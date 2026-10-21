@@ -171,7 +171,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   только запасное: без памяти о фокусе выбор пробелом перекидывал бы остановку
   на первый выбранный тег. Сторожат `core/__tests__/tags.spec.ts`,
   `plugins/__tests__/tags-keyboard.plugin.spec.ts`,
-  `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts` и
+  `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`,
+  `ui/solid/__tests__/tags.spec.tsx` и
   `playground/vue/browser/tags-keyboard.spec.ts`.
   **Тегам, которым не хватило ширины ряда, отвечает одно свойство —
   `overflow`** (`wrap` по умолчанию, `scroll`). В теме оно состоянием,
@@ -208,7 +209,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   ряда нет. Сторожат `core/__tests__/tags-overflow.spec.ts`,
   `plugins/__tests__/tags-scroll.plugin.spec.ts`,
   `ui/vue/__tests__/tags-overflow.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`
-  («переполнение», «слот default») и `select.spec.ts` («слот tags»),
+  («переполнение», «слот default») и `select.spec.ts` («слот tags»), те же
+  группы в `ui/solid/__tests__/tags.spec.tsx` и `select.spec.tsx`,
   `playground/vue/browser/tags-overflow.spec.ts`,
   `playground/vue/browser/tags-variant.spec.ts` и
   `playground/vue/browser/select-tags.spec.ts`.
@@ -244,13 +246,24 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   начинается с опций и со списка, который прокручивается, — с ними работают
   сами. Сторожат `core/__tests__/select.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
-  `ui/svelte/__tests__/select.spec.ts` и
+  `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
   корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
   эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
   сервере панели нет, и опции
   разметкой входят в коллекцию только в браузере (см. «Цена» в
-  `collections.md`).
+  `collections.md`). У Solid панель — содержимое `Teleport` на `Portal`, как
+  у Menu: мемо содержимого собирается с первым чтением портала под
+  владельцем места, внутри `Elevate` Select, и опции в ней читают его лифт и
+  входят в его коллекцию после тела Select. На сервере портала нет, и опции
+  разметкой тоже входят в коллекцию только в браузере. Слоты, по которым
+  разметка решает, что рисовать, — поле (`field`), ряд тегов (`tags`),
+  стрелка и опции, — Solid разворачивает `ResolvedSlot` внутри `Elevate`
+  Select: своё поле так встаёт под пустую связку поля формы, а свои теги
+  входят в коллекцию своего набора. Тело компонента выполняется один раз, и
+  поле, ряд тегов и опции — узлы на всё монтирование: открытие, выбор и отбор
+  их не пересоздают (сторожит «узлы — те же» в
+  `ui/solid/__tests__/select.spec.tsx`).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
   `role="switch"` на вложенном `<input>`, состояние сообщает нативный
   `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
@@ -395,8 +408,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
-  Select.
+  NumberInput, CheckBox, Switch и RadioGroup, у Svelte и Solid — ещё Rating,
+  Slider и Select.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -2363,9 +2376,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   из окна, собирается без окна и снимает окно с движка, вставленный обратно —
   снова в окне. Обёртку модуль регистрирует раньше коллекций — при апгрейде
   разметки она собирается раньше списков в ней. Стиль распорки — по свойствам
-  из записи. Select в React, Solid, Angular и Web Components нет — окно у
-  него во Vue и Svelte; у Svelte панель телепортирована, и окно рисует опции
-  в ней, по секциям нарисованного. Сторожат
+  из записи. Select в React, Angular и Web Components нет — окно у него во
+  Vue, Svelte и Solid; у Svelte и Solid панель телепортирована, и окно рисует
+  опции в ней, по секциям нарисованного. Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
   `core/__tests__/select-virtual.spec.ts`,
@@ -2380,7 +2393,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   StrictMode, сервер с гидратацией, подсветка дорисованного элемента), строки
   `Virtual` в `ui/react/__tests__/external-lifetime.spec.tsx`,
   `ui/solid/__tests__/virtual.spec.tsx` (вместо StrictMode — снятый список
-  снимает окно с движка снаружи и отписан от обёртки), «Virtual» в
+  снимает окно с движка снаружи и отписан от обёртки; Select в окне —
+  распорки в списке панели), «Virtual» в
   `ui/solid/__tests__/collections.server.spec.tsx`,
   `ui/svelte/__tests__/virtual.spec.ts` (вместо StrictMode — снятый список и
   снятая вместе с ним обёртка снимают окно с движка снаружи; Select в окне —

@@ -6,7 +6,7 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку в слой своего лифта
  * (`Elevate`), контрол её берёт. Labelable-контрол (Input, NumberInput,
- * CheckBox, Switch, Rating, Slider с одной ручкой) подпись называет своим
+ * Select, CheckBox, Switch, Rating, Slider с одной ручкой) подпись называет своим
  * `for`, группу (RadioGroup, Slider с несколькими ручками) — ссылкой
  * `aria-labelledby`.
  * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
@@ -32,6 +32,7 @@ import {
 	NumberInput,
 	RadioGroup,
 	Rating,
+	Select,
 	Slider,
 	Switch,
 } from '@soldy-ui/solid'
@@ -169,6 +170,7 @@ const LABELABLES: ReadonlyArray<readonly [string, () => JSX.Element, string, str
 	['Switch', () => <Switch />, '.so-switch', '.so-switch input'],
 	['Rating', () => <Rating />, '.so-rating', '.so-rating input'],
 	['Slider', () => <Slider />, '.so-slider', '.so-slider input'],
+	['Select', () => <Select />, '.so-select', '.so-select__field input'],
 ]
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -399,6 +401,53 @@ describe('Field · имя контрола', () => {
 		expect(document.querySelector('.so-field__label')).toBeNull()
 		expect(checkbox.closest('label')?.classList.contains('so-label')).toBe(true)
 		expect(refsOf(checkbox, 'aria-describedby')).toEqual([node('.so-field__helper').id])
+	})
+})
+
+/**
+ * Поле Select — деталь его разметки (`embedded`): связку поля формы берёт
+ * сам Select, а не его Input, и свой набор `aria` с `id` от поля отдаёт
+ * `<input>` комбобокса. Своему содержимому Select опускает пустую связку:
+ * поле встаёт под неё, потому что развёрнуто в слое лифта Select.
+ */
+describe('Field · Select', () => {
+	it('поле Select — деталь его разметки: связку берёт Select, а не его Input', () => {
+		mount(() => (
+			<Field label="Город">
+				<Select />
+			</Field>
+		))
+
+		const combobox = input('.so-select__field input')
+
+		expect(combobox.getAttribute('role')).toBe('combobox')
+		expect(combobox.id).not.toBe('')
+		expect(label().htmlFor).toBe(combobox.id)
+	})
+
+	it('aria_label Select доходит до комбобокса', () => {
+		mount(() => <Select aria_label="Город" />)
+
+		expect(input('.so-select__field input').getAttribute('aria-label')).toBe('Город')
+		expect(node('.so-select').hasAttribute('aria-label')).toBe(false)
+	})
+
+	/**
+	 * Своё поле в слоте `field` — тоже содержимое Select: оно развёрнуто в его
+	 * слое и видит пустую связку, а не связку поля формы над Select.
+	 */
+	it('своё поле в слоте field связку поля формы не берёт — её взял Select', () => {
+		mount(() => (
+			<Field label="Город" helper="Подсказка">
+				<Select field={<Input class="own-field" />} />
+			</Field>
+		))
+
+		const own = input('.own-field input')
+
+		expect(own.id).toBe('')
+		expect(own.hasAttribute('aria-describedby')).toBe(false)
+		expect(label().htmlFor).not.toBe('')
 	})
 })
 

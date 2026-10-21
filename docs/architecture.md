@@ -2349,7 +2349,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8c: Solid Adapter (`packages/ui/solid/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / Menu / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Tags / Select / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Структура зеркалит React — JSX и колбэк-пропы делают их почти близнецами, —
 а механика ближе к Vue и Svelte: тело компонента выполняется один раз, и
@@ -2368,10 +2368,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   классы и наборы ядра, поверх них остальные атрибуты потребителя, кроме
   `ref`); делёж атрибутов потребителя у поля —
   `toRootForward` (класс и стиль корню) и
-  `toControlAttrs` (остальное, кроме `ref`, — `<input>`; так же делит их
-  элемент коллекции — строке, у радио — полю, а ListBox и Tabs — узлу
-  списка); `toPartClass` — классы части без своего экземпляра строкой для
-  `class` компонента, на котором она стоит: снимок ядро отдаёт списком
+  `toControlAttrs` (остальное, кроме `ref`, — `<input>`, у Select —
+  `<input>` его поля; так же делит их элемент коллекции — строке, у радио —
+  полю, а ListBox и Tabs — узлу списка); `toPartClass` — классы части без
+  своего экземпляра строкой для `class` компонента, на котором она стоит:
+  снимок ядро отдаёт списком
   (`TClasses` → `string[]`), а `class` у Solid — строка (панель Menu и
   подменю — `panelClasses` на их Frame); `roleIcon(role)` — компонент
   иконки по роли для `tag` у Icon, один на роль, — он же рисует отметку
@@ -2380,8 +2381,10 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   объект с геттерами по ключам scope, с которым функция слота зовётся один
   раз, — его получают функции всех слотов со scope; `ResolvedSlot` — то же,
   что `resolveSlot`, компонентом, там, где он стоит в разметке, — под слоем
-  лифта владельца коллекции; `relaySlot` — проброс слота элемента коллекции
-  владельцем, scope элемента и сам элемент в нём — живыми полями;
+  лифта владельца коллекции, а со `scope` (аксессором) — и слот со scope:
+  `default` у Tags, `field` и `tags` у Select; `relaySlot` — проброс слота
+  элемента коллекции владельцем, scope элемента и сам элемент в нём — живыми
+  полями;
   `chainHandler` — своё, затем обработчик потребителя, и в форме пары
   `[handler, data]`.
 - `adapter/runtime/` — `useAdapter` поверх связки
@@ -2488,10 +2491,11 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   коллекции два (свой и фасада), и элемент входит в коллекцию на `attach()` в
   `useAdapter`, на сервере тоже. Слоя `TDrafts` и пересборки, как у React,
   нет. Элементы из данных — `<For>` по `shown`: элементы — экземпляры, и
-  ссылка на них устойчива. У ListBox и строк Table — `KeyedFor` по `drawn`, с
-  распорками окна: записи `drawn` новые на каждую смену, и `<For>`, сравнивая
-  их по ссылке, пересоздавал бы все элементы вместе с узлами и фокусом; у
-  ячеек строки — `KeyedFor` по колонке ячейки, по той же причине. Заголовки
+  ссылка на них устойчива. У ListBox, Select и строк Table — `KeyedFor` по
+  `drawn`, с распорками окна: записи `drawn` новые на каждую смену, и
+  `<For>`, сравнивая их по ссылке, пересоздавал бы все элементы вместе с
+  узлами и фокусом; у ячеек строки — `KeyedFor` по колонке ячейки, по той же
+  причине. Заголовки
   колонок — `<For>` по `shownColumns`: колонки — экземпляры. Своей границы
   перерисовки, как `withRenderBoundary` у React и `_TableRowCells` у Vue,
   ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
@@ -2513,6 +2517,29 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   записи `sections` новые на каждую смену, — `<For>` по пунктам секции и
   подменю из данных — `Show` по записи (`keyed`): запись у пункта устойчива,
   а `ctrl` и `engine` подменю читает при сборке.
+- **Select — коллекция в телепортированной панели, как Menu.** Два
+  контекста на одном `useElevator()`: в слой Select пишут связка поля формы
+  (`TFieldControlExtension` — своему содержимому пустую), коллекция и окно
+  обёртки `Virtual`, а `Elevate` стоит вокруг всего содержимого корня — поля
+  и панели. Опции стоят в панели, внутри `Teleport` её Frame: мемо
+  содержимого заводит первое чтение портала под владельцем Teleport, и опции
+  собираются в слое Select, после его тела, — а на сервере, где портала нет,
+  панели и опций нет: опции разметкой входят в коллекцию только в браузере,
+  как у Svelte. Поле, ряд тегов, стрелку и список разметка разворачивает
+  `ResolvedSlot` — поле и ряд тегов со scope (`field`, `tags`): своё поле так
+  встаёт под пустую связку поля формы, а теги своего ряда входят в коллекцию
+  своего набора. Ряд тегов — `Show` по инстансу тегов и его движку: они есть
+  только в `multiple`. Открытость панели — `visible` Frame, а не `Show`:
+  закрытие вычистило бы коллекцию вместе с выбором. Тело выполняется один
+  раз, и поле, ряд тегов и опции — узлы на всё монтирование.
+- **Tags — `<For>` по `shown`, своя раскладка — `ResolvedSlot` со scope.**
+  Теги — экземпляры, и петля по ссылке их не пересоздаёт. Слот `default`
+  получает показанные теги живым scope и разворачивается в слое набора: теги
+  своей раскладки входят в его коллекцию. Выбор тега — `onActionPress` строки
+  (на выключенный тег `press` не приходит), закрытие — `onActionClick`
+  крестика со `stopPropagation`, как у таба: клик Solid делегирует документу,
+  и гасить всплытие там поздно — корни тега и набора отдали бы `action:press`,
+  а поле Select, в котором стоят теги, открыло бы панель.
 - **Окно и выезжающая панель — `Teleport` адаптера, как Frame.** Подложка и
   панель — два узла одного содержимого телепорта: в цели они соседи в обёртке
   портала, подложка раньше. Её раскладывает та же `createRootProps`, что
@@ -3492,7 +3519,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TProgressLinearComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TSliderComponent`, `TRatingComponent`, `TScrollerComponent`, `TPaginationComponent` (its page is an internal part), `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `ProgressLinear`, `Skeleton`, `Slider`, `Rating`, `Scroller`, `Pagination` (its page is an internal part), `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `liveScope`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `ProgressLinear`, `Skeleton`, `Slider`, `Rating`, `Scroller`, `Pagination` (its page is an internal part), `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Tags` with `Tags.Item`, `Select` with `Select.Item` / `Select.Group`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TagsItem`, `SelectItem`, `SelectGroup`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `liveScope`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                    |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `useIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

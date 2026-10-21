@@ -14,6 +14,7 @@ import {
 import { TButton } from '@soldy-ui/core'
 import {
 	Button,
+	ResolvedSlot,
 	liveScope,
 	relaySlot,
 	renderSlot,
@@ -30,6 +31,7 @@ import {
 	type SliderProps,
 	type SwitchProps,
 	type TooltipProps,
+	type TSlotContent,
 	type UseDomProps,
 } from '@soldy-ui/solid'
 import { mount } from './mount'
@@ -458,5 +460,107 @@ describe('живой scope', () => {
 		dispose()
 
 		expect(runs).toBe(1)
+	})
+})
+
+/**
+ * `ResolvedSlot` со scope — слот владельца со scope, развёрнутый там, где
+ * стоит в разметке (Tags отдаёт так показанные теги слоту `default`, Select —
+ * свои экземпляры слотам `field` и `tags`). Функция слота получает scope живым,
+ * как от `resolveSlot`: зовётся один раз, а прочитанное в её разметке
+ * следует за scope на месте.
+ */
+describe('ResolvedSlot со scope', () => {
+	type TScope = { text: string }
+
+	/** Слот со scope от сигнала теста; содержимое и запасное — от теста. */
+	function draw(content: TSlotContent<TScope> | undefined) {
+		const [text, setText] = createSignal('a')
+		const { container } = mount(() => (
+			<div>
+				<ResolvedSlot
+					content={content}
+					scope={() => ({ text: text() })}
+					fallback={<i class="fallback">запасное</i>}
+				/>
+			</div>
+		))
+
+		return { container, setText }
+	}
+
+	it('функция слота зовётся один раз, смена scope обновляет её разметку на месте', () => {
+		let calls = 0
+		const { container, setText } = draw((scope) => {
+			calls += 1
+
+			return <b>{scope.text}</b>
+		})
+		const node = container.querySelector('b')
+
+		setText('b')
+
+		expect(container.querySelector('b')).toBe(node)
+		expect(node?.textContent).toBe('b')
+		expect(calls).toBe(1)
+		expect(container.querySelector('.fallback')).toBeNull()
+	})
+
+	it('деструктурированный scope — функция зовётся заново, с новым значением', () => {
+		let calls = 0
+		const { container, setText } = draw(({ text }) => {
+			calls += 1
+
+			return <b>{text}</b>
+		})
+
+		setText('b')
+
+		expect(container.querySelector('b')?.textContent).toBe('b')
+		expect(calls).toBe(2)
+	})
+
+	it('незаданный слот — запасное', () => {
+		const { container } = draw(undefined)
+
+		expect(container.querySelector('.fallback')?.textContent).toBe('запасное')
+	})
+
+	/** Рисовать ли своё, слот решает по scope: пустое уступает место запасному. */
+	it('пустое при новом scope уступает место запасному, непустое — вытесняет его', () => {
+		const { container, setText } = draw((scope) => (scope.text === 'a' ? <b>свой</b> : null))
+		const content = () => container.firstElementChild?.innerHTML
+
+		expect(content()).toBe('<b>свой</b>')
+
+		setText('b')
+
+		expect(content()).toBe('<i class="fallback">запасное</i>')
+
+		setText('a')
+
+		expect(content()).toBe('<b>свой</b>')
+	})
+
+	it('готовые узлы — как без scope', () => {
+		const { container } = draw(<b class="ready">готово</b>)
+
+		expect(container.querySelector('.ready')?.textContent).toBe('готово')
+		expect(container.querySelector('.fallback')).toBeNull()
+	})
+
+	/**
+	 * Функцию слота со scope без `scope` звать не с чем: тип её не пропускает.
+	 * Тип проверяет не vitest, а шаг CI «Типы — Solid».
+	 */
+	it('функция слота без scope не компилируется', () => {
+		const slot = (scope: TScope) => <b>{scope.text}</b>
+		// @ts-expect-error — функции слота нужен scope: звать её не с чем
+		const plain = () => <ResolvedSlot content={slot} />
+		const scoped = () => <ResolvedSlot content={slot} scope={() => ({ text: 'a' })} />
+
+		expectTypeOf(slot).not.toExtend<JSX.Element>()
+		expectTypeOf(plain).toBeFunction()
+		expectTypeOf(scoped).toBeFunction()
 	})
 })
