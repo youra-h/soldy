@@ -3,10 +3,12 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
- * вокруг `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
- * списком табов и панелями, у группы радио и аккордеона — контейнер
- * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
- * называет правило дескриптора (`focusTarget` плагина действия).
+ * вокруг `<input>`, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
+ * — рамка вокруг узла списка, у Tabs — рамка со списком табов и панелями, у
+ * группы радио и аккордеона — контейнер остановок, у пагинации — `nav` без
+ * своей остановки, у ленты — ряд из кнопок и вьюпорта, у элемента коллекции —
+ * обёртка вокруг строки; узел фокуса называет правило дескриптора
+ * (`focusTarget` плагина действия).
  *
  * Своё у Angular — разметка: корень — элемент компонента, своя остановка
  * перед главной частью — шаблон слота (`leading`) или проекция (`header`). И
@@ -24,8 +26,12 @@ import {
 	TListBox,
 	TListBoxItem,
 	TNumberInput,
+	TPagination,
 	TRadioGroup,
 	TRadioGroupItem,
+	TRating,
+	TScroller,
+	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
@@ -41,8 +47,12 @@ import {
 	TListBoxComponent,
 	TListBoxItemComponent,
 	TNumberInputComponent,
+	TPaginationComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TRatingComponent,
+	TScrollerComponent,
+	TSliderComponent,
 	TSwitchComponent,
 	TTabsComponent,
 	TTabsItemComponent,
@@ -277,6 +287,56 @@ class ListBoxItemHost {
 	readonly ctrl = new TListBoxItem({ value: 'b', text: 'B' })
 }
 
+/** Оценка: фокус держит поле ручки, а корень — ряд звёзд вокруг. */
+@Component({
+	selector: 'probe-rating-focus',
+	standalone: true,
+	imports: [TRatingComponent],
+	template: `<span so-rating [ctrl]="ctrl"></span>`,
+})
+class RatingHost {
+	readonly ctrl = new TRating()
+}
+
+/** Ползунок: фокус держат поля ручек, а корень — дорожка вокруг; — поле первой ручки. */
+@Component({
+	selector: 'probe-slider-focus',
+	standalone: true,
+	imports: [TSliderComponent],
+	template: `<span so-slider [ctrl]="ctrl"></span>`,
+})
+class SliderHost {
+	readonly ctrl = new TSlider({ value: [20, 80] })
+}
+
+/**
+ * Пагинация: корень — `nav` без своей остановки, фокус — на кнопке текущей
+ * страницы, а не на стрелке «назад», которая на третьей странице включена.
+ */
+@Component({
+	selector: 'probe-pagination-focus',
+	standalone: true,
+	imports: [TPaginationComponent],
+	template: `<nav so-pagination [ctrl]="ctrl" [total]="50" [value]="3"></nav>`,
+})
+class PaginationHost {
+	readonly ctrl = new TPagination()
+}
+
+/** Лента со своими остановками: фокус — на первой из них, мимо кнопки «назад». */
+@Component({
+	selector: 'probe-scroller-focus',
+	standalone: true,
+	imports: [TScrollerComponent],
+	template: `<div so-scroller [ctrl]="ctrl">
+		<button class="target">A</button>
+		<button>B</button>
+	</div>`,
+})
+class ScrollerHost {
+	readonly ctrl = new TScroller()
+}
+
 /**
  * Хост с инстансом, которому тест пишет `focused`. Тип инстанса — только
  * свойство: карта событий у каждого контрола своя.
@@ -303,6 +363,15 @@ const CASES: Record<string, TCase> = {
 	Textarea: { host: TextareaHost, target: 'textarea' },
 	CheckBox: { host: CheckBoxHost, target: 'input' },
 	Switch: { host: SwitchHost, target: 'input' },
+	Rating: { host: RatingHost, target: 'input' },
+	// Первое поле по документу — поле первой ручки
+	Slider: { host: SliderHost, target: '[so-slider] input' },
+	Pagination: {
+		host: PaginationHost,
+		target: '[aria-current="page"]',
+		before: '.so-pagination__prev',
+	},
+	'Scroller со своими остановками': { host: ScrollerHost, target: '.target' },
 	'RadioGroup.Item': { host: RadioHost, target: '.target input' },
 	ListBox: { host: ListBoxHost, target: '[role="listbox"]' },
 	'ListBox с полем в header': {
@@ -474,5 +543,37 @@ describe('RadioGroup · отметка по модели', () => {
 		ctrl.focused = true
 
 		expect(document.activeElement).toBe(target())
+	})
+})
+
+@Component({
+	selector: 'probe-scroller-viewport-focus',
+	standalone: true,
+	imports: [TScrollerComponent],
+	template: `<div so-scroller [ctrl]="ctrl"><span>A</span></div>`,
+})
+class ScrollerViewportHost {
+	readonly ctrl = new TScroller()
+}
+
+describe('Scroller · вьюпорт — остановка', () => {
+	/**
+	 * Своих остановок в ленте нет, а листать есть куда: остановка — сам
+	 * вьюпорт. Замер в jsdom нулевой, поэтому факт приносит инстанс — как
+	 * `scroller.spec.ts`. Узел с `tabindex` Angular рисует на проверке
+	 * изменений, а остановку правило берёт у модели.
+	 */
+	it('своих остановок нет — фокус на вьюпорте, а не на кнопке «вперёд»', async () => {
+		const fixture = mountHost(ScrollerViewportHost)
+		const { ctrl } = fixture.componentInstance
+
+		await nextFrame()
+
+		ctrl.notifyViewport({ canPrev: false, canNext: true, hasTabStops: false })
+		fixture.detectChanges()
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(findIn(fixture, '.so-scroller__viewport', HTMLElement))
+		expect(ctrl.focused).toBe(true)
 	})
 })

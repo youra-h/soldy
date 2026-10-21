@@ -6,8 +6,8 @@
  * проброс держит источник, только пока цель слушают (`TEvented`): фасад уходит
  * с движка вместе со своими подписчиками — обменом адаптера. Здесь — настоящий
  * цикл Angular, как `ui/vue/__tests__/external-engine-lifetime.spec.ts` у Vue:
- * три монтирования ListBox подряд, и на шинах владельца, движка и его
- * расширений ни подписки, ни перехватчика, ни слушателя обмена.
+ * три монтирования ListBox и пагинации подряд, и на шинах владельца, движка и
+ * его расширений ни подписки, ни перехватчика, ни слушателя обмена.
  *
  * Список над движком без `ctrl`, перенесённый в компонент раньше по дереву,
  * Angular собирает раньше, чем снимает прежний: привязку владельца забирает
@@ -17,9 +17,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, input, signal } from '@angular/core'
 import { TestBed } from '@angular/core/testing'
-import { TEvented, TListBox, createEngineListBox } from '@soldy-ui/core'
+import {
+	TEvented,
+	TListBox,
+	TPagination,
+	createEngineListBox,
+	createEnginePagination,
+} from '@soldy-ui/core'
 import type { TListBoxCollection } from '@soldy-ui/core'
-import { TListBoxComponent } from '@soldy-ui/angular'
+import { TListBoxComponent, TPaginationComponent } from '@soldy-ui/angular'
 
 afterEach(() => {
 	vi.restoreAllMocks()
@@ -123,6 +129,48 @@ describe('ListBox над движком и владельцем снаружи',
 
 			// Смонтирован по-настоящему: элементы на месте
 			expect(host.querySelectorAll('.so-list-box-item')).toHaveLength(ITEMS.length)
+
+			fixture.destroy()
+		}
+
+		expect(live()).toEqual([])
+	})
+})
+
+/**
+ * Как у Solid и Web Components — на пагинации: страницы окна кладёт в движок
+ * расширение пагинации по владельцу, а рисует шаблон — элементами страниц над
+ * ними. Две страницы (`total` 20 по 10) — столько же, сколько элементов у
+ * списка.
+ */
+describe('Pagination над движком и владельцем снаружи', () => {
+	it('после нескольких монтирований на шинах владельца и движка ничего', () => {
+		const owner = new TPagination({ total: 20, pageSize: 10 })
+		const engine = createEnginePagination({ owner })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([owner.events, engine.events, ...extensions])
+
+		@Component({
+			standalone: true,
+			imports: [TPaginationComponent],
+			template: `<nav so-pagination [ctrl]="owner" [engine]="engine"></nav>`,
+		})
+		class ExternalHost {
+			readonly owner = owner
+			readonly engine = engine
+		}
+
+		for (let i = 0; i < 3; i++) {
+			const fixture = TestBed.createComponent(ExternalHost)
+
+			fixture.detectChanges()
+
+			const host: HTMLElement = fixture.nativeElement
+
+			// Смонтирована по-настоящему: страницы окна на месте
+			expect(host.querySelectorAll('.so-pagination-item')).toHaveLength(2)
 
 			fixture.destroy()
 		}
