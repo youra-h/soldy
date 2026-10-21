@@ -1,5 +1,6 @@
 @use './mixins' as mixins;
 @use '../../mixins/motion';
+@use '../../mixins/veil';
 .so-skeleton {
 	$this: &;
 
@@ -47,7 +48,9 @@
 		//
 		// Волна — блик, который бежит по заглушке, то есть движение: она идёт,
 		// только когда режим движения её разрешает (`motion.allowed`). Без
-		// движения у волны пульсация, как у `pulse`.
+		// движения у волны пульсация, как у `pulse`. Блик — слой поверхности
+		// контрола: в светлой схеме он белый, в тёмной — цвета панели и не
+		// светится.
 		#{$this}--animation-wave & {
 			@apply overflow-hidden;
 			@include mixins.so-skeleton-pulse;
@@ -63,7 +66,7 @@
 					background: linear-gradient(
 						90deg,
 						transparent 0%,
-						rgba(255, 255, 255, 0.4) 50%,
+						#{veil.layer(var(--so-component-surface), 40%)} 50%,
 						transparent 100%
 					);
 					animation: so-skeleton-wave 1.5s ease-in-out infinite;

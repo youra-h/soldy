@@ -1,4 +1,5 @@
 @use '../../mixins/hover';
+@use '../../mixins/on-signal';
 
 // Варианты темы со своим цветом. `normal` сюда не входит: это нейтраль, и у
 // блока без варианта цвет тот же — отдельное правило ему не нужно.
@@ -73,7 +74,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	// коробка остаётся залитой, её гасит только прозрачность блока.
 	#{$on} #{$this}__container {
 		border-color: var(--so-#{$color}-#{$fill});
-		@apply #{'bg-so-' + $color + '-' + $fill} text-white;
+		@apply #{'bg-so-' + $color + '-' + $fill};
+		color: on-signal.$text;
 
 		// Белый — цветом текста, а не в `fill`. В режиме принудительных цветов
 		// браузер заменяет фон коробки системным, а `fill` не трогает: белая
