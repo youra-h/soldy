@@ -16,7 +16,12 @@ export class TSelectionItemExtension<TItem extends object = any>
 	constructor(item: TItem, parent: TSelectionExtension<TItem>) {
 		super(item, parent)
 
-		this.events.relay(parent.events, [{ from: 'change:selection', as: 'change:selected' }])
+		// `change:selection` приходит адаптерам всех элементов, а касается только
+		// тех, чья отметка сменилась: их называет набор сменившихся. Своему
+		// элементу — его новая отметка, остальным — ничего
+		this.events.follow(parent.events, 'change:selection', (_selected, changed) => {
+			if (changed.has(this._item)) this.events.emit('change:selected', this.selected)
+		})
 	}
 
 	/** Выбран ли элемент. Вычисляется на лету через родительский TSelectionExtension. */

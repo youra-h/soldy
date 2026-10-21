@@ -87,6 +87,32 @@ describe('TSelectionExtension', () => {
 		expect(col.extensions.selection.selectedCount).toBe(1)
 	})
 
+	/**
+	 * Второй аргумент `change:selection` — элементы, чья отметка сменилась: по
+	 * нему item-адаптер решает, касается ли смена его элемента. В `single`
+	 * выбор другого снимает прежний — сменились оба; снятие — только снятый.
+	 */
+	it('select в single: сменились прежний и новый; deselect — только снятый', () => {
+		const col = createCollection()
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
+		const c: Item = { id: 3, name: 'c' }
+		const changes = vi.fn<(items: Item[], changed: ReadonlySet<Item>) => void>()
+
+		col.extensions.plain.insert(a)
+		col.extensions.plain.insert(b)
+		col.extensions.plain.insert(c)
+		col.extensions.selection.select(a)
+		col.extensions.selection.events.on('change:selection', changes)
+		col.extensions.selection.select(b)
+		col.extensions.selection.deselect(b)
+
+		expect(changes.mock.calls).toEqual([
+			[[b], new Set([a, b])],
+			[[], new Set([b])],
+		])
+	})
+
 	// Эхо `update:selected` у `v-model` возвращает элементу `true`: выбрать
 	// выбранное — не смена, как снять невыбранное
 	it.each(['single', 'multiple'] as const)(
@@ -176,7 +202,7 @@ describe('TSelectionExtension', () => {
 			list.forEach((item) => plain.push(item))
 			selection.mode = mode
 
-			const changes = vi.fn<(items: Item[]) => void>()
+			const changes = vi.fn<(items: Item[], changed: ReadonlySet<Item>) => void>()
 
 			selection.events.on('change:selection', changes)
 
@@ -189,7 +215,7 @@ describe('TSelectionExtension', () => {
 			selection.selectMany(list)
 
 			expect(selection.selected).toEqual(list)
-			expect(changes.mock.calls).toEqual([[list]])
+			expect(changes.mock.calls).toEqual([[list, new Set(list)]])
 		})
 
 		it('selectMany: item:select:before на каждый элемент, отмена одного остальных не отменяет', () => {
@@ -254,7 +280,8 @@ describe('TSelectionExtension', () => {
 			selection.deselectMany(list)
 
 			expect(selection.selected).toEqual([])
-			expect(changes.mock.calls).toEqual([[[]]])
+			// Сменились только выбранные: невыбранного `b` в наборе нет
+			expect(changes.mock.calls).toEqual([[[], new Set([a, c])]])
 
 			changes.mockClear()
 			selection.deselectMany([a, b])
@@ -317,7 +344,7 @@ describe('TSelectionExtension', () => {
 			batch.set(list)
 			selection.mode = mode
 
-			const changes = vi.fn<(items: Item[]) => void>()
+			const changes = vi.fn<(items: Item[], changed: ReadonlySet<Item>) => void>()
 
 			return { col, list, changes }
 		}
@@ -332,7 +359,7 @@ describe('TSelectionExtension', () => {
 			plain.remove(b)
 
 			expect(selection.selected).toEqual([a, c])
-			expect(changes.mock.calls).toEqual([[[a, c]]])
+			expect(changes.mock.calls).toEqual([[[a, c], new Set([b])]])
 		})
 
 		it('в single — то же: удалённый выбранный снимает выбор с событием', () => {
@@ -344,7 +371,7 @@ describe('TSelectionExtension', () => {
 			plain.remove(list[1])
 
 			expect(selection.selected).toEqual([])
-			expect(changes.mock.calls).toEqual([[[]]])
+			expect(changes.mock.calls).toEqual([[[], new Set([list[1]])]])
 		})
 
 		it('удалённый невыбранный выбор не меняет — события нет', () => {
@@ -371,7 +398,8 @@ describe('TSelectionExtension', () => {
 			batch.remove([a, b, d])
 
 			expect(selection.selected).toEqual([c])
-			expect(changes.mock.calls).toEqual([[[c]]])
+			// Удалённый невыбранный `d` отметки не менял
+			expect(changes.mock.calls).toEqual([[[c], new Set([a, b])]])
 			expect(order).toEqual(['removed', 'removed', 'removed', 'selection'])
 		})
 
@@ -384,7 +412,7 @@ describe('TSelectionExtension', () => {
 			batch.clear()
 
 			expect(selection.selected).toEqual([])
-			expect(changes.mock.calls).toEqual([[[]]])
+			expect(changes.mock.calls).toEqual([[[], new Set(list)]])
 		})
 
 		it('сверка patch убрала выбранные — одно change:selection', () => {
@@ -398,7 +426,7 @@ describe('TSelectionExtension', () => {
 			batch.patch([a, d])
 
 			expect(selection.selected).toEqual([a])
-			expect(changes.mock.calls).toEqual([[[a]]])
+			expect(changes.mock.calls).toEqual([[[a], new Set([b, c])]])
 		})
 	})
 
@@ -419,7 +447,7 @@ describe('TSelectionExtension', () => {
 			list.forEach((item) => plain.push(item))
 			selection.mode = mode
 
-			const changes = vi.fn<(items: Item[]) => void>()
+			const changes = vi.fn<(items: Item[], changed: ReadonlySet<Item>) => void>()
 			const before = vi.fn<(e: TSelectEvent<Item>) => void>()
 
 			return { selection, list, changes, before }
@@ -447,7 +475,8 @@ describe('TSelectionExtension', () => {
 			selection.replaceSelection([b, a])
 
 			expect(selection.selected).toEqual([b, a])
-			expect(changes.mock.calls).toEqual([[[b, a]]])
+			// Отметка ни у кого не сменилась — сменился только порядок
+			expect(changes.mock.calls).toEqual([[[b, a], new Set()]])
 		})
 
 		it('хук — только тому, кто становится выбранным; отмена одного остальных не отменяет', () => {
@@ -491,7 +520,8 @@ describe('TSelectionExtension', () => {
 			selection.replaceSelection([b, c])
 
 			expect(selection.selected).toEqual([c])
-			expect(changes.mock.calls).toEqual([[[c]]])
+			// `b` принят и заменён следующим: его отметка в итоге не сменилась
+			expect(changes.mock.calls).toEqual([[[c], new Set([a, c])]])
 		})
 
 		it('single: не принят никто — прежний остаётся, пустой список снимает выбор', () => {
@@ -510,7 +540,7 @@ describe('TSelectionExtension', () => {
 			selection.replaceSelection([])
 
 			expect(selection.selected).toEqual([])
-			expect(changes.mock.calls).toEqual([[[]]])
+			expect(changes.mock.calls).toEqual([[[], new Set([a])]])
 		})
 
 		it('none: выбора нет', () => {
@@ -600,7 +630,7 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.mode = 'single'
 
 		expect(handler).toHaveBeenCalledTimes(1)
-		expect(handler).toHaveBeenCalledWith([])
+		expect(handler).toHaveBeenCalledWith([], new Set([a, b]))
 	})
 
 	it('mode: переключение с multiple на single не шлёт change:selection, если выбрано 0 элементов', () => {
@@ -626,7 +656,7 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.mode = 'single'
 
 		expect(col.extensions.selection.selectedCount).toBe(0)
-		expect(handler).toHaveBeenCalledWith([])
+		expect(handler).toHaveBeenCalledWith([], new Set([item]))
 	})
 
 	it('mode: переключение с single на multiple выбор не трогает', () => {
@@ -684,7 +714,7 @@ describe('TSelectionExtension', () => {
 		col.extensions.selection.events.on('change:selection', handler)
 		col.extensions.selection.select(item)
 
-		expect(handler).toHaveBeenCalledWith([item])
+		expect(handler).toHaveBeenCalledWith([item], new Set([item]))
 	})
 
 	it('эмитит change:mode при смене режима', () => {
@@ -748,7 +778,7 @@ describe('TSelectionExtension', () => {
 		function marked(mode: TSelectionMode) {
 			const engine = createEngineSelection<Item>()
 			const { selection } = engine.extensions
-			const changes = vi.fn<(items: Item[]) => void>()
+			const changes = vi.fn<(items: Item[], changed: ReadonlySet<Item>) => void>()
 			const before = vi.fn<(e: TSelectEvent<Item>) => void>()
 
 			selection.mode = mode
@@ -768,7 +798,7 @@ describe('TSelectionExtension', () => {
 
 			expect(before.mock.calls.map(([e]) => e.item)).toEqual(expected)
 			expect(selection.selected).toEqual(expected)
-			expect(changes.mock.calls).toEqual([[expected]])
+			expect(changes.mock.calls).toEqual([[expected, new Set(expected)]])
 		})
 
 		it('batch.set в single: из нескольких отметок выбран последний принятый, change:selection одно', () => {
@@ -779,7 +809,8 @@ describe('TSelectionExtension', () => {
 			const last = engine.extensions.batch.items[7]
 
 			expect(selection.selected).toEqual([last])
-			expect(changes.mock.calls).toEqual([[[last]]])
+			// Отметки, принятые по пути и заменённые следующими, в итоге не сменились
+			expect(changes.mock.calls).toEqual([[[last], new Set([last])]])
 		})
 
 		it('single: отменённый хук последней отметки оставляет предыдущую принятую', () => {

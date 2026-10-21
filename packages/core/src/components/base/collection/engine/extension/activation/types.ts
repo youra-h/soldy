@@ -15,7 +15,13 @@ export class TActivateEvent<TItem> extends TActionEvent {
 export type TActivationEvents<TItem> = {
 	/** Элемент вот-вот станет активным; `preventDefault()` отменяет активацию */
 	'item:activate:before': (e: TActivateEvent<TItem>) => void
-	'change:activation': (item: TItem | undefined) => void
+	/**
+	 * Активный сменился. `item` — новый активный, `previous` — прежний;
+	 * `undefined` — активного нет (сняли) или не было. Сменилась активность
+	 * ровно у этих двух: item-адаптер по ним решает, касается ли смена его
+	 * элемента.
+	 */
+	'change:activation': (item: TItem | undefined, previous: TItem | undefined) => void
 	'item:activated': (item: TItem) => void
 	'item:deactivated': (item: TItem | undefined) => void
 }

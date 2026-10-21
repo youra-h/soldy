@@ -327,6 +327,64 @@ describe('value ↔ checked', () => {
 })
 
 /**
+ * Отметка радио — в обе стороны, парой «проп + колбэк», без `ctrl`: `active`
+ * пропом пишет её, а `onChangeActive` приходит только радио, чья отметка
+ * сменилась, и несёт новую. Состояние приложения держит отметку само.
+ */
+describe('отметка радио: active и onChangeActive', () => {
+	/** Группа из трёх, отметки — в состоянии приложения; колбэки — в журнал. */
+	function App({ log }: { log: string[] }): ReactNode {
+		const [a, setA] = useState(true)
+		const [b, setB] = useState(false)
+		const [c, setC] = useState(false)
+		const radio = (value: string, active: boolean, set: (active: boolean) => void) => (
+			<RadioGroup.Item
+				value={value}
+				active={active}
+				onChangeActive={(next) => {
+					log.push(`${value}: ${next}`)
+					set(next)
+				}}
+			/>
+		)
+
+		return (
+			<>
+				<RadioGroup>
+					{radio('a', a, setA)}
+					{radio('b', b, setB)}
+					{radio('c', c, setC)}
+				</RadioGroup>
+				<output className="so-test-state">{[a, b, c].map(String).join(' ')}</output>
+			</>
+		)
+	}
+
+	const state = () => document.querySelector('.so-test-state')?.textContent
+
+	it('выбор B: A получает false, B — true, C молчит; состояние сходится с отметкой', () => {
+		const log: string[] = []
+
+		mount(<App log={log} />)
+
+		expect(checked()).toEqual(['a'])
+
+		log.length = 0
+		choose('b')
+
+		expect(log).toEqual(['a: false', 'b: true'])
+		expect(state()).toBe('false true false')
+		expect(checked()).toEqual(['b'])
+	})
+
+	it('колбэк получает отметку: boolean', () => {
+		expectTypeOf<NonNullable<RadioGroupItemProps['onChangeActive']>>()
+			.parameter(0)
+			.toEqualTypeOf<boolean>()
+	})
+})
+
+/**
  * Приложение вправе отказать в выборе — подписчиком `item:activate:before`.
  * Браузер отмечает нажатое радио и снимает отметку с соседа ещё до клика, а
  * модель запись не приняла и не сменилась: поле адаптера пишет отметку только

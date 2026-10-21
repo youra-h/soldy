@@ -103,10 +103,12 @@ export class TActivationExtension<TItem extends object = any>
 
 		if (event.defaultPrevented) return false
 
+		const previous = this._activeItem
+
 		this._activeItem = item
 
 		this.events.emit('item:activated', item)
-		this.events.emit('change:activation', item)
+		this.events.emit('change:activation', item, previous)
 
 		return true
 	}
@@ -121,7 +123,7 @@ export class TActivationExtension<TItem extends object = any>
 		this._activeItem = undefined
 
 		this.events.emit('item:deactivated', item)
-		this.events.emit('change:activation', undefined)
+		this.events.emit('change:activation', undefined, item)
 	}
 
 	/**
@@ -172,7 +174,7 @@ export class TActivationExtension<TItem extends object = any>
 			this._activeItem = undefined
 
 			this.events.emit('item:deactivated', prev)
-			this.events.emit('change:activation', undefined)
+			this.events.emit('change:activation', undefined, prev)
 		}
 	}
 

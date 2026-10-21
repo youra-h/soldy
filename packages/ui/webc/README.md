@@ -14,7 +14,11 @@ props are attributes or element properties, and events are DOM events named `so:
 events bubble from your element through the DOM, and the prefix tells a component's event from the
 browser's and your own. A "before" event (`so:show:before`, `so:hide:before`) is cancelable, as a
 DOM event is: `event.preventDefault()` in a listener on the element or above it cancels the action.
-Its `detail` is the core event itself, so `event.detail.preventDefault()` cancels it too.
+Its `detail` is the core event itself, so `event.detail.preventDefault()` cancels it too. Any other
+event's `detail` is the argument of the core event, or an array of them when there are several: an
+item's `so:change:selected` carries its new mark and comes only to the item whose mark changed; its
+owner's `so:change:selection` carries `[selected, changed]`, the selected items and the items whose
+mark changed; `so:change:activation` of tabs and radio groups carries `[active, previous]`.
 
 Each component is a native element of its tag extended by Soldy (a customized built-in):
 `<button is="so-button">` is a real `<button>`, `<div is="so-component-view">` a real `<div>`.
