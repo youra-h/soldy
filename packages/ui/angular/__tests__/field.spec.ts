@@ -6,8 +6,8 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку в свой слой лифта
  * (`provideElevator()`), контрол её берёт. Labelable-контрол (Input,
- * CheckBox, Switch) подпись называет своим `for`, группу (RadioGroup) —
- * ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
+ * NumberInput, CheckBox, Switch) подпись называет своим `for`, группу
+ * (RadioGroup) — ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
  * ошибку — `aria-invalid` и `data-invalid` на своём корне.
  *
  * Угол зрения здесь свой. Обёртки нет: корень — элемент потребителя
@@ -27,6 +27,7 @@ import {
 	TFieldComponent,
 	TInputComponent,
 	TLabelComponent,
+	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TSwitchComponent,
@@ -101,7 +102,7 @@ class PositionHost {
 class SectionHost {}
 
 /** Вид контрола в поле. */
-type TControl = 'input' | 'check-box' | 'switch' | 'radio-group'
+type TControl = 'input' | 'number-input' | 'check-box' | 'switch' | 'radio-group'
 
 /**
  * Поле над своим экземпляром и контрол в нём по виду. Вид и экземпляр
@@ -112,6 +113,7 @@ type TControl = 'input' | 'check-box' | 'switch' | 'radio-group'
 	imports: [
 		TFieldComponent,
 		TInputComponent,
+		TNumberInputComponent,
 		TCheckBoxComponent,
 		TSwitchComponent,
 		TRadioGroupComponent,
@@ -121,6 +123,9 @@ type TControl = 'input' | 'check-box' | 'switch' | 'radio-group'
 		@switch (control) {
 			@case ('input') {
 				<div so-input></div>
+			}
+			@case ('number-input') {
+				<div so-number-input></div>
 			}
 			@case ('check-box') {
 				<span so-check-box></span>
@@ -239,10 +244,12 @@ describe('Field · разметка', () => {
 
 /**
  * Labelable-контрол: `for` подписи ведёт на его поле, а справка и ошибка — в
- * наборе поля. Селекторы — корень контрола и поле, которое называет подпись.
+ * наборе поля. Селекторы — корень контрола и поле, которое называет подпись:
+ * у NumberInput — ввод числа, а не скрытое поле формы.
  */
 const LABELABLES = [
 	['Input', 'input', '[so-input]', '[so-input] input'],
+	['NumberInput', 'number-input', '[so-number-input]', '.so-number-input__input'],
 	['CheckBox', 'check-box', '[so-check-box]', '[so-check-box] input'],
 	['Switch', 'switch', '[so-switch]', '[so-switch] input'],
 ] as const

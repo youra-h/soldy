@@ -20,7 +20,13 @@ import {
 	type Type,
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
-import { TButtonComponent, TInputComponent, TTableComponent, provideAttrs } from '@soldy-ui/angular'
+import {
+	TButtonComponent,
+	TInputComponent,
+	TNumberInputComponent,
+	TTableComponent,
+	provideAttrs,
+} from '@soldy-ui/angular'
 
 /** Приложение спека — снимается после каждого теста. */
 let app: ApplicationRef | undefined
@@ -55,6 +61,7 @@ function assemble(component: Type<unknown>, injector: EnvironmentInjector): HTML
 describe('без provideAttrs()', () => {
 	it.each([
 		['Input', TInputComponent],
+		['NumberInput', TNumberInputComponent],
 		['Table', TTableComponent],
 	])('%s бросает ошибку с подсказкой, что подключить и куда', async (_name, component) => {
 		const { injector } = await bare()

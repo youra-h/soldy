@@ -23,6 +23,7 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TNumberInput,
 	TRadioGroup,
 	TRadioGroupItem,
 	TSwitch,
@@ -39,6 +40,7 @@ import {
 	TInputComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TSwitchComponent,
@@ -73,6 +75,32 @@ class InputHost {
 })
 class InputLeadingHost {
 	readonly ctrl = new TInput()
+}
+
+/**
+ * Поле числа: фокус держит ввод, а не коробка корня, не кнопки шага и не
+ * скрытое поле формы.
+ */
+@Component({
+	selector: 'probe-number-input-focus',
+	standalone: true,
+	imports: [TNumberInputComponent],
+	template: `<div so-number-input [ctrl]="ctrl"></div>`,
+})
+class NumberInputHost {
+	readonly ctrl = new TNumberInput()
+}
+
+@Component({
+	selector: 'probe-number-input-leading-focus',
+	standalone: true,
+	imports: [TNumberInputComponent, SlotDirective],
+	template: `<div so-number-input [ctrl]="ctrl">
+		<ng-template slot="leading"><button class="before"></button></ng-template>
+	</div>`,
+})
+class NumberInputLeadingHost {
+	readonly ctrl = new TNumberInput()
 }
 
 @Component({
@@ -266,6 +294,12 @@ type TCase = {
 const CASES: Record<string, TCase> = {
 	Input: { host: InputHost, target: 'input' },
 	'Input с кнопкой в leading': { host: InputLeadingHost, target: 'input', before: '.before' },
+	NumberInput: { host: NumberInputHost, target: '.so-number-input__input' },
+	'NumberInput с кнопкой в leading': {
+		host: NumberInputLeadingHost,
+		target: '.so-number-input__input',
+		before: '.before',
+	},
 	Textarea: { host: TextareaHost, target: 'textarea' },
 	CheckBox: { host: CheckBoxHost, target: 'input' },
 	Switch: { host: SwitchHost, target: 'input' },

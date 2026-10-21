@@ -10,7 +10,7 @@
  *
  * После гидратации узлы — те же, что напечатал сервер, второго нет, консоль
  * чиста (её сторожит окружение спеков), а смена привязки и слушатель идут на
- * тот же узел. Таблица — те же одиннадцать компонентов, что в `attrs.spec.ts`.
+ * тот же узел. Таблица — те же двенадцать компонентов, что в `attrs.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -23,6 +23,7 @@ import {
 	TInputComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TSwitchComponent,
@@ -50,6 +51,7 @@ const TABLE_COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя' }]
 	selector: 'app-root',
 	imports: [
 		TInputComponent,
+		TNumberInputComponent,
 		TTextareaComponent,
 		TCheckBoxComponent,
 		TSwitchComponent,
@@ -64,6 +66,7 @@ const TABLE_COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя' }]
 		TTableComponent,
 	],
 	template: `<div so-input ${WRITTEN}></div>
+		<div so-number-input ${WRITTEN}></div>
 		<div so-textarea ${WRITTEN}></div>
 		<span so-check-box ${WRITTEN}></span>
 		<span so-switch ${WRITTEN}></span>
@@ -86,6 +89,7 @@ class AttrsPage {
 /** Случай: корень пробы в странице и внутренний узел в нём. */
 const CASES: ReadonlyArray<readonly [string, string, string]> = [
 	['Input', '.probe[so-input]', 'input'],
+	['NumberInput', '.probe[so-number-input]', '.so-number-input__input'],
 	['Textarea', '.probe[so-textarea]', 'textarea'],
 	['CheckBox', '.probe[so-check-box]', 'input'],
 	['Switch', '.probe[so-switch]', 'input'],

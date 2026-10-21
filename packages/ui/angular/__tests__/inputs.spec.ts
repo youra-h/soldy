@@ -453,6 +453,7 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TLabelComponent',
 				'TFieldComponent',
 				'TInputComponent',
+				'TNumberInputComponent',
 				'TTextareaComponent',
 				'TCheckBoxComponent',
 				'TSwitchComponent',
@@ -487,9 +488,15 @@ describe('вход в строгом шаблоне · хосты компоне
 	it.each(components.map((component) => [component.name, component] as const))(
 		'%s: неверное значение — ошибка на каждом входе',
 		(_name, component) => {
-			// TS2322 — «значение не присваивается типу поля»: сверка шла по входу
+			// Ошибка присваивания — сверка шла по входу. TS2322 — «значение не
+			// присваивается типу поля»; у слабого типа — все свойства необязательны,
+			// как у опций формата NumberInput, — TS отвечает раньше своим TS2559,
+			// «нет общих свойств»
 			expect(rejectionsOf(component, 'wrong')).toEqual(
-				component.inputs.map((input) => ({ span: input, code: 2322 })),
+				component.inputs.map((input) => ({
+					span: input,
+					code: expect.toBeOneOf([2322, 2559]),
+				})),
 			)
 		},
 	)
