@@ -408,11 +408,12 @@ describe('вид', () => {
 	const CASES = SCHEMES.flatMap((scheme) => KINDS.map((kind) => ({ scheme, ...kind })))
 
 	/**
-	 * Пороги WCAG 2 — у белой плашки обычного сообщения. Заголовок, описание и
-	 * подписи кнопок — текст кегля `text-sm`: 4,5:1 (1.4.3). Значок и крестик —
-	 * графика: 3:1 (1.4.11). У заливки вида порогов нет: она — сигнал, ступень
-	 * кнопки `filled` своего цвета, и под пороги её не подгоняют
-	 * (`themes/oren/AGENTS.md`, «тосты Toasts»).
+	 * Пороги WCAG 2 — у белой плашки обычного сообщения. Заголовок и подписи
+	 * кнопок — текст кегля `text-sm`: 4,5:1 (1.4.3). Значок и крестик —
+	 * графика: 3:1 (1.4.11). Описание — приглушённый текст ступени остальных
+	 * подсказок темы: порога у него нет, оно только тише заголовка. У заливки
+	 * вида порогов нет: она — сигнал, ступень кнопки `filled` своего цвета, и
+	 * под пороги её не подгоняют (`themes/oren/AGENTS.md`, «тосты Toasts»).
 	 */
 	const TEXT = 4.5
 	const GRAPHIC = 3
@@ -511,8 +512,8 @@ describe('вид', () => {
 				).toBeGreaterThanOrEqual(TEXT)
 				expect(
 					contrast(style(part(item, 'description')).color, plate),
-					`${name}: описание`,
-				).toBeGreaterThanOrEqual(TEXT)
+					`${name}: описание тише заголовка`,
+				).toBeLessThan(contrast(style(part(item, 'text')).color, plate))
 				expect(contrast(icon, plate), `${name}: значок`).toBeGreaterThanOrEqual(GRAPHIC)
 			}
 		},
