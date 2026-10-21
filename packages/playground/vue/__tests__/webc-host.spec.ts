@@ -11,7 +11,10 @@
  * перестановка `<so-drag-and-drop>` — автономные элементы, своим тегом. Ребёнок
  * без компонента — ряд коллекций в перестановке — тоже со своим стилем. Окно и
  * выезжающую панель открывает кнопка в обёртке (`opener` описания), а тосты
- * показывают кнопки внутри менеджера `<so-toasts>` — API у своего места.
+ * показывают кнопки внутри менеджера `<so-toasts>` — API у своего места. Дети,
+ * которые зависят от пропа строки, — триггер меню по режиму `openOn`, —
+ * ставятся до вставки, и смена такого пропа строит элемент заново (`rebuild`
+ * описания).
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -544,6 +547,89 @@ describe('хост Web Components · оверлеи', () => {
 		expect(panel.parentElement).toBe(document.body)
 		expect(panel.getAttribute('role')).toBe('tooltip')
 		expect(find(panel, '.so-tooltip__content').textContent).toBe('Короткое пояснение к кнопке')
+
+		handle.unmount()
+	})
+
+	/**
+	 * Пункты меню — разметкой, как у Vue: части меню в свете элемента, а панель
+	 * с ними уехала в `body`. Флажки, переключатели, подменю и пункт с панелью
+	 * — свои элементы частей; нажатие действия приходит в журнал событием
+	 * фасада меню (`choose`).
+	 */
+	it('превью Menu: триггер в корне, панель с пунктами в body, выбор — в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'menu',
+			props: {},
+			onEvent: (name) => events.push(name),
+		})
+		const trigger = find(node, '.so-menu > .so-button')
+		const panel = panelOf(trigger, 'aria-controls')
+		const row = (text: string) =>
+			[...panel.querySelectorAll('[role^="menuitem"]')].find(
+				(candidate) =>
+					candidate.querySelector('.so-button__text')?.textContent?.trim() === text,
+			)
+
+		expect(trigger.textContent?.trim()).toBe('Действия')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.getAttribute('role')).toBe('menu')
+		expect(texts(panel.querySelectorAll('.so-menu-group__label'))).toEqual([
+			'Вид',
+			'Сортировка',
+		])
+		expect(row('Сетка')?.getAttribute('role')).toBe('menuitemcheckbox')
+		expect(row('По имени')?.getAttribute('aria-checked')).toBe('true')
+		expect(row('Поделиться')?.getAttribute('aria-haspopup')).toBe('menu')
+		expect(row('Срок')?.getAttribute('aria-haspopup')).toBe('dialog')
+		expect(row('Изменить')?.querySelector('.so-menu-item__shortcut')?.textContent).toBe(
+			'Ctrl+E',
+		)
+
+		await nextFrame()
+		trigger.click()
+		await flush()
+		await nextFrame()
+		events.length = 0
+
+		const edit = row('Изменить')
+
+		if (!(edit instanceof HTMLElement)) throw new Error('строки «Изменить» нет')
+
+		edit.click()
+		await flush()
+
+		expect(events).toContain('choose')
+		expect(events).toContain('change:open')
+
+		handle.unmount()
+	})
+
+	/**
+	 * Режим контекстного меню — из пропсов колонки, как у Vue: в слоте
+	 * `trigger` тогда область, а не кнопка. Дети ставятся до вставки, и смена
+	 * режима строит элемент заново.
+	 */
+	it('превью Menu: смена openOn строит меню заново — у контекстного меню в слоте область', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'menu', props: {} })
+		const before = find(node, '.so-menu')
+
+		expect(before.querySelector(':scope > .so-button')).not.toBeNull()
+
+		handle.update({ openOn: 'contextmenu' })
+
+		const after = find(node, '.so-menu')
+
+		expect(after).not.toBe(before)
+		expect(node.querySelectorAll('.so-menu')).toHaveLength(1)
+		expect(after.querySelector(':scope > .so-button')).toBeNull()
+		expect(after.querySelector(':scope > [slot="trigger"]')?.getAttribute('tabindex')).toBe('0')
+		expect(
+			after.querySelector(':scope > [slot="trigger"]')?.hasAttribute('aria-haspopup'),
+		).toBe(false)
 
 		handle.unmount()
 	})

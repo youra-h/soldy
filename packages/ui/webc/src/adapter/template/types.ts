@@ -26,14 +26,15 @@
  * `ownerAttributes` (`attributes.ts`): верхним слоем раскладчика элемента, тем
  * же правилом, что база на корне. Тем же вызовом — набор для содержимого слота,
  * которому остальные адаптеры отдают его в scope: связку с панелью триггеру
- * Popover и Tooltip (`triggerAria`). Scope у слотов Web Components нет, и
+ * Popover, Tooltip и Menu (`triggerAria`). Scope у слотов Web Components нет, и
  * привязать набор потребитель не может, поэтому шаблон кладёт его на первый
  * элемент слота — узлы слота отдаёт контекст (`slotted`). Состояние в
  * контексте — свойства инстанса и выходы плагинов его дескриптора: пометку
  * панели владельцем (`dismiss_ownerAttribute`) шаблон читает с типом. Стиль
  * значением на узле шаблона — позицию ручки Slider, долю заливки звезды
  * Rating, высоту распорки окна — тем же правилом кладёт `ownerStyles`
- * (`styles.ts`). Вложенный элемент soldy —
+ * (`styles.ts`), а классы значением — классы панели меню и подменю
+ * (`panelClasses`) — `ownerClasses` (`classes.ts`). Вложенный элемент soldy —
  * деталь разметки владельца — шаблон строит помощником `createDetail` с
  * обязательным именем места (`embedded`), а свою разметку отдаёт в её слот
  * помощником `lend`.
@@ -133,9 +134,17 @@ export type TTemplateParts = {
 /**
  * Контекст привязок и построения: живой вид элемента. `TOutputs` — выходы
  * плагинов дескриптора компонента (`DescriptorPluginOutputs`), их шаблон
- * читает в состоянии рядом со свойствами инстанса.
+ * читает в состоянии рядом со свойствами инстанса. `TOwnerFacade` — фасад
+ * владельца, своей коллекции, у части, которая сразу и элемент коллекции над
+ * ней, и владелец своей (пункт с подменю): его свойства шаблон читает в том же
+ * состоянии, а `facade` у такой части — её фасад элемента.
  */
-export interface ITemplateContext<TInstance = object, TFacade = unknown, TOutputs = unknown> {
+export interface ITemplateContext<
+	TInstance = object,
+	TFacade = unknown,
+	TOutputs = unknown,
+	TOwnerFacade = unknown,
+> {
 	/**
 	 * Сам элемент — корень компонента, а у элемента-обёртки
 	 * (`TRootSpec.wrapped`) — узел вокруг корня, который построил шаблон
@@ -150,10 +159,11 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown, TOutput
 	 * связки, с выходами плагинов его дескриптора (`dismiss_ownerAttribute`); у
 	 * коллекционного компонента — вместе со свойствами фасада (`items`,
 	 * `shown`, `active`, `order`): имена пропсов фасада и выходов плагинов
-	 * префиксуются, и одноимённых у них нет. Вид — тот же, что у связки
-	 * (`TBindingState`): выходы — одним видом с инстансом.
+	 * префиксуются, и одноимённых у них нет. У пункта с подменю — ещё и
+	 * свойства фасада своей коллекции (`sections`, `submenus`). Вид — тот же,
+	 * что у связки (`TBindingState`): выходы — одним видом с инстансом.
 	 */
-	readonly state: TBindingState<TInstance, TFacade, TOutputs>
+	readonly state: TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>
 	/**
 	 * Инстанс компонента — текущей связки: его команды зовёт разметка (`clear`
 	 * кнопки очистки поля). Читается в момент обращения, поэтому обработчик,
@@ -164,9 +174,11 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown, TOutput
 	/**
 	 * Фасад коллекции текущей связки — у компонента с двумя контекстами (свой и
 	 * фасада): через его контекст элемента разметка зовёт команды коллекции —
-	 * активировать таб, раскрыть секцию, закрыть таб. Читается в момент
-	 * обращения, как `ctrl`: каждое подключение — новая связка и новый фасад. У
-	 * остальных компонентов и до первой сборки его нет.
+	 * активировать таб, раскрыть секцию, закрыть таб. У части с тремя
+	 * контекстами — фасад элемента: нажатие строки пункта с подменю открывает
+	 * его панель командой меню над ним. Читается в момент обращения, как
+	 * `ctrl`: каждое подключение — новая связка и новый фасад. У остальных
+	 * компонентов и до первой сборки его нет.
 	 */
 	readonly facade: TFacade | undefined
 	/** Задано ли пользователем содержимое именованного слота — и точки-образца */
@@ -175,7 +187,7 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown, TOutput
 	 * Узлы заданного слота — его свет в точке слота, в порядке разметки. Так
 	 * шаблон кладёт набор на содержимое потребителя, которому остальные
 	 * адаптеры отдают его в scope: связку с панелью — первому элементу слота
-	 * `trigger` у Popover и Tooltip (`ownerAttributes`). Узлы — те самые, что
+	 * `trigger` у Popover, Tooltip и Menu (`ownerAttributes`). Узлы — те самые, что
 	 * написал потребитель, а не копии: триггер остаётся тем же узлом, и набор
 	 * на нём сменяется на месте. Слот не задан, шаблон его не объявил или это
 	 * образец (его копию отдаёт `sample`) — пусто.
@@ -207,13 +219,23 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown, TOutput
  * `apply` — метод: общая привязка, объявленная для части инстанса (`{ text }`),
  * подходит шаблону любого компонента, у которого эта часть есть.
  */
-export interface ITemplateBinding<TInstance = object, TFacade = unknown, TOutputs = unknown> {
+export interface ITemplateBinding<
+	TInstance = object,
+	TFacade = unknown,
+	TOutputs = unknown,
+	TOwnerFacade = unknown,
+> {
 	/** Пропы, при изменении которых привязку надо применить */
 	props: readonly string[]
-	apply(ctx: ITemplateContext<TInstance, TFacade, TOutputs>): void
+	apply(ctx: ITemplateContext<TInstance, TFacade, TOutputs, TOwnerFacade>): void
 }
 
-export interface ITemplate<TInstance = object, TFacade = unknown, TOutputs = unknown> {
+export interface ITemplate<
+	TInstance = object,
+	TFacade = unknown,
+	TOutputs = unknown,
+	TOwnerFacade = unknown,
+> {
 	/**
 	 * Строит структуру в корне — в самом элементе — и отдаёт точки
 	 * распределения света и узел поля. Зовётся один раз, при первом
@@ -231,17 +253,17 @@ export interface ITemplate<TInstance = object, TFacade = unknown, TOutputs = unk
 	create(
 		root: HTMLElement,
 		hasSlot: TSlotGiven,
-		ctx: ITemplateContext<TInstance, TFacade, TOutputs>,
+		ctx: ITemplateContext<TInstance, TFacade, TOutputs, TOwnerFacade>,
 	): TTemplateParts
 
-	bindings: readonly ITemplateBinding<TInstance, TFacade, TOutputs>[]
+	bindings: readonly ITemplateBinding<TInstance, TFacade, TOutputs, TOwnerFacade>[]
 }
 
 /** Объявление привязки: bind('text', ctx => ...) или bind(['a','b'], ...) */
-export function bind<TInstance, TFacade = unknown, TOutputs = unknown>(
+export function bind<TInstance, TFacade = unknown, TOutputs = unknown, TOwnerFacade = unknown>(
 	props: string | readonly string[],
-	apply: (ctx: ITemplateContext<TInstance, TFacade, TOutputs>) => void,
-): ITemplateBinding<TInstance, TFacade, TOutputs> {
+	apply: (ctx: ITemplateContext<TInstance, TFacade, TOutputs, TOwnerFacade>) => void,
+): ITemplateBinding<TInstance, TFacade, TOutputs, TOwnerFacade> {
 	return {
 		props: typeof props === 'string' ? [props] : props,
 		apply,

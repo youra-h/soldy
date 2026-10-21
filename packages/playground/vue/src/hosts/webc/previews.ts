@@ -74,6 +74,13 @@ export type TPreview = {
 		| Readonly<Record<string, readonly TContent[]>>
 		| ((bind: TPreviewProps) => Readonly<Record<string, readonly TContent[]>>)
 	/**
+	 * Пропсы строки, от которых зависят дети (`slots` функцией), — их смена
+	 * строит элемент заново, как смена `ctrl`: дети ставятся до вставки, а
+	 * свет собранного элемента база уже разложила. Так у Menu режим
+	 * контекстного меню (`openOn`) меняет триггер на область, как разметка Vue.
+	 */
+	readonly rebuild?: readonly string[]
+	/**
 	 * Обёртка — элемент вокруг компонента, как у Vue и React: подпись Label у
 	 * CheckBox, Switch, Slider и Rating — элемент soldy со своими пропсами, в
 	 * слоте по умолчанию которого лежит компонент, — а у таблицы, полосы
@@ -259,6 +266,118 @@ const FULL_WIDTH: TPreview = { tag: 'div', style: () => 'width:100%' }
 
 /** Содержимое коллекций — из общего манифеста, как у Vue и React. */
 const ITEMS = COLLECTION_ITEMS
+
+/**
+ * Область контекстного меню — как «файл» у потребителя, как у Vue: меню
+ * вызывают над ней правой кнопкой, долгим касанием и Shift+F10 — она
+ * фокусируемая, — и панель встаёт у точки вызова.
+ */
+const contextArea = (): Node => {
+	const node = document.createElement('div')
+
+	node.tabIndex = 0
+	node.style.cssText = 'padding:24px 32px; border:1px dashed; border-radius:8px'
+	node.textContent = 'Правая кнопка, долгое касание или Shift+F10'
+
+	return node
+}
+
+/** Пункт меню разметкой: элемент части со своими пропсами и детьми по слотам. */
+const menuPart = (
+	is: string,
+	props: TPreviewProps = {},
+	slots: Readonly<Record<string, readonly TContent[]>> = {},
+): TPreview => ({ tag: 'div', is, props, slots })
+
+/**
+ * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
+ * переключателей — отмечен один, — действия с подсказками сочетаний в слоте
+ * `trailing`, подменю с подменю внутри, пункт с панелью, которая монтируется с
+ * первым открытием, выключенное действие и «опасный» пункт своего варианта.
+ * Календаря в Web Components нет, и в панели «Срок» — поле числа дней, как у
+ * Solid.
+ */
+const MENU_ITEMS: readonly TContent[] = [
+	menuPart(
+		'so-menu-group',
+		{ label: 'Вид' },
+		{
+			default: [
+				menuPart('so-menu-checkbox-item', { value: 'grid', text: 'Сетка', selected: true }),
+				menuPart('so-menu-checkbox-item', { value: 'ruler', text: 'Линейка' }),
+			],
+		},
+	),
+	menuPart('so-menu-separator'),
+	menuPart(
+		'so-menu-radio-group',
+		{ label: 'Сортировка', value: 'name' },
+		{
+			default: [
+				menuPart('so-menu-radio-item', { value: 'name', text: 'По имени' }),
+				menuPart('so-menu-radio-item', { value: 'date', text: 'По дате' }),
+			],
+		},
+	),
+	menuPart('so-menu-separator'),
+	menuPart(
+		'so-menu-item',
+		{ value: 'edit', text: 'Изменить' },
+		{ trailing: [caption('Ctrl+E')] },
+	),
+	menuPart(
+		'so-menu-item',
+		{ value: 'copy', text: 'Дублировать' },
+		{ trailing: [caption('Ctrl+D')] },
+	),
+	menuPart(
+		'so-menu-submenu',
+		{ value: 'share', text: 'Поделиться' },
+		{
+			default: [
+				menuPart('so-menu-item', { value: 'link', text: 'Ссылка' }),
+				menuPart('so-menu-item', { value: 'mail', text: 'Почта' }),
+				menuPart(
+					'so-menu-submenu',
+					{ value: 'messengers', text: 'Мессенджеры' },
+					{
+						default: [
+							menuPart('so-menu-item', { value: 'telegram', text: 'Telegram' }),
+							menuPart('so-menu-item', { value: 'whatsapp', text: 'WhatsApp' }),
+						],
+					},
+				),
+			],
+		},
+	),
+	menuPart(
+		'so-menu-popover-item',
+		{ value: 'due', text: 'Срок', lazyMount: true },
+		{
+			default: [
+				{
+					tag: 'div',
+					is: 'so-field',
+					props: { label: 'Через, дней' },
+					slots: {
+						default: [
+							{ tag: 'div', is: 'so-number-input', props: { value: 3, min: 0 } },
+						],
+					},
+				},
+			],
+		},
+	),
+	menuPart('so-menu-item', { value: 'archive', text: 'В архив', disabled: true }),
+	menuPart('so-menu-separator'),
+	menuPart(
+		'so-menu-item',
+		{ value: 'remove', text: 'Удалить', variant: 'negative' },
+		{
+			trailing: [caption('Del')],
+		},
+	),
+]
 
 /**
  * Элемент soldy в разметке без компонента — кодом, как его строит
@@ -464,6 +583,24 @@ export const PREVIEWS: Record<string, TPreview> = {
 				button('Действие'),
 			],
 		},
+	},
+
+	// Триггер — Button в слоте `trigger`: связку с меню и вид «нажата» он
+	// получает сам, scope у слотов нет. У контекстного меню (`openOn:
+	// 'contextmenu'`) в слоте область, как у Vue. Режим область берёт из пропсов
+	// колонки: у колонки экземпляра его нет, и там меню вызывают над кнопкой.
+	// Дети ставятся до вставки, поэтому смена режима строит элемент заново
+	// (`rebuild`). Пункты — разметкой, как у Vue; пришли данными (`items` блока
+	// групп страницы) — из них: разметка заменила бы данные, а группы меню
+	// рисует из данных
+	menu: {
+		tag: 'span',
+		is: 'so-menu',
+		rebuild: ['openOn'],
+		slots: (bind) => ({
+			trigger: [bind.openOn === 'contextmenu' ? contextArea : button('Действия')],
+			default: bind.items ? [] : MENU_ITEMS,
+		}),
 	},
 
 	// Триггер — Button в слоте `trigger`: ссылку на панель (`aria-describedby`)
