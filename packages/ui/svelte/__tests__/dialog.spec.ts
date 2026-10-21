@@ -107,11 +107,13 @@ function clear(mounted: TMounted): void {
 }
 
 describe('разметка', () => {
+	// Телепорт кладёт их в свою обёртку: место — по `contains`, а не по родителю
 	it('окно телепортировано целиком: подложка и панель — соседи в body, подложка раньше', async () => {
-		await render()
+		const { mounted } = await render()
 
-		expect(panel().parentElement).toBe(document.body)
-		expect(backdrop().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
+		expect(mounted.container.contains(panel())).toBe(false)
+		expect(backdrop().parentElement).toBe(panel().parentElement)
 		expect(backdrop().nextElementSibling).toBe(panel())
 		expect(panel().contains(backdrop())).toBe(false)
 	})
@@ -251,8 +253,8 @@ describe('разметка', () => {
 
 		await render({ target: '#so-test-host' })
 
-		expect(panel().parentElement).toBe(host)
-		expect(backdrop().parentElement).toBe(host)
+		expect(host.contains(panel())).toBe(true)
+		expect(host.contains(backdrop())).toBe(true)
 	})
 })
 
@@ -610,16 +612,17 @@ describe('окно поверх окна', () => {
 		expect(lower.visible).toBe(true)
 	})
 
+	// Пометка фона — на обёртке телепорта нижнего окна, а не на самой панели
 	it('нижнее окно для скринридера спрятано, пока открыто верхнее', async () => {
 		const { upper } = await renderNested()
 
-		expect(node('.so-test-lower').getAttribute('aria-hidden')).toBe('true')
+		expect(node('.so-test-lower').closest('[aria-hidden="true"]')).not.toBeNull()
 		expect(node('.so-test-upper').closest('[aria-hidden="true"]')).toBeNull()
 
 		upper.visible = false
 		await settle()
 
-		expect(node('.so-test-lower').hasAttribute('aria-hidden')).toBe(false)
+		expect(node('.so-test-lower').closest('[aria-hidden="true"]')).toBeNull()
 	})
 })
 
