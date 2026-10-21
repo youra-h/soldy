@@ -145,6 +145,24 @@ describe('раскладчик элемента', () => {
 		expect(node.getAttribute('aria-selected')).toBe('true')
 	})
 
+	/**
+	 * Выходы плагинов на корне (`TRootSpec.plugins` — пометка окна владельцем)
+	 * лежат в `v-bind` корня Vue следом за наборами ядра: на общем имени они
+	 * главнее наборов, а набор владельца главнее их.
+	 */
+	it('выходы плагинов — поверх наборов ядра и под набором владельца', () => {
+		const node = document.createElement('div')
+		const attributes = TElementAttributes.of(node)
+
+		attributes.set('markup', { 'data-mark': 'markup' })
+		attributes.set('plugins', { 'data-owner': 'plugins', 'data-mark': 'plugins' })
+		attributes.set('dataset', { 'data-owner': 'dataset', 'data-open': 'true' })
+
+		expect(node.getAttribute('data-owner')).toBe('plugins')
+		expect(node.getAttribute('data-mark')).toBe('markup')
+		expect(node.getAttribute('data-open')).toBe('true')
+	})
+
 	it('раскладчик у элемента один, кто бы его ни взял', () => {
 		const node = document.createElement('div')
 

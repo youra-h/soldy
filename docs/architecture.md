@@ -1696,7 +1696,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1740,7 +1740,8 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   раскладывают наборы, классы и стиль ядра на корень-хост, а раскладчик
   элемента `TElementAttributes` сводит слоями наборы корня и набор владельца
   на одном элементе, — и `teleport.ts`: `teleportRoot` уводит корень-хост слоя
-  в цель (см. «DOM-биндинг»).
+  в цель и держит перед ним спутника корня — подложку окна и выезжающей
+  панели (см. «DOM-биндинг»).
 - `adapter/locale/` — `LocaleProviderDirective` (`[so-locale-provider]`): свой
   `TLocaleSource` поддереву через `providers`, вход пишется в тот же источник.
 - `adapter/elevator/` — лифт: слой DI на владельца коллекции (`provideElevator()`
@@ -1854,7 +1855,8 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 `span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
 `[so-skeleton]` у Skeleton, `div[so-frame], [so-frame]` у Frame,
 `span[so-popover], [so-popover]` у Popover, `span[so-tooltip], [so-tooltip]` у
-Tooltip, `label[so-label], [so-label]` у Label, у владельцев коллекций и панели таба —
+Tooltip, `div[so-dialog], [so-dialog]` у Dialog, `div[so-drawer], [so-drawer]`
+у Drawer, `label[so-label], [so-label]` у Label, у владельцев коллекций и панели таба —
 `div[so-accordion]`, `div[so-radio-group]`, `div[so-tabs-content]` (и `[…]`
 без тега). Потребитель
 пишет `<button so-button>`, `<a so-button href>`, `<div so-button>`, и этот
@@ -1924,8 +1926,9 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 - слой уезжает в цель сам: `teleport` в описании корня называет выходы с
   селектором цели и с признаком «на месте»
   (`{ strategy: 'host', teleport: { target: 'target', contained: 'contained' } }`
-  у Frame), а `teleportRoot` (`teleport.ts`) переносит элемент потребителя со
-  всем, что на нём написано. Переносит только в браузере и после отрисовки
+  у Frame и Drawer; у Dialog признака нет — окно всегда в цели), а
+  `teleportRoot` (`teleport.ts`) переносит элемент потребителя со всем, что
+  на нём написано. Переносит только в браузере и после отрисовки
   (`afterRenderEffect`), чтобы гидратация нашла узел на месте; на месте
   остаётся якорь-комментарий, к нему узел возвращается с `contained` и без
   цели. Слой есть только в браузере, как оверлей CDK: «корень на своём
@@ -1947,7 +1950,18 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   каждой отрисовки (`afterEveryRender`) перенос сверяет, где узел, с тем,
   куда его увёл. Место ушло из документа — узел уходит из цели вместе с ним,
   место вернулось — узел снова в цели, с новым якорем там, где его поставил
-  Angular; узел вне документа в цель не уезжает, пока его не вставят;
+  Angular; узел вне документа в цель не уезжает, пока его не вставят.
+  Подложку окна и выезжающей панели — у Vue соседку панели в телепорте —
+  шаблон рисует спутником корня (`#companion`, `teleport: { …, companion: true }`):
+  внутри панели нажатие по ней стало бы нажатием внутри окна. База читает
+  его сигнальным запросом, перенос после каждого приведения к месту держит
+  его прямо перед корнем — в цели и на месте, — уводит за местом и снимает
+  вместе с компонентом, а прячет его база тем же значением, что корень;
+- `plugins` в описании корня — выходы плагинов, которые у Vue лежат в
+  `v-bind` корня следом за наборами: пометку панели владельцем
+  `dismiss_ownerAttribute` у Dialog и Drawer база кладёт на корень своим
+  слоем раскладчика `TElementAttributes`, поверх наборов ядра и под набором
+  владельца, — свой хост шаблон Angular не адресует;
 - `sets` в описании корня — какие наборы ядра база кладёт на корень, по
   умолчанию все три. У поля — `attrs` и `dataset`: его `aria` стоит на
   вложенном `<input>`, а `dataset` — на корне, где его читает тема, как у
@@ -2074,7 +2088,9 @@ DOM-эмуляция серверного рендера Angular запись `i
 поля (текст не переписывается набором, каретка на месте); `icon.spec.ts` —
 иконка по роли, `locale.spec.ts` — локаль поддерева и имя кнопки очистки,
 `frame.spec.ts` — слой: перенос в цель и обратно, якорь, снятие, без цели
-панели нет, место, которое Angular вынул и вернул; `ssr.server.spec.ts` и
+панели нет, место, которое Angular вынул и вернул; `dialog.spec.ts` и
+`drawer.spec.ts` — окно и выезжающая панель, подложка-спутник с корнем в цели
+и на месте; `ssr.server.spec.ts` и
 `fields.server.spec.ts` — серверный рендер и гидратация: разметка сервера,
 слоя на сервере нет, атрибуты потребителя поля на `<input>`, после гидратации
 смена входов доходит до узла, id монтирования у сервера и браузера один.
@@ -2141,11 +2157,13 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
   — голая кнопка без ошибки. Ошибку даёт только привязка входа: `[text]` на
   элементе без компонента — NG8002.
 - `rendered=false` прячет корень, а не удаляет: элемент написал потребитель.
-- На сервере и без цели от панели Frame остаётся пустой скрытый элемент
-  потребителя, а не ничего: убрать его компонент не может.
-- Angular вставляет и переставляет узлы относительно своих: Frame — первый
-  узел представления `@for`, перед которым вставляют или которое переставляют,
-  — роняет его с NG05106 (обёртка-элемент это снимает).
+- На сервере и без цели от панели Frame, окна и выезжающей панели остаётся
+  пустой скрытый элемент потребителя, а не ничего: убрать его компонент не
+  может.
+- Angular вставляет и переставляет узлы относительно своих: Frame, окно и
+  выезжающая панель — первый узел представления `@for`, перед которым
+  вставляют или которое переставляют, — роняют его с NG05106 (обёртка-элемент
+  это снимает).
 - Инлайновый `display` потребителя главнее скрытия: шаблон потребителя главнее
   привязок хоста. Во Vue и React наоборот.
 - Атрибут, класс и свойство стиля потребителя под именем, которое называет

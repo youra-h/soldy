@@ -347,7 +347,7 @@ function drawFixture(
 /**
  * Компонент хоста со своей разметкой — фикстура сценария или превью своим
  * шаблоном: пропсы оболочки — его входам, а слушают выходы компонента в его
- * разметке (`target`), как у превью — выходы самого компонента.
+ * разметке (`subject`), как у превью — выходы самого компонента.
  */
 function drawTemplate(
 	outlet: ViewContainerRef,
@@ -356,7 +356,7 @@ function drawTemplate(
 	listeners: readonly TOutputListener[],
 ): TDrawn {
 	const { ref, write } = insert(outletPlace(outlet), type, props)
-	const unlisten = listen(ref.instance.target(), listeners)
+	const unlisten = listen(ref.instance.subject(), listeners)
 
 	return {
 		write,

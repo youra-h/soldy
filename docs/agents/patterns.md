@@ -949,14 +949,27 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `ui/svelte/__tests__/dialog.spec.ts`, `ui/webc/__tests__/dialog.spec.ts`
   (сверх сценариев Vue — подложка-спутник ездит и прячется с окном, перенос не
   пересобирает кнопку в окне, значок разворота — в строке кнопки тем же
-  узлом; Select внутри — поповером), `playground/vue/browser/dialog.spec.ts`,
+  узлом; Select внутри — поповером), `ui/angular/__tests__/dialog.spec.ts`
+  (сверх сценариев Vue — подложка-спутник ездит, прячется и уходит с местом
+  вместе с окном, снятое окно уносит её, имена кнопок — от локали провайдера
+  вокруг окна, шаблоны значков; Select внутри — поповером) и
+  `ui/angular/__tests__/ssr.server.spec.ts` (на сервере — пустой скрытый
+  элемент без подложки, после гидратации — тот же узел в `body` с подложкой
+  перед ним), `playground/vue/browser/dialog.spec.ts`,
   `playground/vue/browser/svelte-host.spec.ts` (открытое окно Svelte с
-  подложкой и частями стоит, как у Vue) и `playground/vue/browser/webc-frame.spec.ts`
-  с `webc-host.spec.ts` (открытое окно Web Components — так же). **Web
-  Components** (`<div is="so-dialog">`): элемент — сама панель, в цель её
-  уводит база; подложку строит шаблон спутником корня — база ставит её перед
-  окном, увозит и прячет с ним. Значок разворота сменяется без обёртки: метка
-  в слоте кнопки, слоты значков выводит `showSlot`.
+  подложкой и частями стоит, как у Vue), `playground/vue/browser/webc-frame.spec.ts`
+  с `webc-host.spec.ts` (открытое окно Web Components — так же) и
+  `playground/vue/browser/angular-host.spec.ts` (открытое окно Angular — так
+  же). **Web Components** (`<div is="so-dialog">`): элемент — сама панель, в
+  цель её уводит база; подложку строит шаблон спутником корня — база ставит
+  её перед окном, увозит и прячет с ним. Значок разворота сменяется без
+  обёртки: метка в слоте кнопки, слоты значков выводит `showSlot`.
+  **Angular** (`<div so-dialog>`): элемент — сама панель, в цель её уводит
+  база; подложку рисует шаблон спутником корня (`#companion`) — база ставит её
+  перед окном, увозит и прячет с ним. Пометку окна владельцем на корень кладёт
+  база (`plugins` в описании корня): свой хост шаблон Angular не адресует.
+  Кнопки шапки — `@if`, значки — шаблоны слотов, открытость — `[visible]` и
+  `(soChangeVisible)`.
 - **Drawer** — выезжающая панель у края экрана. Своего паттерна APG у неё нет:
   это модальный Dialog, и модальность у неё общая с окном (`TModalLayer`, см.
   «Слой оверлея») — роль, `aria-modal`, имя от заголовка, крестик, Escape,
@@ -1004,19 +1017,27 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
   `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx`,
   `ui/svelte/__tests__/drawer.spec.ts` (у React и Svelte смена `contained` на
-  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже) и
+  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже),
   `ui/webc/__tests__/drawer.spec.ts` (у Web Components — тем же узлом, с
   подложкой рядом, и кнопки в панели не пересобираются),
-  `playground/vue/browser/drawer.spec.ts`
+  `ui/angular/__tests__/drawer.spec.ts` (у Angular — тем же узлом и той же
+  подложкой перед ним; снятая на месте панель уносит подложку) и
+  `ui/angular/__tests__/ssr.server.spec.ts` (с `contained` на сервере —
+  пустой скрытый элемент без подложки, после гидратации — на месте, с
+  подложкой перед ним), `playground/vue/browser/drawer.spec.ts`
   (жест пальцем — группа «пальцем»: за полосу и от абзаца в теле панель
   закрывается, а протяжка поперёк оси и по телу, которое прокручивается
   вдоль оси, прокручивает тело, и панель остаётся открытой),
   `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
-  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` с
-  `webc-host.spec.ts` (открытая панель Web Components — так же). **Web
-  Components** (`<div is="so-drawer">`): элемент — сама панель; с
-  `contained` база оставляет её на месте, а подложку-спутника ставит перед
-  ней и там.
+  как у Vue), `playground/vue/browser/webc-frame.spec.ts` с
+  `webc-host.spec.ts` (открытая панель Web Components — так же) и
+  `playground/vue/browser/angular-host.spec.ts` (открытая панель Angular —
+  так же). **Web Components** (`<div is="so-drawer">`): элемент — сама
+  панель; с `contained` база оставляет её на месте, а подложку-спутника
+  ставит перед ней и там. **Angular** (`<div so-drawer>`): так же — элемент
+  потребителя и есть панель, а подложку шаблон рисует спутником корня
+  (`#companion`), и база ставит её перед панелью в цели и на месте; полоса
+  жеста и крестик — `@if`.
 - **Toasts** — всплывающие уведомления. Своего паттерна APG у них нет; ARIA —
   как у Zag и Radix: регион `role="region"` с `aria-live="polite"` и именем
   от локали («Уведомления (F8)», раздел `toasts`) стоит в документе и пустым —

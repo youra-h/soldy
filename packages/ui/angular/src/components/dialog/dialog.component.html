@@ -1,0 +1,111 @@
+<!--
+	Корень — сам хост (`<div so-dialog>`), панель окна, и в цель уезжает он,
+	поэтому шаблон — то, что у Vue в телепорте, в том же порядке: подложка,
+	потом содержимое панели, а в конце — слив шаблонов слотов. Слоты
+	контракта: title, default, footer, close-icon, maximize-icon, restore-icon.
+
+	Всё рисуется, пока окно на своём месте — в цели (`placed` базы): слой есть
+	только в браузере, как оверлей CDK, и на сервере, до переноса и без цели
+	окна нет. Содержимое остаётся в контексте места, где написано окно: DI
+	Angular идёт по дереву объявлений, а не по DOM.
+-->
+@if (placed()) {
+	<!--
+		Подложка — спутник корня (`#companion`): шаблон рисует её внутри окна, а
+		база ставит прямо перед ним, увозит с ним в цель и прячет вместе с ним.
+		На ней тот же `z-index`, номер слоя и открытость, что у окна: для окна под
+		этим она — слой выше, и нажатие по ней его не закрывает, а гаснет она
+		вместе со своим окном. Пометки владельцем у неё нет — для своего окна
+		нажатие по ней мимо. Обязательна: фон спрятан от скринридера, но не от
+		указателя, и к странице его не пускает только она.
+	-->
+	<div
+		#companion
+		class="so-dialog__backdrop"
+		[style]="state()['layout_backdropStyles']"
+		[so-attributes]="state()['backdropDataset']"
+	></div>
+	<!--
+		Порядок в окне — заголовок, тело, подвал, потом кнопки: фокус при открытии
+		попадает на первый контрол содержимого, а крестик — последняя остановка
+		Tab. В ряд заголовка кнопки переносит тема.
+
+		Заголовок рисуется всегда: на него окно ссылается `aria-labelledby`, и `id`
+		для этой ссылки он берёт из `titleAria`. Пробелы вокруг проекции Angular
+		вырезает: пустой заголовок и подвал тема сворачивает по `:empty`.
+	-->
+	<h2 class="so-dialog__title" [so-attributes]="state()['titleAria']">
+		<ng-content select="[slot=title]" />
+	</h2>
+	<!--
+		Тело — прокручивается оно, шапка и подвал остаются на месте. `id` — для
+		`aria-describedby` предупреждения.
+	-->
+	<div class="so-dialog__body" [so-attributes]="state()['bodyAria']">
+		<ng-content />
+	</div>
+	<div class="so-dialog__footer">
+		<ng-content select="[slot=footer]" />
+	</div>
+	<!--
+		Кнопки шапки есть, только пока они заданы (`@if`, а не `rendered` кнопки:
+		у Angular он прячет корень, а не удаляет, а тема опирается на их
+		отсутствие в DOM). Вида и размера у них нет — кнопки красит тема по
+		контексту.
+
+		Разворот — переключатель: имя одно, состояние в `aria-pressed`
+		(`maximizeAria`). Значок — по состоянию окна: «развернуть», пока окно не
+		развёрнуто, и «вернуть размер» — когда развёрнуто.
+	-->
+	@if (state()['maximizable']) {
+		<button
+			so-button
+			embedded="dialog.maximize"
+			type="button"
+			class="so-dialog__maximize"
+			[so-attributes]="state()['maximizeAria']"
+			(click)="toggleMaximized()"
+		>
+			@if (state()['maximized']) {
+				@if (slot('restore-icon'); as icon) {
+					<ng-container [ngTemplateOutlet]="icon" />
+				} @else {
+					<svg so-icon embedded="dialog.restore-icon" so-role-icon="arrowsInward"></svg>
+				}
+			} @else {
+				@if (slot('maximize-icon'); as icon) {
+					<ng-container [ngTemplateOutlet]="icon" />
+				} @else {
+					<svg so-icon embedded="dialog.maximize-icon" so-role-icon="arrowsOutward"></svg>
+				}
+			}
+		</button>
+	}
+	<!--
+		Крестик — в углу шапки со стороны конца строки. Он просит окно закрыться:
+		отменить закрытие может подписчик `close:before`, куда вернуть фокус,
+		решает плагин фокуса. Имя — набор `closeAria` от локали.
+	-->
+	@if (state()['closable']) {
+		<button
+			so-button
+			embedded="dialog.close"
+			type="button"
+			class="so-dialog__close"
+			[so-attributes]="state()['closeAria']"
+			(click)="close()"
+		>
+			@if (slot('close-icon'); as icon) {
+				<ng-container [ngTemplateOutlet]="icon" />
+			} @else {
+				<svg so-icon embedded="dialog.close-icon" so-role-icon="close"></svg>
+			}
+		</button>
+	}
+}
+<!--
+	Шаблоны слотов, которые потребитель написал в окне, — в слив, в конце корня и
+	вне ветки: Angular считает их содержимым, и в основной проекции их якоря
+	легли бы в тело окна.
+-->
+<ng-content select="ng-template[slot]" />

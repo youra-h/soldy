@@ -8,7 +8,7 @@ import {
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
 import type { TFixture } from './fixtures'
-import { PopoverPreview, TooltipPreview } from './templates'
+import { DialogPreview, DrawerPreview, PopoverPreview, TooltipPreview } from './templates'
 import {
 	RoleIconDirective,
 	TAccordionComponent,
@@ -153,17 +153,20 @@ type TPreviewBase = {
  * Vue это ComponentView с чужими пропами, а у компонента Angular чужого входа
  * нет вовсе.
  *
- * Превью, которому нужны шаблоны слотов, — своим шаблоном (`TTemplatePreview`).
+ * Превью, которому нужны шаблоны слотов или своё состояние, — своим шаблоном
+ * (`TTemplatePreview`).
  */
 export type TPreview = TComponentPreview | TTemplatePreview
 
 /**
  * Превью своим шаблоном: компонент хоста с разметкой, как у фикстур
- * (`TFixture`), — когда компоненту нужны шаблоны слотов. Триггер Popover и
- * Tooltip — шаблон слота со scope, а шаблоны слотов видит только разметка
- * (`contentChildren`): у компонента, которого хост строит сам, их нет. Ставит
- * такое превью хост путём фикстуры: пропсы оболочки уходят входам компонента
- * превью, а выходы хост слушает у компонента в его разметке (`target`).
+ * (`TFixture`), — когда компоненту нужны шаблоны слотов или своё состояние
+ * превью. Триггер Popover и Tooltip — шаблон слота со scope, а шаблоны слотов
+ * видит только разметка (`contentChildren`): у компонента, которого хост
+ * строит сам, их нет. Окно и выезжающую панель открывает кнопка превью, а
+ * открытость — его своё состояние, как у Vue. Ставит такое превью хост путём
+ * фикстуры: пропсы оболочки уходят входам компонента превью, а выходы хост
+ * слушает у компонента в его разметке (`subject`).
  */
 export type TTemplatePreview = {
 	readonly template: Type<TFixture>
@@ -441,6 +444,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Триггер — Button, ссылку на панель он берёт из scope слота. Текст
 	// подсказки — содержимым: пропа текста у неё нет
 	tooltip: { template: TooltipPreview },
+
+	// Кнопка открывает окно, окно — на своём состоянии превью (см. `DialogPreview`)
+	dialog: { template: DialogPreview },
+
+	// Кнопка открывает панель, панель — на своём состоянии превью, в коробке с
+	// `position: relative` для `contained` (см. `DrawerPreview`)
+	drawer: { template: DrawerPreview },
 
 	skeleton: { component: TSkeletonComponent },
 

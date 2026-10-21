@@ -246,6 +246,10 @@ const invalidMarks = (row: DOMWrapper<Element>) =>
  * и ни в DOM строки, ни в дереве её компонентов его нет. Панель колонки — та,
  * что открыла её кнопка: после нажатия видна ровно она. Закрывает её «Отмена»
  * в подвале — следующая колонка открывает свою.
+ *
+ * После нажатия — кадр: открытость — своё состояние превью, и хост Angular
+ * перепроверяет его на такте приложения, задачей после нажатия, а не
+ * микрозадачей, как остальные хосты.
  */
 async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
 	const panels: HTMLElement[] = []
@@ -253,6 +257,7 @@ async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
 	for (const stage of stagesOf(row)) {
 		await stage.get('.so-button').trigger('click')
 		await nextTick()
+		await nextFrame()
 
 		const open = [...document.querySelectorAll('.so-dialog')].filter(
 			(panel): panel is HTMLElement =>
@@ -270,6 +275,7 @@ async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
 		panels.push(open[0])
 		cancel.click()
 		await nextTick()
+		await nextFrame()
 	}
 
 	return panels

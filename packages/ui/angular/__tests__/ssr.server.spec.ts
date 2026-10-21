@@ -27,6 +27,8 @@ import {
 	RoleIconDirective,
 	SlotDirective,
 	TButtonComponent,
+	TDialogComponent,
+	TDrawerComponent,
 	TFrameComponent,
 	TIconComponent,
 	TPopoverComponent,
@@ -887,5 +889,115 @@ describe('Popover и Tooltip · гидратация', () => {
 		expect(opened.getAttribute('data-placement')).toBe('bottom-start')
 		expect(closed.style.display).toBe('none')
 		expect(closed.getAttribute('data-open')).toBe('false')
+	})
+})
+
+/**
+ * Окно и выезжающая панель, открытые со старта; панель — внутри контейнера.
+ * Заголовок — слот по атрибуту, содержимое — основная проекция.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TDialogComponent, TDrawerComponent],
+	template: `<section class="place">
+		<div so-dialog visible class="dialog">
+			<span slot="title">Настройки</span>
+			<p class="content">Содержимое окна</p>
+		</div>
+		<div so-drawer contained visible class="drawer">
+			<span slot="title">Фильтры</span>
+			<p class="content">Содержимое панели</p>
+		</div>
+	</section>`,
+})
+class ModalPage {}
+
+/**
+ * Слой есть только в браузере, как у Frame: на сервере от окна и выезжающей
+ * панели — и с `contained` тоже — остаётся сам элемент потребителя, на месте,
+ * пустой и скрытый, без классов, наборов, раскладки и пометки владельцем. А
+ * подложки нет вовсе: шаблон рисует её, только пока слой на своём месте.
+ */
+describe('Dialog и Drawer · серверный рендер', () => {
+	it.each([
+		['окно', '.dialog'],
+		['выезжающая панель с contained', '.drawer'],
+	])(
+		'%s на сервере не рисуется: пустой скрытый элемент потребителя без подложки',
+		async (_case, selector) => {
+			const page = await serverPage(ModalPage)
+			const root = find(page, selector, HTMLDivElement)
+
+			expect(root.parentElement?.className).toBe('place')
+			expect(root.style.display).toBe('none')
+			expect(root.textContent).toBe('')
+			expect(root.children).toHaveLength(0)
+			expect([...root.classList]).toEqual([selector.slice(1)])
+			expect(root.hasAttribute('role')).toBe(false)
+			expect(root.hasAttribute('data-open')).toBe(false)
+			expect(root.hasAttribute('data-layer')).toBe(false)
+			expect(root.hasAttribute('data-owner')).toBe(false)
+			expect(root.style.zIndex).toBe('')
+		},
+	)
+
+	it('подложек в разметке сервера нет', async () => {
+		const page = await serverPage(ModalPage)
+
+		expect(page.querySelector('.so-dialog__backdrop, .so-drawer__backdrop')).toBeNull()
+	})
+})
+
+/**
+ * После гидратации окно — элемент потребителя, который напечатал сервер: он
+ * уезжает в `body`, а выезжающая панель с `contained` остаётся на месте, и
+ * перед каждым встаёт подложка. Содержимое строит браузер, и связка с
+ * заголовком ведёт на заголовок браузера.
+ */
+describe('Dialog и Drawer · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('тот же узел — окно в body, панель на месте, подложка перед каждым; ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(ModalPage))
+
+		const dialog = find(document, '.dialog', HTMLDivElement)
+		const drawer = find(document, '.drawer', HTMLDivElement)
+		const app = await hydrate(ModalPage)
+
+		await app.whenStable()
+		await nextFrame()
+
+		expect(find(document, '.dialog', HTMLDivElement)).toBe(dialog)
+		expect(find(document, '.drawer', HTMLDivElement)).toBe(drawer)
+		expect(dialog.parentElement).toBe(document.body)
+		expect(drawer.parentElement?.className).toBe('place')
+
+		for (const [root, block, text] of [
+			[dialog, 'so-dialog', 'Содержимое окна'],
+			[drawer, 'so-drawer', 'Содержимое панели'],
+		] as const) {
+			const title = document.getElementById(root.getAttribute('aria-labelledby') ?? '')
+
+			expect(root.previousElementSibling?.className).toBe(`${block}__backdrop`)
+			expect(root.style.display).toBe('')
+			expect(root.classList).toContain(block)
+			expect(root.getAttribute('data-open')).toBe('true')
+			expect(root.querySelector('.content')?.textContent).toBe(text)
+			expect(title?.classList.contains(`${block}__title`)).toBe(true)
+			expect(root.contains(title)).toBe(true)
+		}
+
+		expect(
+			document.querySelectorAll('.so-dialog__backdrop, .so-drawer__backdrop'),
+		).toHaveLength(2)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
 	})
 })
