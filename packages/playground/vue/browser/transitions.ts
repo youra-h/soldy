@@ -184,6 +184,24 @@ export const transitionRuns = (element: HTMLElement): string[] => {
 }
 
 /**
+ * Значения переменной в инлайновом стиле узла — по мере смены, наблюдателем,
+ * заведённым до действия. Признак, который держится ровно время перехода
+ * (`--so-tabs-active-moving` у табов), чтение после действия могло уже не
+ * застать: ответ `userEvent` идёт кругом RPC, и под нагрузкой переход успевает
+ * доиграть, а признак — сняться.
+ */
+export const styleValues = (element: HTMLElement, property: string): string[] => {
+	const values: string[] = []
+
+	new MutationObserver(() => values.push(element.style.getPropertyValue(property))).observe(
+		element,
+		{ attributes: true, attributeFilter: ['style'] },
+	)
+
+	return values
+}
+
+/**
  * `transitionRuns` только самого узла. События переходов детей всплывают до
  * него, и панель со списком или календарём внутри получала бы цвет строки под
  * указателем и кольцо фокуса дня, — появлению панели они не принадлежат.
