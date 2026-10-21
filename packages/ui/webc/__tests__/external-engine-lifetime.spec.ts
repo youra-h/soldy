@@ -8,10 +8,11 @@
  * связка новая на каждое подключение: элемент, переставленный в документе,
  * собирается заново, и прежняя сборка обязана уйти с движка целиком. Здесь —
  * настоящий цикл Web Components, как `ui/angular/__tests__/external-engine-lifetime.spec.ts`
- * у Angular: набор табов, список и таблица, переставленные трижды и снятые, и
- * на шинах владельца, движка и его расширений ни подписки, ни перехватчика, ни
- * слушателя обмена. У таблицы — ещё строки, колонки и «выбрать все»: их держат
- * элементы частей и чекбоксы, а в окне `<so-virtual>` — и выключатель обёртки.
+ * у Angular: набор табов, список, пагинация и таблица, переставленные трижды и
+ * снятые, и на шинах владельца, движка и его расширений ни подписки, ни
+ * перехватчика, ни слушателя обмена. У таблицы — ещё строки, колонки и
+ * «выбрать все»: их держат элементы частей и чекбоксы, а в окне `<so-virtual>`
+ * — и выключатель обёртки.
  *
  * Список над движком без `ctrl`, подключённый раньше, чем снят прежний, берёт
  * привязку владельца себе, хотя прежний ещё держит движок.
@@ -21,10 +22,12 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
 	TEvented,
 	TListBox,
+	TPagination,
 	TTable,
 	TTabs,
 	TVirtual,
 	createEngineListBox,
+	createEnginePagination,
 	createEngineTable,
 	createEngineTabs,
 	type TListBoxCollection,
@@ -32,10 +35,12 @@ import {
 } from '@soldy-ui/core'
 import {
 	TListBoxElement,
+	TPaginationElement,
 	TTableElement,
 	TTabsElement,
 	TVirtualElement,
 	type TListBoxElementProps,
+	type TPaginationElementProps,
 	type TTableElementProps,
 	type TTabsElementProps,
 	type TVirtualElementProps,
@@ -60,6 +65,10 @@ function isTabs(node: Element): node is TTabsElementProps {
 
 function isListBox(node: Element): node is TListBoxElementProps {
 	return node instanceof TListBoxElement
+}
+
+function isPagination(node: Element): node is TPaginationElementProps {
+	return node instanceof TPaginationElement
 }
 
 function isTable(node: Element): node is TTableElementProps {
@@ -256,6 +265,30 @@ describe('ListBox над движком и владельцем снаружи',
 		el.engine = engine
 
 		await moveThriceAndRemove(el, live, 'so-list-box-item')
+	})
+})
+
+/**
+ * Как у Solid — на Pagination: страницы окна кладёт в движок расширение
+ * пагинации по владельцу, а рисует шаблон — элементами страниц над ними. Две
+ * страницы (`total` 20 по 10) — столько же, сколько элементов у соседей.
+ */
+describe('Pagination над движком и владельцем снаружи', () => {
+	it('переставленная трижды и снятая — на шинах владельца и движка ничего', async () => {
+		const owner = new TPagination({ total: 20, pageSize: 10 })
+		const engine = createEnginePagination({ owner })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([owner.events, engine.events, ...extensions])
+		const el = document.createElement('nav', { is: 'so-pagination' })
+
+		if (!isPagination(el)) throw new Error('<nav is="so-pagination"> нет')
+
+		el.ctrl = owner
+		el.engine = engine
+
+		await moveThriceAndRemove(el, live, 'so-pagination-item')
 	})
 })
 

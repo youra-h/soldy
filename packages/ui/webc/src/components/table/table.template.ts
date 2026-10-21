@@ -76,6 +76,7 @@ import {
 	lendSamples,
 	lendTemplates,
 	ownerAttributes,
+	ownerStyles,
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
@@ -191,18 +192,13 @@ function columnOf(ctx: TTableContext, column: ITableColumn): TTableColumnElement
 	return header
 }
 
-/**
- * Стиль и ширина распорки — из её записи и числа колонок. Узел — шаблона, и
- * другого стиля у него нет: запись его и задаёт целиком.
- */
+/** Стиль и ширина распорки — из её записи и числа колонок. */
 function fillerOf(
 	filler: HTMLTableRowElement,
 	style: Readonly<Record<string, string>>,
 	span: number,
 ) {
-	filler.removeAttribute('style')
-
-	for (const [name, value] of Object.entries(style)) filler.style.setProperty(name, value)
+	ownerStyles(filler, style)
 
 	const cell = filler.firstElementChild
 

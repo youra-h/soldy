@@ -104,9 +104,11 @@
  * скрыт (`shownBy` — `active` у панели таба), уезжает ли корень в слой
  * (`teleport` у Frame): тогда база уводит его в цель по селектору (`TTeleport`,
  * `teleport.ts`), а без цели прячет на месте — это ещё одна причина скрытия,
- * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`),
- * есть ли в корне поле (`control`, см. ниже) и не обёртка ли элемент вокруг
- * корня (`wrapped`, см. выше).
+ * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`)
+ * и из какого выхода берётся его слой `aria` (`aria` — `rootAria` у Slider),
+ * есть ли в корне поле (`control`, см. ниже), объявляет ли поле `id`, когда
+ * атрибуты разметки остаются корню (`fieldId` — Rating, см. ниже), и не
+ * обёртка ли элемент вокруг корня (`wrapped`, см. выше).
  *
  * Атрибуты, классы и свойства стиля потребителя главнее того, что пишет ядро:
  * по каждому имени база помнит, что поставила сама, своё пишет и снимает, а
@@ -135,6 +137,13 @@
  * `ctrl.id`; `el.id` — собственный `id` корня. У радио, строки, узла списка и
  * таблицы своего `id` нет, и атрибут разметки едет на поле вместе со всеми,
  * как `controlAttrs` у Vue.
+ *
+ * Поле с `id` бывает и у корня, чьи атрибуты разметки никуда не едут
+ * (`fieldId`): у Rating, как у Vue, атрибуты потребителя остаются корню —
+ * указатель поле не ловит, и обработчик на поле не сработал бы никогда, — а
+ * `id` — проп поля. Путь у него тот же: атрибут разметки — пропом первой
+ * сборки, с корня снят, из кода — `ctrl.id`. Без признака `id` встал бы и на
+ * корень, и на поле.
  *
  * Сборка — `createWebcAdapterContext` в setup-слое компонента: локаль
  * поддерева она берёт у ближайшего `<so-locale-provider>` вверх от элемента.
@@ -446,6 +455,11 @@ export type TSoldyElementProps<
  *   поля — `attrs` и `dataset`: его `aria` стоит на `<input>`, его кладёт
  *   шаблон (`ownerAttributes`), а `dataset` — на корне, где его читает тема,
  *   как у остальных адаптеров;
+ * - `aria` — имя выхода состояния, чей набор база кладёт на корень слоем
+ *   `aria`, по умолчанию сам `aria`. У Slider — `rootAria`: у нескольких ручек
+ *   корень — группа с именем ползунка, у одной набор пуст, а `aria` ползунка
+ *   уходит полям ручек — его кладёт шаблон из `thumbs`. Говорит только об
+ *   источнике слоя: лежит ли он на корне, решает `sets`;
  * - `control` — в корне поле (Input, CheckBox, Switch, радио), строка
  *   элемента коллекции (таб, секция, элемент списка) или узел списка с ролью
  *   (ListBox, Tabs), а у обёртки — сам корень внутри неё (`table`):
@@ -453,6 +467,10 @@ export type TSoldyElementProps<
  *   элемента база при построении переносит на него, а `id` поля, которое его
  *   объявляет, — проп поля, а не вход корня (см. шапку). Как у `control` в
  *   описании корня Angular;
+ * - `fieldId` — `id` — проп поля, хотя атрибуты разметки остаются корню и на
+ *   поле не едут: Rating (см. шапку). Атрибут `id` разметки база берёт пропом
+ *   первой сборки и снимает с корня, как у корня с полем, где так и без
+ *   признака. Дескриптор без пропа `id` с признаком — ошибка описания;
  * - `wrapped` — элемент — обёртка вокруг корня, а корень — узел шаблона
  *   внутри него: окно таблицы вокруг `table`. `create()` шаблона отдаёт узел
  *   корня (`TTemplateParts.root`), и на него база кладёт классы, наборы и
@@ -469,7 +487,9 @@ export type TRootSpec = {
 	readonly shownBy?: string
 	readonly teleport?: TRootTeleport
 	readonly sets?: readonly TRootSet[]
+	readonly aria?: string
 	readonly control?: boolean
+	readonly fieldId?: boolean
 	readonly wrapped?: boolean
 }
 
@@ -549,13 +569,19 @@ export function SoldyElement<
 	/** Элемент — обёртка вокруг корня (`TRootSpec.wrapped`). */
 	const wrapped = spec.root?.wrapped === true
 	const attributes = attributesOf(descriptors)
+
+	if (spec.root?.fieldId === true && !attributes.has(CONTROL_ID)) {
+		throw new Error('[soldy] Описание корня объявляет id поля, а у дескриптора пропа id нет')
+	}
+
 	/**
-	 * `id` — проп поля, а не вход корня: поле его объявляет (см. шапку). Карта
-	 * его тогда не наблюдает — атрибут разметки база берёт пропом первой сборки
-	 * и снимает с корня, а наблюдаемым атрибутом это снятие вернуло бы проп к
+	 * `id` — проп поля, а не вход корня: поле его объявляет — в корне с полем
+	 * (`control`) или по признаку описания (`fieldId`), см. шапку. Карта его
+	 * тогда не наблюдает — атрибут разметки база берёт пропом первой сборки и
+	 * снимает с корня, а наблюдаемым атрибутом это снятие вернуло бы проп к
 	 * умолчанию.
 	 */
-	const fieldId = control && attributes.has(CONTROL_ID)
+	const fieldId = (control || spec.root?.fieldId === true) && attributes.has(CONTROL_ID)
 
 	if (fieldId) attributes.delete(CONTROL_ID)
 
@@ -564,8 +590,15 @@ export function SoldyElement<
 	 * обёрнутого корня входов нет — атрибуты пропов стоят на элементе.
 	 */
 	const inputs: ReadonlySet<string> = new Set(wrapped ? [] : attributes.keys())
-	/** Наборы ядра на корне (`TRootSpec.sets`). */
-	const rootSets: readonly TRootSet[] = spec.root?.sets ?? ROOT_SETS
+	/** Выход со слоем `aria` корня (`TRootSpec.aria`); нет — сам `aria`. */
+	const ariaOutput = spec.root?.aria ?? 'aria'
+	/**
+	 * Наборы ядра на корне (`TRootSpec.sets`): слой раскладчика и выход
+	 * состояния, из которого он берётся.
+	 */
+	const rootSets: readonly (readonly [TRootSet, string])[] = (spec.root?.sets ?? ROOT_SETS).map(
+		(set) => [set, set === 'aria' ? ariaOutput : set],
+	)
 	/** Свои атрибуты элемента: имя атрибута → имя свойства (`ISoldyElementSpec.attributes`). */
 	const own: ReadonlyMap<string, string> = new Map(
 		(spec.attributes ?? []).map((name) => [toAttributeName(name), name]),
@@ -853,6 +886,9 @@ export function SoldyElement<
 
 			const parts = spec.template.create(this, (name) => light.has(name), this._view)
 
+			// `id` поля — пропом первой сборки, с корня снят; остальное — полю,
+			// если корень с полем (см. шапку)
+			if (fieldId) this._takeFieldId()
 			if (control) this._handOver(parts.control)
 			if (wrapped) this._root = this._wrappedRoot(parts.root)
 
@@ -866,12 +902,25 @@ export function SoldyElement<
 		}
 
 		/**
+		 * `id` поля, которое его объявляет, — пропом первой сборки, с корня снят:
+		 * на поле его пишет шаблон из состояния (см. шапку). Колбэка снятие не
+		 * вызывает: атрибут `id` такой элемент не наблюдает.
+		 */
+		private _takeFieldId(): void {
+			const id = this.getAttribute(CONTROL_ID)
+
+			if (id === null) return
+
+			this._write(CONTROL_ID, id)
+			this.removeAttribute(CONTROL_ID)
+		}
+
+		/**
 		 * Статические атрибуты разметки корня с полем — полю (см. шапку). На
 		 * корне остаются `class`, `style`, `is`, `slot`, атрибуты-входы пропов и
-		 * свои атрибуты элемента; `id` поля, которое его объявляет, база берёт
-		 * пропом первой сборки и снимает с корня — на поле его пишет шаблон из
-		 * состояния. Колбэков снятие не вызывает: ни один из этих атрибутов
-		 * элемент не наблюдает.
+		 * свои атрибуты элемента; `id` поля, которое его объявляет, база к этому
+		 * времени уже взяла пропом (`_takeFieldId`). Колбэков снятие не вызывает:
+		 * ни один из этих атрибутов элемент не наблюдает.
 		 */
 		private _handOver(field: HTMLElement | undefined): void {
 			if (!field) {
@@ -881,14 +930,7 @@ export function SoldyElement<
 			for (const name of this.getAttributeNames()) {
 				if (ROOT_ONLY.has(name) || attributes.has(name) || own.has(name)) continue
 
-				const value = this.getAttribute(name) ?? ''
-
-				if (fieldId && name === CONTROL_ID) {
-					this._write(CONTROL_ID, value)
-				} else {
-					field.setAttribute(name, value)
-				}
-
+				field.setAttribute(name, this.getAttribute(name) ?? '')
 				this.removeAttribute(name)
 			}
 		}
@@ -1082,10 +1124,11 @@ export function SoldyElement<
 			}
 
 			// Наборы корня — нижние слои его раскладчика: память у слоёв одна, и
-			// снятие записи в одном не уносит чужие. Входы пропов называют они
-			for (const name of rootSets) {
-				if (changed(name)) {
-					TElementAttributes.of(root).set(name, setOf(snapshot[name]), inputs)
+			// снятие записи в одном не уносит чужие. Входы пропов называют они.
+			// Слой `aria` — из выхода, который назвало описание корня
+			for (const [layer, output] of rootSets) {
+				if (changed(output)) {
+					TElementAttributes.of(root).set(layer, setOf(snapshot[output]), inputs)
 				}
 			}
 

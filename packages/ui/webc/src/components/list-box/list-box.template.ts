@@ -61,6 +61,7 @@ import {
 	createItem,
 	lendSamples,
 	ownerAttributes,
+	ownerStyles,
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
@@ -127,16 +128,6 @@ function rowsOf(sections: ReadonlyArray<TListBoxSection>, separated: boolean): T
 	])
 }
 
-/**
- * Стиль распорки — из её записи: высота пропущенных и место в составе. Узел —
- * шаблона, и другого стиля у него нет: запись его и задаёт целиком.
- */
-function styleFiller(filler: HTMLElement, style: Readonly<Record<string, string>>): void {
-	filler.removeAttribute('style')
-
-	for (const [name, value] of Object.entries(style)) filler.style.setProperty(name, value)
-}
-
 /** Узел записи: элемент из данных — инстанс данных и копии образцов до вставки — или распорка. */
 function drawnOf(
 	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
@@ -149,7 +140,8 @@ function drawnOf(
 
 		filler.className = 'so-list-box__filler'
 		filler.setAttribute('aria-hidden', 'true')
-		styleFiller(filler, entry.style)
+		// Высота пропущенных и место в составе — из записи
+		ownerStyles(filler, entry.style)
 
 		return filler
 	}
@@ -164,7 +156,7 @@ function drawnOf(
 
 /** Живой записи — её стиль: элемент из данных всё берёт у своего инстанса. */
 function updateDrawn(node: HTMLElement, entry: TListBoxEntry): void {
-	if (entry.kind === 'filler') styleFiller(node, entry.style)
+	if (entry.kind === 'filler') ownerStyles(node, entry.style)
 }
 
 /**

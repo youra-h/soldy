@@ -1137,16 +1137,27 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/slide-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/slider.spec.ts`, `ui/react/__tests__/slider.spec.tsx`,
   `ui/svelte/__tests__/slider.spec.ts`, `ui/solid/__tests__/slider.spec.tsx`
-  (сверх сценариев Vue — ручки по месту и значение поля после хода, ниже) и
-  `playground/vue/browser/slider.spec.ts`; ползунок в поле формы —
+  и `ui/webc/__tests__/slider.spec.ts` (сверх сценариев Vue — ручки по месту и
+  значение поля после хода, ниже; у Web Components — ещё образцы `mark` и
+  `thumb`), `playground/vue/browser/slider.spec.ts` и
+  `playground/vue/browser/webc-controls.spec.ts` (части Web Components стоят,
+  как у Vue, ручку тянет указатель); ползунок в поле формы —
   `ui/vue/__tests__/field.spec.ts`, `ui/react/__tests__/field.spec.tsx`,
-  `ui/svelte/__tests__/field.spec.ts` и `ui/solid/__tests__/field.spec.tsx`
-  («Slider с несколькими ручками в поле»), `playground/vue/browser/field.spec.ts`.
+  `ui/svelte/__tests__/field.spec.ts`, `ui/solid/__tests__/field.spec.tsx` и
+  `ui/webc/__tests__/field.spec.ts` («Slider с несколькими ручками в поле»),
+  `playground/vue/browser/field.spec.ts`.
   **Solid**: выходы `thumbs` и `shownMarks` — новые записи на каждую смену, и
   петля идёт по месту (`Index`), как `:key="index"` у Vue: ручка остаётся тем
   же узлом, и фокус её поля переживает шаг клавишей. Значение поля пишет его
   `ref` (`fieldText`) — после хода поля, как `value` последним у Vue: записанное
-  раньше нового `max`, оно встало бы на прежний край.
+  раньше нового `max`, оно встало бы на прежний край. **Web Components**
+  (`<span is="so-slider">`): петли ручек и меток — по месту, ключ — номер
+  (`TKeyedLoop`); ход поля шаблон пишет раньше значения, а значение — только
+  разошедшееся с узлом. Набор корня — `rootAria` (слой `aria` корня из другого
+  выхода, `TRootSpec.aria`), атрибуты разметки остаются на корне. Слоты `mark`
+  и `thumb` — образцы: копию получает каждая метка и подсказка каждой ручки, а
+  данные копия берёт по номеру своего узла в `shownMarks` и `thumbs`. Метки
+  списком — свойством: атрибут `marks` — флаг точек шкалы.
 - **Rating** — Rating Slider (APG): ползунок с одной ручкой, у которого
   шкала — ряд звёзд, а не группа радио. Звёзды потребитель не адресует, и
   элементами коллекции они не стали бы (см. «Часть или слот»), а
@@ -1199,10 +1210,15 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/vue/__tests__/rating.spec.ts`, `ui/react/__tests__/rating.spec.tsx`,
   `ui/svelte/__tests__/rating.spec.ts`, `ui/solid/__tests__/rating.spec.tsx`
   (сверх сценариев Vue — предпросмотр не пересоздаёт звёзды: петля по месту,
-  `Index`, как у ручек Slider) и
+  `Index`, как у ручек Slider), `ui/webc/__tests__/rating.spec.ts` (то же —
+  петлёй по номеру звезды; `id` — только на поле: атрибуты разметки остаются
+  на корне, а `id` — проп поля, `TRootSpec.fieldId`; слот `icon` — образец,
+  копия в каждом слое каждой звезды),
   `playground/vue/browser/rating.spec.ts` (форма без оценки не уходит,
   сообщение и фокус от браузера, только для показа уходит с 0, тон ошибки у
-  пустых звёзд после попытки отправить).
+  пустых звёзд после попытки отправить) и
+  `playground/vue/browser/webc-controls.spec.ts` (звёзды Web Components стоят,
+  как у Vue, нажатие ставит звезду целиком).
 - **NumberInput** — Spinbutton (APG) на текстовом поле: `<input type="text">`
   с `role="spinbutton"`, `aria-valuenow` и `aria-valuetext` — у числа (текст —
   строкой формата: «12 %», а не «0.12»), `aria-valuemin` и `aria-valuemax` —
@@ -1316,9 +1332,12 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/vue/__tests__/progress-linear.spec.ts`,
   `ui/react/__tests__/progress-linear.spec.tsx`,
   `ui/svelte/__tests__/progress-linear.spec.ts`,
-  `ui/solid/__tests__/progress-linear.spec.tsx` и
-  `playground/vue/browser/progress-linear.spec.ts`; как бег и доля выглядят,
-  оценивает глаз — ручные сценарии `/tests/motion/progress-linear` на стенде.
+  `ui/solid/__tests__/progress-linear.spec.tsx`,
+  `ui/webc/__tests__/progress-linear.spec.ts`,
+  `playground/vue/browser/progress-linear.spec.ts` и
+  `playground/vue/browser/webc-controls.spec.ts` (полоса Web Components стоит,
+  как у Vue); как бег и доля выглядят, оценивает глаз — ручные сценарии
+  `/tests/motion/progress-linear` на стенде.
 - **ProgressSpinner** — индикатор выполнения кольцом: вторая форма той же
   модели, а не режим линии. Ожидание без доли — то же кольцо с
   `indeterminate`: отдельного индикатора «занят» с ролью `status` у
@@ -1628,9 +1647,15 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/svelte/__tests__/collections.server.spec.ts`,
   `ui/solid/__tests__/pagination.spec.tsx` (сверх сценариев Vue — смена окна
   не зовёт слот страниц, оставшихся на экране), «Pagination» в
-  `ui/solid/__tests__/collections.server.spec.tsx` и
+  `ui/solid/__tests__/collections.server.spec.tsx`,
+  `ui/webc/__tests__/pagination.spec.ts` (страницы переживают сдвиг окна — петля
+  по ключу места `TKeyedLoop`, — фокус со стрелки, погасшей у края, — на
+  текущую; слот `item` — образец, копия в каждой странице, а страницу копия
+  берёт у ближайшего `.so-pagination-item`),
   `playground/vue/browser/pagination.spec.ts` (фокус со стрелки, погасшей
-  у края, — на текущую, и Tab мимо погасшей стрелки).
+  у края, — на текущую, и Tab мимо погасшей стрелки) и
+  `playground/vue/browser/webc-controls.spec.ts` (стрелки, страницы и пропуски
+  Web Components стоят, как у Vue).
 - **Table** — Table и Sortable Table (APG): нативные `table`, `thead`,
   `tbody`, `th` и `td`, роль `table` даёт тег, своей клавиатуры нет — у Grid
   другая модель фокуса, это отдельный режим (`grid`, ниже). Колонки и строки — только

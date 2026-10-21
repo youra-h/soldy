@@ -22,8 +22,8 @@
  * ней не подключаются там, где им не место, — в строке, вне ячеек.
  */
 
-import { isContent } from '../runtime/content'
 import { lend } from './lend'
+import { sampleOf } from './sample'
 import type { ITemplateContext } from './types'
 
 /** Карта копий образцов: слот владельца (`item-leading`) → слот элемента (`leading`). */
@@ -66,7 +66,7 @@ export function lendSamples(
  * Копии образцов владельца — в образцы элемента из данных, по карте слотов:
  * каждая в `<template>` в свой слот элемента, а элемент сам копирует его
  * дальше, в свои узлы (см. шапку). Образца нет или копия без содержимого
- * (`isContent`: пустой `<template>` владельца) — слот элемента не задан, и
+ * (`sampleOf`: пустой `<template>` владельца) — слот элемента не задан, и
  * элемент рисует своё: `<template>` содержимым был бы всегда.
  */
 export function lendTemplates(
@@ -75,9 +75,9 @@ export function lendTemplates(
 	slots: TItemSlots,
 ): void {
 	for (const [from, to] of Object.entries(slots)) {
-		const copy = ctx.sample(from)
+		const copy = sampleOf(ctx, from)
 
-		if (!copy || !Array.from(copy.childNodes).some(isContent)) continue
+		if (!copy) continue
 
 		const template = element.ownerDocument.createElement('template')
 

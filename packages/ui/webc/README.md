@@ -42,9 +42,11 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > **Status:** the Web Components adapter is in progress — Button, Icon, Label, Input, NumberInput
 > (`<div is="so-number-input">`: a number in the locale's format with − and + step buttons; the
 > form gets the number), Textarea (`<div is="so-textarea">`: multi-line, growing with its text,
-> with a character counter), CheckBox, Switch, the form field `<div is="so-field">` (label, helper
-> and error linked to the control inside it), ProgressSpinner, Skeleton, Frame, RadioGroup,
-> ListBox, Tabs, Accordion, Table, the `<so-virtual>` window for long lists and the
+> with a character counter), CheckBox, Switch, Slider (`<span is="so-slider">`), Rating
+> (`<span is="so-rating">`), the form field `<div is="so-field">` (label, helper and error linked
+> to the control inside it), ProgressSpinner, ProgressLinear (`<span is="so-progress-linear">`),
+> Skeleton, Frame, Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion,
+> Pagination (`<nav is="so-pagination">`), Table, the `<so-virtual>` window for long lists and the
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`so:move`; `so:move:before` can cancel with `event.preventDefault()`) are ported, the
 > rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
@@ -69,6 +71,7 @@ import '@soldy-ui/webc'
 <button is="so-button" text="Save" class="toolbar-action"><i slot="leading">★</i></button>
 <button is="so-button"><i slot="leading">★</i> Save</button>
 <span is="so-progress-spinner" value="40" aria_label="Uploading"></span>
+<span is="so-progress-linear" value="40" aria_label="Uploading"></span>
 <div is="so-skeleton" width="160" height="16"><p>Loaded content</p></div>
 ```
 
@@ -155,6 +158,30 @@ the element: `el.ctrl.clear()`. The built-in clear button and its icon are part 
 markup, so their events (`so:action:press`, `so:change:focused`) do not bubble — listeners on the
 field and delegation on the form hear the field's own events only.
 
+A slider and a rating are fields as well: `<span is="so-slider">` has a native
+`<input type="range">` in each thumb, `<span is="so-rating">` one under its row of stars, and the
+form gets their values under `name`. A number is one thumb, an array is a thumb per item
+(`value="[20,80]"`, or `el.value = [20, 80]`). The pointer works on the track, never on the inputs,
+so attributes you write on these two stay on the element; only a rating's `id` goes to its input,
+where `<label for>` finds it. With several thumbs the slider is a group named by `aria_label`, and
+each thumb takes its own name from `thumbLabels`:
+
+```html
+<label is="so-label" text="Volume" position="top">
+  <span is="so-slider" value="40" name="volume"></span>
+</label>
+<span is="so-slider" value="[20,80]" aria_label="Price" thumb-labels='["From","To"]'></span>
+<span is="so-rating" value="3.5" step="0.5" name="score" aria_label="Score"></span>
+```
+
+Marks as a list are a property, `el.marks = [{ value: 0, label: 'Min' }]`: the `marks` attribute
+is a flag that marks every point of the scale. The `mark` and `thumb` slots of a slider and the
+`icon` slot of a rating are templates, like the `item-*` slots of a list below: each mark, each
+thumb's tooltip and both layers of each star get a copy of their own. A copy finds its data by its
+place — a mark by its index among the `.so-slider__mark` nodes in `el.state.shownMarks`, a thumb by
+its index among the `.so-slider__thumb` nodes in `el.state.thumbs`, a star by its place among the
+stars (counting from one) and its layer by whether it is inside `.so-rating__star-fill`.
+
 A collection is an owner element with item elements inside: tabs with their panels, an accordion
 with its sections, a radio group with its radios, a list box with its options. An item joins the
 collection of the nearest owner above it in the document when it is connected — in document order,
@@ -214,6 +241,22 @@ yourself. Moving a collection in the document rebuilds it, as any element is reb
 markup items join again with what their attributes and properties say, so a choice the user made
 (the active tab, an open section) does not survive the move. Items given as data in your own
 `engine` keep it.
+
+Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
+(`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,
+`<li is="so-pagination-item">` with a button in it; its `item` slot is a template too, and a copy
+finds its page on the nearest `.so-pagination-item` (`el.ctrl`). A scroller lays its content out in
+its viewport, between the two buttons; a role for the row and what goes with it comes to the
+viewport as `viewportAria` (`viewport-aria` with JSON, or a property):
+
+```html
+<nav is="so-pagination" total="200" value="5" aria_label="Result pages"></nav>
+
+<div is="so-scroller">
+  <button is="so-button" text="First"></button>
+  <button is="so-button" text="Second"></button>
+</div>
+```
 
 A table takes its columns and rows as data only — `columns` and `items` (`el.columns = [...]`, or
 JSON in the attribute), or an `engine` — and draws the column headers and rows itself:

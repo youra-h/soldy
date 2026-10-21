@@ -400,6 +400,87 @@ describe('хост Web Components · коллекции', () => {
 	})
 })
 
+/**
+ * Контролы и навигация — как у Vue: ползунок и оценка — в подписи над ними,
+ * полоса и лента — в границе ширины, пагинация — без содержимого, страницы
+ * рисует её шаблон. Пропсы строки и слушатели — у компонента, а не у обёртки.
+ */
+describe('хост Web Components · контролы и навигация', () => {
+	it.each([
+		['slider', 'so-slider', 'Громкость'],
+		['rating', 'so-rating', 'Оценка'],
+	])(
+		'превью %s — в подписи Label сверху, пропсы строки — у компонента',
+		(component, block, text) => {
+			const node = stage()
+			const handle = host.mount(node, { component, props: { size: 'lg' } })
+			const label = find(node, 'label.so-label')
+			const control = find(label, `.so-label__control > .${block}`)
+
+			expect(find(label, '.so-label__text').textContent).toBe(text)
+			expect(label.classList.contains('so-label--position-top')).toBe(true)
+			expect(control.classList.contains(`${block}--size-lg`)).toBe(true)
+			expect(label.classList.contains('so-label--size-normal')).toBe(true)
+
+			handle.unmount()
+		},
+	)
+
+	it.each([
+		['progress-linear', '.so-progress-linear'],
+		['scroller', '.so-scroller'],
+	])('превью %s — в границе ширины', (component, selector) => {
+		const node = stage()
+		const handle = host.mount(node, { component, props: {} })
+		const frame = find(node, selector).parentElement
+
+		expect(frame?.localName).toBe('div')
+		expect(frame?.style.width).toBe('100%')
+
+		handle.unmount()
+	})
+
+	it('превью Scroller: пункты ленты — прямо во вьюпорте', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'scroller', props: {} })
+		const items = [...find(node, '.so-scroller__viewport').children]
+
+		expect(items.map((item) => item.textContent)).toEqual(
+			COLLECTION_ITEMS.map((item) => `${item.text} пункт ленты`),
+		)
+
+		handle.unmount()
+	})
+
+	/** Страницы — внутренняя часть: их рисует шаблон пагинации по окну. */
+	it('превью Pagination: окно страниц, нажатие страницы — событием в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'pagination',
+			props: { total: 100, value: 5 },
+			onEvent: (name) => events.push(name),
+		})
+
+		await flush()
+
+		const pages = [...node.querySelectorAll('.so-pagination-item > button')]
+
+		expect(pages.map((page) => page.textContent?.trim())).toEqual(['1', '4', '5', '6', '10'])
+
+		await nextFrame()
+		events.length = 0
+
+		const six = pages[3]
+
+		if (six instanceof HTMLElement) six.click()
+
+		expect(events).toContain('change:value')
+
+		handle.unmount()
+	})
+})
+
 /** Узел по селектору; нет его — тест падает здесь. */
 function find(root: ParentNode, selector: string): HTMLElement {
 	const node = root.querySelector(selector)

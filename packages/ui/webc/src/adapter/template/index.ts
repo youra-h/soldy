@@ -1,7 +1,9 @@
 export { bind } from './types'
 export { ownerAttributes } from './attributes'
+export { ownerStyles } from './styles'
 export { createDetail, type TDetailOptions } from './detail'
 export { lend, type TLendAt } from './lend'
+export { sampleOf } from './sample'
 export { TKeyedLoop } from './loop'
 export { createItem, lendSamples, lendTemplates, type TItemSlots } from './item'
 export type {
