@@ -271,6 +271,64 @@ describe('курсор', () => {
 	})
 })
 
+/**
+ * Курсор — причина, только когда плагин услышал его приход. Подсказку,
+ * открытую разметкой или из кода, держит не курсор: панель, вставшая на место
+ * из-под неподвижного курсора, даёт `pointerleave` без `pointerenter` (см.
+ * шапку плагина), и подсказка остаётся открытой.
+ */
+describe('уход без прихода', () => {
+	it('открытая разметкой: уход с панели и с корня не закрывает', () => {
+		const { owner, root, panel } = mountTooltip({ open: true })
+
+		leave(panel)
+		leave(root)
+		vi.advanceTimersByTime(1000)
+
+		expect(owner.open).toBe(true)
+	})
+
+	it('открытая из кода: уход с панели и с корня не закрывает', () => {
+		const { owner, root, panel } = mountTooltip()
+
+		owner.open = true
+		leave(panel)
+		leave(root)
+		vi.advanceTimersByTime(1000)
+
+		expect(owner.open).toBe(true)
+	})
+
+	it('пришёл на панель и ушёл — скрытие через closeDelay', () => {
+		const { owner, panel } = mountTooltip({ open: true })
+
+		enter(panel)
+		leave(panel)
+		vi.advanceTimersByTime(149)
+
+		expect(owner.open).toBe(true)
+
+		vi.advanceTimersByTime(1)
+
+		expect(owner.open).toBe(false)
+	})
+
+	it('пришёл на корень и ушёл — скрытие через closeDelay', () => {
+		const { owner, root } = mountTooltip()
+
+		owner.open = true
+		enter(root)
+		leave(root)
+		vi.advanceTimersByTime(149)
+
+		expect(owner.open).toBe(true)
+
+		vi.advanceTimersByTime(1)
+
+		expect(owner.open).toBe(false)
+	})
+})
+
 describe('фокус', () => {
 	it('с клавиатуры показывает сразу', () => {
 		const { owner, trigger } = mountTooltip()

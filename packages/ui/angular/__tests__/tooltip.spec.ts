@@ -349,6 +349,8 @@ describe('показ и скрытие', () => {
 
 		expect(isOpen()).toBe(true)
 
+		// Открытую из кода курсор не держит: уход закрывает, только если он пришёл
+		enter(root())
 		leave(root())
 		enter(root())
 		leave(root())
