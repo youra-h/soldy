@@ -921,9 +921,17 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/modal-focus.plugin.spec.ts`,
   `plugins/__tests__/dialog-layout.plugin.spec.ts`,
   `ui/vue/__tests__/dialog.spec.ts`, `ui/react/__tests__/dialog.spec.tsx`,
-  `ui/svelte/__tests__/dialog.spec.ts`, `playground/vue/browser/dialog.spec.ts`
-  и `playground/vue/browser/svelte-host.spec.ts` (открытое окно Svelte с
-  подложкой и частями стоит, как у Vue).
+  `ui/svelte/__tests__/dialog.spec.ts`, `ui/webc/__tests__/dialog.spec.ts`
+  (сверх сценариев Vue — подложка-спутник ездит и прячется с окном, перенос не
+  пересобирает кнопку в окне, значок разворота — в строке кнопки тем же
+  узлом; Select внутри — поповером), `playground/vue/browser/dialog.spec.ts`,
+  `playground/vue/browser/svelte-host.spec.ts` (открытое окно Svelte с
+  подложкой и частями стоит, как у Vue) и `playground/vue/browser/webc-frame.spec.ts`
+  с `webc-host.spec.ts` (открытое окно Web Components — так же). **Web
+  Components** (`<div is="so-dialog">`): элемент — сама панель, в цель её
+  уводит база; подложку строит шаблон спутником корня — база ставит её перед
+  окном, увозит и прячет с ним. Значок разворота сменяется без обёртки: метка
+  в слоте кнопки, слоты значков выводит `showSlot`.
 - **Drawer** — выезжающая панель у края экрана. Своего паттерна APG у неё нет:
   это модальный Dialog, и модальность у неё общая с окном (`TModalLayer`, см.
   «Слой оверлея») — роль, `aria-modal`, имя от заголовка, крестик, Escape,
@@ -969,15 +977,21 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `contained` пропал бы. Сторожат `core/__tests__/drawer.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` (касание — его группа «касание»),
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
-  `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx` и
+  `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx`,
   `ui/svelte/__tests__/drawer.spec.ts` (у React и Svelte смена `contained` на
-  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже),
+  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже) и
+  `ui/webc/__tests__/drawer.spec.ts` (у Web Components — тем же узлом, с
+  подложкой рядом, и кнопки в панели не пересобираются),
   `playground/vue/browser/drawer.spec.ts`
   (жест пальцем — группа «пальцем»: за полосу и от абзаца в теле панель
   закрывается, а протяжка поперёк оси и по телу, которое прокручивается
-  вдоль оси, прокручивает тело, и панель остаётся открытой) и
+  вдоль оси, прокручивает тело, и панель остаётся открытой),
   `playground/vue/browser/svelte-host.spec.ts` (открытая панель Svelte стоит,
-  как у Vue).
+  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` с
+  `webc-host.spec.ts` (открытая панель Web Components — так же). **Web
+  Components** (`<div is="so-drawer">`): элемент — сама панель; с
+  `contained` база оставляет её на месте, а подложку-спутника ставит перед
+  ней и там.
 - **Toasts** — всплывающие уведомления. Своего паттерна APG у них нет; ARIA —
   как у Zag и Radix: регион `role="region"` с `aria-live="polite"` и именем
   от локали («Уведомления (F8)», раздел `toasts`) стоит в документе и пустым —
@@ -1055,18 +1069,29 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   колесо и стрелки остаются странице. **Своё содержимое (`render`)
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
   даёт адаптер — во Vue и Svelte компонент своего фреймворка с пропом `toast`
-  (`TToastRender`, через API `useToasts()`), а рисует его разметка после
-  проверки (`isToastRender`), без приведения. Правило общее: значение, которое
+  (`TToastRender`, через API `useToasts()`), у Web Components — функция,
+  которая получает тост и отдаёт узел (через `toastsOf`), а рисует его
+  разметка после проверки (`isToastRender`), без приведения. Правило общее: значение, которое
   ядро только хранит для разметки, в ядре — `unknown`, тип ему даёт API
   адаптера. Сторожат
   `core/__tests__/toasts.spec.ts`, `plugins/__tests__/toasts.plugin.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts` («тост в регионе»),
   `plugins/__tests__/names.plugin.spec.ts`, `ui/vue/__tests__/toasts.spec.ts`,
-  `ui/svelte/__tests__/toasts.spec.ts`, `playground/vue/browser/toasts.spec.ts`
-  и `playground/vue/browser/svelte-host.spec.ts` (регион Svelte с тостом стоит,
-  как у Vue); вид и ожидание — их группы «вид
-  сообщения», «отсчёт», «значок» и «вид»; стопку — их группы «стопка» и
-  `TToastsCascadePlugin`, а её движение — `playground/vue/browser/motion-mode.spec.ts`.
+  `ui/svelte/__tests__/toasts.spec.ts`, `ui/webc/__tests__/toasts.spec.ts`
+  (сверх сценариев Vue — регион в цели, приложение на месте, атрибуты
+  потребителя — на регионе, снятый менеджер уводит регион из цели;
+  `toastsOf` изнутри окна в цели находит менеджер вокруг его места),
+  `playground/vue/browser/toasts.spec.ts`,
+  `playground/vue/browser/svelte-host.spec.ts` (регион Svelte с тостом стоит,
+  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` с
+  `webc-host.spec.ts` (регион Web Components — так же); вид и ожидание — их
+  группы «вид сообщения», «отсчёт», «значок» и «вид»; стопку — их группы
+  «стопка» и `TToastsCascadePlugin`, а её движение —
+  `playground/vue/browser/motion-mode.spec.ts`. **Web Components**
+  (`<so-toasts>`): менеджер — автономный элемент без коробки вокруг
+  приложения, корень — регион внутри него, и в цель уезжает он; API —
+  `toastsOf(node)`, лифтом места от узла под менеджером, своё содержимое —
+  функция `(toast) => Node` (`TToastRender`), слоты `item-*` — образцы.
 - **Slider** — Slider и Multi-Thumb Slider pattern, вариант на нативных
   `input[type="range"]`: поле на каждую ручку, прозрачное и без указателя
   (`pointer-events: none`). Роль, значение, границы, `disabled` и отправку

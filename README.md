@@ -204,9 +204,9 @@ come in later releases.
 | DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | Vue                                       | 0.2.0   |
 | Popover         | Panel at a trigger with any content: a non-modal dialog                                        | Vue, React, Solid, Svelte, Web Components | 0.2.0   |
 | Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | Vue, React, Solid, Svelte, Web Components | 0.2.0   |
-| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | Vue, React, Svelte                        | 0.2.0   |
-| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | Vue, React, Svelte                        | 0.2.0   |
-| Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | Vue, Svelte                               | 0.2.0   |
+| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | Vue, React, Svelte, Web Components        | 0.2.0   |
+| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | Vue, React, Svelte, Web Components        | 0.2.0   |
+| Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | Vue, Svelte, Web Components               | 0.2.0   |
 | Scroller        | Single-row strip of any content, paged with two buttons                                        | Vue, React, Solid, Svelte, Web Components | 0.2.0   |
 | ListBox         | List with single or multiple selection                                                         | *                                         | 0.2.0   |
 | Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               | *                                         | 0.2.0   |

@@ -2478,7 +2478,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2519,7 +2519,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `displayContents` (их коробка — теневой корень со `<slot>` и
   `:host { display: contents }`),
   `isDefining` (признак идущей регистрации), `teleport.ts` (`TTeleport` —
-  телепорт корня слоя в цель), `relocation.ts` (`relocate` и `isRelocating` —
+  телепорт корня слоя в цель вместе со спутником — подложкой окна, — и корня
+  внутри обёртки — региона тостов), `relocation.ts` (`relocate` и `isRelocating` —
   перенос силами базы), `waiting.ts` (ожидание: подключение внутри чужого
   подключения — следом за ним) и `assignment.ts` (назначенный слот — свет
   детали), см. «Решения по DOM».
@@ -2535,10 +2536,17 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 - `adapter/locale/` — `TLocaleProviderElement`, `<so-locale-provider>`:
   свой `TLocaleSource` поддереву контекстом места, свойство `locale` — в тот же
   источник (см. «Решения по DOM»).
+- `adapter/toasts/` — API тостов приложению, как `useToasts()` у Vue и
+  Svelte: `toastsOf(node)` — API ближайшего `<so-toasts>` выше узла, лифтом
+  места (`TOASTS_ELEVATOR`; узел в увезённой панели ищет от её якоря),
+  менеджера нет — ошибка; `TToastRender` — своё содержимое тоста, функция
+  `(toast) => Node`, и `isToastRender` — проверка, по которой его рисует
+  разметка тоста.
 - `adapter/template/` — `ITemplate`, `bind` (привязка пропа), `ownerAttributes`
   (набор ядра на элементе шаблона — верхним слоем его раскладчика),
   `ownerStyles` (стиль значением на узле шаблона — позиции ручек и меток
-  Slider, доля заливки звезды Rating, распорки окна — тем же правилом, что
+  Slider, доля заливки звезды Rating, распорки окна, `z-index` подложки
+  модального слоя, глубина тоста в стопке — тем же правилом, что
   стиль корня: своё пишет и снимает, чужое не трогает), `createDetail`
   (вложенный элемент soldy шаблона — деталь с обязательным именем места
   `embedded`), `lend` (разметка шаблона — в слот детали, назначением),
@@ -2595,8 +2603,9 @@ ProgressSpinner, — прячет ли видимость корень — `{ hi
 Skeleton, — стоит ли корень по месту в коллекции — `{ order: true }` у
 табов и секций: `order` фасада уходит в стиль корня, — без какого выхода
 корень скрыт — `{ shownBy: 'active' }` у панели таба, — уезжает ли корень в
-слой — `{ teleport: { target: 'target', contained: 'contained' } }` у Frame:
-имена выходов с селектором цели и с признаком «на месте», как
+слой — `{ teleport: { target: 'target', contained: 'contained' } }` у Frame
+и Drawer, `{ teleport: { target: 'target' } }` у Dialog: имена выходов с
+селектором цели и с признаком «на месте» (у окна его нет), как
 `TRootTeleport` у Angular (см. «Слой» в «Решениях по DOM»), — какие наборы
 ядра лежат на корне (`sets`, по умолчанию все три), из какого выхода берётся
 слой `aria` корня — `{ aria: 'rootAria' }` у Slider: у нескольких ручек корень
@@ -2613,7 +2622,11 @@ CheckBox, Switch и радио, у таба и секции
 стиль ядра, с ним связывает `TElementPlugin` и его тег отдаёт ядру, а элементу
 оставляет скрытие и класс и стиль потребителя. Тот же `table` — и поле окна
 (`TTemplateParts.control`): остальные статические атрибуты разметки окна база
-переносит на него, как на поле. Компонент бывает и невизуальным —
+переносит на него, как на поле. Обёрнутый корень бывает и в слое —
+`{ wrapped: true, teleport: { target: 'target' } }` у Toasts: элемент
+`<so-toasts>` без коробки — только место приложения, а в цель уезжает корень,
+регион, и он же внешний узел компонента — база переносит на него все атрибуты
+разметки элемента, класс и стиль тоже, и прячет его, а не элемент. Компонент бывает и невизуальным —
 окно `<so-virtual>` и перестановка `<so-drag-and-drop>`
 (`SoldyElement(HTMLElement, …)`, регистрация `defineAutonomousElement`):
 классы, наборы и видимость база читает из состояния по имени, и у них их нет.
@@ -2935,7 +2948,40 @@ WebKit:
   связь в контексте. В свете контейнера, который собирается позже переноса,
   стоит якорь, и раскладка света берёт его за сам корень: слот — корня, и
   содержимое — он. Сторожат `ui/webc/__tests__/frame.spec.ts` и
-  `browser/webc-frame.spec.ts` стенда.
+  `browser/webc-frame.spec.ts` стенда. Телепорт знает ещё два случая. **Спутник
+  корня** — узел шаблона рядом с корнем, а не в нём (`TTemplateParts.companion`):
+  подложка окна и выезжающей панели, у Vue — соседка панели в телепорте. Он
+  стоит прямо перед корнем — в цели, на месте и без цели, — едет с ним той же
+  операцией, уходит с ним за местом и прячется вместе с ним; настоящее
+  отключение элемента его снимает, подключение возвращает к корню, а в свете
+  контейнера, собранного позже, слот у него — корня. **Обёрнутый корень в
+  слое** (`wrapped` с `teleport`) — регион тостов в `<so-toasts>`: в цель
+  уезжает он, а элемент остаётся на месте со светом — приложением. Место
+  региона — якорь в самом элементе, и настоящее отключение элемента не
+  оставляет регион в цели: он возвращается к якорю, уходит с менеджером, а
+  подключение увозит его заново. Скрытие и атрибуты разметки элемента — у
+  региона: элемент без коробки — только место.
+- **Модальный слой и тосты** — Dialog и Drawer (`<div is="so-dialog">`,
+  `<div is="so-drawer">`) и Toasts (`<so-toasts>`). Корень окна и панели —
+  элемент потребителя, сама панель: классы, наборы, раскладка (`z-index`,
+  размер переменными) и атрибуты потребителя — на нём, как `$attrs` у Vue, а
+  `tabindex="-1"` и пометку владельцем шаблон кладёт слоем владельца — атрибут
+  потребителя главнее. Подложка — спутник корня, её `z-index`
+  (`layout_backdropStyles`) и набор (`backdropDataset`) кладёт шаблон. Кнопки
+  шапки — детали Button (`dialog.maximize`, `dialog.close`, `drawer.close`),
+  которых нет — вне документа: тема опирается на их отсутствие. Значок
+  разворота окна сменяется по `maximized` без обёртки: в слот кнопки шаблон
+  кладёт метку-комментарий, а слоты `maximize-icon` и `restore-icon` —
+  точки `before` у метки со слотом кнопки; метка остаётся там, куда кнопка,
+  собравшись, положила свой слот, и `showSlot` возвращает значок на место и до,
+  и после её сборки. Менеджер тостов — автономный элемент без коробки
+  (`displayContents`) вокруг приложения, корень — регион (обёрнутый корень в
+  слое), в нём `ol.so-toasts__list` с тостами петлёй по `shown` — внутренней
+  частью `<li is="so-toasts-item">` с копиями образцов `item-*`. API —
+  `toastsOf(node)` лифтом места (`adapter/toasts/`), своё содержимое тоста —
+  функция `(toast) => Node`. Сторожат `ui/webc/__tests__/dialog.spec.ts`,
+  `drawer.spec.ts`, `toasts.spec.ts`, `browser/webc-frame.spec.ts` (открытые
+  стоят, как у Vue) и `browser/webc-host.spec.ts` стенда.
 - **Панель у триггера** — Popover и Tooltip (`<span is="so-popover">`,
   `<span is="so-tooltip">`). Корень — элемент потребителя, обёртка триггера и
   якорь панели, на нём — `attrs` и `dataset` (`sets`), ARIA — у панели и у

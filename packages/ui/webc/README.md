@@ -46,6 +46,8 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > (`<span is="so-rating">`), the form field `<div is="so-field">` (label, helper and error linked
 > to the control inside it), ProgressSpinner, ProgressLinear (`<span is="so-progress-linear">`),
 > Skeleton, Frame, Popover (`<span is="so-popover">`), Tooltip (`<span is="so-tooltip">`),
+> Dialog (`<div is="so-dialog">`), Drawer (`<div is="so-drawer">`), Toasts (`<so-toasts>`
+> around the application, a toast from code — `toastsOf(element).show(…)`),
 > Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion,
 > Pagination (`<nav is="so-pagination">`), Table, the `<so-virtual>` window for long lists and the
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
@@ -142,6 +144,72 @@ to `body` or back with `contained` (the panel stays in place, at an `edge` of th
 positioned ancestor). `lazy-mount` keeps the content out of the document until the panel is opened
 for the first time. The close button in the panel's corner shows the `close-icon` slot or a close
 icon; `el.closable = false` removes it — the attribute of a flag can only turn it on.
+
+A dialog and a drawer are modal: the element you wrote is the panel, and it moves to `body` itself,
+like a frame, with its backdrop right before it — the component draws the backdrop, keeps it next
+to the panel wherever the panel goes and hides it with the panel. Nothing opens them for you: there
+is no trigger, so `el.visible = true` (or `el.ctrl.show()`) opens one, and the close button, the
+backdrop, Escape and a swipe ask it to close — `so:close:before` with `event.preventDefault()`
+keeps it open, and `el.dismissible = false` leaves only the close button and the swipe. The title,
+the content and the footer are the `title`, default and `footer` slots. A dialog can be
+maximized (`maximizable`, the `maximize-icon` and `restore-icon` slots); a drawer slides in at an
+edge (`placement`), can be swiped away (`swipe`) and with `contained` stays in the nearest
+positioned ancestor, together with its backdrop:
+
+```html
+<button id="open-settings">Settings</button>
+<div is="so-dialog" id="settings">
+  <span slot="title">Settings</span>
+  <p>Any content: text, fields, buttons</p>
+  <button is="so-button" slot="footer" text="Done"></button>
+</div>
+
+<script type="module">
+  const dialog = document.getElementById('settings')
+
+  document.getElementById('open-settings').addEventListener('click', () => {
+    dialog.visible = true
+  })
+</script>
+```
+
+Toasts are shown from code. `<so-toasts>` wraps the application and has no box of its own, like
+the locale provider: the application inside it stays in place, and the region with the toasts is
+moved to `body`, with the attributes, class and style you wrote on `<so-toasts>`. A node under the
+manager gets the queue with `toastsOf(node)` — the nearest manager above the node, also from inside
+a dialog moved to `body` — and `show` takes a text or options; content of your own is a function
+that receives the toast and returns a node. The `item`, `item-icon`, `item-content` and
+`item-close-icon` slots are templates, as in collections: every toast gets a copy, and a copy finds
+its toast on the nearest `.so-toasts-item` (`el.ctrl`):
+
+```html
+<so-toasts placement="top-end">
+  <main>
+    <button id="save">Save</button>
+  </main>
+</so-toasts>
+
+<script type="module">
+  import { toastsOf } from '@soldy-ui/webc'
+
+  const save = document.getElementById('save')
+
+  save.addEventListener('click', () => {
+    toastsOf(save).show({
+      text: 'Draft saved',
+      type: 'success',
+      render: (toast) => {
+        const undo = document.createElement('button', { is: 'so-button' })
+
+        undo.text = 'Undo'
+        undo.addEventListener('click', () => toast.close())
+
+        return undo
+      },
+    })
+  })
+</script>
+```
 
 In a form it is simply a button:
 
