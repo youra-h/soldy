@@ -7,10 +7,12 @@
  * с движка вместе со своими подписчиками — обменом адаптера. Здесь — настоящий
  * цикл Solid, как `ui/vue/__tests__/external-engine-lifetime.spec.ts` у Vue и
  * `ui/angular/__tests__/external-engine-lifetime.spec.ts` у Angular: три
- * монтирования ListBox и Table подряд, и на шинах владельца, движка и его
- * расширений ни подписки, ни перехватчика, ни слушателя обмена. У таблицы
+ * монтирования ListBox, Table и Menu подряд, и на шинах владельца, движка и
+ * его расширений ни подписки, ни перехватчика, ни слушателя обмена. У таблицы
  * сверх них — строки, колонки и чекбокс «выбрать все»: заголовки и чекбоксы
  * собираются над ними, как над `ctrl` снаружи, — и `ctrl` обёртки `Virtual`.
+ * У меню — пункты из данных и подменю из данных со своим движком: строки и
+ * подменю собираются над ними, как над `ctrl` и `engine` снаружи.
  *
  * Список над движком без `ctrl`, перенесённый в `<Show>` раньше по документу,
  * Solid собирает раньше, чем снимает прежний: привязку владельца забирает
@@ -22,14 +24,17 @@ import { Show, createSignal } from 'solid-js'
 import {
 	TEvented,
 	TListBox,
+	TMenu,
 	TTable,
 	TVirtual,
 	createEngineListBox,
+	createEngineMenu,
 	createEngineTable,
 	type TListBoxCollection,
+	type TMenuCollection,
 	type TTableCollection,
 } from '@soldy-ui/core'
-import { ListBox, Table, Virtual } from '@soldy-ui/solid'
+import { ListBox, Menu, Table, Virtual } from '@soldy-ui/solid'
 import { mount } from './mount'
 
 afterEach(() => {
@@ -280,6 +285,65 @@ describe('Table над движком и владельцем снаружи', (
 			destroy()
 
 			expect(engine.extensions.draw.virtual).toBe(false)
+		}
+
+		expect(live()).toEqual([])
+	})
+})
+
+/** Шины движка меню: сам движок, расширения и пункты. */
+function menuBuses(engine: TMenuCollection): TEvented<any>[] {
+	return [
+		engine.events,
+		...Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		),
+		...engine.extensions.batch.items.map((item) => item.events),
+	]
+}
+
+describe('Menu над движком и владельцем снаружи', () => {
+	/**
+	 * Пункты меню из данных — экземпляры движка, а подменю из данных — пункт и
+	 * движок его пунктов, которые заводит коллекция меню: строки, подменю и его
+	 * пункты собираются над ними, как над `ctrl` и `engine` снаружи. Панели
+	 * телепортированы, и пункты в них — тоже монтирования этого меню.
+	 */
+	it('после нескольких монтирований на шинах владельца, движка, пунктов и движка подменю ничего', () => {
+		const owner = new TMenu()
+		const engine = createEngineMenu({
+			owner,
+			items: [
+				{ value: 'edit', text: 'Изменить' },
+				{
+					value: 'share',
+					text: 'Поделиться',
+					items: [
+						{ value: 'link', text: 'Ссылка' },
+						{ value: 'mail', text: 'Почта' },
+					],
+				},
+			],
+		})
+		const submenus = [...engine.extensions.submenus.entries.values()]
+		const live = watchBuses([
+			owner.events,
+			...menuBuses(engine),
+			...submenus.flatMap((entry) => menuBuses(entry.engine)),
+		])
+
+		expect(submenus).toHaveLength(1)
+
+		for (let i = 0; i < 3; i++) {
+			const { destroy } = mount(() => <Menu ctrl={owner} engine={engine} />)
+
+			// Смонтировано по-настоящему: пункты меню и пункты подменю — в панелях
+			expect(document.querySelectorAll('.so-menu__panel')).toHaveLength(2)
+			expect(document.querySelectorAll('.so-menu-item')).toHaveLength(4)
+
+			destroy()
+
+			expect(document.querySelector('.so-menu__panel')).toBeNull()
 		}
 
 		expect(live()).toEqual([])

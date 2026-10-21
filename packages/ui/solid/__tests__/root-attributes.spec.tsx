@@ -19,7 +19,8 @@
  * `RadioGroup.Item`) делит их так же: остальное — строке, у радио — полю. И
  * ListBox с Tabs: остальное — узлу списка с ролью (`listbox`, `tablist`), а
  * Table — корню `table` внутри окна, которому остаются класс и стиль. У
- * Popover и Tooltip атрибуты — корню, обёртке триггера, а не панели.
+ * Popover, Tooltip и Menu атрибуты — корню, обёртке триггера, а не панели;
+ * пункты меню делят их, как элементы коллекции: остальное — строке.
  *
  * Стиль Solid ставит объектом по свойству и не трогает того, что плагины
  * пишут в узел сами: сдвиг смахиваемой панели (`--so-swipe-offset`) переживает
@@ -40,6 +41,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -72,6 +74,12 @@ import {
 	type LabelProps,
 	type ListBoxItemProps,
 	type ListBoxProps,
+	type MenuCheckboxItemProps,
+	type MenuItemProps,
+	type MenuPopoverItemProps,
+	type MenuProps,
+	type MenuRadioItemProps,
+	type MenuSubmenuProps,
 	type NumberInputProps,
 	type PaginationProps,
 	type PopoverProps,
@@ -109,6 +117,7 @@ type TProbeProps = ButtonProps &
 	PaginationProps &
 	PopoverProps &
 	TooltipProps &
+	MenuProps &
 	TabsProps &
 	AccordionProps &
 	RadioGroupProps &
@@ -145,13 +154,21 @@ const COMPONENTS: ReadonlyArray<
 	['Pagination', Pagination, '.so-pagination', {}],
 	['Popover', Popover, '.so-popover', {}],
 	['Tooltip', Tooltip, '.so-tooltip', {}],
+	['Menu', Menu, '.so-menu', {}],
 	['Tabs.Content', TabsContentProbe, '.so-tabs__panel', {}],
 	['Accordion', Accordion, '.so-accordion', {}],
 	['RadioGroup', RadioGroup, '.so-radio-group', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
-type TItemProbeProps = TabsItemProps & AccordionItemProps & RadioGroupItemProps
+type TItemProbeProps = TabsItemProps &
+	AccordionItemProps &
+	RadioGroupItemProps &
+	MenuItemProps &
+	MenuCheckboxItemProps &
+	MenuRadioItemProps &
+	MenuSubmenuProps &
+	MenuPopoverItemProps
 
 /** Таб — в наборе: `id` строке пишет коллекция. */
 function TabsItemProbe(props: TabsItemProps): JSX.Element {
@@ -189,11 +206,67 @@ function ListBoxItemProbe(props: ListBoxItemProps): JSX.Element {
 	)
 }
 
+/**
+ * Пункты меню — в меню: без него у пункта нет коллекции, а строке `tabindex`
+ * пишет она. Панель меню телепортирована, и пункт ищется по документу.
+ */
+function MenuItemProbe(props: MenuItemProps): JSX.Element {
+	return (
+		<Menu>
+			<Menu.Item value="a" text="A" {...props} />
+		</Menu>
+	)
+}
+
+function MenuCheckboxItemProbe(props: MenuCheckboxItemProps): JSX.Element {
+	return (
+		<Menu>
+			<Menu.CheckboxItem value="a" text="A" {...props} />
+		</Menu>
+	)
+}
+
+function MenuRadioItemProbe(props: MenuRadioItemProps): JSX.Element {
+	return (
+		<Menu>
+			<Menu.RadioGroup value="a">
+				<Menu.RadioItem value="a" text="A" {...props} />
+			</Menu.RadioGroup>
+		</Menu>
+	)
+}
+
+/** Пункт с подменю: `id` строке пишет плагин связок — ссылка на панель. */
+function MenuSubmenuProbe(props: MenuSubmenuProps): JSX.Element {
+	return (
+		<Menu>
+			<Menu.Submenu value="share" text="Поделиться" {...props} />
+		</Menu>
+	)
+}
+
+/** Пункт с панелью: `id` строке пишет плагин связок, как у подменю. */
+function MenuPopoverItemProbe(props: MenuPopoverItemProps): JSX.Element {
+	return (
+		<Menu>
+			<Menu.PopoverItem value="due" text="Срок" {...props} />
+		</Menu>
+	)
+}
+
+/** Строка пункта меню — ребёнок его корня с ролью: на ней ARIA пункта. */
+const MENU_ROW = '.so-menu-item > [role^="menuitem"]'
+
 /** Элемент коллекции, класс его корня и строка, которой уходят атрибуты потребителя. */
 const ITEMS: ReadonlyArray<readonly [string, Component<TItemProbeProps>, string, string]> = [
 	['Tabs.Item', TabsItemProbe, '.so-tabs-item', '.so-tabs-item [role="tab"]'],
 	['Accordion.Item', AccordionItemProbe, '.so-accordion-item', '.so-accordion-item__header'],
 	['RadioGroup.Item', RadioGroupItemProbe, '.so-radio-group-item', '.so-radio-group-item__input'],
+	['Menu.Item', MenuItemProbe, '.so-menu-item', MENU_ROW],
+	['Menu.CheckboxItem', MenuCheckboxItemProbe, '.so-menu-item', MENU_ROW],
+	['Menu.RadioItem', MenuRadioItemProbe, '.so-menu-item', MENU_ROW],
+	['Menu.Submenu', MenuSubmenuProbe, '.so-menu-item', MENU_ROW],
+	['Menu.PopoverItem', MenuPopoverItemProbe, '.so-menu-item', MENU_ROW],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -274,18 +347,19 @@ describe('атрибут снаружи перекрывает набор ядр
 
 /** Компонент с панелью, класс его корня и класс панели. */
 const OVERLAYS: ReadonlyArray<
-	readonly [string, Component<PopoverProps & TooltipProps>, string, string]
+	readonly [string, Component<PopoverProps & TooltipProps & MenuProps>, string, string]
 > = [
 	['Popover', Popover, '.so-popover', '.so-popover__panel'],
 	['Tooltip', Tooltip, '.so-tooltip', '.so-tooltip__panel'],
+	['Menu', Menu, '.so-menu', '.so-menu__panel'],
 ]
 
 /**
- * У Popover и Tooltip корень — обёртка триггера, а панель — их Frame: атрибуты
- * потребителя ложатся на корень, как у Vue, а панель получает только наборы
- * компонента — ARIA, `data-*` и пометку владельцем.
+ * У Popover, Tooltip и Menu корень — обёртка триггера, а панель — их Frame:
+ * атрибуты потребителя ложатся на корень, как у Vue, а панель получает только
+ * наборы компонента — ARIA, `data-*`, свои классы и пометку владельцем.
  */
-describe('Popover, Tooltip: атрибуты снаружи — корню, а не панели', () => {
+describe('Popover, Tooltip, Menu: атрибуты снаружи — корню, а не панели', () => {
 	it.each(OVERLAYS)(
 		'%s: класс, id и data-* потребителя — на корне',
 		(_name, Overlay, root, panel) => {
@@ -735,6 +809,59 @@ const ROOTS: ReadonlyArray<
 	['Pagination', (props) => <Pagination {...props} />, '.so-pagination', '.so-pagination'],
 	['Popover', (props) => <Popover {...props} />, '.so-popover', '.so-popover'],
 	['Tooltip', (props) => <Tooltip {...props} />, '.so-tooltip', '.so-tooltip'],
+	// Корень меню — обёртка триггера, а не его телепортированная панель
+	['Menu', (props) => <Menu {...props} />, '.so-menu', '.so-menu'],
+	['Menu.Item', (props) => <MenuItemProbe {...props} />, '.so-menu-item', '.so-menu-item'],
+	[
+		'Menu.CheckboxItem',
+		(props) => <MenuCheckboxItemProbe {...props} />,
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	[
+		'Menu.RadioItem',
+		(props) => <MenuRadioItemProbe {...props} />,
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	// Корень пункта с подменю и пункта с панелью — пункт, а не телепортированная панель
+	['Menu.Submenu', (props) => <MenuSubmenuProbe {...props} />, '.so-menu-item', '.so-menu-item'],
+	[
+		'Menu.PopoverItem',
+		(props) => <MenuPopoverItemProbe {...props} />,
+		'.so-menu-item',
+		'.so-menu-item',
+	],
+	[
+		'Menu.Group',
+		(props) => (
+			<Menu>
+				<Menu.Group label="Вид" {...props} />
+			</Menu>
+		),
+		'.so-menu-group',
+		'.so-menu-group',
+	],
+	[
+		'Menu.RadioGroup',
+		(props) => (
+			<Menu>
+				<Menu.RadioGroup label="Сортировка" {...props} />
+			</Menu>
+		),
+		'.so-menu-group',
+		'.so-menu-group',
+	],
+	[
+		'Menu.Separator',
+		(props) => (
+			<Menu>
+				<Menu.Separator {...props} />
+			</Menu>
+		),
+		'.so-menu-separator',
+		'.so-menu-separator',
+	],
 	['Tabs', (props) => <Tabs {...props} />, '.so-tabs', '.so-tabs'],
 	['Tabs.Item', (props) => <TabsItemProbe {...props} />, '.so-tabs-item', '.so-tabs-item'],
 	[

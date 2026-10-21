@@ -6,9 +6,9 @@
  * вокруг `<input>`, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
  * — рамка вокруг узла списка, у Tabs — рамка со списком табов и панелями, у
  * группы радио и аккордеона — контейнер остановок, у пагинации — `nav` без
- * своей остановки, у ленты — ряд из кнопок и вьюпорта, у элемента коллекции —
- * обёртка вокруг строки; узел фокуса называет правило дескриптора
- * (`focusTarget` плагина действия).
+ * своей остановки, у ленты — ряд из кнопок и вьюпорта, у элемента коллекции и
+ * пункта меню — обёртка вокруг строки; узел фокуса называет правило
+ * дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Solid — такт: смену состояния он применяет к DOM синхронно, и
  * разметка отстаёт от модели только внутри `batch`.
@@ -23,6 +23,11 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TMenuCheckboxItem,
+	TMenuItem,
+	TMenuPopoverItem,
+	TMenuRadioItem,
+	TMenuSubmenu,
 	TNumberInput,
 	TPagination,
 	TRadioGroup,
@@ -41,6 +46,7 @@ import {
 	CheckBox,
 	Input,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	RadioGroup,
@@ -51,7 +57,22 @@ import {
 	Tabs,
 	Textarea,
 } from '@soldy-ui/solid'
+import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 import { find, mount, nextFrame } from './mount'
+
+type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
+
+/**
+ * Меню, открытое с первой отрисовки, с пунктом `a` перед пунктом теста: фокус
+ * встаёт на строку своего пункта, а не на первую строку меню. Пункт теста
+ * разметка зовёт в содержимом меню — в слое его лифта.
+ */
+const menu = (item: () => JSX.Element) => () => (
+	<Menu open trigger={(scope: TMenuTriggerScope) => <button {...scope.triggerAria}>M</button>}>
+		<Menu.Item value="a" text="A" />
+		{item()}
+	</Menu>
+)
 
 type TCase = {
 	/**
@@ -364,6 +385,68 @@ const CASES: Record<string, TCase> = {
 			}
 		},
 		target: '.target [role="option"]',
+	},
+	// У пунктов меню фокус держит строка, а корень — обёртка вокруг неё
+	'Menu.Item': {
+		render: () => {
+			const ctrl = new TMenuItem({ value: 'b', text: 'B' })
+
+			return { ctrl, node: menu(() => <Menu.Item ctrl={ctrl} class="target" />) }
+		},
+		target: '.target [role="menuitem"]',
+	},
+	'Menu.CheckboxItem': {
+		render: () => {
+			const ctrl = new TMenuCheckboxItem({ value: 'b', text: 'B' })
+
+			return { ctrl, node: menu(() => <Menu.CheckboxItem ctrl={ctrl} class="target" />) }
+		},
+		target: '.target [role="menuitemcheckbox"]',
+	},
+	'Menu.RadioItem': {
+		render: () => {
+			const ctrl = new TMenuRadioItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: menu(() => (
+					<Menu.RadioGroup label="Вид">
+						<Menu.RadioItem ctrl={ctrl} class="target" />
+					</Menu.RadioGroup>
+				)),
+			}
+		},
+		target: '.target [role="menuitemradio"]',
+	},
+	'Menu.Submenu': {
+		render: () => {
+			const ctrl = new TMenuSubmenu({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: menu(() => (
+					<Menu.Submenu ctrl={ctrl} class="target">
+						<Menu.Item value="x" text="X" />
+					</Menu.Submenu>
+				)),
+			}
+		},
+		target: '.target [role="menuitem"]',
+	},
+	'Menu.PopoverItem': {
+		render: () => {
+			const ctrl = new TMenuPopoverItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: menu(() => (
+					<Menu.PopoverItem ctrl={ctrl} class="target">
+						<p>Панель</p>
+					</Menu.PopoverItem>
+				)),
+			}
+		},
+		target: '.target [role="menuitem"]',
 	},
 }
 

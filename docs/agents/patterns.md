@@ -772,7 +772,11 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `text` и `open`), `arrow-icon` и `default` — содержимое панели.
   Сторожат `core/__tests__/menu.spec.ts`,
   `plugins/__tests__/menu.plugin.spec.ts`, `plugins/__tests__/typeahead.spec.ts`,
-  `plugins/__tests__/ids.plugin.spec.ts`, `ui/vue/__tests__/menu.spec.ts` и
+  `plugins/__tests__/ids.plugin.spec.ts`, `ui/vue/__tests__/menu.spec.ts`,
+  `ui/solid/__tests__/menu.spec.tsx` (сценарии Vue, а у Solid ещё — триггер
+  тем же узлом после открытия и закрытия, фокус на нём после закрытия кликом,
+  строки пунктов из данных — те же узлы после смены подписи в `groups` и
+  нового пункта, переезд подменю из данных в другую группу) и
   `playground/vue/browser/menu.spec.ts` (контекстное меню, подменю и пункт с
   панелью — их группы); подменю — ещё `plugins/__tests__/menu-submenu.plugin.spec.ts`
   (клавиши уровней, задержка открытия, путь к панели и Tab через уровни) и
