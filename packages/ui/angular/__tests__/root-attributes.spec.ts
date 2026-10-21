@@ -30,6 +30,7 @@ import {
 	TInputComponent,
 	TLabelComponent,
 	TListBoxComponent,
+	TNumberInputComponent,
 	TProgressSpinnerComponent,
 	TSkeletonComponent,
 	TSwitchComponent,
@@ -221,6 +222,22 @@ class SwitchProbe extends TProbeHost {}
 class InputProbe extends TProbeHost {}
 
 @Component({
+	selector: 'probe-number-input',
+	standalone: true,
+	imports: [TNumberInputComponent],
+	template: `<div
+		so-number-input
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class NumberInputProbe extends TProbeHost {}
+
+@Component({
 	selector: 'probe-textarea',
 	standalone: true,
 	imports: [TTextareaComponent],
@@ -244,23 +261,33 @@ class TextareaProbe extends TProbeHost {}
 		TCheckBoxComponent,
 		TSwitchComponent,
 		TInputComponent,
+		TNumberInputComponent,
 		TTextareaComponent,
 	],
 	template: `<div so-field invalid><span so-check-box disabled></span></div>
 		<div so-field invalid><span so-switch disabled></span></div>
 		<div so-field invalid><div so-input disabled></div></div>
+		<div so-field invalid><div so-number-input disabled></div></div>
 		<div so-field invalid><div so-textarea disabled></div></div>`,
 })
 class InvalidFieldsHost {}
 
 /**
  * Поле, хост его пробы, селектор корня, класс ядра на нём и селектор поля
- * внутри корня: `<input>`, у Textarea — `<textarea>`.
+ * внутри корня: `<input>`, у Textarea — `<textarea>`, у NumberInput — ввод
+ * числа по своему классу: рядом в корне лежит скрытое поле формы.
  */
 const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
 	['CheckBox', CheckBoxProbe, '[so-check-box]', 'so-check-box', 'input'],
 	['Switch', SwitchProbe, '[so-switch]', 'so-switch', 'input'],
 	['Input', InputProbe, '[so-input]', 'so-input', 'input'],
+	[
+		'NumberInput',
+		NumberInputProbe,
+		'[so-number-input]',
+		'so-number-input',
+		'.so-number-input__input',
+	],
 	['Textarea', TextareaProbe, '[so-textarea]', 'so-textarea', 'textarea'],
 ]
 
@@ -382,8 +409,9 @@ describe('корень связан с TElementPlugin', () => {
 /**
  * У поля атрибуты потребителя делятся, как у Vue и React: класс и стиль —
  * корню, атрибуты из разметки — вложенному полю (`<input>`, у Textarea —
- * `<textarea>`), куда их переносит база (`TRootSpec.control`). Наборы ядра —
- * каждый на своём элементе: `attrs` (`dir`) — на корне, `aria` — на поле.
+ * `<textarea>`, у NumberInput — ввод числа), куда их переносит база
+ * (`TRootSpec.control`). Наборы ядра — каждый на своём элементе: `attrs`
+ * (`dir`) — на корне, `aria` — на поле.
  */
 describe('поле: атрибуты потребителя делятся между корнем и полем', () => {
 	it.each(FIELDS)(
@@ -397,6 +425,7 @@ describe('поле: атрибуты потребителя делятся ме�
 		},
 	)
 
+	/** Свой класс у поля бывает — ввод NumberInput: по нему ввод находят плагины. */
 	it.each(FIELDS)(
 		'%s: атрибуты из разметки — на поле, не на корне',
 		(_name, host, selector, _own, control) => {
@@ -406,7 +435,7 @@ describe('поле: атрибуты потребителя делятся ме�
 
 			expect(el.hasAttribute('title')).toBe(false)
 			expect(input.getAttribute('title')).toBe('probe')
-			expect(input.hasAttribute('class')).toBe(false)
+			expect(input.classList.contains('mine')).toBe(false)
 			expect(input.hasAttribute('style')).toBe(false)
 		},
 	)
@@ -432,6 +461,11 @@ describe('поле: атрибуты потребителя делятся ме�
 		},
 	)
 
+	/**
+	 * У ввода NumberInput `dir` называет и ядро — направление числа в формате
+	 * (`inputAttrs`), у `en-US` тот же `ltr`: на поле он стоит при любом
+	 * `direction` поля.
+	 */
 	it.each(FIELDS)(
 		'%s: dir ядра — на корне, dir потребителя — на поле',
 		(_name, host, selector, _own, control) => {

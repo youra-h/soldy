@@ -3,9 +3,11 @@
  *
  * Разметка сервера несёт то, что поле пишет само: текст — атрибутом `value`
  * (директива текста поля пишет его в узел эмуляции DOM, а она отдаёт его
- * атрибутом), у `<textarea>` — её содержимым, отметку — атрибутом `checked`,
- * наборы `aria` и `clearAria` — на `<input>` и кнопке очистки, а атрибуты
- * потребителя — уже на поле: их туда перенесла база.
+ * атрибутом), у `<textarea>` — её содержимым, у NumberInput — строкой формата
+ * по локали поддерева, а число — в скрытом поле формы, отметку — атрибутом
+ * `checked`, наборы `aria` и `clearAria` — на `<input>` и кнопке очистки,
+ * имена кнопок шага — на них, а атрибуты потребителя — уже на поле: их туда
+ * перенесла база.
  *
  * При гидратации Angular ставит статические атрибуты разметки потребителя на
  * узел сервера заново, и база переносит их так же — на `<input>` из разметки
@@ -18,10 +20,13 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, signal, type ApplicationRef } from '@angular/core'
+import { ruRU } from '@soldy-ui/plugins'
 import {
+	LocaleProviderDirective,
 	TCheckBoxComponent,
 	TInputComponent,
 	TLabelComponent,
+	TNumberInputComponent,
 	TSwitchComponent,
 	TTextareaComponent,
 } from '@soldy-ui/angular'
@@ -36,7 +41,9 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 		TCheckBoxComponent,
 		TSwitchComponent,
 		TInputComponent,
+		TNumberInputComponent,
 		TTextareaComponent,
+		LocaleProviderDirective,
 	],
 	template: `<label so-label text="Согласен" class="agree"
 			><span so-check-box [value]="checked()" title="Согласие"></span
@@ -60,13 +67,28 @@ import { hydrate, leavePage, loadPage, renderOnServer } from './server'
 			counter
 			[maxlength]="200"
 			direction="rtl"
-		></div>`,
+		></div>
+		<ng-container so-locale-provider [locale]="locale">
+			<div
+				so-number-input
+				[value]="amount()"
+				[min]="0"
+				title="Сколько"
+				class="amount"
+				name="Количество"
+			></div>
+		</ng-container>`,
 })
 class FieldsPage {
 	readonly checked = signal(true)
 	readonly text = signal('abc')
 	readonly note = signal('строка\nещё')
+	readonly amount = signal<number | undefined>(1234.5)
+	readonly locale = ruRU
 }
+
+/** Число строкой формата `ru-RU`, как его пишет поле. */
+const ruNumber = (value: number) => new Intl.NumberFormat('ru-RU').format(value)
 
 /** Страница сервера, разобранная документом, — как её получил бы браузер. */
 async function serverPage(): Promise<Document> {
@@ -139,6 +161,40 @@ describe('серверный рендер', () => {
 		expect(counter.id).not.toBe('')
 		expect(textarea.getAttribute('aria-describedby')).toBe(counter.id)
 	})
+
+	/**
+	 * Текст ввода — буфер правки ядра: директива текста поля пишет его в узел
+	 * эмуляции DOM, и она отдаёт его атрибутом `value` — строкой формата по
+	 * локали поддерева. В форму уходит скрытое поле с числом, а не текст. Имена
+	 * кнопок шага плагин имён пишет при установке: они есть уже в разметке
+	 * сервера.
+	 */
+	it('NumberInput — текст в формате локали поддерева, число в скрытом поле, имена кнопок шага', async () => {
+		const page = await serverPage()
+		const root = find(page, '[so-number-input]', HTMLElement)
+		const input = find(root, '.so-number-input__input', HTMLInputElement)
+		const hidden = find(root, 'input[type="hidden"]', HTMLInputElement)
+
+		expect(input.getAttribute('value')).toBe(ruNumber(1234.5))
+		expect(input.getAttribute('lang')).toBe('ru-RU')
+		expect(input.getAttribute('role')).toBe('spinbutton')
+		expect(input.getAttribute('aria-valuenow')).toBe('1234.5')
+		expect(input.getAttribute('aria-valuemin')).toBe('0')
+		expect(input.getAttribute('inputmode')).toBe('decimal')
+		expect(input.getAttribute('title')).toBe('Сколько')
+		expect(input.hasAttribute('name')).toBe(false)
+		expect(root.hasAttribute('title')).toBe(false)
+		expect([...root.classList]).toEqual(expect.arrayContaining(['amount', 'so-number-input']))
+		expect(hidden.getAttribute('name')).toBe('Количество')
+		expect(hidden.getAttribute('value')).toBe('1234.5')
+		expect(hidden.hasAttribute('title')).toBe(false)
+		expect(
+			find(root, '.so-number-input__increment', HTMLButtonElement).getAttribute('aria-label'),
+		).toBe('Увеличить Количество')
+		expect(
+			find(root, '.so-number-input__decrement', HTMLButtonElement).getAttribute('tabindex'),
+		).toBe('-1')
+	})
 })
 
 /** Разметка сервера в документе и гидратация над ней: приложение браузера и его страница. */
@@ -173,6 +229,9 @@ describe('гидратация', () => {
 		const clear = find(document, '.so-input__clear', HTMLButtonElement)
 		const textarea = find(document, '[so-textarea] textarea', HTMLTextAreaElement)
 		const counter = find(document, '.so-textarea__counter', HTMLElement)
+		const amount = find(document, '.so-number-input__input', HTMLInputElement)
+		const hidden = find(document, '[so-number-input] input[type="hidden"]', HTMLInputElement)
+		const increment = find(document, '.so-number-input__increment', HTMLButtonElement)
 		const app = await hydrate(FieldsPage)
 
 		await app.whenStable()
@@ -182,6 +241,12 @@ describe('гидратация', () => {
 		expect(find(document, '.so-input__clear', HTMLButtonElement)).toBe(clear)
 		expect(find(document, '[so-textarea] textarea', HTMLTextAreaElement)).toBe(textarea)
 		expect(find(document, '.so-textarea__counter', HTMLElement)).toBe(counter)
+		expect(find(document, '.so-number-input__input', HTMLInputElement)).toBe(amount)
+		expect(find(document, '[so-number-input] input[type="hidden"]', HTMLInputElement)).toBe(
+			hidden,
+		)
+		expect(find(document, '.so-number-input__increment', HTMLButtonElement)).toBe(increment)
+		expect(document.querySelectorAll('.so-number-input__input')).toHaveLength(1)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})
@@ -239,5 +304,34 @@ describe('гидратация', () => {
 		expect(textarea.getAttribute('aria-describedby')).toBe(
 			find(root, '.so-textarea__counter', HTMLElement).id,
 		)
+	})
+
+	/**
+	 * Узел ввода уже держит текст сервера в формате локали, и директива его не
+	 * переписывает; смена значения после гидратации доходит до ввода строкой
+	 * формата и до скрытого поля числом.
+	 */
+	it('NumberInput: текст сервера на месте, смена значения — в ввод и скрытое поле', async () => {
+		const { app, page } = await hydrated()
+		const root = find(document, '[so-number-input]', HTMLElement)
+		const input = find(root, '.so-number-input__input', HTMLInputElement)
+		const hidden = find(root, 'input[type="hidden"]', HTMLInputElement)
+
+		expect(input.value).toBe(ruNumber(1234.5))
+		expect(input.getAttribute('title')).toBe('Сколько')
+		expect(root.hasAttribute('title')).toBe(false)
+		expect(hidden.value).toBe('1234.5')
+
+		page.amount.set(2000)
+		await app.whenStable()
+
+		expect(input.value).toBe(ruNumber(2000))
+		expect(hidden.value).toBe('2000')
+
+		page.amount.set(undefined)
+		await app.whenStable()
+
+		expect(input.value).toBe('')
+		expect(hidden.value).toBe('')
 	})
 })

@@ -96,6 +96,11 @@ describe('хост Angular', () => {
 		['icon', '.so-icon'],
 		['skeleton', '.so-skeleton'],
 		['input', '.so-input'],
+		// Коробка поля и её части: ввод, ряд кнопок шага, сами кнопки и их значки
+		[
+			'number-input',
+			'.so-number-input, .so-number-input__input, .so-number-input__stepper, .so-number-input__decrement, .so-number-input__increment, .so-number-input svg',
+		],
 		// Корень и поле внутри: корень — `<div so-textarea>`, как `div` у Vue, а
 		// рамкой его делает тема
 		['textarea', '.so-textarea, .so-textarea textarea'],

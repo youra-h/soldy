@@ -118,15 +118,16 @@
   Icon, `span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
   `div[so-frame], [so-frame]` у Frame, `label[so-label], [so-label]` у Label,
   `div[so-field], [so-field]` у Field; у полей — `div[so-input], [so-input]`,
-  `div[so-textarea], [so-textarea]`, `span[so-check-box], [so-check-box]`,
-  `span[so-switch], [so-switch]`; у коллекций — владельцы, их элементы и
-  панель таба: `div[so-list-box]`, `div[so-list-box-item]`,
-  `div[so-list-box-group]`, `div[so-tabs]`, `div[so-tabs-item]`,
-  `div[so-tabs-content]`, `div[so-accordion]`, `div[so-accordion-item]`,
-  `div[so-radio-group]`, `label[so-radio-group-item]` (у каждого — и голый
-  атрибут); у таблицы — окно `div[so-table], [so-table]` и части, которые она
-  рисует сама: заголовок колонки `th[so-table-column], [so-table-column]` и
-  строка `tr[so-table-row], [so-table-row]`. Без тега — только
+  `div[so-number-input], [so-number-input]`, `div[so-textarea], [so-textarea]`,
+  `span[so-check-box], [so-check-box]`, `span[so-switch], [so-switch]`; у
+  коллекций — владельцы, их элементы и панель таба: `div[so-list-box]`,
+  `div[so-list-box-item]`, `div[so-list-box-group]`, `div[so-tabs]`,
+  `div[so-tabs-item]`, `div[so-tabs-content]`, `div[so-accordion]`,
+  `div[so-accordion-item]`, `div[so-radio-group]`, `label[so-radio-group-item]`
+  (у каждого — и голый атрибут); у таблицы — окно `div[so-table], [so-table]` и
+  части, которые она рисует сама: заголовок колонки
+  `th[so-table-column], [so-table-column]` и строка
+  `tr[so-table-row], [so-table-row]`. Без тега — только
   `[so-component-view]` и `[so-skeleton]`. Потребитель пишет
   `<button so-button>`, `<a so-button href>`, `<div so-input>`,
   `<span so-check-box>` — какой тег написан, так элемент себя и ведёт. Первым
@@ -267,18 +268,25 @@
   раскладки со своей памятью спорили бы за общее имя: снимая своё, одна
   снимала бы и значение другой. Какие наборы база кладёт на корень, задаёт
   описание корня (`sets`, по умолчанию все три): у поля — `attrs` и
-  `dataset`.
+  `dataset`. Директива на элементе одна, поэтому наборы, которые разметка
+  кладёт на один узел, она получает одним объектом, склеенными в порядке Vue:
+  `aria` и `dataset` строки элемента списка, `inputAttrs`, `aria` и
+  `inputAria` ввода NumberInput, имя и `data-pressed` его кнопки шага
+  (`decrementAria` и `decrementDataset`).
   Сторожат `attributes.spec.ts` (набор на элементе; набор владельца на
   `<div so-button>` главнее её роли и `tabindex` с первой отрисовки, смена
   своего у кнопки его не снимает, снятое владельцем возвращает значение
-  кнопки; порядок записи в раскладчик не важен) и `input.spec.ts` (`clearAria`
-  на кнопке очистки рядом с её наборами).
+  кнопки; порядок записи в раскладчик не важен), `input.spec.ts` (`clearAria`
+  на кнопке очистки рядом с её наборами) и `number-input.spec.ts` (три набора
+  на вводе, `data-pressed` удержания на кнопке шага).
 - **Поле: атрибуты потребителя делятся между корнем и `<input>`**, как у Vue
   и React: класс и стиль — корню, всё остальное, что потребитель написал на
-  поле, — `<input>`. Описание корня `control` у Input, Textarea, CheckBox и
-  Switch (`{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`)
+  поле, — `<input>`. Описание корня `control` у Input, NumberInput, Textarea,
+  CheckBox и Switch (`{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`)
   называет базе узел шаблона `#control`, и написанное доходит до него двумя
-  путями. **Статику** — `autocomplete`, `data-*`, `title` в разметке — Angular
+  путями; у NumberInput `#control` — ввод числа, а скрытое поле формы
+  написанного потребителем не получает. **Статику** — `autocomplete`,
+  `data-*`, `title` в разметке — Angular
   ставит на хост ещё до конструктора, и её переносит база (`_moveAttributes`):
   снимает с хоста тем же приёмом, что атрибуты-входы, а на поле ставит
   эффектом, раньше, чем шаблон поля положит на него `aria` (имя, которое
@@ -318,7 +326,7 @@
   из разметки — на поле), спеки ListBox, Tabs и Accordion (класс и стиль —
   корню элемента, остальное — строке; у ListBox и Tabs `aria-label`, `id` и
   `data-*` — узлу списка, `tabindex="-1"` снимает ListBox с остановок Tab) и
-  `attrs.spec.ts` (привязки и слушатели — таблицей по всем одиннадцати).
+  `attrs.spec.ts` (привязки и слушатели — таблицей по всем двенадцати).
 - **Рендерер адаптера — `provideAttrs()`** (`src/adapter/attrs/`). Компилятор
   Vue собирает всё, что написано на компоненте, в объект и отдаёт его
   компоненту (`$attrs`), а компилятор Angular превращает `[attr.x]`, `[x]` и
@@ -382,7 +390,7 @@
   анимаций не станет (Angular 23). Не чинится: событие, пришедшее до
   гидратации, сервер просит повторить на хосте (`jsaction`), а `focus` не
   всплывает — фокус в поле до гидратации `(focus)` не повторит. Сторожат
-  `attrs.spec.ts` (таблица по одиннадцати компонентам: `[attr.x]` и
+  `attrs.spec.ts` (таблица по двенадцати компонентам: `[attr.x]` и
   `[aria-label]` — на узле, смена, `null` снимает; `[title]` — на узле; класс,
   `[class.x]`, стиль, атрибут инкапсуляции и `ng-version` — на корне; `(focus)`
   и `(blur)` — от узла; `(transitionend)` и `(soElementReady)` — у корня;
@@ -391,8 +399,9 @@
   узла, снятый атрибут, что остаётся на хосте, отписка до и после снятия),
   `attrs.server.spec.ts` (сервер: статика и привязки на узле, `ngh` на хосте;
   гидратация: узел тот же, второго нет, смена привязки и `(focus)` — на нём)
-  и `attrs-required.spec.ts` (приложение без провайдера: Input и Table бросают
-  ошибку, Button собирается; провайдер в инжекторе маршрута — тоже ошибка).
+  и `attrs-required.spec.ts` (приложение без провайдера: Input, NumberInput и
+  Table бросают ошибку, Button собирается; провайдер в инжекторе маршрута —
+  тоже ошибка).
 - **Текст поля — директива `[so-field-text]`** (`FieldTextDirective`,
   `src/adapter/runtime/field-text.directive.ts`), как `fieldText` у Svelte и
   Solid и поле адаптера React: пишет текст в узел сеттером входа, только когда
@@ -401,12 +410,15 @@
   каретку такая запись не двигает, но снимает с поля пометку «изменено
   пользователем», и браузер перестаёт проверять `minlength` и `maxlength`. На
   сервере тот же сеттер пишет текст в узел эмуляции, и она отдаёт его
-  атрибутом `value`, а у `<textarea>` Textarea — её содержимым. Отметку и
-  «выбрано частично» флажка шаблон пишет привязками `[checked]` и
-  `[indeterminate]`: их запись, совпавшая с узлом, ничего у поля не снимает.
-  Сторожат `input.spec.ts` и `textarea.spec.ts` («набор не переписывает
-  поле», у Input — ещё «ввод в середину текста — каретка на месте»),
-  `checkable.spec.ts` и `fields.server.spec.ts`.
+  атрибутом `value`, а у `<textarea>` Textarea — её содержимым. У NumberInput
+  директива пишет не значение, а буфер правки ядра (`text`): пока набирают —
+  набранное, после — строку формата локали; число уходит в скрытое поле
+  формы. Отметку и «выбрано частично» флажка шаблон пишет привязками
+  `[checked]` и `[indeterminate]`: их запись, совпавшая с узлом, ничего у поля
+  не снимает. Сторожат `input.spec.ts`, `textarea.spec.ts` и
+  `number-input.spec.ts` («набор не переписывает поле», у Input — ещё «ввод в
+  середину текста — каретка на месте»), `checkable.spec.ts` и
+  `fields.server.spec.ts`.
 - **Инстанс ядра в шаблоне — `instance()` базы**: внешний `ctrl` или
   собранный в `ngOnInit`. Шаблон отдаёт его в scope слотов (`{ ctrl }` у Input
   и Switch) и зовёт его команды (`clear` кнопки очистки), как `ctrl` в шаблоне

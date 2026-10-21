@@ -20,6 +20,7 @@ import {
 	TLabelComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TNumberInputComponent,
 	TProgressSpinnerComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
@@ -249,6 +250,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	button: { component: TButtonComponent },
 
 	input: { component: TInputComponent },
+	'number-input': { component: TNumberInputComponent },
 
 	textarea: { component: TTextareaComponent },
 
