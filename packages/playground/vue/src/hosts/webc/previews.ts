@@ -1,3 +1,4 @@
+import type { TToastsItemType } from '@soldy-ui/core'
 import {
 	COLLECTION_ITEMS,
 	COLLECTION_MANY_ITEMS,
@@ -5,7 +6,11 @@ import {
 	TABLE_MANY_ROWS,
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
+	TOASTS_ITEM_TYPES,
+	TOAST_SAVING,
+	toastSample,
 } from '@soldy-ui/playground-shared'
+import { toastsOf, type TToastRender } from '@soldy-ui/webc'
 
 /**
  * Как рисовать компонент на стенде — в Web Components.
@@ -73,11 +78,20 @@ export type TPreview = {
 	 * CheckBox, Switch, Slider и Rating — элемент soldy со своими пропсами, в
 	 * слоте по умолчанию которого лежит компонент, — а у таблицы, полосы
 	 * ProgressLinear и ленты Scroller граница ширины, `div` со стилем (у
-	 * таблицы — от пропсов строки). Пропсы строки, `ctrl` и слушатели — у
-	 * компонента, обёртке пропсы задаёт описание. Код колонок обёртку не
-	 * показывает: он про компонент.
+	 * таблицы — от пропсов строки), у выезжающей панели — её контейнер. Пропсы
+	 * строки, `ctrl` и слушатели — у компонента, обёртке пропсы задаёт
+	 * описание. Код колонок обёртку не показывает: он про компонент.
 	 */
 	readonly wrapper?: TPreview
+	/**
+	 * Кнопка, которая открывает компонент, — её подпись: окно и выезжающую
+	 * панель на стенде открывает кнопка, как у Vue, — закрытые они спрятаны, а
+	 * открытые накрывают страницу подложкой. Button встаёт в обёртку перед
+	 * компонентом, и нажатие пишет компоненту `visible = true`, как кнопка
+	 * превью Vue — своё состояние `v-model:visible`. Без обёртки кнопке негде
+	 * стоять: корень превью — один узел.
+	 */
+	readonly opener?: string
 }
 
 /** Пропсы элемента — свойствами, по имени. */
@@ -129,6 +143,112 @@ const paragraph = (value: string) => (): Node => {
 
 /** Кнопка с подписью — в слоте: триггер поповера и подсказки, кнопка в панели. */
 const button = (text: string): TPreview => ({ tag: 'button', is: 'so-button', props: { text } })
+
+/**
+ * Строчная подпись — в именованном слоте: заголовок окна и выезжающей панели.
+ * Текст без элемента атрибута `slot` не несёт и ушёл бы в слот по умолчанию.
+ */
+const caption = (value: string) => (): Node => {
+	const node = document.createElement('span')
+
+	node.textContent = value
+
+	return node
+}
+
+/** Поле с подсказкой — в теле окна и выезжающей панели, как у Vue. */
+const field = (placeholder: string): TPreview => ({
+	tag: 'div',
+	is: 'so-input',
+	props: { placeholder },
+})
+
+/**
+ * Кнопка подвала окна и выезжающей панели — как у Vue: нажатие закрывает их
+ * записью открытости (`visible = false`). Свою панель кнопка находит по месту
+ * — ближайший предок с классом панели: окно, увезённое в цель, держит её в
+ * себе.
+ */
+const closing = (text: string) => (): Node => {
+	const node = soldy('button', 'so-button', { text })
+
+	node.addEventListener('click', () => {
+		const panel = node.closest('.so-dialog, .so-drawer')
+
+		if (panel) Reflect.set(panel, 'visible', false)
+	})
+
+	return node
+}
+
+/** Своё содержимое тоста — кнопка «Отменить»: тост приходит ей параметром и закрывается ею. */
+const undo: TToastRender = (toast) => {
+	const node = soldy('button', 'so-button', { text: 'Отменить' })
+
+	node.addEventListener('click', () => toast.close())
+
+	return node
+}
+
+/**
+ * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
+ * у своего места (`toastsOf`) и показывают тост, как кнопки превью Vue —
+ * `useToasts()`. Менеджер оборачивает их, как приложение, а регион с тостами
+ * уехал к краю окна, мимо ячейки превью.
+ *
+ * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`). Что
+ * сообщает тост, — образцы стенда, одни на все хосты (`toastSample`), своё
+ * содержимое к ним — кнопка «Отменить» этого хоста. Текст начинается с номера:
+ * в стопке видно, какой тост где. Последняя кнопка — ожидание: «Сохраняем…» с
+ * кольцом на месте значка сам не закрывается, а через пару секунд тот же тост
+ * сообщает успех. Ряд кнопок — с переносом, как у Vue. Номера — свои у каждой
+ * отрисовки ряда.
+ */
+const toastsTrigger = (): Node => {
+	const row = document.createElement('div')
+	let count = 0
+
+	row.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px'
+
+	const notify = (node: Element, type?: TToastsItemType) => {
+		const sample = toastSample(type, undo)
+
+		count += 1
+		toastsOf(node).show({ ...sample, text: `${count}. ${sample.text}`, type })
+	}
+
+	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	const save = (node: Element) => {
+		count += 1
+
+		const toast = toastsOf(node).show({ text: `${count}. Сохраняем…`, loading: true })
+		const done = `${count}. Сохранено`
+
+		setTimeout(() => {
+			if (!toast) return
+
+			toast.loading = false
+			toast.type = 'success'
+			toast.text = done
+		}, TOAST_SAVING)
+	}
+
+	const action = (text: string, act: (node: Element) => void): Node => {
+		const node = soldy('button', 'so-button', { text })
+
+		node.addEventListener('click', () => act(node))
+
+		return node
+	}
+
+	row.append(
+		action('обычное', (node) => notify(node)),
+		...TOASTS_ITEM_TYPES.map((type) => action(type, (node) => notify(node, type))),
+		action('загрузка → готово', save),
+	)
+
+	return row
+}
 
 /**
  * Граница ширины — как у Vue: сцена ячейки — флексбокс, и полоса или лента
@@ -357,6 +477,44 @@ export const PREVIEWS: Record<string, TPreview> = {
 			default: [text('Короткое пояснение к кнопке')],
 		},
 	},
+
+	// Окно открывает кнопка, как у Vue: закрытое оно спрятано, а открытое
+	// накрывает страницу подложкой. Кнопка и окно — прямо в ячейке: обёртка без
+	// коробки. Окно уезжает в `body`, в ячейке — его якорь; кнопки подвала его
+	// закрывают
+	dialog: {
+		tag: 'div',
+		is: 'so-dialog',
+		opener: 'Открыть окно',
+		slots: {
+			title: [caption('Настройки')],
+			default: [paragraph('Произвольное содержимое: текст, поля, кнопки'), field('Имя')],
+			footer: [closing('Отмена'), closing('Сохранить')],
+		},
+		wrapper: { tag: 'div', style: () => 'display:contents' },
+	},
+
+	// Выезжающую панель тоже открывает кнопка. Кнопка и панель — в своей коробке
+	// с `position: relative`, как у Vue: с `contained` панель не уезжает, а
+	// встаёт в ней, и строка `contained` показывает её в коробке превью
+	drawer: {
+		tag: 'div',
+		is: 'so-drawer',
+		opener: 'Открыть панель',
+		slots: {
+			title: [caption('Фильтры')],
+			default: [paragraph('Произвольное содержимое: текст, поля, кнопки'), field('Поиск')],
+			footer: [closing('Сбросить'), closing('Применить')],
+		},
+		wrapper: {
+			tag: 'div',
+			style: () => 'position:relative; width:100%; min-height:240px; overflow:hidden',
+		},
+	},
+
+	// Менеджер — автономный элемент без коробки, своим тегом, вокруг ряда
+	// кнопок, которые показывают тосты из кода. Регион с тостами — у края окна
+	toasts: { tag: 'so-toasts', slots: { default: [toastsTrigger] } },
 
 	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
 	// (`<div is="so-button-div">`): её строит шаблон элемента. Пришли данными

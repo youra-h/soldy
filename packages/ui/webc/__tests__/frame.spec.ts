@@ -251,6 +251,24 @@ describe('Frame · телепорт', () => {
 		expect(anchors(place)).toHaveLength(1)
 	})
 
+	/**
+	 * Спутник — подложку окна — строит шаблон, а у Frame его нет: в цель
+	 * уезжает он один, и на месте, с `contained`, рядом с ним ничего не встаёт.
+	 */
+	it('без спутника: в цели и на месте — только сам Frame', async () => {
+		const place = mount('<span class="before"></span><div is="so-frame" visible></div>')
+		const node = frame()
+
+		expect([...document.body.children]).toEqual([place, node])
+
+		node.contained = true
+		await flush()
+
+		expect(node.previousElementSibling?.className).toBe('before')
+		expect([...place.children]).toEqual([node.previousElementSibling, node])
+		expect([...document.body.children]).toEqual([place])
+	})
+
 	it('target уводит узел в свою цель, смена target — в новую тем же узлом', async () => {
 		const first = addTarget('first')
 		const second = addTarget('second')

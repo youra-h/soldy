@@ -27,6 +27,11 @@ export * from './scroller'
 export * from './frame'
 export * from './popover'
 export * from './tooltip'
+export * from './dialog'
+export * from './drawer'
+// Менеджер тостов — слой и коллекция: модуль менеджера регистрирует тост после
+// себя
+export * from './toasts'
 // Окно и перестановка — раньше коллекций: при апгрейде разметки элемент,
 // зарегистрированный раньше, собирается раньше, и коллекции в обёртке его
 // находят
