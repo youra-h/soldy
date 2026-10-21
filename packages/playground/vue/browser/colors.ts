@@ -48,6 +48,11 @@ export const settled = (element: Element): Promise<unknown> =>
  * ступеней и `oklab()` у вуали, а не `rgb()`. Канва принимает любую из этих
  * записей, кладёт слой на слой ровно так же, как страница, и отдаёт
  * получившиеся байты sRGB.
+ *
+ * Строку, которая не цвет, холст молча пропускает и кладёт слой прежним
+ * цветом — от прошлого вызова. Так `none` у `fill` отметки совпал бы с цветом,
+ * прочитанным перед ним, и сверка прошла бы на чужом цвете. Поэтому такая
+ * строка роняет тест здесь.
  */
 const paint = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
 
@@ -57,11 +62,28 @@ export function pixel(colors: string[]): Uint8ClampedArray {
 	paint.clearRect(0, 0, 1, 1)
 
 	for (const color of colors) {
+		if (!CSS.supports('color', color)) throw new Error(`${color}: не цвет`)
+
 		paint.fillStyle = color
 		paint.fillRect(0, 0, 1, 1)
 	}
 
 	return paint.getImageData(0, 0, 1, 1).data
+}
+
+/**
+ * Цвет градиента в фоне узла — первый цвет в `background-image`. Так тема
+ * кладёт слой одного цвета поверх `background-color`: заливку текущей
+ * страницы Pagination — переход фона её не ведёт, — и линию под закреплённой
+ * шапкой Table нижним пикселем фона. Градиента нет — тест падает здесь.
+ */
+export function gradientColor(element: Element): string {
+	const image = style(element).backgroundImage
+	const color = /(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\)/.exec(image)
+
+	if (!color) throw new Error(`градиента в фоне нет: ${image}`)
+
+	return color[0]
 }
 
 /**
