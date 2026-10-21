@@ -218,22 +218,16 @@ const TEXT = 'Произвольное содержимое: текст, пол�
 
 /**
  * Рамки триггера и открытой панели с её частями — от угла триггера: панель
- * встаёт у якоря, и её место сверяется не от угла окна, а от него. Меряется,
- * когда привязка досчитала место (кадры после показа) и доиграли переходы
- * темы — проявление панели.
+ * встаёт у якоря, и её место сверяется не от угла окна, а от него. Панели
+ * нет — пусто.
  */
-async function measure(parts: string): Promise<TBox[]> {
-	await nextFrame()
-	await nextFrame()
-	await Promise.all(document.getAnimations().map((animation) => animation.finished))
-	await nextFrame()
-
+function boxesOf(parts: string): TBox[] {
 	const trigger = document.querySelector('.so-test-trigger')
 	const found = [...document.querySelectorAll(parts)].filter(
 		(node) => node.getClientRects().length > 0,
 	)
 
-	if (!trigger || found.length === 0) throw new Error(`${parts}: открытой панели нет`)
+	if (!trigger || found.length === 0) return []
 
 	const origin = trigger.getBoundingClientRect()
 
@@ -247,6 +241,29 @@ async function measure(parts: string): Promise<TBox[]> {
 			height: Math.round(box.height),
 		}
 	})
+}
+
+/**
+ * Рамки, когда панель встала: доиграли переходы темы — проявление панели, — и
+ * два кадра подряд рамки те же. Место панели привязка досчитывает кадром после
+ * показа, а под нагрузкой кадры идут реже, и число кадров не загадывается.
+ */
+async function measure(parts: string): Promise<TBox[]> {
+	let previous = ''
+
+	for (let frame = 0; frame < 60; frame += 1) {
+		await nextFrame()
+		await Promise.all(document.getAnimations().map((animation) => animation.finished))
+
+		const boxes = boxesOf(parts)
+		const current = JSON.stringify(boxes)
+
+		if (boxes.length > 0 && current === previous) return boxes
+
+		previous = current
+	}
+
+	throw new Error(`${parts}: открытая панель не встала за 60 кадров`)
 }
 
 /** Vue: компонент в блоке, меряется и снимается — следующей отрисовке он не мешает. */
