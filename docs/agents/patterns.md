@@ -1149,7 +1149,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   — `unknown` в ядре**: ядро его не читает, это значение разметки, и тип ему
   даёт адаптер — во Vue, React, Svelte и Solid компонент своего фреймворка с
   пропом `toast` (`TToastRender`, через API `useToasts()`; у React — и
-  объект-компонент `memo`, `forwardRef`, `lazy`, но не готовый элемент), у Web
+  объект-компонент `memo`, `forwardRef`, `lazy`, но не готовый элемент), у
+  Angular — класс компонента со входом `toast` (тоже `useToasts()`), у Web
   Components — функция, которая получает тост и отдаёт узел (через
   `toastsOf`), а рисует его разметка после проверки (`isToastRender`), без
   приведения. Правило общее: значение, которое
@@ -1172,10 +1173,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   (сверх сценариев Vue — регион в цели, приложение на месте, атрибуты
   потребителя — на регионе, снятый менеджер уводит регион из цели;
   `toastsOf` изнутри окна в цели находит менеджер вокруг его места),
+  `ui/angular/__tests__/toasts.spec.ts` (сверх сценариев Vue — у `div` нет
+  коробки, а статика, класс, стиль, привязки и слушатель с него — на регионе;
+  `useToasts()` в поле компонента прямо в `<div so-toasts>` и в окне под
+  менеджером; без менеджера ошибку бросает `show`; `<ng-container so-toasts>` —
+  ошибка) и `ui/angular/__tests__/ssr.server.spec.ts` (на сервере региона нет,
+  после гидратации — те же узлы приложения и регион в `body`),
   `playground/vue/browser/toasts.spec.ts`,
   `playground/vue/browser/svelte-host.spec.ts` (регион Svelte с тостом стоит,
-  как у Vue) и `playground/vue/browser/webc-frame.spec.ts` с
-  `webc-host.spec.ts` (регион Web Components — так же); вид и ожидание — их
+  как у Vue), `playground/vue/browser/webc-frame.spec.ts` с
+  `webc-host.spec.ts` (регион Web Components — так же) и
+  `playground/vue/browser/angular-host.spec.ts` (регион Angular — так же); вид и ожидание — их
   группы «вид сообщения», «отсчёт», «значок» и «вид»; стопку — их группы
   «стопка» и `TToastsCascadePlugin`, а её движение —
   `playground/vue/browser/motion-mode.spec.ts`. **Web Components**
@@ -1183,6 +1191,14 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   приложения, корень — регион внутри него, и в цель уезжает он; API —
   `toastsOf(node)`, лифтом места от узла под менеджером, своё содержимое —
   функция `(toast) => Node` (`TToastRender`), слоты `item-*` — образцы.
+  **Angular** (`<div so-toasts>`): менеджер — атрибутом на элементе
+  потребителя, без коробки (`display: contents` пишет база), корень — регион
+  внутри него, и в цель уезжает он, а всё, что потребитель написал на `div`,
+  класс и стиль тоже, — региону; API — `useToasts()` в поле компонента под
+  менеджером, а из слоя лифта он читается на каждый `show`: компонент прямо в
+  `<div so-toasts>` Angular создаёт раньше, чем менеджер опустит API, — и
+  менеджера выше нет — ошибку бросает `show`; своё содержимое — класс
+  компонента со входом `toast`, слоты `item-*` — шаблоны.
 - **Slider** — Slider и Multi-Thumb Slider pattern, вариант на нативных
   `input[type="range"]`: поле на каждую ручку, прозрачное и без указателя
   (`pointer-events: none`). Роль, значение, границы, `disabled` и отправку

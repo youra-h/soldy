@@ -428,6 +428,54 @@ describe('хост Angular · превью своим шаблоном', () => {
 		expect(document.querySelector('.so-drawer, .so-drawer__backdrop')).toBe(null)
 	})
 
+	/**
+	 * Тосты показывают кнопки внутри менеджера, а API им даёт компонент под ним
+	 * (`useToasts()` полем) — превью своим шаблоном. Регион уехал в `body`, а в
+	 * узле превью — ряд кнопок; пропсы оболочки уходят входам превью и дальше
+	 * менеджеру, выходы хост слушает у него. Кнопка показывает тост со своим
+	 * содержимым хоста — «Отменить», — а снятое превью уносит регион.
+	 */
+	it('тосты: кнопка превью показывает тост в регионе, пропсы — менеджеру', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'toasts',
+			props: { placement: 'top-start' },
+			onEvent: (name) => events.push(name),
+		})
+		const region = document.querySelector('.so-toasts')
+
+		if (!(region instanceof HTMLElement)) throw new Error('региона нет')
+
+		expect(region.parentElement).toBe(document.body)
+		expect(region.classList).toContain('so-toasts--placement-top-start')
+		expect(textsOf(node, '.so-button')).toEqual([
+			'обычное',
+			'info',
+			'success',
+			'warning',
+			'error',
+			'загрузка → готово',
+		])
+
+		// Тост показывает кнопка, а перепроверяет приложение само, на своём такте
+		all(node, '.so-button')[0]?.click()
+		await nextFrame()
+
+		expect(textsOf(region, '.so-toasts-item__text')).toEqual(['1. Черновик сохранён'])
+		expect(textsOf(region, '.so-toasts-item__content .so-button')).toEqual(['Отменить'])
+		expect(events).toContain('change:shown')
+
+		handle.update({ placement: 'bottom-end' })
+
+		expect(region.classList).toContain('so-toasts--placement-bottom-end')
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(region.isConnected).toBe(false)
+	})
+
 	it('подсказка: ссылка триггера ведёт на панель с текстом, open — входом превью', () => {
 		const node = stage()
 		const events: string[] = []

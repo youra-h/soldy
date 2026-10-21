@@ -5,7 +5,8 @@
  *
  * Приложение здесь своё, без TestBed: в провайдерах спеков (`providers.ts`)
  * рендерер адаптера подключён всем. Компонент без внутреннего узла — Button —
- * собирается и без него. Провайдер не там, где подменяет рендерер приложения,
+ * собирается и без него. Менеджер тостов отдаёт написанное на нём региону — тоже
+ * рендерером адаптера. Провайдер не там, где подменяет рендерер приложения,
  * — в провайдерах маршрута, — тоже ошибка: реестр он даёт, а рендерер не
  * подменяет.
  */
@@ -25,6 +26,7 @@ import {
 	TInputComponent,
 	TNumberInputComponent,
 	TTableComponent,
+	TToastsComponent,
 	provideAttrs,
 } from '@soldy-ui/angular'
 
@@ -63,6 +65,7 @@ describe('без provideAttrs()', () => {
 		['Input', TInputComponent],
 		['NumberInput', TNumberInputComponent],
 		['Table', TTableComponent],
+		['Toasts', TToastsComponent],
 	])('%s бросает ошибку с подсказкой, что подключить и куда', async (_name, component) => {
 		const { injector } = await bare()
 

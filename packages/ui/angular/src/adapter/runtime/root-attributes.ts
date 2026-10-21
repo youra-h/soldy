@@ -76,7 +76,8 @@ export function classesOf(value: unknown): readonly string[] {
 /**
  * Стиль корня из слоёв состояния — снизу вверх: выход плагина раскладки
  * (`layout_styles`), поверх него стиль-выход самого компонента
- * (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`orderOf`).
+ * (`fractionStyle` у ProgressSpinner), место элемента коллекции (`orderOf`) и
+ * скрытие корня, который прячет база стилем (корень в слое внутри обёртки).
  * Из одноимённых свойств действует верхний слой.
  *
  * Слой — объект `имя → значение` с именами, как в CSS: так их пишут плагины и
@@ -102,12 +103,15 @@ export function stylesOf(...layers: readonly unknown[]): TRootStyles {
 }
 
 /**
- * Слой стиля с местом элемента коллекции — `order` фасада: ряд коллекции —
- * флексбокс, и элемент встаёт по номеру в коллекции, а не по месту в разметке.
- * Номера нет — слоя нет: у компонента своего места нет.
+ * Слой стиля с местом элемента коллекции — `order` фасада в свойстве стиля
+ * `property`, которое назвал компонент (`TRootSpec.order`): у элементов ListBox,
+ * Tabs и Accordion это CSS `order` — ряд коллекции флексбокс, и элемент встаёт
+ * по номеру в коллекции, а не по месту в разметке, — а у тоста глубина в
+ * стопке, `--so-toasts-depth`. Свойства или номера нет — слоя нет: у компонента
+ * своего места нет.
  */
-export function orderOf(value: unknown): object | undefined {
-	return typeof value === 'number' ? { order: value } : undefined
+export function orderOf(property: string | undefined, value: unknown): object | undefined {
+	return property !== undefined && typeof value === 'number' ? { [property]: value } : undefined
 }
 
 /**

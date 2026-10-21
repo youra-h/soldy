@@ -9,7 +9,9 @@
  * внутренний узел компонента, — а всё остальное, и то, что остаётся на хосте
  * (класс, стиль, служебные атрибуты Angular, метки soldy, входы, выходы
  * `so*`), отдаёт рендереру Angular как есть. Классы и стили (`addClass`,
- * `setStyle`) он не трогает вовсе: вид — у корня.
+ * `setStyle`) — вид хоста, и у хоста с коробкой рендерер их не трогает; у
+ * хоста без коробки (обёртка региона тостов) внешний узел компонента — узел
+ * внутри, и их рендерер тоже отдаёт записи хоста (`keepsLook`).
  *
  * Класс, а не `Proxy`: команды рендерера — его методы, и каждый виден
  * типами `Renderer2`.
@@ -107,19 +109,31 @@ export class TForwardingRenderer extends Renderer2 {
 	}
 
 	addClass(el: unknown, name: string): void {
-		this._delegate.addClass(el, name)
+		const host = this._registry.hostOf(el)
+
+		if (host && !host.keepsLook) host.addClass(this._delegate, name)
+		else this._delegate.addClass(el, name)
 	}
 
 	removeClass(el: unknown, name: string): void {
-		this._delegate.removeClass(el, name)
+		const host = this._registry.hostOf(el)
+
+		if (host && !host.keepsLook) host.removeClass(this._delegate, name)
+		else this._delegate.removeClass(el, name)
 	}
 
 	setStyle(el: unknown, style: string, value: unknown, flags?: RendererStyleFlags2): void {
-		this._delegate.setStyle(el, style, value, flags)
+		const host = this._registry.hostOf(el)
+
+		if (host && !host.keepsLook) host.setStyle(this._delegate, style, value, flags)
+		else this._delegate.setStyle(el, style, value, flags)
 	}
 
 	removeStyle(el: unknown, style: string, flags?: RendererStyleFlags2): void {
-		this._delegate.removeStyle(el, style, flags)
+		const host = this._registry.hostOf(el)
+
+		if (host && !host.keepsLook) host.removeStyle(this._delegate, style, flags)
+		else this._delegate.removeStyle(el, style, flags)
 	}
 
 	setProperty(el: unknown, name: string, value: unknown): void {

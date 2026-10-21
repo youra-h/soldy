@@ -11,6 +11,13 @@
  * элемент по ссылке, где бы тот ни стоял: привязки, содержимое, контексты DI
  * места (локаль провайдера вокруг Frame).
  *
+ * Корень бывает и узлом шаблона внутри обёртки — регион тостов в
+ * `<div so-toasts>` (`'wrapped'` со слоем): обёртка с приложением остаётся на
+ * месте, а в цель уезжает регион. Такой узел шаблон рисует, только пока слой
+ * на своём месте, и после ухода места рисует заново, поэтому корень телепорт
+ * читает при каждом приведении к месту (`root`): до отрисовки его нет, а новый
+ * узел — новый корень, и якорь прежнего уходит из разметки.
+ *
  * - Слой есть только в браузере, как оверлей CDK: переносит корень и решает,
  *   на своём ли он месте, эффект после отрисовки (`afterRenderEffect`),
  *   которого на сервере нет. Гидратация ищет узел там, где его нарисовал
@@ -68,6 +75,7 @@
  */
 
 import {
+	DOCUMENT,
 	DestroyRef,
 	afterEveryRender,
 	afterRenderEffect,
@@ -91,20 +99,22 @@ export const TELEPORT_ANCHOR = 'so-teleport'
 /** Спутника нет — у корня Frame. */
 const NO_COMPANION: Signal<Element | null> = signal(null).asReadonly()
 
-/** Корень увезён: якорь на его месте и цель, в которую его увёл перенос. */
+/** Корень увезён: сам узел, якорь на его месте и цель, в которую его увёл перенос. */
 type TAway = {
+	readonly node: Element
 	readonly anchor: Comment
 	readonly target: Element
 }
 
 /**
  * Переносит корень `root` по `place`, а спутника `companion` (см. шапку)
- * держит прямо перед ним. Спутник — узел шаблона, которого нет, пока шаблон
- * его не нарисовал (`null`), и который бывает новым. Зовётся в контексте
+ * держит прямо перед ним. Корень — элемент потребителя или узел шаблона
+ * внутри обёртки, которого нет, пока шаблон его не нарисовал (`null`), и
+ * который бывает новым; спутник — тоже узел шаблона. Зовётся в контексте
  * инъекции компонента: хукам после отрисовки и снятию нужен его инжектор.
  */
 export function teleportRoot(
-	root: Element,
+	root: () => Element | null,
 	place: TTeleportPlace,
 	companion: Signal<Element | null> = NO_COMPANION,
 ): Signal<boolean> {
@@ -122,31 +132,34 @@ export function teleportRoot(
 	 */
 	let wanted: Element | null = null
 
-	/** Корень в цели — якорь и цель; корень на месте — `null`. */
+	/** Корень в цели — узел, якорь и цель; корень на месте — `null`. */
 	let away: TAway | null = null
+
+	/** Документ компонента: в нём цель ищется по селектору. */
+	const document = inject(DOCUMENT)
 
 	/**
 	 * Корень уходит в цель; там, где его поставил Angular, встаёт якорь. Корень
 	 * уже увезён (сменилась цель) — якорь прежний. Зовётся только для корня в
 	 * документе: у него есть родитель, и якорю есть где встать.
 	 */
-	const moveTo = (target: Element): void => {
+	const moveTo = (node: Element, target: Element): void => {
 		let anchor = away?.anchor
 
 		if (anchor === undefined) {
-			anchor = root.ownerDocument.createComment(TELEPORT_ANCHOR)
-			root.replaceWith(anchor)
+			anchor = document.createComment(TELEPORT_ANCHOR)
+			node.replaceWith(anchor)
 		}
 
-		target.appendChild(root)
-		away = { anchor, target }
+		target.appendChild(node)
+		away = { node, anchor, target }
 	}
 
 	/** Корень возвращается к якорю, якорь уходит. */
 	const moveHome = (): void => {
 		if (away === null) return
 
-		away.anchor.replaceWith(root)
+		away.anchor.replaceWith(away.node)
 		away = null
 	}
 
@@ -157,42 +170,49 @@ export function teleportRoot(
 	 * эффект цели, а новый спутник появляется отрисовкой, после которой сверка
 	 * идёт всё равно.
 	 */
-	const escort = (): void => {
-		const node = untracked(companion)
+	const escort = (node: Element): void => {
+		const escorted = untracked(companion)
 
-		if (node === null) return
+		if (escorted === null) return
 
-		const parent = root.parentNode
+		const parent = node.parentNode
 
-		if (parent === null) node.remove()
-		else if (node.nextSibling !== root) parent.insertBefore(node, root)
+		if (parent === null) escorted.remove()
+		else if (escorted.nextSibling !== node) parent.insertBefore(escorted, node)
 	}
 
 	/**
 	 * Приводит корень к его месту — в цель `wanted` или на место — и ставит
 	 * перед ним спутника. Сначала сверяет, где корень на самом деле, с тем,
 	 * куда его увёл перенос: после сверки корень либо там, где его поставил
-	 * Angular, и якоря нет, либо в цели, а якорь — в документе.
+	 * Angular, и якоря нет, либо в цели, а якорь — в документе. Корень читается
+	 * без слежения, как спутник: новый узел появляется отрисовкой, после которой
+	 * сверка идёт всё равно. Узла корня нет — шаблон его ещё не нарисовал или
+	 * снял, — и ставить нечего.
 	 */
 	const settle = (): void => {
-		if (away !== null && root.parentNode !== away.target) {
-			// Angular вынул корень из цели или вставил обратно на место: старый
-			// якорь больше ничего не держит
+		const node = untracked(root)
+
+		if (away !== null && (away.node !== node || node.parentNode !== away.target)) {
+			// Angular вынул корень из цели или вставил обратно на место — или
+			// снял его и нарисовал новый: старый якорь больше ничего не держит
 			away.anchor.remove()
 			away = null
 		} else if (away !== null && !away.anchor.isConnected) {
 			// Место ушло из документа вместе с предком — корень уходит с ним
-			if (away.anchor.parentNode) away.anchor.replaceWith(root)
-			else root.remove()
+			if (away.anchor.parentNode) away.anchor.replaceWith(away.node)
+			else away.node.remove()
 
 			away = null
 		}
 
+		if (node === null) return
+
 		if (wanted === null) moveHome()
 		// Корень вне документа — места у него нет: ждёт, пока Angular его вставит
-		else if (root.parentNode !== wanted && root.isConnected) moveTo(wanted)
+		else if (node.parentNode !== wanted && node.isConnected) moveTo(node, wanted)
 
-		escort()
+		escort(node)
 	}
 
 	// Фаза записи: хуки меняют DOM, а раскладку не читают. Эффект — на смену
@@ -202,7 +222,7 @@ export function teleportRoot(
 			const contained = place.contained()
 			const selector = contained ? null : place.target()
 
-			wanted = selector === null ? null : root.ownerDocument.querySelector(selector)
+			wanted = selector === null ? null : document.querySelector(selector)
 			placed.set(contained || wanted !== null)
 			settle()
 		},
@@ -220,7 +240,7 @@ export function teleportRoot(
 		if (away === null) return
 
 		away.anchor.remove()
-		root.remove()
+		away.node.remove()
 		away = null
 	})
 
