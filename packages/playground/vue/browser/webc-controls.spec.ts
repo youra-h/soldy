@@ -114,6 +114,12 @@ async function pair(
 	html: string,
 	props: Record<string, unknown> = {},
 ): Promise<{ vue: HTMLElement; webc: HTMLElement }> {
+	// Указатель остался там, где его бросил прошлый тест или спек, а часть под
+	// ним наведением меняет коробку — звезда Rating поднимается масштабом:
+	// уводим его в угол страницы, в отступ блока. Не `unhover`: тот ставит
+	// указатель в центр `body`, а там встанет пара.
+	await userEvent.hover(document.body, { position: { x: 0, y: 0 } })
+
 	render(defineComponent({ render: () => h('div', { class: 'vue', style: BOX }, [vue()]) }))
 	await nextTick()
 
