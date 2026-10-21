@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TControl, TRadioGroup, createEngineTabs } from '@soldy-ui/core'
+import { TControl, TRadioGroup, TScroller, createEngineTabs } from '@soldy-ui/core'
 import {
 	TAccordionElement,
 	TAccordionItemElement,
@@ -24,8 +24,12 @@ import {
 	TListBoxElement,
 	TListBoxItemElement,
 	TNumberInputElement,
+	TPaginationElement,
 	TRadioGroupElement,
 	TRadioGroupItemElement,
+	TRatingElement,
+	TScrollerElement,
+	TSliderElement,
 	TSwitchElement,
 	TTabsElement,
 	TTabsItemElement,
@@ -127,6 +131,38 @@ const CASES: Record<string, TCase> = {
 		element: TSwitchElement,
 		owner: '[is="so-switch"]',
 		target: 'input',
+	},
+	// Фокус держит поле ручки, а корень — ряд звёзд вокруг
+	Rating: {
+		html: '<span is="so-rating"></span>',
+		element: TRatingElement,
+		owner: '[is="so-rating"]',
+		target: 'input',
+	},
+	// Фокус держат поля ручек, а корень — дорожка вокруг: поле первой ручки
+	Slider: {
+		html: '<span is="so-slider" value="[20,80]"></span>',
+		element: TSliderElement,
+		owner: '[is="so-slider"]',
+		target: '.so-slider__thumb input',
+	},
+	// Корень — `nav` без своей остановки: фокус — на кнопке текущей страницы
+	Pagination: {
+		html: '<nav is="so-pagination" total="50" value="3"></nav>',
+		element: TPaginationElement,
+		owner: '[is="so-pagination"]',
+		target: '[aria-current="page"]',
+		// Стрелка «назад» на третьей странице включена — остановка перед страницами
+		before: '.so-pagination__prev:not([disabled])',
+	},
+	'Scroller со своими остановками': {
+		html: `<div is="so-scroller">
+			<button class="target">A</button>
+			<button>B</button>
+		</div>`,
+		element: TScrollerElement,
+		owner: '[is="so-scroller"]',
+		target: '.target',
 	},
 	'RadioGroup.Item': {
 		html: `<div is="so-radio-group">
@@ -368,5 +404,28 @@ describe('RadioGroup · отметка по модели', () => {
 		ctrl.focused = true
 
 		expect(document.activeElement).toBe(target)
+	})
+})
+
+describe('Scroller · вьюпорт — остановка', () => {
+	/**
+	 * Своих остановок в ленте нет, а листать есть куда: остановка — сам
+	 * вьюпорт. Замер в jsdom нулевой, поэтому факт приносит инстанс — как
+	 * `scroller.spec.ts`.
+	 */
+	it('своих остановок нет — фокус на вьюпорте, а не на кнопке «вперёд»', async () => {
+		await mount('<div is="so-scroller"><span>A</span></div>')
+
+		const ctrl = ctrlOf(nodeOf('[is="so-scroller"]'))
+
+		if (!(ctrl instanceof TScroller)) throw new Error('у ленты нет инстанса ленты')
+
+		ctrl.notifyViewport({ canPrev: false, canNext: true, hasTabStops: false })
+		await flush()
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(nodeOf('.so-scroller__viewport'))
+		expect(ctrl.focused).toBe(true)
 	})
 })

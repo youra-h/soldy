@@ -40,10 +40,15 @@ import {
 	TListBoxElement,
 	TListBoxItemElement,
 	TNumberInputElement,
+	TPaginationElement,
+	TProgressLinearElement,
 	TProgressSpinnerElement,
 	TRadioGroupElement,
 	TRadioGroupItemElement,
+	TRatingElement,
+	TScrollerElement,
 	TSkeletonElement,
+	TSliderElement,
 	TSwitchElement,
 	TTabsContentElement,
 	TTabsElement,
@@ -62,10 +67,15 @@ import {
 	type TListBoxElementProps,
 	type TListBoxItemElementProps,
 	type TNumberInputElementProps,
+	type TPaginationElementProps,
+	type TProgressLinearElementProps,
 	type TProgressSpinnerElementProps,
 	type TRadioGroupElementProps,
 	type TRadioGroupItemElementProps,
+	type TRatingElementProps,
+	type TScrollerElementProps,
 	type TSkeletonElementProps,
+	type TSliderElementProps,
 	type TSwitchElementProps,
 	type TTabsContentElementProps,
 	type TTabsElementProps,
@@ -73,6 +83,7 @@ import {
 	type TTextareaElementProps,
 } from '@soldy-ui/webc'
 import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
+import { ownerStyles } from '../src/adapter/template'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
@@ -112,6 +123,26 @@ function isSpinner(node: Element | null): node is TProgressSpinnerElementProps {
 
 function isSkeleton(node: Element | null): node is TSkeletonElementProps {
 	return node instanceof TSkeletonElement
+}
+
+function isLine(node: Element | null): node is TProgressLinearElementProps {
+	return node instanceof TProgressLinearElement
+}
+
+function isSlider(node: Element | null): node is TSliderElementProps {
+	return node instanceof TSliderElement
+}
+
+function isRating(node: Element | null): node is TRatingElementProps {
+	return node instanceof TRatingElement
+}
+
+function isPagination(node: Element | null): node is TPaginationElementProps {
+	return node instanceof TPaginationElement
+}
+
+function isScroller(node: Element | null): node is TScrollerElementProps {
+	return node instanceof TScrollerElement
 }
 
 function isLabel(node: Element | null): node is TLabelElementProps {
@@ -206,7 +237,14 @@ const COMPONENTS: ReadonlyArray<
 	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', null],
 	['Icon', 'span', 'so-icon', isIcon, 'so-icon', null],
 	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', null],
+	['ProgressLinear', 'span', 'so-progress-linear', isLine, 'so-progress-linear', null],
 	['Skeleton', 'div', 'so-skeleton', isSkeleton, 'so-skeleton', null],
+	// Полей у ползунка столько, сколько ручек, а поле оценки указатель не ловит:
+	// атрибуты разметки у обоих остаются корню, как у Vue
+	['Slider', 'span', 'so-slider', isSlider, 'so-slider', null],
+	['Rating', 'span', 'so-rating', isRating, 'so-rating', null],
+	['Scroller', 'div', 'so-scroller', isScroller, 'so-scroller', null],
+	['Pagination', 'nav', 'so-pagination', isPagination, 'so-pagination', null],
 	['Label', 'label', 'so-label', isLabel, 'so-label', null],
 	['Field', 'div', 'so-field', isField, 'so-field', null],
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],
@@ -460,6 +498,10 @@ describe('раскладчик элемента', () => {
 })
 
 describe('корень связан с TElementPlugin', () => {
+	/**
+	 * Своё событие элемента — с него самого: страницы, которые рисует шаблон
+	 * пагинации, — элементы её коллекции, и их события тоже всплывают.
+	 */
 	it.each(COMPONENTS)('%s: so:element:ready приходит с корнем', async (_name, tag, is, guard) => {
 		const el = document.createElement(tag, { is })
 		const ready: unknown[] = []
@@ -467,7 +509,7 @@ describe('корень связан с TElementPlugin', () => {
 		expect(guard(el)).toBe(true)
 
 		el.addEventListener('so:element:ready', (event) => {
-			if (event instanceof CustomEvent) ready.push(event.detail)
+			if (event instanceof CustomEvent && event.target === el) ready.push(event.detail)
 		})
 		document.body.appendChild(el)
 		await nextFrame()
@@ -511,7 +553,52 @@ describe('стиль потребителя главнее стиля ядра',
 	})
 })
 
+/**
+ * Слой `aria` корня бывает из другого выхода (`TRootSpec.aria`): у Slider — из
+ * набора корня `rootAria`, а `aria` ползунка уходит полям ручек. Правило слоя
+ * то же: атрибут потребителя на корне главнее набора, своё база снимает.
+ */
+describe('слой aria корня из другого выхода', () => {
+	it('Slider: на корне — rootAria, атрибут потребителя главнее его имени', async () => {
+		const el = mount(
+			'<span is="so-slider" value="[20,80]" aria_label="Ядра" aria-label="Своё"></span>',
+			isSlider,
+		)
+
+		expect(el.getAttribute('role')).toBe('group')
+		expect(el.getAttribute('aria-label')).toBe('Своё')
+
+		// Одна ручка — набор корня пуст: роль база снимает, чужое имя — нет
+		el.value = 50
+		await flush()
+
+		expect(el.hasAttribute('role')).toBe(false)
+		expect(el.getAttribute('aria-label')).toBe('Своё')
+	})
+
+	it('Slider: aria ползунка на корень не ложится — у одной ручки он у поля', () => {
+		const el = mount('<span is="so-slider" value="30" aria_label="Громкость"></span>', isSlider)
+
+		expect(el.hasAttribute('aria-label')).toBe(false)
+		expect(el.querySelector('input')?.getAttribute('aria-label')).toBe('Громкость')
+	})
+})
+
 describe('стиль-выход компонента', () => {
+	it('ProgressLinear: стиль потребителя — поверх доли, смена доли его не трогает', async () => {
+		const el = mount(
+			'<span is="so-progress-linear" value="40" style="--so-progress-linear-percent: 90%"></span>',
+			isLine,
+		)
+
+		expect(el.style.getPropertyValue('--so-progress-linear-percent')).toBe('90%')
+
+		el.value = 60
+		await flush()
+
+		expect(el.style.getPropertyValue('--so-progress-linear-percent')).toBe('90%')
+	})
+
 	it('ProgressSpinner: стиль потребителя — поверх доли', () => {
 		const el = mount(
 			'<span is="so-progress-spinner" value="40" style="--so-progress-spinner-fraction: 0.9"></span>',
@@ -601,6 +688,63 @@ describe('раскладка стиля', () => {
 		applyStyles(node, stylesOf({}), applied)
 
 		expect(node.style.width).toBe('50px')
+	})
+})
+
+/**
+ * Стиль значением на узле шаблона — позиции ручек и меток Slider, доля
+ * заливки звезды Rating, распорки окна — кладёт шаблон (`ownerStyles`) тем же
+ * правилом, что база на корне: своё пишет и снимает, чужое не трогает.
+ */
+describe('стиль на узле шаблона', () => {
+	it('своё пишется и снимается, ушедшее из записи — тоже; памяти — у узла', () => {
+		const node = document.createElement('span')
+
+		ownerStyles(node, { '--so-slider-position': '20%', 'z-index': '2' })
+
+		expect(node.style.getPropertyValue('--so-slider-position')).toBe('20%')
+		expect(node.style.zIndex).toBe('2')
+
+		ownerStyles(node, { '--so-slider-position': '40%' })
+
+		expect(node.style.getPropertyValue('--so-slider-position')).toBe('40%')
+		expect(node.style.zIndex).toBe('')
+
+		ownerStyles(node, undefined)
+
+		expect(node.style.length).toBe(0)
+	})
+
+	it('свойство, записанное в узел мимо шаблона, переживает смену записи', () => {
+		const node = document.createElement('span')
+
+		ownerStyles(node, { '--so-slider-position': '20%' })
+		node.style.setProperty('--so-swipe-offset', '3px')
+		node.style.setProperty('--so-slider-position', '99%')
+
+		ownerStyles(node, { '--so-slider-position': '40%' })
+
+		expect(node.style.getPropertyValue('--so-swipe-offset')).toBe('3px')
+		expect(node.style.getPropertyValue('--so-slider-position')).toBe('99%')
+
+		ownerStyles(node, {})
+
+		expect(node.style.getPropertyValue('--so-swipe-offset')).toBe('3px')
+		expect(node.style.getPropertyValue('--so-slider-position')).toBe('99%')
+	})
+
+	it('Slider: свойство, записанное в ручку мимо шаблона, переживает шаг значения', async () => {
+		const el = mount('<span is="so-slider" value="20"></span>', isSlider)
+		const thumb = el.querySelector('.so-slider__thumb')
+
+		if (!(thumb instanceof HTMLElement)) throw new Error('ручки нет')
+
+		thumb.style.setProperty('--so-probe', '1')
+		el.value = 60
+		await flush()
+
+		expect(thumb.style.getPropertyValue('--so-slider-position')).toBe('60%')
+		expect(thumb.style.getPropertyValue('--so-probe')).toBe('1')
 	})
 })
 

@@ -6,8 +6,9 @@
  * часть стоит, пока задан её текст, ошибка — при `invalid` и на месте
  * подсказки. С контролом поле связывает проводка: поле опускает связку лифтом
  * своему хосту, контрол находит её вверх по документу. Labelable-контрол
- * (Input, NumberInput, CheckBox, Switch) подпись называет своим `for`, группу
- * (RadioGroup) — ссылкой `aria-labelledby`. Справку контрол получает в
+ * (Input, NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой)
+ * подпись называет своим `for`, группу (RadioGroup, Slider с несколькими
+ * ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
  * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
  * корне.
  *
@@ -17,9 +18,16 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TField, TInput } from '@soldy-ui/core'
+import { TField, TInput, TSlider } from '@soldy-ui/core'
 import { FieldDescriptor } from '@soldy-ui/setup'
-import { TFieldElement, TIconElement, TInputElement, type TFieldElementProps } from '@soldy-ui/webc'
+import {
+	TFieldElement,
+	TIconElement,
+	TInputElement,
+	TSliderElement,
+	type TFieldElementProps,
+	type TSliderElementProps,
+} from '@soldy-ui/webc'
 import { fieldTemplate } from '../src/components/field/field.template'
 import { bareContext } from './template-context'
 
@@ -234,6 +242,8 @@ const LABELABLES = [
 	],
 	['CheckBox', '<span is="so-check-box"></span>', '.so-check-box', '.so-check-box input'],
 	['Switch', '<span is="so-switch"></span>', '.so-switch', '.so-switch input'],
+	['Rating', '<span is="so-rating"></span>', '.so-rating', '.so-rating input'],
+	['Slider', '<span is="so-slider"></span>', '.so-slider', '.so-slider input'],
 ] as const
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -317,6 +327,98 @@ describe('RadioGroup в поле', () => {
 		])
 	})
 })
+
+/**
+ * Ползунок с несколькими ручками — группа: `for` назвал бы одно поле из них, а
+ * ссылка на подпись в наборе полей перекрыла бы имена ручек (`thumbLabels`).
+ * Подпись и справка — у корня (`role="group"`), а ошибка — `aria-invalid` на
+ * каждом поле: на группе ARIA ошибки не объявляет.
+ */
+describe('Slider с несколькими ручками в поле', () => {
+	const RANGE = `<span is="so-slider" value="[20,80]" thumb-labels='["От","До"]'></span>`
+	const root = () => node('.so-slider')
+	const thumbs = () => [...document.querySelectorAll('.so-slider input')]
+
+	it('for у подписи нет, корень — группа со ссылкой на подпись, имена ручек целы', async () => {
+		mount(`<div is="so-field" label="Цена">${RANGE}</div>`)
+		await flush()
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-label'))).toEqual(['От', 'До'])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-labelledby'))).toEqual([
+			false,
+			false,
+		])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+	})
+
+	it('справка — у группы, ошибка — aria-invalid на каждой ручке, data-invalid на корне', async () => {
+		const ctrl = new TField({ label: 'Цена', helper: 'Подсказка', error: 'Ошибка' })
+
+		mountOver(ctrl, RANGE)
+		await flush()
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([node('.so-field__helper').id])
+		expect(thumbs().map((thumb) => thumb.hasAttribute('aria-describedby'))).toEqual([
+			false,
+			false,
+		])
+
+		ctrl.invalid = true
+		await flush()
+
+		expect(refsOf(root(), 'aria-describedby')).toEqual([node('.so-field__error').id])
+		expect(thumbs().map((thumb) => thumb.getAttribute('aria-invalid'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(root().hasAttribute('aria-invalid')).toBe(false)
+		expect(root().dataset['invalid']).toBe('true')
+	})
+
+	it('число ручек сменилось — подпись за ним: for у одной, ссылка группы у нескольких', async () => {
+		const slider = new TSlider({ value: 30 })
+		const el = document.createElement('span', { is: 'so-slider' })
+
+		if (!isSlider(el)) throw new Error('<span is="so-slider"> не элемент soldy')
+
+		el.ctrl = slider
+
+		// Ползунок над инстансом — светом поля, до вставки
+		const host = document.createElement('div')
+
+		host.innerHTML = '<div is="so-field" label="Цена"></div>'
+		host.firstElementChild?.appendChild(el)
+		document.body.appendChild(host)
+		await flush()
+
+		expect(label().htmlFor).toBe(input('.so-slider input').id)
+
+		slider.value = [20, 80]
+		await flush()
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(root().getAttribute('role')).toBe('group')
+		expect(refsOf(root(), 'aria-labelledby')).toEqual([label().id])
+		expect(thumbs().map((thumb) => thumb.id)).toEqual(['', ''])
+
+		slider.value = 50
+		await flush()
+
+		const single = input('.so-slider input')
+
+		expect(single.id).not.toBe('')
+		expect(label().htmlFor).toBe(single.id)
+		expect(root().hasAttribute('role')).toBe(false)
+		expect(root().hasAttribute('aria-labelledby')).toBe(false)
+	})
+})
+
+function isSlider(node: Element | null): node is TSliderElementProps {
+	return node instanceof TSliderElement
+}
 
 function isInput(node: Element | null): node is HTMLElement & { ctrl: TInput | undefined } {
 	return node instanceof TInputElement
