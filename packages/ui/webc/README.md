@@ -45,7 +45,8 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > with a character counter), CheckBox, Switch, Slider (`<span is="so-slider">`), Rating
 > (`<span is="so-rating">`), the form field `<div is="so-field">` (label, helper and error linked
 > to the control inside it), ProgressSpinner, ProgressLinear (`<span is="so-progress-linear">`),
-> Skeleton, Frame, Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion,
+> Skeleton, Frame, Popover (`<span is="so-popover">`), Tooltip (`<span is="so-tooltip">`),
+> Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion,
 > Pagination (`<nav is="so-pagination">`), Table, the `<so-virtual>` window for long lists and the
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`so:move`; `so:move:before` can cancel with `event.preventDefault()`) are ported, the
@@ -114,6 +115,33 @@ Moving the panel rebuilds neither the frame nor anything inside it, and the pane
 was written in: the button above takes its language from the `<so-locale-provider>` around the
 card, not around `#layers`. Removing the card from the page takes the panel out of the target with
 it.
+
+A popover is a panel with any content at a trigger — a non-modal dialog — and a tooltip is a hint
+shown on hover and on keyboard focus. The trigger is your element in the `trigger` slot, the
+content is the default slot, and the panel is a frame of their own, moved to `body`. Slots get no
+scope, so the trigger receives its side of the link by itself: the component writes it onto the
+first element of the `trigger` slot — `aria-haspopup`, `aria-expanded`, `aria-controls` and
+`data-selected` at a popover's trigger, `aria-describedby` (`aria-labelledby` with `type="label"`)
+at a tooltip's. Clicking the trigger, pressing outside, Escape and Tab are handled for you:
+
+```html
+<span is="so-popover" aria_label="Filters">
+  <button is="so-button" slot="trigger" text="Filters"></button>
+  <p>Any content: text, fields, buttons</p>
+  <button is="so-button" text="Apply"></button>
+</span>
+
+<span is="so-tooltip">
+  <button is="so-button" slot="trigger" text="Save"></button>
+  Save a draft
+</span>
+```
+
+The trigger stays the node you wrote, and the panel's content is not rebuilt when the panel moves
+to `body` or back with `contained` (the panel stays in place, at an `edge` of the nearest
+positioned ancestor). `lazy-mount` keeps the content out of the document until the panel is opened
+for the first time. The close button in the panel's corner shows the `close-icon` slot or a close
+icon; `el.closable = false` removes it — the attribute of a flag can only turn it on.
 
 In a form it is simply a button:
 

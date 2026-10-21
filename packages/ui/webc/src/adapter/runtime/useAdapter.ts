@@ -3,7 +3,8 @@
  *
  * Принимает ГОТОВЫЙ adapter-context и хост-элемент, возвращает TBinding:
  *
- * - state: текущие значения props из Core (обычный объект)
+ * - state: текущие значения props из Core (обычный объект) — свойства инстанса
+ *   и выходы плагинов его дескриптора, в типе тоже (`TBindingState`)
  * - компонент принят (`adapter.attach()`) сразу при создании связки
  * - syncProps(props): элемент → Core, только переданные ключи
  * - bindElement(el): DOM-биндинг для TElementPlugin
@@ -39,21 +40,35 @@ import type { IPluginBundle } from '@soldy-ui/plugins'
 import { WebcProfile } from '../common'
 
 /**
- * Состояние компонента, как его читают база и шаблон: свойства инстанса и, у
- * коллекционного компонента, свойства фасада. Одноимённых у них нет: имена
- * пропсов фасада префиксуются (`tab_closable`).
+ * Состояние компонента, как его читают база и шаблон: свойства инстанса, выходы
+ * плагинов его дескриптора и, у коллекционного компонента, свойства фасада.
+ * Одноимённых у них нет: имена пропсов фасада префиксуются (`tab_closable`),
+ * выходов плагинов — тоже (`dismiss_ownerAttribute`, `layout_styles`).
+ *
+ * Выходы — в том же виде, что у остальных адаптеров (`TAdapterState` из
+ * setup): геттер плагина читается, как свойство инстанса. Без них в типе
+ * шаблон прочёл бы выход только по имени, без типа, — пометку панели
+ * владельцем у Popover и Tooltip. Поэтому и вид у них с инстансом один
+ * (`TInstance & TOutputs`), а не третий рядом: из пересечения трёх видов
+ * TypeScript не выводит инстанс и фасад по ожидаемому типу контекста шаблона.
  */
-export type TBindingState<TInstance, TFacade = unknown> = TInstanceState<TInstance> &
+export type TBindingState<TInstance, TFacade = unknown, TOutputs = unknown> = TInstanceState<
+	TInstance & TOutputs
+> &
 	TInstanceState<TFacade>
 
 /**
  * Связка компонента для базы элемента (`SoldyElement`). `TFacade` — фасад
  * коллекции у компонента с двумя контекстами (`joinBindings`); у остальных его
- * нет.
+ * нет. `TOutputs` — выходы плагинов дескриптора компонента
+ * (`DescriptorPluginOutputs`): их тоже читает шаблон.
  */
-export type TBinding<TInstance = object, TFacade = unknown> = {
-	/** Свойства инстанса и фасада со снимком через `valueOf()` — см. `TInstanceState`. */
-	readonly state: TBindingState<TInstance, TFacade>
+export type TBinding<TInstance = object, TFacade = unknown, TOutputs = unknown> = {
+	/**
+	 * Свойства инстанса, выходы плагинов и свойства фасада со снимком через
+	 * `valueOf()` — см. `TInstanceState`.
+	 */
+	readonly state: TBindingState<TInstance, TFacade, TOutputs>
 	readonly ctrl: TInstance
 	/** Фасад коллекции: через его контекст элемента шаблон зовёт команды коллекции. */
 	readonly facade: TFacade
@@ -168,7 +183,7 @@ export function useAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
 	host: HTMLElement,
 	onUpdate: TUpdateListener,
-): TBinding<C['instance']> {
+): TBinding<C['instance'], unknown, C['plugins']['outputs']> {
 	// Событие детали (`embedded`) не всплывает: деталь — разметка владельца, и
 	// владелец слушает её на самом элементе, как в остальных адаптерах. Иначе
 	// `so:action:press` кнопки очистки дошёл бы до слушателей поля и до
@@ -245,35 +260,36 @@ function joinStates(
  *
  * Граница между рантаймом и типом — как `toInstanceState` у одной связки и
  * `toBindingState` у Vue. Вид собран по дескрипторам компонента и фасада из тех
- * же инстансов, что называют `TInstance` и `TFacade`, но по именам свойств —
- * эту связь держат дескрипторы, TypeScript её не видит.
+ * же инстансов, что называют `TInstance` и `TFacade`, — с выходами плагинов
+ * компонента (`TOutputs`), — но по именам свойств — эту связь держат
+ * дескрипторы, TypeScript её не видит.
  */
-function toBindingState<TInstance, TFacade>(
+function toBindingState<TInstance, TFacade, TOutputs>(
 	view: Readonly<Record<string, unknown>>,
-): TBindingState<TInstance, TFacade> {
-	return view as TBindingState<TInstance, TFacade>
+): TBindingState<TInstance, TFacade, TOutputs> {
+	return view as TBindingState<TInstance, TFacade, TOutputs>
 }
 
 /**
  * Связка компонента с двумя контекстами — для базы, которой нужна одна:
  *
- * - состояние — одним живым видом, свойства компонента и фасада
- *   (`TBindingState`);
+ * - состояние — одним живым видом, свойства компонента с выходами его плагинов
+ *   и свойства фасада (`TBindingState`);
  * - входы — обоим: элемент отдаёт дельту, и каждый берёт свои;
  * - события — от обоих, с одного элемента (их отдаёт каждая связка сама);
  * - узел — только свой: у фасада его нет;
  * - уничтожение — фасад раньше компонента, как у Angular и React: элемент
  *   выходит из коллекции, пока его набор плагинов цел.
  */
-export function joinBindings<TInstance, TFacade>(
-	owner: TBinding<TInstance>,
+export function joinBindings<TInstance, TFacade, TOutputs>(
+	owner: TBinding<TInstance, unknown, TOutputs>,
 	facade: TCollectionBinding<TFacade>,
-): TBinding<TInstance, TFacade> {
+): TBinding<TInstance, TFacade, TOutputs> {
 	const ownerState: Readonly<Record<string, unknown>> = owner.state
 	const facadeState: Readonly<Record<string, unknown>> = facade.state
 
 	return {
-		state: toBindingState<TInstance, TFacade>(joinStates(ownerState, facadeState)),
+		state: toBindingState<TInstance, TFacade, TOutputs>(joinStates(ownerState, facadeState)),
 		ctrl: owner.ctrl,
 		facade: facade.facade,
 		plugins: owner.plugins,

@@ -167,16 +167,17 @@
 	// Ручка — центром на своей позиции: полстороны назад логическим полем, в RTL
 	// оно само встаёт с другой стороны.
 	//
-	// Поверхность — цвет ручки Switch (`--so-component-knob`), кромка — цвет
+	// Поверхность и тень — те же, что у ручки Switch (`--so-component-knob` и
+	// `shadow-md`): ручка контрола — одна роль, и тень у неё одна. Кромка — цвет
 	// заливки. Ореол — вуаль вокруг кромки: кольцо `ring` ложится в одну тень с
-	// `shadow-sm` и её не перебивает.
+	// `shadow-md` и её не перебивает.
 	//
 	// Содержимое — по центру ручки, флексом: от этого места подсказка со
 	// значением и считает своё вдоль оси (см. `__tooltip`).
 	&__thumb {
 		@apply absolute flex items-center justify-center;
 		@apply rounded-full border-solid;
-		@apply bg-so-component-knob shadow-sm;
+		@apply bg-so-component-knob shadow-md;
 		@apply cursor-grab;
 		@apply ring-(length:--so-slider-halo) ring-(--so-slider-halo-color);
 		--so-slider-halo: 0px;
