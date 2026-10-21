@@ -23,7 +23,7 @@
  * слушатели плагинов и фокус — кадром позже.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { TButton, TComponentView, TDialog } from '@soldy-ui/core'
 import type { TCloseEvent, TCloseReason } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, type IPluginContext, type TDialogOffsetEvent } from '@soldy-ui/plugins'
@@ -1053,7 +1053,9 @@ describe('перенос', () => {
 		}
 	}
 
-	afterEach(() => {
+	// Перед тестом, а не после: общий `afterEach` файла чистит `body` позже
+	// хука группы, и связки прошлого теста уничтожаются уже после сброса
+	beforeEach(() => {
 		assembled.length = 0
 		destroyed = 0
 	})

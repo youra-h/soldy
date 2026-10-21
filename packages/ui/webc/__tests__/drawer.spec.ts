@@ -21,7 +21,7 @@
  * `playground/vue/browser/webc-frame.spec.ts`.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { TButton, TComponentView, TDrawer } from '@soldy-ui/core'
 import type { TCloseEvent, TCloseReason } from '@soldy-ui/core'
 import { TBasePlugin, type IPluginContext } from '@soldy-ui/plugins'
@@ -678,7 +678,9 @@ describe('перенос', () => {
 		}
 	}
 
-	afterEach(() => {
+	// Перед тестом, а не после: общий `afterEach` файла чистит `body` позже
+	// хука группы, и связки прошлого теста уничтожаются уже после сброса
+	beforeEach(() => {
 		assembled.length = 0
 		destroyed = 0
 	})
@@ -705,5 +707,61 @@ describe('перенос', () => {
 		expect(find('.so-test-action')).toBe(action)
 		expect([...assembled].sort()).toEqual(['', 'Применить'])
 		expect(destroyed).toBe(0)
+	})
+
+	/**
+	 * Полифил встроенных элементов (Safari) зовёт колбэки своим наблюдателем —
+	 * микрозадачей позже, по записям: отключение — снятым узлам и элементам в
+	 * них, подключение — вставленным. Подложка едет той же операцией базы, и
+	 * колбэки после переноса связок не трогают — ни у панели, ни у кнопок в ней.
+	 */
+	it('колбэки полифила после переноса с подложкой связок не трогают', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin], { scope: 'all' })
+
+		/** Элементы soldy в поддереве узла, сам узел — первым; так их находит полифил. */
+		const soldyIn = (node: Node): (TDrawerElementProps | HTMLElement)[] =>
+			node instanceof Element
+				? [node, ...node.querySelectorAll('*')].filter(
+						(each): each is HTMLElement =>
+							each instanceof HTMLElement && 'connectedCallback' in each,
+					)
+				: []
+		const callbacks = (el: HTMLElement, name: 'connectedCallback' | 'disconnectedCallback') => {
+			const callback: unknown = Reflect.get(el, name)
+
+			if (typeof callback === 'function') callback.call(el)
+		}
+		const observer = new MutationObserver((records) => {
+			for (const record of records) {
+				for (const node of record.removedNodes) {
+					for (const el of soldyIn(node)) callbacks(el, 'disconnectedCallback')
+				}
+
+				for (const node of record.addedNodes) {
+					for (const el of soldyIn(node)) callbacks(el, 'connectedCallback')
+				}
+			}
+		})
+
+		observer.observe(document, { childList: true, subtree: true })
+
+		try {
+			const drawer = await render({
+				content: '<button is="so-button" class="so-test-action" text="Применить"></button>',
+			})
+
+			await flush()
+			drawer.contained = true
+			await flush()
+			drawer.contained = false
+			await flush()
+
+			expect(drawer.parentElement).toBe(document.body)
+			expect(backdrop().nextElementSibling).toBe(drawer)
+			expect([...assembled].sort()).toEqual(['', 'Применить'])
+			expect(destroyed).toBe(0)
+		} finally {
+			observer.disconnect()
+		}
 	})
 })
