@@ -74,7 +74,7 @@ describe('разметка', () => {
 		expect(root().localName).toBe('span')
 		expect(root().contains(trigger())).toBe(true)
 		expect(root().contains(panel())).toBe(false)
-		expect(panel().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
 		expect(isOpen()).toBe(false)
 	})
 

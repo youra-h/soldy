@@ -139,7 +139,7 @@ describe('разметка', () => {
 		expect(root.localName).toBe('span')
 		expect(root.contains(trigger())).toBe(true)
 		expect(root.contains(panel())).toBe(false)
-		expect(panel().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
 		expect(isOpen()).toBe(false)
 	})
 
@@ -255,7 +255,8 @@ describe('разметка', () => {
 
 		const [named, bare] = [...document.querySelectorAll('.so-popover__panel')]
 
-		expect(named.parentElement).toBe(document.body)
+		expect(document.body.contains(named)).toBe(true)
+		expect(named.closest('.so-popover')).toBeNull()
 		expect(named.querySelector('.so-popover__close')?.getAttribute('aria-label')).toBe(
 			'Закрыть',
 		)
@@ -750,7 +751,8 @@ describe('React', () => {
 
 		expect(onRecoverableError).not.toHaveBeenCalled()
 		expect(trigger()).toBe(serverTrigger)
-		expect(panel().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
+		expect(container.contains(panel())).toBe(false)
 		expect(panelOf(trigger())).toBe(panel())
 
 		await open()

@@ -676,7 +676,7 @@ describe('панель как телепортированный Frame', () => {
 	it('класс и пометка владельцем доезжают до узла в body', () => {
 		const { container } = mount(Harness, {})
 
-		expect(panel().parentElement).toBe(document.body)
+		expect(document.body.contains(panel())).toBe(true)
 		expect(panel().hasAttribute('data-owner')).toBe(true)
 		expect(container.querySelector('.so-select__panel')).toBeNull()
 	})

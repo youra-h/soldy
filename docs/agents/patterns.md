@@ -246,8 +246,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
   `ui/svelte/__tests__/select.spec.ts` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
-  корень в `body`, который `Teleport` монтирует эффектом со всеми контекстами
-  места: опции в ней читают лифт Select, а на сервере панели нет, и опции
+  корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
+  эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
+  сервере панели нет, и опции
   разметкой входят в коллекцию только в браузере (см. «Цена» в
   `collections.md`).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
@@ -1004,7 +1005,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/drawer-layout.plugin.spec.ts`,
   `ui/vue/__tests__/drawer.spec.ts`, `ui/react/__tests__/drawer.spec.tsx`,
   `ui/svelte/__tests__/drawer.spec.ts` (у React и Svelte смена `contained` на
-  лету рисует панель новым узлом, и замок прокрутки встаёт кадром позже) и
+  лету переносит панель тем же узлом — телепорт двигает свою обёртку, — и
+  замок прокрутки встаёт сразу) и
   `ui/webc/__tests__/drawer.spec.ts` (у Web Components — тем же узлом, с
   подложкой рядом, и кнопки в панели не пересобираются),
   `playground/vue/browser/drawer.spec.ts`
