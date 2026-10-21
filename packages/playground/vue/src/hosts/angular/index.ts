@@ -53,14 +53,10 @@ type TInsertOptions = {
 	readonly projected?: Node[][]
 }
 
-/**
- * Узел содержимого: элемент части, на котором она соберётся, разметка со своим
- * содержимым — его узлы уже в ней — или разметка без компонента.
- */
+/** Узел содержимого: элемент части, на котором она соберётся, или разметка. */
 type TContentNode =
-	| { readonly node: Node; readonly part?: undefined; readonly nested?: undefined }
-	| { readonly node: Element; readonly part: TPart; readonly nested?: undefined }
-	| { readonly node: Element; readonly part?: undefined; readonly nested: TContentNode[] }
+	| { readonly node: Node; readonly part?: undefined }
+	| { readonly node: Element; readonly part: TPart }
 
 /**
  * Пропсы, которым у компонента Angular нет входа: тег корня — у самого
@@ -143,23 +139,11 @@ function insert<T extends object>(
 /**
  * Узлы содержимого — до сборки компонента: компонент получает их проекцией при
  * создании, а части соберутся на своих элементах позже (`assembleParts`).
- * Содержимое разметки ложится в неё детьми сразу — с элементами своих частей.
  */
 function nodesOf(content: readonly TContent[] = []): TContentNode[] {
-	return content.map((entry): TContentNode => {
-		if (typeof entry === 'function') return { node: entry() }
-
-		if ('markup' in entry) {
-			const node = entry.markup()
-			const nested = nodesOf(entry.content)
-
-			for (const child of nested) node.appendChild(child.node)
-
-			return { node, nested }
-		}
-
-		return { node: entry.element(), part: entry }
-	})
+	return content.map((entry) =>
+		typeof entry === 'function' ? { node: entry() } : { node: entry.element(), part: entry },
+	)
 }
 
 /**
@@ -196,19 +180,15 @@ function assemble(ref: ComponentRef<unknown>): void {
 
 /**
  * Части содержимого — каждая на свой элемент в проекции владельца, с его
- * инжектором, после его сборки и по порядку; у части — свои части. Части в
- * разметке со своим содержимым — тоже части владельца: разметка компонента не
- * заводит, и DI идёт мимо неё, как в шаблоне. Собранное копится в `built`:
- * снимается вместе с превью.
+ * инжектором, после его сборки и по порядку; у части — свои части. Собранное
+ * копится в `built`: снимается вместе с превью.
  */
 function assembleParts(
 	owner: ComponentRef<unknown>,
 	nodes: readonly TContentNode[],
 	built: ComponentRef<unknown>[],
 ): void {
-	for (const { node, part, nested } of nodes) {
-		if (nested) assembleParts(owner, nested, built)
-
+	for (const { node, part } of nodes) {
 		if (!part) continue
 
 		const content = nodesOf(part.content)

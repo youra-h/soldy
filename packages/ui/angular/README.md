@@ -9,10 +9,11 @@ Web Components.
 The adapter is wiring, not behavior: it connects a core model to Angular's signals and renders the
 markup — BEM classes `so-*` and `data-*` state attributes. Props, events and slots come from the
 component descriptor, so they match the other five adapters; only the spelling is Angular's: a
-component is a prefixed attribute on your own element (`<button so-button>`, `<div so-input>`) —
-only the wrappers that render no element of their own are elements (`<so-virtual>`,
-`<so-drag-and-drop>`); the toasts manager has its region, so it is `<div so-toasts>` — events are
-outputs
+component is always a prefixed attribute, never a tag of its own — on your own element when it has
+an element to render into (`<button so-button>`, `<div so-input>`; the toasts manager has its
+region, so it is `<div so-toasts>`), and on an `<ng-container>` when it renders no element of its
+own (`<ng-container so-virtual>`, `<ng-container so-drag-and-drop>`, like
+`<ng-container so-locale-provider>`) — events are outputs
 named `so` + the core name in camelCase (`show` → `soShow`, `show:before` → `soShowBefore`,
 `element:ready` → `soElementReady`), and slots are filled through the `slot` attribute. Every
 output has the prefix: Angular binds `(x)` both to an output and to the DOM event of that name, so
@@ -30,8 +31,8 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > Rating (`<span so-rating>`), the form field `<div so-field>` (label, helper and error linked to
 > the control inside it), Scroller (`<div so-scroller>`), RadioGroup, ListBox, Tabs, Accordion,
 > Pagination (`<nav so-pagination>`), Table, the `Virtual` window for long lists and the
-> `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
-> dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
+> `<ng-container so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and
+> Accordion by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
 > `contained` it stays in place. Popover (`<span so-popover>`) and Tooltip (`<span so-tooltip>`)
 > are panels on a Frame anchored to the element you write them on. The modal window Dialog
@@ -248,11 +249,12 @@ template: `<div so-table [items]="rows" [columns]="columns" mode="multiple" aria
 
 Without a `cell` template a value is rendered as the cell's text from the core (`cell.text`) — an
 object as JSON; the `soText` pipe (`TextPipe`) gives your own template the same text. A long list renders only
-what is visible inside `<so-virtual>` — the same with a table; the wrapper has no box of its own,
-and `enabled` turns the window off:
+what is visible inside `<ng-container so-virtual>` — the same with a table; the window renders no
+element of its own, so the layout around the list stays as it is, and `enabled` turns the window
+off:
 
 ```ts
-template: `<so-virtual><div so-list-box [items]="cities"></div></so-virtual>`
+template: `<ng-container so-virtual><div so-list-box [items]="cities"></div></ng-container>`
 ```
 
 A panel over the page is a Frame. The element you write is the panel, and it is that element which

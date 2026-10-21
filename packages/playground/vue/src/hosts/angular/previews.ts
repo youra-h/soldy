@@ -1,19 +1,19 @@
 import { inputBinding, type DirectiveWithBindings, type Type } from '@angular/core'
 import {
 	COLLECTION_ITEMS,
-	COLLECTION_MANY_ITEMS,
 	TABLE_COLUMNS,
-	TABLE_MANY_ROWS,
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
 import type { TFixture } from './fixtures'
 import {
 	DialogPreview,
+	DragAndDropPreview,
 	DrawerPreview,
 	PopoverPreview,
 	ToastsPreview,
 	TooltipPreview,
+	VirtualPreview,
 } from './templates'
 import {
 	RoleIconDirective,
@@ -21,7 +21,6 @@ import {
 	TAccordionItemComponent,
 	TButtonComponent,
 	TCheckBoxComponent,
-	TDragAndDropComponent,
 	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
@@ -44,7 +43,6 @@ import {
 	TTabsContentComponent,
 	TTabsItemComponent,
 	TTextareaComponent,
-	TVirtualComponent,
 } from '@soldy-ui/angular'
 
 /** Пропсы компонента — именами разметки. */
@@ -76,25 +74,10 @@ export type TPart = {
 }
 
 /**
- * Разметка без компонента со своим содержимым — частями и разметкой: ряд,
- * окно прокрутки вокруг списка и таблицы в окне `Virtual`. Элемент строит
- * функция, как и разметку без содержимого, а содержимое ложится в него
- * детьми, по порядку. Части в ней собираются, как части её владельца: с его
- * инжектором и после него.
+ * Содержимое компонента: часть или разметка без компонента — текст, блок с
+ * отступом. Разметку строит функция: у каждой отрисовки свои узлы.
  */
-export type TMarkup = {
-	/** Элемент разметки — у каждой отрисовки свой. */
-	readonly markup: () => Element
-	/** Содержимое элемента — части и разметка. */
-	readonly content: readonly TContent[]
-}
-
-/**
- * Содержимое компонента: часть, разметка со своим содержимым или разметка без
- * компонента — текст, блок с отступом. Разметку строит функция: у каждой
- * отрисовки свои узлы.
- */
-export type TContent = TPart | TMarkup | (() => Node)
+export type TContent = TPart | (() => Node)
 
 /**
  * Обёртка вокруг компонента превью — компонент адаптера со своими пропсами, а
@@ -159,8 +142,8 @@ type TPreviewBase = {
  * Vue это ComponentView с чужими пропами, а у компонента Angular чужого входа
  * нет вовсе.
  *
- * Превью, которому нужны шаблоны слотов или своё состояние, — своим шаблоном
- * (`TTemplatePreview`).
+ * Превью, которому нужны шаблоны слотов или своё состояние, и компонент без
+ * корня — своим шаблоном (`TTemplatePreview`).
  */
 export type TPreview = TComponentPreview | TTemplatePreview
 
@@ -172,9 +155,11 @@ export type TPreview = TComponentPreview | TTemplatePreview
  * строит сам, их нет. Окно и выезжающую панель открывает кнопка превью, а
  * открытость — его своё состояние, как у Vue. Тосты показывают кнопки внутри
  * менеджера тостов, а API им даёт компонент под менеджером (`useToasts()`
- * полем) — тоже разметка. Ставит такое превью хост путём
- * фикстуры: пропсы оболочки уходят входам компонента превью, а выходы хост
- * слушает у компонента в его разметке (`subject`).
+ * полем) — тоже разметка. Компонент без корня — окно `Virtual` и перестановка
+ * `DragAndDrop` — директива на `<ng-container>`, а директиву хост сам не
+ * строит: `createComponent` строит только компонент. Ставит такое превью хост
+ * путём фикстуры: пропсы оболочки уходят входам компонента превью, а выходы
+ * хост слушает у компонента в его разметке (`subject`).
  */
 export type TTemplatePreview = {
 	readonly template: Type<TFixture>
@@ -256,25 +241,13 @@ const strip = (value: string) => (): Node => {
  */
 const FULL_WIDTH = (): string => 'width: 100%'
 
-/** Разметка `div` со стилем строкой CSS и своим содержимым — ряд, окно прокрутки. */
-const markup = (style: string, content: readonly TContent[]): TMarkup => ({
-	markup: () => {
-		const node = document.createElement('div')
-
-		node.setAttribute('style', style)
-
-		return node
-	},
-	content,
-})
-
 /** Содержимое коллекций — из общего манифеста, как у Vue и React. */
 const ITEMS = COLLECTION_ITEMS
 
 /**
- * Табы и их панели частями — у превью Tabs и DragAndDrop. Первый таб активен
- * сразу — иначе ни одна панель не смонтируется. Панели — слотом `content`,
- * вне списка табов.
+ * Табы и их панели частями — у превью Tabs. Первый таб активен сразу — иначе
+ * ни одна панель не смонтируется. Панели — слотом `content`, вне списка
+ * табов.
  */
 const TABS_CONTENT: readonly TContent[] = [
 	...ITEMS.map((item, index) => ({
@@ -291,7 +264,7 @@ const TABS_CONTENT: readonly TContent[] = [
 	})),
 ]
 
-/** Секции частями, с содержимым, — у превью Accordion и DragAndDrop. */
+/** Секции частями, с содержимым, — у превью Accordion. */
 const ACCORDION_CONTENT: readonly TContent[] = ITEMS.map((item) => ({
 	component: TAccordionItemComponent,
 	element: tag('div'),
@@ -467,71 +440,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	skeleton: { component: TSkeletonComponent },
 
-	// Перестановка у трёх коллекций сразу, на одном составе: Tabs и Accordion —
-	// теми же частями, что на их страницах, ListBox — данными, как у Vue и React.
-	// Элемент переставляется в своей коллекции: между коллекциями обёртка не
-	// переносит. Ряд — граница ширины, как у окна: табы — во всю ширину ряда,
-	// список и секции — под ними, рядом. Коллекции в разметке ряда собираются
-	// частями обёртки — с её инжектором, и её слой лифта они видят
-	'drag-and-drop': {
-		component: TDragAndDropComponent,
-		content: [
-			markup(
-				'display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; width: 100%',
-				[
-					markup('flex: 1 1 100%; min-width: 0', [
-						{
-							component: TTabsComponent,
-							element: tag('div'),
-							content: TABS_CONTENT,
-						},
-					]),
-					{
-						component: TListBoxComponent,
-						element: tag('div'),
-						props: { items: ITEMS, aria_label: 'Пункты' },
-					},
-					markup('flex: 1; min-width: 200px', [
-						{
-							component: TAccordionComponent,
-							element: tag('div'),
-							content: ACCORDION_CONTENT,
-						},
-					]),
-				],
-			),
-		],
-	},
+	// Перестановка у трёх коллекций сразу — `<ng-container so-drag-and-drop>`
+	// вокруг ряда. Компонент без корня — директива на контейнере, а её хост сам
+	// не строит, поэтому превью — своим шаблоном (см. `DragAndDropPreview`)
+	'drag-and-drop': { template: DragAndDropPreview },
 
-	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
-	// ListBox с пределом строк прокручивается сам, таблица — в окне прокрутки
-	// высотой 320 px; строка `enabled` включает и выключает окно у обоих.
-	// Элементы — данными (`items`): элементы разметкой окно не прячет. Ряд —
-	// граница ширины, как у Vue и React. Select в Angular нет, и его окна рядом
-	// тоже. Переставленную колонку таблица ведёт целиком, с ячейками строк
-	// (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи
-	virtual: {
-		component: TVirtualComponent,
-		content: [
-			markup('display: flex; gap: 24px; align-items: flex-start; width: 100%', [
-				{
-					component: TListBoxComponent,
-					element: tag('div'),
-					props: { items: COLLECTION_MANY_ITEMS, maxRows: 8, aria_label: 'Пункты' },
-				},
-				markup('flex: 1; min-width: 0; height: 320px; overflow: auto', [
-					{
-						component: TTableComponent,
-						element: tag('div'),
-						props: {
-							items: TABLE_MANY_ROWS,
-							columns: TABLE_COLUMNS,
-							reorderPreview: 'column',
-							aria_label: 'Сотрудники',
-						},
-					},
-				]),
-			]),
-		],
-	},
+	// Окно на списке и таблице по тысяче элементов — `<ng-container
+	// so-virtual>` вокруг ряда, своим шаблоном по той же причине (см.
+	// `VirtualPreview`)
+	virtual: { template: VirtualPreview },
 }

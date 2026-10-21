@@ -2,9 +2,10 @@
  * DragAndDrop под Angular — перестановка элементов Tabs, ListBox и Accordion
  * жестом.
  *
- * Обёртка своего узла не рисует: элемент `<so-drag-and-drop>` Angular ставит,
- * но бокса у него нет (`display: contents`), а шаблон — только содержимое. Её
- * экземпляр подхватывают коллекции внутри (`TDragAndDropCollectionExtension`)
+ * Своего узла у обёртки нет: корня у компонента нет, он директива и пишется
+ * атрибутом на `<ng-container>` (`<ng-container so-drag-and-drop>`), а на месте
+ * контейнера Angular ставит только комментарий-якорь. Экземпляр обёртки
+ * подхватывают коллекции внутри (`TDragAndDropCollectionExtension`)
  * и включают им плагин перетаскивания — узлы их элементов становятся
  * `draggable`, а жест — командой обёртки. События перестановки компонент
  * отдаёт выходами (`(soMoveBefore)`, `(soMove)`), и отмена в обработчике
@@ -14,8 +15,9 @@
  * `ui/react/__tests__/drag-and-drop.spec.tsx`); сервер и гидратация —
  * `collections.server.spec.ts`.
  *
- * Своё у Angular — слой лифта DI: обёртка отдаёт его поддереву провайдером, и
- * экземпляр обёртки коллекция читает из слоя, внутри которого её написали.
+ * Своё у Angular — слой лифта DI: обёртка отдаёт его поддереву провайдером
+ * директивы — инжектор у `<ng-container>` свой, — и экземпляр обёртки
+ * коллекция читает из слоя, внутри которого её написали.
  * Обработчики выходов у хостов — точного типа: шаблон хоста проверяет `ngc`
  * («Типы — Angular»), и `$event` другого типа его не пройдёт. Хосты, чьи
  * шаблоны различаются только тегом, — со своими селекторами: без них Angular
@@ -117,7 +119,7 @@ const places = (events: readonly IDragAndDropMove[]) =>
 	selector: 'probe-wrapped',
 	standalone: true,
 	imports: [TDragAndDropComponent, ...COLLECTION_IMPORTS],
-	template: `<so-drag-and-drop>${COLLECTIONS}</so-drag-and-drop>`,
+	template: `<ng-container so-drag-and-drop>${COLLECTIONS}</ng-container>`,
 })
 class WrappedHost {
 	readonly items = ITEMS
@@ -163,13 +165,13 @@ describe('DragAndDrop: коллекции внутри', () => {
 			TAccordionItemComponent,
 			TListBoxComponent,
 		],
-		template: `<so-drag-and-drop>
+		template: `<ng-container so-drag-and-drop>
 			<div so-accordion>
 				<div so-accordion-item value="a" text="A">
 					<div so-list-box [items]="items" aria_label="Пункты"></div>
 				</div>
 			</div>
-		</so-drag-and-drop>`,
+		</ng-container>`,
 	})
 	class NestedHost {
 		readonly items = ITEMS
@@ -190,27 +192,25 @@ describe('DragAndDrop: коллекции внутри', () => {
 	})
 
 	/**
-	 * Своего узла у обёртки нет: элемент Angular ставит, но бокса у него нет, а
-	 * в нём — только то, что написал потребитель.
+	 * Своего узла у обёртки нет: директиву пишут на `<ng-container>`, на его
+	 * месте Angular ставит только комментарий-якорь, и коллекции стоят прямо в
+	 * разметке хоста, как без обёртки, — раскладка вокруг них та же.
 	 */
-	it('обёртка без бокса: display: contents, внутри — только содержимое', () => {
+	it('своего узла у обёртки нет: коллекции — прямо в разметке хоста', () => {
 		const fixture = mountHost(WrappedHost)
 		const host: HTMLElement = fixture.nativeElement
-		const wrapper = host.querySelector('so-drag-and-drop')
-
-		if (!(wrapper instanceof HTMLElement)) throw new Error('обёртки нет')
 
 		// Компонент — по метке селектора на элементе
 		const marker = (child: Element) =>
 			child.getAttributeNames().find((name) => name.startsWith('so-'))
 		const component = (child: Element) => `${child.localName}[${marker(child)}]`
 
-		expect(wrapper.style.display).toBe('contents')
-		expect([...wrapper.children].map(component)).toEqual([
+		expect([...host.children].map(component)).toEqual([
 			'div[so-tabs]',
 			'div[so-list-box]',
 			'div[so-accordion]',
 		])
+		expect(host.querySelector('[so-drag-and-drop]')).toBe(null)
 	})
 })
 
@@ -223,9 +223,13 @@ describe('DragAndDrop: коллекции внутри', () => {
 	selector: 'probe-events',
 	standalone: true,
 	imports: [TDragAndDropComponent, TListBoxComponent],
-	template: `<so-drag-and-drop (soMoveBefore)="onMoveBefore($event)" (soMove)="onMove($event)">
+	template: `<ng-container
+		so-drag-and-drop
+		(soMoveBefore)="onMoveBefore($event)"
+		(soMove)="onMove($event)"
+	>
 		<div so-list-box [items]="items" aria_label="Пункты"></div>
-	</so-drag-and-drop>`,
+	</ng-container>`,
 })
 class EventsHost {
 	readonly items = ITEMS

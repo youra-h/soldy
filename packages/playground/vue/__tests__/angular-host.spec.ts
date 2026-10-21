@@ -8,11 +8,12 @@
  * пропа без входа хост не глушит; экземпляр ядра адаптер берёт при сборке, и
  * смена `ctrl` ставит компонент заново; обёртку и содержимое превью хост
  * собирает сам — части на своих элементах в проекциях, после владельца и с
- * его инжектором, и в разметке содержимого тоже; рамка вокруг компонента идёт
- * за пропсами оболочки, а данные превью ложатся под них; превью, которому
- * нужны шаблоны слотов (Popover, Tooltip) или своё состояние (открытость
- * Dialog и Drawer), — свой шаблон, как у фикстуры: пропсы — входам его
- * компонента, выходы — у компонента в его разметке.
+ * его инжектором; рамка вокруг компонента идёт за пропсами оболочки, а данные
+ * превью ложатся под них; превью, которому нужны шаблоны слотов (Popover,
+ * Tooltip) или своё состояние (открытость Dialog и Drawer), и компонент без
+ * корня — директива на `<ng-container>` (Virtual, DragAndDrop) — свой
+ * шаблон, как у фикстуры: пропсы — входам его компонента, выходы — у
+ * компонента в его разметке.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -476,6 +477,71 @@ describe('хост Angular · превью своим шаблоном', () => {
 		expect(region.isConnected).toBe(false)
 	})
 
+	/**
+	 * Окно — директива на `<ng-container>`, а директиву хост сам не строит:
+	 * превью своим шаблоном. Своего узла у окна нет — ряд стоит прямо в
+	 * разметке превью, — и окно подхватывают обе коллекции ряда: до замера
+	 * каждая рисует первые 50 из тысячи. Выходы хост слушает у окна в разметке
+	 * превью, а пропа без входа не глушит.
+	 */
+	it('окно: ряд — прямо в разметке превью, окно у списка и у таблицы', () => {
+		const node = stage()
+		const handle = host.mount(node, {
+			component: 'virtual',
+			props: {},
+			onEvent: () => {},
+		})
+		const row = node.querySelector('pg-virtual-preview > div')
+
+		if (!(row instanceof HTMLElement)) throw new Error('ряда нет')
+
+		expect(row.style.display).toBe('flex')
+		expect([...row.children].map((child) => child.className)).toEqual([
+			expect.stringContaining('so-list-box'),
+			'',
+		])
+		expect(row.querySelector(':scope > div > .so-table__viewport')).not.toBe(null)
+		expect(all(node, '.so-list-box-item')).toHaveLength(50)
+		expect(all(node, '.so-table-row')).toHaveLength(50)
+		expect(() => handle.update({ nothing: true })).toThrow('нет входов: nothing')
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+	})
+
+	/**
+	 * Перестановка — тоже директива на `<ng-container>`: ряд с тремя
+	 * коллекциями стоит прямо в разметке превью, а их элементы перетаскиваются —
+	 * узлы элементов плагин получает через кадр.
+	 */
+	it('перестановка: ряд — прямо в разметке превью, элементы коллекций перетаскиваются', async () => {
+		const node = stage()
+		const handle = host.mount(node, {
+			component: 'drag-and-drop',
+			props: {},
+			onEvent: () => {},
+		})
+		const row = node.querySelector('pg-drag-and-drop-preview > div')
+
+		if (!(row instanceof HTMLElement)) throw new Error('ряда нет')
+
+		await nextFrame()
+
+		expect(textsOf(row, '.so-tabs-item')).toEqual(TEXTS)
+		expect(textsOf(row, '.so-list-box-item')).toEqual(TEXTS)
+		expect(textsOf(row, '.so-accordion-item .so-accordion-item__header')).toEqual(TEXTS)
+		expect(
+			all(row, '.so-tabs-item, .so-list-box-item, .so-accordion-item').map((item) =>
+				item.getAttribute('draggable'),
+			),
+		).toEqual(Array.from({ length: TEXTS.length * 3 }, () => 'true'))
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+	})
+
 	it('подсказка: ссылка триггера ведёт на панель с текстом, open — входом превью', () => {
 		const node = stage()
 		const events: string[] = []
@@ -506,7 +572,7 @@ describe('хост Angular · превью своим шаблоном', () => {
 	})
 })
 
-describe('хост Angular · рамка и разметка содержимого', () => {
+describe('хост Angular · рамка', () => {
 	/**
 	 * Таблица — в рамке: разметке без компонента со стилем от пропсов
 	 * оболочки, как `div` вокруг Table у Vue и React. Строки и колонки —
@@ -537,33 +603,6 @@ describe('хост Angular · рамка и разметка содержимо�
 		expect(frame.style.overflow).toBe('auto')
 		expect(all(node, '.so-table-row')).toHaveLength(TABLE_SCROLL_ROWS.length)
 		expect(node.querySelector('table.so-table')?.getAttribute('data-sticky-head')).toBe('true')
-
-		handle.unmount()
-
-		expect(node.childNodes).toHaveLength(0)
-	})
-
-	/**
-	 * Содержимое обёртки окна — разметка со своим содержимым: ряд, а в нём
-	 * список и окно прокрутки с таблицей. Части в разметке собираются, как
-	 * части обёртки, — с её инжектором, — и окно обёртки подхватывают обе
-	 * коллекции: до замера каждая рисует первые 50 из тысячи.
-	 */
-	it('окно: список и таблица — частями в разметке обёртки, окно у обоих', () => {
-		const node = stage()
-		const handle = host.mount(node, { component: 'virtual', props: {} })
-		const row = node.querySelector('so-virtual > div')
-
-		if (!(row instanceof HTMLElement)) throw new Error('ряда нет')
-
-		expect(row.style.display).toBe('flex')
-		expect([...row.children].map((child) => child.className)).toEqual([
-			expect.stringContaining('so-list-box'),
-			'',
-		])
-		expect(row.querySelector(':scope > div > .so-table__viewport')).not.toBe(null)
-		expect(all(node, '.so-list-box-item')).toHaveLength(50)
-		expect(all(node, '.so-table-row')).toHaveLength(50)
 
 		handle.unmount()
 
