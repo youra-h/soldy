@@ -33,6 +33,8 @@ import {
 	TButtonElement,
 	TCheckBoxElement,
 	TComponentViewElement,
+	TDialogElement,
+	TDrawerElement,
 	TFieldElement,
 	TIconElement,
 	TInputElement,
@@ -62,6 +64,8 @@ import {
 	type TButtonElementProps,
 	type TCheckBoxElementProps,
 	type TComponentViewElementProps,
+	type TDialogElementProps,
+	type TDrawerElementProps,
 	type TFieldElementProps,
 	type TIconElementProps,
 	type TInputElementProps,
@@ -157,6 +161,14 @@ function isTooltip(node: Element | null): node is TTooltipElementProps {
 	return node instanceof TTooltipElement
 }
 
+function isDialog(node: Element | null): node is TDialogElementProps {
+	return node instanceof TDialogElement
+}
+
+function isDrawer(node: Element | null): node is TDrawerElementProps {
+	return node instanceof TDrawerElement
+}
+
 function isLabel(node: Element | null): node is TLabelElementProps {
 	return node instanceof TLabelElement
 }
@@ -221,16 +233,21 @@ function isListBoxItem(node: Element | null): node is TListBoxItemElementProps {
 	return node instanceof TListBoxItemElement
 }
 
-/** Элемент разметки, подключённый к документу; узел не того вида — тест падает здесь. */
+/**
+ * Элемент разметки, подключённый к документу; узел не того вида — тест падает
+ * здесь. Элемент берётся до вставки — живым он стал уже в `innerHTML`: слой
+ * (окно, выезжающая панель) при подключении уезжает в `body`, мимо контейнера.
+ */
 function mount<T extends HTMLElement>(html: string, guard: TElementGuard<T>): T {
 	const host = document.createElement('div')
 
 	host.innerHTML = html
-	document.body.appendChild(host)
 
 	const node = host.firstElementChild
 
 	if (!guard(node)) throw new Error(`${html}: элемента soldy нет`)
+
+	document.body.appendChild(host)
 
 	return node
 }
@@ -261,6 +278,10 @@ const COMPONENTS: ReadonlyArray<
 	// `attrs` и `dataset`, и атрибуты разметки остаются на нём
 	['Popover', 'span', 'so-popover', isPopover, 'so-popover', null],
 	['Tooltip', 'span', 'so-tooltip', isTooltip, 'so-tooltip', null],
+	// Корень — сама панель слоя: уезжает в `body` с атрибутами потребителя, а
+	// подложка рядом — спутник, атрибутов разметки у неё нет
+	['Dialog', 'div', 'so-dialog', isDialog, 'so-dialog', null],
+	['Drawer', 'div', 'so-drawer', isDrawer, 'so-drawer', null],
 	['Label', 'label', 'so-label', isLabel, 'so-label', null],
 	['Field', 'div', 'so-field', isField, 'so-field', null],
 	['CheckBox', 'span', 'so-check-box', isCheckBox, 'so-check-box', 'input'],

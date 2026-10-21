@@ -23,6 +23,7 @@ import {
 	TABLE_COLUMN_SLOTS,
 	TABLE_ROW_SLOTS,
 	TABS_ITEM_SLOTS,
+	TOASTS_ITEM_SLOTS,
 	type TItemSlots,
 } from '@soldy-ui/webc'
 // Таблица пробросов сторожа setup — строки «владелец, слот ← источник, слот, ключ»
@@ -52,6 +53,7 @@ describe('карта копий образцов — строки таблицы
 		['RadioGroup', RADIO_GROUP_ITEM_SLOTS],
 		['ListBox', LIST_BOX_ITEM_SLOTS],
 		['Pagination', PAGINATION_ITEM_SLOTS],
+		['Toasts', TOASTS_ITEM_SLOTS],
 	] as const)('%s', (owner, slots) => {
 		const relays = relaysOf(owner)
 

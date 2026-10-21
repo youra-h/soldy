@@ -70,13 +70,18 @@
  * это нативный тег: `role` и `tabindex` оно не пишет, а `disabled` пишет
  * нативным атрибутом, как у `<Button>` во Vue.
  *
- * Корень — сам элемент, кроме компонента, чей внешний узел — обёртка вокруг
- * корня: окно таблицы (`<div is="so-table">`, класс `so-table__viewport`)
- * вокруг `table`. Тогда корень — узел шаблона внутри элемента
- * (`TRootSpec.wrapped`): на него ложится всё, что ядро пишет на корень, с ним
- * связан `TElementPlugin`, и тег ядру уходит его, а элементу остаются скрытие
- * и класс и стиль потребителя — как окну у Vue и React. Остальные атрибуты
- * разметки у таблицы едут на корень: он же её поле (`control`, ниже).
+ * Корень — сам элемент, кроме компонента, чей корень — узел шаблона внутри
+ * элемента-обёртки (`TRootSpec.wrapped`): на него ложится всё, что ядро пишет
+ * на корень, с ним связан `TElementPlugin`, и тег ядру уходит его. Обёртка
+ * бывает двух видов. Окно таблицы (`<div is="so-table">`, класс
+ * `so-table__viewport`) вокруг `table` — внешний узел компонента: элементу
+ * остаются скрытие и класс и стиль потребителя — как окну у Vue и React, — а
+ * остальные атрибуты разметки у таблицы едут на корень: он же её поле
+ * (`control`, ниже). Менеджер тостов `<so-toasts>` вокруг приложения — только
+ * место: его корень, регион, уезжает в слой, а элемент без коробки остаётся
+ * с приложением, у Vue узла у него нет вовсе. Поэтому внешний узел — сам
+ * регион: на него база переносит все атрибуты разметки элемента, класс и стиль
+ * тоже, и его же прячет.
  *
  * Компонент бывает и невизуальным — окно `<so-virtual>`: классов, наборов и
  * видимости у него нет, и база, которая читает их из состояния по имени,
@@ -102,9 +107,13 @@
  * (у Skeleton нет — она убирает только заглушку), стоит ли корень по месту в
  * коллекции (`order` — элементы Tabs и Accordion), без какого выхода корень
  * скрыт (`shownBy` — `active` у панели таба), уезжает ли корень в слой
- * (`teleport` у Frame): тогда база уводит его в цель по селектору (`TTeleport`,
- * `teleport.ts`), а без цели прячет на месте — это ещё одна причина скрытия,
- * рядом с `rendered` и `visible`, — какие наборы ядра лежат на корне (`sets`)
+ * (`teleport` у Frame, Dialog, Drawer и Toasts): тогда база уводит его в цель
+ * по селектору (`TTeleport`, `teleport.ts`), а без цели прячет на месте — это
+ * ещё одна причина скрытия, рядом с `rendered` и `visible`. Спутник корня слоя
+ * — подложку окна и выезжающей панели, которую строит шаблон
+ * (`TTemplateParts.companion`), — база ставит прямо перед корнем, увозит и
+ * возвращает с ним и прячет вместе с ним. Ещё описание корня называет, какие
+ * наборы ядра лежат на корне (`sets`)
  * и из какого выхода берётся его слой `aria` (`aria` — `rootAria` у Slider),
  * есть ли в корне поле (`control`, см. ниже), объявляет ли поле `id`, когда
  * атрибуты разметки остаются корню (`fieldId` — Rating, см. ниже), и не
@@ -289,6 +298,14 @@ export type TRootSet = (typeof ROOT_SETS)[number]
  */
 const ROOT_ONLY = new Set(['class', 'style', 'is', 'slot'])
 
+/**
+ * Атрибуты элемента-обёртки, чей корень уезжает в слой, которые остаются на
+ * элементе, сверх входов пропов и своих атрибутов: `is` — имя элемента, `slot`
+ * — его место в свете родителя. Класс и стиль уходят корню вместе с остальным:
+ * элемент — только место, у Vue на нём нет и узла (см. шапку).
+ */
+const PLACE_ONLY = new Set(['is', 'slot'])
+
 /** Атрибут корня с полем, который ведёт не корень, а поле, — если поле его объявляет (см. шапку). */
 const CONTROL_ID = 'id'
 
@@ -300,14 +317,15 @@ type TPlacedTarget = Exclude<TSlotTarget, { mode: 'sample' }>
  * назначения — атрибут `slot` на элементе, как в стандарте. Текстовые узлы
  * атрибутов не имеют и без назначения попадают в слот по умолчанию, поэтому
  * `<button is="so-button">Текст</button>` работает как у нативной кнопки. У
- * якоря увезённого корня слот — корня: якорь стоит на его месте.
+ * якоря увезённого корня и у спутника корня слот — корня: якорь стоит на его
+ * месте, спутник — рядом с ним, и в свет контейнера они встают вместе.
  */
 function slotOf(node: ChildNode): string {
 	const assigned = takeAssignedSlot(node)
 
 	if (assigned !== undefined) return assigned
 
-	const element = node instanceof Element ? node : TTeleport.rootAt(node)
+	const element = TTeleport.rootAt(node) ?? (node instanceof Element ? node : undefined)
 
 	return element?.getAttribute('slot') ?? DEFAULT_SLOT
 }
@@ -342,12 +360,13 @@ function targetOf(targets: TSlotTargets, name: string): TSlotTarget | undefined 
 /**
  * Кладёт узел в точку слота: внутрь узла или перед ним (`TSlotTarget`). Точка,
  * которая ведёт в слот детали, назначает узлу этот слот: деталь разложит его
- * по назначению, когда соберётся.
+ * по назначению, когда соберётся. Перед меткой в свете детали узел встаёт
+ * туда, где метка сейчас: до сборки детали — в её свет, после — в её слот.
  */
 function place(node: ChildNode, target: TPlacedTarget): void {
-	if (target.mode === 'append') {
-		if (target.slot !== undefined) assignSlot(node, target.slot)
+	if (target.slot !== undefined) assignSlot(node, target.slot)
 
+	if (target.mode === 'append') {
 		target.node.appendChild(node)
 	} else {
 		target.node.parentNode?.insertBefore(node, target.node)
@@ -371,14 +390,15 @@ function copyOf(node: ChildNode, owner: Document): Node {
 
 /**
  * Куда корню слоя — по состоянию, выходы называет описание корня: селектор
- * цели — непустая строка, всё остальное — цели нет.
+ * цели — непустая строка, всё остальное — цели нет. Выхода «на месте» нет
+ * (окно) — корень всегда в цели.
  */
 function placeOf(state: TStateSnapshot, names: TRootTeleport): TTeleportPlace {
 	const target = state[names.target]
 
 	return {
 		target: typeof target === 'string' && target !== '' ? target : null,
-		contained: state[names.contained] === true,
+		contained: names.contained !== undefined && state[names.contained] === true,
 	}
 }
 
@@ -459,10 +479,13 @@ export type TSoldyElementProps<
  *   `active` фасада — панель видна, только пока активен её таб. Как у Angular;
  * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
- *   у Frame), их называет компонент, как у Angular. Переносит корень
- *   `TTeleport` (`teleport.ts`) — сам элемент потребителя: на первой раскладке
- *   связки и на смене этих выходов. Цели нет — корень на месте и скрыт. Нет —
- *   корень стоит, где его написали;
+ *   у Frame и Drawer, у Dialog и Toasts — только цель), их называет
+ *   компонент, как у Angular. Переносит корень `TTeleport` (`teleport.ts`) —
+ *   сам элемент потребителя, а у обёртки (`wrapped`) — корень внутри неё: на
+ *   первой раскладке связки и на смене этих выходов. Спутник корня, который
+ *   строит шаблон (`TTemplateParts.companion`, подложка окна), стоит прямо
+ *   перед ним и ездит с ним. Цели нет — корень на месте и скрыт вместе со
+ *   спутником. Нет — корень стоит, где его написали, и спутника у него нет;
  * - `sets` — какие наборы ядра база кладёт на корень, по умолчанию все три. У
  *   поля — `attrs` и `dataset`: его `aria` стоит на `<input>`, его кладёт
  *   шаблон (`ownerAttributes`), а `dataset` — на корне, где его читает тема,
@@ -490,7 +513,13 @@ export type TSoldyElementProps<
  *   Элементу остаются скрытие и класс и стиль потребителя — он внешний узел
  *   компонента, как окно у Vue и React; остальные атрибуты разметки уходят
  *   корню, если он же и поле (`control`). Входов пропов у такого корня нет:
- *   их атрибуты потребитель пишет на элемент. Нет — корень сам элемент.
+ *   их атрибуты потребитель пишет на элемент. Обёрнутый корень, который
+ *   уезжает в слой (`teleport`), — сам внешний узел компонента: регион тостов
+ *   в `<so-toasts>`, а элемент без коробки остаётся на месте со светом —
+ *   приложением — и у Vue узла не имеет вовсе. Поэтому атрибуты разметки
+ *   элемента, класс и стиль тоже, база при построении переносит на корень,
+ *   кроме `is`, `slot`, входов пропов и своих атрибутов, а скрытие ложится на
+ *   корень — приложение в элементе остаётся на виду. Нет — корень сам элемент.
  */
 export type TRootSpec = {
 	readonly style?: string
@@ -509,8 +538,11 @@ export type TRootSpec = {
 export type TRootTeleport = {
 	/** Выход с селектором цели: `target` у Frame. */
 	readonly target: string
-	/** Выход «корень на месте, без переноса»: `contained` у Frame. */
-	readonly contained: string
+	/**
+	 * Выход «корень на месте, без переноса»: `contained` у Frame и Drawer. Нет
+	 * — места на месте у слоя нет (окно, регион тостов): корень всегда в цели.
+	 */
+	readonly contained?: string
 }
 
 /**
@@ -674,19 +706,30 @@ export function SoldyElement<
 		 */
 		private _root: HTMLElement = this
 
+		/**
+		 * Внешний узел компонента — на него ложится скрытие: сам элемент, и у окна
+		 * таблицы тоже, а у обёрнутого корня, который уезжает в слой, — корень:
+		 * элемент со светом остаётся на месте и на виду (`TRootSpec.wrapped`).
+		 */
+		private _outer: HTMLElement = this
+
 		/** Память раскладки корня: что поставила база (см. `root-attributes.ts`). */
 		private _appliedClasses: TAppliedClasses = new Set()
 		private _appliedStyles: TAppliedStyles = new Map()
-		/** Память скрытия — у элемента: скрытие ложится на него и у обёрнутого корня. */
+		/** Память скрытия внешнего узла (`_outer`). */
 		private _hiddenDisplay: THiddenDisplay = undefined
 
 		/** Контекст привязок шаблона — живой вид элемента (`_viewOf`). */
 		private readonly _view: ITemplateContext<TInstance, TFacade, TOutputs> = this._viewOf()
 
-		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его первая раскладка. */
+		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его построение. */
 		private _teleport?: TTeleport
 		/** Корень на своём месте: у слоя — в цели или на месте; без цели — нет. */
 		private _placed = true
+		/** Спутник корня слоя (`TTemplateParts.companion`): прячется вместе с корнем. */
+		private _companion: HTMLElement | null = null
+		/** Память скрытия спутника. */
+		private _companionDisplay: THiddenDisplay = undefined
 
 		get state(): TBindingState<TInstance, TFacade> {
 			return this._binding?.state ?? {}
@@ -751,7 +794,8 @@ export function SoldyElement<
 			this._connected = false
 			this._binding?.destroy()
 			this._binding = undefined
-			// Увезённый корень сняли или переставили: якорь уходит с места
+			// Увезённый корень сняли или переставили: якорь уходит с места, а
+			// корень обёртки — за местом, в элемент (`TTeleport.release`)
 			this._teleport?.release()
 		}
 
@@ -908,8 +952,17 @@ export function SoldyElement<
 			// `id` поля — пропом первой сборки, с корня снят; остальное — полю,
 			// если корень с полем (см. шапку)
 			if (fieldId) this._takeFieldId()
-			if (control) this._handOver(parts.control)
+			if (control) this._handOver(this._controlOf(parts.control), ROOT_ONLY)
 			if (wrapped) this._root = this._wrappedRoot(parts.root)
+
+			// Обёрнутый корень в слое — внешний узел: атрибуты разметки и скрытие —
+			// его, элемент остаётся местом (см. `TRootSpec.wrapped`)
+			if (wrapped && layer) {
+				this._handOver(this._root, PLACE_ONLY)
+				this._outer = this._root
+			}
+
+			this._teleport = this._teleportOf(parts.companion)
 
 			// Слоты не наследуются: слота по умолчанию может не быть вовсе
 			// (ProgressSpinner), и узлом содержимого тогда остаётся корень
@@ -935,23 +988,54 @@ export function SoldyElement<
 		}
 
 		/**
-		 * Статические атрибуты разметки корня с полем — полю (см. шапку). На
-		 * корне остаются `class`, `style`, `is`, `slot`, атрибуты-входы пропов и
-		 * свои атрибуты элемента; `id` поля, которое его объявляет, база к этому
-		 * времени уже взяла пропом (`_takeFieldId`). Колбэков снятие не вызывает:
-		 * ни один из этих атрибутов элемент не наблюдает.
+		 * Поле корня, которое построил шаблон (`TRootSpec.control`). Не построил —
+		 * описание корня с шаблоном разошлось, и атрибуты разметки нести некуда.
 		 */
-		private _handOver(field: HTMLElement | undefined): void {
+		private _controlOf(field: HTMLElement | undefined): HTMLElement {
 			if (!field) {
 				throw new Error('[soldy] Описание корня объявляет поле, а шаблон его не построил')
 			}
 
-			for (const name of this.getAttributeNames()) {
-				if (ROOT_ONLY.has(name) || attributes.has(name) || own.has(name)) continue
+			return field
+		}
 
-				field.setAttribute(name, this.getAttribute(name) ?? '')
+		/**
+		 * Статические атрибуты разметки элемента — узлу, который их несёт (см.
+		 * шапку): полю корня, а у обёрнутого корня в слое — корню. На элементе
+		 * остаются `keep` — у поля `class`, `style`, `is`, `slot`, у корня в слое
+		 * только `is` и `slot`, — атрибуты-входы пропов и свои атрибуты элемента;
+		 * `id` поля, которое его объявляет, база к этому времени уже взяла пропом
+		 * (`_takeFieldId`). Колбэков снятие не вызывает: ни один из этих
+		 * атрибутов элемент не наблюдает.
+		 */
+		private _handOver(target: HTMLElement, keep: ReadonlySet<string>): void {
+			for (const name of this.getAttributeNames()) {
+				if (keep.has(name) || attributes.has(name) || own.has(name)) continue
+
+				target.setAttribute(name, this.getAttribute(name) ?? '')
 				this.removeAttribute(name)
 			}
+		}
+
+		/**
+		 * Телепорт корня слоя (`TRootSpec.teleport`) со спутником, который
+		 * построил шаблон. Спутник без слоя — описание корня с шаблоном разошлось:
+		 * ставить его рядом с корнем незачем, а прятать и увозить — некому.
+		 */
+		private _teleportOf(companion: HTMLElement | undefined): TTeleport | undefined {
+			if (layer === undefined) {
+				if (companion) {
+					throw new Error(
+						'[soldy] Шаблон построил спутник корня, а описание корня слоя не объявляет',
+					)
+				}
+
+				return undefined
+			}
+
+			this._companion = companion ?? null
+
+			return new TTeleport(this, this._root, this._companion)
 		}
 
 		/**
@@ -1187,20 +1271,24 @@ export function SoldyElement<
 			}
 
 			// Слой — в цель или на место: на первой раскладке связки и на смене
-			// цели или «на месте». Корень потребителя, и переносит его база
+			// цели или «на месте». Корень потребителя или корень в обёртке, и
+			// переносит его база — вместе со спутником
+			const teleport = this._teleport
 			const placing =
-				layer !== undefined && (full || changed(layer.target) || changed(layer.contained))
+				layer !== undefined &&
+				teleport !== undefined &&
+				(full ||
+					changed(layer.target) ||
+					(layer.contained !== undefined && changed(layer.contained)))
 
-			if (placing) {
-				this._teleport ??= new TTeleport(this)
-				this._placed = this._teleport.place(placeOf(snapshot, layer))
-			}
+			if (placing) this._placed = teleport.place(placeOf(snapshot, layer))
 
 			// Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка,
 			// ни потребитель. Прячут корень `rendered` и `visible`, если видимость
 			// его прячет, выход, без которого корня нет (`shownBy`), и слой без
-			// цели: корень на месте, а места у панели нет. Прячется элемент, и у
-			// обёрнутого корня тоже: спрятана обёртка — спрятан и корень в ней
+			// цели: корень на месте, а места у панели нет. Прячется внешний узел
+			// компонента: элемент, и у окна таблицы тоже — спрятано окно, спрятан и
+			// корень в нём, — а у корня в слое — сам корень. Спутник — вместе с ним
 			if (
 				changed('rendered') ||
 				changed('visible') ||
@@ -1210,12 +1298,17 @@ export function SoldyElement<
 				const unseen =
 					hides && (snapshot['rendered'] === false || snapshot['visible'] === false)
 				const absent = shownBy !== undefined && snapshot[shownBy] !== true
+				const hidden = unseen || absent || !this._placed
 
-				this._hiddenDisplay = applyHidden(
-					this,
-					unseen || absent || !this._placed,
-					this._hiddenDisplay,
-				)
+				this._hiddenDisplay = applyHidden(this._outer, hidden, this._hiddenDisplay)
+
+				if (this._companion) {
+					this._companionDisplay = applyHidden(
+						this._companion,
+						hidden,
+						this._companionDisplay,
+					)
+				}
 			}
 
 			for (const binding of spec.template.bindings) {
