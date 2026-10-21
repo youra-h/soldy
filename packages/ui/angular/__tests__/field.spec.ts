@@ -6,8 +6,9 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку в свой слой лифта
  * (`provideElevator()`), контрол её берёт. Labelable-контрол (Input,
- * NumberInput, CheckBox, Switch) подпись называет своим `for`, группу
- * (RadioGroup) — ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
+ * NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой) подпись
+ * называет своим `for`, группу (RadioGroup, Slider с несколькими ручками) —
+ * ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
  * ошибку — `aria-invalid` и `data-invalid` на своём корне.
  *
  * Угол зрения здесь свой. Обёртки нет: корень — элемент потребителя
@@ -20,7 +21,7 @@
 import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { TField, TInput, type TFieldPosition } from '@soldy-ui/core'
+import { TField, TInput, TSlider, type TFieldPosition, type TSliderMarks } from '@soldy-ui/core'
 import {
 	SlotDirective,
 	TCheckBoxComponent,
@@ -30,6 +31,8 @@ import {
 	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TRatingComponent,
+	TSliderComponent,
 	TSwitchComponent,
 } from '@soldy-ui/angular'
 import { findIn, markupOf, mountHost } from './mount'
@@ -101,8 +104,16 @@ class PositionHost {
 })
 class SectionHost {}
 
-/** Вид контрола в поле. */
-type TControl = 'input' | 'number-input' | 'check-box' | 'switch' | 'radio-group'
+/** Вид контрола в поле; `slider-range` — ползунок с двумя ручками. */
+type TControl =
+	| 'input'
+	| 'number-input'
+	| 'check-box'
+	| 'switch'
+	| 'rating'
+	| 'slider'
+	| 'slider-range'
+	| 'radio-group'
 
 /**
  * Поле над своим экземпляром и контрол в нём по виду. Вид и экземпляр
@@ -116,6 +127,8 @@ type TControl = 'input' | 'number-input' | 'check-box' | 'switch' | 'radio-group
 		TNumberInputComponent,
 		TCheckBoxComponent,
 		TSwitchComponent,
+		TRatingComponent,
+		TSliderComponent,
 		TRadioGroupComponent,
 		TRadioGroupItemComponent,
 	],
@@ -132,6 +145,15 @@ type TControl = 'input' | 'number-input' | 'check-box' | 'switch' | 'radio-group
 			}
 			@case ('switch') {
 				<span so-switch></span>
+			}
+			@case ('rating') {
+				<span so-rating></span>
+			}
+			@case ('slider') {
+				<span so-slider></span>
+			}
+			@case ('slider-range') {
+				<span so-slider [value]="[20, 80]" [thumbLabels]="['От', 'До']"></span>
 			}
 			@case ('radio-group') {
 				<div so-radio-group>
@@ -245,13 +267,16 @@ describe('Field · разметка', () => {
 /**
  * Labelable-контрол: `for` подписи ведёт на его поле, а справка и ошибка — в
  * наборе поля. Селекторы — корень контрола и поле, которое называет подпись:
- * у NumberInput — ввод числа, а не скрытое поле формы.
+ * у NumberInput — ввод числа, а не скрытое поле формы, у оценки и ползунка с
+ * одной ручкой — поле ручки.
  */
 const LABELABLES = [
 	['Input', 'input', '[so-input]', '[so-input] input'],
 	['NumberInput', 'number-input', '[so-number-input]', '.so-number-input__input'],
 	['CheckBox', 'check-box', '[so-check-box]', '[so-check-box] input'],
 	['Switch', 'switch', '[so-switch]', '[so-switch] input'],
+	['Rating', 'rating', '[so-rating]', '[so-rating] input'],
+	['Slider', 'slider', '[so-slider]', '[so-slider] input'],
 ] as const
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
@@ -334,6 +359,96 @@ describe('RadioGroup в поле', () => {
 			false,
 			false,
 		])
+	})
+})
+
+@Component({
+	standalone: true,
+	imports: [TFieldComponent, TSliderComponent],
+	template: `<div so-field label="Цена"><span so-slider [ctrl]="slider"></span></div>`,
+})
+class SliderCtrlHost {
+	readonly slider = new TSlider({ value: 30 })
+}
+
+/**
+ * Ползунок с несколькими ручками — группа: `for` назвал бы одно поле из них, а
+ * ссылка на подпись в наборе полей перекрыла бы имена ручек (`thumbLabels`).
+ * Подпись и справка — у корня (`role="group"`, набор корня `rootAria`), а
+ * ошибка — `aria-invalid` на каждом поле: на группе ARIA ошибки не объявляет.
+ */
+describe('Slider с несколькими ручками в поле', () => {
+	const root = (fixture: ComponentFixture<unknown>) => node(fixture, '[so-slider]')
+	const thumbs = (fixture: ComponentFixture<unknown>): HTMLInputElement[] => [
+		...fixture.nativeElement.querySelectorAll('[so-slider] input'),
+	]
+
+	it('for у подписи нет, корень — группа со ссылкой на подпись, имена ручек целы', () => {
+		const fixture = mountControl(new TField({ label: 'Цена' }), 'slider-range')
+
+		expect(labelOf(fixture).hasAttribute('for')).toBe(false)
+		expect(root(fixture).getAttribute('role')).toBe('group')
+		expect(refsOf(root(fixture), 'aria-labelledby')).toEqual([labelOf(fixture).id])
+		expect(thumbs(fixture).map((thumb) => thumb.getAttribute('aria-label'))).toEqual([
+			'От',
+			'До',
+		])
+		expect(thumbs(fixture).map((thumb) => thumb.hasAttribute('aria-labelledby'))).toEqual([
+			false,
+			false,
+		])
+		expect(thumbs(fixture).map((thumb) => thumb.id)).toEqual(['', ''])
+	})
+
+	it('справка — у группы, ошибка — aria-invalid на каждой ручке, data-invalid на корне', () => {
+		const ctrl = new TField({ label: 'Цена', helper: 'Подсказка', error: 'Ошибка' })
+		const fixture = mountControl(ctrl, 'slider-range')
+
+		expect(refsOf(root(fixture), 'aria-describedby')).toEqual([
+			node(fixture, '.so-field__helper').id,
+		])
+		expect(thumbs(fixture).map((thumb) => thumb.hasAttribute('aria-describedby'))).toEqual([
+			false,
+			false,
+		])
+
+		ctrl.invalid = true
+		fixture.detectChanges()
+
+		expect(refsOf(root(fixture), 'aria-describedby')).toEqual([
+			node(fixture, '.so-field__error').id,
+		])
+		expect(thumbs(fixture).map((thumb) => thumb.getAttribute('aria-invalid'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(root(fixture).hasAttribute('aria-invalid')).toBe(false)
+		expect(root(fixture).dataset['invalid']).toBe('true')
+	})
+
+	it('число ручек сменилось — подпись за ним: for у одной, ссылка группы у нескольких', () => {
+		const fixture = mountHost(SliderCtrlHost)
+		const { slider } = fixture.componentInstance
+
+		expect(labelOf(fixture).htmlFor).toBe(input(fixture, '[so-slider] input').id)
+
+		slider.value = [20, 80]
+		fixture.detectChanges()
+
+		expect(labelOf(fixture).hasAttribute('for')).toBe(false)
+		expect(root(fixture).getAttribute('role')).toBe('group')
+		expect(refsOf(root(fixture), 'aria-labelledby')).toEqual([labelOf(fixture).id])
+		expect(thumbs(fixture).map((thumb) => thumb.id)).toEqual(['', ''])
+
+		slider.value = 50
+		fixture.detectChanges()
+
+		const field = input(fixture, '[so-slider] input')
+
+		expect(field.id).not.toBe('')
+		expect(labelOf(fixture).htmlFor).toBe(field.id)
+		expect(root(fixture).hasAttribute('role')).toBe(false)
+		expect(root(fixture).hasAttribute('aria-labelledby')).toBe(false)
 	})
 })
 
@@ -481,6 +596,68 @@ class ReleasedHost {
 	readonly nested = signal(false)
 }
 
+/**
+ * Слоты ползунка и оценки — шаблоны, объявленные внутри контрола: DI ведёт из
+ * них в слой контрола, с пустой связкой. Флажок взял связку раньше них, его
+ * сняли, а переключатель появляется в подписи метки или в значке звезды позже.
+ */
+@Component({
+	selector: 'probe-field-slider-mark',
+	standalone: true,
+	imports: [
+		TFieldComponent,
+		TCheckBoxComponent,
+		TSliderComponent,
+		TSwitchComponent,
+		SlotDirective,
+	],
+	template: `<div so-field label="Подпись" helper="Подсказка">
+		@if (first()) {
+			<span so-check-box></span>
+		}
+		<span so-slider [value]="20" [marks]="marks">
+			<ng-template slot="mark">
+				@if (nested()) {
+					<span so-switch></span>
+				}
+			</ng-template>
+		</span>
+	</div>`,
+})
+class SliderMarkReleasedHost {
+	readonly first = signal(true)
+	readonly nested = signal(false)
+	readonly marks: TSliderMarks = [{ value: 50 }]
+}
+
+@Component({
+	selector: 'probe-field-rating-icon',
+	standalone: true,
+	imports: [
+		TFieldComponent,
+		TCheckBoxComponent,
+		TRatingComponent,
+		TSwitchComponent,
+		SlotDirective,
+	],
+	template: `<div so-field label="Подпись" helper="Подсказка">
+		@if (first()) {
+			<span so-check-box></span>
+		}
+		<span so-rating [max]="1">
+			<ng-template slot="icon" let-filled="filled">
+				@if (filled && nested()) {
+					<span so-switch></span>
+				}
+			</ng-template>
+		</span>
+	</div>`,
+})
+class RatingIconReleasedHost {
+	readonly first = signal(true)
+	readonly nested = signal(false)
+}
+
 @Component({
 	standalone: true,
 	imports: [TFieldComponent, TInputComponent],
@@ -524,6 +701,28 @@ describe('Field · одно поле — один контрол', () => {
 	 */
 	it('связка освободилась — контрол в слоте другого контрола её не берёт', () => {
 		const fixture = mountHost(ReleasedHost)
+
+		fixture.componentInstance.first.set(false)
+		fixture.detectChanges()
+		fixture.componentInstance.nested.set(true)
+		fixture.detectChanges()
+
+		const nested = input(fixture, '[so-switch] input')
+
+		expect(nested.id).toBe('')
+		expect(nested.hasAttribute('aria-describedby')).toBe(false)
+	})
+
+	/**
+	 * Слоты ползунка и оценки разворачиваются под их слоем лифта, с пустой
+	 * связкой: контрол в подписи метки или в значке звезды — их содержимое, а не
+	 * контрол поля.
+	 */
+	it.each([
+		['Slider, слот mark', SliderMarkReleasedHost],
+		['Rating, слот icon', RatingIconReleasedHost],
+	])('%s: связка освободилась — контрол в слоте её не берёт', (_name, host) => {
+		const fixture = mountHost(host)
 
 		fixture.componentInstance.first.set(false)
 		fixture.detectChanges()

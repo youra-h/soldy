@@ -30,12 +30,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, type ApplicationRef, type Type } from '@angular/core'
 import type { TTableColumnSource } from '@soldy-ui/core'
+import { ruRU } from '@soldy-ui/plugins'
 import {
+	LocaleProviderDirective,
 	TAccordionComponent,
 	TAccordionItemComponent,
 	TDragAndDropComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TPaginationComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TTableComponent,
@@ -249,6 +252,120 @@ describe('RadioGroup · серверный рендер', () => {
 		expect(fields.map((field) => field.hasAttribute('checked'))).toEqual([false, true, false])
 		expect(names.size).toBe(1)
 		expect([...names][0]).toMatch(/\S/)
+	})
+})
+
+/**
+ * Пагинация: страницы окна кладёт в коллекцию её расширение при сборке, а
+ * сборка идёт и на сервере, — сервер рисует окно с текущей страницей и
+ * пропусками. Имена стрелок и цифры номеров пишут плагины имён и языка по
+ * локали поддерева, тоже при сборке. Страница — внутренняя часть: её элемент
+ * рисует шаблон пагинации, и гидратация находит его на месте.
+ */
+describe('Pagination · серверный рендер и гидратация', () => {
+	@Component({
+		selector: 'app-root',
+		standalone: true,
+		imports: [TPaginationComponent, LocaleProviderDirective],
+		template: `<div so-locale-provider [locale]="locale">
+			<nav so-pagination [total]="100" [value]="5" aria_label="Страницы"></nav>
+		</div>`,
+	})
+	class PaginationPage {
+		readonly locale = ruRU
+	}
+
+	@Component({
+		selector: 'app-root',
+		standalone: true,
+		imports: [TPaginationComponent, LocaleProviderDirective],
+		template: `<div so-locale-provider [locale]="locale">
+			<nav so-pagination [total]="200000" [value]="12345"></nav>
+		</div>`,
+	})
+	class DigitsPage {
+		readonly locale = ruRU
+	}
+
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	/** Ряд строкой: пропуск — «…», текущая — в скобках. */
+	const row = (page: ParentNode) =>
+		all(page, '.so-pagination__list > li')
+			.map((place) => {
+				const text = place.textContent?.trim() ?? ''
+
+				return place.querySelector('[aria-current="page"]') ? `[${text}]` : text
+			})
+			.join(' ')
+
+	/** Кнопка страницы по её тексту. */
+	const page = (scope: ParentNode, text: string) =>
+		all(scope, '.so-pagination-item > button').find(
+			(button) => button.textContent?.trim() === text,
+		)
+
+	it('окно, текущая и имена — уже в разметке сервера', async () => {
+		const server = await serverPage(PaginationPage)
+
+		expect(row(server)).toBe('1 … 4 [5] 6 … 10')
+		expect(attributeOf(all(server, 'nav'), 'aria-label')).toEqual(['Страницы'])
+		expect(attributeOf(all(server, '.so-pagination__prev'), 'aria-label')).toEqual([
+			'Предыдущая страница',
+		])
+		expect(attributeOf(all(server, '.so-pagination__next'), 'aria-label')).toEqual([
+			'Следующая страница',
+		])
+		// Текущая — у кнопки и у места: обе отметки сервер рисует сразу
+		expect(attributeOf(all(server, '.so-pagination-item'), 'data-selected')).toEqual([
+			'false',
+			'false',
+			'true',
+			'false',
+			'false',
+		])
+	})
+
+	it('цифры номеров — по локали поддерева', async () => {
+		const ru = new Intl.NumberFormat('ru-RU')
+		const server = await serverPage(DigitsPage)
+
+		expect(row(server)).toBe(
+			[
+				'1',
+				'…',
+				ru.format(12_344),
+				`[${ru.format(12_345)}]`,
+				ru.format(12_346),
+				'…',
+				ru.format(20_000),
+			].join(' '),
+		)
+	})
+
+	it('гидратация берёт страницы сервера, ошибок нет; нажатие доходит до разметки', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(PaginationPage))
+
+		const six = page(document, '6')
+		const app = await hydrate(PaginationPage)
+
+		await app.whenStable()
+
+		expect(six).toBeInstanceOf(HTMLElement)
+		expect(page(document, '6')).toBe(six)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+
+		if (six instanceof HTMLElement) six.click()
+		await app.whenStable()
+
+		expect(row(document)).toBe('1 … 5 [6] 7 … 10')
 	})
 })
 

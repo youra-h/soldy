@@ -1,0 +1,108 @@
+<!--
+	Корень — сам хост (`<span so-slider>`), поэтому шаблон — дорожка с
+	заливкой, метками и ручками. Слоты контракта: mark (scope { value, label })
+	и thumb (scope { value, index }).
+
+	Всё, что в ручках и метках зависит от значения, ядро отдаёт готовым:
+	позиции — CSS-переменными в стиле, состояния — наборами `data-*`. Ручки и
+	метки идут по месту (`track $index`): записи выходов новые на каждую смену,
+	а узел ручки и его поле остаются теми же.
+
+	Дорожка — ход центров ручек: 0 % и 100 % значения — края её коробки по оси,
+	её мерит плагин указателя. Рельс рисует тема псевдоэлементом, своего узла у
+	него нет. Ручку и поле плагины находят по классам и только прямыми детьми:
+	`__thumb` — ребёнок дорожки, `input` — ребёнок ручки.
+-->
+<span class="so-slider__track">
+	<!--
+		Заливка — одна на ползунок: от начала или от `origin` до ручки, у
+		нескольких ручек — между крайними. Края приходят переменными
+		(`--so-slider-range-start`, `--so-slider-range-end`).
+	-->
+	<span class="so-slider__range" [style]="state()['rangeStyle']"></span>
+	<!--
+		Метки — только если они заданы: точками шкалы или списком. Каждая метка —
+		позиция в стиле (`--so-slider-position`) и состояния `data-in-range` и
+		`data-current`. Блок — под `aria-hidden`, как подсказка: подписи меток —
+		зрительная шкала, значение и границы объявляет поле, а в подписи `Label`
+		их текст вошёл бы в имя поля.
+
+		Подпись — шаблон слота `mark` со scope метки, без него — её `label`
+		текстом узла. Пустую подпись тема прячет по `:empty`, и метка остаётся
+		одной точкой: у подписи без текста в узле нет ни одного ребёнка.
+	-->
+	@if ((state()['shownMarks'] ?? []).length > 0) {
+		<span class="so-slider__marks" aria-hidden="true">
+			@for (mark of state()['shownMarks'] ?? []; track $index) {
+				<span class="so-slider__mark" [style]="mark.style" [so-attributes]="mark.dataset">
+					@if (slot('mark'); as content) {
+						<span class="so-slider__mark-label"
+							><ng-container
+								[ngTemplateOutlet]="content"
+								[ngTemplateOutletContext]="{
+									value: mark.value,
+									label: mark.label,
+								}"
+						/></span>
+					} @else {
+						<span class="so-slider__mark-label" [textContent]="mark.label ?? ''"></span>
+					}
+				</span>
+			}
+		</span>
+	}
+	<!--
+		Ручка — по одной на значение: позиция в стиле (`--so-slider-position`),
+		состояние `data-dragging`. Подсказка со значением — внутри ручки, поэтому
+		едет за ней сама.
+	-->
+	@for (thumb of state()['thumbs'] ?? []; track $index) {
+		<span class="so-slider__thumb" [style]="thumb.style" [so-attributes]="thumb.dataset">
+			<!--
+				Нативное поле — по одному в ручке. Мобильные скринридеры двигают его
+				своим жестом, `name`, `disabled` и отправку формы даёт браузер,
+				ARIA-дублей ему нет. Ход поля — соседи и зазор, шаг — шкалы (`any` у
+				списка). Значение пишет директива текста поля — после хода:
+				записанное раньше нового `max`, оно встало бы на прежний край, — и
+				только разошедшееся с узлом. Набор поля ядро отдаёт целиком
+				(`thumb.aria`): у одной ручки — весь `aria` ползунка, у нескольких —
+				ориентация и ошибка, а имя ручки из `thumbLabels` в нём уже сильнее.
+				Тема делает поле прозрачным во всю ручку и не пускает к нему
+				указатель: тянет плагин, а не браузер.
+			-->
+			<input
+				class="so-slider__input"
+				type="range"
+				[min]="thumb.min"
+				[max]="thumb.max"
+				[step]="thumb.step"
+				[so-field-text]="thumb.value | soText"
+				[attr.name]="state()['name'] ?? null"
+				[disabled]="state()['disabled'] === true"
+				[so-attributes]="thumb.aria"
+			/>
+			<!--
+				Подсказка со значением — только когда она включена (`tooltip`):
+				рисовать ли, решает ядро (`tooltipRendered`), когда показывать в
+				`auto` — тема. Под `aria-hidden`: значение объявляет поле.
+				Содержимое — шаблон слота `thumb` со scope ручки, без него — её
+				значение текстом узла, без пробелов по краям.
+			-->
+			@if (state()['tooltipRendered']) {
+				@if (slot('thumb'); as content) {
+					<span class="so-slider__tooltip" aria-hidden="true"
+						><ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ value: thumb.value, index: $index }"
+					/></span>
+				} @else {
+					<span
+						class="so-slider__tooltip"
+						aria-hidden="true"
+						[textContent]="thumb.value | soText"
+					></span>
+				}
+			}
+		</span>
+	}
+</span>
