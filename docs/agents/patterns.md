@@ -408,8 +408,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  NumberInput, CheckBox, Switch и RadioGroup, у Svelte и Solid — ещё Rating,
-  Slider и Select.
+  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
+  Select, у Solid — ещё Rating, Slider, Select, DateInput и DatePicker.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -1620,7 +1620,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/calendar-picker.spec.ts`,
   `plugins/__tests__/calendar-keyboard.plugin.spec.ts`,
   `plugins/__tests__/calendar-pointer.plugin.spec.ts`,
-  `ui/vue/__tests__/calendar.spec.ts` и `playground/vue/browser/calendar.spec.ts`.
+  `ui/vue/__tests__/calendar.spec.ts`, `ui/solid/__tests__/calendar.spec.tsx`
+  (у Solid ещё — кнопка заголовка, её поповер и живая область те же при
+  листании и выборе месяца, панель выбора — прямой потомок корня поповера) и
+  `playground/vue/browser/calendar.spec.ts`.
 - **DateInput** — поле даты из частей (`spinbutton`) в группе, с
   `kind: 'datetime'` — даты и времени, с `timePrecision: 'second'` — до
   секунды: корень — `role="group"`, имя — `aria_label` или `aria_labelledBy`
@@ -1681,7 +1684,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   после `ready`. `id` частей пишет `TDateInputIdsPlugin` от монтирования.
   Сторожат `core/__tests__/date-input.spec.ts`,
   `plugins/__tests__/date-input.plugin.spec.ts`,
-  `ui/vue/__tests__/date-input.spec.ts` и
+  `ui/vue/__tests__/date-input.spec.ts`, `ui/solid/__tests__/date-input.spec.tsx`
+  (у Solid ещё — узел части тот же при наборе и при смене локали, а часть,
+  которую браузер оставил пустой, получает текст ядра: он — `textContent`
+  узла) и
   `playground/vue/browser/date-input.spec.ts` — протяжка с левого края дня и
   месяца, Ctrl+C и Ctrl+X без переводов строк, Ctrl+A, контекстное меню, ввод
   времени и секунд с клавиатуры, ширина поля при наборе года и у поля до
@@ -1745,6 +1751,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/date-picker.spec.ts`,
   `plugins/__tests__/date-picker.plugin.spec.ts`,
   `ui/vue/__tests__/date-picker.spec.ts`,
+  `ui/solid/__tests__/date-picker.spec.tsx`,
   `playground/vue/browser/date-picker.spec.ts` и
   `playground/vue/browser/anchored-swipe.spec.ts`.
 - **Pagination** — постраничная навигация. Своего паттерна APG у неё нет:
