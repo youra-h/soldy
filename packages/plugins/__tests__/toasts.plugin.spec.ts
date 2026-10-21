@@ -24,6 +24,7 @@ import {
 	TCollectionElements,
 	TElementPlugin,
 	TPluginBundle,
+	TReadyPlugin,
 	TToastsCascadePlugin,
 	TToastsKeyboardPlugin,
 	TToastsLayoutPlugin,
@@ -66,13 +67,16 @@ type TMountOptions = {
 
 /**
  * Регион тостов с плагинами: показ рисует показанные тосты, как разметка, —
- * узел и набор каждому новому, а ушедшие из выборки снимает.
+ * узел и набор каждому новому, а ушедшие из выборки снимает. Узел региона
+ * объявляет кадром `TElementPlugin`, и `TReadyPlugin` отдаёт его региону, как
+ * у компонента: номер слоя открыт только у слоя с узлом.
  */
 function mount({ owner: props, plugins, detached = false }: TMountOptions) {
 	const owner = new TToasts(props)
 	const engine = createEngineToasts({ owner })
 	const bundle = new TPluginBundle(owner)
 		.use(TElementPlugin)
+		.use(TReadyPlugin)
 		.use(TCollectionBundlesPlugin)
 		.use(TCollectionElements)
 
@@ -866,12 +870,16 @@ describe('TToastsCascadePlugin — фокус после перерисовки'
 })
 
 describe('TToastsLayoutPlugin — слой в стилях', () => {
-	it('styles — z-index слоя; подъём — новый объект и событие', () => {
+	it('styles — z-index слоя; подъём — новый объект и событие', async () => {
 		const { owner, bundle } = mount({ plugins: [TToastsLayoutPlugin] })
 		const layout = pluginOf(bundle, TToastsLayoutPlugin)
+
+		await nextFrame()
+
 		const before = layout.styles
 		const onStyles = vi.fn()
 
+		expect(owner.zIndex).toBeGreaterThan(0)
 		expect(before).toEqual({ 'z-index': owner.zIndex })
 
 		layout.events.on('change:styles', onStyles)
@@ -880,5 +888,22 @@ describe('TToastsLayoutPlugin — слой в стилях', () => {
 		expect(layout.styles).not.toBe(before)
 		expect(layout.styles).toEqual({ 'z-index': owner.zIndex })
 		expect(onStyles).toHaveBeenCalledTimes(1)
+	})
+
+	/**
+	 * Регион видим с создания и есть в разметке сервера, где узла нет: номер
+	 * счётчика процесса в неё не попадает, `z-index` — 0 и у сервера, и в
+	 * первой отрисовке браузера. Номер приходит кадром узла.
+	 */
+	it('до кадра узла — z-index 0, кадр узла открывает номер слоя', async () => {
+		const { owner, bundle } = mount({ plugins: [TToastsLayoutPlugin] })
+		const layout = pluginOf(bundle, TToastsLayoutPlugin)
+
+		expect(layout.styles).toEqual({ 'z-index': 0 })
+
+		await nextFrame()
+
+		expect(owner.zIndex).toBeGreaterThan(0)
+		expect(layout.styles).toEqual({ 'z-index': owner.zIndex })
 	})
 })

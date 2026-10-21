@@ -22,11 +22,14 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > Input, NumberInput (a number in the locale's format with − and + step buttons; the form gets the
 > number), Textarea (multi-line, growing with its text, with a character counter), CheckBox and
 > Switch, Slider (a number or a range) and Rating, the form field `Field` (label, helper and error
-> linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
-> (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
-> or `items`), Pagination, Table (columns and rows as data — `columns`, `items` — with sorting,
-> row selection, column resizing and reordering), the `Scroller` strip, the `Virtual` window for
-> long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the
+> linked to the control inside it), the collections ListBox, Tabs, Accordion, RadioGroup and Tags
+> (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`,
+> `<Tags.Item>` or `items`; tags close, select by mode and either wrap or scroll), Select (a
+> combobox: `<Select.Item>` and `<Select.Group>` or `items`, `editable` with search or filter,
+> tags in the field in `multiple`), Pagination, Table (columns and rows as data — `columns`,
+> `items` — with sorting, row selection, column resizing and reordering), the `Scroller` strip,
+> the `Virtual` window for long lists (`<Virtual><ListBox items={…} /></Virtual>`, the same with
+> `Select` and `Table`) and the
 > `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
 > cancel) are ported, the rest of the set is on its way. Icon renders the `tag` it is given: an
@@ -38,15 +41,18 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > region. A change of `contained` or `target` moves the same nodes, and a field in the panel keeps
 > what was typed. Popover, Tooltip and Menu keep the trigger in their root and anchor their panel,
 > a Frame, to that root; your attributes and `ref` go to the root, not to the panel. The items of a
-> menu stand in its panel, so they are drawn on the client, not on the server. A field gives its
-> class and style to the root and every other attribute to its `<input>` (a textarea — to its
-> `<textarea>`), except Slider and Rating: they keep every attribute on the root — a slider has a
-> field per thumb, and the pointer never reaches the field. An item of a collection, a menu item
-> too, gives them to its row; a list box and tabs give them to the list itself, `[role=listbox]` or
-> `[role=tablist]`; a table gives them to the `<table>` itself, and its class, style and `ref` to
-> the scroll viewport around it; otherwise `ref` gets the root. `Label` names the control it
-> wraps; `LocaleProvider` gives a subtree its language and library strings, such as the name of
-> the clear button of `Input` or the arrows of `Pagination`. See
+> menu stand in its panel, so they are drawn on the client, not on the server. Select anchors its
+> list panel to its root the same way: the server renders a Select from `items` with the text of
+> the selected option (with tags in `multiple`); options given as markup live in the panel and
+> join the collection on the client. A field — and Select — gives its class and style to the root
+> and every other attribute to its `<input>` (a textarea — to its `<textarea>`), except Slider and
+> Rating: they keep every attribute on the root — a slider has a field per thumb, and the pointer
+> never reaches the field. An item of a collection, a menu item too, gives them to its row; a list
+> box and tabs give them to the list itself, `[role=listbox]` or `[role=tablist]`; a table gives
+> them to the `<table>` itself, and its class, style and `ref` to the scroll viewport around it;
+> otherwise `ref` gets the root. `Label` names the control it wraps; `LocaleProvider` gives a
+> subtree its language and library strings, such as the name of the clear button of `Input` or the
+> arrows of `Pagination`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install

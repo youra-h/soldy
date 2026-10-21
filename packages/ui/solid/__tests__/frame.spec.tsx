@@ -21,7 +21,7 @@ import { createSignal, type JSX } from 'solid-js'
 import { TFrame } from '@soldy-ui/core'
 import { TAnchorPlugin, TPluginBundle, ruRU } from '@soldy-ui/plugins'
 import { Button, Frame, LocaleProvider } from '@soldy-ui/solid'
-import { find, mount } from './mount'
+import { find, mount, nextFrame } from './mount'
 
 /** Узел Frame — там, куда его увёл телепорт. */
 const frame = () => find(document, '.so-frame', HTMLElement)
@@ -247,8 +247,13 @@ describe('Frame · rendered и visible', () => {
 })
 
 describe('Frame · слой и раскладка', () => {
-	it('у показанного style.zIndex равен data-layer', () => {
+	/** Номер слоя открыт только у слоя с узлом: созданному видимым его даёт кадр узла. */
+	it('у показанного style.zIndex равен data-layer', async () => {
 		mount(() => <Frame visible />)
+
+		expect(frame().hasAttribute('data-layer')).toBe(false)
+
+		await nextFrame()
 
 		const layer = frame().getAttribute('data-layer')
 
@@ -256,13 +261,16 @@ describe('Frame · слой и раскладка', () => {
 		expect(frame().style.zIndex).toBe(layer)
 	})
 
-	it('показ через ctrl поднимает слой в обоих местах', () => {
+	it('показ через ctrl поднимает слой в обоих местах', async () => {
 		const ctrl = new TFrame()
 
 		mount(() => <Frame ctrl={ctrl} />)
+		// Узел объявлен — показ даёт номер сразу
+		await nextFrame()
 
 		ctrl.show()
 
+		expect(ctrl.zIndex).toBeGreaterThan(0)
 		expect(frame().style.display).toBe('')
 		expect(frame().style.zIndex).toBe(String(ctrl.zIndex))
 		expect(frame().getAttribute('data-layer')).toBe(String(ctrl.zIndex))

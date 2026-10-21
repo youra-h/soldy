@@ -598,10 +598,6 @@ describe('React', () => {
 		).not.toBeNull()
 	})
 
-	/**
-	 * Закрытая: у открытой номер слоя выдаёт счётчик ядра, один на процесс, и
-	 * сервер с браузером выдали бы разные — это вопрос ядра, а не адаптера.
-	 */
 	it('гидратация закрытой с contained — без расхождений, панель — узел сервера', async () => {
 		const shown = { set: (_: boolean) => {} }
 
@@ -641,5 +637,41 @@ describe('React', () => {
 
 		expect(isOpen()).toBe(true)
 		expect(document.activeElement).toBe(node('.so-test-first'))
+	})
+
+	/**
+	 * Номер слоя выдаёт счётчик ядра, один на процесс, — у сервера свой. Номер
+	 * открывает узел, поэтому в разметке сервера его нет, первая отрисовка
+	 * браузера с ней сходится, а номер приходит кадром узла.
+	 */
+	it('гидратация открытой с contained — без расхождений, номер слоя — кадром узла', async () => {
+		const page = (
+			<div className="so-test-host">
+				<Drawer contained visible>
+					{inside}
+				</Drawer>
+			</div>
+		)
+		const container = document.createElement('div')
+		const onRecoverableError = vi.fn()
+
+		container.innerHTML = renderToString(page)
+		document.body.append(container)
+
+		expect(panel().hasAttribute('data-layer')).toBe(false)
+		expect(backdrop().hasAttribute('data-layer')).toBe(false)
+
+		act(() => {
+			track(hydrateRoot(container, page, { onRecoverableError }))
+		})
+		await nextFrame()
+
+		const layer = panel().getAttribute('data-layer')
+
+		expect(onRecoverableError).not.toHaveBeenCalled()
+		expect(layer).not.toBeNull()
+		expect(backdrop().getAttribute('data-layer')).toBe(layer)
+		expect(panel().style.zIndex).toBe(layer)
+		expect(backdrop().style.zIndex).toBe(layer)
 	})
 })

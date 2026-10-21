@@ -29,7 +29,12 @@
 import { describe, it, expect } from 'vitest'
 import { For, type JSX } from 'solid-js'
 import { renderToString } from 'solid-js/web'
-import { createEngineListBox, createEngineToasts, type TTableColumnSource } from '@soldy-ui/core'
+import {
+	createEngineListBox,
+	createEngineToasts,
+	type ITagsItem,
+	type TTableColumnSource,
+} from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import {
 	Accordion,
@@ -38,8 +43,10 @@ import {
 	LocaleProvider,
 	Pagination,
 	RadioGroup,
+	Select,
 	Table,
 	Tabs,
+	Tags,
 	Toasts,
 	Virtual,
 	useToasts,
@@ -205,6 +212,130 @@ describe('ListBox · серверный рендер', () => {
 
 		expect(markup(body)).toContain('<b>Первый:false</b>')
 		expect(markup(body)).toContain('<b>Второй:true</b>')
+	})
+})
+
+describe('Tags · серверный рендер', () => {
+	const ITEMS = [
+		{ value: 'a', text: 'A' },
+		{ value: 'b', text: 'B' },
+		{ value: 'c', text: 'C' },
+	]
+
+	it('теги из items — полностью: выбранные — aria-selected, остановка Tab — у первого из них', () => {
+		const body = render(() => <Tags items={ITEMS} mode="multiple" value={['b']} />)
+		const rows = tagsWith(body, 'role', 'option')
+
+		expect(tagsOf(body)[0]?.attributes.role).toBe('listbox')
+		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true', 'false'])
+		expect(attributeOf(rows, 'tabindex')).toEqual(['-1', '0', '-1'])
+		expect(attributeOf(withClass(body, 'so-tags-item'), 'data-selected')).toEqual([
+			'false',
+			'true',
+			'false',
+		])
+	})
+
+	/**
+	 * Остановку Tab выбранному тегу коллекция пишет, когда он входит, — и
+	 * сервер рисует его с ней. Тег выше него сервер уже нарисовал, пока
+	 * остановка была у него, и снимает её только гидратация. Поэтому
+	 * остановка проверяется только у выбранного: временно, до задачи
+	 * https://app.clickup.com/t/869fkckpq.
+	 */
+	it('теги разметки — с выбором и остановкой Tab от коллекции, крестик назван', () => {
+		const body = render(() => (
+			<Tags mode="single" closable>
+				<Tags.Item value="a" text="A" />
+				<Tags.Item value="b" text="B" selected />
+			</Tags>
+		))
+		const rows = tagsWith(body, 'role', 'option')
+
+		expect(attributeOf(rows, 'aria-selected')).toEqual(['false', 'true'])
+		expect(rows[1]?.attributes.tabindex).toBe('0')
+		expect(attributeOf(withClass(body, 'so-tags-item__close'), 'aria-label')).toEqual([
+			'Close A',
+			'Close B',
+		])
+	})
+
+	/**
+	 * Своя раскладка слота `default` развёрнута в слое набора и на сервере:
+	 * теги в ней — элементы его коллекции, с выбором от неё.
+	 */
+	it('своя раскладка слота default — теги в коллекции набора', () => {
+		const body = render(() => (
+			<Tags items={ITEMS} mode="multiple" value={['c']}>
+				{(scope: { shown: ReadonlyArray<ITagsItem> }) => (
+					<div class="own">
+						<For each={scope.shown}>{(tag) => <Tags.Item ctrl={tag} />}</For>
+					</div>
+				)}
+			</Tags>
+		))
+
+		expect(withClass(body, 'own')).toHaveLength(1)
+		expect(attributeOf(tagsWith(body, 'role', 'option'), 'aria-selected')).toEqual([
+			'false',
+			'false',
+			'true',
+		])
+	})
+})
+
+/**
+ * Панель Select — Frame, а портала на сервере нет, как у Menu и Popover:
+ * опций в разметке сервера нет. Опции из данных в коллекции с самой сборки, и
+ * поле сервер рисует с текстом выбранного, а в `multiple` — с тегами. Опции
+ * разметкой стоят в панели и входят в коллекцию, когда её содержимое прочтёт
+ * портал, — только в браузере: на сервере поле пустое.
+ */
+describe('Select · серверный рендер', () => {
+	const ITEMS = [
+		{ value: 'a', text: 'Первый' },
+		{ value: 'b', text: 'Второй' },
+		{ value: 'c', text: 'Третий' },
+	]
+
+	/** Поле комбобокса — единственный `<input>` разметки. */
+	const fieldOf = (body: string) => tagsOf(body).filter((tag) => tag.name === 'input')
+
+	it('из items — поле с текстом выбранного и связкой комбобокса, панели нет', () => {
+		const body = render(() => <Select items={ITEMS} value="b" name="Город" />)
+		const [field, ...rest] = fieldOf(body)
+
+		expect(rest).toEqual([])
+		expect(field?.attributes.role).toBe('combobox')
+		expect(field?.attributes.value).toBe('Второй')
+		expect(field?.attributes['aria-expanded']).toBe('false')
+		expect(field?.attributes['aria-controls']).toMatch(/.+/)
+		expect(withClass(body, 'so-select__panel')).toEqual([])
+		expect(tagsWith(body, 'role', 'option')).toEqual([])
+	})
+
+	it('из items в multiple — выбранное тегами в поле, текст поля пуст', () => {
+		const body = render(() => <Select items={ITEMS} mode="multiple" value={['a', 'c']} />)
+
+		expect(withClass(body, 'so-select__tags')).toHaveLength(1)
+		expect(withClass(body, 'so-tags-item')).toHaveLength(2)
+		expect(textOf(body)).toContain('Первый')
+		expect(textOf(body)).toContain('Третий')
+		expect(textOf(body)).not.toContain('Второй')
+		expect(fieldOf(body)[0]?.attributes.value ?? '').toBe('')
+	})
+
+	it('опции разметкой — поле пустое: опции входят в коллекцию только в браузере', () => {
+		const body = render(() => (
+			<Select value="tver" name="Город">
+				<Select.Item value="msk" text="Москва" />
+				<Select.Item value="tver" text="Тверь" />
+			</Select>
+		))
+
+		expect(fieldOf(body)[0]?.attributes.value ?? '').toBe('')
+		expect(textOf(body)).not.toContain('Тверь')
+		expect(withClass(body, 'so-select-item')).toEqual([])
 	})
 })
 

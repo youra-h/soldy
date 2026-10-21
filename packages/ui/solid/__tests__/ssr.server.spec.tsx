@@ -74,8 +74,10 @@ describe('Frame · серверный рендер', () => {
 
 		expect(body).toMatch(/^<div [^>]*class="so-frame ?"/)
 		expect(body).toContain('data-contained="true"')
-		// Внутри контейнера — `absolute` без координат: место решает тема
-		expect(body).toMatch(/style="position:absolute;[^"]*z-index:\d+"/)
+		// Внутри контейнера — `absolute` без координат: место решает тема. Номера
+		// слоя на сервере нет: его открывает узел, а счётчик у сервера свой
+		expect(body).toMatch(/style="position:absolute;[^"]*z-index:0"/)
+		expect(body).not.toContain('data-layer')
 		expect(body).not.toMatch(/style="[^"]*\b(left|top):/)
 		expect(body).toContain('<span>Панель</span>')
 	})
@@ -197,6 +199,25 @@ describe('Dialog, Drawer и Toasts · серверный рендер', () => {
 		expect(contained).toContain('tabindex="-1"')
 		expect(contained).toContain('data-contained="true"')
 		expect(contained).toContain('<div class="so-drawer__body"><span>Панель</span></div>')
+	})
+
+	/**
+	 * Номер слоя выдаёт счётчик процесса, и у сервера он свой: попади он в
+	 * разметку, гидратация с клиентом не сошлась бы. Открывает номер узел, а на
+	 * сервере узла нет — у открытой панели и её подложки номера нет, `z-index` — 0.
+	 */
+	it('Drawer с contained, открытый, — без номера слоя у панели и подложки', () => {
+		const body = markup(
+			renderToString(() => (
+				<Drawer contained visible>
+					<span>Панель</span>
+				</Drawer>
+			)),
+		)
+
+		expect(body.match(/data-open="true"/g)).toHaveLength(2)
+		expect(body).not.toContain('data-layer')
+		expect(body.match(/z-index:0\b/g)).toHaveLength(2)
 	})
 
 	it('Toasts — приложение без региона', () => {

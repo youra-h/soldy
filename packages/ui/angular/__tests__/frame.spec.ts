@@ -690,8 +690,14 @@ describe('Frame · rendered и visible', () => {
 })
 
 describe('Frame · слой и раскладка', () => {
-	it('у показанного style.zIndex равен data-layer', () => {
-		mountHost(PanelHost)
+	/** Номер слоя открыт только у слоя с узлом: созданному видимым его даёт кадр узла. */
+	it('у показанного style.zIndex равен data-layer', async () => {
+		const fixture = mountHost(PanelHost)
+
+		expect(frame().hasAttribute('data-layer')).toBe(false)
+
+		await nextFrame()
+		fixture.detectChanges()
 
 		const layer = frame().getAttribute('data-layer')
 
@@ -699,13 +705,17 @@ describe('Frame · слой и раскладка', () => {
 		expect(frame().style.zIndex).toBe(layer)
 	})
 
-	it('показ через ctrl поднимает слой в обоих местах', () => {
+	it('показ через ctrl поднимает слой в обоих местах', async () => {
 		const fixture = mountHost(CtrlHost)
 		const { ctrl } = fixture.componentInstance
+
+		// Узел объявлен — показ даёт номер сразу
+		await nextFrame()
 
 		ctrl.show()
 		fixture.detectChanges()
 
+		expect(ctrl.zIndex).toBeGreaterThan(0)
 		expect(frame().style.display).toBe('')
 		expect(frame().style.zIndex).toBe(String(ctrl.zIndex))
 		expect(frame().getAttribute('data-layer')).toBe(String(ctrl.zIndex))

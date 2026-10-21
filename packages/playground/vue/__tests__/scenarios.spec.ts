@@ -11,7 +11,15 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import { SCENARIOS as SCENARIO_REGISTRY, type TScenario } from '@soldy-ui/playground-shared'
+import {
+	SCENARIOS as SCENARIO_REGISTRY,
+	TScenarioHost,
+	TScenarioJournal,
+	createInstance,
+	findComponent,
+	type IPreviewHost,
+	type TScenario,
+} from '@soldy-ui/playground-shared'
 import { componentsOf, coversScenario, scenariosOf, testsPath, topicsOf } from '../src/catalog'
 import { FRAMEWORKS, hostOf, loadHost } from '../src/hosts'
 import { createScenarioBench, SCENARIO_BENCH } from '../src/composables/useScenarios'
@@ -57,6 +65,46 @@ beforeEach(() => {
 })
 
 const mountOptions = { global: { plugins: [router] }, attachTo: document.body }
+
+/** Кнопка сцены, которую шаг ручного сценария велит нажать: «Нажмите «info»». */
+const PRESS = /Нажмите «([^»]+)»/g
+
+/** Подписи кнопок, которые велят нажать шаги сценария. */
+function pressedIn(scenario: TScenario): string[] {
+	if (scenario.kind !== 'manual') return []
+
+	return scenario.steps.flatMap((step) => [...step.matchAll(PRESS)].map(([, label]) => label))
+}
+
+/**
+ * Подписи кнопок на сцене сценария. Сцену ставит хост сценариев, как прогон, —
+ * превью или фикстура, пропсы сценария и `ctrl` с экземпляром, — но без `run`:
+ * кнопки человек жмёт на готовой сцене. Подписи прочитаны — сцена снимается.
+ */
+async function sceneButtons(host: IPreviewHost, scenario: TScenario): Promise<string[]> {
+	const entry = findComponent(scenario.component)
+
+	if (!entry) throw new Error(`компонента «${scenario.component}» нет в реестре`)
+
+	const stage = new TScenarioHost(host)
+	const instance = createInstance(entry)
+	const scene = document.createElement('div')
+	const target = scene.appendChild(document.createElement('div'))
+
+	document.body.append(scene)
+	stage.attach(scenario.id, { scene, target })
+	await stage.mount({ scenario, instance, journal: new TScenarioJournal(scenario.id) })
+
+	const labels = [...scene.querySelectorAll('button')].map(
+		(node) => node.textContent?.trim() ?? '',
+	)
+
+	await stage.unmount(scenario.id)
+	instance.destroy?.()
+	scene.remove()
+
+	return labels
+}
 
 describe.each(IDS)('каталог сценариев %s', (framework) => {
 	const host = hostOf(framework)
@@ -120,6 +168,40 @@ describe.each(IDS)('каталог сценариев %s', (framework) => {
 		const used = new Set(SCENARIO_REGISTRY.map((scenario) => scenario.fixture))
 
 		expect(host.fixtures.filter((key) => !used.has(key))).toEqual([])
+	})
+})
+
+/**
+ * Кнопку, которую шаг ручного сценария велит нажать, человек ищет на сцене.
+ * Подписи кнопок превью живут в хостах, шаги — в `shared`, и разойтись они
+ * могут молча: стопка Toasts просила «positive» и «negative», когда кнопки
+ * давно стояли по видам сообщения.
+ */
+describe('кнопки из шагов ручных сценариев', () => {
+	it('шаги называют кнопки — сторожу есть что сверять', () => {
+		expect(SCENARIO_REGISTRY.filter((scenario) => pressedIn(scenario).length)).not.toEqual([])
+	})
+
+	it.each(IDS)('%s: каждая — на сцене своего сценария', async (framework) => {
+		const host = hostOf(framework)
+		const missing: string[] = []
+
+		for (const scenario of scenariosOf(host)) {
+			const labels = pressedIn(scenario)
+
+			if (!labels.length) continue
+
+			const shown = await sceneButtons(host, scenario)
+
+			missing.push(
+				...labels
+					.filter((label) => !shown.includes(label))
+					.map((label) => `${scenario.id}: «${label}»`),
+			)
+		}
+
+		expect(missing).toEqual([])
+		expect(warnings).toEqual([])
 	})
 })
 

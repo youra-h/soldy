@@ -62,6 +62,7 @@ import {
 	Table,
 	Tabs,
 	Textarea,
+	Toasts,
 	Tooltip,
 	type AccordionItemProps,
 	type AccordionProps,
@@ -89,6 +90,7 @@ import {
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	type ToastsProps,
 	type TooltipProps,
 	toControlAttrs,
 	toRootForward,
@@ -118,7 +120,8 @@ type TProbeProps = ButtonProps &
 	PopoverProps &
 	TooltipProps &
 	DialogProps &
-	DrawerProps
+	DrawerProps &
+	ToastsProps
 
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
 function TabsContentProbe(props: TabsContentProps): ReactNode {
@@ -131,8 +134,8 @@ function TabsContentProbe(props: TabsContentProps): ReactNode {
 
 /**
  * Компонент, класс его корня и пропсы, без которых он не рисуется: у Icon
- * тега по умолчанию нет. Frame, окно и выезжающая панель уходят телепортом в
- * `body` — корень ищется по документу.
+ * тега по умолчанию нет. Frame, окно, выезжающая панель и регион тостов уходят
+ * телепортом в `body` — корень ищется по документу.
  */
 const COMPONENTS: ReadonlyArray<
 	readonly [string, ComponentType<TProbeProps>, string, Partial<TProbeProps>]
@@ -157,6 +160,7 @@ const COMPONENTS: ReadonlyArray<
 	['Tooltip', Tooltip, '.so-tooltip', {}],
 	['Dialog', Dialog, '.so-dialog', {}],
 	['Drawer', Drawer, '.so-drawer', {}],
+	['Toasts', Toasts, '.so-toasts', {}],
 ]
 
 /** Общие пропсы элементов коллекций в таблице. */
@@ -412,7 +416,8 @@ function ListBoxItemProbe(props: ListBoxItemProps): ReactNode {
  * всех, кроме таблицы: её `ref` получает окно, внешний узел, куда ложатся
  * атрибуты потребителя, а к `TElementPlugin` привязан корень `table`. Поле и
  * элемент коллекции отдают корень, а не `<input>` и не строку, окно и
- * выезжающая панель — панель в телепорте, а не подложку.
+ * выезжающая панель — панель в телепорте, а не подложку, менеджер тостов —
+ * регион в телепорте: приложение в его `children` — не его разметка.
  */
 const ROOTS: ReadonlyArray<
 	readonly [string, (props: TRefProbeProps) => ReactNode, string, string]
@@ -429,6 +434,7 @@ const ROOTS: ReadonlyArray<
 	['Tooltip', (props) => <Tooltip {...props} />, '.so-tooltip', '.so-tooltip'],
 	['Dialog', (props) => <Dialog {...props} />, '.so-dialog', '.so-dialog'],
 	['Drawer', (props) => <Drawer {...props} />, '.so-drawer', '.so-drawer'],
+	['Toasts', (props) => <Toasts {...props} />, '.so-toasts', '.so-toasts'],
 	['Field', (props) => <Field {...props} />, '.so-field', '.so-field'],
 	['Icon', (props) => <Icon tag="i" {...props} />, '.so-icon', '.so-icon'],
 	['Label', (props) => <Label {...props} />, '.so-label', '.so-label'],

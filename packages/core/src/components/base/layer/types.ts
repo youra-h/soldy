@@ -1,8 +1,11 @@
 import type { IComponentView, IComponentViewProps, TComponentViewEvents } from '../component-view'
 
 /**
- * Атрибут слоя: показанный слой пишет в `dataset` тот же номер, что в
- * `zIndex`. Больше номер — выше слой, открытый позже.
+ * Атрибут слоя: слой пишет в `dataset` тот же номер, что в `zIndex`. Больше
+ * номер — выше слой, открытый позже. Номер есть только у слоя с узлом
+ * (`ready`), который уже брал место в стеке; без узла атрибута нет — и в
+ * разметке сервера тоже, где номер счётчика процесса разошёлся бы с
+ * браузером.
  *
  * По нему плагины оверлея узнают вложенность в DOM, где её нет: панели
  * телепортированы в `body` и лежат там соседями. Нажатие и фокус в панели
@@ -22,7 +25,10 @@ export interface ILayerProps extends IComponentViewProps {
 }
 
 export type TLayerEvents = TComponentViewEvents & {
-	/** change:zIndex — слой показан и поднят над всеми, кого показали раньше */
+	/**
+	 * change:zIndex — номер слоя сменился: слой с узлом поднят над всеми, кого
+	 * показали раньше, узел подключён (номер места открыт) или снят (`0`)
+	 */
 	'change:zIndex': (value: number) => void
 	/** change:target */
 	'change:target': (value: string) => void
@@ -32,11 +38,17 @@ export interface ILayer<
 	TProps extends ILayerProps = ILayerProps,
 	TEvents extends Record<string, (...args: any) => any> = TLayerEvents,
 > extends IComponentView<TProps, TEvents> {
-	/** Текущий z-index (readonly): номер слоя в общем стеке */
+	/**
+	 * Номер слоя в общем стеке (readonly): место слоя, если у него есть узел
+	 * (`ready`), без узла — `0`
+	 */
 	readonly zIndex: number
 	/** Целевой элемент для Teleport */
 	target: string
-	/** Поднять слой над всеми выданными: новый номер в стеке и в `data-layer` */
+	/**
+	 * Поднять слой над всеми выданными: новое место в стеке. Номер в `zIndex` и
+	 * `data-layer` — сразу у слоя с узлом, у слоя без узла — с подключением
+	 */
 	raise(): void
 }
 
