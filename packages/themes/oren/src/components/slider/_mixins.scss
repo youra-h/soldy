@@ -83,10 +83,11 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // - заливка и кромка ручки — насыщенная ступень 500: своё место на шкале у
 //   неё есть, в обеих схемах она одна и та же. Заливка и кромка одного цвета —
 //   ручка читается концом заливки;
-// - ореол ручки — вуаль состояний, наведение и перетаскивание, но вдвое
-//   плотнее, чем у Button (`--so-component-state-*`): у кнопки вуаль — весь её
-//   фон, а ореол — кольцо в треть ручки, и плотностью фона оно в тёмной схеме
-//   пропадало;
+// - ореол ручки — вуаль состояний той же плотности, что подсветка наведения и
+//   нажатия у остальных компонентов (`--so-component-state-*`): под
+//   наведением — плотность наведения, в перетаскивании — нажатия, как фон
+//   Button `plain` того же цвета. Своей плотности у ореола нет: удвоенная, как
+//   было, выделяла его из всей темы;
 // - точка метки на рельсе — вуаль поверх вуали рельса, на заливке — цвет
 //   ручки: на насыщенной ступени вуаль той же ступени невидима;
 // - подпись метки, на которой стоит ручка, — текст варианта, ступень 800, как
@@ -95,8 +96,8 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 	@include slider-rail($color);
 
 	--so-slider-fill: var(--so-#{$color}-500);
-	--so-slider-halo-hover: #{veil.tint($color, calc(2 * var(--so-component-state-hover)))};
-	--so-slider-halo-active: #{veil.tint($color, calc(2 * var(--so-component-state-active)))};
+	--so-slider-halo-hover: #{veil.tint($color, var(--so-component-state-hover))};
+	--so-slider-halo-active: #{veil.tint($color, var(--so-component-state-active))};
 	--so-slider-tick: #{veil.tint($color, 45%)};
 	--so-slider-current-text: var(--so-#{$color}-800);
 }
