@@ -9,7 +9,8 @@
  * браузера, захват указателя доводит отпускание до корня, а стрелка делает
  * ровно один шаг — ядра, без нативного.
  *
- * Переходы темы — тоже здесь: jsdom стилей не считает и переходов не заводит.
+ * Переходы темы и цвет ореола ручки — тоже здесь: jsdom стилей не считает и
+ * переходов не заводит.
  *
  * Позиции — от левого верхнего угла дорожки: её коробка — ход центров ручек,
  * 0 и 1 доли — её края по оси (контракт темы с плагином указателя).
@@ -20,9 +21,11 @@ import { render, cleanup } from 'vitest-browser-vue'
 import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { TSlider } from '@soldy-ui/core'
-import type { ISliderProps, TSliderValue } from '@soldy-ui/core'
-import { Label, Slider } from '@soldy-ui/vue'
+import type { ISliderProps, TComponentVariant, TSliderValue } from '@soldy-ui/core'
+import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
+import { Button, Label, Slider } from '@soldy-ui/vue'
 
+import { pixel } from './colors'
 import { reducedMotion } from './media'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
@@ -825,5 +828,135 @@ describe('подсказка', () => {
 		expect(find('.so-label').contains(tooltip())).toBe(true)
 		expect(tooltip().textContent).toBe('50')
 		expect(page.getByRole('slider', { name: 'Цена', exact: true }).query()).toBe(field(0))
+	})
+})
+
+/**
+ * Ореол ручки — вуаль состояний той же плотности, что подсветка наведения и
+ * нажатия у остальных компонентов темы: под наведением — как фон кнопки
+ * `plain` того же варианта под наведением, в протяжке — как её фон при
+ * нажатии. Своей плотности у ореола нет. Ни плотностей, ни палитры спек не
+ * знает: эталон — кнопка рядом, цвета сверяются холстом (`./colors`).
+ *
+ * Ореол — кольцо `box-shadow` ручки: слой без сдвига и размытия, с разлётом.
+ * Тянут ручку нажатием мимо неё, как в «ручку тянут — видна»: ни наведения,
+ * ни нажатия у ручки нет, и ореол держит `data-dragging`.
+ */
+describe('ореол', () => {
+	/** Обе схемы: цвета у них свои, а плотности общие. */
+	const SCHEMES = ['oren', 'oren-dark'] as const
+
+	/** Цвет кольца ореола ручки; кольца нет — тест падает здесь. */
+	function halo(thumb: Element): string {
+		const ring = getComputedStyle(thumb)
+			.boxShadow.split(/,(?![^(]*\))/)
+			.map((layer) => {
+				const lengths = (layer.match(/-?[\d.]+px/g) ?? []).map(parseFloat)
+				const [x = 0, y = 0, blur = 0, spread = 0] = lengths
+
+				return { color: layer.replace(/-?[\d.]+px/g, '').trim(), x, y, blur, spread }
+			})
+			.find(({ x, y, blur, spread }) => x === 0 && y === 0 && blur === 0 && spread >= 1)
+
+		if (!ring) throw new Error('кольца ореола нет')
+
+		return ring.color
+	}
+
+	/** Указатель — на узел мимо ползунка и кнопки. */
+	const away = () => userEvent.hover(find('.so-test-away'))
+
+	/** Ползунок варианта и под ним эталон — кнопка `plain` того же варианта. */
+	async function show(variant: TComponentVariant) {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 400px; padding: 24px' }, [
+						h('div', { class: 'so-test-away', style: 'height: 24px' }),
+						h(Slider, { variant, value: 50 }),
+						h(Button, { view: 'plain', variant, text: 'Эталон' }),
+					]),
+			}),
+		)
+
+		// Плагины получают корень кадром
+		await nextFrame()
+		await nextFrame()
+		await away()
+	}
+
+	/** Ореол под наведением — когда доиграл его переход. */
+	async function hovered(): Promise<string> {
+		const thumb = thumbs()[0]
+
+		await userEvent.hover(thumb)
+		await settled(thumb)
+
+		return halo(thumb)
+	}
+
+	/** Ореол, пока ручку тянут, — когда доиграл его переход. */
+	async function dragged(): Promise<string> {
+		const thumb = thumbs()[0]
+
+		await userEvent.hover(track(), { position: along(0.1) })
+		await commands.mouseDown()
+
+		try {
+			await userEvent.hover(track(), { position: along(0.3) })
+			await expect.poll(() => thumb.dataset.dragging).toBe('true')
+
+			expect(thumb.matches(':hover, :active')).toBe(false)
+
+			await settled(thumb)
+
+			return halo(thumb)
+		} finally {
+			await commands.mouseUp()
+		}
+	}
+
+	/**
+	 * Фон эталона под наведением и при нажатии — когда доиграл переход цвета.
+	 * Кнопка мыши отпускается мимо кнопки.
+	 */
+	async function reference(): Promise<{ hover: string; press: string }> {
+		const button = find('.so-button')
+
+		await userEvent.hover(button)
+		await settled(button)
+
+		const hover = getComputedStyle(button).backgroundColor
+
+		await commands.mouseDown()
+
+		try {
+			await settled(button)
+
+			return { hover, press: getComputedStyle(button).backgroundColor }
+		} finally {
+			await away()
+			await commands.mouseUp()
+		}
+	}
+
+	describe.each(SCHEMES)('%s', (scheme) => {
+		beforeEach(() => {
+			document.documentElement.dataset.soTheme = scheme
+		})
+
+		it.each(COMPONENT_VARIANTS)(
+			'variant="%s": под наведением — вуаль наведения кнопки, в протяжке — вуаль нажатия',
+			async (variant) => {
+				await show(variant)
+
+				const hover = await hovered()
+				const drag = await dragged()
+				const button = await reference()
+
+				expect(pixel([hover]), 'наведение').toEqual(pixel([button.hover]))
+				expect(pixel([drag]), 'протяжка').toEqual(pixel([button.press]))
+			},
+		)
 	})
 })
