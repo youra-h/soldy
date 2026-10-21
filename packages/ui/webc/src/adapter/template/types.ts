@@ -21,9 +21,16 @@
  * Набор ядра на элементе шаблона, а не на корне, — `aria` поля на `<input>`,
  * `clearAria` поля на кнопке очистки — кладёт шаблон функцией
  * `ownerAttributes` (`attributes.ts`): верхним слоем раскладчика элемента, тем
- * же правилом, что база на корне. Стиль значением на узле шаблона — позицию
- * ручки Slider, долю заливки звезды Rating, высоту распорки окна — тем же
- * правилом кладёт `ownerStyles` (`styles.ts`). Вложенный элемент soldy —
+ * же правилом, что база на корне. Тем же вызовом — набор для содержимого слота,
+ * которому остальные адаптеры отдают его в scope: связку с панелью триггеру
+ * Popover и Tooltip (`triggerAria`). Scope у слотов Web Components нет, и
+ * привязать набор потребитель не может, поэтому шаблон кладёт его на первый
+ * элемент слота — узлы слота отдаёт контекст (`slotted`). Состояние в
+ * контексте — свойства инстанса и выходы плагинов его дескриптора: пометку
+ * панели владельцем (`dismiss_ownerAttribute`) шаблон читает с типом. Стиль
+ * значением на узле шаблона — позицию ручки Slider, долю заливки звезды
+ * Rating, высоту распорки окна — тем же правилом кладёт `ownerStyles`
+ * (`styles.ts`). Вложенный элемент soldy —
  * деталь разметки владельца — шаблон строит помощником `createDetail` с
  * обязательным именем места (`embedded`), а свою разметку отдаёт в её слот
  * помощником `lend`.
@@ -31,7 +38,7 @@
  * (`TKeyedLoop`, `loop.ts`).
  */
 
-import type { TInstanceState } from '@soldy-ui/setup'
+import type { TBindingState } from '../runtime/useAdapter'
 
 /**
  * Куда попадает содержимое слота.
@@ -95,7 +102,12 @@ export type TTemplateParts = {
 	readonly root?: HTMLElement
 }
 
-export interface ITemplateContext<TInstance = object, TFacade = unknown> {
+/**
+ * Контекст привязок и построения: живой вид элемента. `TOutputs` — выходы
+ * плагинов дескриптора компонента (`DescriptorPluginOutputs`), их шаблон
+ * читает в состоянии рядом со свойствами инстанса.
+ */
+export interface ITemplateContext<TInstance = object, TFacade = unknown, TOutputs = unknown> {
 	/**
 	 * Сам элемент — корень компонента, а у элемента-обёртки
 	 * (`TRootSpec.wrapped`) — внешний узел вокруг корня, который построил
@@ -106,11 +118,13 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown> {
 	readonly content: HTMLElement
 	/**
 	 * Свойства инстанса компонента со снимком через `valueOf()` — текущей
-	 * связки; у коллекционного компонента — вместе со свойствами фасада
-	 * (`items`, `shown`, `active`, `order`): имена пропсов фасада префиксуются,
-	 * и одноимённых у них нет.
+	 * связки, с выходами плагинов его дескриптора (`dismiss_ownerAttribute`); у
+	 * коллекционного компонента — вместе со свойствами фасада (`items`,
+	 * `shown`, `active`, `order`): имена пропсов фасада и выходов плагинов
+	 * префиксуются, и одноимённых у них нет. Вид — тот же, что у связки
+	 * (`TBindingState`): выходы — одним видом с инстансом.
 	 */
-	readonly state: TInstanceState<TInstance> & TInstanceState<TFacade>
+	readonly state: TBindingState<TInstance, TFacade, TOutputs>
 	/**
 	 * Инстанс компонента — текущей связки: его команды зовёт разметка (`clear`
 	 * кнопки очистки поля). Читается в момент обращения, поэтому обработчик,
@@ -128,6 +142,16 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown> {
 	readonly facade: TFacade | undefined
 	/** Задано ли пользователем содержимое именованного слота — и точки-образца */
 	hasSlot(name: string): boolean
+	/**
+	 * Узлы заданного слота — его свет в точке слота, в порядке разметки. Так
+	 * шаблон кладёт набор на содержимое потребителя, которому остальные
+	 * адаптеры отдают его в scope: связку с панелью — первому элементу слота
+	 * `trigger` у Popover и Tooltip (`ownerAttributes`). Узлы — те самые, что
+	 * написал потребитель, а не копии: триггер остаётся тем же узлом, и набор
+	 * на нём сменяется на месте. Слот не задан, шаблон его не объявил или это
+	 * образец (его копию отдаёт `sample`) — пусто.
+	 */
+	slotted(name: string): readonly ChildNode[]
 	/**
 	 * Копия образца — содержимого слота, который шаблон объявил образцом
 	 * (`TSlotTarget` с `sample`): `<template slot="item-leading">` даёт копию
@@ -154,13 +178,13 @@ export interface ITemplateContext<TInstance = object, TFacade = unknown> {
  * `apply` — метод: общая привязка, объявленная для части инстанса (`{ text }`),
  * подходит шаблону любого компонента, у которого эта часть есть.
  */
-export interface ITemplateBinding<TInstance = object, TFacade = unknown> {
+export interface ITemplateBinding<TInstance = object, TFacade = unknown, TOutputs = unknown> {
 	/** Пропы, при изменении которых привязку надо применить */
 	props: readonly string[]
-	apply(ctx: ITemplateContext<TInstance, TFacade>): void
+	apply(ctx: ITemplateContext<TInstance, TFacade, TOutputs>): void
 }
 
-export interface ITemplate<TInstance = object, TFacade = unknown> {
+export interface ITemplate<TInstance = object, TFacade = unknown, TOutputs = unknown> {
 	/**
 	 * Строит структуру в корне — в самом элементе — и отдаёт точки
 	 * распределения света и узел поля. Зовётся один раз, при первом
@@ -178,17 +202,17 @@ export interface ITemplate<TInstance = object, TFacade = unknown> {
 	create(
 		root: HTMLElement,
 		hasSlot: TSlotGiven,
-		ctx: ITemplateContext<TInstance, TFacade>,
+		ctx: ITemplateContext<TInstance, TFacade, TOutputs>,
 	): TTemplateParts
 
-	bindings: readonly ITemplateBinding<TInstance, TFacade>[]
+	bindings: readonly ITemplateBinding<TInstance, TFacade, TOutputs>[]
 }
 
 /** Объявление привязки: bind('text', ctx => ...) или bind(['a','b'], ...) */
-export function bind<TInstance, TFacade = unknown>(
+export function bind<TInstance, TFacade = unknown, TOutputs = unknown>(
 	props: string | readonly string[],
-	apply: (ctx: ITemplateContext<TInstance, TFacade>) => void,
-): ITemplateBinding<TInstance, TFacade> {
+	apply: (ctx: ITemplateContext<TInstance, TFacade, TOutputs>) => void,
+): ITemplateBinding<TInstance, TFacade, TOutputs> {
 	return {
 		props: typeof props === 'string' ? [props] : props,
 		apply,

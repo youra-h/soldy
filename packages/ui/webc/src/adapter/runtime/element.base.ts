@@ -222,6 +222,18 @@
  * или самого узла — отдаёт контекст (`sample`). Так владелец коллекции берёт
  * слоты `item-*`: scope у слотов Web Components нет, и копию одного образца
  * получает каждый элемент из данных.
+ *
+ * Узлы слота. Набор, который остальные адаптеры отдают содержимому слота в
+ * scope, — связку с панелью триггеру Popover и Tooltip (`triggerAria`), —
+ * шаблон кладёт на первый элемент слота сам (`ownerAttributes`): scope у
+ * слотов нет, и привязать набор потребитель не может. Узлы слота в его точке
+ * — те самые, что написал потребитель, — отдаёт контекст (`slotted`): триггер
+ * остаётся тем же узлом, а набор на нём сменяется на месте.
+ *
+ * Состояние связки, которое шаблон получает в контексте, — свойства инстанса и
+ * выходы плагинов дескриптора (`TOutputs` описания элемента): пометку панели
+ * владельцем (`dismiss_ownerAttribute`) шаблон Popover читает с типом, как
+ * разметка остальных адаптеров.
  */
 
 import type { IComponent, IComponentProps } from '@soldy-ui/core'
@@ -501,8 +513,13 @@ export type TRootTeleport = {
 	readonly contained: string
 }
 
-/** Всё, чем элементы soldy отличаются друг от друга. */
-export interface ISoldyElementSpec<TInstance, TFacade = unknown> {
+/**
+ * Всё, чем элементы soldy отличаются друг от друга. `TOutputs` — выходы
+ * плагинов дескриптора компонента (`DescriptorPluginOutputs`): их связка
+ * отдаёт в состоянии, а шаблон читает с типом (пометку панели владельцем у
+ * Popover и Tooltip).
+ */
+export interface ISoldyElementSpec<TInstance, TFacade = unknown, TOutputs = unknown> {
 	/** Дескриптор компонента: по нему строятся атрибуты и свойства пропов. */
 	readonly descriptor: IComponentDescriptor
 	/**
@@ -511,7 +528,7 @@ export interface ISoldyElementSpec<TInstance, TFacade = unknown> {
 	 */
 	readonly facade?: IComponentDescriptor
 	/** Шаблон: структура в корне и привязки пропов. */
-	readonly template: ITemplate<TInstance, TFacade>
+	readonly template: ITemplate<TInstance, TFacade, TOutputs>
 	/** Описание корня — см. `TRootSpec`. */
 	readonly root?: TRootSpec
 	/**
@@ -526,7 +543,7 @@ export interface ISoldyElementSpec<TInstance, TFacade = unknown> {
 		ctrl: TInstance | undefined,
 		props: Record<string, unknown>,
 		onUpdate: TUpdateListener,
-	): TBinding<TInstance, TFacade>
+	): TBinding<TInstance, TFacade, TOutputs>
 }
 
 /**
@@ -552,15 +569,17 @@ export type TSoldyElementClass<TInstance, TFacade = unknown> = (new (
  *
  * Тип результата объявлен явно — нативный класс плюс своё (`ISoldyElement`):
  * класс, выведенный из выражения, TypeScript в декларации не выпустит, у него
- * приватные члены.
+ * приватные члены. Выходы плагинов (`TOutputs`) — дело шаблона: в состоянии
+ * элемента для потребителя (`el.state`) их тип не обещан.
  */
 export function SoldyElement<
 	TNative extends TNativeElementClass,
 	TInstance extends IComponent<IComponentProps, any>,
 	TFacade = unknown,
+	TOutputs = unknown,
 >(
 	Native: TNative,
-	spec: ISoldyElementSpec<TInstance, TFacade>,
+	spec: ISoldyElementSpec<TInstance, TFacade, TOutputs>,
 ): TNative & TSoldyElementClass<TInstance, TFacade> {
 	/** Описания элемента: своё и, у коллекционного компонента, фасада. */
 	const descriptors = spec.facade ? [spec.descriptor, spec.facade] : [spec.descriptor]
@@ -619,7 +638,7 @@ export function SoldyElement<
 			return [...attributes.keys(), ...own.keys()]
 		}
 
-		private _binding?: TBinding<TInstance, TFacade>
+		private _binding?: TBinding<TInstance, TFacade, TOutputs>
 
 		/**
 		 * Последнее значение каждого пропа, какое видел элемент: записанное
@@ -662,7 +681,7 @@ export function SoldyElement<
 		private _hiddenDisplay: THiddenDisplay = undefined
 
 		/** Контекст привязок шаблона — живой вид элемента (`_viewOf`). */
-		private readonly _view: ITemplateContext<TInstance, TFacade> = this._viewOf()
+		private readonly _view: ITemplateContext<TInstance, TFacade, TOutputs> = this._viewOf()
 
 		/** Телепорт корня слоя (`TRootSpec.teleport`) — заводит его первая раскладка. */
 		private _teleport?: TTeleport
@@ -1029,6 +1048,20 @@ export function SoldyElement<
 			}
 		}
 
+		/**
+		 * Узлы заданного слота — `slotted` контекста шаблона (см. шапку): те
+		 * самые узлы света в точке слота, копией списка — свой свет база ведёт
+		 * сама. Слот не задан, не объявлен или образец — пусто.
+		 */
+		private _slotted(name: string): readonly ChildNode[] {
+			const nodes = this._light?.get(name)
+			const target = targetOf(this._targets, name)
+
+			if (!nodes || !target || target.mode === 'sample') return []
+
+			return [...nodes]
+		}
+
 		/** Копия образца — `sample` контекста шаблона (см. шапку). */
 		private _sample(name: string): DocumentFragment | null {
 			const nodes = this._light?.get(name)
@@ -1071,14 +1104,15 @@ export function SoldyElement<
 
 		/**
 		 * Контекст привязок шаблона — живой вид элемента, один на всё время
-		 * жизни: узел содержимого, состояние, инстанс и фасад он отдаёт в момент
-		 * обращения. Поэтому обработчик, который шаблон завёл на одной связке и
-		 * который запомнил контекст, после перестановки зовёт инстанс и фасад
-		 * новой связки, а не прежней.
+		 * жизни: узел содержимого, состояние (с выходами плагинов), инстанс и
+		 * фасад он отдаёт в момент обращения. Поэтому обработчик, который шаблон
+		 * завёл на одной связке и который запомнил контекст, после перестановки
+		 * зовёт инстанс и фасад новой связки, а не прежней.
 		 */
-		private _viewOf(): ITemplateContext<TInstance, TFacade> {
+		private _viewOf(): ITemplateContext<TInstance, TFacade, TOutputs> {
 			const content = (): HTMLElement => this._content
-			const state = (): TBindingState<TInstance, TFacade> => this.state
+			const state = (): TBindingState<TInstance, TFacade, TOutputs> =>
+				this._binding?.state ?? {}
 			const instance = (): TInstance | undefined => this.ctrl
 			const facade = (): TFacade | undefined => this._binding?.facade
 
@@ -1097,6 +1131,7 @@ export function SoldyElement<
 					return facade()
 				},
 				hasSlot: (name) => this._light?.has(name) ?? false,
+				slotted: (name) => this._slotted(name),
 				showSlot: (name, shown) => this._showSlot(name, shown),
 				sample: (name) => this._sample(name),
 			}

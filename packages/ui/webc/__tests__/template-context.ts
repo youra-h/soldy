@@ -20,6 +20,7 @@ export function bareContext<TInstance, TFacade>(
 		ctrl: undefined,
 		facade: undefined,
 		hasSlot: () => false,
+		slotted: () => [],
 		showSlot: () => {},
 		sample: () => null,
 	}
