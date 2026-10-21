@@ -7,8 +7,12 @@
  * `name` радио, остановки Tab. Панель таба находит свой таб к своей сборке, и
  * панель активного таба тоже в разметке сервера — с содержимым и связкой;
  * неактивная панель — скрытый элемент потребителя без содержимого. Так же, как
- * у Vue и Svelte; у React элементы разметки входят в коллекцию при коммите, и
- * сервер рисует их без этого.
+ * у Vue, Svelte и Solid, и точнее них: они пишут разметку строкой по ходу
+ * инициализации, и таб выше активного уходит в неё с остановкой Tab, которую
+ * держал как первый доступный, а сервер Angular отдаёт разметку своей
+ * эмуляции DOM, когда приложение стабильно, — остановка у него одна
+ * (`docs/agents/collections.md`, «Цена»). У React элементы разметки входят в
+ * коллекцию при коммите, и сервер рисует их без этого.
  *
  * `id` частей — связки «таб ↔ панель» и «заголовок ↔ панель» — и общий `name`
  * радио строят плагины связок от id монтирования, а он у Angular — номер
@@ -20,8 +24,10 @@
  * Таблица из данных — так же: строки в её коллекции с самой сборки, и сервер
  * рисует их вместе с `id` заголовков строк и ссылками чекбоксов на них, а
  * подписи колонок — с их `id` и именем кнопки сортировки от локали. Окно
- * обёртки `<so-virtual>` коллекция подхватывает при сборке, и сервер отдаёт
- * уже окно — первые 50 элементов, — а гидратация собирает то же окно.
+ * `<ng-container so-virtual>` коллекция подхватывает при сборке, и сервер
+ * отдаёт уже окно — первые 50 элементов, — а гидратация собирает то же окно.
+ * Своего узла у окна и у обёртки перестановки нет ни на сервере, ни после
+ * гидратации: директиву на `<ng-container>` сервер печатает комментарием.
  *
  * Разметка сервера проверяется разобранной документом: порядок атрибутов у
  * сервера свой (`server.ts`).
@@ -147,6 +153,26 @@ describe('Tabs · серверный рендер', () => {
 	})
 	class MarkupPage {}
 
+	/** Активный таб в своём компоненте: его шаблон Angular рисует после таба выше. */
+	@Component({
+		selector: 'app-active-tab',
+		standalone: true,
+		imports: [TTabsItemComponent],
+		template: `<div so-tabs-item value="b" text="B" active></div>`,
+	})
+	class ActiveTab {}
+
+	@Component({
+		selector: 'app-root',
+		standalone: true,
+		imports: [TTabsComponent, TTabsItemComponent, ActiveTab],
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="A"></div>
+			<app-active-tab></app-active-tab>
+		</div>`,
+	})
+	class NestedPage {}
+
 	it.each([
 		['табы из items', ItemsPage],
 		['табы и панели из разметки', MarkupPage],
@@ -163,6 +189,24 @@ describe('Tabs · серверный рендер', () => {
 			expect(panels[0].getAttribute('aria-labelledby')).toBe(rows[1].id)
 		},
 	)
+
+	/**
+	 * У Vue, Svelte и Solid таб выше активного уходит в разметку сервера с
+	 * остановкой Tab, которую держал как первый доступный, — до гидратации
+	 * остановок две (`docs/agents/collections.md`, «Цена»). Angular эту цену не
+	 * платит: сервер рисует в эмуляцию DOM и отдаёт её разметку, когда
+	 * приложение стабильно, — таб, у которого остановку забрал активный, к
+	 * этому времени перерисован. Даже когда активный входит после того, как
+	 * шаблон таба выше уже нарисован, — из своего компонента.
+	 */
+	it.each([
+		['табы разметки', MarkupPage],
+		['активный в своём компоненте, после отрисовки таба выше', NestedPage],
+	] as const)('%s, активный вторым — остановка Tab одна, у него', async (_name, app) => {
+		const page = await serverPage(app)
+
+		expect(attributeOf(all(page, '[role="tab"]'), 'tabindex')).toEqual(['-1', '0'])
+	})
 
 	it('неактивная панель на сервере — скрытый элемент без содержимого', async () => {
 		const page = await serverPage(ItemsPage)
@@ -680,12 +724,29 @@ describe('Table · гидратация', () => {
 	})
 })
 
-/** Список из восьмидесяти элементов в окне обёртки. */
+/**
+ * Компоненты прямо в корне приложения — метками селекторов на элементах
+ * (`div[so-list-box]`). Своего узла у директивы на `<ng-container>` нет: на
+ * его месте сервер печатает комментарий, и коллекции в ней — прямо в корне.
+ */
+function rootChildren(page: ParentNode): string[] {
+	const root = page.querySelector('app-root')
+
+	if (!root) throw new Error('корня приложения нет')
+
+	return [...root.children].map((child) => {
+		const marker = child.getAttributeNames().find((name) => name.startsWith('so-'))
+
+		return `${child.localName}[${marker}]`
+	})
+}
+
+/** Список из восьмидесяти элементов в окне. */
 @Component({
 	selector: 'app-root',
 	standalone: true,
 	imports: [TListBoxComponent, TVirtualComponent],
-	template: `<so-virtual><div so-list-box [items]="items"></div></so-virtual>`,
+	template: `<ng-container so-virtual><div so-list-box [items]="items"></div></ng-container>`,
 })
 class VirtualPage {
 	readonly items = Array.from({ length: 80 }, (_, index) => ({
@@ -703,9 +764,10 @@ describe('Virtual · серверный рендер и гидратация', (
 	/**
 	 * Окно коллекция подхватывает при сборке, а сборка идёт и на сервере:
 	 * сервер отдаёт уже окно, первые 50 элементов, без распорок — замера на
-	 * сервере нет.
+	 * сервере нет. Своего узла у окна нет и в разметке сервера: список — прямо
+	 * в корне приложения.
 	 */
-	it('сервер отдаёт окно — первые 50 элементов, без распорок', async () => {
+	it('сервер отдаёт окно — первые 50 элементов, без распорок и без узла окна', async () => {
 		const page = await serverPage(VirtualPage)
 
 		expect(all(page, '.so-list-box-item')).toHaveLength(50)
@@ -713,6 +775,7 @@ describe('Virtual · серверный рендер и гидратация', (
 		expect(attributeOf(all(page, '.so-list-box-item .so-button'), 'aria-posinset').at(-1)).toBe(
 			'50',
 		)
+		expect(rootChildren(page)).toEqual(['div[so-list-box]'])
 	})
 
 	it('гидратация сходится: то же окно на тех же узлах, ошибок нет', async () => {
@@ -731,6 +794,7 @@ describe('Virtual · серверный рендер и гидратация', (
 		expect(
 			attributeOf(all(document, '.so-list-box-item .so-button'), 'aria-setsize').at(-1),
 		).toBe('80')
+		expect(rootChildren(document)).toEqual(['div[so-list-box]'])
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})
@@ -748,7 +812,7 @@ describe('Virtual · серверный рендер и гидратация', (
 		TAccordionComponent,
 		TAccordionItemComponent,
 	],
-	template: `<so-drag-and-drop>
+	template: `<ng-container so-drag-and-drop>
 		<div so-tabs>
 			<div so-tabs-item value="a" text="A" active></div>
 			<div so-tabs-item value="b" text="B"></div>
@@ -758,7 +822,7 @@ describe('Virtual · серверный рендер и гидратация', (
 			<div so-accordion-item value="a" text="A">Содержимое A</div>
 			<div so-accordion-item value="b" text="B">Содержимое B</div>
 		</div>
-	</so-drag-and-drop>`,
+	</ng-container>`,
 })
 class DragAndDropPage {
 	readonly items = [
@@ -770,6 +834,9 @@ class DragAndDropPage {
 /** Элементы трёх коллекций страницы — по порядку: табы, список, секции. */
 const ITEM_SELECTORS = ['.so-tabs-item', '.so-list-box-item', '.so-accordion-item']
 
+/** Коллекции страницы перестановки — прямо в корне: своего узла у обёртки нет. */
+const DRAG_AND_DROP_CHILDREN = ['div[so-tabs]', 'div[so-list-box]', 'div[so-accordion]']
+
 describe('DragAndDrop · серверный рендер и гидратация', () => {
 	afterEach(() => {
 		vi.restoreAllMocks()
@@ -779,13 +846,14 @@ describe('DragAndDrop · серверный рендер и гидратация
 	/**
 	 * Обёртку коллекции подхватывают при сборке, а она идёт и на сервере, но
 	 * `draggable` ставит плагин перетаскивания на узлы элементов, а узлов
-	 * плагинам на сервере нет.
+	 * плагинам на сервере нет. Своего узла у обёртки нет и в разметке сервера.
 	 */
-	it('сервер — элементы коллекций без draggable', async () => {
+	it('сервер — элементы коллекций без draggable, коллекции — прямо в корне', async () => {
 		const page = await serverPage(DragAndDropPage)
 
 		expect(ITEM_SELECTORS.map((selector) => all(page, selector).length)).toEqual([2, 2, 2])
 		expect(all(page, '[draggable]')).toEqual([])
+		expect(rootChildren(page)).toEqual(DRAG_AND_DROP_CHILDREN)
 	})
 
 	/**
@@ -808,6 +876,7 @@ describe('DragAndDrop · серверный рендер и гидратация
 		expect(
 			ITEM_SELECTORS.map((selector) => attributeOf(all(document, selector), 'draggable')),
 		).toEqual(ITEM_SELECTORS.map(() => ['true', 'true']))
+		expect(rootChildren(document)).toEqual(DRAG_AND_DROP_CHILDREN)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})

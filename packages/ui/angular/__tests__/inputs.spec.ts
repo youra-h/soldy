@@ -21,8 +21,9 @@
  * - снятый булев вход возвращается к умолчанию, а не к `false`;
  * - `expectTypeOf` — тип поля: с `any` верный шаблон прошёл бы и так;
  * - какие входы генератор считает булевыми;
- * - хосты каждого компонента экспорта, которые компилирует здесь же
- *   компилятор Angular, в памяти: неверное значение в каждом входе — ошибка на
+ * - хосты каждого компонента экспорта (у компонента без корня — директива на
+ *   `<ng-container>`), которые компилирует здесь же компилятор Angular, в
+ *   памяти: неверное значение в каждом входе — ошибка на
  *   каждом, булевы входы атрибутом без значения — ни одной ошибки, со
  *   значением `"yes"` — ошибка на каждом. Под `@ts-expect-error` отрицательный
  *   случай не записать — ошибка шаблона приходит не из строки TS. А без него
@@ -45,7 +46,7 @@ import {
 	readConfiguration,
 	setFileSystem,
 } from '@angular/compiler-cli'
-import { Component, reflectComponentType, signal, type Type } from '@angular/core'
+import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import type { TButtonView, TComponentSize } from '@soldy-ui/core'
 import {
@@ -55,7 +56,6 @@ import {
 	ValueControlDescriptor,
 	type TExternalPluginProps,
 } from '@soldy-ui/setup'
-import * as angular from '@soldy-ui/angular'
 import {
 	TButtonComponent,
 	TComponentComponent,
@@ -63,6 +63,7 @@ import {
 	useBooleanInputs,
 	useInputs,
 } from '@soldy-ui/angular'
+import { exportedDeclarations, type TDeclaration } from './declarations'
 
 @Component({
 	standalone: true,
@@ -241,19 +242,12 @@ describe('булев вход · критерий генератора', () => {
 /** Корень пакета: у собранного спека `import.meta.url` — его исходник. */
 const PACKAGE = dirname(dirname(fileURLToPath(import.meta.url)))
 
-/**
- * Класс из экспорта: `reflectComponentType` принимает только конструктор.
- * Утилиты экспорта (`useAdapter`, `setupButton`) для JS тоже функции с
- * прототипом, но компонента за ними она не найдёт.
- */
-function isConstructor(value: unknown): value is Type<unknown> {
-	return typeof value === 'function' && typeof value.prototype === 'object'
-}
-
 type TExportedComponent = {
 	/** Имя в экспорте пакета: под ним хост импортирует компонент. */
 	readonly name: string
 	readonly selector: string
+	/** Компонент Angular или директива — компонент без корня, его пишут на `<ng-container>`. */
+	readonly kind: TDeclaration['kind']
 	/** Все входы в том виде, в каком их видит шаблон, с `ctrl` базы. */
 	readonly inputs: readonly string[]
 	/**
@@ -264,27 +258,22 @@ type TExportedComponent = {
 	readonly booleans: readonly string[]
 }
 
-/** Компоненты экспорта — не ручным списком: новый попадёт под проверку сам. */
+/**
+ * Компоненты soldy экспорта — и директивы компонентов без корня — не ручным
+ * списком: новый попадёт под проверку сам.
+ */
 function exportedComponents(): TExportedComponent[] {
-	const entries: Record<string, unknown> = angular
-	const result: TExportedComponent[] = []
-
-	for (const [name, value] of Object.entries(entries)) {
-		const mirror = isConstructor(value) ? reflectComponentType(value) : null
-
-		if (!mirror) continue
-
-		result.push({
+	return exportedDeclarations()
+		.filter(({ soldy }) => soldy)
+		.map(({ name, selector, kind, inputs }) => ({
 			name,
-			selector: mirror.selector,
-			inputs: mirror.inputs.map((input) => input.templateName),
-			booleans: mirror.inputs
+			selector,
+			kind,
+			inputs: inputs.map((input) => input.templateName),
+			booleans: inputs
 				.filter((input) => input.transform !== undefined)
 				.map((input) => input.templateName),
-		})
-	}
-
-	return result
+		}))
 }
 
 /** Виды хоста — по тому, что стоит на элементе компонента. */
@@ -305,13 +294,14 @@ const BINDINGS: Record<THostKind, (component: TExportedComponent) => readonly st
 /**
  * Элемент компонента с `bindings` — по первому селектору, как его строит сам
  * Angular, когда создаёт компонент без разметки: тег селектора, а без него
- * `div`, и атрибуты селектора (`<button so-button …>`). Закрывающий тег
- * обязателен: самозакрытие Angular разрешает только кастомным и
- * void-элементам, и `<button so-button />` не скомпилировался бы.
+ * `div`, и атрибуты селектора (`<button so-button …>`). Директиву компонента
+ * без корня потребитель пишет на `<ng-container>` — так же её пишет и хост.
+ * Закрывающий тег обязателен: самозакрытие Angular разрешает только
+ * кастомным и void-элементам, и `<button so-button />` не скомпилировался бы.
  */
-function hostElement(selector: string, bindings: readonly string[]): string {
+function hostElement({ selector, kind }: TExportedComponent, bindings: readonly string[]): string {
 	const [first] = CssSelector.parse(selector)
-	const tag = first.element ?? 'div'
+	const tag = kind === 'directive' ? 'ng-container' : (first.element ?? 'div')
 	const attributes: string[] = []
 
 	// Атрибуты селектора идут парами «имя, значение», пустое значение — атрибут без него
@@ -326,15 +316,15 @@ function hostElement(selector: string, bindings: readonly string[]): string {
 }
 
 /** Хост потребителя, у которого на элементе компонента стоят `bindings`. */
-function hostSource({ name, selector }: TExportedComponent, bindings: readonly string[]): string {
+function hostSource(component: TExportedComponent, bindings: readonly string[]): string {
 	return [
 		`import { Component } from '@angular/core'`,
-		`import { ${name} } from '@soldy-ui/angular'`,
+		`import { ${component.name} } from '@soldy-ui/angular'`,
 		'',
 		'@Component({',
 		'	standalone: true,',
-		`	imports: [${name}],`,
-		`	template: \`${hostElement(selector, bindings)}\`,`,
+		`	imports: [${component.name}],`,
+		`	template: \`${hostElement(component, bindings)}\`,`,
 		'})',
 		'export class Host {',
 		`	readonly wrong = Symbol('wrong')`,
@@ -464,6 +454,8 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TRatingComponent',
 				'TScrollerComponent',
 				'TPaginationComponent',
+				'TVirtualComponent',
+				'TDragAndDropComponent',
 			]),
 		)
 	})

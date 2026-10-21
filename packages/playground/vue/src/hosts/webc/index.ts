@@ -234,7 +234,8 @@ function write(element: HTMLElement, before: Map<string, unknown>, after: Map<st
  * поверхности дескриптора (`listenersOf`). Обёртка превью (подпись вокруг
  * флажка) получает только свои пропсы описания. Смена `ctrl` пересоздаёт
  * элемент вместе с обёрткой: присвоенный подключённому, он дошёл бы до ядра
- * лишь при следующем подключении.
+ * лишь при следующем подключении. Так же — смена пропа, от которого зависят
+ * дети превью (`TPreview.rebuild`): свет собранного элемента уже разложен.
  *
  * Синхронно: элемент собирается при подключении и раскладывает состояние
  * ядра на себя тем же вызовом, — к возврату из `mount` компонент в DOM, как
@@ -267,8 +268,11 @@ const host: IPreviewHost = {
 		return {
 			update(next) {
 				// Инстанс и движок коллекции элемент берёт сборкой, как `ctrl` и
-				// `engine` у остальных фреймворков: другой — значит, другой элемент
-				if (next.ctrl !== bind.ctrl || next.engine !== bind.engine) {
+				// `engine` у остальных фреймворков: другой — значит, другой элемент.
+				// Так же — пропсы, от которых зависят дети превью (`rebuild`)
+				const rebuilt = (preview.rebuild ?? []).some((name) => next[name] !== bind[name])
+
+				if (next.ctrl !== bind.ctrl || next.engine !== bind.engine || rebuilt) {
 					built.outer.remove()
 					built = build(preview, next, listeners)
 					root.appendChild(built.outer)
