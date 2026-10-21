@@ -4,11 +4,12 @@
  *
  * Статику разметки переносит база (`root-attributes.spec.ts`, спеки полей),
  * а привязки и слушатели Angular отдаёт рендереру шаблона потребителя — их
- * доносит рендерер адаптера. Таблица — по всем одиннадцати компонентам, у
+ * доносит рендерер адаптера. Таблица — по всем двенадцати компонентам, у
  * которых написанное на компоненте делится между корнем и узлом внутри
  * (`TRootSpec.control`, `'wrapped'`): поля и радио — `<input>` или
- * `<textarea>`, элементы ListBox, Tabs и Accordion — строка, ListBox и Tabs —
- * узел списка с ролью, Table — `table` в окне.
+ * `<textarea>`, у NumberInput — ввод числа, элементы ListBox, Tabs и
+ * Accordion — строка, ListBox и Tabs — узел списка с ролью, Table — `table`
+ * в окне.
  *
  * На корне остаётся вид — класс и стиль, — служебные атрибуты Angular, выходы
  * компонента и события движения. Та же таблица идёт ещё раз рядом со старыми
@@ -31,6 +32,7 @@ import {
 	TInputComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TSwitchComponent,
@@ -91,6 +93,16 @@ const TABLE_COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя' }]
 	}`,
 })
 class InputProbe extends TForwardProbe {}
+
+@Component({
+	selector: 'probe-forward-number-input',
+	imports: [TNumberInputComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-number-input ${WRITTEN}></div>
+	}`,
+})
+class NumberInputProbe extends TForwardProbe {}
 
 @Component({
 	selector: 'probe-forward-textarea',
@@ -213,6 +225,15 @@ type TForwardCase = {
 
 const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 	['Input', { component: TInputComponent, probe: InputProbe, root: '[so-input]', node: 'input' }],
+	[
+		'NumberInput',
+		{
+			component: TNumberInputComponent,
+			probe: NumberInputProbe,
+			root: '[so-number-input]',
+			node: '.so-number-input__input',
+		},
+	],
 	[
 		'Textarea',
 		{

@@ -368,6 +368,7 @@ describe('выходы компонентов экспорта · геттер �
 				'TLabelComponent',
 				'TFieldComponent',
 				'TInputComponent',
+				'TNumberInputComponent',
 				'TTextareaComponent',
 				'TCheckBoxComponent',
 				'TSwitchComponent',

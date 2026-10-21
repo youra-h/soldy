@@ -191,7 +191,7 @@ come in later releases.
 | --------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------- | ------- |
 | Button          | Button: text, icons in slots, four views                                                       | *                                         | 0.2.0   |
 | Input           | Text field with slots for icons and buttons                                                    | *                                         | 0.2.0   |
-| NumberInput     | Number field in the locale's format: step and bounds, arrow keys, − and + buttons with hold    | Vue, React, Solid, Svelte, Web Components | alpha   |
+| NumberInput     | Number field in the locale's format: step and bounds, arrow keys, − and + buttons with hold    | *                                         | alpha   |
 | CheckBox        | Checkbox with a third, indeterminate state                                                     | *                                         | 0.2.0   |
 | Switch          | Switch: the same value as a checkbox, a different metaphor                                     | *                                         | 0.2.0   |
 | Label           | Control label: clicking the text toggles the control, and the text is its accessible name      | *                                         | 0.2.0   |

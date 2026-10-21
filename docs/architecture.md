@@ -1692,7 +1692,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Frame / ProgressSpinner / Skeleton / Input / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Textable / Button / Icon / Label / Field / Frame / ProgressSpinner / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / RadioGroup / ListBox / Tabs / Accordion / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1949,13 +1949,14 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 - `shownBy` в описании корня — выход, без которого корень скрыт: у панели
   таба `active` — неактивная панель скрыта, а её содержимое в документ не
   вставляется;
-- `control` в описании корня — у поля, Input, Textarea, CheckBox и Switch
-  (`{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`), у радио,
-  элемента коллекции, ListBox и Tabs: всё, что потребитель записал на
+- `control` в описании корня — у поля, Input, NumberInput, Textarea, CheckBox
+  и Switch (`{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`),
+  у радио, элемента коллекции, ListBox и Tabs: всё, что потребитель записал на
   компонент, кроме `class`, `style`, служебных атрибутов Angular, входов и
   меток soldy (`so-*` — селектор), доходит до элемента шаблона `#control` —
-  вложенного `<input>`, строки или узла списка с ролью (`listbox`,
-  `tablist`), как атрибуты снаружи у Vue и React. Статику разметки база
+  вложенного `<input>` (у NumberInput — ввода числа, а не скрытого поля
+  формы), строки или узла списка с ролью (`listbox`, `tablist`), как атрибуты
+  снаружи у Vue и React. Статику разметки база
   переносит сама; чей атрибут, она узнаёт не по узлу, а по скомпилированной
   разметке потребителя (`HostAttributeToken`): атрибут инкапсуляции стилей
   (`_ngcontent-*`) и всё, что при гидратации напечатал сервер, остаются на

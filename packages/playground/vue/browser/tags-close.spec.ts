@@ -10,17 +10,22 @@
  * крестик со строкой, а пилюлю — с её же состояниями, а не с числами темы. В
  * jsdom раскладки нет.
  *
- * Последний раздел — зона нажатия крестика: минимум цели указателя по WCAG
- * 2.5.8 при прежнем виде крестика.
+ * Раздел «зона нажатия крестика» — минимум цели указателя по WCAG 2.5.8 при
+ * прежнем виде крестика.
+ *
+ * Последний раздел — цвет крестика: он цвета подписи пилюли в любом виде и
+ * варианте, а его наведение, нажатие и кольцо фокуса на пилюле не чужие ей.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
-import { Select, SelectItem, Tags, TagsItem } from '@soldy-ui/vue'
+import { BUTTON_VIEWS, COMPONENT_SIZES, COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
+import { Button, Select, SelectItem, Tags, TagsItem } from '@soldy-ui/vue'
 import type { TTagsOverflow } from '@soldy-ui/core'
+
+import { lightness, pixel } from './colors'
 
 import '@soldy-ui/theme-oren'
 
@@ -459,5 +464,259 @@ describe('зона нажатия крестика', () => {
 		render(harness({ size: 'sm' }, 'rtl'))
 
 		expectZone(itemOf('a'))
+	})
+})
+
+/**
+ * Крестик — цвета подписи пилюли: на `filled` с вариантом белый, на `plain` и
+ * `outlined` — цвета варианта, у нейтрали и вида `none` — нейтраль. Варианта
+ * крестику разметка не передаёт, и цвет он берёт у пилюли (`tags/_tags.scss`).
+ *
+ * Его наведение и нажатие на пилюле — не чужое пятно. У `plain` и `outlined`
+ * подпись — цвет семейства пилюли, и вуаль крестика — та же, что у самой
+ * пилюли. Насыщенная пилюля — `filled` с вариантом — место со своим текстом,
+ * как залитая плашка тоста (`toasts.spec.ts`, «вид»): вуаль её семейства на
+ * заливке той же ступени невидима, поэтому состояния крестика — тень, фон
+ * уходит от белой подписи, темнее, — а кольцо фокуса — цвета подписи: кольцо
+ * темы на заливке почти пропадает. У нейтрали и вида `none` крестик прежний,
+ * `plain` нейтрали: его вуали и кольцо — как у такой же кнопки вне тега.
+ *
+ * Цвет пилюли приходит тремя путями (`tags-variant.spec.ts`), и проверяются
+ * все: свой вариант тега в наборе без варианта — каждый и без него, — и
+ * вариант набора `accent` у тега без своего, со своим `normal` и со своим
+ * другим. Палитры спек не знает: подпись сверяется с подписью пилюли, вуаль —
+ * с вуалью пилюли или эталонной кнопки, тень — светлотой поверх пилюли под
+ * ней (`./colors`).
+ */
+describe('цвет крестика — от пилюли', () => {
+	/** Обе схемы: цвета у них свои, а правила те же. */
+	const SCHEMES = ['oren', 'oren-dark'] as const
+
+	type TVariant = (typeof COMPONENT_VARIANTS)[number] | undefined
+
+	type TView = (typeof BUTTON_VIEWS)[number]
+
+	/** Варианты со своим цветом: у `normal` цвет нейтрали. */
+	const COLORED = COMPONENT_VARIANTS.filter((variant) => variant !== 'normal')
+
+	/** Наборы спека: вариант набора и свои варианты тегов в нём. */
+	const SETS: ReadonlyArray<{ name: string; variant: TVariant; tags: readonly TVariant[] }> = [
+		{ name: 'own', variant: undefined, tags: [undefined, 'normal', ...COLORED] },
+		{ name: 'accent', variant: 'accent', tags: [undefined, 'normal', 'caution'] },
+	]
+
+	/** Подпись и значение тега: свой вариант, без него — «нет». */
+	const textOf = (own: TVariant) => own ?? 'нет'
+
+	/**
+	 * Состояние крестика на насыщенной пилюле видно, если фон под ним отошёл от
+	 * пилюли по светлоте OKLab не меньше, чем вуаль-заливка от подложки, —
+	 * порог `VISIBLE_FILL` из `button-view.spec.ts`, как у кнопок на плашке
+	 * тоста.
+	 */
+	const VISIBLE_FILL = 0.02
+
+	/**
+	 * Чем крестик красит состояния на пилюле этого вида и цвета: тенью — на
+	 * насыщенной, вуалью пилюли — у `plain` и `outlined`, иначе — вуалью
+	 * нейтрали, как кнопка `plain` без варианта.
+	 */
+	const kindOf = (view: TView, tone: TVariant) => {
+		if (view === 'filled' && tone !== undefined && tone !== 'normal') return 'тень'
+		if (view === 'plain' || view === 'outlined') return 'пилюля'
+
+		return 'нейтраль'
+	}
+
+	/**
+	 * Наборы без выбора — так у строк нет остановки Tab, и с клавиатуры Tab
+	 * идёт по крестикам. Перед ними — эталон, кнопка `plain` нейтрали вне тега,
+	 * а перед эталоном — узел, с которого начинается Tab и на который уходит
+	 * указатель.
+	 */
+	const colorHarness = (view: TView) =>
+		defineComponent({
+			render() {
+				return h('div', [
+					h('div', { class: 'so-test-away', tabindex: -1, style: 'height: 24px' }),
+					h(Button, { view: 'plain', text: 'Эталон', class: 'so-test-reference' }),
+					...SETS.map(({ name, variant, tags }) =>
+						h('div', { style: 'width: 640px' }, [
+							h(Tags, {
+								class: `so-test-set-${name}`,
+								closable: true,
+								mode: 'none',
+								view,
+								variant,
+								items: tags.map((own) => ({
+									value: textOf(own),
+									text: textOf(own),
+									variant: own,
+								})),
+							}),
+						]),
+					),
+				])
+			},
+		})
+
+	/** Пилюли в порядке разметки — порядке Tab — с тем, чем крестик красит состояния. */
+	const pillsOf = (view: TView) =>
+		SETS.flatMap(({ name, variant, tags }) =>
+			tags.map((own) => {
+				const item = [
+					...find(`.so-test-set-${name}`).querySelectorAll('.so-tags-item'),
+				].find((candidate) => candidate.textContent?.trim() === textOf(own))
+
+				if (!(item instanceof HTMLElement)) throw new Error(`тега ${textOf(own)} нет`)
+
+				return {
+					name: `набор ${name}, тег ${textOf(own)}`,
+					item,
+					close: find(':scope > .so-tags-item__close', item),
+					kind: kindOf(view, own ?? variant),
+				}
+			}),
+		)
+
+	/**
+	 * Фон узла под наведением и при нажатии — когда доиграли переходы цвета
+	 * `scope`. Кнопка мыши отпускается мимо узла: отпускание над крестиком —
+	 * клик, а клик закрыл бы тег.
+	 */
+	const pressed = async <T>(target: HTMLElement, scope: HTMLElement, read: () => T) => {
+		await userEvent.hover(target)
+		await settled(scope)
+
+		const hovered = read()
+
+		await commands.mouseDown()
+
+		try {
+			await settled(scope)
+
+			return { наведение: hovered, нажатие: read() }
+		} finally {
+			await away()
+			await commands.mouseUp()
+		}
+	}
+
+	describe.each(SCHEMES)('%s', (scheme) => {
+		beforeEach(() => {
+			document.documentElement.dataset.soTheme = scheme
+		})
+
+		it.each(BUTTON_VIEWS)('view="%s": крестик в покое — цвета подписи пилюли', async (view) => {
+			render(colorHarness(view))
+			await away()
+
+			for (const { name, item, close } of pillsOf(view)) {
+				await settled(item)
+
+				expect(pixel([style(close).color]), name).toEqual(pixel([style(item).color]))
+			}
+		})
+
+		it.each(BUTTON_VIEWS)(
+			'view="%s": под наведением и при нажатии крестик цвета подписи, а фон — не чужой пилюле',
+			async (view) => {
+				render(colorHarness(view))
+
+				const reference = find('.so-test-reference')
+				const neutral = await pressed(
+					reference,
+					reference,
+					() => style(reference).backgroundColor,
+				)
+
+				for (const { name, item, close, kind } of pillsOf(view)) {
+					// Снимок, а не живой стиль: к проверке состояние уже снято
+					const looks = await pressed(close, item, () => ({
+						label: style(close).color,
+						fill: style(close).backgroundColor,
+						text: style(item).color,
+						pill: style(item).backgroundColor,
+					}))
+
+					for (const [state, { label, fill, text, pill }] of Object.entries(looks)) {
+						const at = `${name}, ${state}`
+
+						expect(pixel([label]), `${at}: подпись`).toEqual(pixel([text]))
+
+						if (kind === 'тень') {
+							expect(
+								lightness([pill, fill]) - lightness([pill]),
+								`${at}: тень темнее пилюли`,
+							).toBeLessThanOrEqual(-VISIBLE_FILL)
+						} else if (kind === 'пилюля') {
+							expect(pixel([fill]), `${at}: вуаль пилюли`).toEqual(pixel([pill]))
+						} else {
+							expect(pixel([fill]), `${at}: вуаль нейтрали`).toEqual(
+								pixel([
+									state === 'наведение' ? neutral.наведение : neutral.нажатие,
+								]),
+							)
+						}
+					}
+				}
+			},
+		)
+
+		it.each(BUTTON_VIEWS)(
+			'view="%s": кольцо фокуса крестика с клавиатуры — на насыщенной пилюле цвета подписи, иначе — темы',
+			async (view) => {
+				render(colorHarness(view))
+
+				const reference = find('.so-test-reference')
+
+				find('.so-test-away').focus()
+				await userEvent.tab()
+
+				expect(document.activeElement, 'эталон').toBe(reference)
+
+				await settled(reference)
+
+				const ring = style(reference).outlineColor
+
+				for (const { name, item, close, kind } of pillsOf(view)) {
+					await userEvent.tab()
+
+					expect(document.activeElement, name).toBe(close)
+
+					await settled(close)
+
+					expect(pixel([style(close).outlineColor]), `${name}: кольцо`).toEqual(
+						pixel([kind === 'тень' ? style(item).color : ring]),
+					)
+				}
+			},
+		)
+	})
+
+	/** Тег в поле Select — насыщенная пилюля: Select отдаёт свой вариант набору тегов. */
+	it('в поле Select с вариантом крестик тега — цвета подписи пилюли', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 460px' }, [
+						h(Select, { mode: 'multiple', value: ['0'], variant: 'accent' }, () => [
+							h(SelectItem, { key: '0', value: '0', text: 'Москва' }),
+						]),
+					]),
+			}),
+		)
+
+		await expect.poll(() => document.querySelectorAll('.so-tags-item').length).toBe(1)
+
+		const item = find('.so-tags-item')
+
+		await settled(item)
+
+		expect(pixel([style(find(':scope > .so-tags-item__close', item)).color])).toEqual(
+			pixel([style(item).color]),
+		)
+		// Пилюля в поле — насыщенная: подпись на ней не цвета поля
+		expect(pixel([style(item).color])).not.toEqual(pixel([style(find('.so-input')).color]))
 	})
 })
