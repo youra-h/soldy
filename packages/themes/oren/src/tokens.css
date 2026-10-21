@@ -109,9 +109,11 @@
 	 * которые уходят под шапку. В тёмной схеме не переопределяется, как
 	 * `--so-component-text`: выбор ступени тот же. */
 	--so-place-surface: var(--so-neutral-50);
-	/* Ручка Switch — см. tokens-dark.css, там роли расходятся */
+	/* Ручка Switch и Slider — см. tokens-dark.css, там роли расходятся */
 	--so-component-knob: #fff;
-	/* Вуаль для утопленных элементов (неактивные вкладки Tabs--outline) */
+	/* Вуаль утопленного — того, что уводят за поверхность: подложка Dialog,
+	 * Drawer и панели выбора месяца Calendar (`modal.backdrop` в
+	 * `mixins/_modal.scss`), неактивные вкладки Tabs `outline`. */
 	--so-component-veil: var(--so-neutral-400);
 
 	/* ─── Плотность вуали состояний ─────────────────────────────
