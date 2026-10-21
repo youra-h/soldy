@@ -442,3 +442,161 @@ describe('TDragPlugin — жест перестановки командой о�
 		expect(ends).toEqual([true])
 	})
 })
+
+/**
+ * Касание пальцем — у узла, а не у корня: событие всплывает до корня, как у
+ * браузера. Палец один (`pointerId` 1), основной.
+ */
+function touch(node: Element, type: string, x = 0, y = 0): PointerEvent {
+	const event = new PointerEvent(type, {
+		bubbles: true,
+		cancelable: true,
+		clientX: x,
+		clientY: y,
+		pointerId: 1,
+		pointerType: 'touch',
+		isPrimary: true,
+	})
+
+	node.dispatchEvent(event)
+
+	return event
+}
+
+/**
+ * Узел под пальцем — точкой документа (`elementFromPoint`): касание браузер
+ * захватывает за узлом, где оно началось, и цель событий его хода — этот узел.
+ * В jsdom раскладки нет, и точку тест отдаёт сам.
+ */
+function under(node: Element | null): void {
+	Object.defineProperty(document, 'elementFromPoint', { value: () => node, configurable: true })
+}
+
+describe('TDragPlugin — пальцем: долгое нажатие берёт элемент', () => {
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	it('палец, державший элемент, переносит его на место третьего: move, drag:start и drag:end', async () => {
+		const { engine, items, nodeOf, drag, moved } = await activated()
+		const events: string[] = []
+
+		vi.useFakeTimers()
+		drag.events.on('drag:start', () => events.push('start'))
+		drag.events.on('drag:end', () => events.push('end'))
+
+		touch(nodeOf(items[0]), 'pointerdown')
+		vi.advanceTimersByTime(450)
+
+		expect(events).toEqual(['start'])
+		expect(items[0].classes.has('so-drag-and-drop__item', false)).toBe(true)
+
+		under(nodeOf(items[2]))
+		touch(nodeOf(items[0]), 'pointermove', 0, 80)
+		touch(nodeOf(items[0]), 'pointerup', 0, 80)
+
+		expect(order(engine.extensions.batch.items)).toEqual(['b', 'c', 'a'])
+		expect(moved.map(({ oldIndex, newIndex }) => [oldIndex, newIndex])).toEqual([[0, 2]])
+		expect(events).toEqual(['start', 'end'])
+		expect(items[0].classes.has('so-drag-and-drop__item', false)).toBe(false)
+	})
+
+	it('палец, ушедший за порог до долгого нажатия, — прокрутка: жеста нет, страница не держится', async () => {
+		const { engine, items, nodeOf, drag, asked } = await activated()
+		const starts: unknown[] = []
+
+		vi.useFakeTimers()
+		drag.events.on('drag:start', (payload) => starts.push(payload))
+
+		touch(nodeOf(items[0]), 'pointerdown')
+		touch(nodeOf(items[0]), 'pointermove', 0, 20)
+		vi.advanceTimersByTime(1000)
+
+		const scroll = new Event('touchmove', { bubbles: true, cancelable: true })
+
+		nodeOf(items[0]).dispatchEvent(scroll)
+		under(nodeOf(items[2]))
+		touch(nodeOf(items[0]), 'pointermove', 0, 80)
+
+		expect(starts).toEqual([])
+		expect(scroll.defaultPrevented).toBe(false)
+		expect(asked).toEqual([])
+		expect(order(engine.extensions.batch.items)).toEqual(['a', 'b', 'c'])
+	})
+
+	it('взятый элемент несут — прокрутка отменена; палец держит — меню и выделение браузера не начинаются', async () => {
+		const { items, nodeOf } = await activated()
+		const press = () => new Event('contextmenu', { bubbles: true, cancelable: true })
+
+		vi.useFakeTimers()
+
+		touch(nodeOf(items[0]), 'pointerdown')
+
+		const menu = press()
+		const select = new Event('selectstart', { bubbles: true, cancelable: true })
+
+		nodeOf(items[0]).dispatchEvent(menu)
+		nodeOf(items[0]).dispatchEvent(select)
+		vi.advanceTimersByTime(450)
+
+		const scroll = new Event('touchmove', { bubbles: true, cancelable: true })
+
+		nodeOf(items[0]).dispatchEvent(scroll)
+
+		expect(menu.defaultPrevented).toBe(true)
+		expect(select.defaultPrevented).toBe(true)
+		expect(scroll.defaultPrevented).toBe(true)
+
+		touch(nodeOf(items[0]), 'pointerup')
+
+		const after = press()
+
+		nodeOf(items[0]).dispatchEvent(after)
+
+		expect(after.defaultPrevented).toBe(false)
+	})
+
+	it('нативный dragstart под пальцем отменён: элемент берёт долгое нажатие, а не жест браузера', async () => {
+		const { items, nodeOf, drag } = await activated()
+		const starts: unknown[] = []
+
+		vi.useFakeTimers()
+		drag.events.on('drag:start', (payload) => starts.push(payload))
+
+		touch(nodeOf(items[0]), 'pointerdown')
+
+		expect(fire(nodeOf(items[0]), 'dragstart').defaultPrevented).toBe(true)
+		expect(starts).toEqual([])
+	})
+
+	it('отнятый палец — жест кончился; выключенный элемент и мышь долгим нажатием не берутся', async () => {
+		const { items, nodeOf, drag } = await activated()
+		const events: string[] = []
+
+		vi.useFakeTimers()
+		drag.events.on('drag:start', () => events.push('start'))
+		drag.events.on('drag:end', () => events.push('end'))
+
+		touch(nodeOf(items[0]), 'pointerdown')
+		vi.advanceTimersByTime(450)
+		touch(nodeOf(items[0]), 'pointercancel')
+
+		expect(events).toEqual(['start', 'end'])
+
+		items[1].disabled = true
+		touch(nodeOf(items[1]), 'pointerdown')
+		vi.advanceTimersByTime(450)
+		touch(nodeOf(items[1]), 'pointerup')
+
+		nodeOf(items[2]).dispatchEvent(
+			new PointerEvent('pointerdown', {
+				bubbles: true,
+				pointerType: 'mouse',
+				isPrimary: true,
+			}),
+		)
+		vi.advanceTimersByTime(450)
+
+		expect(events).toEqual(['start', 'end'])
+	})
+})

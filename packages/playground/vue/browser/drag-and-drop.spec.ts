@@ -19,7 +19,7 @@
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { useIcons } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
@@ -164,6 +164,69 @@ describe('перестановка мышью', () => {
 		expect(onScreen(document, '.so-list-box-item', 'y')).toEqual(['b', 'c', 'a'])
 		expect(onScreen(document, '.so-tabs-item', 'x')).toEqual(['a', 'b', 'c'])
 		expect(onScreen(document, '.so-accordion-item', 'y')).toEqual(['a', 'b', 'c'])
+	})
+})
+
+/**
+ * Палец — событиями касания протокола DevTools (`commands.touchDrag`), как на
+ * телефоне: нативного перетаскивания у касания нет, и элемент берёт долгое
+ * нажатие (`TDragPlugin`, 450 мс). Касание, сразу ушедшее в сторону, —
+ * прокрутка, и элемент остаётся на месте.
+ */
+describe('перестановка пальцем', () => {
+	/** Сколько палец стоит до первого шага: дольше долгого нажатия плагина. */
+	const HOLD = 700
+
+	/** Узел элемента — селектором для команды: метка на узле, пока идёт тест. */
+	const mark = (node: HTMLElement): string => {
+		node.dataset.testTouch = ''
+
+		return '[data-test-touch]'
+	}
+
+	/** Сдвиг от центра одного узла до центра другого. */
+	const between = (from: HTMLElement, to: HTMLElement) => {
+		const a = from.getBoundingClientRect()
+		const b = to.getBoundingClientRect()
+
+		return {
+			dx: b.left + b.width / 2 - (a.left + a.width / 2),
+			dy: b.top + b.height / 2 - (a.top + a.height / 2),
+		}
+	}
+
+	it.each(COLLECTIONS)(
+		'%s: первый элемент, взятый долгим нажатием и перенесённый на третий, встаёт третьим',
+		async (_, item, handle, axis) => {
+			await mount()
+
+			const from = nodeOf(document, handle, 'Пункт A')
+			const { dx, dy } = between(from, nodeOf(document, handle, 'Пункт C'))
+
+			await commands.touchDrag(mark(from), dx, dy, 10, HOLD)
+			await frames()
+
+			expect(onScreen(document, item, axis)).toEqual(['b', 'c', 'a'])
+			// Палец идёт шагами и по пути проходит над вторым: перестановка
+			// живая, элемент встаёт под пальцем на каждом новом месте
+			expect(moved.map(({ oldIndex, newIndex }) => [oldIndex, newIndex])).toEqual([
+				[0, 1],
+				[1, 2],
+			])
+		},
+	)
+
+	it('касание, сразу ушедшее в сторону, — прокрутка: элемент остаётся на месте', async () => {
+		await mount()
+
+		const from = nodeOf(document, '.so-list-box-item', 'Пункт A')
+		const { dx, dy } = between(from, nodeOf(document, '.so-list-box-item', 'Пункт C'))
+
+		await commands.touchDrag(mark(from), dx, dy)
+		await frames()
+
+		expect(onScreen(document, '.so-list-box-item', 'y')).toEqual(['a', 'b', 'c'])
+		expect(moved).toEqual([])
 	})
 })
 

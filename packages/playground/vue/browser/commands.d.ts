@@ -25,9 +25,16 @@ declare module 'vitest/browser' {
 		tap: (selector: string, count?: number) => Promise<void>
 		/**
 		 * Протянуть палец от центра узла на `dx`, `dy` за `steps` шагов (по
-		 * умолчанию 10) — селектор CSS в рамке теста
+		 * умолчанию 10), простояв на месте `hold` мс до первого шага (по
+		 * умолчанию — сразу), — селектор CSS в рамке теста
 		 */
-		touchDrag: (selector: string, dx: number, dy: number, steps?: number) => Promise<void>
+		touchDrag: (
+			selector: string,
+			dx: number,
+			dy: number,
+			steps?: number,
+			hold?: number,
+		) => Promise<void>
 		/** Вставить текст без клавиш, как экранная клавиатура: `beforeinput` и `input` */
 		insertText: (text: string) => Promise<void>
 		/** Текст незавершённой композиции IME; завершает её `insertText` */
