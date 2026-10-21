@@ -275,6 +275,28 @@ async function dialogPanels(row: DOMWrapper<Element>): Promise<HTMLElement[]> {
 	return panels
 }
 
+/**
+ * Узел, на который ссылается `aria-controls` узла колонки: панель меню у его
+ * кнопки, список Select у его поля. Оба телепортированы в `body` из корня
+ * хоста, и в DOM строки их нет, а ссылка ведёт на свой: `id` у каждого превью
+ * свои. Панель и список в документе и у закрытого компонента — открывать его
+ * не нужно.
+ */
+function controlledBy(stage: DOMWrapper<Element>, selector: string): Element {
+	const id = stage.get(selector).attributes('aria-controls')
+	const controlled = id ? document.getElementById(id) : null
+
+	if (!controlled) throw new Error(`${selector}: узла по aria-controls нет`)
+
+	return controlled
+}
+
+/** Секции групп в узле: `[групп, разделителей]`. */
+const sectionsIn = (node: Element, group: string, separator: string) => [
+	node.querySelectorAll(group).length,
+	node.querySelectorAll(separator).length,
+]
+
 describe.each(IDS)('каталог хоста %s', (framework) => {
 	/**
 	 * Ключи карты превью — те же идентификаторы, что в общем реестре. Опечатка
@@ -700,7 +722,9 @@ describe('свойства плагинов', () => {
  * Пресет строки: `removeOnBackspace` виден только в `editable` + `multiple`,
  * `indicator` у ListBox нужен там, где выбрано несколько элементов, `offset`
  * у Dialog виден у окна, растянутого по экрану, текст `error` у Field — только
- * при `invalid`, а сообщение `invalid` — только с текстом ошибки.
+ * при `invalid`, сообщение `invalid` — только с текстом ошибки, а линии
+ * `groupSeparators` у ListBox, Select и Menu — только на составе с группами,
+ * которого у превью нет.
  *
  * Проверяем DOM обеих колонок, а не сам пресет: во второй колонке он едет
  * разметкой рядом с `ctrl`, и доехать до инстанса и фасада коллекции там
@@ -710,6 +734,10 @@ describe('свойства плагинов', () => {
  * оба остаются выбранными только в `multiple`. У окна признак — переменные
  * размера и отступа на его панели. У поля формы — что стоит под контролом,
  * подсказка или ошибка, и отметка ошибки у самого контрола (`aria-invalid`).
+ * У групп — сколько групп и линий между ними: у ListBox — в самом списке, у
+ * Select — в списке панели, у Menu — в панели. Панели телепортированы, и
+ * колонку со своей связывает ссылка `aria-controls` — поля Select и кнопки
+ * меню.
  */
 describe('пресет строки', () => {
 	it.each(drawing('select'))(
@@ -750,6 +778,106 @@ describe('пресет строки', () => {
 			const wrapper = await openPage(framework, 'list-box')
 
 			expect(await selectedAfterTwoClicks(rowOf(wrapper, 'view'))).toEqual([1, 1])
+		},
+	)
+
+	/**
+	 * Разделитель встаёт только между секциями групп, а превью рисует состав без
+	 * групп — у Menu ещё и с ручными `Menu.Separator`, которых свойство не
+	 * трогает: снятый флаг не менял ничего. Пресет строки отдаёт состав с
+	 * группами данными, как блок групп: две группы и элемент без группы — три
+	 * секции и две линии между ними. У ListBox и Select линий по умолчанию нет,
+	 * у Menu — есть.
+	 */
+	it.each(drawing('list-box'))(
+		'%s: groupSeparators ставит и снимает линии между группами ListBox в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'list-box')
+			const row = rowOf(wrapper, 'groupSeparators')
+			const sections = () =>
+				stagesOf(row).map((stage) =>
+					sectionsIn(stage.element, '.so-list-box-group', '.so-list-box__separator'),
+				)
+
+			expect(sections()).toEqual([
+				[2, 0],
+				[2, 0],
+			])
+
+			await enter(row, true)
+			expect(sections()).toEqual([
+				[2, 2],
+				[2, 2],
+			])
+
+			await enter(row, false)
+			expect(sections()).toEqual([
+				[2, 0],
+				[2, 0],
+			])
+			expect(firstLines()).toEqual([])
+		},
+	)
+
+	it.each(drawing('select'))(
+		'%s: groupSeparators ставит и снимает линии между группами в списке Select в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'select')
+			const row = rowOf(wrapper, 'groupSeparators')
+			const sections = () =>
+				stagesOf(row).map((stage) =>
+					sectionsIn(
+						controlledBy(stage, '.so-select__field input'),
+						'.so-select-group',
+						'.so-select__separator',
+					),
+				)
+
+			expect(sections()).toEqual([
+				[2, 0],
+				[2, 0],
+			])
+
+			await enter(row, true)
+			expect(sections()).toEqual([
+				[2, 2],
+				[2, 2],
+			])
+
+			await enter(row, false)
+			expect(sections()).toEqual([
+				[2, 0],
+				[2, 0],
+			])
+			expect(firstLines()).toEqual([])
+		},
+	)
+
+	it.each(drawing('menu'))(
+		'%s: снятый groupSeparators убирает линии между группами в панели Menu в обеих колонках',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'menu')
+			const row = rowOf(wrapper, 'groupSeparators')
+			const sections = () =>
+				stagesOf(row).map((stage) =>
+					sectionsIn(
+						controlledBy(stage, '.so-button'),
+						'.so-menu-group',
+						'.so-menu-separator',
+					),
+				)
+
+			expect(sections()).toEqual([
+				[2, 2],
+				[2, 2],
+			])
+
+			await enter(row, false)
+			expect(sections()).toEqual([
+				[2, 0],
+				[2, 0],
+			])
+			expect(firstLines()).toEqual([])
 		},
 	)
 
