@@ -48,5 +48,5 @@ export function setupPagination(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator: createWebcElevator(host) })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, adapter, host, onUpdate))
+	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
 }

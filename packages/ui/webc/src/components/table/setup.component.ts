@@ -57,5 +57,5 @@ export function setupTable(
 		// обёртку — при приёме, снятие — с уничтожением
 		.use(TVirtualCollectionExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, adapter, host, onUpdate))
+	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
 }

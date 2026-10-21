@@ -11,13 +11,14 @@
  * Угол зрения здесь свой. Корень — элемент потребителя, страница — внутренняя
  * часть `<li is="so-pagination-item">`, которую рисует шаблон пагинации над
  * страницами окна. Слот со scope (`item`) — образец: копию получает каждая
- * страница, а данные копия берёт у страницы — `el.ctrl`.
+ * страница, а данные копия берёт у страницы — `el.ctrl`. События страницы —
+ * разметки пагинации — не всплывают.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TPagination, type IPaginationItem } from '@soldy-ui/core'
-import { arEG, ruRU } from '@soldy-ui/plugins'
-import { PaginationDescriptor, PaginationItemDescriptor } from '@soldy-ui/setup'
+import { TButton, TPagination, TPaginationItem, type IPaginationItem } from '@soldy-ui/core'
+import { TBasePlugin, arEG, ruRU, type IPluginContext } from '@soldy-ui/plugins'
+import { PaginationDescriptor, PaginationItemDescriptor, usePlugins } from '@soldy-ui/setup'
 import {
 	TLocaleProviderElement,
 	TPaginationElement,
@@ -455,6 +456,124 @@ describe('текст и слоты', () => {
 		await mount('<nav is="so-pagination" total="30"><b class="stray">текст</b></nav>')
 
 		expect(document.querySelector('.stray')).toBeNull()
+	})
+})
+
+/**
+ * Страницу строит шаблон пагинации (`createItem`), а не пишет потребитель: она
+ * — разметка пагинации, и её события слышно на самой странице, а до пагинации
+ * и выше они не всплывают — как у Vue и React, где событие страницы слышит
+ * только разметка пагинации. Нажатую страницу приложению сообщает пагинация —
+ * `so:change:value`. Деталью (`embedded`) страница при этом не стала: плагин
+ * приложения на страницы ставится, а на кнопку внутри страницы — нет.
+ */
+describe('события страниц', () => {
+	/**
+	 * События страницы: сборка и узел, смена текущей (`data-selected` и
+	 * `aria-current` — её наборы), выключенность и размер от пагинации, текст
+	 * номера от локали.
+	 */
+	const PAGE_EVENTS = [
+		'so:bundle:create',
+		'so:element:ready',
+		'so:change:dataset',
+		'so:change:aria',
+		'so:change:disabled',
+		'so:change:size',
+		'so:change:text',
+	] as const
+
+	it('слышны на самой странице, до nav и выше не доходят', async () => {
+		const provider = new TLocaleProviderElement()
+		const listening = new AbortController()
+		const above: string[] = []
+		const onPage = new Set<string>()
+
+		provider.innerHTML = '<nav is="so-pagination" total="30" value="1"></nav>'
+
+		const root = paginationOf(provider)
+
+		for (const scope of [root, provider, document]) {
+			for (const name of PAGE_EVENTS) {
+				scope.addEventListener(
+					name,
+					({ target }) => {
+						if (target instanceof Element && isPage(target)) above.push(name)
+					},
+					{ signal: listening.signal },
+				)
+			}
+		}
+
+		try {
+			document.body.appendChild(provider)
+
+			// Страницы шаблон строит при сборке пагинации, а набор и узел они
+			// объявляют позже: микрозадачей и кадром
+			const pages = findAll('.so-pagination-item')
+
+			expect(pages).toHaveLength(3)
+
+			for (const place of pages) {
+				for (const name of PAGE_EVENTS) place.addEventListener(name, () => onPage.add(name))
+			}
+
+			await nextFrame()
+
+			root.value = 2
+			await flush()
+			root.disabled = true
+			await flush()
+			root.size = 'lg'
+			await flush()
+			provider.locale = arEG
+			await flush()
+
+			expect([...onPage].sort()).toEqual([...PAGE_EVENTS].sort())
+			expect(above).toEqual([])
+		} finally {
+			listening.abort()
+		}
+	})
+
+	it('плагин приложения со scope own на страницы ставится, на кнопки страниц — нет', async () => {
+		const pages: unknown[] = []
+		const buttons: unknown[] = []
+
+		class TPageProbePlugin extends TBasePlugin<TPaginationItem> {
+			override install(ctx: IPluginContext, options?: unknown): void {
+				super.install(ctx, options)
+
+				pages.push(ctx.getInstance())
+			}
+		}
+
+		class TButtonProbePlugin extends TBasePlugin<TButton> {
+			override install(ctx: IPluginContext, options?: unknown): void {
+				super.install(ctx, options)
+
+				buttons.push(ctx.getInstance())
+			}
+		}
+
+		const disposePages = usePlugins(TPaginationItem, [TPageProbePlugin])
+		const disposeButtons = usePlugins(TButton, [TButtonProbePlugin])
+
+		try {
+			await mount('<nav is="so-pagination" total="30" value="2"></nav>')
+
+			const drawn = findAll('.so-pagination-item').map((place) =>
+				isPage(place) ? place.ctrl : undefined,
+			)
+
+			expect(drawn).toHaveLength(3)
+			expect(pages).toEqual(drawn)
+			// Стрелки и кнопки страниц — детали: плагин приложения на них не встаёт
+			expect(buttons).toEqual([])
+		} finally {
+			disposeButtons()
+			disposePages()
+		}
 	})
 })
 

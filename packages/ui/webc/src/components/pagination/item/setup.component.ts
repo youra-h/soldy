@@ -44,7 +44,7 @@ export function setupPaginationItem(
 		elevator: createWebcElevator(host),
 	})
 
-	const item = useCollectionAdapter(itemAdapter, adapter, host, onUpdate)
+	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 
 	return joinBindings(owner, item)
