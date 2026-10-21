@@ -70,9 +70,10 @@ export type TPreview = {
 		| ((bind: TPreviewProps) => Readonly<Record<string, readonly TContent[]>>)
 	/**
 	 * Обёртка — элемент вокруг компонента, как у Vue и React: подпись Label у
-	 * CheckBox и Switch — элемент soldy со своими пропсами, в слоте по
-	 * умолчанию которого лежит компонент, — а у таблицы граница ширины, `div`
-	 * со стилем от пропсов строки. Пропсы строки, `ctrl` и слушатели — у
+	 * CheckBox, Switch, Slider и Rating — элемент soldy со своими пропсами, в
+	 * слоте по умолчанию которого лежит компонент, — а у таблицы, полосы
+	 * ProgressLinear и ленты Scroller граница ширины, `div` со стилем (у
+	 * таблицы — от пропсов строки). Пропсы строки, `ctrl` и слушатели — у
 	 * компонента, обёртке пропсы задаёт описание. Код колонок обёртку не
 	 * показывает: он про компонент.
 	 */
@@ -101,6 +102,27 @@ const block = (padding: string, value: string) => (): Node => {
 
 	return node
 }
+
+/**
+ * Элемент ленты — как у Vue: строчный блок с отступом, без переноса текста.
+ * Каждый — прямой ребёнок вьюпорта: по ним тема ставит точки снапа, а плагин
+ * считает края.
+ */
+const strip = (value: string) => (): Node => {
+	const node = document.createElement('span')
+
+	node.style.cssText = 'padding:4px 12px; white-space:nowrap'
+	node.textContent = value
+
+	return node
+}
+
+/**
+ * Граница ширины — как у Vue: сцена ячейки — флексбокс, и полоса или лента
+ * держала бы там только свой минимум, а лента с шириной по содержимому
+ * вылезла бы за колонку целиком — листать стало бы нечего.
+ */
+const FULL_WIDTH: TPreview = { tag: 'div', style: () => 'width:100%' }
 
 /** Содержимое коллекций — из общего манифеста, как у Vue и React. */
 const ITEMS = COLLECTION_ITEMS
@@ -230,6 +252,22 @@ export const PREVIEWS: Record<string, TPreview> = {
 		wrapper: { tag: 'label', is: 'so-label', props: { text: 'Включено' } },
 	},
 
+	// Имени у ползунка нет, как у флажка: видимое даёт подпись Label над
+	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей
+	// высоты
+	slider: {
+		tag: 'span',
+		is: 'so-slider',
+		wrapper: { tag: 'label', is: 'so-label', props: { text: 'Громкость', position: 'top' } },
+	},
+
+	// Имени у оценки нет, как у ползунка: видимое даёт подпись Label над звёздами
+	rating: {
+		tag: 'span',
+		is: 'so-rating',
+		wrapper: { tag: 'label', is: 'so-label', props: { text: 'Оценка', position: 'top' } },
+	},
+
 	// Подпись — проп `text` из пропсов превью, контрол — слотом. Строки
 	// страницы правят саму подпись: сторону, размер текста, вариант
 	label: {
@@ -266,6 +304,19 @@ export const PREVIEWS: Record<string, TPreview> = {
 	tabs: TABS,
 
 	accordion: ACCORDION,
+
+	// Содержимое ленты — просто разметка, по элементу на пункт: коллекции у неё
+	// нет. Лента — в границе ширины, как у Vue
+	scroller: {
+		tag: 'div',
+		is: 'so-scroller',
+		slots: { default: ITEMS.map((item) => strip(`${item.text} пункт ленты`)) },
+		wrapper: FULL_WIDTH,
+	},
+
+	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама,
+	// а рисует её шаблон. Язык номеров и имён стрелок — из шапки стенда
+	pagination: { tag: 'nav', is: 'so-pagination' },
 
 	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
 	// (`<div is="so-button-div">`): её строит шаблон элемента. Пришли данными
@@ -305,6 +356,12 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	// Глиф — роль, свой атрибут элемента: `<svg>` рисунка строит шаблон Icon
 	icon: { tag: 'span', is: 'so-icon', attributes: { icon: 'arrowDown' } },
+
+	// Длину горизонтальной полосе даёт контейнер, своей у неё нет: обёртка —
+	// граница ширины, как у Vue. Вертикальная — строчный блок своей высоты, и
+	// обёртка ей не мешает. По умолчанию полоса пуста — доля ноль, а бег —
+	// флаг `indeterminate`
+	'progress-linear': { tag: 'span', is: 'so-progress-linear', wrapper: FULL_WIDTH },
 
 	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
 	// бег — флаг `indeterminate`
