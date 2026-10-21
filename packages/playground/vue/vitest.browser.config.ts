@@ -39,6 +39,9 @@ type TTouchEvent = {
 	touchPoints: TTouchPoint[]
 }
 
+/** Шаг жеста: событие касания или пауза пальца на месте, мс. */
+type TTouchStep = TTouchEvent | { wait: number }
+
 /**
  * Палец — событиями касания протокола DevTools (`Input.dispatchTouchEvent`).
  * `userEvent` касаться не умеет, а `touchscreen` Playwright требует контекста
@@ -57,7 +60,7 @@ type TTouchEvent = {
 async function touch(
 	{ page, frame }: BrowserCommandContext,
 	selector: string,
-	events: (point: TTouchPoint) => TTouchEvent[],
+	events: (point: TTouchPoint) => TTouchStep[],
 ): Promise<void> {
 	const box = await (await frame()).locator(selector).boundingBox()
 
@@ -70,8 +73,9 @@ async function touch(
 	try {
 		if (pause > 0) await page.waitForTimeout(pause)
 
-		for (const event of events(point)) {
-			await session.send('Input.dispatchTouchEvent', event)
+		for (const step of events(point)) {
+			if ('wait' in step) await page.waitForTimeout(step.wait)
+			else await session.send('Input.dispatchTouchEvent', step)
 		}
 	} finally {
 		lastTap = Date.now()
@@ -97,20 +101,22 @@ const tap = defineBrowserCommand<[selector: string, count?: number]>(
  * Протяжка пальцем — от центра узла на `dx`, `dy`: `touchStart`, `touchMove`
  * равными шагами (`steps`) и `touchEnd` в последней точке. Жест смахивания
  * (`browser/drawer.spec.ts`, «пальцем»): касание, в отличие от мыши, браузер
- * сам захватывает за узлом под пальцем и забирает под прокрутку.
+ * сам захватывает за узлом под пальцем и забирает под прокрутку. `hold` —
+ * сколько палец стоит на месте до первого шага, мс: долгое нажатие, которым
+ * палец берёт элемент коллекции (`browser/drag-and-drop.spec.ts`, «пальцем»).
  */
-const touchDrag = defineBrowserCommand<[selector: string, dx: number, dy: number, steps?: number]>(
-	(context, selector, dx, dy, steps = 10) =>
-		touch(context, selector, ({ x, y }) => [
-			{ type: 'touchStart', touchPoints: [{ x, y }] },
-			...Array.from({ length: steps }, (_, index): TTouchEvent => ({
-				type: 'touchMove',
-				touchPoints: [
-					{ x: x + (dx * (index + 1)) / steps, y: y + (dy * (index + 1)) / steps },
-				],
-			})),
-			{ type: 'touchEnd', touchPoints: [] },
-		]),
+const touchDrag = defineBrowserCommand<
+	[selector: string, dx: number, dy: number, steps?: number, hold?: number]
+>((context, selector, dx, dy, steps = 10, hold = 0) =>
+	touch(context, selector, ({ x, y }) => [
+		{ type: 'touchStart', touchPoints: [{ x, y }] },
+		...(hold > 0 ? [{ wait: hold }] : []),
+		...Array.from({ length: steps }, (_, index): TTouchEvent => ({
+			type: 'touchMove',
+			touchPoints: [{ x: x + (dx * (index + 1)) / steps, y: y + (dy * (index + 1)) / steps }],
+		})),
+		{ type: 'touchEnd', touchPoints: [] },
+	]),
 )
 
 /**
