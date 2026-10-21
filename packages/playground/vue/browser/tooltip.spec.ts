@@ -222,3 +222,43 @@ describe('курсор', () => {
 		await expect.poll(isOpen).toBe(true)
 	})
 })
+
+describe('открытая с первой отрисовки', () => {
+	/**
+	 * Подсказку, открытую пропом, курсор не держит, пока плагин не услышал его
+	 * приход. До первого кадра её панель лежит там, где её поставила привязка
+	 * по нулевому размеру: левым краем — в центре корня, верхним — в 6px над
+	 * ним, то есть поверх триггера. Слушатели плагина встают в первом кадре,
+	 * а наведение браузер пересчитывает по раскладке и без движения мыши —
+	 * раньше, — поэтому переезд панели на место из-под неподвижного курсора
+	 * приходит плагину `pointerleave` без `pointerenter`. Без правила «уход
+	 * прячет, только если приход засчитан» подсказка закрывалась через
+	 * задержку скрытия сама; так падала сверка подсказки Web Components с Vue
+	 * (`webc-frame.spec.ts`), когда курсор там оставил прошлый файл.
+	 */
+	it('панель, вставшая на место из-под неподвижного курсора, подсказку не закрывает', async () => {
+		// Раскладка открытой подсказки — курсор увёл `beforeEach`
+		await show({ open: true })
+		await steady(panel())
+
+		const anchor = root().getBoundingClientRect()
+		const placed = panel().getBoundingClientRect()
+
+		cleanup()
+
+		// Точка в той части первой раскладки панели, что правее корня: ни
+		// корня, ни места панели там нет
+		const x = (anchor.right + anchor.left + anchor.width / 2 + placed.width) / 2
+		const y = anchor.top - 6 + placed.height / 2
+
+		expect(x).toBeGreaterThan(anchor.right)
+		expect(y).toBeGreaterThan(placed.bottom)
+
+		await userEvent.hover(document.documentElement, { position: { x, y }, force: true })
+		await show({ open: true })
+		// Дольше задержки скрытия: закрыть было бы уже пора
+		await wait(150 + 200)
+
+		expect(isOpen()).toBe(true)
+	})
+})
