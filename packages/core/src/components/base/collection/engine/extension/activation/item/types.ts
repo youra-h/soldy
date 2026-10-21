@@ -2,7 +2,12 @@ import type { IItemExtension, TBaseItemEventsExtension } from '../../types'
 
 /** События item-адаптера активации. */
 export type TActivationItemEventsExtension = TBaseItemEventsExtension & {
-	'change:active': () => void
+	/**
+	 * Активность этого элемента сменилась; `value` — новая, то же, что отдаёт
+	 * геттер `active`. Приходит только новому активному и прежнему, а не всем
+	 * на любую смену активного.
+	 */
+	'change:active': (value: boolean) => void
 }
 
 /**

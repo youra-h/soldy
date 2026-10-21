@@ -10,7 +10,7 @@
  * кроме глобального компонента приложения с именем подменю: реестра
  * компонентов у Solid нет, и подменю рисует себя само. `v-model` у Solid нет —
  * открытость, отметку и значение потребитель отдаёт пропом и слышит колбэком
- * (`onChangeOpen`, `onChangeSelected`, `onChangeValue`).
+ * со значением (`onChangeOpen`, `onChangeSelected`, `onChangeValue`).
  *
  * Своё у Solid. Связка триггера меняется на каждое открытие, а триггер — тот
  * же узел: scope живой. Пункты из данных — по секциям, записи которых новые
@@ -28,8 +28,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { For, createSignal, type JSX } from 'solid-js'
 import {
-	TMenuCheckboxItem,
-	TMenuRadioItem,
 	createEngineMenu,
 	type IMenuItem,
 	type IMenuItemSource,
@@ -381,30 +379,35 @@ describe('нажатие пунктов', () => {
 	})
 
 	/**
-	 * Отметка — выбор коллекции меню: `selected` пропом пишет её, а
-	 * `onChangeSelected` сообщает, что выбор сменился, — отметку флажка
-	 * приложение читает у коллекции.
+	 * Отметка — в обе стороны, парой «проп + колбэк»: `selected` пропом пишет
+	 * её, а `onChangeSelected` приходит флажку, чья отметка сменилась, и несёт
+	 * её. Отметку приложение держит у себя и коллекцию не читает; соседний
+	 * флажок, чья отметка не менялась, колбэка не получает.
 	 */
 	it('флажок отмечается кликом и меню не закрывает: selected пропом и onChangeSelected', async () => {
-		const engine = createEngineMenu()
-		const grid = new TMenuCheckboxItem({ value: 'grid', text: 'Сетка' })
 		const [checked, setChecked] = createSignal(false)
 		const chosen: unknown[] = []
+		const ruler: boolean[] = []
 
 		await render(() => (
-			<Menu engine={engine} onChoose={(item) => chosen.push(item.value)} trigger={trigger}>
+			<Menu onChoose={(item) => chosen.push(item.value)} trigger={trigger}>
 				<Menu.CheckboxItem
-					ctrl={grid}
+					value="grid"
+					text="Сетка"
 					selected={checked()}
-					onChangeSelected={() =>
-						setChecked(engine.extensions.selection.isSelected(grid))
-					}
+					onChangeSelected={(selected) => setChecked(selected)}
 				/>
-				<Menu.CheckboxItem value="ruler" text="Линейка" selected />
+				<Menu.CheckboxItem
+					value="ruler"
+					text="Линейка"
+					selected
+					onChangeSelected={(selected) => ruler.push(selected)}
+				/>
 			</Menu>
 		))
 
 		await open()
+		ruler.length = 0
 
 		expect(rowOf('Сетка').getAttribute('role')).toBe('menuitemcheckbox')
 		expect(rowOf('Сетка').getAttribute('aria-checked')).toBe('false')
@@ -416,12 +419,19 @@ describe('нажатие пунктов', () => {
 		expect(rowOf('Сетка').getAttribute('aria-checked')).toBe('true')
 		// Отметки флажков независимы, меню открыто, choose нет
 		expect(rowOf('Линейка').getAttribute('aria-checked')).toBe('true')
+		expect(ruler).toEqual([])
 		expect(isOpen()).toBe(true)
 		expect(chosen).toEqual([])
 
-		setChecked(false)
+		click(rowOf('Сетка'))
 
+		expect(checked()).toBe(false)
 		expect(rowOf('Сетка').getAttribute('aria-checked')).toBe('false')
+
+		setChecked(true)
+
+		expect(rowOf('Сетка').getAttribute('aria-checked')).toBe('true')
+		expect(ruler).toEqual([])
 	})
 
 	it('отметка рисуется только у отмеченного флажка, обёртка — у всех флажков', async () => {
@@ -561,30 +571,32 @@ describe('переключатели', () => {
 		expect(checked()).toEqual(['false', 'false', 'true'])
 	})
 
+	/**
+	 * Отметка переключателя — тоже в обе стороны: сосед, с которого её сняла
+	 * группа, узнаёт об этом своим колбэком со значением.
+	 */
 	it('selected у переключателя — его отметка: значение группы и сосед за ней', async () => {
-		const engine = createEngineMenu()
-		const name = new TMenuRadioItem({ value: 'name', text: 'name' })
-		const date = new TMenuRadioItem({ value: 'date', text: 'date' })
 		const [sort, setSort] = createSignal<TMenuRadioGroupValue>('name')
 		const [nameChecked, setNameChecked] = createSignal(true)
 		const [dateChecked, setDateChecked] = createSignal(false)
-		const isSelected = (item: IMenuItem) => engine.extensions.selection.isSelected(item)
 
 		await render(() => (
-			<Menu engine={engine} trigger={trigger}>
+			<Menu trigger={trigger}>
 				<Menu.RadioGroup
 					value={sort()}
 					onChangeValue={(payload) => setSort(payload.newValue)}
 				>
 					<Menu.RadioItem
-						ctrl={name}
+						value="name"
+						text="name"
 						selected={nameChecked()}
-						onChangeSelected={() => setNameChecked(isSelected(name))}
+						onChangeSelected={(selected) => setNameChecked(selected)}
 					/>
 					<Menu.RadioItem
-						ctrl={date}
+						value="date"
+						text="date"
 						selected={dateChecked()}
-						onChangeSelected={() => setDateChecked(isSelected(date))}
+						onChangeSelected={(selected) => setDateChecked(selected)}
 					/>
 				</Menu.RadioGroup>
 			</Menu>

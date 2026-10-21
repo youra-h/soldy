@@ -24,8 +24,9 @@ type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
 
 /**
  * TEvented — шина событий: подписки {@link on}, перехватчики {@link use},
- * слушатели всех событий {@link listen} и пробросы из источников
- * ({@link relay}, {@link relayAll}).
+ * слушатели всех событий {@link listen}, пробросы из источников
+ * ({@link relay}, {@link relayAll}) и своя реакция на событие источника
+ * ({@link follow}).
  *
  * **Шина платит за подписку, а не за то, что создана.** Эмиттер подписок,
  * список перехватчиков, список слушателей и пробросы заводятся при первом
@@ -52,7 +53,10 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 */
 	private _listeners?: readonly TEventListener<TEvents>[]
 
-	/** Пробросы {@link relay} и {@link relayAll} — с первым: подписаны на источники, пока эмиттер слушают. */
+	/**
+	 * Пробросы {@link relay} и {@link relayAll} и реакции {@link follow} — с
+	 * первым: подписаны на источники, пока эмиттер слушают.
+	 */
 	private _relays?: TRelays
 
 	/** Слушают ли эмиттер: есть подписчики, перехватчики или слушатели. */
@@ -335,8 +339,9 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 *   присваивается в `TEventSink<TOwn>`. Поэтому дженерик-карта цели сверяется
 	 *   по своему констрейнту.
 	 * - Обработчик цели должен принимать аргументы события источника; параметров у
-	 *   цели может быть меньше (`change:selection` → `change:selected: () => void`).
-	 *   Обработчики, несовместимые в обе стороны, — ошибка.
+	 *   цели может быть меньше (`{ from: 'change:disabled', as: 'change:closable' }`
+	 *   адаптера таба: `(value: boolean)` → `() => void`). Обработчики,
+	 *   несовместимые в обе стороны, — ошибка.
 	 * - Карта с индексной сигнатурой (у источника или у цели) принимает любое имя и
 	 *   обработчики не сверяет.
 	 *
@@ -492,8 +497,54 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	}
 
 	/**
-	 * Полностью очищает эмиттер: отписывается от всех проброшенных событий ({@link relay}),
-	 * снимает middleware, слушателей и входящие подписки.
+	 * Своя реакция на событие источника — на том же сроке, что у пробросов.
+	 *
+	 * Подписывает обработчик на событие источника, только пока эту шину
+	 * слушают (`on`, `use` или `listen`, см. `TRelays`), и снимает в
+	 * {@link destroy}. Поэтому шина, которая живёт меньше источника
+	 * (item-адаптер над расширением движка снаружи), на нём не остаётся, как и
+	 * её пробросы.
+	 *
+	 * Чем отличается от соседей: `on` — подписка на свои события, `relay` и
+	 * `relayAll` — проброс события источника в эту шину, `follow` — свой
+	 * обработчик события источника. Что эмитить и эмитить ли вообще, решает
+	 * обработчик: событие источника приходит всем подписчикам, а касается не
+	 * каждого.
+	 *
+	 * Срок — тот же, что у хука `then` правила `relay`: пока шину не слушают,
+	 * обработчик не вызывается. Действие, нужное на каждое событие источника, —
+	 * подписка на сам источник.
+	 *
+	 * Имя сверяется с картой источника — имя вне её не компилируется, — а
+	 * обработчик получает аргументы события. Карта с индексной сигнатурой
+	 * принимает любое имя.
+	 *
+	 * @param source  - источник событий (другой `TEvented`)
+	 * @param event   - имя события в источнике
+	 * @param handler - обработчик события источника
+	 *
+	 * @example
+	 * // Item-адаптер выбора сообщает только о своём элементе:
+	 * this.events.follow(parent.events, 'change:selection', (_selected, changed) => {
+	 *   if (changed.has(this._item)) this.events.emit('change:selected', this.selected)
+	 * })
+	 */
+	follow<TSource extends Record<string, (...args: any) => any>, K extends keyof TSource>(
+		source: TEvented<TSource>,
+		event: K,
+		handler: TSource[K],
+	): void {
+		this._relay(() => {
+			source.on(event, handler)
+
+			return () => source.off(event, handler)
+		})
+	}
+
+	/**
+	 * Полностью очищает эмиттер: отписывается от всех проброшенных событий
+	 * ({@link relay}, {@link relayAll}) и реакций ({@link follow}), снимает
+	 * middleware, слушателей и входящие подписки.
 	 */
 	destroy(): void {
 		this._relays?.destroy()
@@ -503,7 +554,10 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 		this._items = undefined
 	}
 
-	/** Завести проброс: пробросы заводятся с первым, а эмиттер, который уже слушают, подписывает его сразу. */
+	/**
+	 * Завести проброс или реакцию: набор заводится с первым, а эмиттер, который
+	 * уже слушают, подписывает их сразу.
+	 */
 	private _relay(relay: () => () => void): void {
 		this._relays ??= new TRelays()
 		this._relays.add(relay)

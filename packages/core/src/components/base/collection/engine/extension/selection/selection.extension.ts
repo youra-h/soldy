@@ -27,8 +27,8 @@ export class TSelectionExtension<TItem extends object = any>
 
 	private _selected: Set<TItem> = new Set()
 	private _mode: TSelectionMode = 'single'
-	/** Запись удалила выбранный элемент — объявить на её `change:items`. */
-	private _lostOnWrite = false
+	/** Выбранные, которых удалила запись, — объявить на её `change:items`. */
+	private _lostOnWrite?: Set<TItem>
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ISelectionItemExtension<TItem>>) {
 		super(TSelectionItemExtension, options)
@@ -84,16 +84,19 @@ export class TSelectionExtension<TItem extends object = any>
 		// но раз на запись: запись удаляет пачкой, и `change:selection` на
 		// каждый удалённый выбранный прогнал бы подписчиков выбора по всей
 		// коллекции столько раз. `change:items` приходит следом за всеми
-		// `item:removed` каждой записи — команды и пачки
+		// `item:removed` каждой записи — команды и пачки, — и потерянные
+		// уходят в нём сменившимися
 		ctx.driver.events.on('item:removed', (e) => {
-			if (this._selected.delete(e.item)) this._lostOnWrite = true
+			if (this._selected.delete(e.item)) (this._lostOnWrite ??= new Set()).add(e.item)
 		})
 
 		ctx.driver.events.on('change:items', () => {
-			if (!this._lostOnWrite) return
+			const lost = this._lostOnWrite
 
-			this._lostOnWrite = false
-			this._notifySelected()
+			if (lost === undefined) return
+
+			this._lostOnWrite = undefined
+			this._notifySelected(lost)
 		})
 
 		ctx.driver.events.on('reset', () => {
@@ -183,14 +186,19 @@ export class TSelectionExtension<TItem extends object = any>
 
 		if (event.defaultPrevented) return false
 
+		const changed = new Set<TItem>()
+
 		if (!this.multiple) {
-			// снять выделение с предыдущего
+			// снять выделение с предыдущего — его отметка сменилась тоже
+			for (const previous of this._selected) changed.add(previous)
+
 			this._selected.clear()
 		}
 
 		this._selected.add(item)
+		changed.add(item)
 
-		this._notifySelected()
+		this._notifySelected(changed)
 
 		return true
 	}
@@ -202,7 +210,7 @@ export class TSelectionExtension<TItem extends object = any>
 
 		this._selected.delete(item)
 
-		this._notifySelected()
+		this._notifySelected(new Set([item]))
 	}
 
 	/**
@@ -224,7 +232,7 @@ export class TSelectionExtension<TItem extends object = any>
 		if (!this.multiple) return
 
 		const stored = new Set(this._ctx.driver.valueOf())
-		let changed = false
+		const changed = new Set<TItem>()
 
 		for (const item of items) {
 			if (this._selected.has(item) || !stored.has(item)) continue
@@ -236,10 +244,10 @@ export class TSelectionExtension<TItem extends object = any>
 			if (event.defaultPrevented) continue
 
 			this._selected.add(item)
-			changed = true
+			changed.add(item)
 		}
 
-		if (changed) this._notifySelected()
+		if (changed.size > 0) this._notifySelected(changed)
 	}
 
 	/**
@@ -248,13 +256,13 @@ export class TSelectionExtension<TItem extends object = any>
 	 * выбрано, а `change:selection` — одно, в конце.
 	 */
 	deselectMany(items: readonly TItem[]): void {
-		let changed = false
+		const changed = new Set<TItem>()
 
 		for (const item of items) {
-			if (this._selected.delete(item)) changed = true
+			if (this._selected.delete(item)) changed.add(item)
 		}
 
-		if (changed) this._notifySelected()
+		if (changed.size > 0) this._notifySelected(changed)
 	}
 
 	/**
@@ -275,6 +283,10 @@ export class TSelectionExtension<TItem extends object = any>
 	 *   последний принятый. Пустой список снимает выбор, а список, где не
 	 *   принят никто, оставляет прежний — как отменённый `select`;
 	 * - `none` — выбора нет.
+	 *
+	 * Сменившиеся — разность прежнего выбора и нового в обе стороны: снятые и
+	 * ставшие выбранными. Сменился только порядок — набор пуст, а
+	 * `change:selection` приходит: порядок выбора — его часть.
 	 */
 	replaceSelection(items: readonly TItem[]): void {
 		if (this._mode === 'none') return
@@ -307,8 +319,20 @@ export class TSelectionExtension<TItem extends object = any>
 
 		if (sameValue(before, next)) return
 
-		this._selected = new Set(next)
-		this._notifySelected()
+		const previous = this._selected
+		const selected = new Set(next)
+		const changed = new Set<TItem>()
+
+		for (const item of previous) {
+			if (!selected.has(item)) changed.add(item)
+		}
+
+		for (const item of selected) {
+			if (!previous.has(item)) changed.add(item)
+		}
+
+		this._selected = selected
+		this._notifySelected(changed)
 	}
 
 	/** @returns выбран ли элемент после вызова */
@@ -337,20 +361,24 @@ export class TSelectionExtension<TItem extends object = any>
 	}
 
 	/**
-	 * Полная очистка выделения.
+	 * Полная очистка выделения. Сменились все, кто был выбран: прежний набор
+	 * и уходит сменившимися.
 	 */
 	resetSelection(): void {
 		if (this._selected.size > 0) {
-			this._selected.clear()
+			const changed: ReadonlySet<TItem> = this._selected
 
-			this._notifySelected()
+			this._selected = new Set()
+
+			this._notifySelected(changed)
 		}
 	}
 
 	/**
-	 * Уведомление об изменении выделения.
+	 * Уведомление об изменении выделения: выбранные и элементы, чья отметка
+	 * сменилась.
 	 */
-	private _notifySelected(): void {
-		this.events.emit('change:selection', this.selected)
+	private _notifySelected(changed: ReadonlySet<TItem>): void {
+		this.events.emit('change:selection', this.selected, changed)
 	}
 }

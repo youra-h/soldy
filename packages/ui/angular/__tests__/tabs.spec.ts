@@ -1062,12 +1062,11 @@ describe('типы', () => {
 		expectTypeOf<TTabsComponent>().toHaveProperty('soItemActivated')
 		expectTypeOf<TTabsComponent>().toHaveProperty('soItemClose')
 		expectTypeOf<TTabsComponent>().toHaveProperty('soEngineCreate')
-		expectTypeOf<TTabsItemComponent['soChangeActive']>().toEqualTypeOf<
-			EventEmitter<undefined>
-		>()
+		// Активность таба и панели — значением: выход приходит тому, чья сменилась
+		expectTypeOf<TTabsItemComponent['soChangeActive']>().toEqualTypeOf<EventEmitter<boolean>>()
 		expectTypeOf<TTabsItemComponent['soChangeOrder']>().toEqualTypeOf<EventEmitter<undefined>>()
 		expectTypeOf<TTabsContentComponent['soChangeActive']>().toEqualTypeOf<
-			EventEmitter<undefined>
+			EventEmitter<boolean>
 		>()
 	})
 

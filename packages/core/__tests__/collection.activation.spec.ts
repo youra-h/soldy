@@ -150,19 +150,25 @@ describe('TActivationExtension', () => {
 
 	// --- События ---
 
-	it('эмитит change:activation при активации', () => {
+	it('эмитит change:activation при активации: новый активный и прежний', () => {
 		const col = createCollection()
-		const item: Item = { id: 1, name: 'a' }
+		const a: Item = { id: 1, name: 'a' }
+		const b: Item = { id: 2, name: 'b' }
 		const handler = vi.fn()
 
-		col.extensions.plain.insert(item)
+		col.extensions.plain.insert(a)
+		col.extensions.plain.insert(b)
 		col.extensions.activation.events.on('change:activation', handler)
-		col.extensions.activation.activate(item)
+		col.extensions.activation.activate(a)
+		col.extensions.activation.activate(b)
 
-		expect(handler).toHaveBeenCalledWith(item)
+		expect(handler.mock.calls).toEqual([
+			[a, undefined],
+			[b, a],
+		])
 	})
 
-	it('эмитит change:activation с undefined при деактивации', () => {
+	it('эмитит change:activation с undefined при деактивации, прежний — вторым', () => {
 		const col = createCollection()
 		const item: Item = { id: 1, name: 'a' }
 		const handler = vi.fn()
@@ -172,7 +178,20 @@ describe('TActivationExtension', () => {
 		col.extensions.activation.events.on('change:activation', handler)
 		col.extensions.activation.deactivate(item)
 
-		expect(handler).toHaveBeenCalledWith(undefined)
+		expect(handler).toHaveBeenCalledWith(undefined, item)
+	})
+
+	it('reset: change:activation с undefined, прежний — вторым', () => {
+		const col = createCollection()
+		const item: Item = { id: 1, name: 'a' }
+		const handler = vi.fn()
+
+		col.extensions.plain.insert(item)
+		col.extensions.activation.activate(item)
+		col.extensions.activation.events.on('change:activation', handler)
+		col.extensions.activation.reset()
+
+		expect(handler.mock.calls).toEqual([[undefined, item]])
 	})
 
 	it('эмитит item:activated и item:deactivated', () => {
@@ -221,7 +240,7 @@ describe('TActivationExtension', () => {
 		col.extensions.plain.remove(item)
 
 		expect(col.extensions.activation.activeItem).toBeUndefined()
-		expect(handler).toHaveBeenCalledWith(undefined)
+		expect(handler).toHaveBeenCalledWith(undefined, item)
 	})
 
 	it('удаление неактивного элемента активный не меняет', () => {
@@ -260,7 +279,7 @@ describe('TActivationExtension', () => {
 
 		expect(col.extensions.activation.activeItem).toBeUndefined()
 		expect(handler).toHaveBeenCalledTimes(1)
-		expect(handler).toHaveBeenCalledWith(undefined)
+		expect(handler).toHaveBeenCalledWith(undefined, b)
 	})
 
 	it('сбрасывает активацию при reset driver', () => {
@@ -276,7 +295,7 @@ describe('TActivationExtension', () => {
 		col.extensions.batch.clear()
 
 		expect(col.extensions.activation.activeItem).toBeUndefined()
-		expect(handler).toHaveBeenCalledWith(undefined)
+		expect(handler).toHaveBeenCalledWith(undefined, item)
 	})
 
 	// --- findActivatable ---

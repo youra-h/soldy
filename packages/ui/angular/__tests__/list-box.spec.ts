@@ -1039,8 +1039,9 @@ describe('типы', () => {
 			EventEmitter<TSelectionMode>
 		>()
 		expectTypeOf<TListBoxComponent>().toHaveProperty('soEngineCreate')
+		// Отметка элемента — значением: выход приходит элементу, чья отметка сменилась
 		expectTypeOf<TListBoxItemComponent['soChangeSelected']>().toEqualTypeOf<
-			EventEmitter<undefined>
+			EventEmitter<boolean>
 		>()
 		expectTypeOf<TListBoxItemComponent['soChangeOrder']>().toEqualTypeOf<
 			EventEmitter<undefined>

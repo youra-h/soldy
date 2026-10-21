@@ -264,6 +264,70 @@ describe('выбор', () => {
 	})
 })
 
+/**
+ * Отметка элемента — в обе стороны, парой «проп + колбэк», без `ctrl`:
+ * `selected` пропом пишет её, а `onChangeSelected` приходит только элементу,
+ * чья отметка сменилась, и несёт новую. Состояние приложения — пропсы
+ * родителя (`reactiveProps`): колбэк пишет отметку туда, и элемент получает
+ * её обратно пропом. Коллекцию приложение не читает.
+ */
+describe('отметка элемента: selected и onChangeSelected', () => {
+	/** Список из трёх, отметки — в пропсах родителя; колбэки — в журнал. */
+	function app(log: string[], mode?: ListBoxProps['mode']) {
+		const props = reactiveProps<THarnessProps>({ list: { mode }, items: [] })
+		const item = (value: string, selected: boolean): ListBoxItemProps => ({
+			value,
+			text: value.toUpperCase(),
+			selected,
+			onChangeSelected: (next) => {
+				log.push(`${value}: ${next}`)
+
+				const own = props.items?.find((candidate) => candidate.value === value)
+
+				if (own) own.selected = next
+			},
+		})
+
+		props.items = [item('a', true), item('b', false), item('c', false)]
+		mount(Harness, props)
+
+		return () => props.items?.map(({ selected }) => String(selected)).join(' ')
+	}
+
+	it('клик по B: A получает false, B — true, C молчит; состояние сходится с выбором', () => {
+		const log: string[] = []
+		const state = app(log)
+
+		expect(selection()).toEqual(['true', 'false', 'false'])
+
+		log.length = 0
+		click(rowOf('B'))
+
+		expect(log).toEqual(['a: false', 'b: true'])
+		expect(state()).toBe('false true false')
+		expect(selection()).toEqual(['false', 'true', 'false'])
+	})
+
+	it('multiple: повторный клик снимает только свою отметку', () => {
+		const log: string[] = []
+		const state = app(log, 'multiple')
+
+		log.length = 0
+		click(rowOf('C'))
+		click(rowOf('A'))
+
+		expect(log).toEqual(['c: true', 'a: false'])
+		expect(state()).toBe('false false true')
+		expect(selection()).toEqual(['false', 'false', 'true'])
+	})
+
+	it('колбэк получает отметку: boolean', () => {
+		expectTypeOf<NonNullable<ListBoxItemProps['onChangeSelected']>>()
+			.parameter(0)
+			.toEqualTypeOf<boolean>()
+	})
+})
+
 describe('состав', () => {
 	it('список из items рисует элемент на каждый', () => {
 		mount(ListBox, { items: ITEMS })

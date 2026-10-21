@@ -298,7 +298,8 @@ describe('Коллекция табов с TTabsExtension + TActivationExtension
 		engine.extensions.activation.activate(tab)
 
 		expect(onActivated).toHaveBeenCalledWith(tab)
-		expect(onChange).toHaveBeenCalledWith(tab)
+		// Активного до него не было
+		expect(onChange).toHaveBeenCalledWith(tab, undefined)
 	})
 
 	it('деактивация при удалении активного элемента', () => {

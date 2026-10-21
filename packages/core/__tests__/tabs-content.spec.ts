@@ -107,15 +107,28 @@ describe('фасад панели — активность', () => {
 		expect(facadeFor('b').item).toBe(items[1])
 	})
 
-	it('релеит change:active наружу', () => {
+	it('релеит change:active наружу — с активностью своего таба', () => {
 		const { tabsFacade, items, facadeFor } = createTabs(['a', 'b'])
 		const facade = facadeFor('b')
 		const handler = vi.fn()
 
 		facade.events.on('change:active', handler)
 		tabsFacade.activate(items[1])
+		tabsFacade.activate(items[0])
 
-		expect(handler).toHaveBeenCalled()
+		expect(handler.mock.calls).toEqual([[true], [false]])
+	})
+
+	it('смена активного между чужими табами панель не трогает', () => {
+		const { tabsFacade, items, facadeFor } = createTabs(['a', 'b', 'c'])
+		const facade = facadeFor('c')
+		const handler = vi.fn()
+
+		tabsFacade.activate(items[0])
+		facade.events.on('change:active', handler)
+		tabsFacade.activate(items[1])
+
+		expect(handler).not.toHaveBeenCalled()
 	})
 })
 
@@ -147,7 +160,7 @@ describe('фасад панели — смена контекста', () => {
 		facade.setContext(contextOf('b'))
 
 		expect(facade.active).toBe(false)
-		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler.mock.calls).toEqual([[false]])
 	})
 
 	it('с неактивного таба на активный — change:active, панель активна', () => {
@@ -156,7 +169,7 @@ describe('фасад панели — смена контекста', () => {
 		facade.setContext(contextOf('a'))
 
 		expect(facade.active).toBe(true)
-		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler.mock.calls).toEqual([[true]])
 	})
 
 	it('панель без таба получила активный — change:active', () => {
@@ -167,7 +180,7 @@ describe('фасад панели — смена контекста', () => {
 		facade.setContext(contextOf('a'))
 
 		expect(facade.active).toBe(true)
-		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler.mock.calls).toEqual([[true]])
 	})
 
 	it('активность не сменилась — тишина', () => {
@@ -186,7 +199,7 @@ describe('фасад панели — смена контекста', () => {
 
 		expect(facade.active).toBe(false)
 		expect(facade.item).toBeUndefined()
-		expect(handler).toHaveBeenCalledTimes(1)
+		expect(handler.mock.calls).toEqual([[false]])
 	})
 
 	it('снятие контекста неактивного таба — тишина', () => {

@@ -216,6 +216,45 @@ describe('выбор', () => {
 	})
 
 	/**
+	 * Отметку элемента сообщает его событие: `so:change:selected` приходит
+	 * только элементу, чья отметка сменилась, и `detail` у него — новая
+	 * отметка. У события списка `so:change:selection` аргументов ядра два, и
+	 * `detail` — их пара: выбранные и элементы, чья отметка сменилась.
+	 */
+	it('so:change:selected — элементу, чья отметка сменилась, с отметкой; so:change:selection — пара', async () => {
+		const list = listIn(
+			await mount(`<div is="so-list-box">
+				<div is="so-list-box-item" value="a" text="A" selected></div>
+				<div is="so-list-box-item" value="b" text="B"></div>
+				<div is="so-list-box-item" value="c" text="C"></div>
+			</div>`),
+		)
+		const marks: string[] = []
+		const details: unknown[] = []
+
+		for (const text of ['A', 'B', 'C']) {
+			const item = itemOf(text)
+
+			item.addEventListener('so:change:selected', (event) => {
+				if (event instanceof CustomEvent && event.target === item) {
+					marks.push(`${text}: ${String(event.detail)}`)
+				}
+			})
+		}
+
+		list.addEventListener('so:change:selection', (event) => {
+			if (event instanceof CustomEvent && event.target === list) details.push(event.detail)
+		})
+
+		await click(rowOf('B'))
+
+		expect(marks).toEqual(['A: false', 'B: true'])
+		expect(details).toEqual([
+			[[itemOf('B').ctrl], new Set([itemOf('A').ctrl, itemOf('B').ctrl])],
+		])
+	})
+
+	/**
 	 * Выключенный элемент кликом не выбирается — выключен ли он сам или весь
 	 * список. Включённый обратно — выбирается тем же кликом: так видно, что
 	 * обработчик на месте и отказ даёт именно выключенность.

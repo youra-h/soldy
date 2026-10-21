@@ -472,8 +472,9 @@ describe('типы', () => {
 		>()
 		expectTypeOf<TAccordionComponent>().toHaveProperty('soChangeSelection')
 		expectTypeOf<TAccordionComponent>().toHaveProperty('soEngineCreate')
+		// Отметка секции — значением: выход приходит секции, чья отметка сменилась
 		expectTypeOf<TAccordionItemComponent['soChangeSelected']>().toEqualTypeOf<
-			EventEmitter<undefined>
+			EventEmitter<boolean>
 		>()
 		expectTypeOf<TAccordionItemComponent['soChangeOrder']>().toEqualTypeOf<
 			EventEmitter<undefined>
