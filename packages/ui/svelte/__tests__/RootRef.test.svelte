@@ -47,6 +47,10 @@
 		| 'Dialog'
 		| 'Drawer'
 		| 'Toasts'
+		| 'DateInput'
+		| 'Calendar'
+		| 'Calendar.Item'
+		| 'DatePicker'
 </script>
 
 <script lang="ts">
@@ -65,14 +69,20 @@
 	 * Окно и выезжающая панель — закрытые: телепорт уводит их в `body` и
 	 * такими, и `ref` у них — панель; у менеджера тостов `ref` — регион. Части
 	 * меню — в его панели, телепортированной в `body`, а `ref` меню, пункта с
-	 * подменю и пункта с панелью — их корень, а не панель.
+	 * подменю и пункта с панелью — их корень, а не панель. Дни календаря рисует
+	 * сам календарь, и `ref` потребитель берёт у дня, который рисует сам, — без
+	 * календаря, сам по себе; `ref` DatePicker — корень вокруг полей, а не
+	 * телепортированная панель.
 	 */
 	import type { TButton } from '@soldy-ui/core'
 	import {
 		Accordion,
 		Button,
+		Calendar,
 		CheckBox,
 		ComponentView,
+		DateInput,
+		DatePicker,
 		Dialog,
 		Drawer,
 		Field,
@@ -255,6 +265,14 @@
 		<Drawer bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Toasts'}
 		<Toasts bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'DateInput'}
+		<DateInput bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Calendar'}
+		<Calendar bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Calendar.Item'}
+		<Calendar.Item bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'DatePicker'}
+		<DatePicker bind:ref={get, set} {onElementReady} />
 	{:else}
 		<Pagination total={30} bind:ref={get, set} {onElementReady} />
 	{/if}

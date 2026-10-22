@@ -44,8 +44,12 @@ import {
 import {
 	Accordion,
 	Button,
+	Calendar,
+	CalendarItem,
 	CheckBox,
 	ComponentView,
+	DateInput,
+	DatePicker,
 	Dialog,
 	Drawer,
 	Field,
@@ -82,8 +86,12 @@ import {
 	toWrappedRootProps,
 	type AccordionProps,
 	type ButtonProps,
+	type CalendarItemProps,
+	type CalendarProps,
 	type CheckBoxProps,
 	type ComponentViewProps,
+	type DateInputProps,
+	type DatePickerProps,
 	type DialogProps,
 	type DrawerProps,
 	type FieldProps,
@@ -146,7 +154,11 @@ type TProbeProps = ButtonProps &
 	MenuProps &
 	DialogProps &
 	DrawerProps &
-	ToastsProps
+	ToastsProps &
+	DateInputProps &
+	CalendarProps &
+	CalendarItemProps &
+	DatePickerProps
 
 /**
  * Компонент, как его рисовать, и класс его корня. Пропсы, без которых корень
@@ -158,7 +170,10 @@ type TProbeProps = ButtonProps &
  * всё ложится на корень. Корень поповера, подсказки и меню — обёртка
  * триггера, а не панель; корень окна и выезжающей панели — панель, и уходит
  * она в `body` телепортом и закрытой; корень менеджера тостов — регион в
- * `body`.
+ * `body`. Поле даты, календарь и DatePicker атрибуты потребителя не делят:
+ * своего `<input>` под них нет, и всё ложится на корень — коробку ряда частей,
+ * сетки с кнопками листания, якорь панели вокруг полей. День календаря без
+ * календаря рисуется сам по себе — корень у него та же ячейка `td`.
  */
 const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
 	['Button', (props) => mount(Button, props), '.so-button'],
@@ -170,7 +185,8 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['ProgressSpinner', (props) => mount(ProgressSpinner, props), '.so-progress-spinner'],
 	['ProgressLinear', (props) => mount(ProgressLinear, props), '.so-progress-linear'],
 	['Skeleton', (props) => mount(Skeleton, props), '.so-skeleton'],
-	['Tabs.Content', (props) => mount(ItemProbe, { kind: 'content', ...props }), '.so-tabs__panel'],
+	// Вид обёртки — последним: `kind` есть и среди пропсов строки (у поля даты)
+	['Tabs.Content', (props) => mount(ItemProbe, { ...props, kind: 'content' }), '.so-tabs__panel'],
 	['Accordion', (props) => mount(Accordion, props), '.so-accordion'],
 	['Tags', (props) => mount(Tags, props), '.so-tags'],
 	['RadioGroup', (props) => mount(RadioGroup, props), '.so-radio-group'],
@@ -184,6 +200,10 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['Dialog', (props) => mount(Dialog, props), '.so-dialog'],
 	['Drawer', (props) => mount(Drawer, props), '.so-drawer'],
 	['Toasts', (props) => mount(Toasts, props), '.so-toasts'],
+	['DateInput', (props) => mount(DateInput, props), '.so-date-input'],
+	['Calendar', (props) => mount(Calendar, props), '.so-calendar'],
+	['Calendar.Item', (props) => mount(CalendarItem, props), '.so-calendar-item'],
+	['DatePicker', (props) => mount(DatePicker, props), '.so-date-picker'],
 ]
 
 /** Общие пропсы полей в таблице. */
@@ -851,6 +871,13 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Dialog', '.so-dialog', '.so-dialog'],
 	['Drawer', '.so-drawer', '.so-drawer'],
 	['Toasts', '.so-toasts', '.so-toasts'],
+	// Корень поля даты — коробка вокруг ряда частей, а не часть
+	['DateInput', '.so-date-input', '.so-date-input'],
+	// Корень календаря — сетки с кнопками листания, а не день и не панель выбора месяца
+	['Calendar', '.so-calendar', '.so-calendar'],
+	['Calendar.Item', '.so-calendar-item', '.so-calendar-item'],
+	// Корень DatePicker — якорь панели вокруг полей, а не поле и не телепортированная панель
+	['DatePicker', '.so-date-picker', '.so-date-picker'],
 ]
 
 /** Поля: `ref` — корень, а не `<input>` или `<textarea>`. */
