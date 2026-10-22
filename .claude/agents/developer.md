@@ -301,7 +301,16 @@ tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__cli
    все пустые — остановись: вернись на `main`, удали ветку
    (`git switch main && git branch -D release/next`) и сообщи «выпускать
    нечего». Пустые changeset'ы уйдут со следующим настоящим выпуском.
-4. `npm ci`, затем `npm run changeset:version`. Команда сама поднимает версии
+4. `npm install --no-audit --no-fund`, затем `git status --short` — пусто:
+   дерево приведено к lock, а сам lock не переписан. Строка есть —
+   остановись и сообщи: lock на `main` разошёлся с манифестами, и выпуск
+   увёз бы правку, которой нет в changeset'ах. Не `npm ci`: тот сначала
+   сносит весь `node_modules`, и на Windows его на полпути роняет нативный
+   модуль, который держит другой процесс (языковой сервер редактора,
+   dev-сервер стенда), — дерево остаётся удалённым наполовину;
+   `npm install` трогает только пакеты, разошедшиеся с lock (так же
+   готовят папку `/drive` и `restore` в `tools/min-peers/`).
+   Затем `npm run changeset:version`. Команда сама поднимает версии
    (до `1.0` — с суффиксом: `0.3.0-alpha.0`, changesets в pre-режиме, см.
    `docs/agents/build.md`, «Версии пакетов»), пишет `CHANGELOG.md`, переносит
    changeset'ы в `.changeset/pre/` и обновляет `package-lock.json`. Из
