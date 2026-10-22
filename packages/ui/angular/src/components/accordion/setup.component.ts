@@ -14,17 +14,7 @@ import {
 } from '../../adapter'
 import type { TBinding } from '../../adapter'
 
-/**
- * setupAccordion — setup-слой Accordion.
- *
- * Два контекста, как у Vue и Svelte: свой (`AccordionDescriptor`) и фасада
- * коллекции (`AccordionCollectionDescriptor`) на общем наборе, одной связкой.
- * Расширения коллекции опускают движок и регистратор секций лифтом — в слой
- * аккордеона (`provideElevator()` в его `providers`).
- *
- * `engine` — готовая коллекция снаружи, вход аккордеона: фасад работает на
- * ней, а без неё собирает свою (`completeEngine`).
- */
+/** Аккордеон; `engine` — готовая коллекция снаружи (`completeEngine`). */
 export function setupAccordion(
 	ctrl: IAccordion | undefined,
 	props: object,

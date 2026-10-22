@@ -3,25 +3,7 @@ import type { IComponent } from '@soldy-ui/core'
 import { TComponentSurface } from '../../generated/component.metadata'
 import { setupComponent } from './setup.component'
 
-/**
- * TComponentComponent — headless-слой TComponent.
- *
- * Входы и выходы с их типами объявляет сгенерированная база
- * `TComponentSurface` (generated/component.metadata.ts), в `@Directive` их
- * нет — как у Button.
- *
- * Разметки у TComponent нет ни в одном адаптере, слотов в описании тоже, а
- * корня, к которому относилось бы написанное потребителем, у компонента нет:
- * `TComponentBase` остаётся с корнем по умолчанию — стратегией `'view'` без
- * `#root`. Поэтому компонент — директива, а не компонент Angular, и пишется
- * атрибутом на `<ng-container>`, как провайдер локали:
- * `<ng-container so-component [ctrl]="ctrl" />`. Своего узла и шаблона у
- * директивы нет: на месте контейнера Angular ставит только комментарий-якорь,
- * а написанное внутри контейнера — разметка того, кто его написал, и
- * компонент её не трогает.
- *
- * Selector: [so-component]
- */
+/** Headless TComponent: корня нет, поэтому директива на `<ng-container so-component>`. */
 @Directive({
 	selector: '[so-component]',
 })

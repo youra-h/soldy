@@ -14,18 +14,7 @@ import {
 } from '../../../adapter'
 import type { TBinding } from '../../../adapter'
 
-/**
- * setupMenuRadioItem — setup-слой переключателя меню.
- *
- * Два контекста, как у флажка: собственный (`MenuRadioItemDescriptor` — текст,
- * значение и группа переключателя) и фасада
- * (`MenuCollectionRadioItemDescriptor` — вход в коллекцию меню и отметка, её
- * выбор). Группу — ближайшую `<div so-menu-radio-group>` — переключатель берёт
- * лифтом при сборке (`TMenuRadioItemExtension` на собственном контексте), до
- * входа в коллекцию: группа опустила себя в свой слой раньше, её `ngOnInit`
- * идёт раньше хуков её содержимого. Что в группе отмечен один, держит
- * коллекция меню.
- */
+/** Переключатель меню: группу берёт лифтом — её `ngOnInit` идёт раньше его сборки. */
 export function setupMenuRadioItem(
 	ctrl: IMenuRadioItem | undefined,
 	props: object,

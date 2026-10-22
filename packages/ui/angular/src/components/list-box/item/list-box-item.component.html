@@ -1,18 +1,3 @@
-<!--
-	Корень — сам хост (`<div so-list-box-item>`), строка — `Button` на `div`,
-	помечена `#control`: на неё ложится то, что потребитель написал на корне,
-	кроме класса и стиля, а директива набора кладёт `aria` и `dataset` элемента.
-	Слоты
-	контракта: leading, default (scope { text, selected }), trailing,
-	indicator-icon (scope { selected }).
-
-	Обёртка отметки рисуется, пока `indicator` не `none`, — и у невыбранных
-	тоже: она резервирует место, иначе строка прыгала бы при выборе. Иконка
-	внутри — только у выбранного, слот `indicator-icon` подменяет её. Сторона
-	логическая (`start`/`end`): `dir` стоит на корне, а строка — flex.
-	`aria-hidden`: состояние скринридеру объявляет `aria-selected`, второй
-	источник того же факта дал бы двойное объявление.
--->
 <div
 	so-button
 	#control
@@ -48,6 +33,10 @@
 		}
 	</ng-container>
 </div>
+<!--
+	Отметка рисуется и у невыбранных: она держит место, и строка не прыгает при выборе.
+	`aria-hidden`: выбор скринридеру объявляет `aria-selected`.
+-->
 <ng-template #mark>
 	<span class="so-list-box-item__indicator" aria-hidden="true">
 		@if (slot('indicator-icon'); as indicator) {
@@ -65,4 +54,5 @@
 		}
 	</span>
 </ng-template>
+<!-- Шаблоны слотов — в слив: в основной проекции они сняли бы запасной текст. -->
 <ng-content select="ng-template[slot]" />

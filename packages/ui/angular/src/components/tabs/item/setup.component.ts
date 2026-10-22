@@ -13,18 +13,7 @@ import {
 } from '../../../adapter'
 import type { TBinding } from '../../../adapter'
 
-/**
- * setupTabsItem — setup-слой таба.
- *
- * Два контекста, как у элементов Vue и Svelte: собственный
- * (`TabsItemDescriptor` — текст, значение, закрываемость) и фасада
- * (`TabsCollectionItemDescriptor` — активность, порядок, итог закрываемости).
- * Расширение элемента берёт лифтом из слоя набора движок и регистратор и
- * отдаёт фасаду контекст таба.
- *
- * В коллекцию таб входит, когда контекст фасада принят, — в `ngOnInit`, и на
- * сервере тоже.
- */
+/** Таб: свой контекст и фасада; в коллекцию входит, когда контекст фасада принят (`ngOnInit`). */
 export function setupTabsItem(
 	ctrl: ITabsItem | undefined,
 	props: object,

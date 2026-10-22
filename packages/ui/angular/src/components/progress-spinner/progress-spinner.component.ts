@@ -4,25 +4,8 @@ import { TProgressSpinnerSurface } from '../../generated/progress-spinner.metada
 import { setupProgressSpinner } from './setup.component'
 
 /**
- * TProgressSpinnerComponent — индикатор выполнения кольцом.
- *
- * Обёртки нет: корень — сам элемент потребителя (`<span so-progress-spinner>`),
- * шаблон — рисунок кольца внутри него. Корень по умолчанию — `span`: кольцо
- * кладут в Button и Label, а внутри них HTML разрешает только строчную
- * разметку.
- *
- * Размер и вариант (`--size-*`, `--variant-*`), бег (`data-indeterminate`),
- * роль, значения и имя для скринридера и `dir` раскладывает на элемент
- * `TComponentBase` (стратегия `'host'`). Долю готового — переменную
- * `--so-progress-spinner-fraction` выхода `fractionStyle` — тоже она: это
- * стиль-выход компонента, и его имя компонент называет базе. Стиль
- * потребителя главнее доли.
- *
- * `span[so-progress-spinner]` стоит первым: по первому селектору Angular
- * выбирает тег хоста, когда создаёт компонент сам (`createComponent`), — это
- * тег ядра по умолчанию.
- *
- * Selector: span[so-progress-spinner], [so-progress-spinner]
+ * Индикатор выполнения кольцом: шаблон — рисунок кольца, долю кладёт стиль-выход.
+ * AGENTS.md (Angular), «Стиль корня-хоста — тоже эффект базы, по свойствам».
  */
 @Component({
 	selector: 'span[so-progress-spinner], [so-progress-spinner]',

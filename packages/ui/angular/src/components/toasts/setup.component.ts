@@ -14,27 +14,7 @@ import {
 } from '../../adapter'
 import type { TBinding } from '../../adapter'
 
-/**
- * setupToasts — setup-слой Toasts.
- *
- * Два контекста, как у Vue: свой (`ToastsDescriptor`) и фасада коллекции
- * (`ToastsCollectionDescriptor`) на общем наборе, одной связкой. Логики здесь
- * нет: очередь, предел видимых и подъём региона — расширение коллекции
- * `toasts`, отсчёт — `TToastsTimerPlugin`, удаление догасших —
- * `TToastsRemovalPlugin`, F8 и Escape — `TToastsKeyboardPlugin`, листание
- * стопки — `TToastsCascadePlugin`, слой в стилях — `TToastsLayoutPlugin`, имя
- * региона — `TToastsNamesPlugin`.
- *
- * Расширения коллекции опускают лифтом в слой менеджера
- * (`provideElevator()` в его `providers`) движок с регистратором тостов
- * (`TCollectionExtension`) — тосты региона берут их при своей сборке — и API
- * тостов (`TToastsApiExtension`) — его берёт `useToasts()` у компонента под
- * менеджером.
- *
- * `engine` — готовая коллекция снаружи, вход менеджера: фасад работает на ней,
- * а без неё собирает свою (`completeEngine`). Тем же движком код вне
- * компонентов показывает тосты (`engine.extensions.toasts.show`).
- */
+/** Toasts: лифт опускает в слой менеджера движок (тостам региона) и API тостов (`useToasts()`). */
 export function setupToasts(
 	ctrl: IToasts | undefined,
 	props: object,

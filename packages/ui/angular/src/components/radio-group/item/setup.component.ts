@@ -13,15 +13,6 @@ import {
 } from '../../../adapter'
 import type { TBinding } from '../../../adapter'
 
-/**
- * setupRadioGroupItem — setup-слой радио.
- *
- * Два контекста, как у элементов остальных коллекций: собственный (пропсы
- * радио) и фасада (отмечено ли радио в группе), одной связкой. Расширение
- * элемента берёт лифтом из слоя группы движок и регистратор и отдаёт фасаду
- * контекст радио; в группу радио входит, когда контекст фасада принят, — в
- * `ngOnInit`, и на сервере тоже.
- */
 export function setupRadioGroupItem(
 	ctrl: IRadioGroupItem | undefined,
 	props: object,

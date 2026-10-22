@@ -7,34 +7,7 @@ import { TIconComponent } from '../../icon'
 import { TMenuCheckboxItemSurface } from '../../../generated/menu-checkbox-item.metadata'
 import { setupMenuCheckboxItem } from './setup.component'
 
-/**
- * TMenuCheckboxItemComponent — флажок меню: строка пункта с отметкой в начале,
- * как `Menu.CheckboxItem` у Vue.
- *
- * Корень и строка — как у пункта-действия (`TMenuItemComponent`): корень
- * несёт классы, `attrs` и `dataset` (`data-highlighted`, `data-disabled`,
- * `data-selected`), строка — Button на `div` (`#control`) с ARIA флажка (роль
- * `menuitemcheckbox`, `aria-checked` и `tabindex="-1"` от меню), и написанное
- * на флажке, кроме класса и стиля, доходит до строки.
- *
- * Отметка — выбор коллекции меню, а не своё состояние: вход `selected` и выход
- * `(soChangeSelected)` — у фасада флажка. Нажатие — клик строки, решает меню
- * (`adapters.menu.toggle()`): выключенному отказывает, а доступному
- * переключает отметку и остаётся открытым.
- *
- * Обёртка отметки (`so-menu-item__indicator`) — у неотмеченного флажка тоже: она
- * держит колонку, а её наличие в списке тема читает как «у меню есть колонка
- * отметок». Рисунок внутри — только у отмеченного: шаблон слота
- * `indicator-icon` (scope `{ selected }`) или иконка роли `check`. Обёртка
- * скрыта от скринридера: состояние объявляет `aria-checked`.
- *
- * Слоты: `leading` и `trailing` проецируются, `default` (scope
- * `{ text, selected }`) — проекцией или шаблоном, без него — текст;
- * `indicator-icon` — шаблоном: есть ли что-то в `<ng-content>`, Angular не
- * сообщает, а без слота флажок рисует свою отметку.
- *
- * Selector: div[so-menu-checkbox-item], [so-menu-checkbox-item]
- */
+/** Флажок меню: строка, как у пункта-действия, с отметкой — выбором коллекции меню. */
 @Component({
 	selector: 'div[so-menu-checkbox-item], [so-menu-checkbox-item]',
 	imports: [
