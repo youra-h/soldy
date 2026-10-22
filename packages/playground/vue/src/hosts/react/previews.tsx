@@ -20,7 +20,10 @@ import {
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
+	DateInput,
+	DatePicker,
 	Dialog,
 	DragAndDrop,
 	Drawer,
@@ -113,9 +116,8 @@ type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 /**
  * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
  * переключателей — отмечен один, — действия с подсказками сочетаний, подменю
- * с подменю внутри, пункт с панелью, которая монтируется с первым открытием,
- * выключенное действие и «опасный» пункт своего варианта. Календаря в React
- * нет, и в панели «Срок» — поле числа дней, как у Solid.
+ * с подменю внутри, пункт с панелью — календарём, который монтируется с первым
+ * открытием, — выключенное действие и «опасный» пункт своего варианта.
  */
 const menuItems = () => (
 	<>
@@ -140,9 +142,7 @@ const menuItems = () => (
 			</Menu.Submenu>
 		</Menu.Submenu>
 		<Menu.PopoverItem value="due" text="Срок" lazyMount>
-			<Field label="Через, дней">
-				<NumberInput value={3} min={0} />
-			</Field>
+			<Calendar />
 		</Menu.PopoverItem>
 		<Menu.Item value="archive" text="В архив" disabled />
 		<Menu.Separator />
@@ -369,6 +369,18 @@ export const PREVIEWS: Record<string, TPreview> = {
 			))}
 		</RadioGroup>
 	),
+
+	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
+	// сеток. Языка у превью нет: это локаль провайдера вокруг корня хоста —
+	// выбор языка в шапке (`setLocale` хоста)
+	calendar: (bind) => <Calendar {...bind} />,
+
+	// Язык — из шапки стенда, как у календаря
+	'date-input': (bind) => <DateInput {...bind} />,
+
+	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
+	// из шапки стенда, как у поля и календаря
+	'date-picker': (bind) => <DatePicker {...bind} />,
 
 	// Элементы — разметкой, а пришли данными (`items` блока групп страницы) —
 	// из них: разметка заменила бы данные, а группы список рисует из данных

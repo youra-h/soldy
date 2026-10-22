@@ -15,7 +15,14 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > ProgressSpinner, ProgressLinear, Input, NumberInput (a number in the locale's format with − and +
 > step buttons; the form gets the number), Textarea (multi-line, growing with its text, with a
 > character counter), CheckBox, Switch, Slider, Rating, the form field `Field` (label, helper and
-> error linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
+> error linked to the control inside it), the dates — DateInput (a date, or a date and time with
+> `kind="datetime"`, typed in parts in the locale's format; the form gets the date as a string),
+> Calendar (month grids of `Calendar.Item` days; a month heading opens the month and year picker)
+> and DatePicker (a date field and a calendar in a panel: a single date or a range, with Cancel
+> and OK buttons under `confirmable`; the panel is teleported, so the server renders the field
+> and the calendar button, and the calendar appears on the client; every attribute of yours goes
+> to the root of a date component — a date field has no `<input>`, only its parts), the
+> collections ListBox, Tabs, Accordion and RadioGroup
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
 > or `items`), Pagination, the `Scroller` strip, the overlays Popover and Tooltip (the trigger in
 > the `trigger` slot, `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Menu (an

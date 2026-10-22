@@ -30,8 +30,11 @@ import { createRoot } from 'react-dom/client'
 import {
 	TAccordion,
 	TButton,
+	TCalendar,
 	TCheckBox,
 	TComponentView,
+	TDateInput,
+	TDatePicker,
 	TDialog,
 	TDragAndDrop,
 	TDrawer,
@@ -61,6 +64,7 @@ import {
 	TTooltip,
 	TVirtual,
 	createEngineAccordion,
+	createEngineCalendar,
 	createEngineListBox,
 	createEngineMenu,
 	createEnginePagination,
@@ -69,12 +73,15 @@ import {
 	createEngineTabs,
 	createEngineToasts,
 } from '@soldy-ui/core'
-import type { TListBoxCollection, TTableCollection } from '@soldy-ui/core'
+import type { TCalendarCollection, TListBoxCollection, TTableCollection } from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
 	ComponentView,
+	DateInput,
+	DatePicker,
 	Dialog,
 	DragAndDrop,
 	Drawer,
@@ -208,6 +215,32 @@ function tableBuses(engine: TTableCollection): TEvented<any>[] {
 	]
 }
 
+/**
+ * Шины мест панелей выбора месяца и года: поповер, список и его движок места
+ * заводит расширение `picker` движка календаря, и живут они вместе с ним —
+ * дольше монтирования. Компоненты места собираются над ними, как над `ctrl` и
+ * движком снаружи.
+ */
+function placeBuses(engine: TCalendarCollection): TEvented<any>[] {
+	return engine.extensions.picker.pickers.flatMap((place) => [
+		place.popover.events,
+		place.list.events,
+		...engineBuses(place.engine),
+	])
+}
+
+/**
+ * Открыть панель первого места: открытый поповер подписывает фокус и нажатие
+ * мимо, а содержимое — список места — монтируется только с первым открытием.
+ */
+function openFirstPlace(engine: TCalendarCollection): void {
+	const [place] = engine.extensions.picker.pickers
+
+	if (!place) throw new Error('мест у движка календаря нет')
+
+	place.popover.open = true
+}
+
 /** Ждёт обещания на рендере — так сосед ждёт данных. */
 function Wait({ promise }: { promise: Promise<void> }) {
 	use(promise)
@@ -323,6 +356,25 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 			(ctrl) => <Button ctrl={ctrl} />,
 		),
 	},
+	/**
+	 * Дни кладёт в движок вид, а места панелей выбора заводит расширение
+	 * `picker`, когда у движка есть владелец, — поэтому он у движка с создания,
+	 * и шины дней и мест проверяются тоже. Панель первого места открыта:
+	 * поповер, список и его движок места собираются над экземплярами движка.
+	 */
+	Calendar: {
+		'ctrl и движок, панель места открыта': () => {
+			const ctrl = new TCalendar()
+			const engine = createEngineCalendar({ owner: ctrl })
+
+			openFirstPlace(engine)
+
+			return {
+				node: <Calendar ctrl={ctrl} engine={engine} />,
+				buses: [ctrl.events, ...engineBuses(engine), ...placeBuses(engine)],
+			}
+		},
+	},
 	CheckBox: {
 		ctrl: overCtrl(
 			() => new TCheckBox(),
@@ -333,6 +385,43 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 		ctrl: overCtrl(
 			() => new TComponentView(),
 			(ctrl) => <ComponentView ctrl={ctrl} />,
+		),
+	},
+	DateInput: {
+		ctrl: overCtrl(
+			() => new TDateInput({ value: '2026-05-12' }),
+			(ctrl) => <DateInput ctrl={ctrl} clearable />,
+		),
+	},
+	/**
+	 * Открытый DatePicker: у открытого подписаны фокус панели, нажатие мимо и
+	 * немой фон. Поля, календарь и движок его коллекции — экземпляры ядра
+	 * DatePicker, они живут дольше монтирования: поля и календарь собираются
+	 * над ними, как над `ctrl` снаружи, — и места панелей выбора месяца и года
+	 * в движке тоже.
+	 */
+	DatePicker: {
+		'ctrl открыт: поля, календарь и движок — его': () => {
+			const ctrl = new TDatePicker({ open: true, value: '2026-09-10' })
+
+			openFirstPlace(ctrl.engine)
+
+			return {
+				node: <DatePicker ctrl={ctrl} />,
+				buses: [
+					ctrl.events,
+					ctrl.field.events,
+					ctrl.start.events,
+					ctrl.end.events,
+					ctrl.calendar.events,
+					...engineBuses(ctrl.engine),
+					...placeBuses(ctrl.engine),
+				],
+			}
+		},
+		'ctrl, диапазон': overCtrl(
+			() => new TDatePicker({ mode: 'range', value: ['2026-09-10', '2026-09-14'] }),
+			(ctrl) => <DatePicker ctrl={ctrl} clearable />,
 		),
 	},
 	/**

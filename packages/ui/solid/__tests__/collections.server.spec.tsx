@@ -775,9 +775,8 @@ describe('Calendar · серверный рендер', () => {
 
 	/**
 	 * Панель места — прямой потомок заголовка, а он — месяца: за кнопкой
-	 * заголовка сразу идёт панель. На эту цепочку,
-	 * `.so-calendar__month > .so-calendar__heading > .so-popover__panel`,
-	 * опирается селектор темы.
+	 * заголовка сразу идёт панель. С `contained` сервер Solid рисует её на
+	 * месте, без обёрток телепорта.
 	 */
 	const PLACE =
 		/<div class="so-calendar__month"><div [^>]*class="so-popover so-calendar__heading ?"[^>]*><button [^>]*>[\s\S]*?<\/button>(<div [^>]*class="so-frame so-popover__panel ?"[^>]*>)/g

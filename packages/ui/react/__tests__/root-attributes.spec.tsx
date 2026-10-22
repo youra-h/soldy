@@ -21,7 +21,8 @@
  * остальное — строке с ролью `menuitem*`. ListBox и Tabs делят их так же:
  * остальное — узлу списка с ролью (`listbox`, `tablist`), поверх его `aria`.
  * Table — между окном и корнем `table` в нём: класс, стиль и `ref` — окну,
- * остальное — `table`.
+ * остальное — `table`. Поле даты, Calendar и DatePicker их не делят: своего
+ * `<input>` под них нет, и всё уходит корню, как у Vue.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -48,8 +49,11 @@ import {
 import {
 	Accordion,
 	Button,
+	Calendar,
 	CheckBox,
 	ComponentView,
+	DateInput,
+	DatePicker,
 	Dialog,
 	Drawer,
 	Field,
@@ -78,7 +82,10 @@ import {
 	type AccordionItemProps,
 	type AccordionProps,
 	type ButtonProps,
+	type CalendarProps,
 	type ComponentViewProps,
+	type DateInputProps,
+	type DatePickerProps,
 	type DialogProps,
 	type DrawerProps,
 	type FieldProps,
@@ -189,6 +196,21 @@ const COMPONENTS: ReadonlyArray<
 	['Toasts', Toasts, '.so-toasts', {}],
 ]
 
+/** Общие пропсы поля даты, календаря и DatePicker. */
+type TDateProbeProps = DateInputProps & CalendarProps & DatePickerProps
+
+/**
+ * Поле даты, Calendar и DatePicker и класс их корня — своей таблицей: в
+ * пересечение пропсов таблицы компонентов TypeScript их уже не вмещает
+ * (TS2590). Атрибуты потребителя они не делят: своего `<input>` под них нет, и
+ * всё уходит корню, как у Vue.
+ */
+const DATES: ReadonlyArray<readonly [string, ComponentType<TDateProbeProps>, string]> = [
+	['DateInput', DateInput, '.so-date-input'],
+	['Calendar', Calendar, '.so-calendar'],
+	['DatePicker', DatePicker, '.so-date-picker'],
+]
+
 /**
  * Атрибуты потребителя, которые таблица отдаёт элементу коллекции: `id` уходит
  * строке, класс и стиль — корню. Пересечение пропсов всех элементов
@@ -294,6 +316,31 @@ describe('атрибут снаружи перекрывает набор ядр
 			expect(find(document, selector, HTMLElement).getAttribute('dir')).toBe('ltr')
 		},
 	)
+
+	it.each(DATES)('%s: dir потребителя — поверх dir ядра', (_name, Probe, selector) => {
+		mount(<Probe direction="rtl" dir="ltr" />)
+
+		expect(find(document, selector, HTMLElement).getAttribute('dir')).toBe('ltr')
+	})
+
+	it.each(DATES)('%s: класс потребителя — после классов ядра', (_name, Probe, selector) => {
+		mount(<Probe className="mine" />)
+
+		const classes = [...find(document, selector, HTMLElement).classList]
+
+		expect(classes.at(-1)).toBe('mine')
+		expect(classes[0]).toBe(selector.slice(1))
+	})
+
+	it.each(DATES)('%s: id, title и data-* потребителя — на корне', (_name, Probe, selector) => {
+		mount(<Probe id="mine" title="Своё" data-probe="1" />)
+
+		const root = find(document, selector, HTMLElement)
+
+		expect(root.id).toBe('mine')
+		expect(root.title).toBe('Своё')
+		expect(root.dataset['probe']).toBe('1')
+	})
 
 	it('Button на div: tabIndex потребителя — поверх tabindex="0" ядра', () => {
 		const { root } = mount(<Button tag="div" tabIndex={-1} />)
@@ -632,6 +679,12 @@ const ROOTS: ReadonlyArray<
 		'.so-table__viewport',
 		'table.so-table',
 	],
+	// Корень поля даты — коробка вокруг ряда частей, а не часть
+	['DateInput', (props) => <DateInput {...props} />, '.so-date-input', '.so-date-input'],
+	// Корень календаря — сетки с кнопками листания, а не день и не панель выбора месяца
+	['Calendar', (props) => <Calendar {...props} />, '.so-calendar', '.so-calendar'],
+	// Корень DatePicker — якорь панели вокруг полей, а не поле и не телепортированная панель
+	['DatePicker', (props) => <DatePicker {...props} />, '.so-date-picker', '.so-date-picker'],
 ]
 
 /** Поля: `ref` потребителя — корень, а не `<input>` или `<textarea>`. */

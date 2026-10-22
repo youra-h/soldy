@@ -199,9 +199,9 @@ come in later releases.
 | Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | *                                 | 0.2.0   |
 | RadioGroup      | One option out of several: native radio buttons sharing a `name`                               | *                                 | 0.2.0   |
 | Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | Vue, Svelte, Solid                | 0.2.0   |
-| Calendar        | Month grids: pick a single date, several dates or a range                                      | Vue, Solid                        | 0.2.0   |
-| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | Vue, Solid                        | 0.2.0   |
-| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | Vue, Solid                        | 0.2.0   |
+| Calendar        | Month grids: pick a single date, several dates or a range                                      | Vue, React, Solid                 | 0.2.0   |
+| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | Vue, React, Solid                 | 0.2.0   |
+| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | Vue, React, Solid                 | 0.2.0   |
 | Popover         | Panel at a trigger with any content: a non-modal dialog                                        | *                                 | 0.2.0   |
 | Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | *                                 | 0.2.0   |
 | Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | *                                 | 0.2.0   |

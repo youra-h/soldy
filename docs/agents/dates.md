@@ -459,16 +459,26 @@ DatePicker (`TDatePicker`, `core/src/components/custom/date-picker`) — пол�
 подтверждением); скрытые поля формы, место кнопки очистки, подвал
 подтверждения и проверку набора из разметки (`validate` доходит до поля, и
 смонтированный DateInput его не перетирает) —
-`ui/vue/__tests__/date-picker.spec.ts` и `ui/solid/__tests__/date-picker.spec.tsx`;
+`ui/vue/__tests__/date-picker.spec.ts`, `ui/solid/__tests__/date-picker.spec.tsx`
+и `ui/react/__tests__/date-picker.spec.tsx`;
 части поля в ряду, их наборы и текст на узле части —
-`ui/vue/__tests__/date-input.spec.ts` и `ui/solid/__tests__/date-input.spec.tsx`
+`ui/vue/__tests__/date-input.spec.ts`, `ui/solid/__tests__/date-input.spec.tsx`
 (у Solid узел части тот же при наборе и при смене локали, а текст — `textContent`
-узла), сетки, дни и панели выбора месяца и года на разметке —
-`ui/vue/__tests__/calendar.spec.ts` и `ui/solid/__tests__/calendar.spec.tsx`;
+узла) и `ui/react/__tests__/date-input.spec.tsx` (у React текст части —
+единственный ребёнок-строка: React пишет его свойством узла и узлов-детей не
+держит, поэтому часть, которую браузер оставил пустой, получает текст ядра
+одним узлом; атрибуты касания уходят пропами React, без предупреждений в
+консоли), сетки, дни и панели выбора месяца и года на разметке —
+`ui/vue/__tests__/calendar.spec.ts`, `ui/solid/__tests__/calendar.spec.tsx` и
+`ui/react/__tests__/calendar.spec.tsx`;
 их же в разметке сервера Solid — имена сеток, дни с одной остановкой Tab,
 панель выбора на месте, `id` двух рендеров, заголовок месяца на языке своего
 запроса — `ui/solid/__tests__/collections.server.spec.tsx` и
-`ui/solid/__tests__/locale.server.spec.tsx`; рамку ошибки коробки
+`ui/solid/__tests__/locale.server.spec.tsx`, у React — сервер и гидратация
+без расхождений (`id` частей, сеток и заголовков те же, части нередактируемы,
+панель выбора на месте) и пересборка под StrictMode (поля, календарь и
+поповеры мест — над новыми экземплярами) — группы «React» трёх спеков дат
+React выше; рамку ошибки коробки
 диапазона, квадрат кнопки очистки в обоих режимах и Tab до «OK» —
 `playground/vue/browser/date-picker.spec.ts`; подпись колонки по обе
 стороны правила — короткие `ru-RU`, `fr-FR`, `zh-CN`, `hi-IN` и узкие
