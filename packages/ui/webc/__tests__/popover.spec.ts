@@ -24,11 +24,16 @@
  * кадром позже.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, expectTypeOf, afterEach, vi } from 'vitest'
 import { TButton, TComponentView, TFrame, TPopover } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
 import { PopoverDescriptor, usePlugins } from '@soldy-ui/setup'
-import { TLocaleProviderElement, TPopoverElement, type TPopoverElementProps } from '@soldy-ui/webc'
+import {
+	TLocaleProviderElement,
+	TPopoverElement,
+	registerPopoverTag,
+	type TPopoverElementProps,
+} from '@soldy-ui/webc'
 import { popoverTemplate } from '../src/components/popover/popover.template'
 import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
 import { bareContext } from './template-context'
@@ -1096,5 +1101,80 @@ describe('жест', () => {
 		expect(panel().dataset.swiping).toBe('false')
 		expect(opens).toEqual([true, false])
 		expect(document.activeElement).toBe(trigger())
+	})
+})
+
+/**
+ * Popover на другом теге — тот же Popover под своим именем: одно имя элемента
+ * расширяет один тег. Регистрирует его фабрика `registerPopoverTag`: описание
+ * элемента — дескриптор, шаблон, корень, setup — у всех тегов одно. На `div` —
+ * заголовок месяца Calendar: панель с `contained` лежит в корне поповера, а в
+ * строчном `span` блочной разметке не место.
+ */
+describe('<div is="so-popover-div"> · Popover на div', () => {
+	const TPopoverDivElement = registerPopoverTag('div')
+
+	function isPopoverDiv(node: Element | null): node is TPopoverElementProps<HTMLDivElement> {
+		return node instanceof TPopoverDivElement
+	}
+
+	/** Поповер на `div` из разметки, подключённый к документу, и кадр. */
+	async function mountDiv(html: string): Promise<TPopoverElementProps<HTMLDivElement>> {
+		const host = document.createElement('div')
+
+		host.innerHTML = html
+
+		const node = host.firstElementChild
+
+		if (!isPopoverDiv(node)) throw new Error('<div is="so-popover-div"> нет')
+
+		document.body.appendChild(host)
+		await flush()
+		await nextFrame()
+
+		return node
+	}
+
+	it('класс у тега один: повторный вызов отдаёт его же, имя — so-popover-div', () => {
+		expect(registerPopoverTag('div')).toBe(TPopoverDivElement)
+		expect(customElements.get('so-popover-div')).toBe(TPopoverDivElement)
+		expect(document.createElement('div', { is: 'so-popover-div' })).toBeInstanceOf(
+			TPopoverDivElement,
+		)
+	})
+
+	it('описание — то же, что у <span is="so-popover">: атрибуты-входы одни', () => {
+		expect(TPopoverDivElement.observedAttributes).toEqual(TPopoverElement.observedAttributes)
+	})
+
+	it('div с классами поповера; триггер получает связку, панель с contained — в корне', async () => {
+		const el = await mountDiv(`<div is="so-popover-div" contained edge="top">
+			${TRIGGER}
+			<p class="so-test-content">Содержимое</p>
+		</div>`)
+
+		expect(el).toBeInstanceOf(HTMLDivElement)
+		expect(el.classList).toContain('so-popover')
+		expect(el.ctrl?.tag).toBe('div')
+		expect(trigger().getAttribute('aria-haspopup')).toBe('dialog')
+		expect(trigger().getAttribute('aria-expanded')).toBe('false')
+		expect(panel().parentElement).toBe(el)
+		expect(panel().dataset['contained']).toBe('true')
+		expect(panel().dataset['edge']).toBe('top')
+
+		trigger().click()
+		await flush()
+
+		expect(isOpen()).toBe(true)
+		expect(trigger().getAttribute('aria-expanded')).toBe('true')
+		expect(trigger().getAttribute('aria-controls')).toBe(panel().id)
+		expect(el.dataset['open']).toBe('true')
+	})
+
+	it('тип — тот же Popover на своём теге', () => {
+		expectTypeOf<TPopoverElementProps<HTMLDivElement>>().toExtend<HTMLDivElement>()
+		expectTypeOf<TPopoverElementProps<HTMLDivElement>['contained']>().toEqualTypeOf<
+			TPopoverElementProps['contained']
+		>()
 	})
 })

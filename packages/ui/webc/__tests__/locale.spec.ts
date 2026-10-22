@@ -11,9 +11,11 @@
  * провайдер, провайдер и элемент в разметке до регистрации и перестановка под
  * другой провайдер. Без провайдера — английский. Строку, которую по этому пути
  * рисует компонент, — имя кнопки очистки Input — сторожит `input.spec.ts`.
+ * Язык — тоже локали: имена месяцев и дни недели календаря и имена частей поля
+ * даты пишет на каждую смену плагин языка, без пересборки.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { TButton } from '@soldy-ui/core'
 import {
 	TBasePlugin,
@@ -301,5 +303,89 @@ describe('<so-locale-provider>', () => {
 
 		placed.destroy()
 		given.destroy()
+	})
+})
+
+/**
+ * Язык — тег локали поддерева: подписи календаря — заголовок месяца, дни недели
+ * и первый день недели — и имена частей поля даты пишет плагин языка на каждую
+ * смену, и узлы те же — календарь и поле не пересобраны.
+ */
+describe('<so-locale-provider> · язык', () => {
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(new Date(2026, 8, 26, 12))
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	/** Подписи колонок календаря по порядку. */
+	const weekdays = () =>
+		[...document.querySelectorAll('.so-calendar__weekday')].map((cell) =>
+			cell.textContent?.trim(),
+		)
+
+	/**
+	 * Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 —
+	 * воскресенье): у `en-US` и `ru-RU` подпись колонки — короткое имя.
+	 */
+	const week = (locale: string, first: number) => {
+		const short = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
+
+		return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+			short.format(Date.UTC(2026, 8, 20 + first + offset)),
+		)
+	}
+
+	/** Месяц и год сентября 2026 на языке `locale` — как заголовок сетки. */
+	const month = (locale: string) =>
+		new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+			Date.UTC(2026, 8, 1),
+		)
+
+	it('смена локали меняет заголовок месяца и дни недели календаря на лету', async () => {
+		const host = markup(
+			`<so-locale-provider><div is="so-calendar" months='["2026-09-01"]'></div></so-locale-provider>`,
+		)
+
+		document.body.appendChild(host)
+		await announced()
+
+		const grid = find(host, '.so-calendar__grid')
+		const title = find(host, '.so-calendar__title-text')
+
+		expect(weekdays()).toEqual(week('en-US', 0))
+		expect(title.textContent?.trim()).toBe(month('en-US'))
+
+		provider(host).locale = ruRU
+		await announced()
+
+		expect(find(host, '.so-calendar__grid')).toBe(grid)
+		expect(find(host, '.so-calendar__title-text')).toBe(title)
+		expect(weekdays()).toEqual(week('ru-RU', 1))
+		expect(title.textContent?.trim()).toBe(month('ru-RU'))
+	})
+
+	it('имена частей поля даты — на языке провайдера, смена — без пересборки', async () => {
+		const host = markup(
+			'<so-locale-provider><div is="so-date-input"></div></so-locale-provider>',
+		)
+
+		document.body.appendChild(host)
+		await announced()
+
+		const day = find(host, '.so-date-input__segment[data-type="day"]')
+		const name = (locale: string) =>
+			new Intl.DisplayNames([locale, 'en-US'], { type: 'dateTimeField' }).of('day')
+
+		expect(day.getAttribute('aria-label')).toBe(name('en-US'))
+
+		provider(host).locale = ruRU
+		await announced()
+
+		expect(find(host, '.so-date-input__segment[data-type="day"]')).toBe(day)
+		expect(day.getAttribute('aria-label')).toBe(name('ru-RU'))
 	})
 })

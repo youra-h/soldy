@@ -19,11 +19,17 @@
  * строки (`item-leading` — в `leading`) и образцом под тем же именем
  * (`item-leading` — в `item-leading`), который копирует уже в свои пункты, —
  * поэтому карт у подменю две, и с таблицей сверяется их сумма.
+ *
+ * Календарь копирует образец `item` в каждый день, а DatePicker отдаёт свой
+ * образец `item` календарю панели образцом под тем же именем
+ * (`lendTemplates`): день уже в scope слота календаря, и ключа у проброса нет.
  */
 
 import { describe, it, expect } from 'vitest'
 import {
 	ACCORDION_ITEM_SLOTS,
+	CALENDAR_ITEM_SLOTS,
+	DATE_PICKER_CALENDAR_SLOTS,
 	LIST_BOX_ITEM_SLOTS,
 	MENU_ITEM_SLOTS,
 	MENU_SUBMENU_SLOTS,
@@ -73,6 +79,7 @@ describe('карта копий образцов — строки таблицы
 		['Select', SELECT_ITEM_SLOTS],
 		['Pagination', PAGINATION_ITEM_SLOTS],
 		['Toasts', TOASTS_ITEM_SLOTS],
+		['Calendar', CALENDAR_ITEM_SLOTS],
 	] as const)('%s', (owner, slots) => {
 		const relays = relaysOf(owner, `${owner}.Item`)
 
@@ -101,5 +108,12 @@ describe('карта копий образцов — строки таблицы
 
 		expect(relays.length).toBeGreaterThan(0)
 		expect(pairsOf(...maps)).toEqual(relays)
+	})
+
+	it('DatePicker → Calendar', () => {
+		const relays = relaysOf('DatePicker', 'Calendar')
+
+		expect(relays.length).toBeGreaterThan(0)
+		expect(pairsOf(DATE_PICKER_CALENDAR_SLOTS)).toEqual(relays)
 	})
 })

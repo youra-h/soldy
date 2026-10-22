@@ -461,7 +461,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
   NumberInput, Textarea, CheckBox, Switch, RadioGroup, Rating, Slider и
-  Select, а у React, Solid, Svelte и Angular — ещё DateInput и DatePicker.
+  Select, а у React, Solid, Svelte, Angular и Web Components — ещё DateInput и
+  DatePicker.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -1744,10 +1745,18 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   выбора — прямой потомок корня поповера, а он — месяца, текст дня, подписей и
   заголовка — без пробелов; остановка по модели — «Calendar · остановка по
   модели» в `ui/angular/__tests__/focus-target.spec.ts`),
+  `ui/webc/__tests__/calendar.spec.ts` (у Web Components ещё — заголовок
+  месяца — Popover на `div`, `<div is="so-popover-div">`, кнопка заголовка,
+  её поповер и живая область те же при листании и выборе месяца, панель
+  выбора — в корне поповера, день под фокусом переживает листание месяца тем
+  же узлом, а переставленный календарь без движка снаружи встаёт над новыми
+  днями и поповерами мест),
   `playground/vue/browser/calendar.spec.ts` (и
   `playground/vue/browser/svelte-host.spec.ts` и
   `playground/vue/browser/angular-host.spec.ts`: календари Svelte и Angular и
-  их открытая панель выбора стоят, как у Vue) и серверные спеки Solid, Svelte
+  их открытая панель выбора стоят, как у Vue, а
+  `playground/vue/browser/webc-dates.spec.ts` — так же сетка и открытая панель
+  выбора Web Components) и серверные спеки Solid, Svelte
   и Angular: «Calendar · серверный рендер» и «id и name — от
   createUniqueId()» в `ui/solid/__tests__/collections.server.spec.tsx`, «id и
   name — от $props.id()» в `ui/svelte/__tests__/collections.server.spec.ts` и
@@ -1839,7 +1848,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   локали; текст ряда — ровно дата с разделителями; `id` поля — на корне; на
   сервере — части с `id` и текстом, после гидратации — те же узлы,
   `ui/angular/__tests__/ssr.server.spec.ts`; группа в поле формы —
-  `ui/angular/__tests__/field.spec.ts`) и
+  `ui/angular/__tests__/field.spec.ts`),
+  `ui/webc/__tests__/date-input.spec.ts` (у Web Components текст части
+  пишется, только когда разошёлся с узлом: опустошённая браузером часть
+  получает текст ядра целиком, узел — тот же), поле каждого размера рядом с
+  Vue — `playground/vue/browser/webc-dates.spec.ts` — и
   `playground/vue/browser/date-input.spec.ts` — протяжка с левого края дня и
   месяца, Ctrl+C и Ctrl+X без переводов строк, Ctrl+A, контекстное меню, ввод
   времени и секунд с клавиатуры, ширина поля при наборе года и у поля до
@@ -1918,10 +1931,16 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   корня, `rendered: false` прячет и открытую панель; сервер рисует DatePicker
   полем с кнопкой и пустой скрытой панелью, после гидратации она в `body` и
   открывается, — `ui/angular/__tests__/ssr.server.spec.ts`),
+  `ui/webc/__tests__/date-picker.spec.ts` (у Web Components ещё — смена режима
+  переставляет кнопки, поле возвращается тем же узлом; смена `confirmable`
+  строит календарь панели заново; переставленный DatePicker пересобирает и
+  панель в `body`),
   `playground/vue/browser/date-picker.spec.ts`,
-  `playground/vue/browser/svelte-host.spec.ts` и
+  `playground/vue/browser/svelte-host.spec.ts`,
   `playground/vue/browser/angular-host.spec.ts` (поле DatePicker Svelte и
   Angular и его открытая панель стоят, как у Vue) и
+  `playground/vue/browser/webc-dates.spec.ts` (панель DatePicker Web
+  Components у поля — как у Vue) и
   `playground/vue/browser/anchored-swipe.spec.ts`.
 - **Pagination** — постраничная навигация. Своего паттерна APG у неё нет:
   корень — `nav`, ориентир для скринридера, имя ему даёт приложение

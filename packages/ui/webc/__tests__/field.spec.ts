@@ -7,11 +7,13 @@
  * подсказки. С контролом поле связывает проводка: поле опускает связку лифтом
  * своему хосту, контрол находит её вверх по документу. Labelable-контрол
  * (Input, NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой,
- * Select) подпись называет своим `for`, группу (RadioGroup, Slider с
- * несколькими ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
- * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
- * корне. У Select поле — деталь Input: ссылки и ошибку несёт набор Select, и
- * у детали с полем он ложится на `<input>` комбобокса.
+ * Select) подпись называет своим `for`, группу (DateInput, DatePicker,
+ * RadioGroup, Slider с несколькими ручками) — ссылкой `aria-labelledby`.
+ * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
+ * `data-invalid` на своём корне. У Select поле — деталь Input: ссылки и ошибку
+ * несёт набор Select, и у детали с полем он ложится на `<input>` комбобокса.
+ * Поля DatePicker — тоже детали его разметки: связку берёт DatePicker, и у
+ * одной даты его набор ложится на поле, а у диапазона группа — его корень.
  *
  * Угол зрения здесь свой. Корень — элемент потребителя, слот части — элемент
  * с атрибутом `slot`, как у Label, а части поля шаблон строит сразу и снимает
@@ -295,6 +297,56 @@ describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
 	})
 })
 
+/**
+ * Поле даты и DatePicker — группы: подпись называет их ссылкой, `for` нет.
+ * Селектор — элемент с именем группы: у одной даты группа — само поле
+ * DatePicker, у диапазона — его корень. Поля DatePicker — детали его разметки
+ * (`embedded`): связку поля формы берёт DatePicker и отдаёт её полю своим
+ * набором `aria`.
+ */
+const GROUPS = [
+	['DateInput', '<div is="so-date-input"></div>', '.so-date-input'],
+	['DatePicker', '<div is="so-date-picker"></div>', '.so-date-picker__field'],
+	['DatePicker range', '<div is="so-date-picker" mode="range"></div>', '.so-date-picker'],
+] as const
+
+describe.each(GROUPS)('%s в поле', (_name, control, group) => {
+	it('for у подписи нет, группа ссылается на подпись', async () => {
+		mount(`<div is="so-field" label="Подпись">${control}</div>`)
+		await flush()
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(label().id).not.toBe('')
+		expect(refsOf(node(group), 'aria-labelledby')).toEqual([label().id])
+	})
+
+	it('справка и ошибка — у группы, data-invalid — на её корне', async () => {
+		const ctrl = new TField({ label: 'Подпись', helper: 'Подсказка', error: 'Ошибка' })
+
+		mountOver(ctrl, control)
+		await flush()
+
+		expect(refsOf(node(group), 'aria-describedby')).toEqual([node('.so-field__helper').id])
+
+		ctrl.invalid = true
+		await flush()
+
+		expect(refsOf(node(group), 'aria-describedby')).toEqual([node('.so-field__error').id])
+		expect(node(group).getAttribute('aria-invalid')).toBe('true')
+		expect(node(group).dataset['invalid']).toBe('true')
+	})
+
+	it('ссылки — у группы, а не у её частей', async () => {
+		mount(`<div is="so-field" label="Подпись" helper="Подсказка">${control}</div>`)
+		await flush()
+
+		const parts = [...document.querySelectorAll('.so-date-input__segment')]
+
+		expect(parts.length).toBeGreaterThan(0)
+		expect(parts.every((part) => !part.hasAttribute('aria-describedby'))).toBe(true)
+	})
+})
+
 /** Группа: подпись называет её ссылкой, `for` нет. */
 describe('RadioGroup в поле', () => {
 	const group = () => node('.so-radio-group')
@@ -483,6 +535,15 @@ describe('Field · имя контрола', () => {
 
 		expect(node('.so-radio-group').getAttribute('aria-label')).toBe('Своё')
 		expect(node('.so-radio-group').hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('своё имя поля даты главнее подписи поля', () => {
+		mount(`<div is="so-field" label="Подпись">
+			<div is="so-date-input" aria_label="Своё"></div>
+		</div>`)
+
+		expect(node('.so-date-input').getAttribute('aria-label')).toBe('Своё')
+		expect(node('.so-date-input').hasAttribute('aria-labelledby')).toBe(false)
 	})
 
 	it('флажок в подписи Label внутри поля: Label называет его, поле даёт справку', () => {

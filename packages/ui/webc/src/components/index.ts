@@ -42,3 +42,8 @@ export * from './select'
 export * from './menu'
 export * from './pagination'
 export * from './table'
+// Даты: поле и календарь — раньше DatePicker, его поля и календарь — их детали.
+// Модуль календаря регистрирует и день
+export * from './date-input'
+export * from './calendar'
+export * from './date-picker'

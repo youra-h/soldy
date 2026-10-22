@@ -2820,7 +2820,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Tags / Select / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / DateInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Tags / Select / Calendar / DatePicker / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2947,7 +2947,11 @@ defineElement('so-button', TButtonElement, 'button')
 элемента ListBox — `registerButtonTag('div')`, строка `<div is="so-button-div">`,
 шаблон опции Select — `registerButtonTag('span')`, строка
 `<span is="so-button-span">`. Теги фабрики с их нативными классами — карта
-регистраций в её модуле, и её тип сверяет класс с тегом.
+регистраций в её модуле, и её тип сверяет класс с тегом. Так же у Popover —
+фабрика `registerPopoverTag(tag)`: заголовок месяца Calendar —
+`registerPopoverTag('div')`, `<div is="so-popover-div">`: панель выбора с
+`contained` лежит в корне поповера, а в строчном `span` блочной разметке не
+место.
 
 У коллекционного компонента описание элемента называет ещё и дескриптор
 фасада (`facade`), а модуль владельца регистрирует и свои части:
@@ -3620,6 +3624,43 @@ WebKit:
   `collection-item-lifetime.spec.ts`, `external-engine-lifetime.spec.ts`,
   `virtual.spec.ts` и `browser/webc-collections.spec.ts` стенда (теги, поле и
   открытая панель стоят, как у Vue; стрелки ходят по опциям).
+- **Даты** — DateInput (`<div is="so-date-input">`), Calendar
+  (`<div is="so-calendar">` с днями `<td is="so-calendar-item">`) и
+  DatePicker (`<div is="so-date-picker">`). У поля даты поля в корне нет: части
+  — узлы шаблона без своего `<input>`, все три набора ядра и атрибуты
+  разметки — на корне, как у Vue, `id` корню пишет привязка (`:id="id"`), а
+  значение для формы — скрытое поле. Части и разделители — петлёй по ключу
+  записи (ключ части — тип), и текст части шаблон пишет `textContent`, только
+  когда тот разошёлся с узлом: часть, которую браузер на касании оставил
+  пустой, получает текст ядра целиком, а тот же текст узел не трогает. Календарь
+  — коллекция, как пагинация: дни кладёт в движок вид, а рисует шаблон, и
+  слота по умолчанию нет. Месяцы — петлёй по месту сетки, недели — по первой
+  дате, ячейки — по элементу дня (у заполнителя — по дате): элемент дня
+  сменился (новая связка без движка снаружи) — новый узел, а день, оставшийся
+  на экране, — тот же узел с фокусом. Заголовок месяца — деталь Popover на
+  `div` (`calendar.picker`) над поповером места, который держит расширение
+  `picker`; сменился экземпляр поповера места — новая деталь, как ряд тегов
+  у Select. Кнопка заголовка (`calendar.title`) — деталь в слоте `trigger`
+  поповера: связку с панелью на неё кладёт сам Popover. Карточка панели —
+  деталь ListBox (`calendar.picker-list`) над списком и движком места и
+  шапка; до первого открытия она вне документа (`lazyMount` поповера места).
+  У DatePicker набор корня — `rootAria` (описание корня): у диапазона корень
+  — группа, у одной даты `aria` DatePicker шаблон кладёт на поле слоем
+  владельца, рядом с пропсами имени. Поля — детали DateInput над полями
+  DatePicker, календарь панели — деталь Calendar над его календарём и движком,
+  панель — деталь Frame с якорем-корнем. Кнопки очистки и календаря у одной
+  даты встают в слоты `clear` и `trailing` поля перед метками
+  (`lendMark`, `lendBefore`), у диапазона — в корень после поля конца;
+  смена режима переставляет кнопки и вынимает разметку прежнего режима, а
+  детали полей остаются за шаблоном. Подвал календаря — его свет к построению,
+  поэтому смена `confirmable` строит календарь панели заново, над теми же
+  календарём и движком. Образец `item` DatePicker отдаёт календарю образцом
+  (`lendTemplates`). Сторожат `ui/webc/__tests__/date-input.spec.ts`,
+  `calendar.spec.ts`, `date-picker.spec.ts`, `field.spec.ts`,
+  `focus-target.spec.ts`, `item-slots.spec.ts`, `locale.spec.ts`,
+  `root-attributes.spec.ts`, `external-engine-lifetime.spec.ts` и
+  `browser/webc-dates.spec.ts` стенда (поле каждого размера, сетка, открытая
+  панель выбора месяца и года и панель DatePicker стоят, как у Vue).
 
 **Типы.** Класс элемента собирает фабрика `SoldyElement(Native, spec)`: база
 одна, а нативный класс у каждого тега свой. Тип результата объявлен явно —
@@ -3642,10 +3683,10 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 со своим тегом: `TButtonElementProps<HTMLDivElement>` у
 `<div is="so-button-div">`, `TButtonElementProps<HTMLSpanElement>` у
 `<span is="so-button-span">`, и `disabled` там — свойство пропа, а у
-`<button>` — нативное. Сторожат `expectTypeOf` в
+`<button>` — нативное; поповер на `div` — `TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
 `ui/webc/__tests__/button.spec.ts`, `frame.spec.ts`, `tabs.spec.ts`,
-`accordion.spec.ts`, `list-box.spec.ts`, `tags.spec.ts`, `select.spec.ts` и
-`menu.spec.ts`.
+`accordion.spec.ts`, `list-box.spec.ts`, `tags.spec.ts`, `select.spec.ts`,
+`menu.spec.ts` и `popover.spec.ts`.
 
 Плата за light DOM: `<slot>` недоступен, поэтому пользовательское содержимое
 раскладывается при первом подключении вручную — по атрибуту `slot` в точки,
@@ -3718,7 +3759,8 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
   `<div is="so-button-div">` и `<span is="so-button-span">`
   (`registerButtonTag`), других тегов у неё пока нет — кнопке-ссылке
   понадобится `<a is="so-button-a">`, тем же вызовом фабрики, с `a` в её
-  карте регистраций. Иконка — только `<span is="so-icon">`:
+  карте регистраций. У Popover — `<div is="so-popover-div">`
+  (`registerPopoverTag`). Иконка — только `<span is="so-icon">`:
   `<i is="so-icon">` под тем же именем не оживёт, а `<svg>` атрибут `is` не
   расширяет вовсе.
 - `is`, выставленный атрибутом после `createElement`, элемент не оживляет —
@@ -3791,6 +3833,12 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
   Так же у образцов Slider, Rating и Pagination: данные — по месту узла копии.
 - Метки ползунка списком — только свойством (`el.marks = [...]`): первый тип
   пропа `marks` булев, и атрибут — флаг «точки шкалы».
+- Несколько дат и диапазон у Calendar и DatePicker — только свойством
+  (`el.value = ['2026-09-10', '2026-09-14']`): первый тип пропа `value` —
+  строка, и атрибут — одна дата.
+- Подвал календаря (слот `footer`) — свет к построению, как любой слот: у
+  DatePicker смена `confirmable` строит календарь панели заново, и фокус в
+  открытой панели при этом не держится.
 - Триггер Popover и Tooltip — первый элемент слота `trigger` к построению:
   элемент, добавленный в корень потом, связку с панелью не получает —
   наблюдателя за светом нет. Текст и пробелы в слоте набора не несут. Так же

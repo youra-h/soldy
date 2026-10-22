@@ -18,31 +18,100 @@
  * На корне из наборов ядра — `attrs` и `dataset` (`data-open`): ARIA у панели
  * и у триггера. Классы, наборы и скрытие корня раскладывает база.
  *
+ * Поповер на другом теге — тот же Popover под своим именем: одно имя элемента
+ * расширяет один тег (`customElements.define` с `extends`). Его регистрирует
+ * фабрика `registerPopoverTag` там, где тег впервые нужен разметке
+ * библиотеки: `<div is="so-popover-div">` — заголовок месяца Calendar с
+ * панелью выбора месяца и года: панель лежит в корне поповера, а в строчном
+ * `span` блочной разметке не место. Имя — имя компонента и тег через дефис,
+ * как у Button на другом теге. Описание элемента у всех тегов одно
+ * (`POPOVER`), отличается только нативный класс.
+ *
  * Разметка вынесена в popover.template.ts, жизненный цикл — в SoldyElement.
  */
 
 import { PopoverDescriptor } from '@soldy-ui/setup'
 import type { IPopover } from '@soldy-ui/core'
 import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import type {
+	ISoldyElement,
+	ISoldyElementSpec,
+	TSoldyElementClass,
+	TSoldyElementProps,
+} from '../../adapter'
 import { popoverTemplate } from './popover.template'
-import { setupPopover } from './setup.component'
+import { setupPopover, type TPopoverOutputs } from './setup.component'
 
-export const TPopoverElement = SoldyElement(HTMLSpanElement, {
+/** Описание элемента Popover — одно на все его теги: дескриптор, шаблон, корень и setup. */
+const POPOVER: ISoldyElementSpec<IPopover, unknown, TPopoverOutputs> = {
 	descriptor: PopoverDescriptor(),
 	template: popoverTemplate,
 	root: { sets: ['attrs', 'dataset'] },
 	setup: setupPopover,
-})
+}
+
+export const TPopoverElement = SoldyElement(HTMLSpanElement, POPOVER)
 
 defineElement('so-popover', TPopoverElement, 'span')
 
 /**
- * `<span is="so-popover">` из JS: нативный `span`, своё элемента soldy
- * (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
- * плагинов (`aria_label`) — без тех, что у `span` уже есть, и без
+ * Теги, на которых Popover регистрируется ещё раз (`registerPopoverTag`), —
+ * сверх своего `span`. Тег здесь — значит, у поповера на нём есть место в
+ * разметке библиотеки: `div` — заголовок месяца Calendar, корень панели
+ * выбора месяца и года.
+ */
+export type TPopoverTag = 'div'
+
+/** Класс Popover на теге `K`: нативный класс тега и своё элемента soldy. */
+export type TPopoverTagClass<K extends TPopoverTag> = (new () => HTMLElementTagNameMap[K]) &
+	TSoldyElementClass<IPopover>
+
+/**
+ * Регистрация Popover на теге: класс на нативном классе тега создаётся и
+ * регистрируется при первом обращении, каждое следующее отдаёт тот же — у
+ * тега класс один. Тип сверяет нативный класс с тегом, как у Button.
+ */
+function registration<K extends TPopoverTag>(
+	tag: K,
+	Native: new () => HTMLElementTagNameMap[K],
+): () => TPopoverTagClass<K> {
+	let element: TPopoverTagClass<K> | undefined
+
+	return () => {
+		if (!element) {
+			element = SoldyElement(Native, POPOVER)
+			defineElement(`so-popover-${tag}`, element, tag)
+		}
+
+		return element
+	}
+}
+
+/** Регистрация каждого тега: тег без неё не компилируется (`TPopoverTag`). */
+const REGISTRATIONS: { readonly [K in TPopoverTag]: () => TPopoverTagClass<K> } = {
+	div: registration('div', HTMLDivElement),
+}
+
+/**
+ * Popover на теге `tag` — `<div is="so-popover-div">`: класс регистрируется
+ * при первом вызове, и каждый следующий отдаёт тот же. Зовёт её разметка там,
+ * где тег впервые нужен; класс нужен ей для проверки вида детали
+ * (`createDetail`), потребителю — для `instanceof`.
+ *
+ * Своей логики у поповера на теге нет: описание элемента — то же, что у
+ * `<span is="so-popover">` (`POPOVER`), повторяется только регистрация.
+ */
+export function registerPopoverTag<K extends TPopoverTag>(tag: K): TPopoverTagClass<K> {
+	return REGISTRATIONS[tag]()
+}
+
+/**
+ * Popover из JS: нативный элемент тега (по умолчанию `<span is="so-popover">`,
+ * `TPopoverElementProps<HTMLDivElement>` — `<div is="so-popover-div">`), своё
+ * элемента soldy (`ctrl`, `state`) и свойства пропов дескриптора вместе с
+ * пропсами его плагинов (`aria_label`) — без тех, что у тега уже есть, и без
  * `HOST_PROPS` (`TSoldyElementProps`).
  */
-export type TPopoverElementProps = HTMLSpanElement &
+export type TPopoverElementProps<TNative extends HTMLElement = HTMLSpanElement> = TNative &
 	ISoldyElement<IPopover> &
-	TSoldyElementProps<typeof PopoverDescriptor, HTMLSpanElement>
+	TSoldyElementProps<typeof PopoverDescriptor, TNative>

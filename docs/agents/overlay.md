@@ -223,11 +223,15 @@
   вправе. Так селектор находит панель и прямым ребёнком корня (Vue, Solid,
   Svelte — панель с `contained` с первой отрисовки на месте, — Angular, у
   которого панель — Frame в шаблоне поповера, а с `contained` элемент Frame
-  остаётся на месте, — React после серверной разметки), и в обёртках
-  `Teleport` React на клиенте (сторожат «панель — в корне поповера» и группа
-  «React» в `ui/react/__tests__/calendar.spec.tsx` и «панель — прямой потомок
-  корня поповера» в `ui/svelte/__tests__/calendar.spec.ts` и
-  `ui/angular/__tests__/calendar.spec.ts`). У Solid `Teleport`
+  остаётся на месте, — Web Components, React после серверной разметки), и в
+  обёртках `Teleport` React на клиенте (сторожат «панель — в корне поповера» и
+  группа «React» в `ui/react/__tests__/calendar.spec.tsx` и «панель — прямой
+  потомок корня поповера» в `ui/svelte/__tests__/calendar.spec.ts` и
+  `ui/angular/__tests__/calendar.spec.ts`). У Web Components с
+  `contained` панель — деталь Frame — остаётся в корне поповера на `div`
+  (`<div is="so-popover-div">`), и корень — прямой потомок месяца (сторожит
+  «панель — в корне поповера, а он — прямой потомок месяца» в
+  `ui/webc/__tests__/calendar.spec.ts`). У Solid `Teleport`
   (`ui/solid/src/adapter/runtime/`) стоит на `Portal` из `solid-js/web` со
   своей целью: `Portal` без цели ушёл бы в `body`. С `contained` портала нет:
   Teleport рисует содержимое на месте, без своих обёрток, и панель —
