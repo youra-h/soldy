@@ -54,9 +54,10 @@
   Dialog, регион с тостом в окружении `node`), «гидратация открытой с
   contained» в `ui/react/__tests__/drawer.spec.tsx`, «номер слоя при
   гидратации» в `ui/vue/__tests__/ssr-ids.spec.ts` (окно и панель без
-  предупреждений, номер — кадром узла) и серверная разметка открытой панели с
-  `contained` в `ui/svelte/__tests__/ssr.server.spec.ts` и
-  `ui/solid/__tests__/ssr.server.spec.tsx`.
+  предупреждений, номер — кадром узла), «номер слоя — кадром узла сервера» в
+  `ui/svelte/__tests__/hydration/overlay.hydration.spec.ts` и серверная
+  разметка открытой панели с `contained` в `ui/svelte/__tests__/ssr.server.spec.ts`
+  и `ui/solid/__tests__/ssr.server.spec.tsx`.
   Здесь же контракт закрытия пользователем (см. ниже, «Закрытие
   пользователем — запрос») и контракт смахиваемого слоя (`ISwipeable`, см.
   `TSwipePlugin` ниже).
@@ -256,6 +257,10 @@
   получает узел в документе, и «гидратация с contained»: узел сервера, первый
   уход с места — новый узел, дальше тот же; у Svelte — «contained с первой
   отрисовки» о том же и «attachment потребителя»: узел в документе),
+  `ui/svelte/__tests__/hydration/overlay.hydration.spec.ts` (у Svelte —
+  гидратация с `contained`: панель сервера — тем же узлом на месте, у
+  поповера — прямым потомком корня, первый уход с места — новый узел, дальше
+  тот же),
   `ui/react/__tests__/dialog.spec.tsx` и `drawer.spec.tsx` (группы «React»:
   окно на сервере пусто и появляется после гидратации, панель с `contained`
   на сервере на месте), «contained на лету» в `drawer.spec.tsx` React и

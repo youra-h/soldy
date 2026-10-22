@@ -20,8 +20,8 @@
  *
  * Язык поля — тег локали поддерева (`LocaleProvider`), своего у поля нет:
  * здесь он русский, а тест на другом языке задаёт свою локаль провайдеру.
- * Серверная разметка — `ssr.server.spec.ts`; гидратацию пакет не проверит
- * (см. `vitest.config.ts`).
+ * Серверная разметка — `ssr.server.spec.ts`, гидратация —
+ * `hydration/dates.hydration.spec.ts`.
  */
 
 import { describe, it, expect, vi } from 'vitest'

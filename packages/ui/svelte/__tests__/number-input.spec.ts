@@ -13,8 +13,8 @@
  * Текст ввода — буфер правки ядра (`text`), а не значение: разметка пишет его
  * свойством узла, и только когда он разошёлся с узлом (`fieldText`). На
  * сервере текст уходит атрибутом `value` — это проверяет
- * `number-input.server.spec.ts`; гидратацию пакет не проверит (см.
- * `vitest.config.ts`). `ref` — корень: его сторожит `root-attributes.spec.ts`.
+ * `number-input.server.spec.ts`. `ref` — корень: его сторожит
+ * `root-attributes.spec.ts`.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach, type Mock } from 'vitest'
