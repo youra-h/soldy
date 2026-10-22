@@ -87,15 +87,15 @@ function calendarOf(root: ParentNode): TCalendarElementProps {
 }
 
 /**
- * Календарь из разметки, подключённый к документу, и кадр: корень плагины
- * получают через `requestAnimationFrame`. `prepare` — до вставки: слушатели,
- * `ctrl`, движок. `locale` — провайдер вокруг календаря.
+ * Календарь из разметки, вставленный в документ, — без ожидания: сборка прошла
+ * внутри вставки, а отрисовки в микротаске и кадра ещё не было. `prepare` — до
+ * вставки: слушатели, `ctrl`, движок. `locale` — провайдер вокруг календаря.
  */
-async function mount(
+function insert(
 	html = '<div is="so-calendar"></div>',
 	prepare: (el: TCalendarElementProps) => void = () => {},
 	locale?: TLocale,
-): Promise<TCalendarElementProps> {
+): TCalendarElementProps {
 	const host = document.createElement('div')
 
 	host.innerHTML = locale ? `<so-locale-provider>${html}</so-locale-provider>` : html
@@ -112,6 +112,21 @@ async function mount(
 
 	prepare(el)
 	document.body.appendChild(host)
+
+	return el
+}
+
+/**
+ * Календарь из разметки, подключённый к документу, и кадр: корень плагины
+ * получают через `requestAnimationFrame`. Параметры — как у `insert`.
+ */
+async function mount(
+	html?: string,
+	prepare?: (el: TCalendarElementProps) => void,
+	locale?: TLocale,
+): Promise<TCalendarElementProps> {
+	const el = insert(html, prepare, locale)
+
 	await settle()
 
 	return el
@@ -149,13 +164,11 @@ async function controlled(html = '<div is="so-calendar"></div>'): Promise<TCalen
 }
 
 /**
- * Месяцы сеток, возвращённые свойством, — как `v-model:months` у Vue.
- * Слушатель встаёт после сборки: месяцы, показанные при сборке, элемент сообщает
- * ещё до того, как связка готова принять запись (временно, до 869fkykqe).
+ * Месяцы сеток, которые потребитель возвращает свойством, — как
+ * `v-model:months` у Vue: на каждую смену он пишет их обратно в элемент. Первую
+ * смену — месяцы, показанные при сборке, — слушатель слышит внутри вставки.
  */
-async function withMonths(): Promise<TCalendarElementProps> {
-	const el = await mount()
-
+function returnMonths(el: TCalendarElementProps): void {
 	el.addEventListener('so:change:months', (event) => {
 		if (!(event instanceof CustomEvent) || !Array.isArray(event.detail)) return
 
@@ -163,8 +176,11 @@ async function withMonths(): Promise<TCalendarElementProps> {
 			(month): month is TCalendarDate => typeof month === 'string',
 		)
 	})
+}
 
-	return el
+/** Календарь, чьи месяцы сеток возвращает потребитель (`returnMonths`). */
+async function withMonths(): Promise<TCalendarElementProps> {
+	return mount(undefined, returnMonths)
 }
 
 /** Узел по селектору в документе; нет его или он не того вида — тест падает здесь. */
@@ -1001,5 +1017,63 @@ describe('Calendar · движок снаружи', () => {
 
 		expect(el.ctrl?.value).toBe('2026-09-12')
 		expect(dayCell('2026-09-12').dataset['selected']).toBe('true')
+	})
+})
+
+/**
+ * Месяцы, показанные при сборке, календарь сообщает внутри вставки: вид пишет
+ * их владельцу при приёме фасада, и связки у элемента ещё нет. Записанное
+ * слушателем в этот момент — смена от потребителя, и место ей в связке этой
+ * сборки: она доходит до ядра сразу после сборки, до конца вставки, а не ждёт
+ * следующей.
+ */
+describe('Calendar · запись на событии сборки', () => {
+	/**
+	 * Без предусловия сценарий выродился бы молча: событие, пришедшее после
+	 * вставки, пишет уже в живую связку.
+	 */
+	it('возвращённые месяцы не затеняют ядро — ни после листания, ни после перестановки', async () => {
+		const heard = vi.fn()
+		const el = insert(undefined, (node) => {
+			node.addEventListener('so:change:months', heard)
+			returnMonths(node)
+		})
+
+		expect(heard).toHaveBeenCalledOnce()
+
+		await settle()
+		next().click()
+		await settle()
+
+		expect(el.months).toEqual(['2026-10-01'])
+		expect(el.ctrl?.months).toEqual(['2026-10-01'])
+
+		document.body.appendChild(el)
+		await settle()
+
+		expect(el.months).toEqual(['2026-10-01'])
+		expect(el.ctrl?.months).toEqual(['2026-10-01'])
+		expect(titles()).toEqual(['October 2026'])
+	})
+
+	it('другие месяцы, записанные на событии сборки, ядро принимает в этой же сборке', async () => {
+		const el = insert(undefined, (node) => {
+			node.addEventListener(
+				'so:change:months',
+				() => {
+					node.months = ['2026-12-01']
+				},
+				{ once: true },
+			)
+		})
+
+		expect(el.ctrl?.months).toEqual(['2026-12-01'])
+		expect(el.months).toEqual(['2026-12-01'])
+
+		await settle()
+
+		expect(el.months).toEqual(['2026-12-01'])
+		expect(titles()).toEqual(['December 2026'])
+		expect(dayCell('2026-12-10').textContent?.trim()).toBe('10')
 	})
 })
