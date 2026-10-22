@@ -320,11 +320,9 @@ describe('разметка', () => {
 				><i class="so-test-icon">{{ item.value }}</i></ng-template
 			>
 			<ng-template slot="item" let-text="text">{{ text }}…</ng-template>
-			<ng-template slot="item-trailing" let-item="item">
-				@if (item.value === 'remove') {
-					Del
-				}
-			</ng-template>
+			<ng-template slot="item-trailing" let-item="item">{{
+				item.value === 'remove' ? 'Del' : ''
+			}}</ng-template>
 		</span>`,
 	})
 	class SlotsPage {
@@ -2267,6 +2265,47 @@ describe('Angular', () => {
 
 		expect(node('.so-menu').style.display).toBe('')
 		expect(isOpen()).toBe(true)
+	})
+
+	/**
+	 * Написанное на пункте делится, как у элемента ListBox: класс и стиль —
+	 * корню пункта, где тема читает его состояние, а статика разметки — строке,
+	 * где роль и фокус пункта.
+	 */
+	@Component({
+		selector: 'probe-menu-item-attrs',
+		standalone: true,
+		imports: [...BASE, TMenuItemComponent],
+		template: `<span so-menu>
+			${TRIGGER}
+			<div
+				so-menu-item
+				value="edit"
+				text="Изменить"
+				class="mine"
+				style="color: red"
+				title="Подсказка"
+				data-probe="1"
+			></div>
+		</span>`,
+	})
+	class ItemAttrsPage {}
+
+	it('класс и стиль — корню пункта, остальное, что написано на пункте, — строке', async () => {
+		await render(ItemAttrsPage)
+
+		const row = rowOf('Изменить')
+		const item = row.parentElement
+
+		expect(item?.classList).toContain('mine')
+		expect(item?.classList).toContain('so-menu-item')
+		expect(item?.style.color).toBe('red')
+		expect(item?.hasAttribute('title')).toBe(false)
+		expect(item?.hasAttribute('data-probe')).toBe(false)
+		expect(row.getAttribute('title')).toBe('Подсказка')
+		expect(row.dataset['probe']).toBe('1')
+		expect(row.classList.contains('mine')).toBe(false)
+		expect(row.getAttribute('role')).toBe('menuitem')
 	})
 
 	/**
