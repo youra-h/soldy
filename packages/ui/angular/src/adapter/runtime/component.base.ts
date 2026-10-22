@@ -78,6 +78,10 @@
  *   `style="display: …"` потребителя проигрывал бы скрытию, а у видимого
  *   корня снимался бы вовсе. `class`, `[class.x]` и `[ngClass]` потребителя
  *   ставят и снимают только свои имена;
+ * - `id` корня у компонента, которому его некуда больше положить (DateInput,
+ *   DatePicker), — тот же эффект набора `attrs`, под набором
+ *   (`TRootSpec.id`): `id` — вход, и его статический атрибут база с хоста
+ *   снимает, как любой вход;
  * - стиль — тоже эффект базы, по свойствам и тем же правилом: снизу выход
  *   плагина раскладки (`layout_styles`), поверх него стиль-выход компонента
  *   (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`order`
@@ -315,6 +319,15 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   уходит полям ручек — его кладёт шаблон из `thumbs`. Говорит только об
  *   источнике слоя: лежит ли он на корне, решает `sets`. Как `aria` в описании
  *   корня Web Components;
+ * - `id` — имя выхода состояния, который база пишет атрибутом `id` корня: у
+ *   DateInput и DatePicker — их `id`, своего поля ввода, на которое его
+ *   положить, у них нет, и Vue пишет `:id` на корень. `id` — вход, и
+ *   статический атрибут с его именем база с хоста снимает, как любой вход
+ *   (`_clearInputAttributes`), а обратно его кладёт эта настройка. Слой —
+ *   `attrs` раскладчика, под набором `attrs` ядра: у Vue `:id` стоит перед
+ *   `v-bind` наборов, — и набор, назвавший `id`, главнее. Значения нет —
+ *   атрибут снимается. Пишет его обычный эффект, как наборы, — `id` есть и в
+ *   разметке сервера. Нет настройки — `id` корня не трогается;
  * - `control` — у корня есть вложенное поле, элемент шаблона `#control`
  *   (`<input>` у Input, CheckBox, Switch и радио, ввод числа — не скрытое поле
  *   формы — у NumberInput, `<textarea>` у Textarea, строка — у элемента
@@ -338,6 +351,7 @@ export type TRootSpec =
 			readonly aria?: string
 			readonly plugins?: readonly string[]
 			readonly control?: boolean
+			readonly id?: string
 	  }
 
 /** Описание корня-хоста — элемента потребителя (`TRootSpec` со стратегией `'host'`). */
@@ -345,11 +359,11 @@ type TRootHost = Extract<TRootSpec, { readonly strategy: 'host' }>
 
 /**
  * Что база раскладывает на корень, — часть описания корня-хоста: стиль-выход,
- * место в коллекции, наборы, выход слоя `aria` и выходы плагинов. Корень
+ * место в коллекции, наборы, выход слоя `aria`, выходы плагинов и `id`. Корень
  * внутри обёртки берёт умолчания: все три набора из одноимённых выходов, без
- * своего стиля, места и выходов плагинов.
+ * своего стиля, места, выходов плагинов и `id`.
  */
-type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria' | 'plugins'>
+type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria' | 'plugins' | 'id'>
 
 /**
  * Память раскладки на одном узле — что база поставила на него в прошлый раз.
@@ -865,8 +879,8 @@ export abstract class TComponentBase<
 	 * context.
 	 *
 	 * Из описания корня здесь — имя стиль-выхода компонента (`style`), место в
-	 * коллекции (`order`), наборы ядра на корне (`sets`) и выход слоя `aria`
-	 * (`aria`).
+	 * коллекции (`order`), наборы ядра на корне (`sets`), выход слоя `aria`
+	 * (`aria`) и выход `id` корня (`id`).
 	 */
 	private _bindHost(host: Element, root: TRootHost): void {
 		this._clearInputAttributes(host)
@@ -993,15 +1007,19 @@ export abstract class TComponentBase<
 		// Наборы — слоями раскладчика элемента: на корень вложенного компонента
 		// свой набор поверх кладёт ещё и разметка владельца (`AttributesDirective`).
 		// Раскладчик — у каждого узла свой, со своей памятью. Слой `aria` — из
-		// выхода, который назвало описание корня (`rootAria` у Slider)
-		for (const name of paint.sets ?? ROOT_SETS) {
-			const output = name === 'aria' ? (paint.aria ?? 'aria') : name
-			const set = computed(() => attributesOf(this._drawn()[output]))
+		// выхода, который назвало описание корня (`rootAria` у Slider), а в слое
+		// `attrs` под набором — `id` корня, если его назвало описание (`_rootLayer`)
+		const sets = paint.sets ?? ROOT_SETS
+
+		for (const name of ROOT_SETS) {
+			const layer = this._rootLayer(name, paint, sets)
+
+			if (!layer) continue
 
 			effect(() => {
 				const element = target()
 
-				if (element) TElementAttributes.of(element).set(name, set())
+				if (element) TElementAttributes.of(element).set(name, layer())
 			})
 		}
 
@@ -1033,6 +1051,33 @@ export abstract class TComponentBase<
 
 			styled = { on: element, applied: applyStyles(element, styles, applied) }
 		})
+	}
+
+	/**
+	 * Слой `name` раскладчика корня — то, что в него кладёт база: набор ядра из
+	 * своего выхода, если описание корня кладёт этот набор на корень (`sets`), а
+	 * в слое `attrs` под набором — `id` корня из выхода, который назвало
+	 * описание (`TRootSpec.id`): у Vue `:id` стоит перед `v-bind` наборов, и
+	 * набор, назвавший `id`, главнее. Класть нечего — слоя нет.
+	 *
+	 * Набор — значение состояния как есть: связка заменяет его только на смену
+	 * содержимого, и эффект слоя смена чужих свойств не будит. Слой с `id`
+	 * собирается заново только на смену `id` или набора.
+	 */
+	private _rootLayer(
+		name: TRootSet,
+		paint: TRootPaint,
+		sets: readonly TRootSet[],
+	): Signal<object> | null {
+		const output = name === 'aria' ? (paint.aria ?? 'aria') : name
+		const own = sets.includes(name) ? computed(() => attributesOf(this._drawn()[output])) : null
+		const idOutput = name === 'attrs' ? paint.id : undefined
+
+		if (idOutput === undefined) return own
+
+		const id = computed(() => this._drawn()[idOutput])
+
+		return computed(() => ({ id: id(), ...own?.() }))
 	}
 
 	/**
