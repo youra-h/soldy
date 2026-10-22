@@ -668,9 +668,10 @@
 («слой»), `ui/vue/__tests__/popover.spec.ts` («вложенные слои», «Select
 внутри»), `ui/vue/__tests__/dialog.spec.ts` («окно поверх окна», «Select
 внутри»), `ui/vue/__tests__/drawer.spec.ts` («внутри модального окна») и
-их пары у React — `ui/react/__tests__/popover.spec.tsx` («вложенные слои»),
-`dialog.spec.tsx` («окно поверх окна», «Popover внутри»), `drawer.spec.tsx`
-(«внутри модального окна») и `tooltip.spec.tsx` («в открытом поповере»), — у
+их пары у React — `ui/react/__tests__/popover.spec.tsx` («вложенные слои»,
+«Select внутри»), `dialog.spec.tsx` («окно поверх окна», «Popover внутри»,
+«Select внутри»), `drawer.spec.tsx` («внутри модального окна») и
+`tooltip.spec.tsx` («в открытом поповере»), — у
 Solid: `ui/solid/__tests__/popover.spec.tsx` («вложенные слои»),
 `tooltip.spec.tsx` («в открытом поповере»), `dialog.spec.tsx` («окно поверх
 окна», «Popover внутри») и `drawer.spec.tsx` («внутри модального окна») — и у
@@ -767,8 +768,9 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 пишет его в свой `aria` ядро компонента (см. «Прочее» в «Доступность
 (a11y)»). Сторожат `plugins/__tests__/hide-outside.plugin.spec.ts`,
 `ui/vue/__tests__/hide-outside.spec.ts` (Select в модальном `Frame`),
-`ui/react/__tests__/dialog.spec.tsx` («Popover внутри»: закрытая панель
-поповера в окне спрятана, открытая — доступна),
+`ui/react/__tests__/dialog.spec.tsx` («Popover внутри» и «Select внутри»:
+закрытая панель поповера и закрытый список Select в окне спрятаны,
+открытые — доступны),
 `ui/solid/__tests__/dialog.spec.tsx` (то же; у Solid панели лежат в обёртках
 своих порталов, и пометку получает обёртка нижнего окна — соседка обёртки
 верхнего, — а обёртку открытой панели поповера оставляет путь к её слою),

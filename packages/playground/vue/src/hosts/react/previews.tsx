@@ -38,11 +38,13 @@ import {
 	RadioGroup,
 	Rating,
 	Scroller,
+	Select,
 	Skeleton,
 	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Tags,
 	Textarea,
 	Toasts,
 	Tooltip,
@@ -378,6 +380,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</ListBox>
 	),
 
+	// Опции — разметкой, а пришли данными (`items` блока групп страницы) — из
+	// них, как у Vue: разметка заменила бы данные, а группы Select рисует из данных
+	select: (bind) => (
+		<Select {...bind}>
+			{bind.items ? null : ITEMS.map((item) => <Select.Item key={item.value} {...item} />)}
+		</Select>
+	),
+
 	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама.
 	// Язык номеров и имён стрелок — из шапки стенда
 	pagination: (bind) => <Pagination {...bind} />,
@@ -494,6 +504,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</Tabs>
 	),
 
+	// Обёртка — граница ширины, как у Vue: сцена ячейки — флексбокс, и ряд по
+	// ширине своих тегов уходил бы за край колонки, а `overflow` не срабатывал
+	// бы вовсе — прокручивать было бы нечего
+	tags: (bind) => (
+		<div style={{ width: '100%' }}>
+			<Tags items={ITEMS} {...bind} />
+		</div>
+	),
+
 	accordion: (bind) => <Accordion {...bind}>{accordionItems()}</Accordion>,
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind} />,
@@ -541,17 +560,21 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</DragAndDrop>
 	),
 
-	// Окно на списке и таблице по тысяче элементов: на пяти его не видно.
-	// ListBox с пределом строк прокручивается сам, таблица — в обёртке высотой
-	// 320 px; строка `enabled` включает и выключает окно у обоих. Элементы —
-	// данными (`items`): элементы разметкой окно не прячет. Ряд — граница
-	// ширины, как у Vue. Select в React нет, и его окна рядом тоже.
-	// Переставленную колонку таблица ведёт целиком, с ячейками строк
-	// (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи
+	// Окно на трёх списках по тысяче элементов: на пяти его не видно. ListBox с
+	// пределом строк прокручивается сам, у Select прокручивается список его
+	// панели, таблица — в обёртке высотой 320 px; строка `enabled` включает и
+	// выключает окно у всех разом. Элементы — данными (`items`): элементы
+	// разметкой окно не прячет. Ряд — граница ширины, как у Vue, а Select — в
+	// колонке своей ширины: поле во всю ширину места, и в ряду оно забрало бы
+	// место таблицы. Переставленную колонку таблица ведёт целиком, с ячейками
+	// строк (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи
 	virtual: (bind) => (
 		<Virtual {...bind}>
 			<div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', width: '100%' }}>
 				<ListBox items={COLLECTION_MANY_ITEMS} maxRows={8} aria_label="Пункты" />
+				<div style={{ flex: 'none', width: 220 }}>
+					<Select items={COLLECTION_MANY_ITEMS} placeholder="Выберите" />
+				</div>
 				<div style={{ flex: 1, minWidth: 0, height: 320, overflow: 'auto' }}>
 					<Table
 						items={TABLE_MANY_ROWS}

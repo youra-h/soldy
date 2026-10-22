@@ -681,9 +681,9 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 `ui/angular/__tests__/menu.spec.ts`
 («группы из данных» и «группы разметки» — в телепортированной панели меню, у
 подменю — свои разделители) и
-`ui/svelte/__tests__/select.spec.ts` и `ui/solid/__tests__/select.spec.tsx`
-(«группы из данных», «группы разметки»: группа разметки — в
-телепортированной панели).
+`ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx` и
+`ui/react/__tests__/select.spec.tsx` («группы из данных», «группы разметки»:
+группа разметки — в телепортированной панели).
 `groupSeparators` сторожат `core/__tests__/list-contract.spec.ts` (ListBox и
 Select), «разделители секций группировки» в `core/__tests__/menu.spec.ts`
 (меню и подменю), те же спеки разметки — разделители по умолчанию, со
@@ -1461,7 +1461,11 @@ Solid — порталом, а ни эффекта, ни портала серв
 `ui/solid/__tests__/collections.server.spec.tsx`). Так же стоят пункты Menu —
 и разметкой, и из данных: сервер рисует меню корнем с триггером (сторожит
 «Menu · серверный рендер» в `ui/svelte/__tests__/collections.server.spec.ts`
-и `ui/solid/__tests__/ssr.server.spec.tsx`). У Web Components сервера
+и `ui/solid/__tests__/ssr.server.spec.tsx`). У React опций Select
+разметкой в серверной разметке нет вовсе — его портала сервер не рисует, — и
+в коллекцию они входят после гидратации, а Select из данных сервер рисует так
+же, с текстом выбранного и тегами (сторожит группа «React» в
+`ui/react/__tests__/select.spec.tsx`). У Web Components сервера
 нет, и цены тоже: элемент входит в коллекцию при подключении, а то, что
 коллекция пишет ему и соседям, доходит до разметки отрисовкой — микрозадачей,
 до кадра.

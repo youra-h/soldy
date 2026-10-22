@@ -1,5 +1,5 @@
 /**
- * Virtual в React — окно над ListBox на настоящей разметке.
+ * Virtual в React — окно над ListBox и Select на настоящей разметке.
  *
  * Обёртка своего узла не рисует: её окно подхватывает коллекция внутри
  * (`TVirtualCollectionExtension`), и список рисует только видимые элементы, а
@@ -8,7 +8,9 @@
  * (`plugins/__tests__/virtual.plugin.spec.ts`); раскладки в jsdom нет, и
  * замер здесь подаётся рисованию движка снаружи руками. Сценарии Vue —
  * `ui/vue/__tests__/virtual.spec.ts`; в настоящем браузере —
- * `playground/vue/browser/list-box-virtual.spec.ts`.
+ * `playground/vue/browser/list-box-virtual.spec.ts` и
+ * `playground/vue/browser/select-virtual.spec.ts`. Окно таблицы —
+ * `table.spec.tsx`, «окно».
  *
  * Своё у React — сборка на рендере и приём при коммите. Подписка коллекции
  * на выключатель обёртки ждёт приёма, пересобранная обёртка (StrictMode)
@@ -22,9 +24,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { StrictMode, act, type ReactElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { createEngineListBox } from '@soldy-ui/core'
+import { createEngineListBox, createEngineSelect } from '@soldy-ui/core'
 import type { IListBoxItem, TListBoxCollection } from '@soldy-ui/core'
-import { ListBox, Virtual } from '@soldy-ui/react'
+import { ListBox, Select, Virtual } from '@soldy-ui/react'
 import { mount, nextFrame, track } from './mount'
 
 /** `count` элементов: значение `v1`… и текст. */
@@ -325,5 +327,106 @@ describe('ListBox в окне — цикл React', () => {
 		expect(
 			fillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual([`${179 * 30}px`])
+	})
+})
+
+/**
+ * Select в окне: список панели — телепортированной в `body` — рисует только
+ * видимые опции. Панель закрыта: она в документе всегда, открытость — её
+ * `display`, и опции в ней смонтированы с первой отрисовки.
+ */
+describe('Select в окне', () => {
+	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
+	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.so-select__filler')]
+
+	/** Строка опции: на ней набор `aria` опции. */
+	function selectRow(text: string): HTMLElement {
+		const row = [
+			...document.querySelectorAll<HTMLElement>('.so-select-item > .so-button'),
+		].find((node) => node.textContent?.trim() === text)
+
+		if (!row) throw new Error(`${text}: строки нет`)
+
+		return row
+	}
+
+	it('без обёртки — все опции, распорок нет', () => {
+		mount(<Select items={items(80)} />)
+
+		expect(selectOptions()).toHaveLength(80)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
+		mount(
+			<Virtual>
+				<Select items={items(80)} />
+			</Virtual>,
+		)
+
+		expect(selectOptions()).toHaveLength(50)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('`enabled: false` — все опции', () => {
+		mount(
+			<Virtual enabled={false}>
+				<Select items={items(80)} />
+			</Virtual>,
+		)
+
+		expect(selectOptions()).toHaveLength(80)
+	})
+
+	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', () => {
+		const engine = createEngineSelect({ items: items(200) })
+
+		mount(
+			<Virtual>
+				<Select engine={engine} />
+			</Virtual>,
+		)
+
+		// Видны места 100–109: с запасом — 90–119
+		act(() => engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 }))
+
+		const list = document.querySelector('.so-select__list')
+
+		if (!list) throw new Error('списка нет')
+
+		expect(selectFillers().map((filler) => filler.getAttribute('aria-hidden'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(
+			selectFillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
+		).toEqual(['2700px', '2400px'])
+		expect(list.firstElementChild).toBe(selectFillers()[0])
+		expect(list.lastElementChild).toBe(selectFillers()[1])
+		expect(selectOptions()).toHaveLength(30)
+		expect(selectRow('Пункт 91').getAttribute('aria-setsize')).toBe('200')
+		expect(selectRow('Пункт 91').getAttribute('aria-posinset')).toBe('91')
+	})
+
+	/**
+	 * Опции и распорки — одной петлёй с ключом записи, как у ListBox: опция,
+	 * которая осталась в окне, React не перемонтирует.
+	 */
+	it('сдвиг окна не перемонтирует оставшуюся опцию — тот же узел', () => {
+		const engine = createEngineSelect({ items: items(200) })
+
+		mount(
+			<Virtual>
+				<Select engine={engine} />
+			</Virtual>,
+		)
+
+		act(() => engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 }))
+
+		const kept = selectRow('Пункт 101')
+
+		act(() => engine.extensions.draw.notifyViewport({ top: 3300, bottom: 3600, step: 30 }))
+
+		expect(selectRow('Пункт 101')).toBe(kept)
 	})
 })

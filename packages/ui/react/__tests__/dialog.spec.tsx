@@ -5,10 +5,10 @@
  * нажатия мимо — плагины; здесь важно, что они сходятся: окно телепортировано
  * целиком, подложка — сосед панели с тем же слоем, панель помечена владельцем,
  * кнопки шапки говорят с ядром, три причины закрытия проходят через запрос, а
- * окно поверх окна и поповер внутри закрывают только свой слой. Сценарии — те
- * же, что у Vue (`ui/vue/__tests__/dialog.spec.ts`); слой выше окна там —
- * список Select, здесь — панель Popover: Select проверит свой порт. Фон под
- * окном с поповером внутри — сценарии `ui/vue/__tests__/hide-outside.spec.ts`.
+ * окно поверх окна, поповер и Select внутри закрывают только свой слой.
+ * Сценарии — те же, что у Vue (`ui/vue/__tests__/dialog.spec.ts`); слой выше
+ * окна — панель Popover и список Select. Фон под окном с поповером и Select
+ * внутри — сценарии `ui/vue/__tests__/hide-outside.spec.ts`.
  *
  * Открытость окна — состояние родителя: смена приходит `onChangeVisible`, как
  * `v-model:visible` у Vue. Своё у React — портал, которого на сервере нет, и
@@ -28,7 +28,7 @@ import type { TCloseEvent, TCloseReason } from '@soldy-ui/core'
 import type { TDialogOffsetEvent } from '@soldy-ui/plugins'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import { Button, Dialog, Popover, type DialogProps } from '@soldy-ui/react'
+import { Button, Dialog, Popover, Select, type DialogProps } from '@soldy-ui/react'
 import { find, mount, nextFrame, track } from './mount'
 
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
@@ -809,6 +809,124 @@ describe('Popover внутри', () => {
 		expect(ariaHiddenNodes()).toEqual(before)
 		expect(muted(opener())).toBe(false)
 		expect(muted(popoverPanel())).toBe(false)
+	})
+})
+
+/**
+ * Список Select в окне — тоже панель в `body`, соседка окна, как панель
+ * поповера: открытый — слой выше окна, нажатие в него окно не закрывает,
+ * Escape закрывает только его. Фон под окном — сценарии
+ * `ui/vue/__tests__/hide-outside.spec.ts`: закрытый список, без номера слоя
+ * выше окна, спрятан, открытый — доступен скринридеру.
+ */
+describe('Select внутри', () => {
+	const withSelect = (
+		<Select className="so-test-select">
+			<Select.Item value="a" text="Первый" />
+			<Select.Item value="b" text="Второй" />
+		</Select>
+	)
+
+	const field = () => find(document, '.so-test-select input', HTMLInputElement)
+	const selectPanel = () => node('.so-select__panel')
+
+	/** Спрятан ли узел от скринридера — сам или через предка. */
+	const muted = (element: Element) => element.closest('[aria-hidden="true"]') !== null
+
+	/** Кто в документе несёт `aria-hidden` и с каким значением — чтобы сравнить «до» и «после». */
+	const ariaHiddenNodes = () =>
+		new Map(
+			[...document.querySelectorAll('[aria-hidden]')].map((element) => [
+				element,
+				element.getAttribute('aria-hidden'),
+			]),
+		)
+
+	/** Открыть список кликом мышью целиком: нажатие, фокус от `mousedown`, клик. */
+	async function openSelect(): Promise<void> {
+		const target = field()
+
+		pointerDown(target)
+		act(() => {
+			target.focus()
+			target.click()
+		})
+		await nextFrame()
+	}
+
+	it('список Select — слоем выше окна: нажатие в него окно не закрывает', async () => {
+		const shown = await render({ content: withSelect })
+
+		await open(shown)
+		await openSelect()
+
+		expect(isOpen(selectPanel())).toBe(true)
+		expect(Number(selectPanel().dataset.layer)).toBeGreaterThan(Number(panel().dataset.layer))
+
+		const option = node('.so-select__panel [role="option"]')
+
+		pointerDown(option)
+		click(option)
+
+		expect(shown.value).toBe(true)
+		expect(isOpen()).toBe(true)
+		expect(field().value).toBe('Первый')
+	})
+
+	it('Escape в открытом Select закрывает только Select, второй — окно', async () => {
+		const shown = await render({ content: withSelect })
+
+		await open(shown)
+		await openSelect()
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(shown.value).toBe(true)
+
+		press('Escape')
+
+		expect(shown.value).toBe(false)
+	})
+
+	it('окно открыто — страница под aria-hidden, окно и поле Select доступны', async () => {
+		const shown = await render({ content: withSelect })
+
+		await open(shown)
+
+		expect(muted(opener())).toBe(true)
+		expect(muted(panel())).toBe(false)
+		expect(muted(field())).toBe(false)
+	})
+
+	it('закрытый список Select спрятан, открытый — доступен', async () => {
+		const shown = await render({ content: withSelect })
+
+		await open(shown)
+
+		// Список смонтирован и скрыт, номера слоя выше окна у него ещё нет
+		expect(muted(selectPanel())).toBe(true)
+
+		await openSelect()
+
+		expect(field().getAttribute('aria-expanded')).toBe('true')
+		expect(muted(selectPanel())).toBe(false)
+		expect(muted(node('.so-select__panel [role="option"]'))).toBe(false)
+	})
+
+	it('окно закрыто — всё как было, в том числе чужие aria-hidden', async () => {
+		const shown = await render({ content: withSelect })
+		const before = ariaHiddenNodes()
+
+		await open(shown)
+		await openSelect()
+		await close(shown)
+
+		expect(ariaHiddenNodes()).toEqual(before)
+		expect(muted(opener())).toBe(false)
+		expect(muted(selectPanel())).toBe(false)
 	})
 })
 

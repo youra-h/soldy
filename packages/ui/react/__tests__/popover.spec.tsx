@@ -5,8 +5,8 @@
  * здесь важно, что они сходятся: панель телепортирована и помечена владельцем,
  * триггер получает связку через scope, фокус уходит в панель и возвращается,
  * Escape и Tab закрывают только свой слой. Сценарии — те же, что у Vue
- * (`ui/vue/__tests__/popover.spec.ts`); Select внутри поповера проверит порт
- * Select, а слой выше панели здесь — вложенный поповер.
+ * (`ui/vue/__tests__/popover.spec.ts`); слой выше панели — вложенный поповер
+ * и список Select внутри поповера.
  *
  * Своё у React — корень значением рендера: якорь панели — корень, а в React
  * он приходит только в ref-функцию при коммите. Его отдаёт хук адаптера
@@ -27,7 +27,7 @@ import { renderToString } from 'react-dom/server'
 import { TPopover } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
-import { Button, LocaleProvider, Popover, type PopoverProps } from '@soldy-ui/react'
+import { Button, LocaleProvider, Popover, Select, type PopoverProps } from '@soldy-ui/react'
 import { find, mount, nextFrame, track } from './mount'
 
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
@@ -596,6 +596,59 @@ describe('вложенные слои', () => {
 
 		expect(isOpen(panelOf(innerTrigger()))).toBe(false)
 		expect(isOpen(panelOf(trigger()))).toBe(true)
+	})
+})
+
+/**
+ * Список Select в панели — тоже панель в `body`, соседка панели поповера, а
+ * не её потомок: открытый — слой выше, Escape закрывает только его, а клик в
+ * него поповер не закрывает.
+ */
+describe('Select внутри', () => {
+	const withSelect = () =>
+		page(
+			{},
+			<Select className="so-test-select">
+				<Select.Item value="a" text="Первый" />
+				<Select.Item value="b" text="Второй" />
+			</Select>,
+		)
+
+	const field = () => find(document, '.so-test-select input', HTMLInputElement)
+	const selectPanel = () => node('.so-select__panel')
+
+	it('Escape в открытом Select закрывает только Select', async () => {
+		await render(withSelect())
+		await open()
+		click(field())
+		await nextFrame()
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(isOpen()).toBe(true)
+
+		// Второй Escape — уже поповеру: Select закрыт и клавишу не тратит
+		press('Escape')
+
+		expect(isOpen()).toBe(false)
+	})
+
+	it('клик в список Select поповер не закрывает', async () => {
+		await render(withSelect())
+		await open()
+		click(field())
+		await nextFrame()
+
+		const option = node('.so-select__panel [role="option"]')
+
+		click(option)
+
+		expect(isOpen()).toBe(true)
+		expect(field().getAttribute('aria-expanded')).toBe('false')
+		expect(field().value).toBe('Первый')
 	})
 })
 

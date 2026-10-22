@@ -17,8 +17,13 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > character counter), CheckBox, Switch, Slider, Rating, the form field `Field` (label, helper and
 > error linked to the control inside it), the collections ListBox, Tabs, Accordion and RadioGroup
 > (`<ListBox.Item>`, `<Tabs.Item>` with `<Tabs.Content>`, `<Accordion.Item>`, `<RadioGroup.Item>`
-> or `items`), Pagination, the `Scroller` strip, the overlays Popover and Tooltip (the trigger in
-> the `trigger` slot, `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Menu (an
+> or `items`), the tag set Tags (`<Tags.Item>` or `items`, with close buttons and optional
+> selection), Select (a select field with a list in a panel: single selection, multiple selection
+> with tags in the field, typing with search or filtering, groups — `<Select.Item>`,
+> `<Select.Group>` or `items`; the options stand in the panel, so the server renders the field, and
+> options written as markup join the select on the client), Pagination, the `Scroller` strip, the
+> overlays Popover and Tooltip (the trigger in the `trigger` slot,
+> `trigger={({ triggerAria }) => <Button {...triggerAria} />}`), Menu (an
 > action menu at a button or a context menu on right click — `openOn="contextmenu"` — with
 > `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` with `<Menu.RadioItem>`,
 > `<Menu.Submenu>`, `<Menu.PopoverItem>`, `<Menu.Group>` and `<Menu.Separator>` or `items`, where
@@ -28,8 +33,8 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > (notifications shown from code with `useToasts()`; the region is teleported into `target`, and
 > `ref` is the region), Table (columns and rows as data — `columns`, `items` — with sorting, row
 > selection, column resizing and reordering), the `Virtual` window for long lists
-> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Table`) and the `DragAndDrop`
-> wrapper that lets users reorder the items of Tabs, ListBox and Accordion by dragging
+> (`<Virtual><ListBox items={…} /></Virtual>`, the same with `Select` and `Table`) and the
+> `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by dragging
 > (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel) are
 > ported, the rest of the set is on its way. Icon renders the `tag` it is given; `roleIcon(role)`
 > makes that tag from the registered icon pack. See
