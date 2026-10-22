@@ -500,8 +500,9 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 `ui/angular/__tests__/virtual.spec.ts`), у Web Components — `TKeyedLoop`
 шаблона: узлу живого ключа она отдаёт его новую запись (`update`), и распорка
 берёт из неё стиль (сторожат «распорки окна» в
-`ui/webc/__tests__/list-box.spec.ts` и «окно» в
-`ui/webc/__tests__/table.spec.ts`).
+`ui/webc/__tests__/list-box.spec.ts`, «окно» в
+`ui/webc/__tests__/table.spec.ts` и «Select в окне» в
+`ui/webc/__tests__/virtual.spec.ts`).
 
 - **Стратегия, а не флаг.** По умолчанию рисуются все показанные. Окно
   (`TWindowStrategy`, отдельным модулем) ставит тот, кто его включает
@@ -683,7 +684,9 @@ Select и строк таблицы. Выход `drawn` — что рисова�
 подменю — свои разделители) и
 `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx` и
 `ui/react/__tests__/select.spec.tsx` («группы из данных», «группы разметки»:
-группа разметки — в телепортированной панели).
+группа разметки — в телепортированной панели), `ui/webc/__tests__/select.spec.ts`
+(«группы»: секции и группа разметки в увезённой панели, стрелки порядком
+экрана; «разметка до регистрации» — группа раньше опций своего света).
 `groupSeparators` сторожат `core/__tests__/list-contract.spec.ts` (ListBox и
 Select), «разделители секций группировки» в `core/__tests__/menu.spec.ts`
 (меню и подменю), те же спеки разметки — разделители по умолчанию, со

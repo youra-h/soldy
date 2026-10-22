@@ -19,12 +19,16 @@ import {
 	TListBoxElement,
 	TMenuElement,
 	TRadioGroupElement,
+	TSelectElement,
 	TTabsElement,
+	TTagsElement,
 	type TAccordionElementProps,
 	type TListBoxElementProps,
 	type TMenuElementProps,
 	type TRadioGroupElementProps,
+	type TSelectElementProps,
 	type TTabsElementProps,
+	type TTagsElementProps,
 } from '@soldy-ui/webc'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -73,13 +77,18 @@ type TOwner =
 	| TAccordionElementProps
 	| TRadioGroupElementProps
 	| TListBoxElementProps
+	| TTagsElementProps
+	| TSelectElementProps
 	| TMenuElementProps
 
 function isTabs(node: Element): node is TTabsElementProps {
 	return node instanceof TTabsElement
 }
 
-/** Где элементы коллекции владельца: в нём самом, а у меню — в панели, увезённой в `body`. */
+/**
+ * Где элементы коллекции владельца: в нём самом, а у меню и Select — в
+ * панели, увезённой в `body`.
+ */
 type TItemsScope = (owner: Element) => ParentNode
 
 /**
@@ -110,6 +119,14 @@ const COLLECTIONS: ReadonlyArray<
 		'so-list-box',
 		(node): node is TOwner => node instanceof TListBoxElement,
 		(el) => el,
+	],
+	['Tags', 'div', 'so-tags', (node): node is TOwner => node instanceof TTagsElement, (el) => el],
+	[
+		'Select',
+		'div',
+		'so-select',
+		(node): node is TOwner => node instanceof TSelectElement,
+		() => document,
 	],
 	[
 		'Menu',

@@ -3,10 +3,11 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и Angular, по
  * компонентам адаптера, без `act` и сервера. У поля корень — коробка вокруг
- * `<input>`, у ListBox — рамка вокруг узла списка, у Tabs — рамка со списком
- * табов и панелями, у группы радио и аккордеона — контейнер остановок, у
- * элемента коллекции — обёртка вокруг строки; узел фокуса называет правило
- * дескриптора (`focusTarget` плагина действия).
+ * `<input>`, у Select — рамка вокруг поля, детали Input, и крестиков тегов
+ * перед ним, у ListBox — рамка вокруг узла списка, у Tabs — рамка со списком
+ * табов и панелями, у группы радио, аккордеона и набора тегов — контейнер
+ * остановок, у элемента коллекции — обёртка вокруг строки; узел фокуса
+ * называет правило дескриптора (`focusTarget` плагина действия).
  *
  * Своё у Web Components — разметка: корень — элемент потребителя, инстанс —
  * его `ctrl`, своя остановка перед главной частью — свет слота (`leading`,
@@ -29,10 +30,13 @@ import {
 	TRadioGroupItemElement,
 	TRatingElement,
 	TScrollerElement,
+	TSelectElement,
 	TSliderElement,
 	TSwitchElement,
 	TTabsElement,
 	TTabsItemElement,
+	TTagsElement,
+	TTagsItemElement,
 	TTextareaElement,
 } from '@soldy-ui/webc'
 
@@ -273,6 +277,55 @@ const CASES: Record<string, TCase> = {
 		element: TListBoxItemElement,
 		owner: '.target',
 		target: '.target [role="option"]',
+	},
+	// Фокус держит `<input>` поля — детали Input, а не корень
+	Select: {
+		html: `<div is="so-select">
+			<div is="so-select-item" value="a" text="A"></div>
+		</div>`,
+		element: TSelectElement,
+		owner: '[is="so-select"]',
+		target: '.so-select__field input',
+	},
+	'Select multiple с тегами': {
+		html: `<div is="so-select" mode="multiple">
+			<div is="so-select-item" value="a" text="A" selected></div>
+			<div is="so-select-item" value="b" text="B" selected></div>
+		</div>`,
+		element: TSelectElement,
+		owner: '[is="so-select"]',
+		target: '.so-select__field input',
+		// Крестик тега — нативная остановка перед полем
+		before: '.so-tags-item__close',
+	},
+	'Tags с выбором': {
+		html: `<div is="so-tags" mode="single" closable>
+			<div is="so-tags-item" value="a" text="A"></div>
+			<div is="so-tags-item" value="b" text="B" selected class="target"></div>
+		</div>`,
+		element: TTagsElement,
+		owner: '[is="so-tags"]',
+		// Остановка — выбранный тег, а не крестик первого и не первая строка
+		target: '.target [role="option"]',
+	},
+	'Tags без выбора': {
+		html: `<div is="so-tags" closable>
+			<div is="so-tags-item" value="a" text="A" class="target"></div>
+			<div is="so-tags-item" value="b" text="B"></div>
+		</div>`,
+		element: TTagsElement,
+		owner: '[is="so-tags"]',
+		// У строк остановки нет — остановка набора — крестик первого тега
+		target: '.target .so-tags-item__close',
+	},
+	'Tags.Item': {
+		html: `<div is="so-tags" closable>
+			<div is="so-tags-item" value="a" text="A"></div>
+			<div is="so-tags-item" value="b" text="B" class="target"></div>
+		</div>`,
+		element: TTagsItemElement,
+		owner: '.target',
+		target: '.target [role="listitem"]',
 	},
 }
 

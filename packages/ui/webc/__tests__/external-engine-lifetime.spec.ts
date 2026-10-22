@@ -8,13 +8,15 @@
  * связка новая на каждое подключение: элемент, переставленный в документе,
  * собирается заново, и прежняя сборка обязана уйти с движка целиком. Здесь —
  * настоящий цикл Web Components, как `ui/angular/__tests__/external-engine-lifetime.spec.ts`
- * у Angular: набор табов, список, пагинация и таблица, переставленные трижды и
- * снятые, и на шинах владельца, движка и его расширений ни подписки, ни
- * перехватчика, ни слушателя обмена. У таблицы — ещё строки, колонки и
- * «выбрать все»: их держат элементы частей и чекбоксы, а в окне `<so-virtual>`
- * — и выключатель обёртки. У меню пункты — в панели, увезённой в `body`: она
- * идёт за местом меню и пересобирается вместе с ним, а снятое меню уводит её
- * сразу.
+ * у Angular: набор табов, список, набор тегов, Select, пагинация и таблица,
+ * переставленные трижды и снятые, и на шинах владельца, движка и его
+ * расширений ни подписки, ни перехватчика, ни слушателя обмена. У таблицы —
+ * ещё строки, колонки и «выбрать все»: их держат элементы частей и чекбоксы, а
+ * в окне `<so-virtual>` — и выключатель обёртки. У меню и Select опции — в
+ * панели, увезённой в `body`: она идёт за местом владельца и пересобирается
+ * вместе с ним, а снятый владелец уводит её сразу. У Select ещё поле — деталь
+ * Input над экземпляром поля владельца, — а в `multiple` и теги в поле над
+ * экземпляром и коллекцией, которые держит его движок.
  *
  * Список над движком без `ctrl`, подключённый раньше, чем снят прежний, берёт
  * привязку владельца себе, хотя прежний ещё держит движок.
@@ -26,14 +28,18 @@ import {
 	TListBox,
 	TMenu,
 	TPagination,
+	TSelect,
 	TTable,
 	TTabs,
+	TTags,
 	TVirtual,
 	createEngineListBox,
 	createEngineMenu,
 	createEnginePagination,
+	createEngineSelect,
 	createEngineTable,
 	createEngineTabs,
+	createEngineTags,
 	type TListBoxCollection,
 	type TTableCollection,
 } from '@soldy-ui/core'
@@ -41,14 +47,18 @@ import {
 	TListBoxElement,
 	TMenuElement,
 	TPaginationElement,
+	TSelectElement,
 	TTableElement,
 	TTabsElement,
+	TTagsElement,
 	TVirtualElement,
 	type TListBoxElementProps,
 	type TMenuElementProps,
 	type TPaginationElementProps,
+	type TSelectElementProps,
 	type TTableElementProps,
 	type TTabsElementProps,
+	type TTagsElementProps,
 	type TVirtualElementProps,
 } from '@soldy-ui/webc'
 
@@ -75,6 +85,14 @@ function isListBox(node: Element): node is TListBoxElementProps {
 
 function isMenu(node: Element): node is TMenuElementProps {
 	return node instanceof TMenuElement
+}
+
+function isTags(node: Element): node is TTagsElementProps {
+	return node instanceof TTagsElement
+}
+
+function isSelect(node: Element): node is TSelectElementProps {
+	return node instanceof TSelectElement
 }
 
 function isPagination(node: Element): node is TPaginationElementProps {
@@ -305,6 +323,85 @@ describe('Menu над движком и владельцем снаружи', ()
 		await moveThriceAndRemove(el, live, 'so-menu-item', document)
 
 		expect(document.querySelector('.so-menu-item')).toBeNull()
+	})
+})
+
+/** Набор тегов — теги из данных над движком снаружи, как у списка. */
+describe('Tags над движком и владельцем снаружи', () => {
+	it('переставленный трижды и снятый — на шинах владельца и движка ничего', async () => {
+		const owner = new TTags({ closable: true })
+		const engine = createEngineTags({ owner, items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([owner.events, engine.events, ...extensions])
+		const el = document.createElement('div', { is: 'so-tags' })
+
+		if (!isTags(el)) throw new Error('<div is="so-tags"> нет')
+
+		el.ctrl = owner
+		el.engine = engine
+
+		await moveThriceAndRemove(el, live, 'so-tags-item')
+	})
+})
+
+/**
+ * Select — опции из данных в панели, увезённой в `body`, и поле — деталь Input
+ * над экземпляром поля владельца: каждое подключение собирает Select, его поле
+ * и панель с опциями над тем же движком и владельцем. Панель идёт за местом
+ * Select, а снятый Select уводит её с собой тем же вызовом.
+ */
+describe('Select над движком и владельцем снаружи', () => {
+	it('переставленный трижды и снятый — на шинах владельца, поля и движка ничего', async () => {
+		const owner = new TSelect()
+		const engine = createEngineSelect({ owner, items: ITEMS })
+		const extensions = Object.values(engine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([owner.events, owner.field.events, engine.events, ...extensions])
+		const el = document.createElement('div', { is: 'so-select' })
+
+		if (!isSelect(el)) throw new Error('<div is="so-select"> нет')
+
+		el.ctrl = owner
+		el.engine = engine
+
+		await moveThriceAndRemove(el, live, 'so-select-item', document)
+
+		expect(document.querySelector('.so-select-item')).toBeNull()
+	})
+
+	/**
+	 * В `multiple` в поле — теги: экземпляр и коллекцию тегов держит движок
+	 * Select, и деталь Tags над ними собирается на каждое подключение заново, а
+	 * снятая на них ничего не оставляет.
+	 */
+	it('с тегами в поле — на шинах тегов и их коллекции тоже ничего', async () => {
+		const owner = new TSelect()
+		const engine = createEngineSelect({ owner, items: ITEMS })
+
+		// Значение — у владельца, и уже в `multiple`: он источник выбора движка
+		engine.extensions.selection.mode = 'multiple'
+		owner.value = ['a', 'b']
+
+		const tags = engine.extensions.tags.tags
+		const tagsEngine = engine.extensions.tags.engine
+
+		if (!tags || !tagsEngine) throw new Error('тегов нет')
+
+		const tagBuses = Object.values(tagsEngine.extensions).flatMap((extension) =>
+			extension ? [extension.events] : [],
+		)
+		const live = watchBuses([tags.events, tagsEngine.events, ...tagBuses])
+		const el = document.createElement('div', { is: 'so-select' })
+
+		if (!isSelect(el)) throw new Error('<div is="so-select"> нет')
+
+		el.ctrl = owner
+		el.engine = engine
+
+		await moveThriceAndRemove(el, live, 'so-tags-item')
 	})
 })
 

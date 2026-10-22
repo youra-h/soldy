@@ -2760,7 +2760,7 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
 
 ## Layer 8d: Web Components Adapter (`packages/ui/webc/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / Tabs / Accordion / ListBox / Tags / Select / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 Единственный таргет без фреймворка — и потому самый показательный тест
 архитектуры: ядро уже событийное, а `CustomEvent` это родная модель DOM.
@@ -2795,7 +2795,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `applyStyles` со `stylesOf` и `orderOf` и `applyHidden` раскладывают на
   элемент классы, стиль и скрытие, а атрибуты — раскладчик элемента
   `TElementAttributes` по правилу `applyAttributes`: один на узел, со слоями —
-  наборы ядра самого элемента снизу, набор владельца сверху, —
+  наборы ядра самого элемента снизу, набор владельца сверху, а у элемента с
+  полем набор владельца уходит на поле, слоем `detail` над набором самой
+  детали (`awaitField`, `bindField`), —
   `defineAutonomousElement` (регистрация без `extends` элементов, у которых в
   остальных адаптерах узла нет: провайдера локали, окна `<so-virtual>` и
   перестановки `<so-drag-and-drop>`),
@@ -2811,7 +2813,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   базы, `rebuild` — его перенос с пересборкой, `owe` и `keepsBinding` — долг:
   отключение, которое элемент должен операции потребителя), `waiting.ts`
   (ожидание: подключение внутри чужого подключения — следом за ним),
-  `assignment.ts` (назначенный слот — свет детали), `owner-markup.ts`
+  `assignment.ts` (назначенный слот — свет детали), `slot-mark.ts`
+  (`markSlot`, `isSlotMark` и `slotOfMark` — метка слота детали: слот с ней
+  задан и пустым), `owner-markup.ts`
   (`markOwnerMarkup` и `isOwnerMarkup` — разметка владельца: элемент, который
   построил шаблон, а не написал потребитель; его события не всплывают) и
   `soldy-mark.ts` (`markSoldyElement` и `isSoldyElement` — метка элемента
@@ -2848,6 +2852,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   тем же правилом, что классы корня), `createDetail`
   (вложенный элемент soldy шаблона — деталь с обязательным именем места
   `embedded`), `lend` (разметка шаблона — в слот детали, назначением),
+  `lendMark` и `lendBefore` (метка в слоте детали и узел перед ней — в её
+  слот и до сборки детали, и после: поле Select, кнопка разворота окна),
   `TKeyedLoop` (петля по ключу — элементы коллекции из данных, распорки окна,
   а с ключом-номером — ручки и метки Slider; живому узлу — его новая запись,
   `update`), `createItem`, `lendSamples` и `lendTemplates` (элемент из данных,
@@ -2878,9 +2884,10 @@ defineElement('so-button', TButtonElement, 'button')
 `registerButtonTag(tag)` — тем же описанием элемента, что у
 `<button is="so-button">`, на нативном классе тега — и отдаёт класс; второй
 вызов отдаёт тот же. Зовёт её разметка там, где тег впервые нужен: шаблон
-элемента ListBox — `registerButtonTag('div')`, строка `<div is="so-button-div">`.
-Теги фабрики с их нативными классами — карта в её модуле, и тип карты сверяет
-класс с тегом.
+элемента ListBox — `registerButtonTag('div')`, строка `<div is="so-button-div">`,
+шаблон опции Select — `registerButtonTag('span')`, строка
+`<span is="so-button-span">`. Теги фабрики с их нативными классами — карта
+регистраций в её модуле, и её тип сверяет класс с тегом.
 
 У коллекционного компонента описание элемента называет ещё и дескриптор
 фасада (`facade`), а модуль владельца регистрирует и свои части:
@@ -3167,7 +3174,14 @@ WebKit:
   форме. `embedded` на всплытие не влияет: это признак для реестра плагинов.
   Очищает поле нажатие кнопки — на её
   `so:action:click` шаблон гасит всплытие нативного клика из `detail` и зовёт
-  `clear` инстанса, который отдаёт контекст шаблона.
+  `clear` инстанса, который отдаёт контекст шаблона. Деталь бывает и с полем
+  (`TRootSpec.control`) — поле Select, деталь Input: набор владельца на такой
+  детали ложится не на её корень, а на её поле, слоем `detail` над набором
+  самой детали, как атрибуты снаружи у Vue (`controlAttrs` поля), — `aria`
+  Select на `<input>` поверх набора комбобокса. Что поле есть, база объявляет
+  раскладчику элемента при создании (`awaitField`): деталь собирается после
+  владельца, и набор, записанный раньше, ждёт её поля, а построенное поле база
+  отдаёт ему после переноса атрибутов разметки (`bindField`) — те главнее.
 - **Локаль поддерева** — `<so-locale-provider>`, автономный элемент: своего
   нативного поведения у него нет, расширять нечего. Контекста у платформы нет,
   поэтому источник (`TLocaleSource`) провайдер отдаёт контекстом места своему
@@ -3514,6 +3528,38 @@ WebKit:
   `collection-elevator.spec.ts`, `collection-item-lifetime.spec.ts`,
   `external-engine-lifetime.spec.ts` и `browser/webc-collections.spec.ts`
   стенда.
+- **Набор тегов и поле выбора** — Tags (`<div is="so-tags">` с
+  `<div is="so-tags-item">`) и Select (`<div is="so-select">` с
+  `<div is="so-select-item">` и `<div is="so-select-group">`): коллекции по
+  тому же устройству. У набора тегов все три набора ядра на корне, теги —
+  разметкой или петлёй по `shown` с копиями образцов `item-*`. Корень тега —
+  пилюля с `attrs`, `dataset` и местом в коллекции, строка — кнопка на `div`
+  (`tags.row`) и поле корня, а крестик (`tags.close`) — сосед строки,
+  вставляется и снимается по `tag_closable`; его клик не всплывает. Выбор —
+  по `so:action:press` строки, а не по клику. У Select корень — рамка с
+  `attrs` и `dataset`, поле — деталь Input (`select.field`) над экземпляром
+  поля Select: `ctrl` ей отдаёт первая отрисовка каждой связки — в построении
+  инстанса ещё нет, а деталь собирается после Select. Деталь — поле корня
+  (`control`): атрибуты разметки Select едут на неё, а с неё — на `<input>`,
+  туда же уходит набор `aria` Select (см. «Деталь разметки»). В `leading`
+  поля — метка (`lendMark`): обёртка стоит и в `single`, перед меткой — ряд
+  тегов, пока выбор множественный: слот `tags` или деталь Tags
+  (`select.tags`) над экземпляром и коллекцией тегов, которые держит Select, —
+  сменился экземпляр (переход в `multiple`, новая связка без движка снаружи) —
+  новая деталь. За меткой — `leading` Select, в `trailing` поля — обёртка
+  стрелки и `trailing` Select, `clear` Select — слот `clear` поля. Своё поле
+  (слот `field`) встаёт в корень на место встроенного, и деталь Input в корень
+  не встаёт. Панель — деталь Frame (`select.frame`) с якорем-корнем, как у
+  меню; в ней полоса жеста и список `div.so-select__list` — как узел списка
+  ListBox (петля по `drawnSections`, распорки окна, `empty`), но без остановки
+  Tab: фокус держит поле. Опция — как элемент ListBox, но строка — кнопка на
+  `span` (`<span is="so-button-span" embedded="select.row" tabindex="-1">`,
+  `TSelectItem._ariaTag`), а выбор — клик корня. Сторожат
+  `ui/webc/__tests__/tags.spec.ts`, `select.spec.ts`, `field.spec.ts`,
+  `focus-target.spec.ts`, `item-slots.spec.ts`, `root-attributes.spec.ts`,
+  `collection-item-lifetime.spec.ts`, `external-engine-lifetime.spec.ts`,
+  `virtual.spec.ts` и `browser/webc-collections.spec.ts` стенда (теги, поле и
+  открытая панель стоят, как у Vue; стрелки ходят по опциям).
 
 **Типы.** Класс элемента собирает фабрика `SoldyElement(Native, spec)`: база
 одна, а нативный класс у каждого тега свой. Тип результата объявлен явно —
@@ -3534,9 +3580,11 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 параметром) — вместе со свойствами фасада, у пункта с подменю — и фасада
 владельца (третий параметр). Кнопка на другом теге — тот же тип
 со своим тегом: `TButtonElementProps<HTMLDivElement>` у
-`<div is="so-button-div">`, и `disabled` там — свойство пропа, а у `<button>`
-— нативное. Сторожат `expectTypeOf` в `ui/webc/__tests__/button.spec.ts`,
-`frame.spec.ts`, `tabs.spec.ts`, `accordion.spec.ts`, `list-box.spec.ts` и
+`<div is="so-button-div">`, `TButtonElementProps<HTMLSpanElement>` у
+`<span is="so-button-span">`, и `disabled` там — свойство пропа, а у
+`<button>` — нативное. Сторожат `expectTypeOf` в
+`ui/webc/__tests__/button.spec.ts`, `frame.spec.ts`, `tabs.spec.ts`,
+`accordion.spec.ts`, `list-box.spec.ts`, `tags.spec.ts`, `select.spec.ts` и
 `menu.spec.ts`.
 
 Плата за light DOM: `<slot>` недоступен, поэтому пользовательское содержимое
@@ -3567,7 +3615,16 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 разметку (`lend`): обёртки стрелок секции — первым узлом `leading` и последним
 `trailing` заголовка, обёртку отметки элемента списка — так же, по стороне
 `indicator`, иконку крестика — кнопке. Элемент soldy в свете элемента едет в
-деталь переносом силами базы и собирается один раз.
+деталь переносом силами базы и собирается один раз. Метка слота
+(`runtime/slot-mark.ts`) — пустой комментарий, который шаблон владельца кладёт
+в слот детали (`lendMark`): слот с ней при построении детали задан, даже
+пустой, и обёртку слота деталь строит, а узлы владельца встают перед меткой
+(`lendBefore`) — до сборки детали в её свет, с назначением слота метки, после
+— в слот. Так поле Select держит обёртку `.so-input__leading` и в `single`, как
+у Vue, где Select отдаёт полю шаблон `#leading` всегда, а теги встают в неё на
+смену режима; так же значок кнопки разворота окна встаёт на своё место по
+`maximized`. Сторожат `select.spec.ts` («обёртка leading стоит и в single»,
+«смена mode после сборки») и `dialog.spec.ts`.
 
 Образцы `item-*`. Слоты элементов из данных у остальных адаптеров получают
 данные элемента через scope, а у Web Components scope нет. Поэтому владелец
@@ -3598,9 +3655,10 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 
 - Тег корня задан регистрацией: одно имя расширяет один тег. Компонент на
   другом теге — своё имя, имя компонента и тег через дефис: у Button это
-  `<div is="so-button-div">` (`registerButtonTag`), других тегов у неё пока
-  нет — кнопке-ссылке понадобится `<a is="so-button-a">`, тем же вызовом
-  фабрики, с `a` в её карте тегов. Иконка — только `<span is="so-icon">`:
+  `<div is="so-button-div">` и `<span is="so-button-span">`
+  (`registerButtonTag`), других тегов у неё пока нет — кнопке-ссылке
+  понадобится `<a is="so-button-a">`, тем же вызовом фабрики, с `a` в её
+  карте регистраций. Иконка — только `<span is="so-icon">`:
   `<i is="so-icon">` под тем же именем не оживёт, а `<svg>` атрибут `is` не
   расширяет вовсе.
 - `is`, выставленный атрибутом после `createElement`, элемент не оживляет —
@@ -3633,7 +3691,14 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
   содержимое слота берёт у элемента — `el.ctrl`. Слот, который у остальных
   адаптеров получает состояние и рисует по нему сам, выводит привязка:
   `indicator-icon` элемента ListBox (scope `selected`) — отметка выбранного,
-  и стоит он только у выбранного элемента, как своя иконка.
+  и стоит он только у выбранного элемента, как своя иконка. Так же и у
+  слотов поля Select со scope: своё поле (`field`) берёт экземпляр поля —
+  `el.ctrl.field`, свой ряд тегов (`tags`) — экземпляр и коллекцию тегов,
+  `el.state.tags` и `el.state.tags_engine` (их держит движок Select, и свой
+  ряд можно построить над ними и до вставки — у движка снаружи,
+  `engine.extensions.tags`), своя кнопка очистки (`clear`) — команду
+  `el.ctrl.field.clear()`. Ряд тегов в слоте выводится, пока выбор
+  множественный.
 - У поля на `<input>` переезжают только атрибуты, которые стоят на корне к
   построению: записанное из кода потом остаётся на корне — наблюдателя за
   корнем нет. Атрибуты-входы пропов (`name`, `disabled`) остаются на корне

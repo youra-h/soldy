@@ -1,20 +1,23 @@
 /**
  * Коллекции Web Components в настоящем браузере: `<div is="so-tabs">`,
  * `<div is="so-accordion">`, `<div is="so-radio-group">`,
- * `<div is="so-list-box">` и `<span is="so-menu">`.
+ * `<div is="so-list-box">`, `<div is="so-tags">`, `<div is="so-select">` и
+ * `<span is="so-menu">`.
  *
  * Теме корень элемента коллекции Web Components — то же, что корень остальных
  * адаптеров: строка таба и его кнопка закрытия, заголовок секции и её стрелка,
- * радио и его кольцо, строка элемента списка — кнопка на `div` — и его отметка
- * каждого размера стоят так же, как у Vue. Клавиатура — то, чего jsdom не
- * выполняет: стрелки по табам и списку ведёт плагин владельца, а по радио —
- * сам браузер, по общему `name` группы. Открытые панели меню и подменю с
- * частями стоят у триггера и у строки так же, как у Vue (замер
- * `panel-boxes.ts`), а стрелки ведут фокус по пунктам и между уровнями — и в
- * меню, переставленном одной операцией.
+ * радио и его кольцо, строка элемента списка — кнопка на `div` — и его отметка,
+ * пилюля тега со строкой и крестиком, поле Select с обёртками, стрелкой и
+ * тегами каждого размера стоят так же, как у Vue. Клавиатура — то, чего jsdom
+ * не выполняет: стрелки по табам, тегам, списку и опциям Select ведёт плагин
+ * владельца, а по радио — сам браузер, по общему `name` группы. Открытые
+ * панели меню и подменю с частями стоят у триггера и у строки, а панель Select
+ * с опциями — у поля так же, как у Vue (замер `panel-boxes.ts`), а стрелки
+ * ведут фокус по пунктам и между уровнями — и в меню, переставленном одной
+ * операцией.
  * Разметку и наборы ядра сторожат `ui/webc/__tests__/tabs.spec.ts`,
- * `accordion.spec.ts`, `radio-group.spec.ts`, `list-box.spec.ts` и
- * `menu.spec.ts`.
+ * `accordion.spec.ts`, `radio-group.spec.ts`, `list-box.spec.ts`,
+ * `tags.spec.ts`, `select.spec.ts` и `menu.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -32,8 +35,12 @@ import {
 	Menu,
 	RadioGroup,
 	RadioGroupItem,
+	Select,
+	SelectItem,
 	Tabs,
 	TabsItem,
+	Tags,
+	TagsItem,
 } from '@soldy-ui/vue'
 import { TRadioGroupElement, type TRadioGroupElementProps } from '@soldy-ui/webc'
 import { measure, type TBox } from './panel-boxes'
@@ -226,6 +233,93 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 			size(find(document, `${box} .so-list-box-item__indicator .so-icon`, Element))
 
 		expect(icon('.webc')).toEqual(icon('.vue'))
+	})
+
+	/** Пилюля тега — корень со строкой и крестиком рядом; выбранный — с выбором. */
+	it('Tags: набор, теги, строки и крестики', async () => {
+		const root = await pair(
+			() =>
+				h(Tags, { size: scale, closable: true, mode: 'single', value: 'a' }, () => [
+					h(TagsItem, { value: 'a', text: 'Первый' }),
+					h(TagsItem, { value: 'b', text: 'Второй' }),
+				]),
+			`<div is="so-tags" size="${scale}" closable mode="single" value="a">
+				<div is="so-tags-item" value="a" text="Первый"></div>
+				<div is="so-tags-item" value="b" text="Второй"></div>
+			</div>`,
+		)
+
+		for (const part of ['.so-tags', '.so-tags-item', '.so-tags-item > .so-button']) {
+			expectSameParts(root, part)
+		}
+
+		// Иконка крестика у Vue — `<svg>` роли, у Web Components — `<span>` с
+		// рисунком внутри: элементы разные, а коробка одна
+		const icons = (box: string) =>
+			[...document.querySelectorAll(`${box} .so-tags-item__close .so-icon`)].map(size)
+
+		expect(icons('.webc')).toEqual(icons('.vue'))
+	})
+
+	/**
+	 * Поле Select — деталь Input: обёртка `leading` стоит и в `single` (её
+	 * держит метка), за полем — обёртка с кнопкой очистки и стрелкой.
+	 */
+	it('Select: поле, обёртки по его сторонам, очистка и стрелка', async () => {
+		const root = await pair(
+			() =>
+				h(Select, { size: scale, value: 'a', clearable: true }, () => [
+					h(SelectItem, { value: 'a', text: 'Первый' }),
+					h(SelectItem, { value: 'b', text: 'Второй' }),
+				]),
+			`<div is="so-select" size="${scale}" value="a" clearable>
+				<div is="so-select-item" value="a" text="Первый"></div>
+				<div is="so-select-item" value="b" text="Второй"></div>
+			</div>`,
+		)
+
+		for (const part of [
+			'.so-select',
+			'.so-select__field',
+			'.so-input__leading',
+			'.so-select__field input',
+			'.so-input__trailing',
+			'.so-input__clear',
+			'.so-select__arrow',
+		]) {
+			expectSameParts(root, part)
+		}
+
+		const arrow = (box: string) =>
+			size(find(document, `${box} .so-select__arrow .so-icon`, Element))
+
+		expect(arrow('.webc')).toEqual(arrow('.vue'))
+	})
+
+	/** Теги в поле — деталь Tags перед полем ввода, как встроенный `Tags` у Vue. */
+	it('Select multiple: теги в поле стоят так же', async () => {
+		const root = await pair(
+			() =>
+				h(Select, { size: scale, mode: 'multiple', value: ['a', 'b'] }, () => [
+					h(SelectItem, { value: 'a', text: 'Первый' }),
+					h(SelectItem, { value: 'b', text: 'Второй' }),
+				]),
+			`<div is="so-select" size="${scale}" mode="multiple">
+				<div is="so-select-item" value="a" text="Первый" selected></div>
+				<div is="so-select-item" value="b" text="Второй" selected></div>
+			</div>`,
+		)
+
+		for (const part of [
+			'.so-select__field',
+			'.so-input__leading',
+			'.so-select__tags',
+			'.so-select__tags .so-tags-item',
+			'.so-select__tags .so-tags-item > .so-button',
+			'.so-select__field input',
+		]) {
+			expectSameParts(root, part)
+		}
 	})
 })
 
@@ -592,5 +686,126 @@ describe('Menu · клавиатура', () => {
 		await expect.poll(active).toBe(rowOf(panelOf(share), 'Ссылка'))
 		expect(panelOf(trigger).parentElement).toBe(document.body)
 		expect(menuRoot.contains(panelOf(trigger))).toBe(false)
+	})
+})
+
+/**
+ * Select Web Components и Select Vue — одна разметка и одни классы: открытая
+ * панель с опциями стоит у поля так же, как у Vue. Панель телепортирована, и
+ * рамки сверяются от угла корня Select — якоря панели — замером
+ * `panel-boxes.ts`, как панели меню выше.
+ */
+describe('Select · открытая панель — как у Vue', () => {
+	/** Блок, в котором стоит Select, — один на обе отрисовки. */
+	const BLOCK = 'padding: 48px 24px; width: 320px'
+
+	/** Панель, список, опции, их строки и отметка выбранной. */
+	const PARTS =
+		'.so-select__panel, .so-select__list, .so-select-item, .so-select-item > .so-button, .so-select-item__indicator'
+
+	const anchor = () => document.querySelector('.so-select')
+
+	/** Открыть панель кликом по полю и замерить её от корня Select. */
+	async function openAndMeasure(): Promise<TBox[]> {
+		const field = document.querySelector<HTMLElement>('.so-select__field input')
+
+		if (!field) throw new Error('поля нет')
+
+		await userEvent.click(field)
+		await expect
+			.poll(() =>
+				document.querySelector('.so-select__field input')?.getAttribute('aria-expanded'),
+			)
+			.toBe('true')
+
+		return measure(anchor, PARTS)
+	}
+
+	it('открытая панель и её опции стоят у поля так же, как у Vue', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: BLOCK }, [
+						h(Select, { value: 'b', indicator: 'start' }, () => [
+							h(SelectItem, { value: 'a', text: 'Первый' }),
+							h(SelectItem, { value: 'b', text: 'Второй' }),
+							h(SelectItem, { value: 'c', text: 'Третий' }),
+						]),
+					]),
+			}),
+		)
+		await nextTick()
+		await nextFrame()
+
+		const vue = await openAndMeasure()
+
+		cleanup()
+
+		await show(`<div style="${BLOCK}"><div is="so-select" value="b" indicator="start">
+			<div is="so-select-item" value="a" text="Первый"></div>
+			<div is="so-select-item" value="b" text="Второй"></div>
+			<div is="so-select-item" value="c" text="Третий"></div>
+		</div></div>`)
+
+		const webc = await openAndMeasure()
+
+		// Корень, панель, список, три опции со строками и отметками
+		expect(webc.length).toBeGreaterThan(10)
+		expect(webc[1].height).toBeGreaterThan(0)
+		expect(webc).toEqual(vue)
+	})
+})
+
+describe('Select · клавиатура', () => {
+	/**
+	 * Фокус не уходит с поля: стрелки ведут подсветку по опциям через
+	 * `aria-activedescendant`, Enter выбирает подсвеченную и закрывает панель.
+	 */
+	it('стрелки ходят по опциям, Enter выбирает, фокус остаётся на поле', async () => {
+		const root = await show(`<div is="so-select">
+			<div is="so-select-item" value="msk" text="Москва"></div>
+			<div is="so-select-item" value="tula" text="Тула" disabled></div>
+			<div is="so-select-item" value="tver" text="Тверь"></div>
+		</div>`)
+		const field = find(root, '.so-select__field input', HTMLInputElement)
+		const active = () =>
+			document
+				.getElementById(field.getAttribute('aria-activedescendant') ?? '')
+				?.textContent?.trim()
+
+		field.focus()
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe('Москва')
+		expect(field.getAttribute('aria-expanded')).toBe('true')
+
+		// Выключенная опция пропускается
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe('Тверь')
+		expect(document.activeElement).toBe(field)
+
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(() => field.value).toBe('Тверь')
+		expect(field.getAttribute('aria-expanded')).toBe('false')
+		expect(document.activeElement).toBe(field)
+	})
+})
+
+describe('Tags · клавиатура', () => {
+	/** Весь набор — одна остановка Tab, стрелки ведут фокус по тегам, пробел выбирает. */
+	it('→ переносит фокус на следующий тег, пробел выбирает его', async () => {
+		const root = await show(`<div is="so-tags" mode="multiple">
+			<div is="so-tags-item" value="a" text="A"></div>
+			<div is="so-tags-item" value="b" text="B"></div>
+			<div is="so-tags-item" value="c" text="C"></div>
+		</div>`)
+		const rows = all(root, '.so-tags-item > .so-button:first-child')
+
+		rows[0]?.focus()
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.poll(() => document.activeElement).toBe(rows[1])
+
+		await userEvent.keyboard(' ')
+		await expect.poll(() => rows[1]?.getAttribute('aria-selected')).toBe('true')
+		expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '0', '-1'])
 	})
 })

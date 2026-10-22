@@ -5,12 +5,12 @@
  * Модальным слоем служит `<div is="so-frame">`, которому плагин поставлен
  * снаружи, из `so:bundle:create`, с открытостью по `visible`: так плагин
  * проверяется один, без остальных плагинов модального окна. Внутри слоя —
- * поповер. Его панель уехала в `body` соседкой окна, а пока закрыта, лежит
- * там без номера слоя выше окна: слой пишет номер только при показе. Здесь
- * проверяется то, ради чего плагин пересчитывает пометки, а не снимает их при
- * открытии: открытая панель получает номер выше окна и остаётся доступной
- * скринридеру. Сценарии — те же, что у Svelte (`hide-outside.spec.ts`), с
- * поповером; Select у Web Components ещё нет.
+ * Select, как у Vue, и поповер, как у Svelte. Список Select и панель поповера
+ * уехали в `body` соседками окна, а пока закрыты, лежат там без номера слоя
+ * выше окна: слой пишет номер только при показе. Здесь проверяется то, ради
+ * чего плагин пересчитывает пометки, а не снимает их при открытии: открытая
+ * панель получает номер выше окна и остаётся доступной скринридеру.
+ * Сценарии — те же, что у Vue и Svelte (`hide-outside.spec.ts`).
  *
  * Правила пометки по отдельности — `plugins/__tests__/hide-outside.plugin.spec.ts`.
  */
@@ -39,23 +39,30 @@ async function settle(): Promise<void> {
 	await nextFrame()
 }
 
+/** Поповер внутри слоя — как у Svelte. */
+const POPOVER = `<span is="so-popover">
+	<button is="so-button" slot="trigger" class="so-test-trigger" text="Ещё"></button>
+	<button class="so-test-inside">Внутри</button>
+</span>`
+
+/** Select внутри слоя — как у Vue. */
+const SELECT = `<div is="so-select" class="so-test-select">
+	<div is="so-select-item" value="a" text="Первый"></div>
+	<div is="so-select-item" value="b" text="Второй"></div>
+</div>`
+
 /**
- * Страница и модальный слой с поповером внутри. Отдаёт слой: смонтирован он
+ * Страница и модальный слой с содержимым внутри. Отдаёт слой: смонтирован он
  * скрытым, как всякий Frame. Плагин ставится так, как его поставит модальное
  * окно, — из `so:bundle:create`, открытость — `visible`, — и только самому
  * слою: событие элемента потребителя всплывает, и до слушателя слоя доходят
- * сборки поповера и его триггера.
+ * сборки того, что внутри.
  */
-async function render(): Promise<TFrameElementProps> {
+async function render(content = POPOVER): Promise<TFrameElementProps> {
 	const page = document.createElement('div')
 
 	page.innerHTML = `<button class="so-test-page">Страница</button>
-		<div is="so-frame" class="so-test-dialog">
-			<span is="so-popover">
-				<button is="so-button" slot="trigger" class="so-test-trigger" text="Ещё"></button>
-				<button class="so-test-inside">Внутри</button>
-			</span>
-		</div>`
+		<div is="so-frame" class="so-test-dialog">${content}</div>`
 
 	const dialog = page.querySelector('.so-test-dialog')
 
@@ -149,5 +156,62 @@ describe('модальный слой с поповером внутри', () =>
 		expect(ariaHiddenNodes()).toEqual(before)
 		expect(muted(node('.so-test-page'))).toBe(false)
 		expect(muted(panel())).toBe(false)
+	})
+})
+
+describe('модальный слой с Select внутри', () => {
+	const field = () => node('.so-test-select input')
+	const list = () => node('.so-select__panel')
+
+	/** Открыть список кликом по полю: открытость доходит до панели второй отрисовкой. */
+	async function openSelect(): Promise<void> {
+		field().click()
+		await flush()
+		await settle()
+	}
+
+	it('слой показан — страница под aria-hidden, слой и его содержимое доступны', async () => {
+		const dialog = await render(SELECT)
+
+		dialog.visible = true
+		await settle()
+
+		expect(muted(node('.so-test-page'))).toBe(true)
+		expect(muted(dialog)).toBe(false)
+		expect(muted(field())).toBe(false)
+	})
+
+	it('закрытый список Select спрятан, открытый — доступен', async () => {
+		const dialog = await render(SELECT)
+
+		dialog.visible = true
+		await settle()
+
+		// Список уехал в `body` скрытым, номера слоя выше окна у него ещё нет
+		expect(list().parentElement).toBe(document.body)
+		expect(muted(list())).toBe(true)
+
+		await openSelect()
+
+		expect(field().getAttribute('aria-expanded')).toBe('true')
+		expect(muted(list())).toBe(false)
+		expect(muted(node('.so-select__panel [role="option"]'))).toBe(false)
+	})
+
+	it('слой скрыт — всё как было, в том числе чужие aria-hidden', async () => {
+		const dialog = await render(SELECT)
+		const before = ariaHiddenNodes()
+
+		dialog.visible = true
+		await settle()
+
+		await openSelect()
+
+		dialog.visible = false
+		await settle()
+
+		expect(ariaHiddenNodes()).toEqual(before)
+		expect(muted(node('.so-test-page'))).toBe(false)
+		expect(muted(list())).toBe(false)
 	})
 })

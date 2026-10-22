@@ -685,9 +685,9 @@ Svelte:
 `dialog.spec.ts` («окно поверх окна», «Select внутри», «Popover внутри»),
 `drawer.spec.ts` («внутри модального окна») и `tooltip.spec.ts` («в открытом
 поповере») — у Web Components: `ui/webc/__tests__/popover.spec.ts`
-(«вложенные слои»), `tooltip.spec.ts` («в открытом поповере»), `dialog.spec.ts`
-(«окно поверх окна», «поповер внутри») и `drawer.spec.ts` («внутри модального
-окна») — и у Angular: `ui/angular/__tests__/popover.spec.ts` («вложенные
+(«вложенные слои», «Select внутри»), `tooltip.spec.ts` («в открытом
+поповере»), `dialog.spec.ts` («окно поверх окна», «Select внутри», «поповер
+внутри») и `drawer.spec.ts` («внутри модального окна») — и у Angular: `ui/angular/__tests__/popover.spec.ts` («вложенные
 слои»), `tooltip.spec.ts` («в открытом поповере»), `dialog.spec.ts` («окно
 поверх окна», «поповер внутри») и `drawer.spec.ts` («внутри модального окна»).
 
@@ -781,6 +781,7 @@ Tab с `body` повёл бы на страницу под ним. Поэтом�
 верхнего, — а обёртку открытой панели поповера оставляет путь к её слою),
 `ui/svelte/__tests__/hide-outside.spec.ts` (Select и поповер в модальном
 `Frame`: список Select и панель поповера — такие же соседки окна в `body`),
-`ui/webc/__tests__/hide-outside.spec.ts` (поповер в модальном `Frame`) и
+`ui/webc/__tests__/hide-outside.spec.ts` (Select и поповер в модальном
+`Frame`) и
 `ui/angular/__tests__/dialog.spec.ts` («поповер внутри»: закрытая панель
 поповера в окне спрятана, открытая — доступна).
