@@ -27,21 +27,26 @@ slot is `children`.
 > dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
 > cancel),
 > Slider, Rating, ProgressLinear, Scroller, Pagination and the overlays — Popover (a panel at a
-> trigger with any content), Tooltip, Dialog (a modal window), Drawer (a panel that slides in at an
-> edge) and Toasts (notifications shown from code with `useToasts()`) — are ported, the rest of the
-> set is on its way. Icon renders the `tag` it is given: an element name, a Svelte component, or
-> `roleIcon(role)` — the icon of that role from the registered icon pack. Frame teleports its panel
-> into `target` (`body` by default) on the client; with `contained` it stays in place, on the
-> server too. Dialog, Drawer, the region of Toasts and the list panel of Select are teleported the
-> same way, and `ref` of Dialog and Drawer is the panel, of Toasts — the region. The server renders
-> a Select from `items` with the text of the selected option (with tags in `multiple`); options
-> given as markup live in the panel and join the collection on the client. A field — and Select —
-> gives its class and style to the root and every other attribute to its `<input>` (a textarea —
-> to its `<textarea>`); an item of a collection gives them to its row; a list box and tabs give
-> them to the list itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the
-> `<table>` itself, and its class, style and `ref` to the scroll viewport around it. `Label` names
-> the control it wraps; `LocaleProvider` gives a subtree its language and library strings, such as
-> the name of the clear button of `Input`. See
+> trigger with any content), Tooltip, Menu (an action menu at a button or on right click:
+> `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` with `<Menu.RadioItem>`,
+> `<Menu.Group>`, `<Menu.Separator>`, submenus `<Menu.Submenu>` and an item with its own panel
+> `<Menu.PopoverItem>`, or `items` — an item with nested `items` is a submenu), Dialog (a modal
+> window), Drawer (a panel that slides in at an edge) and Toasts (notifications shown from code
+> with `useToasts()`) — are ported, the rest of the set is on its way. Icon renders the `tag` it is
+> given: an element name, a Svelte component, or `roleIcon(role)` — the icon of that role from the
+> registered icon pack. Frame teleports its panel into `target` (`body` by default) on the client;
+> with `contained` it stays in place, on the server too. Dialog, Drawer, the region of Toasts, the
+> list panel of Select and the panels of Menu are teleported the same way, and `ref` of Dialog and
+> Drawer is the panel, of Toasts — the region. The server renders a Select from `items` with the
+> text of the selected option (with tags in `multiple`); options given as markup live in the panel
+> and join the collection on the client. The server renders a Menu as its trigger: the panel and
+> its items appear on the client. A field — and Select — gives its class and style to the root and
+> every other attribute to its `<input>` (a textarea — to its `<textarea>`); an item of a
+> collection — a menu item too — gives them to its row; a list box and tabs give them to the list
+> itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the `<table>` itself, and its
+> class, style and `ref` to the scroll viewport around it; a menu, like a popover, gives them to
+> its root around the trigger. `Label` names the control it wraps; `LocaleProvider` gives a subtree
+> its language and library strings, such as the name of the clear button of `Input`. See
 > [the adapter table](https://github.com/youra-h/soldy#components).
 
 ## Install

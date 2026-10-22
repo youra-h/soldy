@@ -16,11 +16,12 @@
  * атрибутами потребителя. У привязки корня адаптера ключ свой: одно другого
  * не перекрывает.
  *
- * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
- * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
- * (у радио — полю), поверх её набора `aria`. Корень остаётся за адаптером и у
- * него. ListBox и Tabs делят их так же: остальное — узлу списка с ролью
- * (`listbox`, `tablist`), поверх его `aria`.
+ * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`, пункты
+ * меню) делит атрибуты потребителя, как у Vue: класс и стиль — корню,
+ * остальное — строке (у радио — полю), поверх её набора `aria`. Корень
+ * остаётся за адаптером и у него. ListBox и Tabs делят их так же: остальное —
+ * узлу списка с ролью (`listbox`, `tablist`), поверх его `aria`. У Menu, как
+ * у Popover и Tooltip, атрибуты потребителя — корню, обёртке триггера.
  *
  * Корень таблицы стоит внутри окна: класс, стиль и `ref` потребителя — окну,
  * внешнему узлу, а остальные атрибуты и attachment-ы потребителя, наборы ядра
@@ -53,6 +54,7 @@ import {
 	Input,
 	Label,
 	ListBox,
+	Menu,
 	NumberInput,
 	Pagination,
 	Popover,
@@ -90,6 +92,7 @@ import {
 	type InputProps,
 	type LabelProps,
 	type ListBoxProps,
+	type MenuProps,
 	type NumberInputProps,
 	type PaginationProps,
 	type PopoverProps,
@@ -140,6 +143,7 @@ type TProbeProps = ButtonProps &
 	PaginationProps &
 	PopoverProps &
 	TooltipProps &
+	MenuProps &
 	DialogProps &
 	DrawerProps &
 	ToastsProps
@@ -151,9 +155,10 @@ type TProbeProps = ButtonProps &
  * нет; панель рисуется, пока активен её таб, — и только внутри набора.
  * Оценка, ползунок, лента и пагинация атрибуты потребителя не делят: полей у
  * оценки и ползунка столько, сколько ручек, а указатель поле не ловит, — и
- * всё ложится на корень. Корень поповера и подсказки — обёртка триггера, а не
- * панель; корень окна и выезжающей панели — панель, и уходит она в `body`
- * телепортом и закрытой; корень менеджера тостов — регион в `body`.
+ * всё ложится на корень. Корень поповера, подсказки и меню — обёртка
+ * триггера, а не панель; корень окна и выезжающей панели — панель, и уходит
+ * она в `body` телепортом и закрытой; корень менеджера тостов — регион в
+ * `body`.
  */
 const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMounted, string]> = [
 	['Button', (props) => mount(Button, props), '.so-button'],
@@ -175,6 +180,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, (props: TProbeProps) => TMount
 	['Pagination', (props) => mount(Pagination, { total: 30, ...props }), '.so-pagination'],
 	['Popover', (props) => mount(Popover, props), '.so-popover'],
 	['Tooltip', (props) => mount(Tooltip, props), '.so-tooltip'],
+	['Menu', (props) => mount(Menu, props), '.so-menu'],
 	['Dialog', (props) => mount(Dialog, props), '.so-dialog'],
 	['Drawer', (props) => mount(Drawer, props), '.so-drawer'],
 	['Toasts', (props) => mount(Toasts, props), '.so-toasts'],
@@ -244,6 +250,9 @@ const INVALID_FIELDS: ReadonlyArray<readonly [string, () => TMounted, string]> =
 /** Рисование элемента коллекции в своём владельце — пропсами самого элемента. */
 type TItemDraw = (props: Record<string | symbol, unknown>) => TMounted
 
+/** Строка пункта меню — `Button` с ролью пункта прямо в корне пункта. */
+const MENU_ROW = '.so-menu-item > [role^="menuitem"]'
+
 /**
  * Элемент коллекции, как его рисовать, класс его корня и строка, которой уходят
  * атрибуты потребителя: у радио строки нет, и атрибуты уходят полю. Элемент —
@@ -279,6 +288,37 @@ const ITEMS: ReadonlyArray<readonly [string, TItemDraw, string, string]> = [
 		(props) => mount(ItemProbe, { kind: 'select', ...props }),
 		'.so-select-item',
 		'.so-select-item [role="option"]',
+	],
+	// Пункты меню — в его панели, телепортированной в `body`; строка — узел с ролью
+	[
+		'Menu.Item',
+		(props) => mount(ItemProbe, { kind: 'menu-item', ...props }),
+		'.so-menu-item',
+		MENU_ROW,
+	],
+	[
+		'Menu.CheckboxItem',
+		(props) => mount(ItemProbe, { kind: 'menu-checkbox-item', ...props }),
+		'.so-menu-item',
+		MENU_ROW,
+	],
+	[
+		'Menu.RadioItem',
+		(props) => mount(ItemProbe, { kind: 'menu-radio-item', ...props }),
+		'.so-menu-item',
+		MENU_ROW,
+	],
+	[
+		'Menu.Submenu',
+		(props) => mount(ItemProbe, { kind: 'menu-submenu', ...props }),
+		'.so-menu-item',
+		MENU_ROW,
+	],
+	[
+		'Menu.PopoverItem',
+		(props) => mount(ItemProbe, { kind: 'menu-popover-item', ...props }),
+		'.so-menu-item',
+		MENU_ROW,
 	],
 ]
 
@@ -797,6 +837,17 @@ const ROOTS: ReadonlyArray<readonly [TRootKind, string, string]> = [
 	['Pagination', '.so-pagination', '.so-pagination'],
 	['Popover', '.so-popover', '.so-popover'],
 	['Tooltip', '.so-tooltip', '.so-tooltip'],
+	// Корень меню — обёртка триггера, а не его телепортированная панель
+	['Menu', '.so-menu', '.so-menu'],
+	['Menu.Item', '.so-menu-item', '.so-menu-item'],
+	['Menu.CheckboxItem', '.so-menu-item', '.so-menu-item'],
+	['Menu.RadioItem', '.so-menu-item', '.so-menu-item'],
+	// Корень пункта с подменю и пункта с панелью — пункт, а не телепортированная панель
+	['Menu.Submenu', '.so-menu-item', '.so-menu-item'],
+	['Menu.PopoverItem', '.so-menu-item', '.so-menu-item'],
+	['Menu.Group', '.so-menu-group', '.so-menu-group'],
+	['Menu.RadioGroup', '.so-menu-group', '.so-menu-group'],
+	['Menu.Separator', '.so-menu-separator', '.so-menu-separator'],
 	['Dialog', '.so-dialog', '.so-dialog'],
 	['Drawer', '.so-drawer', '.so-drawer'],
 	['Toasts', '.so-toasts', '.so-toasts'],

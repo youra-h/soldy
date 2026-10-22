@@ -11,7 +11,9 @@
  * отключение и подключение корня и всего, что в панели. Перенос, который
  * делает сама база, — не отключение: ни Frame, ни кнопка в панели не
  * пересобираются, и в браузере, и с полифилом, который зовёт колбэки своим
- * наблюдателем позже. Перестановка, которую делает потребитель, пересобирает.
+ * наблюдателем позже. Перестановка, которую делает потребитель, пересобирает —
+ * и одной операцией: отключение кнопки браузер доводит внутри переноса Frame
+ * в цель, а оно всё равно настоящее.
  * Содержимое панели остаётся в контексте места: поиск вверх идёт от увезённого
  * корня к якорю, и кнопка в панели видит локаль провайдера вокруг Frame.
  * Панель ходит с местом: контейнер с якорем сняли — панель уходит из цели в
@@ -703,6 +705,136 @@ describe('Frame · содержимое панели', () => {
 		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
 		expect(anchors(place)).toHaveLength(0)
 		expect(anchors(other)).toHaveLength(1)
+	})
+
+	/**
+	 * Перестановка одной операцией, без снятия. Отключение кнопки браузер
+	 * доводит внутри переноса Frame в цель, который делает его новая сборка, и
+	 * признак переноса уже стоит, — а отключение всё равно настоящее: кнопку
+	 * переставила операция потребителя (долг, `relocation.ts`). Долг гасит само
+	 * отключение: переносы силами базы после него кнопку снова не пересобирают.
+	 */
+	it('перестановка одной операцией пересобирает Frame и кнопку под новым провайдером', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+		addTarget('second')
+
+		const { place, node } = mountPanel()
+		const button = find(node, 'button')
+		const other = markup('<so-locale-provider class="zh"></so-locale-provider>')
+
+		provider(other, '.zh').locale = zhCN
+		document.body.appendChild(other)
+		// Признак переноса первой сборки держится до микрозадачи
+		await flush()
+
+		provider(other, '.zh').appendChild(node)
+
+		expect(node.parentElement?.id).toBe('first')
+		expect(find(node, 'button')).toBe(button)
+		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+		expect([...destroyed].sort()).toEqual(['button', 'frame'])
+		expect(anchors(place)).toHaveLength(0)
+		expect(anchors(other)).toHaveLength(1)
+
+		await flush()
+		node.contained = true
+		await flush()
+		node.contained = false
+		await flush()
+		node.target = '#second'
+		await flush()
+
+		expect(node.parentElement?.id).toBe('second')
+		expect(find(node, 'button')).toBe(button)
+		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+		expect(destroyed).toHaveLength(2)
+	})
+
+	/**
+	 * Операция DOM зовёт колбэки и элементам в теневых корнях внутри Frame, и
+	 * долг получают и они: кнопка в открытом теневом корне панели собрана
+	 * заново, как в свете.
+	 */
+	it('перестановка одной операцией пересобирает и кнопку в открытом теневом корне панели', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+
+		const host = markup(`<so-locale-provider>
+			<div is="so-frame" visible target="#first"><div class="card"></div></div>
+		</so-locale-provider>`)
+
+		find(host, '.card').attachShadow({ mode: 'open' }).innerHTML =
+			'<button is="so-button"></button>'
+		provider(host).locale = ruRU
+		document.body.appendChild(host)
+
+		const node = frame()
+		const other = markup('<so-locale-provider class="zh"></so-locale-provider>')
+
+		provider(other, '.zh').locale = zhCN
+		document.body.appendChild(other)
+		await flush()
+
+		expect(assembledOf('button')).toEqual([ruRU.tag])
+
+		provider(other, '.zh').appendChild(node)
+
+		expect(node.parentElement?.id).toBe('first')
+		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+	})
+
+	/**
+	 * С полифилом колбэки приходят его наблюдателем, микрозадачей позже, —
+	 * здесь поверх колбэков jsdom. Лишних сборок они не дают: долг гасит первое
+	 * отключение, и переносы силами базы после перестановки кнопку не
+	 * пересобирают.
+	 */
+	it('перестановка одной операцией с колбэками полифила — итог тот же', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+		addTarget('second')
+
+		const observer = polyfillCallbacks()
+
+		try {
+			const { place, node } = mountPanel()
+			const button = find(node, 'button')
+			const other = markup('<so-locale-provider class="zh"></so-locale-provider>')
+
+			provider(other, '.zh').locale = zhCN
+			document.body.appendChild(other)
+			await flush()
+			await flush()
+
+			provider(other, '.zh').appendChild(node)
+			await flush()
+			await flush()
+
+			expect(node.parentElement?.id).toBe('first')
+			expect(find(node, 'button')).toBe(button)
+			expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+			expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+			expect(anchors(place)).toHaveLength(0)
+			expect(anchors(other)).toHaveLength(1)
+
+			node.contained = true
+			await flush()
+			node.contained = false
+			await flush()
+			node.target = '#second'
+			await flush()
+
+			expect(node.parentElement?.id).toBe('second')
+			expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+			expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+			expect(destroyed).toHaveLength(2)
+		} finally {
+			observer.disconnect()
+		}
 	})
 
 	/**

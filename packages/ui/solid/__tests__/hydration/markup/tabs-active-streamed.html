@@ -1,0 +1,16 @@
+<div data-hk="0010" data-disabled="false" class="so-tabs so-tabs--size-normal so-tabs--horizontal " style=""><div data-hk="001100" class="so-tabs__list " role="tablist" aria-orientation="horizontal"><!--$--><!--/--><!--$--><div data-hk="0011020100" data-disabled="false" data-selected="false" class="so-tabs-item so-tabs-item--size-normal " style="order:0" ><button data-hk="0011020101100" data-disabled="false" type="button" role="tab" id="00110200-tab" aria-controls="00110200-panel" aria-selected="false" tabindex="0" class="so-button so-button--size-normal " style="" ><span data-hk="0011020101101" class="so-button__text">A</span></button></div><template id="pl-00110210"></template><!--pl-00110210--><!--/--><!--$--><!--/--></div></div><script>self.$R=self.$R||[];_$HY.r["0011021000"]=$R[0]=($R[1]=($R[2]=() => {
+	const resolver = {
+		p: 0,
+		s: 0,
+		f: 0
+	};
+	resolver.p = new Promise((resolve, reject) => {
+		resolver.s = resolve;
+		resolver.f = reject;
+	});
+	return resolver;
+})()).p;_$HY.r["00110210"]=$R[3]=($R[4]=$R[2]()).p;</script><template id="00110210"><div data-hk="00110210010100" data-disabled="false" data-selected="true" class="so-tabs-item so-tabs-item--size-normal " style="order:1" ><button data-hk="00110210010101100" data-disabled="false" type="button" role="tab" id="001102100100-tab" aria-controls="001102100100-panel" aria-selected="true" tabindex="0" class="so-button so-button--size-normal " style="" ><span data-hk="00110210010101101" class="so-button__text">B</span></button></div></template><script>$df("00110210");function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)};($R[5]=(resolver, data) => {
+	resolver.s(data);
+	resolver.p.s = 1;
+	resolver.p.v = data;
+})($R[1],!0);$R[5]($R[4],!0);</script>

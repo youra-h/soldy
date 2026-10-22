@@ -22,6 +22,11 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TMenuCheckboxItem,
+	TMenuItem,
+	TMenuPopoverItem,
+	TMenuRadioItem,
+	TMenuSubmenu,
 	TNumberInput,
 	TPagination,
 	TRadioGroup,
@@ -56,6 +61,7 @@ import AccordionHarness from './Accordion.test.svelte'
 import SelectHarness from './Select.test.svelte'
 import TagsHarness from './Tags.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
+import MenuHarness, { type TMenuFocusKind } from './Menu.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
 import { find, mount, nextFrame } from './mount'
@@ -430,6 +436,37 @@ const CASES: Record<string, TCase> = {
 		},
 		target: '.target [role="option"]',
 	},
+	// У пунктов меню фокус держит строка, а корень — обёртка вокруг неё
+	'Menu.Item': {
+		render: () => menuItem('item', new TMenuItem({ value: 'b', text: 'B' })),
+		target: '.target [role="menuitem"]',
+	},
+	'Menu.CheckboxItem': {
+		render: () => menuItem('checkbox', new TMenuCheckboxItem({ value: 'b', text: 'B' })),
+		target: '.target [role="menuitemcheckbox"]',
+	},
+	'Menu.RadioItem': {
+		render: () => menuItem('radio', new TMenuRadioItem({ value: 'b', text: 'B' })),
+		target: '.target [role="menuitemradio"]',
+	},
+	'Menu.Submenu': {
+		render: () => menuItem('submenu', new TMenuSubmenu({ value: 'b', text: 'B' })),
+		target: '.target [role="menuitem"]',
+	},
+	'Menu.PopoverItem': {
+		render: () => menuItem('popover-item', new TMenuPopoverItem({ value: 'b', text: 'B' })),
+		target: '.target [role="menuitem"]',
+	},
+}
+
+/**
+ * Пункт меню, открытого с первой отрисовки, — за пунктом `a`: фокус встаёт на
+ * строку своего пункта, а не на первую строку меню.
+ */
+function menuItem<T extends { focused: boolean }>(focus: TMenuFocusKind, ctrl: T): T {
+	mount(MenuHarness, { case: 'focus', focus, part: { ctrl, class: 'target' } })
+
+	return ctrl
 }
 
 /** Табы данными: активный — второй, остановка Tab не совпадает с первым табом. */

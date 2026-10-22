@@ -12,9 +12,14 @@
  * коллекцию после гидратации. Сервер рисует страницу без него, и разметка от
  * этого не меняется — движок пуст, и элементы разметки входят в него в том
  * же порядке.
+ *
+ * Ожидание данных границы `Suspense` (`wait`) — только у сервера: такую
+ * страницу он отдаёт потоком и содержимое границы досылает после оболочки
+ * (`markup.server.spec.tsx`). Браузер получает данные вместе с разметкой, и
+ * у гидратации они готовы сразу.
  */
 
-import { createSignal, type JSX } from 'solid-js'
+import { Show, Suspense, createResource, createSignal, type Accessor, type JSX } from 'solid-js'
 import type { TAttributesMap, TTabsCollection, TTagsCollection } from '@soldy-ui/core'
 import {
 	Field,
@@ -80,8 +85,8 @@ export function RootProbe(props: TRootProbeProps): JSX.Element {
 	return <div {...root()} />
 }
 
-/** Вход соседа зонда части: задаёт набор узлу выше при своей сборке, как контрол — `for` подписи. */
-function PartProbeEntry(props: { readonly enter: () => void }): JSX.Element {
+/** Вход соседа зонда: меняет набор узла выше при своей сборке, как контрол — `for` подписи. */
+function ProbeEntry(props: { readonly enter: () => void }): JSX.Element {
 	props.enter()
 
 	return <i />
@@ -100,7 +105,7 @@ export function PartProbe(): JSX.Element {
 	return (
 		<div>
 			<span {...part()} />
-			<PartProbeEntry enter={() => setSet({ 'data-probe': 'entered' })} />
+			<ProbeEntry enter={() => setSet({ 'data-probe': 'entered' })} />
 		</div>
 	)
 }
@@ -144,4 +149,135 @@ export function ListBoxWithEmpty(): JSX.Element {
 			<ListBox.Item value="a" text="A" />
 		</ListBox>
 	)
+}
+
+/**
+ * Ожидание данных границы `Suspense` — только у сервера: он дорисовывает
+ * границу, когда `wait` разрешился, а оболочку отдаёт раньше.
+ */
+export type TStreamedPageProps = { readonly wait?: Promise<void> }
+
+/**
+ * Содержимое границы `Suspense`, которое ждёт данных: у сервера — пока не
+ * разрешился `wait`, у браузера данные готовы сразу, как пришедшие с
+ * разметкой. Ждёт ресурс: его чтение и держит границу у сервера.
+ */
+function WithData(props: TStreamedPageProps & { readonly children: JSX.Element }): JSX.Element {
+	const [ready] = createResource(() => props.wait?.then(() => true) ?? true)
+
+	return <Show when={ready()}>{props.children}</Show>
+}
+
+/**
+ * Табы целиком за границей `Suspense`: сервер досылает их потоком после
+ * оболочки, с двумя остановками Tab, и браузер гидратирует их позже основной
+ * гидратации — все мемо раскладки собраны в позднем окне.
+ */
+export function TabsStreamed(props: TTabsPageProps & TStreamedPageProps): JSX.Element {
+	return (
+		<Suspense>
+			<WithData wait={props.wait}>
+				<Tabs engine={props.engine}>
+					<Tabs.Item value="a" text="A" />
+					<Tabs.Item value="b" text="B" active />
+				</Tabs>
+			</WithData>
+		</Suspense>
+	)
+}
+
+/**
+ * Табы, активный за границей `Suspense`: таб выше сервер печатает в оболочке
+ * с остановкой Tab, и его гидратирует основная гидратация, а активный —
+ * поздняя: остановку он забирает у таба, гидратированного раньше.
+ */
+export function TabsActiveStreamed(props: TTabsPageProps & TStreamedPageProps): JSX.Element {
+	return (
+		<Tabs engine={props.engine}>
+			<Tabs.Item value="a" text="A" />
+			<Suspense>
+				<WithData wait={props.wait}>
+					<Tabs.Item value="b" text="B" active />
+				</WithData>
+			</Suspense>
+		</Tabs>
+	)
+}
+
+/** Теги с выбором, выбранный за границей `Suspense` — как у табов. */
+export function TagsSelectedStreamed(props: TTagsPageProps & TStreamedPageProps): JSX.Element {
+	return (
+		<Tags mode="single" engine={props.engine}>
+			<Tags.Item value="a" text="A" />
+			<Suspense>
+				<WithData wait={props.wait}>
+					<Tags.Item value="b" text="B" selected />
+				</WithData>
+			</Suspense>
+		</Tags>
+	)
+}
+
+/**
+ * Поле, контрол со своим `id` за границей `Suspense`: подпись гидратирует
+ * основная гидратация, с `for` на `id` поля контрола от поля, а контрол —
+ * поздняя.
+ */
+export function FieldControlStreamed(props: TStreamedPageProps): JSX.Element {
+	return (
+		<Field label="Почта">
+			<Suspense>
+				<WithData wait={props.wait}>
+					<Input id="email" />
+				</WithData>
+			</Suspense>
+		</Field>
+	)
+}
+
+/**
+ * Корень, набор которого меняют обе гидратации: вход соседа в основной и вход
+ * соседа за границей `Suspense` в поздней. Зонд мемо раскладки, которое к
+ * позднему окну уже отдаёт живое: сервер напечатал `served`, основная
+ * гидратация дописала `main`, поздняя должна дописать `late`.
+ */
+export function RootProbeStreamed(props: TStreamedPageProps): JSX.Element {
+	const [mark, setMark] = createSignal('served')
+	const root = createRootProps(() => ({
+		state: {},
+		sets: [{ 'data-probe': mark() }],
+		forward: {},
+	}))
+
+	return (
+		<div {...root()}>
+			<ProbeEntry enter={() => setMark('main')} />
+			<Suspense>
+				<WithData wait={props.wait}>
+					<ProbeEntry enter={() => setMark('late')} />
+				</WithData>
+			</Suspense>
+		</div>
+	)
+}
+
+/**
+ * Остров с корнем, набор которого задаёт состояние снаружи острова (`mark`),
+ * — зонд мемо раскладки, которое меняет гидратация другого острова: у
+ * каждого острова свой `hydrate()`, и окно второго открывается, когда корень
+ * первого уже гидратирован.
+ */
+export function IslandProbe(props: { readonly mark: Accessor<string> }): JSX.Element {
+	const root = createRootProps(() => ({
+		state: {},
+		sets: [{ 'data-probe': props.mark() }],
+		forward: {},
+	}))
+
+	return <div {...root()} />
+}
+
+/** Остров со входом, который при своей сборке меняет состояние снаружи острова (`enter`). */
+export function IslandEntry(props: { readonly enter: () => void }): JSX.Element {
+	return <ProbeEntry enter={props.enter} />
 }

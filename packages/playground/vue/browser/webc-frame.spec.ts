@@ -11,9 +11,9 @@
  * (`ui/webc/__tests__/frame.spec.ts`) лишь повторяет спецификацию. Здесь тот
  * же порядок сверяет Chromium: Frame и кнопка в панели собраны по разу, с
  * локалью провайдера вокруг Frame, перенос, `contained` и смена цели их не
- * пересобирают, а перестановка потребителем — пересобирает, и перестановка
- * места одной операцией тоже: контейнера с якорем — наблюдатель документа,
- * поповера — сразу после его новой сборки.
+ * пересобирают, а перестановка потребителем — пересобирает, и самого Frame
+ * одной операцией тоже, и перестановка места одной операцией: контейнера с
+ * якорем — наблюдатель документа, поповера — сразу после его новой сборки.
  *
  * Панели на Frame — Popover и Tooltip: их Frame — деталь шаблона, а якорь —
  * корень элемента. Раскладку jsdom не считает, и место открытой панели у
@@ -220,6 +220,32 @@ describe('<div is="so-frame"> · перенос в браузере', () => {
 		const node = frame()
 
 		node.remove()
+		other.appendChild(node)
+
+		expect(node.parentElement).toBe(first)
+		expect(anchors(root)).toHaveLength(0)
+		expect(anchors(other)).toHaveLength(1)
+		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+	})
+
+	/**
+	 * Сам Frame переставлен одной операцией, без снятия: его новая сборка
+	 * увозит его в цель, и отключение кнопки Chromium доводит внутри этого
+	 * переноса, — а оно всё равно настоящее, и кнопка собрана после Frame, с
+	 * локалью нового места.
+	 */
+	it('Frame, переставленный одной операцией, пересобирает и кнопку под новым провайдером', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+
+		const first = addTarget('first')
+		const root = stage(PANEL, ruRU)
+		const other = stage('', zhCN)
+		const node = frame()
+
+		// Признак переноса первой сборки держится до микрозадачи
+		await flush()
+
 		other.appendChild(node)
 
 		expect(node.parentElement).toBe(first)
