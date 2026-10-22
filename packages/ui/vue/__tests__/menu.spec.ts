@@ -1759,6 +1759,66 @@ describe('подменю', () => {
 			expect(shown(rootPanel())).toBe(false)
 		})
 
+		/**
+		 * Без `trackBy` замена `items` пересобирает меню: подменю — новый пункт с
+		 * новым движком, и строку пункта разметка рисует заново — петля по
+		 * `uid`. Пункты шаблона входят в движок нового подменю: вложенный состав
+		 * на месте пропсы без `trackBy` не пишут, и снять их нечему.
+		 */
+		it('item-content и замена items без trackBy: подменю новое, пункты шаблона — в его коллекции, стрелки и выбор идут по ним', async () => {
+			const chosen: unknown[] = []
+			const engine = createEngineMenu()
+			const items = ref<IMenuItemSource[]>([{ value: 'export', text: 'Экспорт', items: [] }])
+			const values = () =>
+				submenuOf(engine, 'export').engine.extensions.batch.items.map((item) => item.value)
+
+			await render(() =>
+				h(
+					Menu,
+					{
+						engine,
+						items: items.value,
+						onChoose: (item: IMenuItem) => chosen.push(item.value),
+					},
+					{
+						trigger,
+						'item-content': () => [
+							h(Menu.Item, { value: 'pdf', text: 'PDF' }),
+							h(Menu.Item, { value: 'png', text: 'PNG' }),
+						],
+					},
+				),
+			)
+
+			const replaced = submenuOf(engine, 'export')
+
+			expect(values()).toEqual(['pdf', 'png'])
+
+			items.value = [{ value: 'export', text: 'Выгрузка', items: [] }]
+			await nextTick()
+
+			// Новый пункт и новый движок; пункты шаблона — в нём, прежний пуст
+			const row = submenuRow('Выгрузка')
+
+			expect(submenuOf(engine, 'export').ctrl).not.toBe(replaced.ctrl)
+			expect(submenuOf(engine, 'export').engine).not.toBe(replaced.engine)
+			expect(values()).toEqual(['pdf', 'png'])
+			expect(replaced.engine.extensions.batch.items).toEqual([])
+			expect(texts(panelOf(row))).toEqual(['PDF', 'PNG'])
+
+			triggerNode().focus()
+			await press(triggerNode(), 'ArrowDown')
+			await press(row, 'ArrowRight')
+
+			expect(document.activeElement).toBe(rowIn(panelOf(row), 'PDF'))
+
+			await press(rowIn(panelOf(row), 'PDF'), 'ArrowDown')
+			await press(rowIn(panelOf(row), 'PNG'), 'Enter')
+
+			expect(chosen).toEqual(['png'])
+			expect(shown(rootPanel())).toBe(false)
+		})
+
 		/** Запись подменю из данных по значению пункта. */
 		function submenuOf(engine: TMenuCollection, value: string) {
 			const { batch, submenus } = engine.extensions
