@@ -161,6 +161,7 @@ describe('хост Angular', () => {
 		// Корень и триггер в нём: панели в ячейке нет — она увезена в `body`
 		['popover', '.so-popover, .so-popover > .so-button'],
 		['tooltip', '.so-tooltip, .so-tooltip > .so-button'],
+		['menu', '.so-menu, .so-menu > .so-button'],
 		// Кнопка, которая открывает окно и панель: сами они увезены в `body`.
 		// У тостов — ряд кнопок, которые их показывают: менеджер без коробки, а
 		// регион увезён
@@ -225,6 +226,91 @@ describe('хост Angular · панель у триггера', () => {
 			expect(angular).toEqual(vue)
 		},
 	)
+})
+
+/** Части панели меню — группы с подписью, разделители, пункты со строками и их колонки. */
+const MENU_PARTS = [
+	'.so-menu__list',
+	'.so-menu-group',
+	'.so-menu-group__label',
+	'.so-menu-separator',
+	'.so-menu-item',
+	'.so-menu-item > .so-button',
+	'.so-menu-item__indicator',
+	'.so-menu-item__icon',
+	'.so-menu-item__shortcut',
+	'.so-menu-item__arrow',
+]
+
+/** Селектор панели якоря и её частей — по её `id`, на который ссылается якорь. */
+function menuPartsOf(anchor: Element | null): string {
+	const panel = `#${CSS.escape(anchor?.getAttribute('aria-controls') ?? '')}`
+
+	return [panel, ...MENU_PARTS.map((part) => `${panel} ${part}`)].join(', ')
+}
+
+/**
+ * Превью меню хоста в блоке — открытым (`open`): рамки панели меню с частями от
+ * угла триггера, а с `submenu` — ещё и подменю «Поделиться», открытого кликом
+ * по его строке, от угла строки. Панелей на экране тогда две, и части каждой
+ * ищутся по её `id`. Меряется и снимается — следующей отрисовке оно не мешает.
+ */
+async function menuOf(framework: string, submenu: boolean): Promise<TBox[]> {
+	const host = await loadHost(framework)
+	const node = document.createElement('div')
+
+	node.style.cssText = BOX
+	document.body.appendChild(node)
+
+	const handle = host.mount(node, { component: 'menu', props: { open: true } })
+	const trigger = () => node.querySelector('.so-menu > .so-button')
+
+	try {
+		if (!submenu) return await measure(trigger, menuPartsOf(trigger()))
+
+		const panel = `#${CSS.escape(trigger()?.getAttribute('aria-controls') ?? '')}`
+		const row = () => document.querySelector(`${panel} .so-menu-item > [aria-haspopup="menu"]`)
+
+		await measure(trigger, menuPartsOf(trigger()))
+
+		const share = row()
+
+		if (!(share instanceof HTMLElement)) throw new Error(`${framework}: строки подменю нет`)
+
+		share.click()
+
+		return await measure(row, menuPartsOf(row()))
+	} finally {
+		handle.unmount()
+		node.remove()
+	}
+}
+
+describe('хост Angular · панели меню и подменю', () => {
+	beforeEach(() => {
+		document.documentElement.dataset.soTheme = 'oren'
+	})
+
+	it('открытая панель меню и её части стоят у триггера так же, как у Vue', async () => {
+		const vue = await menuOf('vue', false)
+		const angular = await menuOf('angular', false)
+
+		// Триггер, панель, список, группы с подписями, разделители, десять пунктов
+		// со строками и их части
+		expect(angular.length).toBeGreaterThan(20)
+		expect(angular[1].height).toBeGreaterThan(0)
+		expect(angular).toEqual(vue)
+	})
+
+	it('открытая панель подменю и её пункты стоят у его строки так же, как у Vue', async () => {
+		const vue = await menuOf('vue', true)
+		const angular = await menuOf('angular', true)
+
+		// Строка, панель подменю, список, три пункта со строками, стрелка подменю
+		expect(angular.length).toBeGreaterThan(5)
+		expect(angular[1].width).toBeGreaterThan(0)
+		expect(angular).toEqual(vue)
+	})
 })
 
 /**

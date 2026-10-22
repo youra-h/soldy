@@ -23,6 +23,7 @@ import {
 	TABLE_COLUMNS,
 	TABLE_ROWS,
 	TABLE_SCROLL_ROWS,
+	presetForProp,
 } from '@soldy-ui/playground-shared'
 import { loadHost } from '../src/hosts'
 
@@ -540,6 +541,91 @@ describe('хост Angular · превью своим шаблоном', () => {
 		handle.unmount()
 
 		expect(node.childNodes).toHaveLength(0)
+	})
+
+	/**
+	 * Триггер меню — шаблон слота, а пункты — частями разметки, как у Vue:
+	 * превью своим шаблоном. Пропсы оболочки уходят входам превью и дальше меню,
+	 * выходы хост слушает у меню в нём. Пункты входят в коллекции своих меню — в
+	 * панели меню и в панелях подменю, увезённых в `body`, — а снятое превью
+	 * уносит все панели.
+	 */
+	it('меню: пункты разметкой — в панелях меню и подменю, пропсы — меню, выходы — у него', () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'menu',
+			props: { size: 'lg' },
+			onEvent: (name) => events.push(name),
+		})
+		const trigger = triggerIn(node, '.so-menu')
+		const panel = linked(trigger, 'aria-controls')
+		const [share] = all(panel, '[aria-haspopup="menu"]')
+
+		expect(trigger.textContent?.trim()).toBe('Действия')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.classList).toContain('so-menu__panel--size-lg')
+		expect(panel.style.display).toBe('none')
+		expect(textsOf(panel, '.so-menu-group__label')).toEqual(['Вид', 'Сортировка'])
+		expect(textsOf(panel, '[role^="menuitem"] .so-button__text')).toEqual([
+			'Сетка',
+			'Линейка',
+			'По имени',
+			'По дате',
+			'Изменить',
+			'Дублировать',
+			'Поделиться',
+			'Срок',
+			'В архив',
+			'Удалить',
+		])
+		expect(textsOf(linked(share, 'aria-controls'), '[role="menuitem"]')).toEqual([
+			'Ссылка',
+			'Почта',
+			'Мессенджеры',
+		])
+
+		handle.update({ size: 'lg', open: true })
+
+		expect(panel.style.display).toBe('')
+		expect(trigger.getAttribute('aria-expanded')).toBe('true')
+		expect(events).toContain('change:open')
+		expect(() => handle.update({ nothing: true })).toThrow('нет входов: nothing')
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(document.querySelector('.so-menu__panel, .so-menu-item__panel')).toBe(null)
+	})
+
+	/**
+	 * Пришли данные — превью рисует меню из них, без пунктов разметки: пресет
+	 * строки `groupSeparators` отдаёт состав с группами, и линии стоят между
+	 * секциями, пока их просит строка. У контекстного меню в слоте — область, а
+	 * связки кнопки у неё нет.
+	 */
+	it('меню из данных: пресет groupSeparators — группы с линиями; контекстное — область в слоте', () => {
+		const node = stage()
+		const preset = presetForProp('menu', 'groupSeparators')
+		const handle = host.mount(node, { component: 'menu', props: preset })
+		const panel = linked(triggerIn(node, '.so-menu'), 'aria-controls')
+
+		expect(textsOf(panel, '.so-menu-group__label')).toEqual(['Фрукты', 'Овощи'])
+		expect(all(panel, '.so-menu-separator')).toHaveLength(2)
+
+		handle.update({ ...preset, groupSeparators: false })
+
+		expect(all(panel, '.so-menu-separator')).toHaveLength(0)
+
+		handle.update({ ...preset, openOn: 'contextmenu' })
+
+		const area = node.querySelector('.so-menu > div[tabindex="0"]')
+
+		expect(area?.textContent?.trim()).toBe('Правая кнопка, долгое касание или Shift+F10')
+		expect(node.querySelector('.so-menu > .so-button')).toBe(null)
+		expect(panel.hasAttribute('aria-labelledby')).toBe(false)
+
+		handle.unmount()
 	})
 
 	it('подсказка: ссылка триггера ведёт на панель с текстом, open — входом превью', () => {

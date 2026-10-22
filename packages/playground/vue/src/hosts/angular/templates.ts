@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, input, linkedSignal, viewChild } from '@angular/core'
+import {
+	ChangeDetectionStrategy,
+	Component,
+	Directive,
+	input,
+	linkedSignal,
+	viewChild,
+} from '@angular/core'
 import type { IToastsItem, TToastsItemType } from '@soldy-ui/core'
 import {
 	AttributesDirective,
@@ -11,6 +18,15 @@ import {
 	TDrawerComponent,
 	TInputComponent,
 	TListBoxComponent,
+	TMenuCheckboxItemComponent,
+	TMenuComponent,
+	TMenuGroupComponent,
+	TMenuItemComponent,
+	TMenuPopoverItemComponent,
+	TMenuRadioGroupComponent,
+	TMenuRadioItemComponent,
+	TMenuSeparatorComponent,
+	TMenuSubmenuComponent,
 	TPopoverComponent,
 	TTableComponent,
 	TTabsComponent,
@@ -165,6 +181,166 @@ export class TooltipPreview implements TFixture {
 	readonly dismiss_enabled = input<TTooltipComponent['dismiss_enabled']>()
 	readonly subject = viewChild.required(TTooltipComponent)
 }
+
+/**
+ * Входы превью меню — на каждый проп, который пишет страница, и `ctrl`, — и
+ * меню в его разметке (`subject`): общие у меню пунктами разметкой и меню из
+ * данных (`MenuPreview`, `MenuItemsPreview`).
+ */
+@Directive()
+abstract class TMenuPreviewInputs implements TFixture {
+	readonly ctrl = input<TMenuComponent['ctrl']>()
+	readonly engine = input<TMenuComponent['engine']>()
+	readonly items = input<TMenuComponent['items']>()
+	readonly groups = input<TMenuComponent['groups']>()
+	readonly groupBy = input<TMenuComponent['groupBy']>()
+	readonly rendered = input<TMenuComponent['rendered']>()
+	readonly visible = input<TMenuComponent['visible']>()
+	readonly direction = input<TMenuComponent['direction']>()
+	readonly size = input<TMenuComponent['size']>()
+	readonly variant = input<TMenuComponent['variant']>()
+	readonly open = input<TMenuComponent['open']>()
+	readonly placement = input<TMenuComponent['placement']>()
+	readonly openOn = input<TMenuComponent['openOn']>()
+	readonly groupSeparators = input<TMenuComponent['groupSeparators']>()
+	readonly dismiss_enabled = input<TMenuComponent['dismiss_enabled']>()
+	readonly subject = viewChild.required(TMenuComponent)
+}
+
+/**
+ * Привязки меню превью ко входам превью, кроме состава — одни у обоих меню.
+ * Состав (`items`) отдаёт только меню из данных: у меню разметкой его заменяет
+ * разметка.
+ */
+const MENU_BINDINGS = `
+	[ctrl]="ctrl()"
+	[engine]="engine()"
+	[groups]="groups()"
+	[groupBy]="groupBy()"
+	[rendered]="rendered()"
+	[visible]="visible()"
+	[direction]="direction()"
+	[size]="size()"
+	[variant]="variant()"
+	[open]="open()"
+	[placement]="placement()"
+	[openOn]="openOn()"
+	[groupSeparators]="groupSeparators()"
+	[dismiss_enabled]="dismiss_enabled()"
+`
+
+/**
+ * Триггер меню — Button, связку с меню и вид «нажата» он кладёт на себя
+ * директивой набора. У контекстного меню (`openOn: 'contextmenu'`) в слоте
+ * область, как «файл» у потребителя: меню вызывают над ней правой кнопкой,
+ * долгим касанием и Shift+F10 — она фокусируемая, — и панель встаёт у точки
+ * вызова. Режим область берёт из пропсов колонки: у колонки экземпляра его
+ * нет, и там меню вызывают над кнопкой.
+ */
+const MENU_TRIGGER = `
+	<ng-template slot="trigger" let-triggerAria="triggerAria" let-triggerDataset="triggerDataset">
+		@if (openOn() === 'contextmenu') {
+			<div tabindex="0" style="padding: 24px 32px; border: 1px dashed; border-radius: 8px">
+				Правая кнопка, долгое касание или Shift+F10
+			</div>
+		} @else {
+			<button
+				so-button
+				text="Действия"
+				[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+			></button>
+		}
+	</ng-template>
+`
+
+/**
+ * Menu: пункты — разметкой, как у Vue: группа флажков с подписью, группа
+ * переключателей — отмечен один, — действия с подсказками сочетаний, подменю с
+ * подменю внутри, пункт с панелью, которая монтируется с первым открытием, —
+ * выключенное действие и «опасный» пункт своего варианта. Календаря в Angular
+ * нет, и в панели «Срок» — текст и кнопка.
+ *
+ * Пришли данными (`items` блока групп страницы и пресета строки
+ * `groupSeparators`) — превью другое, `MenuItemsPreview`: разметка заменила бы
+ * данные, а группы меню рисует из данных. Не `@if` вокруг пунктов: запасное
+ * содержимое `<ng-content>` Angular выбирает один раз, и `@if` в содержимом
+ * занимает проекцию даже с ложным условием. И не второе меню в ветке `@else`:
+ * выходы хост слушает у меню в разметке превью (`subject`) сразу после
+ * создания превью, до первой проверки, а меню в ветке появилось бы только на
+ * ней. Поэтому превью выбирает хост — когда ставит его (`templateFor`).
+ */
+@Component({
+	selector: 'pg-menu-preview',
+	imports: [
+		TMenuComponent,
+		TMenuItemComponent,
+		TMenuCheckboxItemComponent,
+		TMenuRadioGroupComponent,
+		TMenuRadioItemComponent,
+		TMenuGroupComponent,
+		TMenuSeparatorComponent,
+		TMenuSubmenuComponent,
+		TMenuPopoverItemComponent,
+		TButtonComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	template: `
+		<span so-menu ${MENU_BINDINGS}>
+			${MENU_TRIGGER}
+			<div so-menu-group label="Вид">
+				<div so-menu-checkbox-item value="grid" text="Сетка" selected></div>
+				<div so-menu-checkbox-item value="ruler" text="Линейка"></div>
+			</div>
+			<div so-menu-separator></div>
+			<div so-menu-radio-group label="Сортировка" value="name">
+				<div so-menu-radio-item value="name" text="По имени"></div>
+				<div so-menu-radio-item value="date" text="По дате"></div>
+			</div>
+			<div so-menu-separator></div>
+			<div so-menu-item value="edit" text="Изменить">
+				<span slot="trailing">Ctrl+E</span>
+			</div>
+			<div so-menu-item value="copy" text="Дублировать">
+				<span slot="trailing">Ctrl+D</span>
+			</div>
+			<div so-menu-submenu value="share" text="Поделиться">
+				<div so-menu-item value="link" text="Ссылка"></div>
+				<div so-menu-item value="mail" text="Почта"></div>
+				<div so-menu-submenu value="messengers" text="Мессенджеры">
+					<div so-menu-item value="telegram" text="Telegram"></div>
+					<div so-menu-item value="whatsapp" text="WhatsApp"></div>
+				</div>
+			</div>
+			<div so-menu-popover-item value="due" text="Срок" lazyMount>
+				<p style="margin: 0 0 8px">Срок задачи — через неделю</p>
+				<button so-button text="Подтвердить"></button>
+			</div>
+			<div so-menu-item value="archive" text="В архив" disabled></div>
+			<div so-menu-separator></div>
+			<div so-menu-item value="remove" text="Удалить" variant="negative">
+				<span slot="trailing">Del</span>
+			</div>
+		</span>
+	`,
+})
+export class MenuPreview extends TMenuPreviewInputs {}
+
+/**
+ * Menu из данных: состав — `items` блока групп страницы или пресета строки
+ * `groupSeparators`, — и пунктов разметкой нет: меню рисует свои по секциям
+ * групп. Триггер — тот же, что у `MenuPreview`.
+ */
+@Component({
+	selector: 'pg-menu-items-preview',
+	imports: [TMenuComponent, TButtonComponent, SlotDirective, AttributesDirective],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { style: 'display: contents' },
+	template: ` <span so-menu [items]="items()" ${MENU_BINDINGS}> ${MENU_TRIGGER} </span> `,
+})
+export class MenuItemsPreview extends TMenuPreviewInputs {}
 
 /**
  * Dialog: окно на стенде открывает кнопка, как у Vue: закрытое оно спрятано, а
