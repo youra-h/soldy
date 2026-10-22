@@ -12,10 +12,9 @@
  * перерисовку Svelte не сообщает, поэтому остановку спек сверяет значением, а
  * строки — с узлами сервера (`expectServedNodes`).
  *
- * Разметка сервера — фикстуры из `markup/`, их пишет и сверяет серверный
- * прогон (`markup.server.spec.ts`); страницы — те же. Движок снаружи
- * (`engine`) — только у гидратации: по нему тест читает остановку и меняет
- * коллекцию после гидратации.
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.ts`) теми
+ * же страницами. Движок снаружи (`engine`) — только у гидратации: по нему
+ * тест читает остановку и меняет коллекцию после гидратации.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -24,10 +23,7 @@ import { createEngineTabs, createEngineTags } from '@soldy-ui/core'
 import TabsActiveFirst from './TabsActiveFirst.test.svelte'
 import TabsActiveSecond from './TabsActiveSecond.test.svelte'
 import TagsSelectedSecond from './TagsSelectedSecond.test.svelte'
-import tabsActiveFirst from './markup/tabs-active-first.html?raw'
-import tabsActiveSecond from './markup/tabs-active-second.html?raw'
-import tagsSelectedSecond from './markup/tags-selected-second.html?raw'
-import { expectServedNodes, hydrateServed, serve } from './serve'
+import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
 
 /** Строки с ролью `role` — по порядку. */
 const rowsOf = (container: HTMLElement, role: string) => [
@@ -41,7 +37,7 @@ const attributeOf = (rows: readonly Element[], name: string) =>
 describe('Tabs · гидратация', () => {
 	it('табы разметки, активный вторым: у сервера остановок Tab две, после гидратации — одна, у активного', () => {
 		const engine = createEngineTabs()
-		const container = serve(tabsActiveSecond)
+		const container = serve(markupOf('tabs-active-second'))
 		const served = rowsOf(container, 'tab')
 
 		expect(attributeOf(served, 'tabindex')).toEqual(['0', '0'])
@@ -58,7 +54,7 @@ describe('Tabs · гидратация', () => {
 
 	it('после гидратации узлы сервера живые: активировали первый таб — остановка Tab у него', () => {
 		const engine = createEngineTabs()
-		const container = serve(tabsActiveSecond)
+		const container = serve(markupOf('tabs-active-second'))
 		const served = rowsOf(container, 'tab')
 
 		hydrateServed(container, TabsActiveSecond, { engine })
@@ -77,7 +73,7 @@ describe('Tabs · гидратация', () => {
 
 	it('табы разметки, активный первым — остановка Tab одна, у сервера и после гидратации', () => {
 		const engine = createEngineTabs()
-		const container = serve(tabsActiveFirst)
+		const container = serve(markupOf('tabs-active-first'))
 		const served = rowsOf(container, 'tab')
 
 		expect(attributeOf(served, 'tabindex')).toEqual(['0', '-1'])
@@ -96,7 +92,7 @@ describe('Tabs · гидратация', () => {
 describe('Tags · гидратация', () => {
 	it('теги разметки с выбором, выбран второй: у сервера остановок Tab две, после гидратации — одна, у выбранного', () => {
 		const engine = createEngineTags()
-		const container = serve(tagsSelectedSecond)
+		const container = serve(markupOf('tags-selected-second'))
 		const served = rowsOf(container, 'option')
 
 		expect(attributeOf(served, 'tabindex')).toEqual(['0', '0'])

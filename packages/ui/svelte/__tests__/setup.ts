@@ -1,6 +1,8 @@
 /**
- * Окружение тестов Svelte — общее для клиентского и серверного прогона
- * (`setupFiles` в `vitest.config.ts`).
+ * Окружение тестов Svelte — общее для всех прогонов (`setupFiles` в
+ * `vitest.config.ts`) и для разметки сервера, которую рисует прогону
+ * гидратации `hydration/server.ts`: его грузит не прогон, и окружение он
+ * импортирует сам.
  */
 
 import { useIcons } from '@soldy-ui/setup'

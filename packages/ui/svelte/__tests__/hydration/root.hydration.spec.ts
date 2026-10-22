@@ -14,8 +14,8 @@
  * `<textarea>` Svelte при гидратации снимает, и текст в узел возвращает
  * attachment.
  *
- * Разметка сервера — фикстуры из `markup/`, их пишет и сверяет серверный
- * прогон (`markup.server.spec.ts`); страницы — те же.
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.ts`) теми
+ * же страницами.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -24,13 +24,11 @@ import { find } from '../mount'
 import { reactiveProps } from '../reactive-props.svelte'
 import ButtonStyle from './ButtonStyle.test.svelte'
 import FieldText from './FieldText.test.svelte'
-import buttonStyleHidden from './markup/button-style-hidden.html?raw'
-import fieldText from './markup/field-text.html?raw'
-import { expectServedNodes, hydrateServed, serve } from './serve'
+import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
 
 describe('стиль корня · гидратация', () => {
 	it('свойство, которого у браузера нет, снято, стиль потребителя остался — на узле сервера', () => {
-		const container = serve(buttonStyleHidden)
+		const container = serve(markupOf('button-style-hidden'))
 		const served = [...container.querySelectorAll('*')]
 		const button = find(container, '.so-button', HTMLElement)
 
@@ -50,7 +48,7 @@ describe('текст поля · гидратация', () => {
 		find(scope, '.so-textarea textarea', HTMLTextAreaElement)
 
 	it('у <input> и <textarea> — текст значения, узлы — от сервера', () => {
-		const container = serve(fieldText)
+		const container = serve(markupOf('field-text'))
 		const served = [...container.querySelectorAll('*')]
 
 		hydrateServed(container, FieldText, {})
@@ -66,7 +64,7 @@ describe('текст поля · гидратация', () => {
 	 * оно доходит до узла сервера.
 	 */
 	it('новое значение после гидратации — в узле сервера', () => {
-		const container = serve(fieldText)
+		const container = serve(markupOf('field-text'))
 		const served = [input(container), textarea(container)]
 		const props = reactiveProps<ComponentProps<typeof FieldText>>({})
 
