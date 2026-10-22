@@ -1729,21 +1729,29 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   прямой потомок месяца; без движка снаружи под StrictMode поповер места
   встаёт над новым экземпляром и выбирает месяц; сервер и гидратация без
   расхождений, с панелью выбора на месте),
+  `ui/svelte/__tests__/calendar.spec.ts` (у Svelte ещё — кнопка заголовка,
+  её поповер и живая область те же при листании и выборе месяца, панель
+  выбора — прямой потомок корня поповера, а он — месяца, в месяце, строках
+  недели, шапке панели и подвале — без пробелов между узлами),
   `ui/webc/__tests__/calendar.spec.ts` (у Web Components ещё — заголовок
   месяца — Popover на `div`, `<div is="so-popover-div">`, кнопка заголовка,
   её поповер и живая область те же при листании и выборе месяца, панель
   выбора — в корне поповера, день под фокусом переживает листание месяца тем
   же узлом, а переставленный календарь без движка снаружи встаёт над новыми
   днями и поповерами мест),
-  `playground/vue/browser/calendar.spec.ts`,
-  `playground/vue/browser/webc-dates.spec.ts` (сетка и открытая панель выбора
-  Web Components — как у Vue) и серверные спеки Solid:
+  `playground/vue/browser/calendar.spec.ts` (и
+  `playground/vue/browser/svelte-host.spec.ts`: календарь Svelte и его
+  открытая панель выбора стоят, как у Vue, а
+  `playground/vue/browser/webc-dates.spec.ts` — так же сетка и открытая панель
+  выбора Web Components) и серверные спеки Solid и Svelte:
   «Calendar · серверный рендер» и «id и name — от createUniqueId()» в
-  `ui/solid/__tests__/collections.server.spec.tsx` (сетки названы
-  заголовками, дни — полными датами и с одной остановкой Tab, заполнители
-  скрыты, панель выбора — на месте, скрытая и без карточки, `id` двух
-  рендеров одни) и `ui/solid/__tests__/locale.server.spec.tsx` (заголовок
-  месяца и имена кнопок листания — на языке своего запроса).
+  `ui/solid/__tests__/collections.server.spec.tsx` и «id и name — от
+  $props.id()» в `ui/svelte/__tests__/collections.server.spec.ts` (сетки
+  названы заголовками, дни — полными датами и с одной остановкой Tab,
+  заполнители скрыты, панель выбора — на месте, скрытая и без карточки, `id`
+  двух рендеров одни), `ui/solid/__tests__/locale.server.spec.tsx` и
+  `ui/svelte/__tests__/locale.server.spec.ts` (заголовок месяца и имена
+  кнопок листания — на языке своего запроса).
 - **DateInput** — поле даты из частей (`spinbutton`) в группе, с
   `kind: 'datetime'` — даты и времени, с `timePrecision: 'second'` — до
   секунды: корень — `role="group"`, имя — `aria_label` или `aria_labelledBy`
@@ -1812,6 +1820,12 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   браузер оставил пустой, получает текст ядра одним узлом; атрибуты касания —
   пропами React, `contentEditable` с текстом — без предупреждения в консоли;
   сервер и гидратация — те же `id` частей, части нередактируемы),
+  `ui/svelte/__tests__/date-input.spec.ts` (у Svelte текст части пишет
+  `TextSpan` адаптера свойством `textContent`, а текстового узла Svelte в
+  части нет: часть, которую браузер оставил пустой или в которую написал
+  своё, получает текст ядра одним узлом; узел части тот же при наборе и при
+  смене локали; текст ряда — ровно дата с разделителями; на сервере — части с
+  `id` и текстом содержимым узла, `ui/svelte/__tests__/ssr.server.spec.ts`),
   `ui/webc/__tests__/date-input.spec.ts` (у Web Components текст части
   пишется, только когда разошёлся с узлом: опустошённая браузером часть
   получает текст ядра целиком, узел — тот же), поле каждого размера рядом с
@@ -1884,11 +1898,17 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   StrictMode поля и календарь встают над новыми экземплярами: набор в поле
   доходит до значения, выбор дня — до поля; сервер без панели, гидратация без
   расхождений),
+  `ui/svelte/__tests__/date-picker.spec.ts` (у Svelte ещё — подвал календарю
+  и очистку полю DatePicker отдаёт сниппетом, только когда в нём есть что
+  рисовать: сниппет непрозрачен; сервер рисует DatePicker полем с кнопкой,
+  без панели, — `ui/svelte/__tests__/ssr.server.spec.ts`),
   `ui/webc/__tests__/date-picker.spec.ts` (у Web Components ещё — смена режима
   переставляет кнопки, поле возвращается тем же узлом; смена `confirmable`
   строит календарь панели заново; переставленный DatePicker пересобирает и
   панель в `body`),
   `playground/vue/browser/date-picker.spec.ts`,
+  `playground/vue/browser/svelte-host.spec.ts` (поле DatePicker Svelte и его
+  открытая панель стоят, как у Vue),
   `playground/vue/browser/webc-dates.spec.ts` (панель DatePicker Web
   Components у поля — как у Vue) и
   `playground/vue/browser/anchored-swipe.spec.ts`.

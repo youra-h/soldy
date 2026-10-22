@@ -26,8 +26,12 @@ slot is `children`.
 > `DragAndDrop` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can
 > cancel),
-> Slider, Rating, ProgressLinear, Scroller, Pagination and the overlays — Popover (a panel at a
-> trigger with any content), Tooltip, Menu (an action menu at a button or on right click:
+> Slider, Rating, ProgressLinear, Scroller, Pagination, the dates — DateInput (a date or a date
+> and time typed in parts in the locale's format, selected and copied as a whole), Calendar (month
+> grids with a month and year picker; a day is `Calendar.Item`, its content — the `item` snippet)
+> and DatePicker (a date field and a calendar in a panel: a single date or a range, with an optional
+> confirmation) — and the overlays — Popover (a panel at a trigger with any content), Tooltip,
+> Menu (an action menu at a button or on right click:
 > `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` with `<Menu.RadioItem>`,
 > `<Menu.Group>`, `<Menu.Separator>`, submenus `<Menu.Submenu>` and an item with its own panel
 > `<Menu.PopoverItem>`, or `items` — an item with nested `items` is a submenu), Dialog (a modal
@@ -40,7 +44,11 @@ slot is `children`.
 > Drawer is the panel, of Toasts — the region. The server renders a Select from `items` with the
 > text of the selected option (with tags in `multiple`); options given as markup live in the panel
 > and join the collection on the client. The server renders a Menu as its trigger: the panel and
-> its items appear on the client. A field — and Select — gives its class and style to the root and
+> its items appear on the client. The server renders a DatePicker as its field with the calendar
+> button: the panel with the calendar appears on the client; a Calendar on its own the server
+> renders in full, its month and year picker in place and hidden. The date field, the calendar and
+> the DatePicker take their language from `LocaleProvider`: the order of parts, the first day of
+> the week, the month names. A field — and Select — gives its class and style to the root and
 > every other attribute to its `<input>` (a textarea — to its `<textarea>`); an item of a
 > collection — a menu item too — gives them to its row; a list box and tabs give them to the list
 > itself, `[role=listbox]` or `[role=tablist]`; a table gives them to the `<table>` itself, and its

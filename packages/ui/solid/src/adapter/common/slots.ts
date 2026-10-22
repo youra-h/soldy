@@ -45,6 +45,24 @@ export function hasSlot(content: unknown): boolean {
 }
 
 /**
+ * Значение слота — то, что слот отдал разметке: геттер пропа читается, а
+ * функция слота зовётся со scope живым (`liveScope`). Узлы компонентов в слоте
+ * Solid создаёт при этом чтении, под владельцем того, кто читает, поэтому
+ * читают его один раз — в мемо разворота: `resolveSlot` и `ResolvedSlot`.
+ *
+ * Живой scope собирается на вызов функции слота, а не на разворот: слоту без
+ * функции он не нужен, и пункт или звезда без слота лишнего объекта не держат.
+ */
+export function slotValue<TScope extends object>(
+	content: () => TSlotContent<TScope> | undefined,
+	scope: () => TScope,
+): JSX.Element | undefined {
+	const value = content()
+
+	return isSlotFunction(value) ? value(liveScope(scope)) : value
+}
+
+/**
  * Содержимое слота, развёрнутое один раз, — аксессором; пустой слот —
  * `undefined`.
  *
@@ -55,6 +73,14 @@ export function hasSlot(content: unknown): boolean {
  * `children()` Solid — один раз на смену того, что слот читает, — и оба
  * чтения идут из него.
  *
+ * Пустой слот здесь — по узлам, а не по значению (`slotValue`): компонент в
+ * слоте, который ничего не нарисовал, уступает место запасному. На этом стоят
+ * составные компоненты: внутреннему они отдают ветку, пустую по своему
+ * состоянию, — DatePicker полю даты свою кнопку очистки, пока `clearable`, — и
+ * поле рисует обёртку слота, только когда в ней что-то есть. Владелец
+ * коллекции выбирает между содержимым и элементами из данных по значению —
+ * `ResolvedSlot`.
+ *
  * Scope — аксессором, а функция слота получает его живым (`liveScope`), и
  * мемо `children` следит только за тем, что функция прочла сама, в теле.
  * Прочитанное в разметке слота (`scope.text`) смена scope обновляет на месте:
@@ -63,19 +89,12 @@ export function hasSlot(content: unknown): boolean {
  * `scope.selected ? … : null` — функцию перезапускает: так слот решает,
  * рисовать ли своё, а пустое, что он вернул при новом scope, уступает место
  * запасному. Готовые узлы слота от смены scope не пересоздаются вовсе.
- *
- * Живой scope собирается на вызов функции слота, а не на разворот: слоту без
- * функции он не нужен, и пункт или звезда без слота лишнего объекта не держат.
  */
 export function resolveSlot<TScope extends object>(
 	content: () => TSlotContent<TScope> | undefined,
 	scope: () => TScope,
 ): Accessor<JSX.Element | undefined> {
-	const resolved = children(() => {
-		const value = content()
-
-		return isSlotFunction(value) ? value(liveScope(scope)) : value
-	})
+	const resolved = children(() => slotValue(content, scope))
 
 	return () => {
 		const nodes = resolved()

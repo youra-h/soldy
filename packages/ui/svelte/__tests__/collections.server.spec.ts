@@ -28,7 +28,16 @@ import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import type { TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
-import { Accordion, ListBox, Menu, RadioGroup, Select, Table, Tags } from '@soldy-ui/svelte'
+import {
+	Accordion,
+	Calendar,
+	ListBox,
+	Menu,
+	RadioGroup,
+	Select,
+	Table,
+	Tags,
+} from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import DragAndDropHarness from './DragAndDrop.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
@@ -593,6 +602,86 @@ describe('Pagination · серверный рендер', () => {
 })
 
 /**
+ * Календарь на сервере: дни кладёт в коллекцию вид по месяцам сеток при
+ * сборке, а она идёт и на сервере, — сервер рисует сетки целиком, со всем, что
+ * пишут дням расширения коллекции: имя — полная дата, одна остановка Tab на
+ * все сетки. Имена сеток — `id` заголовков и ссылки таблиц на них — пишет
+ * плагин связок от id монтирования. Панель выбора месяца и года — поповер с
+ * `contained`: `Teleport` с `contained` рисует её на месте и на сервере —
+ * скрытой и без карточки: содержимое не монтируется до первого открытия
+ * (`lazyMount`).
+ */
+describe('Calendar · серверный рендер', () => {
+	const MONTHS = ['2026-09-01', '2026-10-01']
+	const FULL = new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeZone: 'UTC' })
+
+	/** Имена дней месяца `month` (1–12) 2026 года — полные даты, как их прочтёт скринридер. */
+	const namesOf = (month: number) =>
+		Array.from({ length: new Date(Date.UTC(2026, month, 0)).getUTCDate() }, (_, index) =>
+			FULL.format(Date.UTC(2026, month - 1, index + 1)),
+		)
+
+	/**
+	 * Панель места — прямой потомок заголовка, а он — месяца: за кнопкой
+	 * заголовка сразу идёт панель. С `contained` сервер Svelte рисует её на
+	 * месте, без обёрток телепорта.
+	 */
+	const PLACE =
+		/<div class="so-calendar__month"><div [^>]*class="so-popover so-calendar__heading"[^>]*><button [^>]*>[\s\S]*?<\/button>(<div [^>]*class="so-frame so-popover__panel"[^>]*>)/g
+
+	it('сетки названы заголовками: id заголовков и aria-labelledby таблиц на них', () => {
+		const { body } = render(Calendar, { props: { months: MONTHS } })
+		const titles = withClass(body, 'so-calendar__title-text')
+		const ids = attributeOf(titles, 'id')
+
+		expect(textOf(body)).toContain('September 2026')
+		expect(textOf(body)).toContain('October 2026')
+		expect(new Set(ids).size).toBe(2)
+		expect(ids).toEqual([expect.stringMatching(/\S/), expect.stringMatching(/\S/)])
+		expect(attributeOf(titles, 'aria-live')).toEqual(['polite', 'polite'])
+		expect(attributeOf(tagsWith(body, 'role', 'grid'), 'aria-labelledby')).toEqual(ids)
+	})
+
+	it('дни — с полными именами и одной остановкой Tab на все сетки, заполнители — под aria-hidden', () => {
+		const { body } = render(Calendar, { props: { months: MONTHS, value: '2026-10-14' } })
+		const days = withClass(body, 'so-calendar-item')
+		const fillers = withClass(body, 'so-calendar__filler')
+
+		expect(attributeOf(days, 'aria-label')).toEqual([...namesOf(9), ...namesOf(10)])
+		// Остановка — у дня с фокусом коллекции: он на выбранной дате
+		expect(attributeOf(tagsWith(body, 'tabindex', '0'), 'aria-label')).toEqual([
+			FULL.format(Date.UTC(2026, 9, 14)),
+		])
+		expect(new Set(attributeOf(days, 'tabindex'))).toEqual(new Set(['0', '-1']))
+		// Неделя en-US — с воскресенья: у сентября 2026 заполнители — 2 дня
+		// августа и 3 октября, у октября — 4 дня сентября, ноябрьских нет
+		expect(attributeOf(fillers, 'aria-hidden')).toEqual(Array.from({ length: 9 }, () => 'true'))
+		expect(fillers.filter((cell) => 'aria-label' in cell.attributes)).toEqual([])
+	})
+
+	it('панель выбора места — на месте, прямым потомком заголовка: скрыта и без карточки', () => {
+		const { body } = render(Calendar, { props: { months: MONTHS } })
+		// Группа поиска — один открывающий тег панели
+		const panels = [...body.replace(/<!--[\s\S]*?-->/g, '').matchAll(PLACE)].flatMap(
+			([, panel]) => tagsOf(panel),
+		)
+
+		expect(panels).toHaveLength(2)
+		expect(attributeOf(panels, 'data-contained')).toEqual(['true', 'true'])
+		expect(attributeOf(panels, 'style')).toEqual([
+			expect.stringContaining('display: none'),
+			expect.stringContaining('display: none'),
+		])
+		// Заголовок — триггер панели своего места
+		expect(attributeOf(withClass(body, 'so-calendar__title'), 'aria-controls')).toEqual(
+			attributeOf(panels, 'id'),
+		)
+		expect(withClass(body, 'so-calendar__picker')).toEqual([])
+		expect(withClass(body, 'so-list-box')).toEqual([])
+	})
+})
+
+/**
  * Окно на сервере: подхват — при сборке коллекции, а она идёт и на сервере.
  * Сервер рисует уже окно — первые 50 элементов, без распорок: замера нет.
  */
@@ -644,7 +733,7 @@ describe('DragAndDrop · серверный рендер', () => {
 })
 
 describe('id и name — от $props.id()', () => {
-	/** Страница: табы и панели, секции и радио — всё разметкой. */
+	/** Страница: табы и панели, секции и радио — всё разметкой, и календарь из двух сеток. */
 	function page(): string {
 		const tabs = render(TabsHarness, {
 			props: {
@@ -666,11 +755,17 @@ describe('id и name — от $props.id()', () => {
 		const radios = render(RadioGroupHarness, {
 			props: { items: [{ value: 'a' }, { value: 'b' }] },
 		}).body
+		const calendar = render(Calendar, {
+			props: { months: ['2026-09-01', '2026-10-01'] },
+		}).body
 
-		return tabs + accordion + radios
+		return tabs + accordion + radios + calendar
 	}
 
-	/** `id` и `name` страницы: табов, панели таба, заголовков и панелей секций, радио. */
+	/**
+	 * `id` и `name` страницы: табов, панели таба, заголовков и панелей секций,
+	 * радио, заголовков месяцев календаря и панелей выбора месяца и года.
+	 */
 	function idsOf(body: string) {
 		return {
 			tabs: attributeOf(tagsWith(body, 'role', 'tab'), 'id'),
@@ -678,6 +773,8 @@ describe('id и name — от $props.id()', () => {
 			heads: attributeOf(withClass(body, 'so-accordion-item__header'), 'id'),
 			bodies: attributeOf(withClass(body, 'so-accordion-item__content'), 'id'),
 			names: attributeOf(tagsWith(body, 'type', 'radio'), 'name'),
+			titles: attributeOf(withClass(body, 'so-calendar__title-text'), 'id'),
+			pickers: attributeOf(withClass(body, 'so-popover__panel'), 'id'),
 		}
 	}
 
@@ -693,7 +790,9 @@ describe('id и name — от $props.id()', () => {
 	it('id у частей свои, name у радио группы — один', () => {
 		const ids = idsOf(page())
 
-		expect(new Set([...ids.tabs, ...ids.heads, ...ids.bodies]).size).toBe(6)
+		expect(
+			new Set([...ids.tabs, ...ids.heads, ...ids.bodies, ...ids.titles, ...ids.pickers]).size,
+		).toBe(10)
 		expect(ids.panel).toEqual([expect.stringMatching(/\S/)])
 		expect(new Set(ids.names).size).toBe(1)
 	})
@@ -702,7 +801,15 @@ describe('id и name — от $props.id()', () => {
 	it('ни один id и name не от счётчика набора', () => {
 		const ids = idsOf(page())
 
-		for (const id of [...ids.tabs, ...ids.panel, ...ids.heads, ...ids.bodies, ...ids.names]) {
+		for (const id of [
+			...ids.tabs,
+			...ids.panel,
+			...ids.heads,
+			...ids.bodies,
+			...ids.names,
+			...ids.titles,
+			...ids.pickers,
+		]) {
 			expect(id).not.toMatch(/^so-\d+-/)
 		}
 	})

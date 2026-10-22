@@ -6,9 +6,10 @@
  * провайдера своему набору плагинов (`bundle.locale`), а плагины языка и имён
  * пишут компоненту тег и имена. Проверяется и сама проводка — источник в
  * наборе, — и строка на разметке: имя кнопки очистки Input собирается из
- * шаблона локали и имени поля. Смена локали доезжает до разметки без
- * перемонтирования, вложенный провайдер даёт поддереву свою, без провайдера —
- * английский. Параллельные серверные рендеры — `locale.server.spec.ts`.
+ * шаблона локали и имени поля, подписи колонок календаря — из имён дней
+ * недели. Смена локали доезжает до разметки без перемонтирования, вложенный
+ * провайдер даёт поддереву свою, без провайдера — английский. Параллельные
+ * серверные рендеры — `locale.server.spec.ts`.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -25,6 +26,7 @@ import {
 import { Button, Input, type ButtonProps } from '@soldy-ui/svelte'
 import Harness from './Locale.test.svelte'
 import LocaleInput from './LocaleInput.test.svelte'
+import Surround from './Surround.test.svelte'
 import { find, mount } from './mount'
 import { reactiveProps } from './reactive-props.svelte'
 
@@ -159,5 +161,42 @@ describe('LocaleProvider · строки на разметке', () => {
 		expect(
 			clearOf(find(container, '.so-test-inner', HTMLElement)).getAttribute('aria-label'),
 		).toBe('Clear Город')
+	})
+
+	/** Подписи колонок календаря по порядку. */
+	const weekdays = () =>
+		[...document.querySelectorAll('.so-calendar__weekday')].map((cell) =>
+			cell.textContent?.trim(),
+		)
+
+	/**
+	 * Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 —
+	 * воскресенье): у `en-US` и `ru-RU` подпись колонки — короткое имя.
+	 */
+	const week = (locale: string, first: number) => {
+		const short = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
+
+		return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+			short.format(Date.UTC(2026, 8, 20 + first + offset)),
+		)
+	}
+
+	it('смена локали меняет дни недели календаря на лету', () => {
+		const props = reactiveProps({
+			around: 'locale' as const,
+			control: 'calendar' as const,
+			locale: enUS,
+			calendar: { months: ['2026-09-01'] },
+		})
+		const { container } = mount(Surround, props)
+		const grid = find(container, '.so-calendar__grid', HTMLElement)
+
+		expect(weekdays()).toEqual(week('en-US', 0))
+
+		props.locale = ruRU
+		flushSync()
+
+		expect(find(container, '.so-calendar__grid', HTMLElement)).toBe(grid)
+		expect(weekdays()).toEqual(week('ru-RU', 1))
 	})
 })
