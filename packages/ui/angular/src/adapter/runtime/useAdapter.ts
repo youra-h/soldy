@@ -1,32 +1,14 @@
 /**
- * useAdapter — основной Angular runtime-слой (аналог useAdapter в React/Vue).
+ * useAdapter — связка adapter-context с Angular, аналог `useAdapter` у Vue.
  *
- * Принимает ГОТОВЫЙ adapter-context и возвращает TBinding:
+ * - состояние — сигнал: он уведомляет шаблон сам, с Zone.js и без;
+ * - компонент принят (`attach()`) сразу при создании связки;
+ * - `syncInputs` — дельта `ngOnChanges`, `syncEvents` — события ядра в
+ *   эмиттеры выходов, `destroy` — очистка.
  *
- * - state: сигнал с текущими значениями props из Core
- * - компонент принят (`adapter.attach()`) сразу при создании связки
- * - syncInputs(inputs): Angular → Core, только изменившиеся входы (вызывается из
- *   ngOnChanges)
- * - syncEvents(outputOf): Core → Angular, приёмник событий ядра; событие уходит
- *   в эмиттер выхода, если выход уже завёл его (`outputOf`)
- * - bindElement(el): DOM-биндинг для TElementPlugin
- * - destroy(): очистка подписок + adapter.destroy()
- *
- * Общее с остальными адаптерами — в обмене `adapter.connect()` из setup; здесь
- * только сигнал состояния и отдача событий эмиттерам выходов.
- *
- * Состояние — сигнал, а не поле + markForCheck(): markForCheck помечает путь
- * грязным, но не планирует проверку, поэтому работал только благодаря Zone.js.
- * Сигнал уведомляет шаблон сам и одинаково работает в zone- и zoneless-режиме.
- *
- * У коллекционного компонента контекстов два — свой и фасада коллекции, — и
- * фасад связывает `useCollectionAdapter`: всё то же, кроме `ctrl` и привязки
- * узла, они принадлежат компоненту. Базе компонента (`TComponentBase`) нужна
- * одна связка, поэтому две сводит `joinBindings`: состояние — одним видом,
- * входы, события и уничтожение — в обе, узел — только в свою. У части, которая
- * сразу и элемент коллекции над ней, и владелец своей, — пункта с подменю, —
- * контекстов три: свой, фасад элемента и фасад владельца — своей коллекции, —
- * и `joinBindings` сводит их так же, третьим параметром.
+ * У коллекционного компонента контекстов два — свой и фасада (у пункта с
+ * подменю три), а базе нужна одна связка: их сводит `joinBindings`. AGENTS.md
+ * (Angular), «Коллекция: два контекста — одна связка».
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
@@ -41,71 +23,34 @@ import type {
 	TStateSnapshot,
 	TInstanceState,
 } from '@soldy-ui/setup'
-import type { IPluginBundle } from '@soldy-ui/plugins'
 import { AngularProfile } from '../common/profile'
 
 /**
- * Вход по пропу дескриптора: тип его значения.
- *
- * Входы объявлены массивом имён, и значение входа Angular пишет в
- * одноимённое свойство инстанса. Строгая проверка шаблона сверяет привязку
- * `[text]="…"` с полем класса, а вход без поля пропускает молча. Поля
- * объявляет сгенерированный `T<Имя>Surface` (`generated/*.metadata.ts`) — по
- * фабрике дескриптора и имени из того же массива: свой проп, проп плагина
- * (`aria_label`) или служебный адаптера (`embedded`, `pluginProps`), как их
- * сводит `DescriptorComponentProps`. Имя вне пропсов дескриптора не
- * компилируется.
- *
- * Входы фасада коллекции (`items`, `mode`, `selected` элемента) — тоже по
- * дескриптору компонента: класс фасада объявляет пропсами `IComponentProps`, а
- * их типы несёт интерфейс пропсов ядра компонента (`IListBoxProps`).
+ * Тип входа по пропу дескриптора — поле входа в сгенерированной
+ * `T<Имя>Surface`: строгий шаблон сверяет привязку с ним.
  */
 export type TInputValue<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInput extends keyof DescriptorComponentProps<TDescriptorFn>,
 > = DescriptorComponentProps<TDescriptorFn>[TInput]
 
-/**
- * Что отдаёт выход — первый аргумент события ядра: `syncEvents` шлёт
- * `emit(args[0])`. У события без аргументов — `undefined`.
- */
+/** Первый аргумент события ядра — его шлёт `syncEvents`. */
 type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
 	? TArgs extends readonly []
 		? undefined
 		: TArgs[0]
 	: undefined
 
-/**
- * Выход по событию дескриптора: эмиттер того, что шлёт `syncEvents`.
- *
- * Строгая проверка шаблона читает выход как свойство класса: привязка
- * `(soActionPress)` без него не компилируется, а `$event` берёт тип у него.
- * Выход с этим типом — геттер сгенерированного `T<Имя>Surface`
- * (`generated/*.metadata.ts`) по фабрике дескриптора и полному имени события,
- * которые кодогенератор берёт из той же поверхности, что имена выходов; эмиттер
- * геттер заводит при первом чтении (`TComponentBase.createOutput`). Событие вне
- * карты дескриптора (`DescriptorAllEvents`) не компилируется. Выход фасада
- * коллекции — по дескриптору фасада: карту событий несёт он.
- */
+/** Тип выхода по событию дескриптора — геттер в сгенерированной `T<Имя>Surface`. */
 export type TOutputEmitter<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TEvent extends keyof DescriptorAllEvents<TDescriptorFn>,
 > = EventEmitter<TOutputValue<DescriptorAllEvents<TDescriptorFn>[TEvent]>>
 
 /**
- * Состояние компонента, как его читает шаблон: свойства инстанса, выходы
- * плагинов дескриптора (`names_selectAll` у Table, `layout_styles`) и, у
- * коллекционного компонента, свойства фасада, а у части, которая сразу и
- * элемент коллекции над ней, и владелец своей (пункт с подменю), — ещё и
- * свойства фасада владельца, своей коллекции (`TOwnerFacade`: `sections`,
- * `submenus`). Одноимённых у них нет: имена пропсов фасада префиксуются
- * (`tab_closable`), выходов плагинов — тоже (`names_`, `layout_`), а у фасада
- * элемента пункта с подменю пропсов нет вовсе.
- *
- * Выходы — в том же виде, что у остальных адаптеров (`TAdapterState` из
- * setup): геттер плагина читается, как свойство инстанса. Без них в типе
- * строгий шаблон не прочёл бы выход и по имени — TS7053 на
- * `state()['names_selectAll']`.
+ * Состояние, как его читает шаблон: свойства инстанса, выходы плагинов и
+ * свойства фасадов. Одноимённых у них нет — имена фасадов и плагинов
+ * префиксуются.
  */
 export type TBindingState<
 	TInstance,
@@ -117,106 +62,57 @@ export type TBindingState<
 	TInstanceState<TOutputs> &
 	TInstanceState<TOwnerFacade>
 
-/** Поиск эмиттера выхода по имени: заведённый — эмиттер, иначе `undefined`. */
+/** Заведённый эмиттер выхода по имени, иначе `undefined`. */
 export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
 
-/**
- * Связка компонента для базы (`TComponentBase`). `TFacade` — фасад коллекции у
- * компонента с двумя контекстами (`joinBindings`); у остальных его нет.
- * `TOutputs` — выходы плагинов дескриптора компонента (`DescriptorPluginOutputs`):
- * их тоже читает шаблон. `TOwnerFacade` — фасад владельца, своей коллекции, у
- * части с тремя контекстами (пункт с подменю): тогда `TFacade` — её фасад
- * элемента в коллекции над ней.
- */
+/** Связка одного контекста. */
+type TExchange<TState> = {
+	readonly state: Signal<TState>
+	syncInputs(inputs: object): void
+	/** Возвращает отписку. */
+	syncEvents(outputOf: TOutputOf): () => void
+	destroy(): void
+}
+
+/** Связка компонента для базы; у компонента с фасадом её собирает `joinBindings`. */
 export type TBinding<
 	TInstance = any,
 	TFacade = unknown,
 	TOutputs = unknown,
 	TOwnerFacade = unknown,
-> = {
-	/**
-	 * Свойства инстанса, выходы плагинов и свойства фасадов со снимком через
-	 * `valueOf()` — см. `TInstanceState`.
-	 */
-	readonly state: Signal<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>>
+> = TExchange<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>> & {
 	readonly ctrl: TInstance
-	/**
-	 * Фасад коллекции: шаблон зовёт через его контекст команды коллекции. У
-	 * части с тремя контекстами — фасад элемента: команды пункта с подменю — это
-	 * команды меню над ним (открыть его панель). Фасад владельца отдельно не
-	 * выходит: его свойства шаблон читает из `state`.
-	 */
+	/** Фасад коллекции; у пункта с подменю — фасад элемента в коллекции над ним. */
 	readonly facade: TFacade
-	readonly plugins: IPluginBundle | null
-	syncInputs(inputs: object): void
-	/**
-	 * Ставит приёмник событий ядра. `outputOf` — эмиттер выхода по имени, если
-	 * выход его уже завёл, иначе `undefined`; эмиттеров сам поиск не заводит.
-	 * Возвращает отписку приёмника.
-	 */
-	syncEvents(outputOf: TOutputOf): () => void
 	bindElement(el: Element | null): void
-	destroy(): void
 }
 
-/**
- * То же, что `TBinding`, но без `ctrl` и привязки узла: они принадлежат
- * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
- */
-export type TCollectionBinding<TFacade = any> = {
-	/** Свойства фасада со снимком через `valueOf()`. */
-	readonly state: Signal<TInstanceState<TFacade>>
+/** Связка фасада: без `ctrl` и узла — они у компонента. */
+export type TCollectionBinding<TFacade = any> = TExchange<TInstanceState<TFacade>> & {
 	readonly facade: TFacade
-	syncInputs(inputs: object): void
-	syncEvents(outputOf: TOutputOf): () => void
-	destroy(): void
 }
 
-/** Общая часть связок контекста — свой он или фасада. */
-type TExchangeBinding<C extends IComponentContract> = {
-	readonly state: Signal<TAdapterState<C>>
-	syncInputs(inputs: object): void
-	syncEvents(outputOf: TOutputOf): () => void
-	destroy(): void
-}
-
-/**
- * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
- * состояние, входы, события, приём и уничтожение.
- */
 function useExchange<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
-): TExchangeBinding<C> {
+): TExchange<TAdapterState<C>> {
 	const binding = adapter.connect(AngularProfile)
 	const values = signal<TStateSnapshot>({})
-
-	// Снимок связки неизменяемый и заменяется на каждое изменение: сигнал
-	// получает его целиком. Подписка сразу отдаёт каждое свойство тем же
-	// вызовом, что и триггер: так сигнал и заполняется
 	const unsubscribe = binding.state.subscribe(() => values.set(binding.state.getSnapshot()))
 
-	// Компонент принят: связку заводит `ngOnInit`, отброшенных сборок у
-	// Angular нет. `ngOnInit` идёт и на сервере, и элемент коллекции входит в
-	// неё к серверной разметке. Владелец собирается раньше своих элементов —
-	// хуки `ngOnInit` Angular зовёт в порядке шаблона, — и элементы разметки
-	// входят в коллекцию в порядке DOM
+	// Связку заводит `ngOnInit`, и на сервере тоже: хуки идут в порядке
+	// шаблона, и элементы разметки входят в коллекцию в порядке DOM
 	adapter.attach()
 
 	return {
 		state: computed(() => toInstanceState<C>(values())),
 
-		// ngOnChanges отдаёт дельту — только изменившиеся входы, поэтому
-		// `inputs.delta`: `inputs.full` сбросил бы к умолчанию все остальные.
-		// Чужих имён дельта не трогает: входы компонента и фасада идут обоим
+		// Дельта, а не `full`: тот сбросил бы к умолчанию остальные входы
 		syncInputs(inputs: object): void {
 			binding.inputs.delta(inputs)
 		},
 
+		// Эмиттер ищется на каждое событие: его заводит первое чтение выхода
 		syncEvents(outputOf: TOutputOf): () => void {
-			// Эмиттер ищется на каждое событие, а не один раз: его заводит первое
-			// чтение выхода, и подписка из кода после монтирования получает
-			// события с этого момента. Выход никто не читал — отдавать некому.
-			// Отдаётся первый аргумент — его и обещает тип выхода (`TOutputEmitter`)
 			return binding.events.listen((exportName, args) => outputOf(exportName)?.emit(args[0]))
 		},
 
@@ -232,72 +128,35 @@ export function useAdapter<C extends IComponentContract>(
 ): TBinding<C['instance'], unknown, C['plugins']['outputs']> {
 	return {
 		...useExchange(adapter),
-
 		ctrl: adapter.instance,
 		facade: undefined,
-		plugins: adapter.bundle,
-
-		bindElement(el: Element | null): void {
-			adapter.bindElement(el)
-		},
+		bindElement: (el) => adapter.bindElement(el),
 	}
 }
 
-/**
- * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
- *
- * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы,
- * события, приём и уничтожение у фасада те же, что у компонента, а `ctrl` и
- * привязки узла — нет:
- *
- * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
- *   ждут сам компонент;
- * - своего узла у фасада нет: он делит набор компонента, и корень к
- *   `TElementPlugin` привязывает связка компонента.
- *
- * Сам фасад связка отдаёт: элемент коллекции зовёт через его контекст команды
- * коллекции (`choose`, `toggle`, `close`).
- */
 export function useCollectionAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
 ): TCollectionBinding<C['instance']> {
 	return { ...useExchange(adapter), facade: adapter.instance }
 }
 
-/** Входы, события и уничтожение — то, что `joinBindings` раздаёт компоненту и фасадам. */
-type TJoined = Pick<TCollectionBinding, 'syncInputs' | 'syncEvents' | 'destroy'>
-
 /**
- * Связка компонента с двумя контекстами — для базы, которой нужна одна:
- *
- * - состояние — одним видом, свойства компонента и фасада (`TBindingState`);
- * - входы — обоим: дельта Angular несёт входы обоих, и каждый берёт свои;
- * - события — от обоих, в выходы одного компонента;
- * - узел — только свой: у фасада его нет;
- * - уничтожение — фасад раньше компонента, в порядке, обратном приёму, как у
- *   React: элемент выходит из коллекции, пока его набор плагинов цел.
- *
- * Третий параметр — фасад владельца у части с тремя контекстами (пункт с
- * подменю: фасад элемента — вход в коллекцию меню над ним, фасад владельца —
- * свои пункты). Он идёт тем же путём, что фасад элемента: его свойства — в
- * том же виде состояния, входы и события — ему тоже, уничтожение — после
- * фасада элемента и раньше компонента. Наружу как фасад выходит фасад
- * элемента: через его контекст шаблон зовёт нажатие строки.
+ * Одна связка из своей и фасадов: состояние — одним видом, входы и события —
+ * всем, узел — только свой, уничтожение — фасады раньше компонента: элемент
+ * выходит из коллекции, пока его набор плагинов цел.
  */
 export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknown>(
 	owner: TBinding<TInstance, unknown, TOutputs>,
 	facade: TCollectionBinding<TFacade>,
 	ownerFacade?: TCollectionBinding<TOwnerFacade>,
 ): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade> {
-	// Фасады — по порядку уничтожения: элемент выходит из коллекции над ним
-	// раньше, чем снимется своя
-	const facades: readonly TJoined[] = ownerFacade ? [facade, ownerFacade] : [facade]
+	// По порядку уничтожения: элемент выходит из коллекции над ним раньше своей
+	const facades: readonly TExchange<unknown>[] = ownerFacade ? [facade, ownerFacade] : [facade]
 
 	return {
 		state: computed(() => ({ ...ownerFacade?.state(), ...facade.state(), ...owner.state() })),
 		ctrl: owner.ctrl,
 		facade: facade.facade,
-		plugins: owner.plugins,
 
 		syncInputs(inputs: object): void {
 			owner.syncInputs(inputs)
@@ -313,9 +172,7 @@ export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknow
 			}
 		},
 
-		bindElement(el: Element | null): void {
-			owner.bindElement(el)
-		},
+		bindElement: (el) => owner.bindElement(el),
 
 		destroy(): void {
 			for (const each of facades) each.destroy()

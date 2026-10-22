@@ -56,7 +56,7 @@ import type { TTableColumnSource } from '@soldy-ui/core'
 import { ɵDomRendererFactory2 } from '@angular/platform-browser'
 import { TForwardingRendererFactory } from '../src/adapter/attrs/factory'
 import { TForwardRegistry } from '../src/adapter/attrs/registry'
-import { assertTemplateHost } from '../src/adapter/runtime/component.base'
+import { assertTemplateHost } from '../src/adapter/runtime/root/host-element'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
 /**
