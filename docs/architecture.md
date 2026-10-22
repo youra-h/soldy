@@ -2268,7 +2268,7 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Tags / Select / Table / Virtual / Scroller / Pagination / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / DateInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Tags / Select / Calendar / DatePicker / Table / Virtual / Scroller / Pagination / DragAndDrop)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2304,7 +2304,9 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли);
   `rootStyle` (`root-style.svelte.ts`) — attachment стиля корня по свойствам;
   `fieldText` — attachment текста поля, который пишет текст в узел, только
-  когда он разошёлся с узлом;
+  когда он разошёлся с узлом; `TextSpan` — `span`, чей текст пишет только он,
+  свойством `textContent` и только когда текст разошёлся с узлом (часть поля
+  даты);
   `Teleport` — содержимое отдельным корнем `mount` с контекстами места в
   своей обёртке (`div` со стилем `display: contents`), которую он двигает в
   цель, в узел места с `disabled` и вон из документа без цели.
@@ -2360,6 +2362,15 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   на экземпляре поля Select (`ctrl={field}`), теги в нём в `multiple` —
   встроенный Tags на инстансе и коллекции тегов Select; слоты поля по сторонам
   Select отдаёт ему всегда, как Vue свои шаблоны `leading` и `trailing`.
+  Календарь — тот же рецепт: свой контекст и контекст фасада, дни — элементы
+  коллекции (`Calendar.Item`), которые входят в неё при инициализации, на
+  сервере тоже. Месяцы — петля по месту сетки (ключ — индекс), недели — по
+  первой дате, дни — по дате; день над другим элементом той же даты —
+  новый (`{#key}`): `ctrl` день берёт при сборке. Поповер места стоит по
+  наличию записи `pickers`, а не по ней самой: запись новая на каждую смену,
+  а Popover и ListBox места собираются один раз. DatePicker отдаёт свои поля,
+  календарь и движок компонентам целиком (`ctrl`, `engine`), как Select —
+  поле; его панель — Frame, и на сервере её нет.
   Петля — по ключу записи: записи `drawn` и ячейки строки новые на каждую
   смену, а узел живого ключа `{#each}` оставляет на месте и отдаёт ему новую
   запись. Своей границы перерисовки, как `withRenderBoundary` у React и
@@ -2397,6 +2408,15 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   сервере текст уходит атрибутом `value`. Отметку и «выбрано частично»
   (`checked`, `indeterminate`) Svelte пишет свойствами сам, своего поля, как
   `NativeInput` у React, у адаптера нет.
+- **Текст части поля даты — `TextSpan`**: свой текст Svelte держит в своём
+  текстовом узле и меняет его данные (`nodeValue`), а на касание часть
+  редактируемая — браузер оставляет её пустой или из своих узлов, и запись
+  Svelte ушла бы в вынутый узел. Поэтому у содержимого части один писатель:
+  `TextSpan` пишет весь текст свойством `textContent`, только когда он
+  разошёлся с узлом, — как текст элемента у Vue, React и Solid. Узла Svelte в
+  части нет: `span` без детей и attachment. На сервере текст — содержимое
+  узла; ветка `{#if}` у сервера и браузера разная (`BROWSER`), и при
+  гидратации Svelte пересобирает часть сам — текст ядра в ней одним узлом.
 - **Слоты — сниппеты**: `children` рендерится через `{@render children?.()}`,
   именованные области layout'а передаются сниппет-пропами.
 - **Атрибуты идут одним объектом** — `toRootProps`: у `<svelte:element>` тип
@@ -2426,7 +2446,10 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   пустым полем. Select из данных (`items`, `engine`) сервер рисует с текстом
   выбранного, в `multiple` — с тегами: его опции в коллекции с самой сборки.
   Пункты Menu — и разметкой, и из данных — стоят в панели тоже: сервер рисует
-  меню его корнем с триггером, а панель с пунктами появляется в браузере.
+  меню его корнем с триггером, а панель с пунктами появляется в браузере. Так
+  же DatePicker: сервер рисует его полем с кнопкой календаря, а панель с
+  календарём появляется в браузере. Календарь сам по себе сервер рисует
+  целиком — с днями и панелью выбора месяца и года на месте (`contained`).
 - Svelte не говорит компоненту, гидратация ли это, поэтому панель с
   `contained` с первой отрисовки `Teleport` рисует прямо на месте, как сервер,
   и при первом уходе с места она один раз собирается заново. Дальше смена
