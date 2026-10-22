@@ -534,6 +534,34 @@ describe('превью tabs', () => {
 })
 
 /**
+ * Область контекстного меню — одна разметка на все хосты: превью сравнивают
+ * колонками. Это нативная кнопка: меню над ней вызывает и Shift+F10, а он идёт
+ * элементу под фокусом, — и в обходе Tab у кнопки свои роль и имя, без
+ * `tabindex` (WCAG 4.1.2); у `div` с `tabindex` их нет. Связки с меню у
+ * области нет: Enter меню не открывает. Режим область берёт из пропсов
+ * колонки, поэтому она — в колонке пропа.
+ */
+describe('превью menu', () => {
+	it.each(drawing('menu'))(
+		'%s: область контекстного меню — нативная кнопка без связки с меню',
+		async (framework) => {
+			const wrapper = await openPage(framework, 'menu')
+			const row = rowOf(wrapper, 'openOn')
+
+			await enter(row, 'contextmenu')
+
+			const area = stagesOf(row)[0].get('.so-menu > button:not(.so-button)').element
+
+			expect(area.getAttribute('type')).toBe('button')
+			expect(area.hasAttribute('tabindex')).toBe(false)
+			expect(area.hasAttribute('aria-haspopup')).toBe(false)
+			expect(area.textContent?.trim()).toBe('Правая кнопка, долгое касание или Shift+F10')
+			expect(firstLines()).toEqual([])
+		},
+	)
+})
+
+/**
  * Переход между страницами — то, чего дымовая проверка выше не видит.
  *
  * Она монтирует `ComponentPage` заново на каждый идентификатор, а в браузере

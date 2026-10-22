@@ -350,7 +350,7 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 - **TElevator** (base) - Caches string/symbol keys to unique symbols
 - **Pattern**: Abstracts parent-child context passing
-- Implementations live in the adapters: `TVueElevator` (provide/inject), `TReactElevator` (one React Context carrying a layer of values, `Elevate` hands it to children), `TSvelteElevator` (`setContext`/`getContext`), `TSolidElevator` (one Solid context carrying a layer of values per owner: the assembly takes it with `useElevator()`, `Elevate` hands it to children), `TAngularElevator` (one DI token carrying a layer of values per owner, the owner adds it with `providers: [provideElevator()]`), `TWebcElevator` (the place context: `down()` gives the value to the owner's host element, `up()` takes the nearest one above the element in the document; the assembly gets a factory per host, `createWebcElevator(host)`)
+- Implementations live in the adapters: `TVueElevator` (provide/inject), `TReactElevator` (one React Context carrying a layer of values, `Elevate` hands it to children), `TSvelteElevator` (`setContext`/`getContext` of the component: the assembly takes a factory with `useElevator()`, its elevators share the assembly layer, which remembers the ancestor's value under each key the assembly lowered, so `up()` returns the ancestor's value even after the component's own `down()`), `TSolidElevator` (one Solid context carrying a layer of values per owner: the assembly takes it with `useElevator()`, `Elevate` hands it to children), `TAngularElevator` (one DI token carrying a layer of values per owner, the owner adds it with `providers: [provideElevator()]`), `TWebcElevator` (the place context: `down()` gives the value to the owner's host element, `up()` takes the nearest one above the element in the document; the assembly gets a factory per host, `createWebcElevator(host)`)
 
 ### Key Files
 
@@ -1735,7 +1735,10 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   `TOutputEmitter` (тип выхода: эмиттер первого аргумента события
   дескриптора); `TComponentBase` (общий жизненный цикл и корень компонента по
   описанию корня `TRootSpec` — см. «DOM-биндинг»), `SlotDirective`
-  (`<ng-template slot>`), `AttributesDirective` (`[so-attributes]`) — набор
+  (`<ng-template slot>`), `SlotOutletDirective` (`[so-slot-outlet]`) — вывод
+  шаблона слота с инжектором места, а не объявления: пункты `item-content`
+  входят в коллекцию подменю, у которого шаблон выведен, —
+  `AttributesDirective` (`[so-attributes]`) — набор
   ядра на элементе шаблона: `aria` поля на `<input>`, `clearAria` на кнопке
   очистки, — `FieldTextDirective` (`input[so-field-text]`) — текст поля в
   узел, только когда он разошёлся с узлом, — и `TextPipe` (`soText`) —
@@ -2164,6 +2167,13 @@ RadioGroup, ListBox, Tabs и Accordion собираются, как у Vue и Sv
 основной проекции он снял бы запасное содержимое, поэтому шаблоны уходят в
 слив `<ng-content select="ng-template[slot]">`.
 
+DI шаблона Angular ведёт от места объявления, а не вывода, поэтому шаблон, в
+котором пишут элементы коллекции, выводится с инжектором места —
+`[so-slot-outlet]`: так панель подменю из данных (`item-content` меню)
+рисуется в подменю, и пункты из неё входят в его коллекцию, а не в
+коллекцию меню, где шаблон написан. Владелец внутри такого шаблона — группа
+переключателей — своим пунктам ближе места.
+
 Корень база отдаёт `TElementPlugin` эффектом после отрисовки — только в
 браузере, как остальные адаптеры: на сервере плагинам узел эмуляции DOM ни к
 чему, а без `requestAnimationFrame` в Node `TElementPlugin` его и не объявил
@@ -2235,7 +2245,16 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
   элемент написал потребитель.
 - Шаблон слота элемента, заданный владельцу (`item-close-icon`,
   `item-indicator-icon`), рисуется у каждого элемента вместо своего: что
-  шаблон нарисовал, Angular не сообщает, — как сниппет у Svelte.
+  шаблон нарисовал, Angular не сообщает, — как сниппет у Svelte. Так же у
+  меню: заданный `item-content` рисуется у каждого подменю из данных вместо
+  его пунктов, и где у Vue и Solid пустой `item-content` оставляет подменю его
+  пункты из данных, у Angular панель такого подменю пуста.
+- На Angular 21.1–22.1.5 владелец внутри шаблона `item-content` (группа,
+  группа переключателей, подменю разметкой) своим пунктам слоя лифта не
+  отдаёт: пункт читает слой со `skipSelf`, а в представлении с инжектором
+  места Angular до 22.1.6 применял `skipSelf` ко всем его узлам, и пункт
+  получал слой подменю, у которого шаблон выведен. Пункты прямо в шаблоне
+  входят в коллекцию подменю на любой версии.
 - Слоты, по которым компонент решает, рисовать ли своё (`close-icon` таба,
   `leading-icon` секции, `leading` и `trailing` набора табов), — только
   шаблоны `<ng-template slot>`: есть ли что-то в `<ng-content>`, Angular не
@@ -2291,8 +2310,18 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   цель, в узел места с `disabled` и вон из документа без цели.
 - `adapter/locale/` — `LocaleProvider`: свой `TLocaleSource` детям через
   `setContext`, смена пропа — в тот же источник.
-- `adapter/elevator/` — `TSvelteElevator` через `setContext`/`getContext`
-  (ограничение то же, что у Vue: только во время инициализации компонента).
+- `adapter/elevator/` — лифт сборки `useElevator()`: setup-функция зовёт его
+  один раз, в начале сборки, и отдаёт фабрику всем своим расширениям.
+  `TSvelteElevator` работает через `setContext`/`getContext` (ограничение то
+  же, что у Vue: только во время инициализации компонента), а лифты фабрики
+  делят слой сборки. Контекст Svelte — карта компонента, копия карты предка, и
+  `getContext` после своего `setContext` по тому же ключу отдал бы своё. Слой
+  помнит значение предка: `down()` перед первой своей записью ключа
+  запоминает, что под ним лежит, а `up()` по опущенному ключу отдаёт
+  запомненное, по остальным — `getContext`. Поэтому компонент, который по
+  одному ключу и берёт, и опускает (пункт с подменю), получает значение
+  предка в любом порядке, как у Vue, React, Solid и Angular. Снимка всей
+  карты (`getAllContexts`) нет — это копия на каждый элемент коллекции.
   Владелец коллекции опускает движок и регистратор в сборке, элемент читает их
   в своей.
 - `adapter/toasts/` — API тостов: `useToasts()` берёт его лифтом менеджера
@@ -2325,18 +2354,18 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   инстансного `<script>` не видит, и части меню и само подменю он берёт
   импортами модуля, а запись подменю из данных (`submenus`) кладёт в пропсы
   `Menu.Submenu` спредом, как `v-bind` у Vue. Подменю — три контекста на одном
-  наборе (свой, фасад пункта, фасад меню), и фасад пункта собирается раньше
-  фасада меню: `getContext` читает карту компонента вместе с его же
-  `setContext`, и после своего `down()` лифт отдал бы своё — временно, до
-  869fkthx3. Поле Select — встроенный Input на экземпляре поля Select
-  (`ctrl={field}`), теги в нём в `multiple` — встроенный Tags на инстансе и
-  коллекции тегов Select; слоты поля по сторонам Select отдаёт ему всегда, как
-  Vue свои шаблоны `leading` и `trailing`. Петля — по ключу
-  записи: записи `drawn` и ячейки строки новые на каждую смену, а узел живого
-  ключа `{#each}` оставляет на месте и отдаёт ему новую запись. Своей границы
-  перерисовки, как `withRenderBoundary` у React и `_TableRowCells` у Vue,
-  ячейкам не нужно: выбор строки меняет её атрибуты, а содержимое ячейки
-  читает только ячейку и сниппет `cell`. Table — тот же рецепт, что ListBox, с
+  наборе (свой, фасад пункта, фасад меню) и одном лифте сборки
+  (`useElevator()`): фасад пункта берёт коллекцию меню над ним, фасад меню
+  опускает свою, и порядок их сборки не важен. Поле Select — встроенный Input
+  на экземпляре поля Select (`ctrl={field}`), теги в нём в `multiple` —
+  встроенный Tags на инстансе и коллекции тегов Select; слоты поля по сторонам
+  Select отдаёт ему всегда, как Vue свои шаблоны `leading` и `trailing`.
+  Петля — по ключу записи: записи `drawn` и ячейки строки новые на каждую
+  смену, а узел живого ключа `{#each}` оставляет на месте и отдаёт ему новую
+  запись. Своей границы перерисовки, как `withRenderBoundary` у React и
+  `_TableRowCells` у Vue, ячейкам не нужно: выбор строки меняет её атрибуты,
+  а содержимое ячейки читает только ячейку и сниппет `cell`. Table — тот же
+  рецепт, что ListBox, с
   окном `Virtual` и без drag-and-drop; `Virtual` — обёртка без узла,
   подключение к окну опускает контекстом, `DragAndDrop` — так же, свой
   экземпляр. Перестановка элемента из данных двигает его узел петлёй с ключом,
@@ -3836,7 +3865,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/vue            | Vue components (`Button`, `CheckBox`, …; collections with parts — `Tabs` with `Tabs.Item` / `Tabs.Content` and flat `TabsItem` / `TabsContent`; `Base*` declarations) + adapter (`createVueAdapterContext`, `useAdapter`, `useCollectionAdapter`, `useProps`, `useEmits`, `useExpose`, `exposeRoot`, `VueProfile`, `VueNaming`, `roleIcon`, `useSplitAttrs`, `TVueElevator`, `VueElevatorFactory`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | @soldy-ui/react          | Components (`Button`, `ComponentView`, …; collections with parts — `ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TableColumn`, `TableRow`), `useSetupXxx` hooks, `useAdapterContext`, `useAdapter`, `useCollectionAdapter`, `ReactProfile`, `ReactNaming`, `TReactElevator`, `Elevate`, `renderSlot`, `toAriaProps`, `toRootProps`, `toWrappedRootProps`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TProgressLinearComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TSliderComponent`, `TRatingComponent`, `TScrollerComponent`, `TPaginationComponent` (its page is an internal part), `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                |
-| @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `SvelteElevatorFactory`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `useElevator`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `ProgressLinear`, `Skeleton`, `Slider`, `Rating`, `Scroller`, `DateInput`, `DatePicker`, `Pagination` (its page is an internal part), `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Tags` with `Tags.Item`, `Select` with `Select.Item` / `Select.Group`, `Calendar` with `Calendar.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TagsItem`, `SelectItem`, `SelectGroup`, `CalendarItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `liveScope`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                                        |
 | @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |

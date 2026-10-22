@@ -3,8 +3,9 @@
 	корня Vue, в том же порядке: строка, панель, а в конце — слив шаблонов
 	слотов. Слоты контракта: leading, header (scope { text, open }),
 	arrow-icon, default — пункты подменю; item (scope { item, text }),
-	item-leading, item-trailing, item-header (scope { item, text, open }) и
-	item-arrow-icon (scope { item }) — слоты пунктов из данных.
+	item-leading, item-trailing, item-header (scope { item, text, open }),
+	item-arrow-icon (scope { item }) и item-content (scope { item }) — слоты
+	пунктов из данных.
 
 	Строка — `Button` на `div`, помечена `#control`, как у пункта-действия: на
 	неё ложится то, что потребитель написал на корне, кроме класса и стиля, а
@@ -56,8 +57,9 @@
 	подменю следующего уровня — этого же компонента, по записи `submenus`, — по
 	порядку, ключ — `uid`. Слоты пункта пробрасываются целиком и только
 	заданные, а свои `item` и `item-*` подменю отдаёт следующему уровню под
-	теми же именами. `item-content` — временно не пробрасывается, до
-	https://app.clickup.com/t/869fktew3 (см. шаблон меню).
+	теми же именами. `item-content` — панель подменю следующего уровня: его
+	шаблон `default` с выводом `[so-slot-outlet]`, как у меню (см. шаблон
+	меню).
 -->
 <ng-template #entries let-items>
 	@for (item of items; track item.uid) {
@@ -89,6 +91,14 @@
 						<ng-container
 							[ngTemplateOutlet]="arrow"
 							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-content'); as panel) {
+					<ng-template slot="default" ngProjectAs="ng-template[slot]">
+						<ng-container
+							[so-slot-outlet]="panel"
+							[so-slot-outlet-context]="{ item }"
 						/>
 					</ng-template>
 				}
@@ -212,28 +222,39 @@
 		показанного: группа с подписью — в `<div so-menu-group>`, пункты без
 		группы — прямо в списке, между соседними секциями, пока его просит
 		подменю (`groupSeparators` — своё, от меню не переходит), — разделитель.
+
+		Пункты бывают и шаблоном `default` — так меню над ним отдаёт подменю из
+		данных свой `item-content`. Шаблон непрозрачен и рисуется вместо своих
+		пунктов из данных. Шаблон, а не проекция: запасное содержимое
+		`<ng-content>` Angular выбирает один раз, при создании, — по тому, стоит
+		ли что-то в проекции, — и ветка `@if` с выводом `item-content`,
+		спроецированная в подменю, сняла бы пункты из данных и с ложным условием.
 	-->
 	<div class="so-menu__list">
-		<ng-content>
-			@for (section of state()['sections'] ?? []; track section.key; let first = $first) {
-				@if (state()['groupSeparators'] && !first) {
-					<div so-menu-separator></div>
-				}
-				@if (section.group; as group) {
-					<div so-menu-group [label]="group.label">
+		@if (slot('default'); as panel) {
+			<ng-container [ngTemplateOutlet]="panel" />
+		} @else {
+			<ng-content>
+				@for (section of state()['sections'] ?? []; track section.key; let first = $first) {
+					@if (state()['groupSeparators'] && !first) {
+						<div so-menu-separator></div>
+					}
+					@if (section.group; as group) {
+						<div so-menu-group [label]="group.label">
+							<ng-container
+								[ngTemplateOutlet]="entries"
+								[ngTemplateOutletContext]="{ $implicit: section.items }"
+							/>
+						</div>
+					} @else {
 						<ng-container
 							[ngTemplateOutlet]="entries"
 							[ngTemplateOutletContext]="{ $implicit: section.items }"
 						/>
-					</div>
-				} @else {
-					<ng-container
-						[ngTemplateOutlet]="entries"
-						[ngTemplateOutletContext]="{ $implicit: section.items }"
-					/>
+					}
 				}
-			}
-		</ng-content>
+			</ng-content>
+		}
 	</div>
 </div>
 <!--

@@ -18,19 +18,20 @@
 
 import { SliderDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	useAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { SliderProps } from './base.component'
 
 export function setupSlider(getProps: () => SliderProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const adapter = createSvelteAdapterContext(SliderDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
+	}).use(TFieldControlExtension, { elevator })
 
 	// Логики здесь нет: нажатия и протяжку ведёт `TSlidePointerPlugin`, клавиши
 	// и жест скринридера — `TSlideKeyboardPlugin`, позиции и состояния ручек,

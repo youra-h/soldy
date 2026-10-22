@@ -23,9 +23,9 @@
 
 import { TextareaDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	useAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { TextareaProps } from './base.component'
@@ -35,11 +35,12 @@ export function setupTextarea(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const adapter = createSvelteAdapterContext(TextareaDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
+	}).use(TFieldControlExtension, { elevator })
 
 	return useAdapter(adapter, getProps, receive)
 }

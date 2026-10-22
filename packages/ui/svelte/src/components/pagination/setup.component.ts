@@ -23,11 +23,11 @@ import {
 	TCollectionExtension,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { PaginationProps } from './base.component'
@@ -37,6 +37,7 @@ export function setupPagination(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(PaginationDescriptor(), {
 		ctrl: props.ctrl,
@@ -56,7 +57,7 @@ export function setupPagination(
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
-	).use(TCollectionExtension, { elevator: SvelteElevatorFactory })
+	).use(TCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,
