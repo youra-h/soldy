@@ -233,16 +233,17 @@ const MENU_BINDINGS = `
  * Триггер меню — Button, связку с меню и вид «нажата» он кладёт на себя
  * директивой набора. У контекстного меню (`openOn: 'contextmenu'`) в слоте
  * область, как «файл» у потребителя: меню вызывают над ней правой кнопкой,
- * долгим касанием и Shift+F10 — она фокусируемая, — и панель встаёт у точки
- * вызова. Режим область берёт из пропсов колонки: у колонки экземпляра его
- * нет, и там меню вызывают над кнопкой.
+ * долгим касанием и Shift+F10, и панель встаёт у точки вызова. Область —
+ * нативная кнопка, как у Vue: под фокусом для Shift+F10, со своими ролью и
+ * именем и без связки с меню. Режим область берёт из пропсов колонки: у
+ * колонки экземпляра его нет, и там меню вызывают над кнопкой.
  */
 const MENU_TRIGGER = `
 	<ng-template slot="trigger" let-triggerAria="triggerAria" let-triggerDataset="triggerDataset">
 		@if (openOn() === 'contextmenu') {
-			<div tabindex="0" style="padding: 24px 32px; border: 1px dashed; border-radius: 8px">
+			<button type="button" style="padding: 24px 32px; border: 1px dashed; border-radius: 8px">
 				Правая кнопка, долгое касание или Shift+F10
-			</div>
+			</button>
 		} @else {
 			<button
 				so-button

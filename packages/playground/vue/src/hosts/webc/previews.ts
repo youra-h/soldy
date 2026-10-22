@@ -269,13 +269,14 @@ const ITEMS = COLLECTION_ITEMS
 
 /**
  * Область контекстного меню — как «файл» у потребителя, как у Vue: меню
- * вызывают над ней правой кнопкой, долгим касанием и Shift+F10 — она
- * фокусируемая, — и панель встаёт у точки вызова.
+ * вызывают над ней правой кнопкой, долгим касанием и Shift+F10, и панель
+ * встаёт у точки вызова. Область — нативная кнопка, как у Vue: под фокусом для
+ * Shift+F10, со своими ролью и именем и без связки с меню.
  */
 const contextArea = (): Node => {
-	const node = document.createElement('div')
+	const node = document.createElement('button')
 
-	node.tabIndex = 0
+	node.type = 'button'
 	node.style.cssText = 'padding:24px 32px; border:1px dashed; border-radius:8px'
 	node.textContent = 'Правая кнопка, долгое касание или Shift+F10'
 
