@@ -1,0 +1,65 @@
+<!--
+	Корень — сам хост (`<div so-select-item>`), строка — `Button` на `span`,
+	помечена `#control`: на неё ложится то, что потребитель написал на корне,
+	кроме класса и стиля, а директива набора кладёт `aria` и `dataset` опции
+	поверх `tabindex="-1"`. Слоты контракта: leading, default (scope
+	{ text, selected }), trailing, indicator-icon (scope { selected }).
+
+	Обёртка отметки рисуется, пока сторона задана (`indicator` не `none`), — и у
+	невыбранных тоже: она резервирует место, иначе строка прыгала бы при
+	выборе. Иконка внутри — только у выбранной, слот `indicator-icon` подменяет
+	её. Сторона логическая (`start`/`end`): `dir` стоит на корне, а строка —
+	flex. `aria-hidden`: состояние скринридеру объявляет `aria-selected`.
+-->
+<span
+	so-button
+	#control
+	embedded="select.row"
+	[size]="state()['size']"
+	[variant]="state()['variant']"
+	[disabled]="state()['disabled']"
+	[so-attributes]="{ tabindex: '-1', ...state()['aria'], ...state()['dataset'] }"
+	(click)="choose()"
+>
+	<ng-container ngProjectAs="[slot=leading]">
+		@if (state()['indicator'] === 'start') {
+			<ng-container [ngTemplateOutlet]="mark" />
+		}
+		<ng-content select="[slot=leading]" />
+	</ng-container>
+	@if (slot('default'); as content) {
+		<ng-container
+			[ngTemplateOutlet]="content"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				selected: state()['selected'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content>{{ state()['text'] }}</ng-content>
+	}
+	<ng-container ngProjectAs="[slot=trailing]">
+		<ng-content select="[slot=trailing]" />
+		@if (state()['indicator'] === 'end') {
+			<ng-container [ngTemplateOutlet]="mark" />
+		}
+	</ng-container>
+</span>
+<ng-template #mark>
+	<span class="so-select-item__indicator" aria-hidden="true">
+		@if (slot('indicator-icon'); as indicator) {
+			<ng-container
+				[ngTemplateOutlet]="indicator"
+				[ngTemplateOutletContext]="{ selected: state()['selected'] ?? false }"
+			/>
+		} @else if (state()['selected']) {
+			<svg
+				so-icon
+				embedded="select.indicator"
+				so-role-icon="check"
+				[size]="state()['size']"
+			></svg>
+		}
+	</span>
+</ng-template>
+<ng-content select="ng-template[slot]" />

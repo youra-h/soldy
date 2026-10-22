@@ -1,0 +1,65 @@
+<!--
+	Корень — сам хост (`<div so-tags-item>`), пилюля тега, строка — `Button` на
+	`div`, помечена `#control`: на неё ложится то, что потребитель написал на
+	корне, кроме класса и стиля, а директива набора кладёт `aria` тега. Слоты
+	контракта: leading, default (scope { text, selected }), trailing, close-icon.
+
+	Строка и кнопка закрытия — соседи: вида нет ни у одной, пилюлю целиком
+	рисует корень. Кнопка закрытия есть, только пока тег можно закрыть
+	(`tag_closable` фасада): у выключенного тега её нет. Не `rendered` кнопки,
+	как у Vue: у Angular он прячет корень, а не удаляет, и скрытая кнопка со
+	своими плагинами стояла бы у каждого тега.
+-->
+<div
+	so-button
+	#control
+	embedded="tags.row"
+	[direction]="state()['direction']"
+	[disabled]="state()['disabled']"
+	[size]="state()['size']"
+	[variant]="state()['variant']"
+	[so-attributes]="state()['aria']"
+	(soActionPress)="toggle()"
+>
+	<ng-container ngProjectAs="[slot=leading]">
+		<ng-content select="[slot=leading]" />
+	</ng-container>
+	@if (slot('default'); as content) {
+		<ng-container
+			[ngTemplateOutlet]="content"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				selected: state()['selected'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content>{{ state()['text'] }}</ng-content>
+	}
+	<ng-container ngProjectAs="[slot=trailing]">
+		<ng-content select="[slot=trailing]" />
+	</ng-container>
+</div>
+@if (state()['tag_closable']) {
+	<button
+		so-button
+		embedded="tags.close"
+		type="button"
+		class="so-tags-item__close"
+		[disabled]="state()['disabled']"
+		[size]="state()['size']"
+		[so-attributes]="state()['closeAria']"
+		(click)="close($event)"
+	>
+		@if (slot('close-icon'); as icon) {
+			<ng-container [ngTemplateOutlet]="icon" />
+		} @else {
+			<svg
+				so-icon
+				embedded="tags.close-icon"
+				so-role-icon="close"
+				[size]="state()['size']"
+			></svg>
+		}
+	</button>
+}
+<ng-content select="ng-template[slot]" />
