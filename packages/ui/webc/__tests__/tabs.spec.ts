@@ -307,6 +307,84 @@ describe('показ панели по активному табу', () => {
 })
 
 /**
+ * Панель таба у Vue — `v-if="rendered && active"`: неактивная или снятая, она
+ * снимает всё своё поддерево, и открытую панель поповера в ней, увезённую в
+ * `body`, тоже. У Web Components панель таба только прячется, а поповер прячет
+ * свою панель по признаку её поддерева.
+ */
+describe('поповер в панели таба', () => {
+	/** Открытый поповер в панели первого таба. */
+	const WITH_POPOVER = `<div is="so-tabs">
+		<div is="so-tabs-item" value="a" text="First" active></div>
+		<div is="so-tabs-item" value="b" text="Second"></div>
+		<div is="so-tabs-content" slot="content" value="a">
+			<span is="so-popover" open><button class="so-test-inside">В поповере</button></span>
+		</div>
+		<div is="so-tabs-content" slot="content" value="b">Панель B</div>
+	</div>`
+
+	/** Панель поповера в документе; нет её — тест падает здесь. */
+	const popoverPanel = () => find(document, '.so-popover__panel', HTMLElement)
+
+	/** Панель первого таба — элемент потребителя. */
+	function firstPanel(host: ParentNode): TTabsContentElementProps {
+		const node = host.querySelector('[is="so-tabs-content"][value="a"]')
+
+		if (!isPanel(node)) throw new Error('панели первого таба нет')
+
+		return node
+	}
+
+	/**
+	 * Содержимое неактивной панели — вне документа, и панель поповера уходит со
+	 * страницы за своим местом. Назад — поповер собран заново, и его панель —
+	 * тот же узел — снова в `body` и на виду.
+	 */
+	it('другой таб — открытой панели поповера на странице нет, назад — снова на виду', async () => {
+		await mount(WITH_POPOVER)
+		await nextFrame()
+
+		const opened = popoverPanel()
+
+		expect(opened.parentElement).toBe(document.body)
+		expect(opened.style.display).toBe('')
+
+		await click(tab('Second'))
+
+		expect(opened.isConnected).toBe(false)
+		expect(document.querySelector('.so-popover__panel')).toBeNull()
+
+		await click(tab('First'))
+
+		expect(popoverPanel()).toBe(opened)
+		expect(opened.parentElement).toBe(document.body)
+		expect(opened.style.display).toBe('')
+	})
+
+	/** Снятая панель активного таба держит содержимое в документе, но прячет его поддерево. */
+	it('rendered=false у панели таба прячет и открытую панель поповера, rendered=true — снова на виду', async () => {
+		const host = await mount(WITH_POPOVER)
+
+		await nextFrame()
+
+		const content = firstPanel(host)
+		const opened = popoverPanel()
+
+		content.rendered = false
+		await flush()
+
+		expect(content.style.display).toBe('none')
+		expect(opened.parentElement).toBe(document.body)
+		expect(opened.style.display).toBe('none')
+
+		content.rendered = true
+		await flush()
+
+		expect(opened.style.display).toBe('')
+	})
+})
+
+/**
  * Тема рисует вид набора от его корня дочерними комбинаторами — свой список,
  * его табы и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от своего
  * списка»). Держится это на разметке: список и панели — дети корня, табы —

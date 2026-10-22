@@ -45,10 +45,12 @@
  *   нажатием мимо. Неизменное шаблон пишет панели при построении, остальное —
  *   только когда сменилось: открытость — `visible` панели, а не `rendered`
  *   (опции входят в коллекцию при подключении, и закрытие не должно её
- *   вычищать), `rendered` — от Select, как у Menu (до увезённой панели скрытие
- *   корня не доходит), сторона и flip — `panelPlacement` и `panelFlip`, ширина
- *   по полю — `autoFitWidth`. Наборы панели — `panelDataset` (`data-swiping`) и
- *   `dismiss_ownerAttribute` — одним слоем владельца.
+ *   вычищать), сторона и flip — `panelPlacement` и `panelFlip`, ширина по полю
+ *   — `autoFitWidth`. `rendered` панели шаблон не пишет: до увезённой панели
+ *   скрытие корня не доходит, и прячет её база Frame по признаку поддерева
+ *   Select (`SoldyElement`, «Поддерево»), как у Menu. Наборы панели —
+ *   `panelDataset` (`data-swiping`) и `dismiss_ownerAttribute` — одним слоем
+ *   владельца.
  * - В панели — свет детали (`lend`): полоса жеста `div.so-select__handle` под
  *   `aria-hidden`, пока жест включён (`handleRendered`), — первой, вне списка;
  *   затем список `div.so-select__list` с набором `listAria` (`role="listbox"`,
@@ -453,27 +455,22 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 		}),
 
 		// Пропсы панели — только сменившиеся
-		bind(
-			['rendered', 'open', 'panelPlacement', 'panelFlip', 'autoFitWidth'],
-			({ root, state }) => {
-				const panel = parts.get(root)?.panel
+		bind(['open', 'panelPlacement', 'panelFlip', 'autoFitWidth'], ({ root, state }) => {
+			const panel = parts.get(root)?.panel
 
-				if (!panel) return
+			if (!panel) return
 
-				const rendered = state.rendered !== false
-				const visible = state.open === true
-				const flip = state.panelFlip === true
-				const matchWidth = state.autoFitWidth === true
+			const visible = state.open === true
+			const flip = state.panelFlip === true
+			const matchWidth = state.autoFitWidth === true
 
-				if (panel.rendered !== rendered) panel.rendered = rendered
-				if (panel.visible !== visible) panel.visible = visible
-				if (panel.anchor_placement !== state.panelPlacement) {
-					panel.anchor_placement = state.panelPlacement
-				}
-				if (panel.anchor_flip !== flip) panel.anchor_flip = flip
-				if (panel.anchor_matchWidth !== matchWidth) panel.anchor_matchWidth = matchWidth
-			},
-		),
+			if (panel.visible !== visible) panel.visible = visible
+			if (panel.anchor_placement !== state.panelPlacement) {
+				panel.anchor_placement = state.panelPlacement
+			}
+			if (panel.anchor_flip !== flip) panel.anchor_flip = flip
+			if (panel.anchor_matchWidth !== matchWidth) panel.anchor_matchWidth = matchWidth
+		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue
 		bind(['panelDataset', 'dismiss_ownerAttribute'], ({ root, state }) => {

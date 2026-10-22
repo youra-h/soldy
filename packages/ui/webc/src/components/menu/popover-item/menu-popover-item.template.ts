@@ -27,8 +27,10 @@
  *   (`end-start`). На панель — набор `panelAria` (`role="dialog"`, `id`,
  *   `aria-labelledby` на строку) и пометка владельцем — одним слоем владельца.
  *   Модификаторов размера и варианта у неё нет: содержимое красится само.
- *   Открытость — `visible` панели, а `rendered` панели — `rendered` пункта:
- *   корень Web Components только прячется.
+ *   Открытость — `visible` панели. `rendered` панели шаблон не пишет: корень
+ *   Web Components только прячется, и увезённую панель прячет база Frame по
+ *   признаку поддерева пункта (`SoldyElement`, «Поддерево») — и у скрытого
+ *   меню над ним тоже.
  * - В панели — обёртка `div.so-menu-item__content` со слотом `default`: то,
  *   что прокручивается. `lazyMount` действует только на слот
  *   (`contentRendered` — `showSlot`): обёртка остаётся, а содержимое до первого
@@ -116,16 +118,11 @@ export const menuPopoverItemTemplate: ITemplate<
 		bind('size', ({ root, state }) => iconSize(parts.get(root)?.arrow ?? null, state.size)),
 
 		// Пропсы панели — только сменившиеся
-		bind(['rendered', 'open'], ({ root, state }) => {
+		bind('open', ({ root, state }) => {
 			const panel = parts.get(root)?.panel
-
-			if (!panel) return
-
-			const rendered = state.rendered !== false
 			const visible = state.open === true
 
-			if (panel.rendered !== rendered) panel.rendered = rendered
-			if (panel.visible !== visible) panel.visible = visible
+			if (panel && panel.visible !== visible) panel.visible = visible
 		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue

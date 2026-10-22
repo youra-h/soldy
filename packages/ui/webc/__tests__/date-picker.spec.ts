@@ -1031,6 +1031,32 @@ describe('DatePicker · жест', () => {
  * переставленный — собирается заново вместе с ней, над теми же экземплярами.
  */
 describe('DatePicker · место панели', () => {
+	/**
+	 * Корень только прячется, а панель увезена в `body`: её прячет база Frame
+	 * по признаку поддерева DatePicker. Открытость при этом не меняется.
+	 */
+	it('rendered=false прячет корень и открытую панель в body, rendered=true — панель снова открыта', async () => {
+		const el = await mount()
+
+		trigger().click()
+		await settle()
+
+		expect(isOpen()).toBe(true)
+
+		el.rendered = false
+		await flush()
+
+		expect(el.style.display).toBe('none')
+		expect(panel().parentElement).toBe(document.body)
+		expect(isOpen()).toBe(false)
+		expect(el.open).toBe(true)
+
+		el.rendered = true
+		await flush()
+
+		expect(isOpen()).toBe(true)
+	})
+
 	it('снятый DatePicker уводит панель из body', async () => {
 		const el = await mount()
 

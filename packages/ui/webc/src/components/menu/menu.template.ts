@@ -26,14 +26,16 @@
  *   Vue. У контекстного меню панель встаёт у точки вызова (`point` →
  *   `anchor_point`): точка главнее корня, пока задана, и выбирает между ними
  *   якорь, а не шаблон. Открытость — `visible` панели, а не `rendered`: пункты
- *   входят в коллекцию при монтировании, и закрытие не должно её вычищать. А
- *   `rendered` панели — `rendered` меню: корень Web Components только
- *   прячется, а до увезённой панели это скрытие не доходит. На панель — `aria`
- *   меню (`role="menu"`, `id`, на который ссылается `aria-controls` триггера,
- *   и `aria-labelledby` на триггер — имя меню) и пометка владельцем
- *   `dismiss_ownerAttribute` — одним слоем владельца. Классы — свой набор
- *   меню (`panelClasses`): блок `so-menu__panel` с размером и вариантом меню —
- *   модификаторы корня до телепортированной панели не доходят.
+ *   входят в коллекцию при монтировании, и закрытие не должно её вычищать.
+ *   `rendered` панели шаблон не пишет: корень Web Components только прячется,
+ *   до увезённой панели это скрытие не доходит, и прячет её база Frame по
+ *   признаку поддерева меню (`SoldyElement`, «Поддерево»), а с ней — и панели
+ *   подменю и пунктов с панелью. На панель — `aria` меню (`role="menu"`, `id`,
+ *   на который ссылается `aria-controls` триггера, и `aria-labelledby` на
+ *   триггер — имя меню) и пометка владельцем `dismiss_ownerAttribute` — одним
+ *   слоем владельца. Классы — свой набор меню (`panelClasses`): блок
+ *   `so-menu__panel` с размером и вариантом меню — модификаторы корня до
+ *   телепортированной панели не доходят.
  * - В панели — список `div.so-menu__list`: то, что прокручивается. Роли у
  *   него нет: фокус без подсветки держит панель, и узел с ролью и фокусом
  *   один. В списке — слот `default`, пункты разметкой, группы и разделители, а
@@ -121,16 +123,14 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 
 	bindings: [
 		// Пропсы панели — только сменившиеся
-		bind(['rendered', 'open', 'placement', 'point'], ({ root, state }) => {
+		bind(['open', 'placement', 'point'], ({ root, state }) => {
 			const panel = panels.get(root)
 
 			if (!panel) return
 
-			const rendered = state.rendered !== false
 			const visible = state.open === true
 			const point = state.point ?? null
 
-			if (panel.rendered !== rendered) panel.rendered = rendered
 			if (panel.visible !== visible) panel.visible = visible
 			if (panel.anchor_placement !== state.placement) {
 				panel.anchor_placement = state.placement
