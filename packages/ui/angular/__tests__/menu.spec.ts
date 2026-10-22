@@ -24,9 +24,9 @@
  * прежнего места и собирает на новом за одну проверку, и в обоих порядках
  * привязка владельца его движка остаётся у живого монтирования. Корень Angular
  * не снимается, а прячется, поэтому `rendered: false` меню и подменю передают
- * и своим панелям. Шаблон `item-content` меню выводит с инжектором места
- * (`[so-slot-outlet]`), и его пункты входят в коллекцию подменю, у которого он
- * выведен, а не меню, где его написали.
+ * и своим панелям. Шаблон `item-content` меню выводит `ngTemplateOutlet` с
+ * инжектором места (`ngTemplateOutletInjector="outlet"`), и его пункты входят
+ * в коллекцию подменю, у которого он выведен, а не меню, где его написали.
  *
  * Порядок Tab, который ведёт сам браузер, jsdom не считает, а раскладку — тем
  * более: место панелей у якоря — `playground/vue/browser/angular-host.spec.ts`.
@@ -1929,8 +1929,9 @@ describe('подменю', () => {
 		/**
 		 * `item-content` — панель подменю из данных шаблоном. Меню отдаёт его
 		 * подменю шаблоном `default`, а выводит с инжектором места
-		 * (`[so-slot-outlet]`), и пункты разметки из шаблона входят в коллекцию
-		 * того подменю, у которого он выведен, а не меню, где его написали.
+		 * (`ngTemplateOutletInjector="outlet"`), и пункты разметки из шаблона
+		 * входят в коллекцию того подменю, у которого он выведен, а не меню, где
+		 * его написали.
 		 * Сценарий Vue — с поправкой на непрозрачный шаблон, как у сниппета
 		 * Svelte: заданный, он рисуется у каждого подменю из данных вместо его
 		 * пунктов, и где ничего не нарисовал, панель пуста, — у Vue и Solid
@@ -2033,11 +2034,53 @@ describe('подменю', () => {
 				expect(values(exported)).toEqual(['pdf', 'png'])
 			})
 
+			/** Пункт шаблона пишет текст из scope — из пункта подменю. */
+			@Component({
+				selector: 'probe-menu-item-content-scope',
+				standalone: true,
+				imports: [...BASE, TMenuItemComponent],
+				template: `<span so-menu [items]="items" [engine]="engine">
+					${TRIGGER}
+					<ng-template slot="item-content" let-item="item">
+						<div so-menu-item value="pdf" [text]="item.text + ' в PDF'"></div>
+					</ng-template>
+				</span>`,
+			})
+			class ItemContentScopePage {
+				readonly items: TItems = [{ value: 'export', text: 'Экспорт', items: [] }]
+				readonly engine = createEngineMenu()
+			}
+
+			/**
+			 * Вывод пересоздаёт представление только с новым шаблоном: новое в
+			 * scope — сменившийся текст пункта подменю — доходит до шаблона в
+			 * тех же узлах, а его пункты остаются в коллекции подменю теми же
+			 * пунктами, без выхода и нового входа.
+			 */
+			it('новое в scope — пункты шаблона те же узлы и те же пункты подменю', async () => {
+				const fixture = await render(ItemContentScopePage)
+				const exported = submenuOf(fixture.componentInstance.engine, 'export')
+				const panel = panelOf(exportRow())
+				const row = rowIn(panel, 'Экспорт в PDF')
+				const [pdf] = exported.engine.extensions.batch.items
+
+				exported.ctrl.text = 'Выгрузка'
+				check()
+
+				expect(texts(panel)).toEqual(['Выгрузка в PDF'])
+				expect(rowIn(panel, 'Выгрузка в PDF')).toBe(row)
+				expect(values(exported.engine)).toEqual(['pdf'])
+				expect(exported.engine.extensions.batch.items[0]).toBe(pdf)
+			})
+
 			/**
 			 * Владелец внутри шаблона — группа переключателей — своим пунктам
 			 * ближе места вывода: узлы шаблона Angular спрашивает раньше места.
 			 * Её ключ и саму группу переключатели берут лифтом из её слоя, а
-			 * движок — из слоя подменю, у которого шаблон выведен.
+			 * движок — из слоя подменю, у которого шаблон выведен. Это и сторож
+			 * минимальной версии Angular 22.1.6: слой лифта читается со
+			 * `skipSelf`, а раньше `skipSelf` в таком представлении пропускал все
+			 * его узлы, и переключатели группы не видели.
 			 */
 			@Component({
 				selector: 'probe-menu-item-content-radio',
