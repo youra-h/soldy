@@ -2,6 +2,7 @@
  * Состояние пула worktree для `/drive`: какие папки заняты, какие свободны.
  * Правила те же, что у `/drive` (`.claude/commands/drive.md`, «Замки» и
  * «Папка пула»): пул — worktree `soldy-*` рядом с основным репозиторием,
+ * кроме `soldy-conflicts` (папка конфликтов в PR, AGENTS.md, «Рабочие папки»),
  * замок папки — `<git>/agent-locks/<папка>` с файлом `task`.
  *
  * Только читает: замков не берёт и не снимает.
@@ -27,9 +28,15 @@ const worktrees = git('worktree', 'list', '--porcelain')
 
 const [main] = worktrees
 const prefix = `${basename(main.path)}-`
+const conflicts = `${prefix}conflicts`
 const pool = worktrees
 	.slice(1)
-	.filter((w) => dirname(w.path) === dirname(main.path) && basename(w.path).startsWith(prefix))
+	.filter(
+		(w) =>
+			dirname(w.path) === dirname(main.path) &&
+			basename(w.path).startsWith(prefix) &&
+			basename(w.path) !== conflicts,
+	)
 
 const rows = pool.map(({ path, branch }) => {
 	const name = basename(path)

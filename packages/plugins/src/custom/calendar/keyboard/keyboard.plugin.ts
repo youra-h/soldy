@@ -215,12 +215,15 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 
 	/**
 	 * Фокус коллекции перешёл — DOM-фокус идёт за ним, если стоял на дне или
-	 * уже ждал узла: тогда он ждёт уже новый день.
+	 * уже ждал узла: тогда он ждёт уже новый день. Без корня — выход: до узла
+	 * DOM-фокуса нет, а ожидание снимает `_bind`. Событие приходит и при сборке
+	 * на сервере — смена месяцев и границ двигает фокус, — а проверке узла там
+	 * не на что опереться: в Node типов DOM нет.
 	 */
 	private readonly _onFocusedDate = (): void => {
 		const engine = this._engine
 
-		if (!engine) return
+		if (!engine || !this._root) return
 
 		if (this._waiting || dayOf(engine, this._elements, this._activeElement)) this._follow()
 	}
@@ -244,13 +247,15 @@ export class TCalendarKeyboardPlugin extends TBasePlugin<ICalendar, TCalendarKey
 	/**
 	 * Стрелка панели выбора погасла, пока на ней фокус, — фокус на список панели.
 	 * Список — ListBox, и остановка Tab у него — узел списка (`pickerListOf`),
-	 * а не корень с классом части календаря.
+	 * а не корень с классом части календаря. Без корня — выход, как у листания:
+	 * `change:pickers` приходит уже при сборке — плагины связок и имён пишут
+	 * наборы мест, — а DOM-фокуса до узла нет.
 	 */
 	private readonly _onPickers = (): void => {
 		const engine = this._engine
 		const owner = this._owner
 
-		if (!engine || !owner) return
+		if (!engine || !owner || !this._root) return
 
 		const pickers = engine.extensions.picker.pickers
 		const hit = pickerPartOf(owner, pickers, this._activeElement)
