@@ -1701,7 +1701,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tags / Select / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1744,8 +1744,9 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   transform булева входа, его импортируют сгенерированные метаданные, —
   `root-attributes.ts`: `applyAttributes`, `applyClasses` и `applyStyles`
   раскладывают наборы, классы и стиль ядра на корень-хост, а раскладчик
-  элемента `TElementAttributes` сводит слоями наборы корня и набор владельца
-  на одном элементе, — и `teleport.ts`: `teleportRoot` уводит корень слоя в
+  элемента `TElementAttributes` сводит слоями наборы корня, набор владельца и
+  набор, который запись хоста отдала своему узлу (`forwarded`), на одном
+  элементе, — и `teleport.ts`: `teleportRoot` уводит корень слоя в
   цель — корень-хост или регион тостов внутри обёртки — и держит перед ним
   спутника корня — подложку окна и выезжающей панели (см. «DOM-биндинг»).
 - `adapter/locale/` — `LocaleProviderDirective` (`[so-locale-provider]`): свой
@@ -1871,18 +1872,20 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 Tooltip, `span[so-menu], [so-menu]` у Menu, `div[so-dialog], [so-dialog]` у
 Dialog, `div[so-drawer], [so-drawer]` у Drawer, `label[so-label], [so-label]` у
 Label, у владельцев коллекций и панели таба —
-`div[so-accordion]`, `div[so-radio-group]`, `div[so-tabs-content]`, у групп и
-разделителя меню — `div[so-menu-group]`, `div[so-menu-radio-group]`,
-`div[so-menu-separator]` (и `[…]` без тега). Потребитель
+`div[so-accordion]`, `div[so-radio-group]`, `div[so-tags]`, `div[so-tabs-content]`,
+у групп и разделителя меню — `div[so-menu-group]`, `div[so-menu-radio-group]`,
+`div[so-menu-separator]`, у группы опций Select — `div[so-select-group]` (и
+`[…]` без тега). Потребитель
 пишет `<button so-button>`, `<a so-button href>`, `<div so-button>`, и этот
 элемент — корень: какой тег написан, так он себя и ведёт, а класс, стиль,
 атрибуты и события на нём работают без проброса. Раньше `<so-button>` был
 обёрткой с кнопкой внутри, и написанное на `<so-button>` до кнопки не доходило.
 Первым стоит селектор с тегом умолчания ядра: по первому селектору Angular
 выбирает тег хоста, когда создаёт компонент сам (`createComponent`), а для
-`[…]` берёт `div`. У поля (`so-input`, `so-check-box`, `so-switch`), элемента
-коллекции (`so-list-box-item`, `so-tabs-item`, `so-accordion-item`, пункты
-меню — `so-menu-item` и соседи) и у
+`[…]` берёт `div`. У поля (`so-input`, `so-check-box`, `so-switch`), Select
+(`so-select`), элемента коллекции (`so-list-box-item`, `so-tabs-item`,
+`so-accordion-item`, `so-tags-item`, `so-select-item`, пункты меню —
+`so-menu-item` и соседи) и у
 ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный: атрибуты
 потребителя у них делятся между корнем и вложенным `<input>`, строкой или
 узлом списка с ролью (`listbox`, `tablist`), и корень — сам элемент
@@ -1987,14 +1990,14 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   — группа с именем ползунка, у одной набор пуст, а `aria` ползунка шаблон
   кладёт на поле ручки из `thumbs`; как `TRootSpec.aria` у Web Components;
 - `order` в описании корня — у элемента коллекции: свойство стиля, в которое
-  уходит `order` фасада. У элементов ListBox, Tabs и Accordion — CSS `order`
+  уходит `order` фасада. У элементов ListBox, Tabs, Accordion, Tags и Select — CSS `order`
   (`order: 'order'`), ряд коллекции — флексбокс; у тоста — глубина в стопке,
   `--so-toasts-depth`. У радио его нет: радио группы стоят где угодно;
 - `shownBy` в описании корня — выход, без которого корень скрыт: у панели
   таба `active` — неактивная панель скрыта, а её содержимое в документ не
   вставляется;
-- `control` в описании корня — у поля, Input, NumberInput, Textarea, CheckBox
-  и Switch (`{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`),
+- `control` в описании корня — у поля, Input, NumberInput, Textarea, CheckBox,
+  Switch и Select (`{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`),
   у радио, элемента коллекции, ListBox и Tabs: всё, что потребитель записал на
   компонент, кроме `class`, `style`, служебных атрибутов Angular, входов и
   меток soldy (`so-*` — селектор), доходит до элемента шаблона `#control` —
@@ -2009,6 +2012,11 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
   приложение подключает `provideAttrs()`, он подменяет `ɵDomRendererFactory2`
   наследником, а база регистрирует хост с его узлом в реестре рендерера (см.
   `packages/ui/angular/AGENTS.md`, «Рендерер адаптера — `provideAttrs()`»).
+  Узел бывает хостом сам — у Select `#control` — его поле `<div so-input>`:
+  запись пишет на узел рендерером адаптера, и узел-хост получает команду тем
+  же путём, по правилам своей записи (цепочка хостов), а статику база
+  переносит тем же рендерером. Так написанное на Select доходит до `<input>`
+  поля, как `v-bind` на `<Input>` у Vue.
 
 Стратегия `'wrapped'` — корень внутри обёртки, у таблицы: элемент
 компонента (`<div so-table>`) — окно вокруг корня, а корень — `table` в
@@ -2048,7 +2056,13 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 раскладчик элемента `TElementAttributes`, каждый свой слой, а на элемент
 ложится их сумма, верхний слой поверх нижних. Порядок, в каком они пишут, от
 этого не зависит: директива пишет в проходе шаблона владельца, база кнопки —
-эффектом позже.
+эффектом позже. На хосте из реестра рендерера адаптера — поле, элемент
+коллекции, ListBox, Tabs, Select — директива отдаёт набор записи хоста, и тот
+ложится туда же, куда остальное написанное на компоненте: на его узел, слоем
+`forwarded` поверх набора, который туда кладёт шаблон самого компонента. Узел
+— сам хост (поле в шаблоне Select): набор идёт дальше по цепочке, и на общем
+имени главнее набор внешнего звена. Так `aria` Select доходит до `<input>`
+его поля.
 
 Текст поля пишет директива `FieldTextDirective` —
 `<input [so-field-text]="state()['value']">`, — только когда он разошёлся с
@@ -2063,9 +2077,9 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 она отдала `TElementPlugin`, — `null` на сервере и до первой отрисовки, после
 неё — узел, как `rootElement` у Vue, Solid и Svelte и `useRootElement` у React.
 Пишет его тот же эффект после отрисовки. Свой хост компонент взять не может
-(`inject` в компонентах запрещён), а якорь панели — корень: Popover, Tooltip и
-Menu отдают его своему Frame (`[anchor_anchor]="rootElement()"`), пункты меню
-со своей панелью — тоже. Корень у них — элемент потребителя
+(`inject` в компонентах запрещён), а якорь панели — корень: Popover, Tooltip,
+Menu и Select отдают его своему Frame (`[anchor_anchor]="rootElement()"`),
+пункты меню со своей панелью — тоже. Корень у них — элемент потребителя
 (`<span so-popover>`, `<span so-menu>`), обёртка триггера; триггер — шаблон
 слота (`<ng-template slot="trigger">`), и связку с панелью из его контекста
 (`triggerAria`, у Popover и Menu ещё `triggerDataset`) потребитель кладёт на
@@ -2138,7 +2152,7 @@ DOM-эмуляция серверного рендера Angular запись `i
 
 ### Коллекции
 
-RadioGroup, ListBox, Tabs и Accordion собираются, как у Vue и Svelte, — один
+RadioGroup, ListBox, Tags, Select, Tabs и Accordion собираются, как у Vue и Svelte, — один
 раз, в `ngOnInit`, из двух контекстов на общем наборе: свой и фасада
 коллекции. Фасад связывает `useCollectionAdapter`, а базе нужна одна связка,
 и две сводит `joinBindings`: шаблон читает свойства обоих из одного `state()`,
@@ -2188,7 +2202,17 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 содержимом включают им перетаскивание, а о перестановке сообщают выходы
 `(soMoveBefore)` и `(soMove)`.
 
-Сторожат спеки `packages/ui/angular/__tests__`: `list-box`, `tabs`,
+Select — коллекция в слое, как меню: поле — `<div so-input>` над экземпляром
+поля Select, края поля — шаблоны (ряд тегов `<div so-tags>` над `tags` и
+`tags_engine`, стрелка), а панель — Frame в шаблоне, увезённый в `body`, со
+списком и опциями: разметкой — основная проекция Select, без неё — секции
+`drawnSections`. Опции видят слой лифта Select там, где их написали (DI идёт по
+дереву объявлений), и входят в коллекцию в своём `ngOnInit`, и на сервере тоже:
+сервер рисует поле с текстом выбранного. Tags — ряд тегов на элементе
+потребителя; своя раскладка — шаблон слота `default` со scope `shown`, и каждый
+тег рисуется в ней ровно один раз.
+
+Сторожат спеки `packages/ui/angular/__tests__`: `list-box`, `tags`, `select`, `tabs`,
 `accordion`, `radio-group`, `table`, `virtual`, `drag-and-drop`, `collection-elevator` (слой
 лифта, соседи, вложенные коллекции, порядок), `collection-item-lifetime`,
 `external-engine-lifetime`, `collections.server` (сервер и гидратация) и
