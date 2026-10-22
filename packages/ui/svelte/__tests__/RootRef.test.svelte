@@ -35,6 +35,15 @@
 		| 'Pagination'
 		| 'Popover'
 		| 'Tooltip'
+		| 'Menu'
+		| 'Menu.Item'
+		| 'Menu.CheckboxItem'
+		| 'Menu.RadioItem'
+		| 'Menu.Submenu'
+		| 'Menu.PopoverItem'
+		| 'Menu.Group'
+		| 'Menu.RadioGroup'
+		| 'Menu.Separator'
 		| 'Dialog'
 		| 'Drawer'
 		| 'Toasts'
@@ -54,7 +63,9 @@
 	 * телепортом, когда его покажут. Таблица — из одной строки и одной
 	 * колонки: её `ref` — окно, а к `TElementPlugin` привязана `table` внутри.
 	 * Окно и выезжающая панель — закрытые: телепорт уводит их в `body` и
-	 * такими, и `ref` у них — панель; у менеджера тостов `ref` — регион.
+	 * такими, и `ref` у них — панель; у менеджера тостов `ref` — регион. Части
+	 * меню — в его панели, телепортированной в `body`, а `ref` меню, пункта с
+	 * подменю и пункта с панелью — их корень, а не панель.
 	 */
 	import type { TButton } from '@soldy-ui/core'
 	import {
@@ -70,6 +81,7 @@
 		Input,
 		Label,
 		ListBox,
+		Menu,
 		NumberInput,
 		Pagination,
 		Popover,
@@ -201,6 +213,42 @@
 		<Popover bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Tooltip'}
 		<Tooltip bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Menu'}
+		<Menu bind:ref={get, set} {onElementReady} />
+	{:else if kind === 'Menu.Item'}
+		<Menu>
+			<Menu.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
+		</Menu>
+	{:else if kind === 'Menu.CheckboxItem'}
+		<Menu>
+			<Menu.CheckboxItem value="a" text="A" bind:ref={get, set} {onElementReady} />
+		</Menu>
+	{:else if kind === 'Menu.RadioItem'}
+		<Menu>
+			<Menu.RadioGroup value="a">
+				<Menu.RadioItem value="a" text="A" bind:ref={get, set} {onElementReady} />
+			</Menu.RadioGroup>
+		</Menu>
+	{:else if kind === 'Menu.Submenu'}
+		<Menu>
+			<Menu.Submenu value="share" text="Поделиться" bind:ref={get, set} {onElementReady} />
+		</Menu>
+	{:else if kind === 'Menu.PopoverItem'}
+		<Menu>
+			<Menu.PopoverItem value="due" text="Срок" bind:ref={get, set} {onElementReady} />
+		</Menu>
+	{:else if kind === 'Menu.Group'}
+		<Menu>
+			<Menu.Group label="Вид" bind:ref={get, set} {onElementReady} />
+		</Menu>
+	{:else if kind === 'Menu.RadioGroup'}
+		<Menu>
+			<Menu.RadioGroup label="Сортировка" bind:ref={get, set} {onElementReady} />
+		</Menu>
+	{:else if kind === 'Menu.Separator'}
+		<Menu>
+			<Menu.Separator bind:ref={get, set} {onElementReady} />
+		</Menu>
 	{:else if kind === 'Dialog'}
 		<Dialog bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Drawer'}

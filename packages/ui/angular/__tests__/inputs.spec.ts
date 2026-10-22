@@ -442,6 +442,8 @@ describe('вход в строгом шаблоне · хосты компоне
 				'TFrameComponent',
 				'TPopoverComponent',
 				'TTooltipComponent',
+				'TMenuComponent',
+				'TMenuSubmenuComponent',
 				'TLabelComponent',
 				'TFieldComponent',
 				'TInputComponent',

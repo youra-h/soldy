@@ -1,0 +1,244 @@
+<!--
+	Корень — сам хост (`<div so-menu-submenu>`), поэтому шаблон — то, что внутри
+	корня Vue, в том же порядке: строка, панель, а в конце — слив шаблонов
+	слотов. Слоты контракта: leading, header (scope { text, open }),
+	arrow-icon, default — пункты подменю; item (scope { item, text }),
+	item-leading, item-trailing, item-header (scope { item, text, open }) и
+	item-arrow-icon (scope { item }) — слоты пунктов из данных.
+
+	Строка — `Button` на `div`, помечена `#control`, как у пункта-действия: на
+	неё ложится то, что потребитель написал на корне, кроме класса и стиля, а
+	директива набора кладёт `aria` пункта.
+-->
+<div
+	so-button
+	#control
+	embedded="menu.row"
+	[size]="state()['size']"
+	[disabled]="state()['disabled']"
+	[so-attributes]="state()['aria']"
+	(click)="openPanel()"
+>
+	<span class="so-menu-item__icon" ngProjectAs="[slot=leading]">
+		<ng-content select="[slot=leading]" />
+	</span>
+	@if (slot('header'); as header) {
+		<ng-container
+			[ngTemplateOutlet]="header"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				open: state()['open'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content select="[slot=header]">{{ state()['text'] }}</ng-content>
+	}
+	<!--
+		Стрелка — у конца строки, в обёртке, которая держит её место и зеркалит
+		её в RTL. Обёртка скрыта от скринридера: подменю объявляет
+		`aria-haspopup`.
+	-->
+	<span class="so-menu-item__arrow" aria-hidden="true" ngProjectAs="[slot=trailing]">
+		@if (slot('arrow-icon'); as arrow) {
+			<ng-container [ngTemplateOutlet]="arrow" />
+		} @else {
+			<svg
+				so-icon
+				embedded="menu.arrow"
+				so-role-icon="arrowRight"
+				[size]="state()['size']"
+			></svg>
+		}
+	</span>
+</div>
+<!--
+	Пункты секции из данных — как у меню (`menu.component.html`): действия и
+	подменю следующего уровня — этого же компонента, по записи `submenus`, — по
+	порядку, ключ — `uid`. Слоты пункта пробрасываются целиком и только
+	заданные, а свои `item` и `item-*` подменю отдаёт следующему уровню под
+	теми же именами. `item-content` — временно не пробрасывается, до
+	https://app.clickup.com/t/869fktew3 (см. шаблон меню).
+-->
+<ng-template #entries let-items>
+	@for (item of items; track item.uid) {
+		@if (state()['submenus']?.get(item); as submenu) {
+			<div so-menu-submenu [ctrl]="submenu.ctrl" [engine]="submenu.engine">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item-header'); as header) {
+					<ng-template
+						slot="header"
+						ngProjectAs="ng-template[slot]"
+						let-text="text"
+						let-open="open"
+					>
+						<ng-container
+							[ngTemplateOutlet]="header"
+							[ngTemplateOutletContext]="{ item, text, open }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-arrow-icon'); as arrow) {
+					<ng-template slot="arrow-icon" ngProjectAs="ng-template[slot]">
+						<ng-container
+							[ngTemplateOutlet]="arrow"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item'); as content) {
+					<ng-template
+						slot="item"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+						let-text="text"
+					>
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item: child, text }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-leading'); as leading) {
+					<ng-template
+						slot="item-leading"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+					>
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item: child }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-template
+						slot="item-trailing"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+					>
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item: child }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-header'); as header) {
+					<ng-template
+						slot="item-header"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+						let-text="text"
+						let-open="open"
+					>
+						<ng-container
+							[ngTemplateOutlet]="header"
+							[ngTemplateOutletContext]="{ item: child, text, open }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-arrow-icon'); as arrow) {
+					<ng-template
+						slot="item-arrow-icon"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+					>
+						<ng-container
+							[ngTemplateOutlet]="arrow"
+							[ngTemplateOutletContext]="{ item: child }"
+						/>
+					</ng-template>
+				}
+			</div>
+		} @else {
+			<div so-menu-item [ctrl]="item">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item'); as content) {
+					<ng-template slot="default" ngProjectAs="ng-template[slot]" let-text="text">
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item, text }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-container ngProjectAs="[slot=trailing]">
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+			</div>
+		}
+	}
+</ng-template>
+<!--
+	Панель — Frame, как у меню: телепорт, слой выше панели меню над ним (нажатие
+	в ней меню мимо не считает), привязка к корню пункта и пометка владельцем.
+	Встаёт у конца строки, верхом вровень с ней, без зазора; у края окна
+	привязка переводит её к началу строки, в RTL — наоборот. На неё ложится набор
+	панели (`panelAria`) и пометка владельцем, одним объектом. `tabindex="-1"` —
+	фокус встаёт на саму панель, пока ни один пункт не подсвечен.
+-->
+<div
+	so-frame
+	embedded="menu.submenu-frame"
+	tabindex="-1"
+	position="fixed"
+	anchor_placement="end-start"
+	[class]="state()['panelClasses']"
+	[visible]="state()['open']"
+	[rendered]="state()['rendered']"
+	[anchor_anchor]="rootElement()"
+	[so-attributes]="{ ...state()['panelAria'], ...state()['dismiss_ownerAttribute'] }"
+>
+	<!--
+		Список — то, что прокручивается, как у меню. Пункты разметки — основная
+		проекция подменю, а без них — свои пункты из данных по секциям
+		показанного: группа с подписью — в `<div so-menu-group>`, пункты без
+		группы — прямо в списке, между соседними секциями, пока его просит
+		подменю (`groupSeparators` — своё, от меню не переходит), — разделитель.
+	-->
+	<div class="so-menu__list">
+		<ng-content>
+			@for (section of state()['sections'] ?? []; track section.key; let first = $first) {
+				@if (state()['groupSeparators'] && !first) {
+					<div so-menu-separator></div>
+				}
+				@if (section.group; as group) {
+					<div so-menu-group [label]="group.label">
+						<ng-container
+							[ngTemplateOutlet]="entries"
+							[ngTemplateOutletContext]="{ $implicit: section.items }"
+						/>
+					</div>
+				} @else {
+					<ng-container
+						[ngTemplateOutlet]="entries"
+						[ngTemplateOutletContext]="{ $implicit: section.items }"
+					/>
+				}
+			}
+		</ng-content>
+	</div>
+</div>
+<!--
+	Шаблоны слотов, которые потребитель написал в подменю или которые ему
+	пробросило меню над ним, — в слив, в конце корня: в основной проекции они
+	сняли бы запасное содержимое — пункты из данных.
+-->
+<ng-content select="ng-template[slot]" />

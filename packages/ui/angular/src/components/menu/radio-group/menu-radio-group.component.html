@@ -1,0 +1,8 @@
+<!--
+	Разметка — как у группы меню: подпись, пока `label` не пуст, и
+	переключатели. `<ng-content>` — один раз и вне `@if`.
+-->
+@if (state()['label']; as label) {
+	<div class="so-menu-group__label" [so-attributes]="state()['labelAria']">{{ label }}</div>
+}
+<ng-content />

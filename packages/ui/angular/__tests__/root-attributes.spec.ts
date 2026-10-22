@@ -32,6 +32,10 @@ import {
 	TInputComponent,
 	TLabelComponent,
 	TListBoxComponent,
+	TMenuComponent,
+	TMenuGroupComponent,
+	TMenuRadioGroupComponent,
+	TMenuSeparatorComponent,
 	TNumberInputComponent,
 	TPaginationComponent,
 	TPopoverComponent,
@@ -277,6 +281,71 @@ class PopoverProbe extends TProbeHost {}
 })
 class TooltipProbe extends TProbeHost {}
 
+/**
+ * Меню — корень с наборами `attrs` и `dataset`, как у поповера: ARIA у него на
+ * панели и триггере. Группы и разделитель — корень с тремя наборами ядра, и
+ * вне меню тоже.
+ */
+@Component({
+	selector: 'probe-menu',
+	standalone: true,
+	imports: [TMenuComponent],
+	template: `<span
+		so-menu
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></span>`,
+})
+class MenuProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-menu-group',
+	standalone: true,
+	imports: [TMenuGroupComponent],
+	template: `<div
+		so-menu-group
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class MenuGroupProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-menu-radio-group',
+	standalone: true,
+	imports: [TMenuRadioGroupComponent],
+	template: `<div
+		so-menu-radio-group
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class MenuRadioGroupProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-menu-separator',
+	standalone: true,
+	imports: [TMenuSeparatorComponent],
+	template: `<div
+		so-menu-separator
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class MenuSeparatorProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 'so-button'],
@@ -293,6 +362,10 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['Pagination', PaginationProbe, '[so-pagination]', 'so-pagination'],
 	['Popover', PopoverProbe, '[so-popover]', 'so-popover'],
 	['Tooltip', TooltipProbe, '[so-tooltip]', 'so-tooltip'],
+	['Menu', MenuProbe, '[so-menu]', 'so-menu'],
+	['Menu.Group', MenuGroupProbe, '[so-menu-group]', 'so-menu-group'],
+	['Menu.RadioGroup', MenuRadioGroupProbe, '[so-menu-radio-group]', 'so-menu-group'],
+	['Menu.Separator', MenuSeparatorProbe, '[so-menu-separator]', 'so-menu-separator'],
 ]
 
 /**
