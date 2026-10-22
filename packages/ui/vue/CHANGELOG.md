@@ -1,5 +1,56 @@
 # @soldy-ui/vue
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+- 0091f1d: Иконка по роли — `roleIcon` вместо `useIcon`, как в React, Solid, Svelte и Web Components: это не composable, его зовут где угодно. Как обновиться: `useIcon('close')` → `roleIcon('close')`.
+- 4fc4efa: DragAndDrop сообщает о перестановке перетаскиванием: `move:before` (отменить — `preventDefault()`) и `move` с `engine`, `item`, `oldIndex`, `newIndex`. Выключенный элемент не перетаскивается, коллекции внутри элементов другой коллекции перестановку не наследуют. Ломающее: `TDragPlugin.activate` принимает вторым аргументом обёртку, `DRAG_CONTEXT_ELEVATOR` перестановку больше не включает — коллекции оборачивают в `DragAndDrop`.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+- 7137eaa: Группы из разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`, `Select.Group`) входят в группировку коллекции, и `sections` описывают их с подписью. Элемент без группы больше не уходит в конец, а остаётся на своём месте среди незаявленных групп; чтобы вернуть прежний порядок, заявите группы в `groups`.
+- fba7c84: Подменю без своего варианта берёт вариант меню над ним; `IMenuOwner.variant` заменён на `panelVariant`.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- 89db4ae: Menu: переключатели — `Menu.RadioGroup` со своим значением (`v-model:value`) и `Menu.RadioItem` внутри неё. В группе отмечен один переключатель: нажатие отмечает его и меню не закрывает, значение группы и отметка связаны в обе стороны, а группу переключатель берёт по месту в разметке. В ядре — `TMenuRadioGroup`, `TMenuRadioItem` и нажатие `checkItem` у расширения меню.
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- b3cb2f3: Menu: пункт `items` с вложенным `items` становится подменю на любом уровне; новые слоты `item-header`, `item-arrow-icon`, `item-content`
+- 8d55e75: Textarea: скринридер читает счётчик символов вместе с полем
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

@@ -1,5 +1,71 @@
 # @soldy-ui/angular
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- 8b3e23f: `<so-virtual>` → `<ng-container so-virtual>`, так же `so-drag-and-drop` и `so-component`
+- f29f5d2: Angular: Toasts — `<div so-toasts>` вокруг приложения, написанное на нём уходит региону; тост из кода — `useToasts().show()`. `TRootSpec.order` — имя свойства стиля: `order: true` → `order: 'order'`.
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+- 5401574: Angular: поля, ListBox, Tabs, их элементы, элемент Accordion и Table пишутся атрибутом на обычном теге, как Button: CheckBox и Switch — на `span` (`<span so-check-box>`), остальные — на `div` (`<so-input>` → `<div so-input>`). Привязки и слушатели на компоненте (`[attr.x]`, `[title]`, `(focus)`) доходят до внутреннего узла, как у Vue и React. Как обновиться: заменить теги (`<so-input …/>` → `<div so-input …></div>`) и добавить `provideAttrs()` в `providers` `appConfig` — на сервере и в браузере; без него эти компоненты бросают ошибку. Компонент на элементе, в который его шаблон не отрисуется (`<input so-input>`, `<textarea so-textarea>`), — тоже ошибка. Новая peer-зависимость — `@angular/platform-browser`.
+- 1173b40: Минимальная версия Angular — 22.2.0 (была 22.1.6): спеки адаптера берут `TestBed.createDirective` и `ɵgetDirectiveDef`, которых до 22.2 нет, и на 22.1 не собираются — поддержка 22.1 не проверена. Обновите `@angular/*` до 22.2.0 или новее.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+- 9284597: Angular: Tags и Select — `<div so-tags>`, `<div so-select>`, части `so-tags-item`, `so-select-item`, `so-select-group`. `[so-attributes]` на поле, элементе коллекции, ListBox и Tabs кладёт набор туда же, куда остальное, написанное на компоненте: на `<input>`, строку или узел списка, а не на корень. Стили корня, завязанные на этот набор, перенесите на этот узел.
+- 7137eaa: Группы из разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`, `Select.Group`) входят в группировку коллекции, и `sections` описывают их с подписью. Элемент без группы больше не уходит в конец, а остаётся на своём месте среди незаявленных групп; чтобы вернуть прежний порядок, заявите группы в `groups`.
+- 8d4064e: `onChangeSelected` элемента коллекции (`ListBox.Item`, `Select.Item`, `Tags.Item`, `Accordion.Item`, `Table.Row`, флажки и переключатели `Menu`) и `onChangeActive` (`Tabs.Item`, `Tabs.Content`, `RadioGroup.Item`) приходят только элементу, чьё состояние сменилось, и несут новое значение: `onChangeSelected={(selected) => …}`. `change:selection` владельца вторым аргументом отдаёт элементы, чья отметка сменилась, `change:activation` — прежний активный; в Web Components `detail` этих двух событий — пара: где читали `detail`, читайте `detail[0]`.
+- eb1522f: Минимальная версия Angular — 22.1.6 (была 21.1): ниже группы и подменю в шаблоне `item-content` у Menu не отдавали слой своим пунктам. Обновите `@angular/*` до ^22.1.6.
+- 15277f5: Удалена директива `SlotOutletDirective` (`[so-slot-outlet]`): шаблон с зависимостями места вывода — встроенный `ngTemplateOutlet` с `ngTemplateOutletInjector: 'outlet'`.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- 096940f: Angular: DateInput, Calendar и DatePicker — `<div so-date-input>`, `<div so-calendar>` (день — `<td so-calendar-item>`), `<div so-date-picker>`. Слоты — шаблоны `<ng-template slot>`: у календаря `item` (`let-item`, `let-text`), `prev-icon`, `next-icon`, `footer`; у поля даты `leading`, `clear`, `trailing`; у DatePicker `clear`, `trigger-icon`, `item`. `id` поля даты и DatePicker — на корне.
+- bee7536: Angular: у Frame нет гидратации (`ngSkipHydration` на хосте) — всё, что написано в панели, браузер строит сам. Текст, спроецированный в панель компонента с Frame в шаблоне (подсказка Tooltip), после гидратации больше не пропадает.
+- fd58d95: Angular: ProgressLinear, Slider, Rating, Pagination и Scroller — по разметке Vue, атрибутом на теге ядра: `<span so-progress-linear>`, `<span so-slider>`, `<span so-rating>`, `<nav so-pagination>`, `<div so-scroller>`. Ползунок и оценка — нативные поля `range` в ручках; значение приходит выходом `(soChangeValue)` в той форме, в какой его задали, `(soCommit)` — одно на действие. В поле формы `Field` подпись называет оценку и ползунок с одной ручкой своим `for`, а ползунок с несколькими ручками — группу ссылкой. Пагинация — коллекция страниц окна с пропусками: страница — внутренняя часть и наружу не выходит, слоты — шаблоны `item`, `prev-icon` и `next-icon`, имена стрелок и цифры номеров — от локали поддерева, окно и текущая страница — уже в серверной разметке. У ленты кнопки — вне вьюпорта, роль ряда — `viewportAria`. Атрибуты потребителя у всех пяти остаются на корне. Слои без разметки — `setupInteractive`, `setupValueControl` и `setupInputControl` с поверхностями `TInteractiveSurface`, `TValueControlSurface`, `TInputControlSurface`; описание корня `TRootSpec` получило `aria` — выход, из которого база берёт слой `aria` корня.
+- 309ce24: DragAndDrop во всех адаптерах: перестановка элементов Tabs, ListBox и Accordion перетаскиванием, события `move:before` и `move` (`onMoveBefore`/`onMove`, `(soMoveBefore)`/`(soMove)`, `so:move:before`/`so:move`); в Angular — `<ng-container so-drag-and-drop>`, в Web Components — `<so-drag-and-drop>`
+- 743c56c: Textarea в React, Solid, Svelte, Angular и Web Components — многострочное поле с авторостом и счётчиком символов, как во Vue
+- bee7536: Angular: Popover и Tooltip — `<span so-popover>` и `<span so-tooltip>`; триггер — шаблон слота `<ng-template slot="trigger">`, связку с панелью на свой элемент кладёт `[so-attributes]`.
+- 514f6d0: Angular: `rendered=false` у компонента и неактивная панель таба прячут и открытые панели вложенных слоёв — подменю, поповера в поповере, окна в панели, — как у остальных адаптеров, где такой компонент снимается целиком.
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- b97bc5c: Angular: Menu — `<span so-menu>` с частями `so-menu-item`, `so-menu-checkbox-item`, `so-menu-radio-group` и `so-menu-radio-item`, `so-menu-group`, `so-menu-separator`, `so-menu-submenu`, `so-menu-popover-item`; триггер — шаблон слота `<ng-template slot="trigger">`, контекстное меню — `openOn="contextmenu"`.
+- c68b9d1: Angular: компонент, снятый `rendered=false` (своим, у предка или как неактивная панель таба), отдаёт плагинам узел `null`, как у Vue. Открытое окно и выезжающая панель отпускают прокрутку страницы и `aria-hidden` фона, а снова показанный компонент получает узел и `element:ready` заново.
+- 8ee9333: Angular: Dialog и Drawer — `<div so-dialog>` и `<div so-drawer>`; подложку адаптер ставит перед панелью сам, открытость — `[visible]` и `(soChangeVisible)`.
+- c7c8d12: Angular: слот `item-content` у Menu — пункты подменю из данных разметкой.
+- 542da8d: Angular: DatePicker больше не передаёт rendered своей панели — её прячет признак поддерева, как у Select, поповера и меню. Поведение то же.
+- 3167c92: NumberInput в Angular (`<div so-number-input>`) — поле числа в формате языка: шаг и границы, клавиши, кнопки «−» и «+» с удержанием, как во Vue
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

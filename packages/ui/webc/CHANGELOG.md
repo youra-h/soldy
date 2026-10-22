@@ -1,5 +1,69 @@
 # @soldy-ui/webc
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+- 8d0c58c: События частей, которые рисует сам компонент, — страниц Pagination, групп ListBox, колонок Table и элементов из данных (`items`, `engine`) у ListBox, Tabs, Accordion, RadioGroup и Table — больше не всплывают до владельца и выше, как и события его деталей; `embedded` на всплытие больше не влияет. Как обновиться: слушать такое событие на самом элементе или брать событие владельца (`so:change:value`, `so:item:activated`, `so:item:close`). `useCollectionAdapter` больше не принимает контекст владельца: `useCollectionAdapter(adapter, host, onUpdate)`.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+- 7137eaa: Группы из разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`, `Select.Group`) входят в группировку коллекции, и `sections` описывают их с подписью. Элемент без группы больше не уходит в конец, а остаётся на своём месте среди незаявленных групп; чтобы вернуть прежний порядок, заявите группы в `groups`.
+- 8d4064e: `onChangeSelected` элемента коллекции (`ListBox.Item`, `Select.Item`, `Tags.Item`, `Accordion.Item`, `Table.Row`, флажки и переключатели `Menu`) и `onChangeActive` (`Tabs.Item`, `Tabs.Content`, `RadioGroup.Item`) приходят только элементу, чьё состояние сменилось, и несут новое значение: `onChangeSelected={(selected) => …}`. `change:selection` владельца вторым аргументом отдаёт элементы, чья отметка сменилась, `change:activation` — прежний активный; в Web Components `detail` этих двух событий — пара: где читали `detail`, читайте `detail[0]`.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- f0b92e4: Событие «до» (`so:show:before`, `so:hide:before`, …) отменяется `preventDefault()` самого события, как событие DOM; `detail.preventDefault()` работает как прежде
+- 62a690a: Web Components: Popover и Tooltip — `<span is="so-popover">` и `<span is="so-tooltip">`; триггер — элемент в слоте `trigger`, связь с панелью (`aria-expanded`, `aria-controls`, `aria-describedby`) он получает сам.
+- 082df04: Web Components: `rendered = false` у элемента и неактивная панель таба прячут и открытые панели вложенных слоёв — подменю, поповера в поповере, окна в панели, — как у остальных адаптеров.
+- a8010a5: Web Components: панель идёт за своим местом и при перестановке одной операцией — меню снова ведёт стрелками и наведением по своим пунктам, а панели Frame, поповера, подсказки и регион тостов собираются заново под провайдером и владельцем нового места
+- 309ce24: DragAndDrop во всех адаптерах: перестановка элементов Tabs, ListBox и Accordion перетаскиванием, события `move:before` и `move` (`onMoveBefore`/`onMove`, `(soMoveBefore)`/`(soMove)`, `so:move:before`/`so:move`); в Angular — `<ng-container so-drag-and-drop>`, в Web Components — `<so-drag-and-drop>`
+- a45ad99: Web Components: Frame, окно и выезжающая панель, переставленные одной операцией, собирают заново и всё в своей панели — кнопки и поля внутри берут локаль и окружение нового места
+- 9b3a3f5: NumberInput в React, Solid, Svelte и Web Components (`<div is="so-number-input">`) — поле числа в формате языка: шаг и границы, клавиши, кнопки «−» и «+» с удержанием, число уходит в форму скрытым полем, как во Vue
+- 743c56c: Textarea в React, Solid, Svelte, Angular и Web Components — многострочное поле с авторостом и счётчиком символов, как во Vue
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- 5047ccc: Web Components: Dialog, Drawer и Toasts — `<div is="so-dialog">` и `<div is="so-drawer">` с подложкой в слое и `<so-toasts>` вокруг приложения; тост из кода — `toastsOf(element).show(…)`, своё содержимое — функция `render(toast)`, которая отдаёт узел.
+- 1f288ea: Web Components: значение, которое слушатель события пишет обратно в свойство элемента, пока тот собирается (`months` календаря на `so:change:months` при вставке), теперь сразу доходит до компонента и не затеняет значение ядра; перестановка элемента больше не откатывает к нему.
+- 52a3b15: Web Components: элемент, снятый `rendered=false` (своим, у предка или как неактивная панель таба), отдаёт плагинам узел `null`, как у Vue. Открытое окно и выезжающая панель отпускают прокрутку страницы и `aria-hidden` фона, а снова показанный элемент получает узел и `so:element:ready` заново.
+- 01e886b: Web Components: ProgressLinear, Slider, Rating, Pagination и Scroller — `<span is="so-progress-linear">`, `<span is="so-slider">`, `<span is="so-rating">`, `<nav is="so-pagination">`, `<div is="so-scroller">`; слои `setupInteractive`, `setupValueControl`, `setupInputControl`. Слоты со scope — образцы (`<template slot="mark">`): копию получает каждая метка, ручка, звезда и страница.
+- 443f125: Web Components: DateInput, Calendar и DatePicker — `so-date-input`, `so-calendar` с днями `<td is="so-calendar-item">` и `so-date-picker`; Popover на `div` — `<div is="so-popover-div">`.
+- 691cdfb: Web Components: `rendered=false` у Popover и Tooltip прячет и открытую панель
+- 1bbe88a: Web Components: Menu — `<span is="so-menu">` с пунктами, группами, разделителями, подменю, флажками, переключателями и пунктами с панелью; по кнопке в слоте `trigger` и контекстное; пункты разметкой или данными (`el.items`).
+- 7be38ad: Web Components: разметка страницы, ожившая при подключении пакета, собирается в порядке документа во всех браузерах, включая Safari с полифилом. Пункты меню разных видов стоят по порядку, стрелки и набор по буквам ходят порядком экрана, группа внутри подменю даёт ключ своим пунктам. Сборка больше не зависит от порядка регистрации элементов
+- f4bc615: Web Components: Tags и Select — `<div is="so-tags">` с `<div is="so-tags-item">`, `<div is="so-select">` с `<div is="so-select-item">` и `<div is="so-select-group">`; опции и теги задаются разметкой или данными, слоты `item-*` — образцы; Button на `span` — `<span is="so-button-span">`.
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

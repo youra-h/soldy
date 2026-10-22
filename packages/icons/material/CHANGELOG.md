@@ -1,5 +1,30 @@
 # @soldy-ui/icons-material
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+
+### Patch Changes
+
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [0179add]
+- Updated dependencies [89db4ae]
+- Updated dependencies [74f6de3]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [0da817b]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [8d55e75]
+  - @soldy-ui/setup@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes
