@@ -609,8 +609,10 @@ describe('хост Web Components · оверлеи', () => {
 
 	/**
 	 * Режим контекстного меню — из пропсов колонки, как у Vue: в слоте
-	 * `trigger` тогда область, а не кнопка. Дети ставятся до вставки, и смена
-	 * режима строит элемент заново.
+	 * `trigger` тогда область, а не Button. Область — нативная кнопка, как у
+	 * Vue: в обходе Tab без `tabindex`, со своими ролью и именем, и связки с
+	 * меню у неё нет. Дети ставятся до вставки, и смена режима строит элемент
+	 * заново.
 	 */
 	it('превью Menu: смена openOn строит меню заново — у контекстного меню в слоте область', () => {
 		const node = stage()
@@ -622,14 +624,14 @@ describe('хост Web Components · оверлеи', () => {
 		handle.update({ openOn: 'contextmenu' })
 
 		const after = find(node, '.so-menu')
+		const area = find(after, ':scope > [slot="trigger"]')
 
 		expect(after).not.toBe(before)
 		expect(node.querySelectorAll('.so-menu')).toHaveLength(1)
 		expect(after.querySelector(':scope > .so-button')).toBeNull()
-		expect(after.querySelector(':scope > [slot="trigger"]')?.getAttribute('tabindex')).toBe('0')
-		expect(
-			after.querySelector(':scope > [slot="trigger"]')?.hasAttribute('aria-haspopup'),
-		).toBe(false)
+		expect([area.localName, area.getAttribute('type')]).toEqual(['button', 'button'])
+		expect(area.hasAttribute('tabindex')).toBe(false)
+		expect(area.hasAttribute('aria-haspopup')).toBe(false)
 
 		handle.unmount()
 	})
