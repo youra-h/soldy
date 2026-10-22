@@ -13,8 +13,15 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TMenu, TMenuItem, TMenuSubmenu } from '@soldy-ui/core'
-import type { IMenuItem, TCollectionEngine } from '@soldy-ui/core'
+import { TMenu, TMenuItem, TMenuSubmenu, createEngineMenu } from '@soldy-ui/core'
+import type {
+	IMenuItem,
+	IMenuItemSource,
+	IMenuSubmenu,
+	TCollectionEngine,
+	TMenuCollection,
+	TMenuSubmenuEntry,
+} from '@soldy-ui/core'
 import {
 	MenuCollectionDescriptor,
 	MenuCollectionItemDescriptor,
@@ -29,14 +36,27 @@ import type { IAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'
 import { childOf, elevatorOf, type TElevatorLayer } from './helpers'
 
-/** Принять контексты, как рантайм адаптера: подписка на состояние и `attach`. */
-function accept(contexts: readonly IAdapterContext[]): void {
-	for (const context of contexts) context.connect(CommonProfile).state.subscribe(() => {})
+/**
+ * Принять контексты, как рантайм адаптера: подписка на состояние и `attach`.
+ * Отдаёт снятие: отписку и `destroy` в обратном порядке.
+ */
+function accept(contexts: readonly IAdapterContext[]): () => void {
+	const offs = contexts.map((context) => context.connect(CommonProfile).state.subscribe(() => {}))
+
 	for (const context of contexts) context.attach()
+
+	return () => {
+		offs.forEach((off) => off())
+
+		for (const context of [...contexts].reverse()) context.destroy()
+	}
 }
 
-/** Меню — свой контекст и фасад меню на его наборе. */
-function mountMenu(layer: TElevatorLayer): {
+/** Меню — свой контекст и фасад меню на его наборе; движок — снаружи или свой. */
+function mountMenu(
+	layer: TElevatorLayer,
+	engine?: TMenuCollection,
+): {
 	menu: TMenu
 	engine: TCollectionEngine<IMenuItem, any>
 } {
@@ -44,7 +64,7 @@ function mountMenu(layer: TElevatorLayer): {
 	const own = createAdapterContext(MenuDescriptor(), { ctrl: menu })
 	const facade = createAdapterContext(
 		MenuCollectionDescriptor(),
-		{ options: { owner: own.instance } },
+		{ options: { owner: own.instance, engine } },
 		{ bundle: own.bundle },
 	).use(TCollectionExtension, { elevator: elevatorOf(layer) })
 
@@ -55,13 +75,16 @@ function mountMenu(layer: TElevatorLayer): {
 
 /**
  * Пункт с подменю — три контекста на одном наборе, как у Vue: фасад пункта
- * берёт коллекцию меню над ним, фасад меню отдаёт свою.
+ * берёт коллекцию меню над ним, фасад меню отдаёт свою. Подменю из данных
+ * разметка меню кладёт по записи `submenus`: пункт и движок его пунктов дали
+ * данные.
  */
 function mountSubmenu(
 	layer: TElevatorLayer,
 	props: object,
-): { submenu: TMenuSubmenu; engine: TCollectionEngine<IMenuItem, any> } {
-	const submenu = new TMenuSubmenu(props)
+	entry?: TMenuSubmenuEntry,
+): { submenu: IMenuSubmenu; engine: TCollectionEngine<IMenuItem, any> } {
+	const submenu = entry?.ctrl ?? new TMenuSubmenu(props)
 	const own = createAdapterContext(MenuSubmenuDescriptor(), { ctrl: submenu, props })
 	const elevator = elevatorOf(layer)
 	const item = createAdapterContext(
@@ -71,7 +94,7 @@ function mountSubmenu(
 	).use(TCollectionItemExtension, { item: own.instance, elevator })
 	const facade = createAdapterContext(
 		MenuSubmenuCollectionDescriptor(),
-		{ options: { owner: own.instance } },
+		{ options: { owner: own.instance, engine: entry?.engine } },
 		{ bundle: own.bundle },
 	).use(TCollectionExtension, { elevator })
 
@@ -80,8 +103,8 @@ function mountSubmenu(
 	return { submenu, engine: facade.instance.engine }
 }
 
-/** Пункт-действие разметкой. */
-function mountItem(layer: TElevatorLayer, props: object): TMenuItem {
+/** Пункт-действие разметкой и его снятие. */
+function mountItem(layer: TElevatorLayer, props: object): { item: TMenuItem; unmount: () => void } {
 	const own = createAdapterContext(MenuItemDescriptor(), { props })
 	const item = createAdapterContext(
 		MenuCollectionItemDescriptor(),
@@ -89,9 +112,7 @@ function mountItem(layer: TElevatorLayer, props: object): TMenuItem {
 		{ bundle: own.bundle },
 	).use(TCollectionItemExtension, { item: own.instance, elevator: elevatorOf(layer) })
 
-	accept([item, own])
-
-	return own.instance
+	return { item: own.instance, unmount: accept([item, own]) }
 }
 
 /** Меню «Изменить · Поделиться → (Ссылка, Почта)» разметкой. */
@@ -99,11 +120,11 @@ function tree() {
 	const menuLayer = childOf()
 	const root = mountMenu(menuLayer)
 	const editLayer = childOf(menuLayer)
-	const edit = mountItem(editLayer, { value: 'edit', text: 'Изменить' })
+	const edit = mountItem(editLayer, { value: 'edit', text: 'Изменить' }).item
 	const shareLayer = childOf(menuLayer)
 	const share = mountSubmenu(shareLayer, { value: 'share', text: 'Поделиться' })
-	const link = mountItem(childOf(shareLayer), { value: 'link', text: 'Ссылка' })
-	const mail = mountItem(childOf(shareLayer), { value: 'mail', text: 'Почта' })
+	const link = mountItem(childOf(shareLayer), { value: 'link', text: 'Ссылка' }).item
+	const mail = mountItem(childOf(shareLayer), { value: 'mail', text: 'Почта' }).item
 
 	return { root, edit, share, link, mail }
 }
@@ -148,9 +169,55 @@ describe('пункт с подменю — элемент меню над ним
 		const share = mountSubmenu(shareLayer, { value: 'share' })
 		const sendLayer = childOf(shareLayer)
 		const send = mountSubmenu(sendLayer, { value: 'send' })
-		const fax = mountItem(childOf(sendLayer), { value: 'fax' })
+		const fax = mountItem(childOf(sendLayer), { value: 'fax' }).item
 
 		expect(share.engine.extensions.batch.items).toEqual([send.submenu])
 		expect(send.engine.extensions.batch.items).toEqual([fax])
+	})
+})
+
+/**
+ * Подменю из данных с пустым `items` и пунктами разметкой — шаблоном
+ * `item-content`, который меню выводит в его панели. Вложенный состав такого
+ * подменю из данных — `[]`, и патч меню по `trackBy` пишет его в движок
+ * подменю сверкой. Пункт разметки держит регистратор подменю, пока тот в
+ * разметке: сверка его не снимает, снятие разметки — убирает.
+ */
+describe('подменю из данных — пункты разметкой', () => {
+	it('патч меню по trackBy оставляет пункт разметки в коллекции подменю, снятие разметки — убирает', () => {
+		const engine = createEngineMenu()
+		const { batch, submenus } = engine.extensions
+		const menuLayer = childOf()
+		const before: IMenuItemSource[] = [{ value: 'export', text: 'Экспорт', items: [] }]
+		const after: IMenuItemSource[] = [{ value: 'export', text: 'Выгрузка', items: [] }]
+
+		batch.trackBy = (item) => item.value
+		batch.items = before
+
+		mountMenu(menuLayer, engine)
+
+		const exported = submenus.entries.get(batch.items[0])
+
+		if (!exported) throw new Error('подменю «export» нет')
+
+		// Разметка меню кладёт подменю из данных по его записи
+		const exportLayer = childOf(menuLayer)
+
+		mountSubmenu(exportLayer, {}, exported)
+
+		const pdf = mountItem(childOf(exportLayer), { value: 'pdf', text: 'PDF' })
+
+		expect(exported.engine.extensions.batch.items).toEqual([pdf.item])
+
+		batch.items = after
+
+		// Тот же пункт и та же запись: патч правит подменю на месте
+		expect(submenus.entries.get(exported.ctrl)).toBe(exported)
+		expect(exported.ctrl.text).toBe('Выгрузка')
+		expect(exported.engine.extensions.batch.items).toEqual([pdf.item])
+
+		pdf.unmount()
+
+		expect(exported.engine.extensions.batch.items).toEqual([])
 	})
 })

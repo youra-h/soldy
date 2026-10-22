@@ -7,7 +7,11 @@ import { TUpdateCommand } from './update-command.class'
 /**
  * Команда сверки состава с входным набором по ключу `trackBy`.
  *
- * Совпавшие обновляются, новые добавляются в конец, пропавшие удаляются.
+ * Совпавшие обновляются, новые добавляются в конец, пропавшие удаляются — те,
+ * кого вправе снять (`removable`, по умолчанию все). Кого снимать нельзя,
+ * решает тот, кто сверку запускает: команда о причинах не знает. Совпадения
+ * ищутся по всему хранилищу, поэтому элемент, которого снимать нельзя, с
+ * ключом из входа обновляется, а не дублируется.
  *
  * Живёт в командах, а не в `TBatchExtension`, именно ради выборок: карту
  * существующих элементов она строит по **`ctx.storage.items`** — сырому
@@ -30,6 +34,8 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 	constructor(
 		private _items: ReadonlyArray<TCollectionEngineItemSource<TItem>>,
 		private _trackBy: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown,
+		/** Можно ли снять элемент, чьего ключа во входе нет. По умолчанию — любой. */
+		private _removable: (item: TItem) => boolean = () => true,
 	) {}
 
 	get changed(): boolean {
@@ -77,7 +83,7 @@ export class TPatchCommand<TItem> implements ICommand<TItem> {
 		}
 
 		itemByKey.forEach((item, key) => {
-			if (!matchedKeys.has(key)) {
+			if (!matchedKeys.has(key) && this._removable(item)) {
 				this._run(ctx, new TRemoveCommand<TItem>(item))
 			}
 		})
