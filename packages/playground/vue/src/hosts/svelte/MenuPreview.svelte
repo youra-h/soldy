@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
-	import { Button, Input, Menu } from '@soldy-ui/svelte'
+	import { Button, Calendar, Menu } from '@soldy-ui/svelte'
 	import type { TPreviewProps } from './previews'
 
 	type TTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
@@ -19,14 +19,10 @@
 
 	Пункты — разметкой, как у Vue: группа флажков с подписью, группа
 	переключателей — отмечен один, — действия с подсказками сочетаний, подменю
-	с подменю внутри, пункт с панелью, которая монтируется с первым открытием,
-	выключенное действие и «опасный» пункт своего варианта. Пришли данными
-	(`items` блока групп страницы) — из них: разметка заменила бы данные, а
-	группы меню рисует из данных.
-
-	Отличие от Vue — содержимое панели пункта «Срок»: у Vue там календарь, а
-	Calendar в адаптере Svelte ещё нет (задача 16.6.5), и до него в панели —
-	поле с кнопкой. Панель та же: произвольное содержимое и `lazyMount`.
+	с подменю внутри, пункт с панелью — календарём, который монтируется с
+	первым открытием, — выключенное действие и «опасный» пункт своего варианта.
+	Пришли данными (`items` блока групп страницы) — из них: разметка заменила бы
+	данные, а группы меню рисует из данных.
 -->
 {#snippet trigger({ triggerAria, triggerDataset }: TTriggerScope)}
 	{#if bind.openOn === 'contextmenu'}
@@ -67,10 +63,7 @@
 			</Menu.Submenu>
 		</Menu.Submenu>
 		<Menu.PopoverItem value="due" text="Срок" lazyMount>
-			<div style="display: flex; gap: 8px; align-items: center">
-				<Input placeholder="ДД.ММ.ГГГГ" aria_label="Срок" />
-				<Button text="Готово" />
-			</div>
+			<Calendar />
 		</Menu.PopoverItem>
 		<Menu.Item value="archive" text="В архив" disabled />
 		<Menu.Separator />

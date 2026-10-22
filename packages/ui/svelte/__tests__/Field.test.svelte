@@ -8,14 +8,18 @@
 	 * - `input` и `id` — экземпляр и свой `id` поля ввода;
 	 * - `nested` — флажок в слоте `trailing` поля ввода: контрол в слоте
 	 *   контрола, а не контрол поля формы;
-	 * - `groupLabel` — своё имя группы радио;
+	 * - `groupLabel` — своё имя группы радио и поля даты;
 	 * - `slider` — экземпляр ползунка; `slider-range` — ползунок с двумя
 	 *   ручками и их именами;
-	 * - `select` — Select с опциями разметки: поле в нём — деталь его разметки.
+	 * - `select` — Select с опциями разметки: поле в нём — деталь его разметки;
+	 * - `date-input` — поле даты, `date-picker` и `date-picker-range` —
+	 *   DatePicker одной даты и диапазона: его поля — детали его разметки.
 	 */
 	import type { TField, TInput, TSlider } from '@soldy-ui/core'
 	import {
 		CheckBox,
+		DateInput,
+		DatePicker,
 		Field,
 		Input,
 		Label,
@@ -38,6 +42,9 @@
 		| 'slider'
 		| 'slider-range'
 		| 'select'
+		| 'date-input'
+		| 'date-picker'
+		| 'date-picker-range'
 
 	type THarnessProps = {
 		/** Экземпляр поля. */
@@ -54,7 +61,7 @@
 		id?: string
 		/** Флажок в слоте `trailing` поля ввода. */
 		nested?: boolean
-		/** Своё имя группы радио. */
+		/** Своё имя группы радио и поля даты. */
 		groupLabel?: string
 		/** Экземпляр ползунка. */
 		slider?: TSlider
@@ -96,6 +103,12 @@
 				<Select.Item value="msk" text="Москва" />
 				<Select.Item value="tver" text="Тверь" />
 			</Select>
+		{:else if control === 'date-input'}
+			<DateInput aria_label={props.groupLabel} />
+		{:else if control === 'date-picker'}
+			<DatePicker />
+		{:else if control === 'date-picker-range'}
+			<DatePicker mode="range" />
 		{:else}
 			<Label text="Согласен"><CheckBox /></Label>
 		{/if}
