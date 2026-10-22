@@ -1,0 +1,241 @@
+<!--
+	Корень — сам хост (`<div so-select>`), рамка, поэтому шаблон — то, что внутри
+	корня Vue, в том же порядке: поле, панель, а в конце — слив шаблонов слотов.
+	Слоты контракта: field (scope { field }), tags (scope { tags, engine }),
+	leading, clear (scope { clear }), arrow-icon, trailing, default — опции,
+	empty; item, item-leading, item-trailing и item-indicator-icon — слоты опций
+	из данных.
+
+	Опции секции из данных (шаблон `entries`, один на группу и на опции без
+	неё), ключ — ключ записи. Без окна это все показанные опции секции, то есть
+	то, что осталось после отбора: скрытая опция уходит из разметки, но из
+	коллекции не исчезает. В окне обёртки `Virtual` (у списка без групп) —
+	видимые и распорки на месте пропущенных: `div` под `aria-hidden`, высоту и
+	место которого тема берёт из его стиля, а стиль пишет ядро. Одна петля на
+	опции и распорки: петли по блокам пересоздавали бы опцию, когда она
+	переходит из блока в блок. Шаблон объявлен в шаблоне Select, и опции в нём
+	видят слой лифта Select и внутри группы: DI идёт по дереву объявлений.
+
+	Слоты опции пробрасываются целиком и только заданные: у каждого слота опции
+	есть `item-<слот>` (`default` — `item`), scope — scope слота опции плюс сама
+	опция. Слот без scope (`leading`, `trailing`) опция проецирует, и проброс —
+	`ng-container` с `ngProjectAs`; слот со scope и слот, по которому опция
+	решает, рисовать ли своё (`indicator-icon` — отметку), она берёт шаблоном, и
+	проброс — `<ng-template slot>`, который `ngProjectAs` уводит в слив шаблонов
+	опции.
+-->
+<ng-template #entries let-entries>
+	@for (entry of entries; track entry.key) {
+		@if (entry.kind === 'filler') {
+			<div class="so-select__filler" aria-hidden="true" [style]="entry.style"></div>
+		} @else {
+			<div so-select-item [ctrl]="entry.item">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item: entry.item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item'); as content) {
+					<ng-template
+						slot="default"
+						ngProjectAs="ng-template[slot]"
+						let-text="text"
+						let-selected="selected"
+					>
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item: entry.item, text, selected }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-container ngProjectAs="[slot=trailing]">
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item: entry.item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item-indicator-icon'); as indicator) {
+					<ng-template
+						slot="indicator-icon"
+						ngProjectAs="ng-template[slot]"
+						let-selected="selected"
+					>
+						<ng-container
+							[ngTemplateOutlet]="indicator"
+							[ngTemplateOutletContext]="{ item: entry.item, selected }"
+						/>
+					</ng-template>
+				}
+			</div>
+		}
+	}
+</ng-template>
+<!--
+	Поле — готовый Input, а шаблон слота `field` его заменяет и получает в scope
+	тот же экземпляр поля. Набор `aria` Select директива кладёт на поле, а поле
+	— хост, который отдаёт написанное своему `<input>`: набор ложится туда
+	поверх набора комбобокса, вместе со всем, что потребитель написал на Select,
+	кроме класса и стиля (`#control`).
+
+	Края — шаблоны поля, всегда: слева ряд тегов, пока они есть (своей
+	разметкой — шаблон `tags`), за ним `[slot=leading]`; справа стрелка в
+	обёртке `.so-select__arrow` (значок — шаблон `arrow-icon` или иконка роли
+	`arrowDown`), за ней `[slot=trailing]`. Своя кнопка очистки — шаблон `clear`
+	полю, только заданный: иначе поле рисует свою по `clearable`.
+-->
+@if (slot('field'); as field) {
+	<ng-container
+		[ngTemplateOutlet]="field"
+		[ngTemplateOutletContext]="{ field: instance()?.field }"
+	/>
+} @else {
+	<div
+		so-input
+		#control
+		embedded="select.field"
+		class="so-select__field"
+		[ctrl]="instance()?.field"
+		[so-attributes]="state()['aria']"
+	>
+		<ng-template slot="leading">
+			@if (state()['tags']; as tags) {
+				@if (slot('tags'); as ownTags) {
+					<ng-container
+						[ngTemplateOutlet]="ownTags"
+						[ngTemplateOutletContext]="{ tags, engine: state()['tags_engine'] }"
+					/>
+				} @else {
+					<div
+						so-tags
+						embedded="select.tags"
+						class="so-select__tags"
+						[ctrl]="tags"
+						[engine]="state()['tags_engine'] ?? undefined"
+					></div>
+				}
+			}
+			<ng-content select="[slot=leading]" />
+		</ng-template>
+		@if (slot('clear'); as clear) {
+			<ng-template slot="clear" let-command="clear">
+				<ng-container
+					[ngTemplateOutlet]="clear"
+					[ngTemplateOutletContext]="{ clear: command }"
+				/>
+			</ng-template>
+		}
+		<ng-template slot="trailing">
+			<!--
+				Стрелка декоративна: состояние панели уже сказано через
+				`aria-expanded` на поле. Класс на обёртке, а не на иконке: тема
+				разворачивает стрелку селектором `.so-select[data-open] .so-select__arrow`,
+				и подменённая шаблоном иконка поворачивается так же.
+			-->
+			<span class="so-select__arrow">
+				@if (slot('arrow-icon'); as arrow) {
+					<ng-container [ngTemplateOutlet]="arrow" />
+				} @else {
+					<svg
+						so-icon
+						embedded="select.arrow"
+						so-role-icon="arrowDown"
+						[size]="state()['size']"
+					></svg>
+				}
+			</span>
+			<ng-content select="[slot=trailing]" />
+		</ng-template>
+	</div>
+}
+<!--
+	Панель — Frame: телепорт, слой, привязка к корню, пометка владельцем. На неё
+	ложатся `panelDataset` Select (признак «тянут», `data-swiping`) и пометка
+	владельцем `dismiss_ownerAttribute` — одним объектом: директива набора на
+	элементе одна. `data-open` панели пишет сам Frame — это видимость его слоя,
+	— а сторону после flip (`data-placement`) — плагин якоря.
+
+	Якорь — корень (`rootElement()` базы): на сервере и до первой отрисовки его
+	нет. `rendered` Select панель получает сама: корень Angular только прячется,
+	а панель увезена в `body`. `visible` Select ей не передаётся, как у Vue, где
+	`v-show` корня до телепортированной панели не доходит.
+-->
+<div
+	so-frame
+	embedded="select.frame"
+	class="so-select__panel"
+	position="fixed"
+	[visible]="state()['open']"
+	[rendered]="state()['rendered']"
+	[anchor_anchor]="rootElement()"
+	[anchor_placement]="state()['panelPlacement']"
+	[anchor_flip]="state()['panelFlip']"
+	[anchor_matchWidth]="state()['autoFitWidth']"
+	[anchor_offset]="4"
+	[so-attributes]="{ ...state()['panelDataset'], ...state()['dismiss_ownerAttribute'] }"
+>
+	<!--
+		Полоса, за которую панель тянут, — пока жест включён. Потребитель её не
+		адресует, скринридеру она не нужна (`aria-hidden`), ставит её тема у края
+		со стороны поля. Прямой потомок панели и вне списка: в `[role=listbox]`
+		скринридер счёл бы её опцией.
+	-->
+	@if (state()['handleRendered']) {
+		<div class="so-select__handle" aria-hidden="true"></div>
+	}
+	<!--
+		Список несёт набор Select `listAria` — роль `listbox`, `id`, на который
+		ссылается поле, и `aria-multiselectable`. Опции разметки
+		(`<div so-select-item>`, `<div so-select-group>`) — основная проекция
+		Select, а без них — то, что рисует коллекция, по секциям группировки
+		(`drawnSections`), ключ — ключ секции: группа с подписью — в
+		`<div so-select-group>`, опции без группы — прямо в списке, между
+		соседними секциями, пока его просит Select (`groupSeparators`), — немой
+		разделитель (не `separator`: в `listbox` ARIA пускает только опции и
+		группы). Секции идут порядком показанного, и стрелки подсвечивают опции
+		так, как они стоят на экране. Без групп секция одна — ни обёртки, ни
+		разделителя.
+
+		Пока показанных опций нет, на их месте слот `empty`, внутри списка:
+		пустой `listbox` для скринридера — тупик.
+	-->
+	<div class="so-select__list" [so-attributes]="state()['listAria']">
+		<ng-content>
+			@for (
+				section of state()['drawnSections'] ?? [];
+				track section.key;
+				let first = $first
+			) {
+				@if (state()['groupSeparators'] && !first) {
+					<div class="so-select__separator" aria-hidden="true"></div>
+				}
+				@if (section.group; as group) {
+					<div so-select-group [label]="group.label">
+						<ng-container
+							[ngTemplateOutlet]="entries"
+							[ngTemplateOutletContext]="{ $implicit: section.entries }"
+						/>
+					</div>
+				} @else {
+					<ng-container
+						[ngTemplateOutlet]="entries"
+						[ngTemplateOutletContext]="{ $implicit: section.entries }"
+					/>
+				}
+			}
+		</ng-content>
+		@if (state()['shown']?.length === 0) {
+			<ng-content select="[slot=empty]" />
+		}
+	</div>
+</div>
+<!--
+	Шаблоны слотов, которые потребитель написал в Select, — в слив, в конце
+	корня: Angular считает их содержимым, и в основной проекции они сняли бы
+	запасное содержимое — опции из данных не нарисовались бы.
+-->
+<ng-content select="ng-template[slot]" />

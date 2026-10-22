@@ -13,6 +13,15 @@
  * хоста без коробки (обёртка региона тостов) внешний узел компонента — узел
  * внутри, и их рендерер тоже отдаёт записи хоста (`keepsLook`).
  *
+ * Запись получает с командой сам рендерер адаптера, а не рендерер Angular под
+ * ним, и на свой узел пишет через него же. Поэтому узел записи, который сам
+ * хост из реестра, — поле `<div so-input>` в шаблоне Select, — получает
+ * команду тем же путём: его запись по своим правилам отдаёт её дальше, на свой
+ * `<input>`. Так написанное на хосте проходит цепочку хостов до узла, где
+ * работает, — как `v-bind` на `<Input>` у Vue, — а на каждом звене остаётся
+ * то, что звено держит у себя (`keeps*`). Снятие и переезд на новый узел идут
+ * той же цепочкой.
+ *
  * Класс, а не `Proxy`: команды рендерера — его методы, и каждый виден
  * типами `Renderer2`.
  */
@@ -95,51 +104,49 @@ export class TForwardingRenderer extends Renderer2 {
 	setAttribute(el: unknown, name: string, value: string, namespace?: string | null): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsAttribute(name))
-			host.setAttribute(this._delegate, name, value, namespace)
+		if (host && !host.keepsAttribute(name)) host.setAttribute(this, name, value, namespace)
 		else this._delegate.setAttribute(el, name, value, namespace)
 	}
 
 	removeAttribute(el: unknown, name: string, namespace?: string | null): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsAttribute(name))
-			host.removeAttribute(this._delegate, name, namespace)
+		if (host && !host.keepsAttribute(name)) host.removeAttribute(this, name, namespace)
 		else this._delegate.removeAttribute(el, name, namespace)
 	}
 
 	addClass(el: unknown, name: string): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsLook) host.addClass(this._delegate, name)
+		if (host && !host.keepsLook) host.addClass(this, name)
 		else this._delegate.addClass(el, name)
 	}
 
 	removeClass(el: unknown, name: string): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsLook) host.removeClass(this._delegate, name)
+		if (host && !host.keepsLook) host.removeClass(this, name)
 		else this._delegate.removeClass(el, name)
 	}
 
 	setStyle(el: unknown, style: string, value: unknown, flags?: RendererStyleFlags2): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsLook) host.setStyle(this._delegate, style, value, flags)
+		if (host && !host.keepsLook) host.setStyle(this, style, value, flags)
 		else this._delegate.setStyle(el, style, value, flags)
 	}
 
 	removeStyle(el: unknown, style: string, flags?: RendererStyleFlags2): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsLook) host.removeStyle(this._delegate, style, flags)
+		if (host && !host.keepsLook) host.removeStyle(this, style, flags)
 		else this._delegate.removeStyle(el, style, flags)
 	}
 
 	setProperty(el: unknown, name: string, value: unknown): void {
 		const host = this._registry.hostOf(el)
 
-		if (host && !host.keepsProperty(name)) host.setProperty(this._delegate, name, value)
+		if (host && !host.keepsProperty(name)) host.setProperty(this, name, value)
 		else this._delegate.setProperty(el, name, value)
 	}
 
@@ -156,7 +163,7 @@ export class TForwardingRenderer extends Renderer2 {
 		const host = this._registry.hostOf(target)
 
 		return host && !host.keepsListener(eventName)
-			? host.listen(this._delegate, eventName, callback, options)
+			? host.listen(this, eventName, callback, options)
 			: this._delegate.listen(target, eventName, callback, options)
 	}
 }

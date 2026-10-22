@@ -14,6 +14,12 @@
  * Узлы живут в своих корнях, а их владелец — петля: контекст места у них тот
  * же, что у самой петли, — внутри `Elevate` владельца коллекции элементы видят
  * его слой.
+ *
+ * Окна гидратации петля переживает, как ветки и петли адаптера (`flow.ts`):
+ * первое значение — живое, а пересчёт в окне читает список и до конца окна
+ * отдаёт прежние узлы — новых строк нет, и записи до строк не доходят. После
+ * окна петля строит, снимает и обновляет строки уже вне гидратации
+ * (`../common/hydration.ts`, шапка).
  */
 
 import {
@@ -25,6 +31,7 @@ import {
 	type Accessor,
 	type JSX,
 } from 'solid-js'
+import { UNCOMPUTED, awaitHydrationEnd, hydrating } from '../common/hydration'
 
 export type TKeyedForProps<TEntry, TKey> = {
 	/** Записи по порядку. */
@@ -65,8 +72,16 @@ export function KeyedFor<TEntry, TKey>(props: TKeyedForProps<TEntry, TKey>): JSX
 		rows.clear()
 	})
 
-	const nodes = createMemo(() => {
+	const nodes = createMemo<JSX.Element[], typeof UNCOMPUTED>((previous) => {
 		const entries = props.each ?? []
+
+		// Пересчитано в окне гидратации — прежние узлы, а после окна петля
+		// пересчитается по сигналу и дойдёт до строк
+		if (previous !== UNCOMPUTED && hydrating()) {
+			awaitHydrationEnd()
+
+			return previous
+		}
 
 		// Узлы и ключи — не зависимости петли: она идёт только за списком
 		return untrack(() => {
@@ -92,7 +107,7 @@ export function KeyedFor<TEntry, TKey>(props: TKeyedForProps<TEntry, TKey>): JSX
 
 			return result
 		})
-	})
+	}, UNCOMPUTED)
 
 	return <>{nodes()}</>
 }

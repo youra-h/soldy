@@ -126,6 +126,24 @@ describe('хост Angular', () => {
 		)
 		expect(node.childNodes).toHaveLength(0)
 	})
+
+	/**
+	 * Страница оболочки монтирует все превью в одну задачу браузера — у Select
+	 * их под семьдесят. Такт приложения у `mount` один: ручной такт Angular
+	 * переводит планировщик на микрозадачи до конца задачи, и в режиме
+	 * разработки первое уведомление после каждого такта идёт в счёт
+	 * бесконечного цикла — сотня подряд роняет его проверку (NG0103). С двумя
+	 * тактами на превью страница Select падала.
+	 */
+	it('девяносто превью в одну задачу — без NG0103', () => {
+		const handles = Array.from({ length: 90 }, () =>
+			host.mount(stage(), { component: 'button', props: { text: 'Кнопка' } }),
+		)
+
+		expect(handles).toHaveLength(90)
+
+		for (const handle of handles) handle.unmount()
+	})
 })
 
 /** Подписи элементов коллекций превью — из общего манифеста. */
@@ -255,6 +273,49 @@ describe('хост Angular · обёртка и содержимое', () => {
 			node.querySelector('.so-label > .so-label__control > .so-check-box > input'),
 		).not.toBe(null)
 		expect(textsOf(node, '.so-label__text')).toEqual(['Подпись'])
+
+		handle.unmount()
+	})
+
+	/**
+	 * Опции Select — свои компоненты на своих элементах в его основной проекции,
+	 * в списке панели, увезённой в `body`. Слой лифта Select опция читает по
+	 * инжектору владельца, поэтому хост собирает её после Select: вошла в
+	 * коллекцию — встала на своё место в ней (`order`), а выбор пишет текст
+	 * опции в поле.
+	 */
+	it('опции Select входят в коллекцию владельца в порядке разметки — в панели в body', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'select', props: {} })
+		const options = all(document.body, '.so-select__panel > .so-select__list > .so-select-item')
+
+		expect(node.querySelector('.so-select__panel')).toBe(null)
+		expect(options.map((option) => option.textContent?.trim())).toEqual(TEXTS)
+		expect(options.map((option) => option.style.order)).toEqual(['0', '1', '2', '3', '4'])
+
+		await nextFrame()
+		all(options[1], '.so-button')[0]?.click()
+		await nextFrame()
+
+		const field = node.querySelector('.so-select__field input')
+
+		expect(field instanceof HTMLInputElement && field.value).toBe(TEXTS[1])
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+		expect(document.querySelector('.so-select__panel')).toBe(null)
+	})
+
+	/** Теги — данными превью: ряд в рамке во всю ширину, пропсы строки — набору. */
+	it('теги — данными превью в рамке, пропсы строки — набору', () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'tags', props: { closable: true } })
+		const frame = node.querySelector('.so-tags')?.parentElement
+
+		expect(textsOf(node, '.so-tags-item > .so-button:first-child')).toEqual(TEXTS)
+		expect(all(node, '.so-tags-item__close')).toHaveLength(TEXTS.length)
+		expect(frame instanceof HTMLElement && frame.style.width).toBe('100%')
 
 		handle.unmount()
 	})
@@ -481,11 +542,11 @@ describe('хост Angular · превью своим шаблоном', () => {
 	/**
 	 * Окно — директива на `<ng-container>`, а директиву хост сам не строит:
 	 * превью своим шаблоном. Своего узла у окна нет — ряд стоит прямо в
-	 * разметке превью, — и окно подхватывают обе коллекции ряда: до замера
-	 * каждая рисует первые 50 из тысячи. Выходы хост слушает у окна в разметке
-	 * превью, а пропа без входа не глушит.
+	 * разметке превью, — и окно подхватывают все три коллекции ряда: до замера
+	 * каждая рисует первые 50 из тысячи, у Select — в списке панели. Выходы хост
+	 * слушает у окна в разметке превью, а пропа без входа не глушит.
 	 */
-	it('окно: ряд — прямо в разметке превью, окно у списка и у таблицы', () => {
+	it('окно: ряд — прямо в разметке превью, окно у списка, Select и таблицы', () => {
 		const node = stage()
 		const handle = host.mount(node, {
 			component: 'virtual',
@@ -500,9 +561,12 @@ describe('хост Angular · превью своим шаблоном', () => {
 		expect([...row.children].map((child) => child.className)).toEqual([
 			expect.stringContaining('so-list-box'),
 			'',
+			'',
 		])
+		expect(row.querySelector(':scope > div > .so-select')).not.toBe(null)
 		expect(row.querySelector(':scope > div > .so-table__viewport')).not.toBe(null)
 		expect(all(node, '.so-list-box-item')).toHaveLength(50)
+		expect(all(document.body, '.so-select__list > .so-select-item')).toHaveLength(50)
 		expect(all(node, '.so-table-row')).toHaveLength(50)
 		expect(() => handle.update({ nothing: true })).toThrow('нет входов: nothing')
 

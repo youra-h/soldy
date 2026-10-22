@@ -43,11 +43,13 @@ import {
 	TProgressSpinnerComponent,
 	TRatingComponent,
 	TScrollerComponent,
+	TSelectComponent,
 	TSkeletonComponent,
 	TSliderComponent,
 	TSwitchComponent,
 	TTableComponent,
 	TTabsComponent,
+	TTagsComponent,
 	TTextareaComponent,
 	TTooltipComponent,
 } from '@soldy-ui/angular'
@@ -346,6 +348,25 @@ class MenuRadioGroupProbe extends TProbeHost {}
 })
 class MenuSeparatorProbe extends TProbeHost {}
 
+/**
+ * Набор тегов — корень с тремя наборами ядра: ряд с ролью и есть набор, и
+ * написанное потребителем остаётся на корне, как у Vue.
+ */
+@Component({
+	selector: 'probe-tags',
+	standalone: true,
+	imports: [TTagsComponent],
+	template: `<div
+		so-tags
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class TagsProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 'so-button'],
@@ -366,6 +387,7 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['Menu.Group', MenuGroupProbe, '[so-menu-group]', 'so-menu-group'],
 	['Menu.RadioGroup', MenuRadioGroupProbe, '[so-menu-radio-group]', 'so-menu-group'],
 	['Menu.Separator', MenuSeparatorProbe, '[so-menu-separator]', 'so-menu-separator'],
+	['Tags', TagsProbe, '[so-tags]', 'so-tags'],
 ]
 
 /**
@@ -457,6 +479,27 @@ class NumberInputProbe extends TProbeHost {}
 })
 class TextareaProbe extends TProbeHost {}
 
+/**
+ * Select делит написанное, как поле: класс и стиль — корню, остальное —
+ * `<input>` его поля. Поле — само хост в шаблоне Select, и до `<input>`
+ * написанное доходит цепочкой хостов.
+ */
+@Component({
+	selector: 'probe-select',
+	standalone: true,
+	imports: [TSelectComponent],
+	template: `<div
+		so-select
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		style="color: red"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class SelectProbe extends TProbeHost {}
+
 /** Поля выключенные и с ошибкой — её пишет поле формы `Field` над каждым. */
 @Component({
 	standalone: true,
@@ -467,19 +510,22 @@ class TextareaProbe extends TProbeHost {}
 		TInputComponent,
 		TNumberInputComponent,
 		TTextareaComponent,
+		TSelectComponent,
 	],
 	template: `<div so-field invalid><span so-check-box disabled></span></div>
 		<div so-field invalid><span so-switch disabled></span></div>
 		<div so-field invalid><div so-input disabled></div></div>
 		<div so-field invalid><div so-number-input disabled></div></div>
-		<div so-field invalid><div so-textarea disabled></div></div>`,
+		<div so-field invalid><div so-textarea disabled></div></div>
+		<div so-field invalid><div so-select disabled></div></div>`,
 })
 class InvalidFieldsHost {}
 
 /**
  * Поле, хост его пробы, селектор корня, класс ядра на нём и селектор поля
  * внутри корня: `<input>`, у Textarea — `<textarea>`, у NumberInput — ввод
- * числа по своему классу: рядом в корне лежит скрытое поле формы.
+ * числа по своему классу: рядом в корне лежит скрытое поле формы, у Select —
+ * `<input>` его поля.
  */
 const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
 	['CheckBox', CheckBoxProbe, '[so-check-box]', 'so-check-box', 'input'],
@@ -493,6 +539,7 @@ const FIELDS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, 
 		'.so-number-input__input',
 	],
 	['Textarea', TextareaProbe, '[so-textarea]', 'so-textarea', 'textarea'],
+	['Select', SelectProbe, '[so-select]', 'so-select', '.so-select__field input'],
 ]
 
 /**

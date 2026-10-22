@@ -1,4 +1,4 @@
-import { Show, type Component, type JSX } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TToastsItemType } from '@soldy-ui/core'
 import {
@@ -10,6 +10,7 @@ import {
 	type TRoleIconProps,
 	type TToastRender,
 } from '../../../adapter'
+import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
 import { ProgressSpinner } from '../../progress-spinner'

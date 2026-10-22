@@ -1,4 +1,4 @@
-import { For, Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { ITableRow, TDrawnEntry } from '@soldy-ui/core'
 import {
@@ -10,6 +10,7 @@ import {
 	renderSlot,
 	rootTag,
 } from '../../adapter'
+import { For, Show } from '../../adapter/runtime/flow'
 import { CheckBox } from '../check-box'
 import { TableColumn } from './column'
 import { TableRow } from './row'

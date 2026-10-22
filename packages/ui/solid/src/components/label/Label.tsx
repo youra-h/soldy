@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { createRootProps, renderSlot, resolveSlot, rootTag } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { setupLabel } from './setup.component'
 import type { LabelProps } from './base.component'
 

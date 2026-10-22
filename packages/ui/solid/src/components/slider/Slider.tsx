@@ -1,4 +1,4 @@
-import { Index, Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TSliderShownMark, TSliderThumb } from '@soldy-ui/core'
 import {
@@ -9,6 +9,7 @@ import {
 	resolveSlot,
 	rootTag,
 } from '../../adapter'
+import { Index, Show } from '../../adapter/runtime/flow'
 import { setupSlider } from './setup.component'
 import type { SliderProps } from './base.component'
 

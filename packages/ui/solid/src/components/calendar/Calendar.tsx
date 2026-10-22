@@ -1,4 +1,4 @@
-import { Index, Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TCalendarCell, TCalendarGrid, TCalendarPicker } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
@@ -12,6 +12,7 @@ import {
 	roleIcon,
 	rootTag,
 } from '../../adapter'
+import { Index, Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { ListBox } from '../list-box'

@@ -1,4 +1,4 @@
-import { Index, Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TRatingStar } from '@soldy-ui/core'
 import {
@@ -10,6 +10,7 @@ import {
 	roleIcon,
 	rootTag,
 } from '../../adapter'
+import { Index, Show } from '../../adapter/runtime/flow'
 import { setupRating } from './setup.component'
 import type { RatingProps } from './base.component'
 

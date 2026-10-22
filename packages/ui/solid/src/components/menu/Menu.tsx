@@ -1,4 +1,4 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
@@ -9,6 +9,7 @@ import {
 	rootTag,
 	toPartClass,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Frame } from '../frame'
 import { drawItems } from './submenu/Submenu'
 import { setupMenu } from './setup.component'

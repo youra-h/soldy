@@ -33,6 +33,8 @@
  * и на сервере, а панель, как у Frame, есть только в браузере. Сервер отдаёт
  * корень с триггером и связкой и пустую скрытую панель в корне, а после
  * гидратации панель уезжает в `body` с пунктами, и стрелки ходят по ним.
+ * Select — так же: опции в коллекции и на сервере, поле — с текстом
+ * выбранного, в `multiple` — с тегами, а панель есть только в браузере.
  *
  * Разметка сервера проверяется разобранной документом: порядок атрибутов у
  * сервера свой (`server.ts`).
@@ -40,7 +42,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, type ApplicationRef, type Type } from '@angular/core'
-import { createEngineMenu, type TTableColumnSource } from '@soldy-ui/core'
+import { createEngineMenu, createEngineSelect, type TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import {
 	AttributesDirective,
@@ -57,6 +59,8 @@ import {
 	TPaginationComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TSelectComponent,
+	TSelectItemComponent,
 	TTableComponent,
 	TTabsComponent,
 	TTabsContentComponent,
@@ -1084,5 +1088,164 @@ describe('Menu · гидратация', () => {
 			)
 			await app.whenStable()
 		}
+	})
+})
+
+/**
+ * Select — коллекция в слое, как меню: опции разметки и из данных входят в
+ * его коллекцию в своём `ngOnInit`, и на сервере тоже, а панель — Frame, и
+ * слой есть только в браузере. Поэтому сервер отдаёт поле с текстом
+ * выбранного — и у опций разметкой, — в `multiple` — теги в поле, а от панели —
+ * пустой скрытый элемент Frame в корне. Поле — `<div so-input>`, а оно само
+ * хост: набор комбобокса и связка — на его `<input>` уже в разметке сервера.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TSelectComponent, TSelectItemComponent],
+	template: `<section class="place">
+		<div so-select class="single" name="Город" [items]="items" value="b"></div>
+		<div so-select class="multiple" mode="multiple" [items]="items" [value]="chosen"></div>
+		<div so-select class="markup" value="tver" [engine]="markup">
+			<div so-select-item value="msk" text="Москва"></div>
+			<div so-select-item value="tver" text="Тверь"></div>
+		</div>
+	</section>`,
+})
+class SelectsPage {
+	readonly items = ITEMS
+	readonly chosen = ['a', 'c']
+	readonly markup = createEngineSelect()
+}
+
+/** Поле Select по селектору корня; нет его — тест падает здесь. */
+function selectField(page: ParentNode, root: string): HTMLInputElement {
+	const field = page.querySelector(`${root} .so-select__field input`)
+
+	if (!(field instanceof HTMLInputElement)) throw new Error(`${root}: поля нет`)
+
+	return field
+}
+
+/** Тексты тегов в поле Select. */
+const tagTexts = (page: ParentNode, root: string) =>
+	all(page, `${root} .so-select__tags .so-tags-item`).map((tag) => tag.textContent?.trim())
+
+describe('Select · серверный рендер', () => {
+	it('из items — поле с текстом выбранного и связкой комбобокса, панель в корне пустая и скрытая', async () => {
+		const page = await serverPage(SelectsPage)
+		const root = page.querySelector('.single')
+		const field = selectField(page, '.single')
+		const panels = all(page, '.single .so-select__panel')
+
+		expect(field.getAttribute('value')).toBe('Второй')
+		expect(field.getAttribute('role')).toBe('combobox')
+		expect(field.getAttribute('aria-expanded')).toBe('false')
+		expect(field.getAttribute('aria-controls')).toMatch(/.+/)
+		expect(panels).toHaveLength(1)
+		expect(panels[0]?.parentElement).toBe(root)
+		expect(panels[0] instanceof HTMLElement && panels[0].style.display).toBe('none')
+		expect(panels[0]?.children).toHaveLength(0)
+		expect(all(page, '[role="option"]')).toEqual([])
+	})
+
+	it('multiple — выбранное тегами в поле, текст поля пуст', async () => {
+		const page = await serverPage(SelectsPage)
+
+		expect(all(page, '.multiple .so-select__tags')).toHaveLength(1)
+		expect(tagTexts(page, '.multiple')).toEqual(['Первый', 'Третий'])
+		expect(selectField(page, '.multiple').getAttribute('value') ?? '').toBe('')
+	})
+
+	/** Опции разметки входят в коллекцию на сервере: текст выбранного — уже в поле. */
+	it('опции разметкой — в коллекции и на сервере: поле с текстом выбранного', async () => {
+		const page = await serverPage(SelectsPage)
+
+		expect(selectField(page, '.markup').getAttribute('value')).toBe('Тверь')
+	})
+})
+
+/**
+ * После гидратации поле и теги — узлы сервера, а панель — элемент Frame,
+ * который напечатал сервер: он уезжает в `body` и получает опции, в коллекции
+ * Select. Номера сборки у сервера и браузера одни, поэтому и связка поля — та
+ * же.
+ */
+describe('Select · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	async function hydrated(): Promise<{ app: ApplicationRef; page: SelectsPage }> {
+		const app = await hydrate(SelectsPage)
+
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		const page: unknown = app.components[0]?.instance
+
+		if (!(page instanceof SelectsPage)) throw new Error('страницы Select нет')
+
+		return { app, page }
+	}
+
+	it('то же поле и те же теги; панель в body, опции в коллекции; связка та же, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(SelectsPage))
+
+		const fields = ['.single', '.multiple', '.markup'].map((root) =>
+			selectField(document, root),
+		)
+		const links = fields.map((field) => field.getAttribute('aria-controls'))
+		const tags = all(document, '.multiple .so-select__tags .so-tags-item')
+		const { page } = await hydrated()
+
+		expect(
+			['.single', '.multiple', '.markup'].map((root) => selectField(document, root)),
+		).toEqual(fields)
+		expect(fields.map((field) => field.getAttribute('aria-controls'))).toEqual(links)
+		expect(all(document, '.multiple .so-select__tags .so-tags-item')).toEqual(tags)
+		expect(fields.map((field) => field.value)).toEqual(['Второй', '', 'Тверь'])
+
+		const panels = all(document, '.so-select__panel')
+
+		expect(panels).toHaveLength(3)
+		expect(panels.map((panel) => panel.parentElement)).toEqual([
+			document.body,
+			document.body,
+			document.body,
+		])
+		expect(document.getElementById(links[0] ?? '')?.getAttribute('role')).toBe('listbox')
+		expect(page.markup.extensions.batch.items.map((item) => item.value)).toEqual([
+			'msk',
+			'tver',
+		])
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	it('клик по опции после гидратации добавляет тег в поле — за выбранными раньше', async () => {
+		loadPage(await renderOnServer(SelectsPage))
+
+		const { app } = await hydrated()
+		const field = selectField(document, '.multiple')
+
+		field.click()
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		const panel = document.getElementById(field.getAttribute('aria-controls') ?? '')
+		const second = panel ? all(panel, '[role="option"]')[1] : undefined
+
+		if (!(second instanceof HTMLElement)) throw new Error('опции «Второй» нет')
+
+		second.click()
+		await app.whenStable()
+
+		// Новый тег встаёт за выбранными раньше: порядок тегов — порядок выбора
+		expect(tagTexts(document, '.multiple')).toEqual(['Первый', 'Третий', 'Второй'])
 	})
 })
