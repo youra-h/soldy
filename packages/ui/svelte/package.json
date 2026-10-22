@@ -51,6 +51,7 @@
     "svelte": "^5.55.10"
   },
   "devDependencies": {
+    "@sinonjs/fake-timers": "^15.4.0",
     "@soldy-ui/icons-material": "0.3.0-alpha.0",
     "@soldy-ui/theme-oren": "0.3.0-alpha.0",
     "@sveltejs/package": "^3.0.1",

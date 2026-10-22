@@ -1,11 +1,12 @@
 /**
  * Гидратация разметки сервера в тестах Svelte — общее у спеков `*.hydration`.
  *
- * Разметку сервера тест кладёт в документ, как её получает браузер, и
- * гидратирует её той же страницей, собранной для браузера (`hydrate` из
- * `svelte`). Разметка — фикстура из `markup/`: её пишет и сверяет серверный
- * прогон (`markup.server.spec.ts`), страницы — те же. Контейнер стоит в
- * документе: Frame уводит панель в `body`, и узлы ищутся по документу.
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.ts`,
+ * `global-setup.ts`) той же версией Svelte, а тест берёт её по имени страницы
+ * (`markupOf`), кладёт в документ, как её получает браузер, и гидратирует той
+ * же страницей, собранной для браузера (`hydrate` из `svelte`). Контейнер
+ * стоит в документе: Frame уводит панель в `body`, и узлы ищутся по
+ * документу.
  *
  * Расхождение сервера и браузера ловят три проверки:
  *
@@ -32,8 +33,9 @@
  * заглушка обёртку не зовёт, и сторож такого вызова не видит.
  */
 
-import { afterEach, beforeEach, expect } from 'vitest'
+import { afterEach, beforeEach, expect, inject } from 'vitest'
 import { flushSync, hydrate, unmount, type Component } from 'svelte'
+import type { TServerPage } from './server'
 
 /** Методы консоли, вызов которых роняет тест. */
 type TGuardedMethod = 'error' | 'warn'
@@ -86,6 +88,11 @@ afterEach(() => {
 
 	expect(messages, 'в консоль ушли ошибки или предупреждения').toEqual([])
 })
+
+/** Разметка сервера страницы `page` — её нарисовал `globalSetup` прогона. */
+export function markupOf(page: TServerPage): string {
+	return inject('serverMarkup')[page]
+}
 
 /** Разметка сервера в документе — как её получает браузер. */
 export function serve(markup: string): HTMLElement {

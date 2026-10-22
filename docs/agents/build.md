@@ -215,10 +215,10 @@ lock не везде; npm 10 не доносит `overrides` корня до з�
 поток Solid несёт данные границ `Suspense`, сериализованные seroval, чей формат
 зависит от версии solid-js, и с фикстурами первый прогон поднял Solid до
 1.9.16, хотя адаптер работает с 1.9.10. Разметку для гидратации строит тот же
-прогон, той версией, что стоит в дереве: у Solid её рисует `globalSetup`
-проекта `hydration` (`packages/ui/solid/__tests__/hydration/global-setup.ts`).
-Svelte пока сверяет фикстуры (`markup.server.spec.ts`) — временно, до
-https://app.clickup.com/t/869fm1ma5.
+прогон, той версией, что стоит в дереве: у Solid и Svelte её рисует
+`globalSetup` проекта `hydration`
+(`packages/ui/solid/__tests__/hydration/global-setup.ts`,
+`packages/ui/svelte/__tests__/hydration/global-setup.ts`).
 
 Локально — те же шаги:
 `node tools/min-peers/cli.ts list|pin|verify @soldy-ui/<адаптер>`, затем

@@ -1635,8 +1635,8 @@ Angular рисует точно:
 `ui/solid/__tests__/collections.server.spec.tsx` — цена точным значением, —
 `ui/svelte/__tests__/hydration/collections.hydration.spec.ts` (гидратация
 разметки сервера Svelte: остановка одна, узлы — серверные, и активация после
-неё доходит до них; разметка — фикстура, которую сверяет серверный прогон,
-`hydration/markup.server.spec.ts`),
+неё доходит до них; разметку рисует перед прогоном его `globalSetup`,
+`hydration/server.ts`),
 `ui/solid/__tests__/hydration/collections.hydration.spec.tsx` (гидратация
 разметки сервера Solid: остановка одна, узлы — серверные; разметку рисует
 перед прогоном его `globalSetup`, `hydration/server.tsx`),

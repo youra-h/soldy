@@ -14,25 +14,29 @@
  * рисует её на месте, `Teleport` начинает в фазе «на месте», и панель
  * сервера остаётся тем же узлом — прямым потомком корня поповера.
  *
- * Разметка сервера — фикстуры из `markup/`, их пишет и сверяет серверный
- * прогон (`markup.server.spec.ts`); страницы — те же. «Сегодня» у обоих
- * прогонов один (`today.ts`), язык — английский: провайдера локали на
- * страницах нет.
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.ts`) теми
+ * же страницами. «Сегодня» у сервера и браузера одно (`today.ts`): часы
+ * браузера хуки ниже ставят на каждый тест, а после теста они снова
+ * настоящие. Язык — английский: провайдера локали на страницах нет.
  */
 
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { flushSync } from 'svelte'
 import { find, nextFrame } from '../mount'
 import CalendarValue from './CalendarValue.test.svelte'
 import DateInputValue from './DateInputValue.test.svelte'
 import DatePickerValue from './DatePickerValue.test.svelte'
-import calendarValue from './markup/calendar-value.html?raw'
-import dateInputValue from './markup/date-input-value.html?raw'
-import datePickerValue from './markup/date-picker-value.html?raw'
-import { expectServedNodes, hydrateServed, serve } from './serve'
-import { useToday } from './today'
+import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
+import { TODAY } from './today'
 
-useToday()
+beforeEach(() => {
+	vi.useFakeTimers({ toFake: ['Date'] })
+	vi.setSystemTime(TODAY)
+})
+
+afterEach(() => {
+	vi.useRealTimers()
+})
 
 /** Части поля даты по порядку. */
 const segmentsOf = (scope: ParentNode) => [...scope.querySelectorAll('.so-date-input__segment')]
@@ -66,7 +70,7 @@ function press(from: Element, key: string): void {
 
 describe('DateInput · гидратация', () => {
 	it('корень, ряд частей, разделители и скрытое поле — узлы сервера', () => {
-		const container = serve(dateInputValue)
+		const container = serve(markupOf('date-input-value'))
 		const served = withoutSegments(container)
 
 		hydrateServed(container, DateInputValue, {})
@@ -82,7 +86,7 @@ describe('DateInput · гидратация', () => {
 	})
 
 	it('в части — один текстовый узел с текстом ядра', () => {
-		const container = serve(dateInputValue)
+		const container = serve(markupOf('date-input-value'))
 
 		hydrateServed(container, DateInputValue, {})
 
@@ -94,7 +98,7 @@ describe('DateInput · гидратация', () => {
 	})
 
 	it('id частей — от $props.id() сервера', () => {
-		const container = serve(dateInputValue)
+		const container = serve(markupOf('date-input-value'))
 		const served = segmentsOf(container).map((segment) => segment.id)
 
 		hydrateServed(container, DateInputValue, {})
@@ -104,7 +108,7 @@ describe('DateInput · гидратация', () => {
 	})
 
 	it('после кадра набор в часть доходит до значения', async () => {
-		const container = serve(dateInputValue)
+		const container = serve(markupOf('date-input-value'))
 
 		hydrateServed(container, DateInputValue, {})
 		await nextFrame()
@@ -126,7 +130,7 @@ describe('DateInput · гидратация', () => {
 
 describe('DatePicker · гидратация', () => {
 	it('поле и кнопка календаря — узлы сервера, в частях — текст ядра одним узлом, id — от сервера', () => {
-		const container = serve(datePickerValue)
+		const container = serve(markupOf('date-picker-value'))
 		const served = withoutSegments(container)
 		const ids = idsOf(container)
 
@@ -146,7 +150,7 @@ describe('DatePicker · гидратация', () => {
 	 * гидратации. Ссылка кнопки календаря пришла от сервера и ведёт на её `id`.
 	 */
 	it('панель — в body после гидратации, ссылка кнопки календаря от сервера ведёт на неё', () => {
-		const container = serve(datePickerValue)
+		const container = serve(markupOf('date-picker-value'))
 		const trigger = find(container, '.so-date-picker__trigger', HTMLElement)
 		const controls = trigger.getAttribute('aria-controls')
 
@@ -163,7 +167,7 @@ describe('DatePicker · гидратация', () => {
 	})
 
 	it('после кадра набор в поле доходит до значения DatePicker', async () => {
-		const container = serve(datePickerValue)
+		const container = serve(markupOf('date-picker-value'))
 
 		hydrateServed(container, DatePickerValue, {})
 		await nextFrame()
@@ -189,7 +193,7 @@ describe('Calendar · гидратация', () => {
 		)
 
 	it('разметка календаря — узлы сервера', () => {
-		const container = serve(calendarValue)
+		const container = serve(markupOf('calendar-value'))
 		const served = [...container.querySelectorAll('*')]
 
 		hydrateServed(container, CalendarValue, {})
@@ -198,7 +202,7 @@ describe('Calendar · гидратация', () => {
 	})
 
 	it('панель выбора месяца и года — узел сервера, прямой потомок корня поповера в заголовке', () => {
-		const container = serve(calendarValue)
+		const container = serve(markupOf('calendar-value'))
 		const panel = pickerPanel(container)
 
 		hydrateServed(container, CalendarValue, {})
@@ -207,7 +211,7 @@ describe('Calendar · гидратация', () => {
 	})
 
 	it('id частей календаря и ссылки на них — от сервера', () => {
-		const container = serve(calendarValue)
+		const container = serve(markupOf('calendar-value'))
 		const ids = idsOf(container)
 
 		hydrateServed(container, CalendarValue, {})
@@ -218,7 +222,7 @@ describe('Calendar · гидратация', () => {
 
 	/** Панель сервера живая: заголовок открывает её на месте, тем же узлом. */
 	it('после кадра заголовок открывает панель сервера на месте', async () => {
-		const container = serve(calendarValue)
+		const container = serve(markupOf('calendar-value'))
 		const panel = pickerPanel(container)
 
 		hydrateServed(container, CalendarValue, {})

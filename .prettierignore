@@ -11,10 +11,6 @@ packages/ui/angular/src/generated
 # Он же в .gitignore пакета; у eslint исключён в globalIgnores.
 **/.angular/**
 
-# Разметку сервера для гидратации Svelte пишет vitest (`toMatchFileSnapshot` в
-# `markup.server.spec.ts`, обновление — `vitest -u`) и сверяет её байт в байт.
-packages/ui/svelte/__tests__/hydration/markup
-
 # Лок-файл пишет npm.
 package-lock.json
 
