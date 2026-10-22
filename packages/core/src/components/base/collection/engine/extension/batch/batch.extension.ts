@@ -21,6 +21,12 @@ export class TBatchExtension<TItem extends object>
 
 	private _trackBy?: (item: TCollectionEngineItemSource<TItem> | TItem) => unknown
 
+	/**
+	 * Удержанные от сверки элементы состава (`hold`): у каждого — знаки его
+	 * удержаний. Элемент удержан, пока знак есть хоть один.
+	 */
+	private readonly _held = new Map<TItem, Set<object>>()
+
 	get trackBy(): ((item: TCollectionEngineItemSource<TItem> | TItem) => unknown) | undefined {
 		return this._trackBy
 	}
@@ -33,6 +39,10 @@ export class TBatchExtension<TItem extends object>
 		// обоих случаях надо перечитать `shown`.
 		ctx.driver.events.on('change:items', () => this.events.emit('change:shown'))
 		ctx.driver.events.on('items:query:invalidated', () => this.events.emit('change:shown'))
+
+		// Ушедший из состава удержание теряет: вернувшийся не удержан, пока его
+		// не удержат снова. `clear` шлёт `item:removed` на каждый элемент
+		ctx.driver.events.on('item:removed', (e) => this._held.delete(e.item))
 	}
 
 	set trackBy(fn: ((item: TCollectionEngineItemSource<TItem> | TItem) => unknown) | undefined) {
@@ -154,8 +164,13 @@ export class TBatchExtension<TItem extends object>
 	 * Сверить состав с входом по ключу `trackBy`.
 	 *
 	 * Пустой вход — тоже состав, а не «нечего делать»: сверка удаляет всё, чего
-	 * во входе нет, то есть всё. Иначе `items = []` с `trackBy` оставлял бы
-	 * коллекцию как была, а без `trackBy` (`clear()` + `set()`) очищал бы её.
+	 * во входе нет, то есть всё, кроме удержанных. Иначе `items = []` с
+	 * `trackBy` оставлял бы коллекцию как была, а без `trackBy` (`clear()` +
+	 * `set()`) очищал бы её.
+	 *
+	 * Удержанных (`hold`) сверка не снимает: их состав задаёт не вход, а тот,
+	 * кто держит, — разметка. Совпадения команда ищет по всему составу, и
+	 * удержанный с ключом из входа обновляется на месте, без дубля.
 	 */
 	patch(items: ReadonlyArray<TCollectionEngineItemSource<TItem>>): void {
 		const trackBy = this._trackBy
@@ -165,10 +180,36 @@ export class TBatchExtension<TItem extends object>
 		}
 
 		// Сверка живёт в команде: ей нужен сырой storage, а не выборка из `items`.
-		this._ctx.execute(new TPatchCommand<TItem>(items, trackBy))
+		this._ctx.execute(new TPatchCommand<TItem>(items, trackBy, (item) => !this._held.has(item)))
 
 		// Пустой вход ничего не добавляет — сообщать не о чем.
 		if (items.length) this.events.emit('items:added', items)
+	}
+
+	/**
+	 * Удержать элемент состава от сверки по ключу. Вне состава — ничего не
+	 * держит. Удержание снимает «отпустить» или уход элемента из состава.
+	 *
+	 * Знак у каждого удержания свой: «отпустить» снимает только своё — и
+	 * повторный вызов, и вызов после ухода элемента ничего не делают, даже
+	 * если элемент вернулся и его удержали снова.
+	 */
+	hold(item: TItem): () => void {
+		if (!this.items.includes(item)) return () => {}
+
+		const sign = {}
+		const signs = this._held.get(item) ?? new Set<object>()
+
+		signs.add(sign)
+		this._held.set(item, signs)
+
+		return () => {
+			const current = this._held.get(item)
+
+			if (!current?.delete(sign)) return
+
+			if (current.size === 0) this._held.delete(item)
+		}
 	}
 
 	remove(items: ReadonlyArray<TItem>): void {

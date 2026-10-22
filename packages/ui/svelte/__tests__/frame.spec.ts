@@ -14,8 +14,8 @@
  * тождеством узлов: новый узел дал бы ту же разметку.
  *
  * Сценарии — те же, что у React (`frame.spec.tsx`), и контексты места в
- * панели, как у Solid, — без гидратации: в одном прогоне компоненты собраны
- * под одно окружение. Серверный рендер — `ssr.server.spec.ts`.
+ * панели, как у Solid. Серверный рендер — `ssr.server.spec.ts`, гидратация
+ * с `contained` — `hydration/overlay.hydration.spec.ts`.
  */
 
 import { describe, it, expect } from 'vitest'

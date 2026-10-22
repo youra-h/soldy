@@ -11,8 +11,7 @@
  * Текст поля разметка пишет свойством узла, и только когда он разошёлся с
  * узлом (`fieldText`). В ядро ввод несёт `TInputPlugin`, а его слушатель
  * встаёт по `ready` узла — кадром позже. Атрибутом `value` текст уходит в
- * серверную разметку — её проверяет `input.server.spec.tsx`; гидратацию пакет
- * не проверит (см. `vitest.config.ts`).
+ * серверную разметку — её проверяет `input.server.spec.tsx`.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'

@@ -1701,7 +1701,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tags / Select / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / DateInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tags / Select / Calendar / DatePicker / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1873,9 +1873,11 @@ Tooltip, `span[so-menu], [so-menu]` у Menu, `div[so-dialog], [so-dialog]` у
 Dialog, `div[so-drawer], [so-drawer]` у Drawer, `label[so-label], [so-label]` у
 Label, у владельцев коллекций и панели таба —
 `div[so-accordion]`, `div[so-radio-group]`, `div[so-tags]`, `div[so-tabs-content]`,
-у групп и разделителя меню — `div[so-menu-group]`, `div[so-menu-radio-group]`,
-`div[so-menu-separator]`, у группы опций Select — `div[so-select-group]` (и
-`[…]` без тега). Потребитель
+`div[so-calendar]` и день календаря `td[so-calendar-item]`, который он рисует
+сам, у групп и разделителя меню — `div[so-menu-group]`, `div[so-menu-radio-group]`,
+`div[so-menu-separator]`, у группы опций Select — `div[so-select-group]`, у
+поля даты и DatePicker'а — `div[so-date-input]` и `div[so-date-picker]`: поля
+ввода, между которым делить написанное, у них нет (и `[…]` без тега). Потребитель
 пишет `<button so-button>`, `<a so-button href>`, `<div so-button>`, и этот
 элемент — корень: какой тег написан, так он себя и ведёт, а класс, стиль,
 атрибуты и события на нём работают без проброса. Раньше `<so-button>` был
@@ -1988,7 +1990,14 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 - `aria` в описании корня — из какого выхода база берёт слой `aria` корня, по
   умолчанию из самого `aria`. У Slider — `rootAria`: у нескольких ручек корень
   — группа с именем ползунка, у одной набор пуст, а `aria` ползунка шаблон
-  кладёт на поле ручки из `thumbs`; как `TRootSpec.aria` у Web Components;
+  кладёт на поле ручки из `thumbs`; как `TRootSpec.aria` у Web Components. У
+  DatePicker'а — тоже `rootAria`: у диапазона корень — группа полей концов, у
+  одной даты группа — само поле;
+- `id` в описании корня — выход, который база пишет атрибутом `id` корня, у
+  поля даты и DatePicker'а: `id` у них — вход, и статический атрибут с его
+  именем база с хоста снимает, а положить его, кроме корня, некуда — поля
+  ввода нет, и Vue пишет `:id` на корень. Слой — `attrs` раскладчика, под
+  набором `attrs` ядра; значения нет — атрибут снят;
 - `order` в описании корня — у элемента коллекции: свойство стиля, в которое
   уходит `order` фасада. У элементов ListBox, Tabs, Accordion, Tags и Select — CSS `order`
   (`order: 'order'`), ряд коллекции — флексбокс; у тоста — глубина в стопке,
@@ -2078,8 +2087,8 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 неё — узел, как `rootElement` у Vue, Solid и Svelte и `useRootElement` у React.
 Пишет его тот же эффект после отрисовки. Свой хост компонент взять не может
 (`inject` в компонентах запрещён), а якорь панели — корень: Popover, Tooltip,
-Menu и Select отдают его своему Frame (`[anchor_anchor]="rootElement()"`),
-пункты меню со своей панелью — тоже. Корень у них — элемент потребителя
+Menu, Select и DatePicker отдают его своему Frame
+(`[anchor_anchor]="rootElement()"`), пункты меню со своей панелью — тоже. Корень у них — элемент потребителя
 (`<span so-popover>`, `<span so-menu>`), обёртка триггера; триггер — шаблон
 слота (`<ng-template slot="trigger">`), и связку с панелью из его контекста
 (`triggerAria`, у Popover и Menu ещё `triggerDataset`) потребитель кладёт на
@@ -2152,7 +2161,7 @@ DOM-эмуляция серверного рендера Angular запись `i
 
 ### Коллекции
 
-RadioGroup, ListBox, Tags, Select, Tabs и Accordion собираются, как у Vue и Svelte, — один
+RadioGroup, ListBox, Tags, Select, Calendar, Tabs и Accordion собираются, как у Vue и Svelte, — один
 раз, в `ngOnInit`, из двух контекстов на общем наборе: свой и фасада
 коллекции. Фасад связывает `useCollectionAdapter`, а базе нужна одна связка,
 и две сводит `joinBindings`: шаблон читает свойства обоих из одного `state()`,
@@ -2219,11 +2228,31 @@ Select — коллекция в слое, как меню: поле — `<div s
 потребителя; своя раскладка — шаблон слота `default` со scope `shown`, и каждый
 тег рисуется в ней ровно один раз.
 
+Calendar — коллекция дней, которые кладёт в движок вид по месяцам сеток,
+поэтому частей разметкой у него нет: сетка месяца — `table`, день —
+`<td so-calendar-item>` над элементом коллекции, атрибутом на ячейке, как
+строка таблицы. Месяцы — петля по месту сетки (`track $index`), и кнопка
+заголовка, её поповер и живая область — те же узлы при листании и выборе
+месяца; поповер места — `@if` с выводом над записью `pickers`: запись новая на
+каждую смену, а вид ветки тот же, и Popover с ListBox панели выбора
+собираются один раз. Ячейка ключуется своим днём, заполнитель — датой: день
+берёт `ctrl` при сборке, и другой элемент на той же дате — новый день. Текст
+дня, подписи и заголовка — свойство узла (`textContent`), как у ячейки
+таблицы. DateInput — части разметкой с наборами ядра, петля по ключу части,
+текст части — тоже свойство узла: часть, которую браузер на касании оставил
+пустой, получает текст ядра одним узлом. DatePicker — DateInput над полями
+DatePicker'а (одна дата или начало и конец), кнопки — шаблонами слотов поля
+или после поля конца, панель — Frame, как у Select, с Calendar над
+календарём и движком DatePicker'а; шаблоны `clear` полю и `footer` календарю
+он отдаёт, только когда в них есть что рисовать.
+
 Сторожат спеки `packages/ui/angular/__tests__`: `list-box`, `tags`, `select`, `tabs`,
-`accordion`, `radio-group`, `table`, `virtual`, `drag-and-drop`, `collection-elevator` (слой
+`accordion`, `radio-group`, `table`, `calendar`, `date-input`, `date-picker`,
+`virtual`, `drag-and-drop`, `collection-elevator` (слой
 лифта, соседи, вложенные коллекции, порядок), `collection-item-lifetime`,
 `external-engine-lifetime`, `collections.server` (сервер и гидратация) и
-`ssr.server` (узла на сервере плагины не получают).
+`ssr.server` (узла на сервере плагины не получают; поле даты и DatePicker на
+сервере и после гидратации).
 
 ### Известные ограничения
 
@@ -2280,6 +2309,11 @@ Select — коллекция в слое, как меню: поле — `<div s
 - Выбор строки таблицы перепроверяет выражения шаблона `cell` в её ячейках:
   своей единицы перерисовки у ячеек нет. Узлы вывода шаблона он не
   пересоздаёт.
+- Шаблон `item`, заданный календарю или DatePicker'у, рисуется в каждом дне
+  вместо номера — и там, где ничего не нарисовал, как сниппет у Svelte.
+- Список панели выбора месяца и года Angular создаёт вместе с календарём, а не
+  с первым открытием: `lazyMount` поповера места убирает содержимое панели из
+  документа, но компоненты в нём создаёт тот, кто их написал, — календарь.
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 

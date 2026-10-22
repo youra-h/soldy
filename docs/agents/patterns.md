@@ -460,9 +460,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
-  Select, у React, Solid и Web Components — ещё Rating, Slider, Select,
-  DateInput и DatePicker.
+  NumberInput, Textarea, CheckBox, Switch, RadioGroup, Rating, Slider и
+  Select, а у React, Solid, Svelte, Angular и Web Components — ещё DateInput и
+  DatePicker.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -616,8 +616,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   частями — так же). **Angular** (`<span so-popover>`): триггер — шаблон слота
   (`<ng-template slot="trigger">`), оба набора связки — в его контексте, и на
   свой элемент их кладёт потребитель директивой `[so-attributes]`; панель —
-  Frame в шаблоне, якорь — сигнал `rootElement()` базы, `rendered` панель
-  получает сама: корень Angular только прячется. **Web Components**
+  Frame в шаблоне, якорь — сигнал `rootElement()` базы. Корень Angular только
+  прячется, и панель, как любой слой в поддереве скрытого компонента, прячет
+  признак поддерева базы (`ui/angular/AGENTS.md`, «Скрытый компонент прячет и
+  слои своего поддерева»). **Web Components**
   (`<span is="so-popover">`): scope у слотов нет, и оба набора триггера шаблон
   кладёт на первый элемент слота `trigger` одним слоем владельца — узлы слота
   отдаёт контекст шаблона (`slotted`). Панель — деталь Frame
@@ -805,7 +807,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   чем фабрика сделала бы из него действие. Вид пункта решает вставка: патч по
   `trackBy` правит пункт на месте, `items` из него уходит в состав движка
   подменю — тем же ключом, — и своего `items` у пункта нет, а действие патч
-  подменю не сделает. Владельца движку подменю пишет фасад смонтированного
+  подменю не сделает. Пункты шаблона `item-content` в движке подменю этот
+  патч не снимает, хотя вложенный `items` такого подменю — `[]`: их держит
+  разметка (`collections.md`, «Сверка по ключу не снимает элементы
+  разметки»). Владельца движку подменю пишет фасад смонтированного
   подменю (`bindOwner` на `attach`), а не коллекция над ним; размер меню
   доходит до его пунктов с владельцем. Слоты — одни на все уровни: строка
   подменю — `item-leading`, `item-header` (scope `text` и `open`) и
@@ -885,7 +890,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/menu-submenu.plugin.spec.ts`
   (клавиши уровней, задержка открытия, путь к панели и Tab через уровни) и
   `setup/__tests__/menu-submenu.spec.ts` (пункт — в коллекции меню над ним,
-  его пункты — в его собственной); пункт с панелью —
+  его пункты — в его собственной; пункт разметки под подменю из данных
+  переживает патч меню); пункт с панелью —
   `plugins/__tests__/menu-popover-item.plugin.spec.ts` (клавиша строки, фокус
   между меню и панелью, Tab из панели в подменю, открытие наведением с
   фокусом на строке и путь указателя к открытой панели), группа «пункт с
@@ -901,10 +907,11 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   берёт) и группа «группы разметки» в `ui/vue/__tests__/menu.spec.ts`;
   подменю из данных — группы «коллекция меню · подменю из данных» и «фасад
   меню · подменю из данных» в `core/__tests__/menu.spec.ts` (вставка, третий
-  уровень, патч, `trackBy` уровней, `change:submenus` раз на запись, отмена,
-  движок снаружи), группа «подменю из данных» в `ui/vue/__tests__/menu.spec.ts`
-  (клик и клавиши на втором и третьем уровне, патч без пересоздания, слоты
-  уровней, `item-content`, глобальный компонент с именем подменю) и
+  уровень, патч, удержанный пункт переживает патч, `trackBy` уровней,
+  `change:submenus` раз на запись, отмена, движок снаружи), группа «подменю
+  из данных» в `ui/vue/__tests__/menu.spec.ts` (клик и клавиши на втором и
+  третьем уровне, патч без пересоздания, слоты уровней, `item-content` — и
+  после патча по `trackBy`, глобальный компонент с именем подменю) и
   пробросы `Menu` и `Menu.Submenu` в `setup/__tests__/item-slots.spec.ts`;
   вариант меню у панелей подменю — группа «вариант меню» в
   `core/__tests__/menu.spec.ts` (все уровни, свой вариант подменю сильнее,
@@ -1733,6 +1740,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   её поповер и живая область те же при листании и выборе месяца, панель
   выбора — прямой потомок корня поповера, а он — месяца, в месяце, строках
   недели, шапке панели и подвале — без пробелов между узлами),
+  `ui/angular/__tests__/calendar.spec.ts` (у Angular ещё — кнопка заголовка,
+  её поповер и живая область те же при листании и выборе месяца, панель
+  выбора — прямой потомок корня поповера, а он — месяца, текст дня, подписей и
+  заголовка — без пробелов; остановка по модели — «Calendar · остановка по
+  модели» в `ui/angular/__tests__/focus-target.spec.ts`),
   `ui/webc/__tests__/calendar.spec.ts` (у Web Components ещё — заголовок
   месяца — Popover на `div`, `<div is="so-popover-div">`, кнопка заголовка,
   её поповер и живая область те же при листании и выборе месяца, панель
@@ -1740,17 +1752,21 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   же узлом, а переставленный календарь без движка снаружи встаёт над новыми
   днями и поповерами мест),
   `playground/vue/browser/calendar.spec.ts` (и
-  `playground/vue/browser/svelte-host.spec.ts`: календарь Svelte и его
-  открытая панель выбора стоят, как у Vue, а
+  `playground/vue/browser/svelte-host.spec.ts` и
+  `playground/vue/browser/angular-host.spec.ts`: календари Svelte и Angular и
+  их открытая панель выбора стоят, как у Vue, а
   `playground/vue/browser/webc-dates.spec.ts` — так же сетка и открытая панель
-  выбора Web Components) и серверные спеки Solid и Svelte:
-  «Calendar · серверный рендер» и «id и name — от createUniqueId()» в
-  `ui/solid/__tests__/collections.server.spec.tsx` и «id и name — от
-  $props.id()» в `ui/svelte/__tests__/collections.server.spec.ts` (сетки
+  выбора Web Components) и серверные спеки Solid, Svelte
+  и Angular: «Calendar · серверный рендер» и «id и name — от
+  createUniqueId()» в `ui/solid/__tests__/collections.server.spec.tsx`, «id и
+  name — от $props.id()» в `ui/svelte/__tests__/collections.server.spec.ts` и
+  «Calendar» в `ui/angular/__tests__/collections.server.spec.ts` (сетки
   названы заголовками, дни — полными датами и с одной остановкой Tab,
   заполнители скрыты, панель выбора — на месте, скрытая и без карточки, `id`
-  двух рендеров одни), `ui/solid/__tests__/locale.server.spec.tsx` и
-  `ui/svelte/__tests__/locale.server.spec.ts` (заголовок месяца и имена
+  двух рендеров одни; у Angular после гидратации — те же узлы и `id`),
+  `ui/solid/__tests__/locale.server.spec.tsx`,
+  `ui/svelte/__tests__/locale.server.spec.ts` и
+  `ui/angular/__tests__/locale.server.spec.ts` (заголовок месяца и имена
   кнопок листания — на языке своего запроса).
 - **DateInput** — поле даты из частей (`spinbutton`) в группе, с
   `kind: 'datetime'` — даты и времени, с `timePrecision: 'second'` — до
@@ -1826,6 +1842,13 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   своё, получает текст ядра одним узлом; узел части тот же при наборе и при
   смене локали; текст ряда — ровно дата с разделителями; на сервере — части с
   `id` и текстом содержимым узла, `ui/svelte/__tests__/ssr.server.spec.ts`),
+  `ui/angular/__tests__/date-input.spec.ts` (у Angular текст части —
+  свойство узла, `[textContent]`: часть, которую браузер оставил пустой,
+  получает текст ядра одним узлом; узел части тот же при наборе и при смене
+  локали; текст ряда — ровно дата с разделителями; `id` поля — на корне; на
+  сервере — части с `id` и текстом, после гидратации — те же узлы,
+  `ui/angular/__tests__/ssr.server.spec.ts`; группа в поле формы —
+  `ui/angular/__tests__/field.spec.ts`),
   `ui/webc/__tests__/date-input.spec.ts` (у Web Components текст части
   пишется, только когда разошёлся с узлом: опустошённая браузером часть
   получает текст ядра целиком, узел — тот же), поле каждого размера рядом с
@@ -1902,13 +1925,20 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   и очистку полю DatePicker отдаёт сниппетом, только когда в нём есть что
   рисовать: сниппет непрозрачен; сервер рисует DatePicker полем с кнопкой,
   без панели, — `ui/svelte/__tests__/ssr.server.spec.ts`),
+  `ui/angular/__tests__/date-picker.spec.ts` (у Angular так же — подвал
+  календарю и очистку полю DatePicker отдаёт шаблоном, только когда в нём
+  есть что рисовать; ещё — `id` на корне, панель в 4 px от подменённого
+  корня, `rendered: false` прячет и открытую панель; сервер рисует DatePicker
+  полем с кнопкой и пустой скрытой панелью, после гидратации она в `body` и
+  открывается, — `ui/angular/__tests__/ssr.server.spec.ts`),
   `ui/webc/__tests__/date-picker.spec.ts` (у Web Components ещё — смена режима
   переставляет кнопки, поле возвращается тем же узлом; смена `confirmable`
   строит календарь панели заново; переставленный DatePicker пересобирает и
   панель в `body`),
   `playground/vue/browser/date-picker.spec.ts`,
-  `playground/vue/browser/svelte-host.spec.ts` (поле DatePicker Svelte и его
-  открытая панель стоят, как у Vue),
+  `playground/vue/browser/svelte-host.spec.ts`,
+  `playground/vue/browser/angular-host.spec.ts` (поле DatePicker Svelte и
+  Angular и его открытая панель стоят, как у Vue) и
   `playground/vue/browser/webc-dates.spec.ts` (панель DatePicker Web
   Components у поля — как у Vue) и
   `playground/vue/browser/anchored-swipe.spec.ts`.

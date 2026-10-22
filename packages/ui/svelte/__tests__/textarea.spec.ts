@@ -10,9 +10,9 @@
  *
  * Текст поля разметка пишет свойством узла, и только когда он разошёлся с
  * узлом (`textareaText`). Содержимым `<textarea>` текст уходит в серверную
- * разметку — её проверяет `textarea.server.spec.ts`; гидратацию пакет не
- * проверит (см. `vitest.config.ts`). `ref` — корень: его сторожит
- * `root-attributes.spec.ts`.
+ * разметку — её проверяет `textarea.server.spec.ts`, а текст поля после
+ * гидратации — `hydration/root.hydration.spec.ts`. `ref` — корень: его
+ * сторожит `root-attributes.spec.ts`.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'

@@ -3,7 +3,9 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
- * вокруг `<input>`, у Select — рамка вокруг поля и тегов, у набора тегов — ряд
+ * вокруг `<input>`, у поля даты — вокруг ряда частей, у DatePicker — вокруг
+ * полей и кнопок, у календаря — вокруг заголовков, кнопок листания и сеток с
+ * одной остановкой, у Select — рамка вокруг поля и тегов, у набора тегов — ряд
  * вокруг строк и крестиков, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
  * — рамка вокруг узла списка, у Tabs — рамка со списком табов и панелями, у
  * группы радио и аккордеона — контейнер остановок, у пагинации — `nav` без
@@ -19,11 +21,15 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Component, type Type } from '@angular/core'
+import { Component, signal, type Type } from '@angular/core'
+import { TestBed } from '@angular/core/testing'
 import {
 	TAccordion,
 	TAccordionItem,
+	TCalendar,
 	TCheckBox,
+	TDateInput,
+	TDatePicker,
 	TInput,
 	TListBox,
 	TListBoxItem,
@@ -47,6 +53,7 @@ import {
 	TTags,
 	TTagsItem,
 	TTextarea,
+	createEngineCalendar,
 	createEngineTabs,
 } from '@soldy-ui/core'
 import {
@@ -54,7 +61,10 @@ import {
 	SlotDirective,
 	TAccordionComponent,
 	TAccordionItemComponent,
+	TCalendarComponent,
 	TCheckBoxComponent,
+	TDateInputComponent,
+	TDatePickerComponent,
 	TInputComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
@@ -144,6 +154,65 @@ class NumberInputLeadingHost {
 })
 class TextareaHost {
 	readonly ctrl = new TTextarea()
+}
+
+/**
+ * Поле даты: фокус держат части, а корень — коробка вокруг ряда частей,
+ * слотов и скрытого поля формы. DatePicker — коробка вокруг полей и кнопок:
+ * фокус — на первой части поля, у диапазона — поля начала. Календарь — на
+ * остановке сетки, дне с фокусом коллекции, а не на заголовке месяца или
+ * кнопках листания перед сеткой.
+ */
+@Component({
+	selector: 'probe-date-input-focus',
+	standalone: true,
+	imports: [TDateInputComponent],
+	template: `<div so-date-input [ctrl]="ctrl"></div>`,
+})
+class DateInputHost {
+	readonly ctrl = new TDateInput()
+}
+
+@Component({
+	selector: 'probe-date-input-leading-focus',
+	standalone: true,
+	imports: [TDateInputComponent, SlotDirective],
+	template: `<div so-date-input [ctrl]="ctrl">
+		<ng-template slot="leading"><button class="before"></button></ng-template>
+	</div>`,
+})
+class DateInputLeadingHost {
+	readonly ctrl = new TDateInput()
+}
+
+@Component({
+	selector: 'probe-date-picker-focus',
+	standalone: true,
+	imports: [TDatePickerComponent],
+	template: `<div so-date-picker [ctrl]="ctrl"></div>`,
+})
+class DatePickerHost {
+	readonly ctrl = new TDatePicker()
+}
+
+@Component({
+	selector: 'probe-date-picker-range-focus',
+	standalone: true,
+	imports: [TDatePickerComponent],
+	template: `<div so-date-picker [ctrl]="ctrl"></div>`,
+})
+class DatePickerRangeHost {
+	readonly ctrl = new TDatePicker({ mode: 'range' })
+}
+
+@Component({
+	selector: 'probe-calendar-focus',
+	standalone: true,
+	imports: [TCalendarComponent],
+	template: `<div so-calendar [ctrl]="ctrl"></div>`,
+})
+class CalendarHost {
+	readonly ctrl = new TCalendar()
 }
 
 @Component({
@@ -538,6 +607,26 @@ const CASES: Record<string, TCase> = {
 		before: '.before',
 	},
 	Textarea: { host: TextareaHost, target: 'textarea' },
+	DateInput: { host: DateInputHost, target: '.so-date-input__segment' },
+	'DateInput с кнопкой в leading': {
+		host: DateInputLeadingHost,
+		target: '.so-date-input__segment',
+		before: '.before',
+	},
+	'DatePicker, одна дата': {
+		host: DatePickerHost,
+		target: '.so-date-picker__field .so-date-input__segment',
+	},
+	'DatePicker, диапазон': {
+		host: DatePickerRangeHost,
+		target: '.so-date-picker__start .so-date-input__segment',
+	},
+	Calendar: {
+		host: CalendarHost,
+		target: '.so-calendar-item[tabindex="0"]',
+		// Заголовок месяца и кнопки листания — остановки перед сеткой
+		before: '.so-calendar__title',
+	},
 	CheckBox: { host: CheckBoxHost, target: 'input' },
 	Switch: { host: SwitchHost, target: 'input' },
 	Rating: { host: RatingHost, target: 'input' },
@@ -763,6 +852,135 @@ class SelectItemHost {
 	readonly select = new TSelect()
 	readonly item = new TSelectItem({ value: 'b', text: 'B' })
 }
+
+/**
+ * Календарь над своим движком: инстанс и движок хост отдаёт входами, а тест
+ * задаёт их до первой проверки — месяцы сеток у каждого теста свои.
+ */
+@Component({
+	selector: 'probe-calendar-model',
+	standalone: true,
+	imports: [TCalendarComponent],
+	template: `<div so-calendar [ctrl]="ctrl()" [engine]="engine()"></div>`,
+})
+class CalendarModelHost {
+	readonly ctrl = signal(new TCalendar())
+	readonly engine = signal(createEngineCalendar())
+}
+
+describe('Calendar · остановка по модели', () => {
+	const stop = () => find(document, '.so-calendar-item[tabindex="0"]', HTMLElement)
+	const titleText = () => find(document, '.so-calendar__title-text', HTMLElement)
+
+	/** Календарь на инстансе `ctrl` и своём движке — после кадра: узлы дней объявлены. */
+	async function mountCalendar(ctrl: TCalendar) {
+		const fixture = TestBed.createComponent(CalendarModelHost)
+		const engine = createEngineCalendar()
+
+		fixture.componentInstance.ctrl.set(ctrl)
+		fixture.componentInstance.engine.set(engine)
+		fixture.detectChanges()
+
+		await nextFrame()
+		fixture.detectChanges()
+
+		return { fixture, engine }
+	}
+
+	/**
+	 * Фокус коллекции ушёл в месяц второй сетки в том же такте, что и запись
+	 * `focused`: Angular перенесёт `tabindex` на проверке изменений, а остановку
+	 * правило берёт у модели (`focusedDate`), — фокус встаёт на день того
+	 * месяца, а не на прежнюю остановку в первой сетке.
+	 */
+	it('фокус коллекции в другом месяце и focused = true в одном такте — фокус на его дне', async () => {
+		const ctrl = new TCalendar({ months: ['2026-01-01', '2026-02-01'] })
+		const { engine } = await mountCalendar(ctrl)
+
+		const before = stop()
+
+		engine.extensions.focus.focusDate('2026-02-10')
+
+		// Такт тот же: остановка в разметке ещё в январе
+		expect(stop()).toBe(before)
+		expect(engine.extensions.focus.focusedDate).toBe('2026-02-10')
+
+		ctrl.focused = true
+
+		const day = document.activeElement
+
+		expect(day).not.toBe(before)
+		expect(day?.classList.contains('so-calendar-item')).toBe(true)
+		expect(day?.textContent).toBe('10')
+		expect(day?.closest('.so-calendar__month')).toBe(
+			document.querySelectorAll('.so-calendar__month')[1],
+		)
+	})
+
+	/**
+	 * Сетка одна, и листание в том же такте, что и запись `focused`, увело
+	 * фокус коллекции в месяц, которого в разметке ещё нет: правило дня не
+	 * находит, а корень календаря фокус не держит. Запись ждёт узла: Angular
+	 * нарисует дни нового месяца на проверке изменений, их узлы объявят кадром
+	 * позже — и фокус встанет на день `focusedDate`.
+	 */
+	it('одна сетка: showNext() и focused = true в одном такте — после перерисовки фокус на дне нового месяца', async () => {
+		const ctrl = new TCalendar({ months: ['2026-01-01'] })
+		const { fixture, engine } = await mountCalendar(ctrl)
+		const { focus, view } = engine.extensions
+
+		view.showNext()
+		ctrl.focused = true
+
+		const date = focus.focusedDate
+
+		// Такт тот же: фокус коллекции в феврале, а разметка ещё январская
+		expect(date.startsWith('2026-02-')).toBe(true)
+		expect(titleText().textContent).not.toBe(view.grids[0]?.title)
+		expect(document.activeElement).toBe(document.body)
+		expect(ctrl.focused).toBe(true)
+
+		fixture.detectChanges()
+		await nextFrame()
+
+		const day = document.activeElement
+
+		expect(titleText().textContent).toBe(view.grids[0]?.title)
+		expect(day).toBe(stop())
+		expect(day?.textContent).toBe(String(Number(date.slice(-2))))
+		expect(ctrl.focused).toBe(true)
+	})
+
+	/**
+	 * Пока открыта панель выбора месяца и года, сетка под её подложкой, и
+	 * остановка календаря — список панели.
+	 */
+	it('панель выбора открыта — фокус на её списке, а не на дне под подложкой', async () => {
+		const ctrl = new TCalendar()
+		const { fixture, engine } = await mountCalendar(ctrl)
+
+		const picker = engine.extensions.picker.pickers[0]
+
+		if (!picker) throw new Error('панели выбора нет')
+
+		picker.popover.open = true
+		fixture.detectChanges()
+		await nextFrame()
+		fixture.detectChanges()
+
+		// Фокус увели из календаря, а панель открыта
+		ctrl.focused = false
+
+		expect(picker.popover.open).toBe(true)
+
+		ctrl.focused = true
+
+		expect(document.activeElement).toBe(
+			find(document, '.so-calendar__picker-list [role="listbox"]', HTMLElement),
+		)
+		expect(ctrl.focused).toBe(true)
+	})
+})
 
 describe('Select.Item · фокус остаётся на поле', () => {
 	/**

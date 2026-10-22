@@ -160,9 +160,8 @@
 	— а сторону после flip (`data-placement`) — плагин якоря.
 
 	Якорь — корень (`rootElement()` базы): на сервере и до первой отрисовки его
-	нет. `rendered` Select панель получает сама: корень Angular только прячется,
-	а панель увезена в `body`. `visible` Select ей не передаётся, как у Vue, где
-	`v-show` корня до телепортированной панели не доходит.
+	нет. `visible` Select панели не передаётся, как у Vue, где `v-show` корня до
+	телепортированной панели не доходит.
 -->
 <div
 	so-frame
@@ -170,7 +169,6 @@
 	class="so-select__panel"
 	position="fixed"
 	[visible]="state()['open']"
-	[rendered]="state()['rendered']"
 	[anchor_anchor]="rootElement()"
 	[anchor_placement]="state()['panelPlacement']"
 	[anchor_flip]="state()['panelFlip']"

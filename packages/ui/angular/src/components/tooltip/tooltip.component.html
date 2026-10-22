@@ -22,8 +22,7 @@
 	элементе одна. Панель не фокусируется, крестика в ней нет.
 
 	Якорь — корень (`rootElement()` базы): на сервере и до первой отрисовки его
-	нет. `rendered` подсказки панель получает сама: корень Angular только
-	прячется, а панель увезена в `body`.
+	нет.
 -->
 <div
 	so-frame
@@ -31,7 +30,6 @@
 	class="so-tooltip__panel"
 	position="fixed"
 	[visible]="state()['open']"
-	[rendered]="state()['rendered']"
 	[anchor_anchor]="rootElement()"
 	[anchor_placement]="state()['placement']"
 	[anchor_offset]="6"

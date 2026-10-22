@@ -80,18 +80,29 @@ export class TCollectionExtension {
 			// Элемент, объявленный в разметке, до этого момента коллекции не
 			// принадлежал. Для него источник состава — шаблон, и исчезновение из
 			// шаблона действительно означает удаление.
-			const items = batchOf<object>(engine)?.items
-			const owned = !items?.includes(instance)
+			//
+			// Правило работает в обе стороны: снятие разметки не трогает элементы
+			// данных, а сверка данных (`items =` по `trackBy`) не снимает элементы
+			// разметки — регистратор держит свой элемент (`batch.hold`), пока тот
+			// в разметке. Так подменю из данных с пунктами в `item-content` не
+			// теряет их на патче меню: его вложенный состав из данных — `[]`.
+			const batch = batchOf<object>(engine)
+			const owned = !batch?.items.includes(instance)
 
 			// push (а не insert) сохраняет порядок DOM: item-ы приходят через
 			// elevator по мере монтирования, поэтому добавляем их последовательно.
 			if (owned) plainOf<object>(engine)?.push(instance)
+
+			const release = owned ? batch?.hold(instance) : undefined
 
 			// Регистрируем bundle элемента (ключ — uid элемента). У элемента без
 			// плагинов бандла нет — регистрировать нечего.
 			if (bundle) bundles?.register(bundle, instance)
 
 			return () => {
+				// Разметка элемент больше не держит
+				release?.()
+
 				// Удаление из коллекции эмитит item:removed — реестр bundles
 				// очистит запись по этому событию.
 				if (owned) plainOf<object>(engine)?.remove(instance)

@@ -204,8 +204,6 @@
 	с размером и вариантом меню, — модификаторы корня до телепортированной панели
 	не доходят. Классы привязки Angular ставит и снимает по одному, а свои
 	(`so-frame`) база Frame снимает только свои, поэтому оба набора стоят рядом.
-	`rendered` меню панель получает сама: корень Angular не снимается, а
-	прячется, а панель увезена в `body`.
 -->
 <div
 	so-frame
@@ -214,7 +212,6 @@
 	position="fixed"
 	[class]="state()['panelClasses']"
 	[visible]="state()['open']"
-	[rendered]="state()['rendered']"
 	[anchor_anchor]="rootElement()"
 	[anchor_point]="state()['point']"
 	[anchor_placement]="state()['placement']"

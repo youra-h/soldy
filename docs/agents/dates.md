@@ -460,10 +460,13 @@ DatePicker (`TDatePicker`, `core/src/components/custom/date-picker`) — пол�
 подтверждения и проверку набора из разметки (`validate` доходит до поля, и
 смонтированный DateInput его не перетирает) —
 `ui/vue/__tests__/date-picker.spec.ts`, `ui/solid/__tests__/date-picker.spec.tsx`,
-`ui/react/__tests__/date-picker.spec.tsx`, `ui/svelte/__tests__/date-picker.spec.ts`
-и `ui/webc/__tests__/date-picker.spec.ts` (у Web Components ещё — смена режима
-переставляет кнопки, а поле возвращается тем же узлом над тем же экземпляром;
-смена `confirmable` строит календарь панели заново);
+`ui/react/__tests__/date-picker.spec.tsx`,
+`ui/svelte/__tests__/date-picker.spec.ts`,
+`ui/angular/__tests__/date-picker.spec.ts` (у Angular ещё — `id` на корне, а не
+на поле, панель в 4 px от подменённого корня, `rendered: false` прячет и
+открытую панель) и `ui/webc/__tests__/date-picker.spec.ts` (у Web Components
+ещё — смена режима переставляет кнопки, а поле возвращается тем же узлом над
+тем же экземпляром; смена `confirmable` строит календарь панели заново);
 части поля в ряду, их наборы и текст на узле части —
 `ui/vue/__tests__/date-input.spec.ts`, `ui/solid/__tests__/date-input.spec.tsx`
 (у Solid узел части тот же при наборе и при смене локали, а текст — `textContent`
@@ -475,27 +478,42 @@ DatePicker (`TDatePicker`, `core/src/components/custom/date-picker`) — пол�
 `TextSpan` адаптера свойством `textContent`, и своего текстового узла Svelte в
 части нет: часть, которую браузер оставил пустой или в которую написал своё,
 получает текст ядра одним узлом; текст ряда — ровно дата с разделителями, без
-пробелов между узлами) и `ui/webc/__tests__/date-input.spec.ts` (у Web
-Components узел части тот же при наборе и при смене локали, а текст часть
-получает, только когда он разошёлся с узлом: опустошённая браузером — текст
-ядра целиком), сетки, дни и панели выбора месяца и года на разметке —
+пробелов между узлами), `ui/angular/__tests__/date-input.spec.ts` (у Angular
+текст части — свойство узла, `[textContent]`: часть, которую браузер оставил
+пустой, получает текст ядра одним узлом; узел части тот же при наборе и при
+смене локали; текст ряда — ровно дата с разделителями; `id` поля — на корне)
+и `ui/webc/__tests__/date-input.spec.ts` (у Web Components узел части тот же
+при наборе и при смене локали, а текст часть получает, только когда он
+разошёлся с узлом: опустошённая браузером — текст ядра целиком), сетки, дни и
+панели выбора месяца и года на разметке —
 `ui/vue/__tests__/calendar.spec.ts`, `ui/solid/__tests__/calendar.spec.tsx`,
-`ui/react/__tests__/calendar.spec.tsx`, `ui/svelte/__tests__/calendar.spec.ts` и
-`ui/webc/__tests__/calendar.spec.ts` (у Web Components заголовок месяца —
-Popover на `div`, `<div is="so-popover-div">`, а день под фокусом переживает
-листание месяца тем же узлом);
-их же в разметке сервера Solid и Svelte — имена сеток, дни с одной остановкой
-Tab, панель выбора на месте, `id` двух рендеров, заголовок месяца на языке
-своего запроса — `ui/solid/__tests__/collections.server.spec.tsx`,
+`ui/react/__tests__/calendar.spec.tsx`, `ui/svelte/__tests__/calendar.spec.ts`,
+`ui/angular/__tests__/calendar.spec.ts` и `ui/webc/__tests__/calendar.spec.ts`
+(у Web Components заголовок месяца — Popover на `div`,
+`<div is="so-popover-div">`, а день под фокусом переживает листание месяца тем
+же узлом);
+их же в разметке сервера Solid, Svelte и Angular — имена сеток, дни с одной
+остановкой Tab, панель выбора на месте, `id` двух рендеров, заголовок месяца
+на языке своего запроса — `ui/solid/__tests__/collections.server.spec.tsx`,
 `ui/solid/__tests__/locale.server.spec.tsx`,
-`ui/svelte/__tests__/collections.server.spec.ts` и
+`ui/svelte/__tests__/collections.server.spec.ts`,
 `ui/svelte/__tests__/locale.server.spec.ts` (у Svelte ещё части поля — содержимым
 узла, с `id` от `$props.id()`, и DatePicker без панели — в
-`ui/svelte/__tests__/ssr.server.spec.ts`), у React — сервер и гидратация
+`ui/svelte/__tests__/ssr.server.spec.ts`),
+`ui/angular/__tests__/collections.server.spec.ts` (после гидратации — те же
+узлы и `id`, панель выбора открывается) и
+`ui/angular/__tests__/locale.server.spec.ts` (у Angular ещё части поля на языке
+своего запроса, а части с `id` и текстом и DatePicker полем с кнопкой и пустой
+скрытой панелью, после гидратации — те же узлы, панель в `body` и
+открывается, — в `ui/angular/__tests__/ssr.server.spec.ts`), у React — сервер и гидратация
 без расхождений (`id` частей, сеток и заголовков те же, части нередактируемы,
 панель выбора на месте) и пересборка под StrictMode (поля, календарь и
 поповеры мест — над новыми экземплярами) — группы «React» трёх спеков дат
-React выше; рамку ошибки коробки
+React выше; у Svelte — гидратация разметки сервера: часть поля Svelte
+пересобирает, и в ней текст ядра одним узлом, остальное поле, кнопка
+календаря, календарь и его панель выбора — узлы сервера, `id` — от сервера,
+набор после кадра доходит до значения —
+`ui/svelte/__tests__/hydration/dates.hydration.spec.ts`; рамку ошибки коробки
 диапазона, квадрат кнопки очистки в обоих режимах и Tab до «OK» —
 `playground/vue/browser/date-picker.spec.ts`; поле даты каждого размера,
 сетку, открытую панель выбора месяца и года и панель DatePicker у поля

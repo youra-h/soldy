@@ -30,8 +30,8 @@ import { setupMenuPopoverItem, type TMenuPopoverItemOutputs } from './setup.comp
  * `so-menu-item__panel`, без модификаторов размера и варианта: содержимое
  * красится само. На неё ложится набор панели (`panelAria`: `role="dialog"`,
  * `id` и `aria-labelledby` на строку) и пометка `dismiss_ownerAttribute`.
- * Открытость — `visible` панели, `rendered` пункта панель получает сама, как у
- * меню. Содержимое — основная проекция в обёртке `.so-menu-item__content`;
+ * Открытость — `visible` панели, как у меню. Содержимое — основная проекция в
+ * обёртке `.so-menu-item__content`;
  * `lazyMount` убирает его из документа до первого открытия, но компоненты в
  * нём Angular создаёт всё равно — их создаёт тот, кто написал содержимое, как в
  * панели поповера.

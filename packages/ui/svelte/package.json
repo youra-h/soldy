@@ -48,14 +48,14 @@
     "esm-env": "^1.2.2"
   },
   "peerDependencies": {
-    "svelte": "^5.29.0"
+    "svelte": "^5.55.10"
   },
   "devDependencies": {
     "@soldy-ui/icons-material": "0.3.0-alpha.0",
     "@soldy-ui/theme-oren": "0.3.0-alpha.0",
     "@sveltejs/package": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
-    "svelte": "^5.29.0",
+    "svelte": "^5.55.10",
     "svelte-check": "^4.7.6"
   }
 }

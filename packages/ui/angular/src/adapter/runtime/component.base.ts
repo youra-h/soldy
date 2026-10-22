@@ -78,6 +78,10 @@
  *   `style="display: …"` потребителя проигрывал бы скрытию, а у видимого
  *   корня снимался бы вовсе. `class`, `[class.x]` и `[ngClass]` потребителя
  *   ставят и снимают только свои имена;
+ * - `id` корня у компонента, которому его некуда больше положить (DateInput,
+ *   DatePicker), — тот же эффект набора `attrs`, под набором
+ *   (`TRootSpec.id`): `id` — вход, и его статический атрибут база с хоста
+ *   снимает, как любой вход;
  * - стиль — тоже эффект базы, по свойствам и тем же правилом: снизу выход
  *   плагина раскладки (`layout_styles`), поверх него стиль-выход компонента
  *   (`fractionStyle` у ProgressSpinner) и место элемента коллекции (`order`
@@ -104,6 +108,16 @@
  *   панели в телепорте Vue — шаблон рисует спутником корня (`#companion`):
  *   её база держит прямо перед корнем, где бы он ни стоял, и прячет тем же
  *   значением, что корень;
+ * - поддерево (`SubtreeDirective`): у Vue корень с `v-if` снимает всё
+ *   поддерево — и панели вложенных слоёв, увезённые в `body`, — а
+ *   `display: none` корня Angular до них не доходит. Поэтому то, что у Vue
+ *   снимает корень, — `rendered=false` у компонента, видимость которого прячет
+ *   хост, и `shownBy`, пока выход не `true`, — база отдаёт поддереву по DI
+ *   признаком «поддерева нет», а слой прячется и по признаку предка, как по
+ *   `placed`, вместе со спутником. Классов и наборов на слое признак не
+ *   снимает. `visible` поддерева не снимает: у Vue это `v-show`. Свою панель
+ *   компонент прячет тем же признаком: Frame в шаблоне поповера `rendered` не
+ *   получает;
  * - выходы плагинов, которые у Vue лежат в `v-bind` корня (пометка панели
  *   владельцем `dismiss_ownerAttribute` у окна и выезжающей панели), база
  *   кладёт на корень своим слоем раскладчика (`TRootSpec.plugins`): свой хост
@@ -232,6 +246,7 @@ import {
 	type TRootStyles,
 } from './root-attributes'
 import { SlotDirective } from './slot.directive'
+import { SUBTREE_PRESENT, SubtreeDirective } from './subtree.directive'
 import { teleportRoot } from './teleport'
 import type { TBinding, TBindingState } from './useAdapter'
 
@@ -266,8 +281,8 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   база пишет сама). Тогда внешний узел компонента — корень: всё, что
  *   потребитель написал на обёртке, класс и стиль тоже, переезжает на него, а
  *   `visible` и `rendered` прячут его, а не обёртку — содержимое остаётся на
- *   виду. Корень шаблон рисует, только пока слой на своём месте (`placed`), и
- *   перенос идёт за узлом `#root`.
+ *   виду, и слои в нём тоже. Корень шаблон рисует, только пока слой на своём
+ *   месте (`placed`), и перенос идёт за узлом `#root`.
  *
  * Корню-хосту база раскладывает ещё стиль и скрытие, и у него три настройки:
  *
@@ -278,7 +293,7 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   раскладки;
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
- *   на виду;
+ *   на виду, — и слоёв в поддереве `rendered` тоже не прячет;
  * - `order` — имя свойства стиля, в которое ложится место корня в коллекции —
  *   `order` фасада элемента, поверх стиль-выхода. У элементов ListBox, Tabs и
  *   Accordion это CSS `order` — их ряд флексбокс, и элемент встаёт по номеру в
@@ -288,17 +303,20 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   строках чужого списка, и номер увёл бы радио по чужому флекс-ряду, — как у
  *   Vue и Svelte;
  * - `shownBy` — выход состояния, без которого корень скрыт: пока он не
- *   `true`, корень прячется, как при `visible=false`. У панели таба это
- *   `active` фасада — панель видна, только пока активен её таб. Имя выхода
- *   называет компонент, как имена выходов слоя. Нет — корень прячут только
- *   `visible` и `rendered`;
+ *   `true`, корень прячется, как при `visible=false`, а слои в поддереве — как
+ *   при `rendered=false` (у Vue панель таба — `v-if="rendered && active"`). У
+ *   панели таба это `active` фасада — панель видна, только пока активен её
+ *   таб. Имя выхода называет компонент, как имена выходов слоя. Нет — корень
+ *   прячут только `visible` и `rendered`;
  * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
  *   у Frame и Drawer, у окна — без «на месте»), их называет компонент, и есть
  *   ли у корня спутник (`companion` у Dialog и Drawer — подложка). Переносит
  *   корень `teleportRoot` (`teleport.ts`) — сам элемент потребителя. Пока
  *   корень не в цели и не на месте — на сервере, до переноса, без цели, —
- *   слоя нет (`placed`). Нет — корень стоит, где его написали;
+ *   слоя нет (`placed`). Увезённый из поддерева предка, слой прячется и
+ *   тогда, когда предок снял своё поддерево (`SubtreeDirective`). Нет —
+ *   корень стоит, где его написали;
  * - `sets` — наборы ядра, которые база кладёт на корень, по умолчанию все три.
  *   У поля — `attrs` и `dataset`: его `aria` стоит на вложенном `<input>`
  *   (`AttributesDirective` в шаблоне), а `dataset` — на корне, где его читает
@@ -315,6 +333,15 @@ import type { TBinding, TBindingState } from './useAdapter'
  *   уходит полям ручек — его кладёт шаблон из `thumbs`. Говорит только об
  *   источнике слоя: лежит ли он на корне, решает `sets`. Как `aria` в описании
  *   корня Web Components;
+ * - `id` — имя выхода состояния, который база пишет атрибутом `id` корня: у
+ *   DateInput и DatePicker — их `id`, своего поля ввода, на которое его
+ *   положить, у них нет, и Vue пишет `:id` на корень. `id` — вход, и
+ *   статический атрибут с его именем база с хоста снимает, как любой вход
+ *   (`_clearInputAttributes`), а обратно его кладёт эта настройка. Слой —
+ *   `attrs` раскладчика, под набором `attrs` ядра: у Vue `:id` стоит перед
+ *   `v-bind` наборов, — и набор, назвавший `id`, главнее. Значения нет —
+ *   атрибут снимается. Пишет его обычный эффект, как наборы, — `id` есть и в
+ *   разметке сервера. Нет настройки — `id` корня не трогается;
  * - `control` — у корня есть вложенное поле, элемент шаблона `#control`
  *   (`<input>` у Input, CheckBox, Switch и радио, ввод числа — не скрытое поле
  *   формы — у NumberInput, `<textarea>` у Textarea, строка — у элемента
@@ -338,6 +365,7 @@ export type TRootSpec =
 			readonly aria?: string
 			readonly plugins?: readonly string[]
 			readonly control?: boolean
+			readonly id?: string
 	  }
 
 /** Описание корня-хоста — элемента потребителя (`TRootSpec` со стратегией `'host'`). */
@@ -345,11 +373,11 @@ type TRootHost = Extract<TRootSpec, { readonly strategy: 'host' }>
 
 /**
  * Что база раскладывает на корень, — часть описания корня-хоста: стиль-выход,
- * место в коллекции, наборы, выход слоя `aria` и выходы плагинов. Корень
+ * место в коллекции, наборы, выход слоя `aria`, выходы плагинов и `id`. Корень
  * внутри обёртки берёт умолчания: все три набора из одноимённых выходов, без
- * своего стиля, места и выходов плагинов.
+ * своего стиля, места, выходов плагинов и `id`.
  */
-type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria' | 'plugins'>
+type TRootPaint = Pick<TRootHost, 'style' | 'order' | 'sets' | 'aria' | 'plugins' | 'id'>
 
 /**
  * Память раскладки на одном узле — что база поставила на него в прошлый раз.
@@ -512,6 +540,9 @@ function forwardRegistry(host: Element): TForwardRegistry {
 
 @Directive({
 	standalone: true,
+	// Носитель признака поддерева: `hostDirectives` наследник получает, а
+	// `providers` — нет (см. `SubtreeDirective`)
+	hostDirectives: [SubtreeDirective],
 	host: {
 		'[style.display]': '_rootDisplay()',
 	},
@@ -559,6 +590,15 @@ export abstract class TComponentBase<
 
 	/** Выход, без которого корень-хост скрыт (`TRootSpec.shownBy`); нет — не прячет. */
 	private readonly _shownBy: string | undefined
+
+	/**
+	 * Поддерево над слоем есть — признак носителя предка (`SubtreeDirective`).
+	 * Корень слоя увезён из поддерева предка, и `display: none` предка до него
+	 * не доходит, поэтому слой прячется и по этому признаку, как по `placed`. У
+	 * остальных — всегда есть: их внешний узел стоит в поддереве предка, и
+	 * спрятанный предок прячет его сам.
+	 */
+	private readonly _above: Signal<boolean>
 
 	/**
 	 * Корень там, где ему место: у слоя (`TRootSpec.teleport`) — в цели или,
@@ -640,7 +680,8 @@ export abstract class TComponentBase<
 	 * корня, который видимость не прячет (`hides: false`), — выход, без которого
 	 * корня нет (`shownBy`), и слой не на своём месте — на сервере, до переноса в
 	 * цель, без цели (`placed`): от элемента потребителя остаётся пустой скрытый
-	 * узел. У корня в шаблоне скрывать нечего.
+	 * узел. Слой прячет ещё и предок, снявший своё поддерево (`_above`): у Vue
+	 * его снял бы `v-if` предка. У корня в шаблоне скрывать нечего.
 	 *
 	 * Инстанса компонента база не знает (у `so-component` нет ни классов, ни
 	 * наборов), поэтому состояние читает по именам — как запись
@@ -649,10 +690,8 @@ export abstract class TComponentBase<
 	private readonly _hidden = computed(() => {
 		const state: TStateSnapshot = this.state()
 		const hidden = this._hides && (state['rendered'] === false || state['visible'] === false)
-		// Выход, без которого корня нет: у панели таба — активен ли её таб
-		const absent = this._shownBy !== undefined && state[this._shownBy] !== true
 
-		return hidden || absent || !this.placed()
+		return hidden || this._absent(state) || !this.placed() || !this._above()
 	})
 
 	/**
@@ -730,6 +769,13 @@ export abstract class TComponentBase<
 	constructor(inputNames: readonly string[], root: TRootSpec = VIEW_ROOT) {
 		this._inputNames = inputNames
 
+		// Поддерево над компонентом — признак носителя предка; предка нет — оно есть
+		const above =
+			inject(SubtreeDirective, { skipSelf: true, optional: true })?.present ?? SUBTREE_PRESENT
+
+		// Признак предка читает только слой: остальных прячет спрятанный предок
+		this._above = root.strategy !== 'view' && root.teleport ? above : SUBTREE_PRESENT
+
 		if (root.strategy === 'host') {
 			// `ElementRef<Node>`, а не `any` по умолчанию: на `<ng-container>` хост —
 			// комментарий, и что это элемент — узел `TElementPlugin`, — проверяет
@@ -787,6 +833,9 @@ export abstract class TComponentBase<
 			this.placed = IN_PLACE
 			this._bindView()
 		}
+
+		// Признак своего поддерева — сразу: поддерево Angular создаёт позже
+		inject(SubtreeDirective, { self: true }).provide(this._subtree(above))
 	}
 
 	ngOnInit(): void {
@@ -865,8 +914,8 @@ export abstract class TComponentBase<
 	 * context.
 	 *
 	 * Из описания корня здесь — имя стиль-выхода компонента (`style`), место в
-	 * коллекции (`order`), наборы ядра на корне (`sets`) и выход слоя `aria`
-	 * (`aria`).
+	 * коллекции (`order`), наборы ядра на корне (`sets`), выход слоя `aria`
+	 * (`aria`) и выход `id` корня (`id`).
 	 */
 	private _bindHost(host: Element, root: TRootHost): void {
 		this._clearInputAttributes(host)
@@ -993,15 +1042,19 @@ export abstract class TComponentBase<
 		// Наборы — слоями раскладчика элемента: на корень вложенного компонента
 		// свой набор поверх кладёт ещё и разметка владельца (`AttributesDirective`).
 		// Раскладчик — у каждого узла свой, со своей памятью. Слой `aria` — из
-		// выхода, который назвало описание корня (`rootAria` у Slider)
-		for (const name of paint.sets ?? ROOT_SETS) {
-			const output = name === 'aria' ? (paint.aria ?? 'aria') : name
-			const set = computed(() => attributesOf(this._drawn()[output]))
+		// выхода, который назвало описание корня (`rootAria` у Slider), а в слое
+		// `attrs` под набором — `id` корня, если его назвало описание (`_rootLayer`)
+		const sets = paint.sets ?? ROOT_SETS
+
+		for (const name of ROOT_SETS) {
+			const layer = this._rootLayer(name, paint, sets)
+
+			if (!layer) continue
 
 			effect(() => {
 				const element = target()
 
-				if (element) TElementAttributes.of(element).set(name, set())
+				if (element) TElementAttributes.of(element).set(name, layer())
 			})
 		}
 
@@ -1033,6 +1086,33 @@ export abstract class TComponentBase<
 
 			styled = { on: element, applied: applyStyles(element, styles, applied) }
 		})
+	}
+
+	/**
+	 * Слой `name` раскладчика корня — то, что в него кладёт база: набор ядра из
+	 * своего выхода, если описание корня кладёт этот набор на корень (`sets`), а
+	 * в слое `attrs` под набором — `id` корня из выхода, который назвало
+	 * описание (`TRootSpec.id`): у Vue `:id` стоит перед `v-bind` наборов, и
+	 * набор, назвавший `id`, главнее. Класть нечего — слоя нет.
+	 *
+	 * Набор — значение состояния как есть: связка заменяет его только на смену
+	 * содержимого, и эффект слоя смена чужих свойств не будит. Слой с `id`
+	 * собирается заново только на смену `id` или набора.
+	 */
+	private _rootLayer(
+		name: TRootSet,
+		paint: TRootPaint,
+		sets: readonly TRootSet[],
+	): Signal<object> | null {
+		const output = name === 'aria' ? (paint.aria ?? 'aria') : name
+		const own = sets.includes(name) ? computed(() => attributesOf(this._drawn()[output])) : null
+		const idOutput = name === 'attrs' ? paint.id : undefined
+
+		if (idOutput === undefined) return own
+
+		const id = computed(() => this._drawn()[idOutput])
+
+		return computed(() => ({ id: id(), ...own?.() }))
 	}
 
 	/**
@@ -1225,6 +1305,38 @@ export abstract class TComponentBase<
 
 			styled = { on: element, applied: applyStyles(element, styles, applied) }
 		})
+	}
+
+	/**
+	 * Признак своего поддерева (`SubtreeDirective`): поддерево есть у предка, и
+	 * сам компонент его не снял. Снимает его то, что у Vue снимает корень `v-if`
+	 * вместе со всем поддеревом: `rendered === false` у компонента, видимость
+	 * которого прячет хост, и выход `shownBy`, пока он не `true` (у Vue панель
+	 * таба — `v-if="rendered && active"`). `visible` — это `v-show`, до
+	 * увезённых панелей он у Vue не доходит, и поддерева не снимает.
+	 *
+	 * `rendered` не снимает поддерево у Skeleton (`hides: false`) — он убирает
+	 * только заглушку, а содержимое на виду, — и у менеджера тостов (корень в
+	 * слое внутри обёртки): он прячет регион, а обёртка с приложением на виду.
+	 * Нечем снять поддерево — признак предка отдаётся как есть.
+	 */
+	private _subtree(above: Signal<boolean>): Signal<boolean> {
+		const unrenders = this._hides && !this._hidesRoot
+
+		if (!unrenders && this._shownBy === undefined) return above
+
+		return computed(() => {
+			if (!above()) return false
+
+			const state: TStateSnapshot = this.state()
+
+			return !(unrenders && state['rendered'] === false) && !this._absent(state)
+		})
+	}
+
+	/** Выход, без которого корня нет (`shownBy`), не `true`: у панели таба — её таб не активен. */
+	private _absent(state: TStateSnapshot): boolean {
+		return this._shownBy !== undefined && state[this._shownBy] !== true
 	}
 
 	/**

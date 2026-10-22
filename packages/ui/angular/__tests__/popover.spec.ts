@@ -14,9 +14,10 @@
  * шаблона меняет контекст в том же представлении, поэтому триггер — тот же
  * узел при каждом открытии и закрытии, и фокус на нём остаётся. Якорь панели —
  * корень: его узел шаблону отдаёт база (`rootElement()`). Корень Angular не
- * снимается, а прячется, поэтому `rendered: false` поповер передаёт и панели:
- * увезённая в `body`, она иначе осталась бы открытой. Крестик без `closable`
- * не прячется, а уходит из разметки (`@if`).
+ * снимается, а прячется, поэтому `rendered: false` поповера прячет и открытые
+ * панели в `body` — свою и вложенных слоёв: увезённые, они иначе остались бы
+ * на виду, а у Vue их снимает `v-if` корня. Крестик без `closable` не
+ * прячется, а уходит из разметки (`@if`).
  *
  * Порядок Tab, который ведёт сам браузер, jsdom не считает: здесь проверены
  * переходы, которые делает плагин (Tab в панель, из неё, Shift+Tab на
@@ -33,6 +34,7 @@ import {
 	LocaleProviderDirective,
 	SlotDirective,
 	TButtonComponent,
+	TDialogComponent,
 	TPopoverComponent,
 	TSelectComponent,
 	TSelectItemComponent,
@@ -205,6 +207,59 @@ class LocalePage {
 	</div>`,
 })
 class NestedPage {}
+
+/**
+ * Внешний поповер, в панели которого — внутренний поповер и окно с подложкой:
+ * их корни уезжают в `body` сами, мимо панели внешнего. Отрисован ли внешний и
+ * открыто ли окно — сигналы.
+ */
+@Component({
+	selector: 'probe-popover-layers',
+	standalone: true,
+	imports: [
+		TPopoverComponent,
+		TDialogComponent,
+		TButtonComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<span so-popover [rendered]="rendered()">
+		<ng-template
+			slot="trigger"
+			let-triggerAria="triggerAria"
+			let-triggerDataset="triggerDataset"
+		>
+			<button
+				so-button
+				text="Открыть"
+				class="so-test-trigger"
+				[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+			></button>
+		</ng-template>
+		<span so-popover>
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Ещё"
+					class="so-test-inner-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+			<button class="so-test-inner-first">Внутри</button>
+		</span>
+		<div so-dialog [visible]="dialog()" (soChangeVisible)="dialog.set($event)">
+			<button class="so-test-dialog-first">В окне</button>
+		</div>
+	</span>`,
+})
+class LayersPage {
+	readonly rendered = signal<boolean | undefined>(undefined)
+	readonly dialog = signal(false)
+}
 
 /** Поповер с Select в панели: список Select — тоже панель в `body`, соседка. */
 @Component({
@@ -820,6 +875,72 @@ describe('вложенные слои', () => {
 		expect(isOpen(panelOf(node('.so-test-inner-trigger')))).toBe(false)
 		expect(isOpen(panelOf(trigger()))).toBe(true)
 	})
+
+	/**
+	 * Панель вложенного поповера увезена в `body` сама, и скрытый корень
+	 * внешнего до неё не доходит. У Vue `v-if` корня внешнего снимает всё его
+	 * поддерево, а у Angular вложенный прячет свою панель по признаку поддерева
+	 * внешнего. Снова отрисованный внешний — обе панели на виду, как и были.
+	 */
+	it('rendered: false у внешнего прячет и открытую панель вложенного', async () => {
+		const fixture = await render(LayersPage)
+		const page = fixture.componentInstance
+
+		await open()
+		await open(node('.so-test-inner-trigger'))
+
+		const outer = panelOf(trigger())
+		const inner = panelOf(node('.so-test-inner-trigger'))
+
+		expect(isOpen(inner)).toBe(true)
+
+		page.rendered.set(false)
+		check()
+
+		expect(isOpen(outer)).toBe(false)
+		expect(isOpen(inner)).toBe(false)
+		expect(inner.parentElement).toBe(document.body)
+
+		page.rendered.set(true)
+		check()
+
+		expect(isOpen(outer)).toBe(true)
+		expect(isOpen(inner)).toBe(true)
+	})
+
+	/**
+	 * Окно в панели — тоже слой: его корень и подложка-спутник уехали в `body`,
+	 * и скрытый внешний поповер прячет обоих тем же признаком поддерева.
+	 */
+	it('rendered: false у внешнего прячет и открытое окно в панели вместе с подложкой', async () => {
+		const fixture = await render(LayersPage)
+		const page = fixture.componentInstance
+
+		await open()
+		page.dialog.set(true)
+		check()
+		await nextFrame()
+
+		const dialog = node('.so-dialog')
+		const backdrop = node('.so-dialog__backdrop')
+
+		expect(dialog.parentElement).toBe(document.body)
+		expect(isOpen(dialog)).toBe(true)
+		expect(isOpen(backdrop)).toBe(true)
+
+		page.rendered.set(false)
+		check()
+
+		expect(isOpen(dialog)).toBe(false)
+		expect(isOpen(backdrop)).toBe(false)
+		expect(page.dialog()).toBe(true)
+
+		page.rendered.set(true)
+		check()
+
+		expect(isOpen(dialog)).toBe(true)
+		expect(isOpen(backdrop)).toBe(true)
+	})
 })
 
 /**
@@ -985,9 +1106,10 @@ describe('Angular', () => {
 	})
 
 	/**
-	 * Корень Angular не снимается, а прячется, а панель увезена в `body`:
-	 * `rendered` поповер передаёт ей сам, иначе открытая панель осталась бы на
-	 * виду без своего триггера. Снова отрисованный — панель на виду, как и была.
+	 * Корень Angular не снимается, а прячется, а панель увезена в `body`: Frame
+	 * в шаблоне поповера прячет её по признаку поддерева поповера, иначе
+	 * открытая панель осталась бы на виду без своего триггера. Снова
+	 * отрисованный — панель на виду, как и была.
 	 */
 	it('rendered: false прячет корень и открытую панель', async () => {
 		const fixture = await render(Page)
