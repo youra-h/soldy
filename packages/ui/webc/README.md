@@ -58,8 +58,11 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > around the application, a toast from code — `toastsOf(element).show(…)`),
 > Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion, Tags
 > (`<div is="so-tags">`), Select (`<div is="so-select">`: a field with a list in a panel, tags in
-> the field for multiple selection), Pagination (`<nav is="so-pagination">`), Table, the
-> `<so-virtual>` window for long lists and the
+> the field for multiple selection), Pagination (`<nav is="so-pagination">`), Table, the date
+> field DateInput (`<div is="so-date-input">`: a date and time typed in parts in the locale's
+> format), Calendar (`<div is="so-calendar">`: month grids with a month and year picker),
+> DatePicker (`<div is="so-date-picker">`: a date field and a calendar in a panel, a single date
+> or a range), the `<so-virtual>` window for long lists and the
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`so:move`; `so:move:before` can cancel with `event.preventDefault()`) are ported, the
 > rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
@@ -427,6 +430,31 @@ your own `field`, `tags` row and `clear` button take what they need from the ele
   </div>
 </div>
 ```
+
+Dates are three elements. The date field `<div is="so-date-input">` is a group of parts — day,
+month and year in the locale's order, with `kind="datetime"` also the hour and the minute — and
+each part is a Tab stop of its own; the form gets the date as `YYYY-MM-DD` from a hidden field
+under `name`. The calendar `<div is="so-calendar">` has no content of its own: it draws the days of
+the months on screen (`months`) itself, each a `<td is="so-calendar-item">`, and the title of a
+month is a popover on a `<div>` — `<div is="so-popover-div">`, the same Popover under a name of its
+own — with the month and year picker in its panel. The date picker `<div is="so-date-picker">` is
+a date field and a calendar in a panel at the field, with `mode="range"` the fields of the start
+and the end; the fields and the calendar are its own instances (`el.ctrl.field`, `el.ctrl.start`,
+`el.ctrl.end`, `el.ctrl.calendar`). The language, the first day of the week and the names of the
+months and parts come from the locale provider.
+
+```html
+<div is="so-date-input" name="birthday" aria_label="Date of birth"></div>
+<div is="so-calendar" mode="range"></div>
+<div is="so-date-picker" name="arrival" clearable aria_label="Arrival"></div>
+```
+
+Several dates and a range are not strings, so they are properties:
+`el.value = ['2026-09-10', '2026-09-14']` — the `value` attribute is a single date. A day is the
+calendar's markup, like an item drawn from data: its events do not bubble, and the calendar reports
+the choice with `so:change:value`. The `item` slot is a template, as in a list: each day gets a
+copy, and a copy finds its day on the nearest `.so-calendar-item` (`el.ctrl.date`, `el.ctrl.text`);
+a date picker hands its `item` template on to its calendar.
 
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
 (`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,
