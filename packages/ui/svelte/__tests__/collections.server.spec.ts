@@ -28,10 +28,11 @@ import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import type { TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
-import { Accordion, ListBox, RadioGroup, Select, Table, Tags } from '@soldy-ui/svelte'
+import { Accordion, ListBox, Menu, RadioGroup, Select, Table, Tags } from '@soldy-ui/svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import DragAndDropHarness from './DragAndDrop.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
+import MenuHarness, { area, trigger } from './Menu.test.svelte'
 import RadioGroupHarness from './RadioGroup.test.svelte'
 import SelectHarness from './Select.test.svelte'
 import Surround from './Surround.test.svelte'
@@ -239,6 +240,52 @@ describe('Select · серверный рендер', () => {
 		expect(fieldOf(body)[0]?.attributes.value ?? '').toBe('')
 		expect(textOf(body)).not.toContain('Тверь')
 		expect(withClass(body, 'so-select-item')).toEqual([])
+	})
+})
+
+/**
+ * Меню на сервере — корень с триггером и его связкой. Панель — Frame, а
+ * телепорта на сервере нет, как у Popover: ни панели, ни пунктов — разметкой
+ * и из данных — в серверной разметке нет. Пункты разметкой стоят в панели и
+ * входят в коллекцию в браузере, когда `Teleport` её смонтирует.
+ */
+describe('Menu · серверный рендер', () => {
+	/** Триггер — кнопка из scope: её атрибуты. */
+	const triggerOf = (body: string) => withClass(body, 'so-test-trigger')[0]?.attributes ?? {}
+
+	it('у кнопки — корень с триггером и связкой, панели и пунктов нет', () => {
+		const { body } = render(MenuHarness, { props: { case: 'groups' } })
+		const button = triggerOf(body)
+
+		expect(tagsOf(body)[0]?.name).toBe('span')
+		expect(tagsOf(body)[0]?.attributes.class?.split(' ')).toContain('so-menu')
+		expect(button['aria-haspopup']).toBe('menu')
+		expect(button['aria-expanded']).toBe('false')
+		expect(button['aria-controls']).toMatch(/.+/)
+		expect(button.id).toMatch(/.+/)
+		expect(button['data-selected']).toBe('false')
+		expect(withClass(body, 'so-menu__panel')).toEqual([])
+		expect(textOf(body)).not.toContain('Изменить')
+		expect(textOf(body)).not.toContain('Сетка')
+	})
+
+	it('у пунктов из данных — так же: панели и пунктов нет', () => {
+		const { body } = render(Menu, {
+			props: { items: [{ value: 'edit', text: 'Изменить' }], trigger },
+		})
+
+		expect(triggerOf(body)['aria-haspopup']).toBe('menu')
+		expect(withClass(body, 'so-menu__panel')).toEqual([])
+		expect(textOf(body)).not.toContain('Изменить')
+	})
+
+	it('у контекстного меню — область без связки', () => {
+		const { body } = render(Menu, { props: { openOn: 'contextmenu', trigger: area } })
+		const [root, areaTag] = tagsOf(body)
+
+		expect(root?.attributes.class?.split(' ')).toContain('so-menu')
+		expect(areaTag?.attributes).toEqual({ class: 'so-test-area' })
+		expect(withClass(body, 'so-menu__panel')).toEqual([])
 	})
 })
 
