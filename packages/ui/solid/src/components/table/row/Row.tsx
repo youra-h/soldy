@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { createPartProps, createRootProps, rootTag } from '../../../adapter'
+import { Show } from '../../../adapter/runtime/flow'
 import { CheckBox } from '../../check-box'
 import { TableRowCells } from './Cells'
 import { setupTableRow } from './setup.component'

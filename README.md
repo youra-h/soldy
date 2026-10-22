@@ -58,14 +58,14 @@ Web Components connect that model to a framework and render the markup: BEM clas
 Install the adapter for your framework, a theme and an icon pack. The adapter brings the core
 (`@soldy-ui/core`, `@soldy-ui/plugins`, `@soldy-ui/setup`) with it.
 
-| Framework      | Install                         | Requires      |
-| -------------- | ------------------------------- | ------------- |
-| Vue            | `npm install @soldy-ui/vue`     | Vue 3.5.21+   |
-| React          | `npm install @soldy-ui/react`   | React 19.2+   |
-| Angular        | `npm install @soldy-ui/angular` | Angular 21.1+ |
-| Svelte         | `npm install @soldy-ui/svelte`  | Svelte 5.29+  |
-| Solid          | `npm install @soldy-ui/solid`   | Solid 1.9.10+ |
-| Web Components | `npm install @soldy-ui/webc`    | —             |
+| Framework      | Install                         | Requires        |
+| -------------- | ------------------------------- | --------------- |
+| Vue            | `npm install @soldy-ui/vue`     | Vue 3.5.21+     |
+| React          | `npm install @soldy-ui/react`   | React 19.2+     |
+| Angular        | `npm install @soldy-ui/angular` | Angular 22.1.6+ |
+| Svelte         | `npm install @soldy-ui/svelte`  | Svelte 5.29+    |
+| Solid          | `npm install @soldy-ui/solid`   | Solid 1.9.10+   |
+| Web Components | `npm install @soldy-ui/webc`    | —               |
 
 The theme and the icon pack are the same for every adapter:
 

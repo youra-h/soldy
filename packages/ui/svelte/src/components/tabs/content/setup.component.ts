@@ -19,11 +19,11 @@ import {
 	TabsContentDescriptor,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../../adapter'
 import type { TabsContentProps } from './base.component'
@@ -33,6 +33,7 @@ export function setupTabsContent(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(TabsContentDescriptor(), {
 		ctrl: props.ctrl,
@@ -45,10 +46,7 @@ export function setupTabsContent(
 		TabsCollectionContentDescriptor(),
 		{ props, mountId },
 		{ bundle: adapter.bundle },
-	).use(TTabsContentBindingExtension, {
-		content: adapter.instance,
-		elevator: SvelteElevatorFactory,
-	})
+	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
 
 	const facade = useCollectionAdapter(content, getProps, () => owner.forwardProps)
 

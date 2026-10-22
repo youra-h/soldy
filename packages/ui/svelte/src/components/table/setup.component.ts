@@ -31,16 +31,17 @@ import {
 	TableDescriptor,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { TableProps } from './base.component'
 
 export function setupTable(getProps: () => TableProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(TableDescriptor(), {
 		ctrl: props.ctrl,
@@ -61,10 +62,10 @@ export function setupTable(getProps: () => TableProps, mountId: string, receive:
 		},
 		{ bundle: adapter.bundle },
 	)
-		.use(TCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TCollectionExtension, { elevator })
 		// Окно обёртки `Virtual` над таблицей: подхват при сборке, подписка на
 		// обёртку — при приёме, снятие — с уничтожением
-		.use(TVirtualCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TVirtualCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,

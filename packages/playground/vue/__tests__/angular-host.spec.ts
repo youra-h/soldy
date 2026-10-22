@@ -665,8 +665,9 @@ describe('хост Angular · превью своим шаблоном', () => {
 	/**
 	 * Пришли данные — превью рисует меню из них, без пунктов разметки: пресет
 	 * строки `groupSeparators` отдаёт состав с группами, и линии стоят между
-	 * секциями, пока их просит строка. У контекстного меню в слоте — область, а
-	 * связки кнопки у неё нет.
+	 * секциями, пока их просит строка. У контекстного меню в слоте — область,
+	 * нативная кнопка, как у Vue: в обходе Tab без `tabindex`, со своими ролью
+	 * и именем, — а связки с меню у неё нет.
 	 */
 	it('меню из данных: пресет groupSeparators — группы с линиями; контекстное — область в слоте', () => {
 		const node = stage()
@@ -683,9 +684,11 @@ describe('хост Angular · превью своим шаблоном', () => {
 
 		handle.update({ ...preset, openOn: 'contextmenu' })
 
-		const area = node.querySelector('.so-menu > div[tabindex="0"]')
+		const area = node.querySelector('.so-menu > button[type="button"]')
 
 		expect(area?.textContent?.trim()).toBe('Правая кнопка, долгое касание или Shift+F10')
+		expect(area?.hasAttribute('tabindex')).toBe(false)
+		expect(area?.hasAttribute('aria-haspopup')).toBe(false)
 		expect(node.querySelector('.so-menu > .so-button')).toBe(null)
 		expect(panel.hasAttribute('aria-labelledby')).toBe(false)
 

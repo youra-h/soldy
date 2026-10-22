@@ -1,4 +1,4 @@
-import { Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import type { IListBoxItem, TDrawnEntry, TDrawnSection } from '@soldy-ui/core'
 import {
 	Elevate,
@@ -11,6 +11,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { ListBoxItem } from './item'
 import { ListBoxGroup } from './group'
 import { setupListBox } from './setup.component'

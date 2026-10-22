@@ -19,9 +19,9 @@
 
 import { CheckBoxDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	useAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { CheckBoxProps } from './base.component'
@@ -31,11 +31,12 @@ export function setupCheckBox(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const adapter = createSvelteAdapterContext(CheckBoxDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
+	}).use(TFieldControlExtension, { elevator })
 
 	// Переключает значение плагин флажка по `change` поля; отметку и «выбрано
 	// частично» разметка пишет свойствами `<input>`

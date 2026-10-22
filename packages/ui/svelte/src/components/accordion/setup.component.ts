@@ -17,11 +17,11 @@ import {
 	TDragAndDropCollectionExtension,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { AccordionProps } from './base.component'
@@ -31,6 +31,7 @@ export function setupAccordion(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(AccordionDescriptor(), {
 		ctrl: props.ctrl,
@@ -51,8 +52,8 @@ export function setupAccordion(
 		},
 		{ bundle: adapter.bundle },
 	)
-		.use(TCollectionExtension, { elevator: SvelteElevatorFactory })
-		.use(TDragAndDropCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TCollectionExtension, { elevator })
+		.use(TDragAndDropCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,

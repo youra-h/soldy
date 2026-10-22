@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { createRootProps, rootTag } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { setupProgressLinear } from './setup.component'
 import type { ProgressLinearProps } from './base.component'
 

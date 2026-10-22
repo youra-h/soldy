@@ -1,5 +1,6 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Elevate, ResolvedSlot, createRootProps, roleIcon } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Calendar } from '../calendar'
 import { DateInput } from '../date-input'

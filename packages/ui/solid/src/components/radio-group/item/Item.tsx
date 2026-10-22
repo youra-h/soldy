@@ -1,4 +1,4 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	chainHandler,
@@ -9,6 +9,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
+import { Show } from '../../../adapter/runtime/flow'
 import { setupRadioGroupItem } from './setup.component'
 import type { RadioGroupItemAttributes, RadioGroupItemProps } from './base.component'
 

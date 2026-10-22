@@ -24,16 +24,17 @@ import {
 	ToastsDescriptor,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { ToastsProps } from './base.component'
 
 export function setupToasts(getProps: () => ToastsProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(ToastsDescriptor(), {
 		ctrl: props.ctrl,
@@ -54,8 +55,8 @@ export function setupToasts(getProps: () => ToastsProps, mountId: string, receiv
 		},
 		{ bundle: adapter.bundle },
 	)
-		.use(TCollectionExtension, { elevator: SvelteElevatorFactory })
-		.use(TToastsApiExtension, { elevator: SvelteElevatorFactory })
+		.use(TCollectionExtension, { elevator })
+		.use(TToastsApiExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,

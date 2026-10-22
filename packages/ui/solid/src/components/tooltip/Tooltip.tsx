@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { createRootProps, liveScope, renderSlot, rootTag } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Frame } from '../frame'
 import { setupTooltip } from './setup.component'
 import type { TooltipProps } from './base.component'

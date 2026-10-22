@@ -1,4 +1,4 @@
-import { Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TDateInputPart, TDateInputSegment } from '@soldy-ui/core'
 import {
@@ -10,6 +10,7 @@ import {
 	roleIcon,
 	rootTag,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { setupDateInput } from './setup.component'

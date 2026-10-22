@@ -275,5 +275,31 @@ export default defineConfigWithVueTs(
 			'soldy/solid-part-props': 'error',
 		},
 	},
+	// Ветки и петли компонента Solid — примитивы адаптера, а не Solid: ветка или
+	// петля Solid, сменившаяся в окне гидратации, ищет новый узел по ключу
+	// чужого окна (`Hydration Mismatch`) и не снимает старый, а примитивы
+	// адаптера держат прежнее до конца окна
+	// (packages/ui/solid/src/adapter/runtime/flow.ts). `Switch` и `Match` — туда
+	// же: своих у адаптера пока нет. Что блок включён, проверяет
+	// tools/eslint/__tests__.
+	{
+		name: 'soldy/solid-components-flow',
+		files: ['packages/ui/solid/src/components/**/*.{ts,tsx}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'solid-js',
+							importNames: ['Show', 'For', 'Index', 'Switch', 'Match'],
+							message:
+								'Ветки и петли компонента — из src/adapter/runtime/flow: они переживают окна гидратации (шапка модуля).',
+						},
+					],
+				},
+			],
+		},
+	},
 	skipFormatting,
 )

@@ -18,19 +18,20 @@
 
 import { RatingDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	useAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { RatingProps } from './base.component'
 
 export function setupRating(getProps: () => RatingProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const adapter = createSvelteAdapterContext(RatingDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
+	}).use(TFieldControlExtension, { elevator })
 
 	// Логики здесь нет: нажатие и протяжку по звёздам ведёт
 	// `TSlidePointerPlugin`, клавиши и жест скринридера — `TSlideKeyboardPlugin`,

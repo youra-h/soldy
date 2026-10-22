@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Elevate, createPartProps, createRootProps, renderSlot, rootTag } from '../../../adapter'
+import { Show } from '../../../adapter/runtime/flow'
 import { setupMenuRadioGroup } from './setup.component'
 import type { MenuRadioGroupProps } from './base.component'
 

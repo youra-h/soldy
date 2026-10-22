@@ -428,6 +428,13 @@ scope, — `ResolvedSlot`, петля по ключу записи `drawn` и с
 Прямой спред состояния (`{...state.contentAria}`) смену за гидратацию до узла
 не донёс бы, и его ловит блок eslint `soldy/solid-part-props`
 (`eslint.config.ts`, правило — `tools/eslint/rules/solid-part-props.ts`).
+Ветки и петли компонента — `Show`, `For` и `Index` адаптера
+(`ui/solid/src/adapter/runtime/flow.ts`), а не Solid: их компонент берёт по
+пути модуля — в бочку адаптера они не входят, имена у них как у Solid. Ветка
+Solid, сменившаяся в окне гидратации, ищет новый узел по ключу чужого окна
+(`Hydration Mismatch`) и не снимает старый, а примитивы адаптера держат
+прежнее до конца окна (docs/agents/collections.md, «Цена»). Импорт их из
+`solid-js` в компонентах ловит блок eslint `soldy/solid-components-flow`.
 
 Angular-компоненты собирают контекст через `createAngularAdapterContext`
 (`packages/ui/angular/src/adapter/common/`): она берёт локаль поддерева —

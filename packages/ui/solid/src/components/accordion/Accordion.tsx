@@ -1,5 +1,6 @@
-import { For, Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Elevate, ResolvedSlot, createRootProps, relaySlot, renderSlot } from '../../adapter'
+import { For, Show } from '../../adapter/runtime/flow'
 import { AccordionItem } from './item'
 import { setupAccordion } from './setup.component'
 import type { AccordionProps } from './base.component'

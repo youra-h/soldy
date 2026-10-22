@@ -5,6 +5,7 @@ import {
 	AttributesDirective,
 	RoleIconDirective,
 	SlotDirective,
+	SlotOutletDirective,
 	provideElevator,
 	type TBinding,
 } from '../../../adapter'
@@ -55,10 +56,13 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
  * или проекцией (`<span slot="header">`), без него — текст пункта;
  * `arrow-icon` — шаблоном, без него — иконка роли `arrowRight`; `default` —
  * пункты подменю, группы и разделители, а без них — свои пункты из данных
- * (`items`) по секциям, как у меню; `item` и `item-*` — слоты пунктов из
- * данных, как у меню: подменю следующего уровня оно отдаёт их под теми же
- * именами. Следующий уровень — сам компонент: автономный компонент Angular
- * видит себя в своём шаблоне без `imports`.
+ * (`items`) по секциям, как у меню; `default` бывает и шаблоном — так меню над
+ * ним отдаёт подменю из данных свой `item-content`, и шаблон рисуется вместо
+ * пунктов из данных; `item` и `item-*` — слоты пунктов из данных, как у меню:
+ * подменю следующего уровня оно отдаёт их под теми же именами, а
+ * `item-content` — его шаблоном `default`, выводом с инжектором места
+ * (`[so-slot-outlet]`). Следующий уровень — сам компонент: автономный
+ * компонент Angular видит себя в своём шаблоне без `imports`.
  *
  * Selector: div[so-menu-submenu], [so-menu-submenu]
  */
@@ -70,6 +74,7 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
 		AttributesDirective,
 		RoleIconDirective,
 		SlotDirective,
+		SlotOutletDirective,
 		TButtonComponent,
 		TFrameComponent,
 		TIconComponent,
