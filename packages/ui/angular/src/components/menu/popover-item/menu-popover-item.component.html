@@ -1,0 +1,85 @@
+<!--
+	Корень — сам хост (`<div so-menu-popover-item>`), поэтому шаблон — то, что
+	внутри корня Vue, в том же порядке: строка и панель, а в конце — слив
+	шаблонов слотов. Слоты контракта: leading, header (scope { text, open }),
+	arrow-icon, default — содержимое панели.
+
+	Строка — `Button` на `div`, помечена `#control`, как у пункта-действия. Текст
+	строки — слот `header`, а не `default`: `default` — содержимое панели, как у
+	секции Accordion и у Popover.
+-->
+<div
+	so-button
+	#control
+	embedded="menu.row"
+	[size]="state()['size']"
+	[disabled]="state()['disabled']"
+	[so-attributes]="state()['aria']"
+	(click)="openPanel()"
+>
+	<span class="so-menu-item__icon" ngProjectAs="[slot=leading]">
+		<ng-content select="[slot=leading]" />
+	</span>
+	@if (slot('header'); as header) {
+		<ng-container
+			[ngTemplateOutlet]="header"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				open: state()['open'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content select="[slot=header]">{{ state()['text'] }}</ng-content>
+	}
+	<!--
+		Стрелка — у конца строки: у пункта есть панель, и встаёт она сбоку.
+		Подсказки сочетания у этого пункта нет. Класс — на обёртке: тема зеркалит
+		стрелку в RTL по `.so-menu-item__arrow`, и стрелка из слота зеркалится так
+		же. Обёртка скрыта от скринридера: о панели говорит ARIA строки.
+	-->
+	<span class="so-menu-item__arrow" aria-hidden="true" ngProjectAs="[slot=trailing]">
+		@if (slot('arrow-icon'); as arrow) {
+			<ng-container [ngTemplateOutlet]="arrow" />
+		} @else {
+			<svg
+				so-icon
+				embedded="menu.arrow"
+				so-role-icon="arrowRight"
+				[size]="state()['size']"
+			></svg>
+		}
+	</span>
+</div>
+<!--
+	Панель — Frame после строки: телепорт в `body`, соседка панели меню, а не
+	её потомок, слой поверх неё, привязка к корню пункта и пометка владельцем.
+	Крестика и полосы жеста нет: панель закрывают Escape, нажатие мимо и другой
+	пункт.
+
+	Содержимое — то, что прокручивается: поля панели внутри прокрутки, кольцо
+	фокуса у края не обрезается. `lazyMount` действует только на проекцию:
+	обёртка остаётся, панель не размонтируется никогда.
+-->
+<div
+	so-frame
+	embedded="menu.popover-item-frame"
+	class="so-menu-item__panel"
+	tabindex="-1"
+	position="fixed"
+	anchor_placement="end-start"
+	[visible]="state()['open']"
+	[rendered]="state()['rendered']"
+	[anchor_anchor]="rootElement()"
+	[so-attributes]="{ ...state()['panelAria'], ...state()['dismiss_ownerAttribute'] }"
+>
+	<div class="so-menu-item__content">
+		@if (state()['contentRendered']) {
+			<ng-content />
+		}
+	</div>
+</div>
+<!--
+	Шаблоны слотов, которые потребитель написал в пункте, — в слив, в конце
+	корня: в основной проекции их якоря легли бы в панель.
+-->
+<ng-content select="ng-template[slot]" />

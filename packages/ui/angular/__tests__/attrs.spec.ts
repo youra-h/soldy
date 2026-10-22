@@ -4,12 +4,12 @@
  *
  * Статику разметки переносит база (`root-attributes.spec.ts`, спеки полей),
  * а привязки и слушатели Angular отдаёт рендереру шаблона потребителя — их
- * доносит рендерер адаптера. Таблица — по всем двенадцати компонентам, у
+ * доносит рендерер адаптера. Таблица — по всем семнадцати компонентам, у
  * которых написанное на компоненте делится между корнем и узлом внутри
  * (`TRootSpec.control`, `'wrapped'`): поля и радио — `<input>` или
  * `<textarea>`, у NumberInput — ввод числа, элементы ListBox, Tabs и
- * Accordion — строка, ListBox и Tabs — узел списка с ролью, Table — `table`
- * в окне.
+ * Accordion и пункты меню — строка, ListBox и Tabs — узел списка с ролью,
+ * Table — `table` в окне.
  *
  * На корне остаётся вид — класс и стиль, — служебные атрибуты Angular, выходы
  * компонента и события движения. Та же таблица идёт ещё раз рядом со старыми
@@ -32,6 +32,12 @@ import {
 	TInputComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TMenuCheckboxItemComponent,
+	TMenuItemComponent,
+	TMenuPopoverItemComponent,
+	TMenuRadioGroupComponent,
+	TMenuRadioItemComponent,
+	TMenuSubmenuComponent,
 	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
@@ -203,6 +209,62 @@ class TabsItemProbe extends TForwardProbe {}
 })
 class AccordionItemProbe extends TForwardProbe {}
 
+/**
+ * Пункты меню — вне меню, сами по себе: панель меню увезена в `body`, мимо
+ * разметки хоста, а делит написанное пункт сам, между корнем и строкой.
+ */
+@Component({
+	selector: 'probe-forward-menu-item',
+	imports: [TMenuItemComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-menu-item value="a" text="A" ${WRITTEN}></div>
+	}`,
+})
+class MenuItemProbe extends TForwardProbe {}
+
+@Component({
+	selector: 'probe-forward-menu-checkbox-item',
+	imports: [TMenuCheckboxItemComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-menu-checkbox-item value="a" text="A" ${WRITTEN}></div>
+	}`,
+})
+class MenuCheckboxItemProbe extends TForwardProbe {}
+
+@Component({
+	selector: 'probe-forward-menu-radio-item',
+	imports: [TMenuRadioGroupComponent, TMenuRadioItemComponent],
+	styles: STYLES,
+	template: `<div so-menu-radio-group>
+		@if (shown()) {
+			<div so-menu-radio-item value="a" text="A" ${WRITTEN}></div>
+		}
+	</div>`,
+})
+class MenuRadioItemProbe extends TForwardProbe {}
+
+@Component({
+	selector: 'probe-forward-menu-submenu',
+	imports: [TMenuSubmenuComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-menu-submenu value="a" text="A" ${WRITTEN}></div>
+	}`,
+})
+class MenuSubmenuProbe extends TForwardProbe {}
+
+@Component({
+	selector: 'probe-forward-menu-popover-item',
+	imports: [TMenuPopoverItemComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-menu-popover-item value="a" text="A" ${WRITTEN}></div>
+	}`,
+})
+class MenuPopoverItemProbe extends TForwardProbe {}
+
 @Component({
 	selector: 'probe-forward-table',
 	imports: [TTableComponent],
@@ -307,6 +369,51 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 		},
 	],
 	['Table', { component: TTableComponent, probe: TableProbe, root: '[so-table]', node: 'table' }],
+	[
+		'Menu.Item',
+		{
+			component: TMenuItemComponent,
+			probe: MenuItemProbe,
+			root: '[so-menu-item]',
+			node: '[so-button]',
+		},
+	],
+	[
+		'Menu.CheckboxItem',
+		{
+			component: TMenuCheckboxItemComponent,
+			probe: MenuCheckboxItemProbe,
+			root: '[so-menu-checkbox-item]',
+			node: '[so-button]',
+		},
+	],
+	[
+		'Menu.RadioItem',
+		{
+			component: TMenuRadioItemComponent,
+			probe: MenuRadioItemProbe,
+			root: '[so-menu-radio-item]',
+			node: '[so-button]',
+		},
+	],
+	[
+		'Menu.Submenu',
+		{
+			component: TMenuSubmenuComponent,
+			probe: MenuSubmenuProbe,
+			root: '[so-menu-submenu]',
+			node: '[so-button]',
+		},
+	],
+	[
+		'Menu.PopoverItem',
+		{
+			component: TMenuPopoverItemComponent,
+			probe: MenuPopoverItemProbe,
+			root: '[so-menu-popover-item]',
+			node: '[so-button]',
+		},
+	],
 ]
 
 /** Атрибуты инкапсуляции стилей хоста на элементе. */

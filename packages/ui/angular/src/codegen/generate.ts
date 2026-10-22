@@ -58,6 +58,18 @@
  * отверг бы чтение по имени (TS7053). У компонента без фасада второй параметр
  * — `unknown`.
  *
+ * У части, которая сразу и элемент коллекции над ней, и владелец своей (пункт
+ * с подменю), контекстов три: свой, фасад элемента (`facade`) и фасад
+ * владельца (`ownerFacade`). Входы и выходы фасада владельца идут после
+ * фасада, по тому же правилу: одноимённые — один раз, от первого дескриптора
+ * (`choose` есть у фасада меню и в карте событий самого подменю). Тип выхода —
+ * по его дескриптору, тип входа — по дескриптору компонента: пропсы своей
+ * коллекции входят в интерфейс пропсов ядра части (`IMenuSubmenuProps`).
+ * Фасад владельца поверхность называет базе четвёртым параметром: его
+ * свойства (`sections`, `submenus`) шаблон читает из того же `state()`. У
+ * остальных четвёртого параметра нет — его умолчание у базы `unknown`, и
+ * поверхности компонентов без фасада владельца генератор не меняет.
+ *
  * Запуск: node --import tsx/esm src/codegen/generate.ts
  *   (или через скрипт в package.json: "generate": "tsx src/codegen/generate.ts")
  *
@@ -67,6 +79,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as prettier from 'prettier'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
 import { collectManifests } from './collect-manifests'
 import { useBooleanInputs, useInputs } from '../adapter/common/useInputs'
 import { useOutputs } from '../adapter/common/useOutputs'
@@ -76,10 +89,13 @@ function toPascalCase(str: string): string {
 }
 
 /** Чей дескриптор несёт выход — под этим именем его тип импортирует сгенерированный файл. */
-type TSource = 'descriptor' | 'facade'
+type TSource = 'descriptor' | 'facade' | 'ownerFacade'
 
 /** Выход, полное имя события ядра за ним и дескриптор, чья это карта событий. */
 type TOutput = readonly [output: string, event: string, source: TSource]
+
+/** Дескриптор поверхности и имя, под которым его импортирует сгенерированный файл. */
+type TSurfaceSource = readonly [source: TSource, descriptor: IComponentDescriptor]
 
 /** Имена по порядку, без повторов: первое вхождение главнее. */
 function unique<T>(values: readonly T[], key: (value: T) => string): T[] {
@@ -124,34 +140,46 @@ async function generate(): Promise<void> {
 		fs.mkdirSync(generatedDir, { recursive: true })
 	}
 
-	for (const { name, folder, descriptor: descriptorFn, facade: facadeFn } of manifests) {
-		const descriptor = descriptorFn()
-		const facade = facadeFn?.()
-		const own = useInputs(descriptor)
-		// Входы фасада — после своих; одноимённый вход — свой
-		const inputs = unique([...own, ...(facade ? useInputs(facade) : [])], (input) => input)
-		const booleans = new Set([
-			...useBooleanInputs(descriptor),
-			...(facade ? useBooleanInputs(facade).filter((input) => !own.includes(input)) : []),
-		])
+	for (const manifest of manifests) {
+		const { name, folder } = manifest
+		const facade = manifest.facade?.()
+		const ownerFacade = manifest.ownerFacade?.()
+		// Дескрипторы поверхности по порядку: свой, фасад, фасад владельца
+		const sources: readonly TSurfaceSource[] = [
+			['descriptor', manifest.descriptor()],
+			...(facade ? [['facade', facade] as const] : []),
+			...(ownerFacade ? [['ownerFacade', ownerFacade] as const] : []),
+		]
+		// Входы фасадов — после своих; одноимённый вход — от первого дескриптора
+		const inputs = unique(
+			sources.flatMap(([, descriptor]) => useInputs(descriptor)),
+			(input) => input,
+		)
+		// Булев вход — тот, что булев у дескриптора, от которого взят вход
+		const booleans = new Set(
+			sources.flatMap(([, descriptor], index) => {
+				const earlier = new Set(
+					sources.slice(0, index).flatMap(([, prior]) => useInputs(prior)),
+				)
+
+				return useBooleanInputs(descriptor).filter((input) => !earlier.has(input))
+			}),
+		)
 		const outputs = unique<TOutput>(
-			[
-				...useOutputs(descriptor).map(([output, event]): TOutput => [
-					output,
-					event,
-					'descriptor',
-				]),
-				...(facade
-					? useOutputs(facade).map(([output, event]): TOutput => [
-							output,
-							event,
-							'facade',
-						])
-					: []),
-			],
+			sources.flatMap(([source, descriptor]) =>
+				useOutputs(descriptor).map(([output, event]): TOutput => [output, event, source]),
+			),
 			([output]) => output,
 		)
 		const constName = toPascalCase(name)
+		// Параметры базы: фасад — `unknown` у компонента без него, фасад владельца
+		// — только у части с ним, у остальных его заменяет умолчание базы
+		const baseParams = [
+			'TInstance',
+			facade ? 'DescriptorInstance<typeof facade>' : 'unknown',
+			'DescriptorPluginOutputs<typeof descriptor>',
+			...(ownerFacade ? ['DescriptorInstance<typeof ownerFacade>'] : []),
+		]
 
 		// Вход в декораторе: булев — объектом с transform, остальные — именем
 		const declaredInputs = inputs.map((input) =>
@@ -169,7 +197,7 @@ async function generate(): Promise<void> {
 			...(booleans.size > 0
 				? [`import { booleanInput } from '../adapter/runtime/boolean-input'`]
 				: []),
-			`import type { ${facade ? 'descriptor, facade' : 'descriptor'} } from '../components/${folder}/manifest'`,
+			`import type { ${sources.map(([source]) => source).join(', ')} } from '../components/${folder}/manifest'`,
 			'',
 			`export const ${constName}Inputs = ${JSON.stringify(inputs)} as const`,
 			`export const ${constName}Outputs = ${JSON.stringify(outputs.map(([output]) => output))} as const`,
@@ -182,18 +210,26 @@ async function generate(): Promise<void> {
 			...(booleans.size > 0
 				? [' * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.']
 				: []),
-			...(facade
+			...(facade && !ownerFacade
 				? [
 						' * Контекстов у компонента два: входы и выходы фасада коллекции — здесь же,',
 						' * после своих. Тип входа фасада — по дескриптору компонента, выхода — по',
 						' * дескриптору фасада.',
 					]
 				: []),
+			...(ownerFacade
+				? [
+						' * Контекстов у компонента три: входы и выходы фасада элемента и фасада',
+						' * владельца — здесь же, после своих. Тип входа фасадов — по дескриптору',
+						' * компонента, выхода — по дескриптору фасада. Свойства фасада владельца',
+						' * шаблон читает из `state()`: их тип база получает четвёртым параметром.',
+					]
+				: []),
 			' * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база',
 			' * получает третьим параметром.',
 			' */',
 			`@Directive({ standalone: true, inputs: [${declaredInputs.join(', ')}], outputs: [...${constName}Outputs] })`,
-			`export abstract class T${constName}Surface<TInstance extends IEntity> extends TComponentBase<TInstance, ${facade ? 'DescriptorInstance<typeof facade>' : 'unknown'}, DescriptorPluginOutputs<typeof descriptor>> {`,
+			`export abstract class T${constName}Surface<TInstance extends IEntity> extends TComponentBase<${baseParams.join(', ')}> {`,
 			...inputs.map(
 				(input) =>
 					`declare ${input}: TInputValue<typeof descriptor, ${JSON.stringify(input)}>`,
