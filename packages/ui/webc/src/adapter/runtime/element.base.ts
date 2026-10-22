@@ -283,6 +283,7 @@ import {
 	type TAppliedStyles,
 	type THiddenDisplay,
 } from './root-attributes'
+import { markSoldyElement } from './soldy-mark'
 import { TTeleport, type TTeleportPlace } from './teleport'
 import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
 import { connecting, isConnecting, wait } from './waiting'
@@ -757,6 +758,12 @@ export function SoldyElement<
 		/** Память скрытия спутника. */
 		private _companionDisplay: THiddenDisplay = undefined
 
+		constructor(...args: ConstructorParameters<TNativeElementClass>) {
+			super(...args)
+			// Элемент soldy — хозяин места панелей, чей якорь в нём (`teleport.ts`)
+			markSoldyElement(this)
+		}
+
 		get state(): TBindingState<TInstance, TFacade, unknown, TOwnerFacade> {
 			return this._binding?.state ?? {}
 		}
@@ -820,9 +827,13 @@ export function SoldyElement<
 			this._connected = false
 			this._binding?.destroy()
 			this._binding = undefined
-			// Увезённый корень сняли или переставили: якорь уходит с места, а
-			// корень обёртки — за местом, в элемент (`TTeleport.release`)
+			// Увезённый корень сняли или переставили: якорь уходит с места
+			// (`TTeleport.release`)
 			this._teleport?.release()
+
+			// Снят со страницы — панели его места уходят за ним сразу. Переставлен
+			// — вернутся при подключении, после его новой сборки (см. шапку)
+			if (!this.isConnected) TTeleport.recall(this)
 		}
 
 		attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
@@ -858,14 +869,23 @@ export function SoldyElement<
 		 * связка, узел и полная отрисовка — на каждое.
 		 */
 		private _connect(): void {
+			/** Структура уже построена: подключение повторное, место пересобрано. */
+			const again = this._light !== null
+
 			this._connected = true
 
-			if (!this._light) {
+			if (!again) {
 				this._readAttributes()
 				this._build()
 			}
 
 			this._assemble().bindElement(this._root)
+
+			// Панели места — к якорям: соберутся следом, с новым лифтом, а пункты
+			// из данных, которые строит первая отрисовка, встанут в очередь за
+			// панелью (см. шапку)
+			if (again) TTeleport.recall(this)
+
 			this._flush(true)
 		}
 

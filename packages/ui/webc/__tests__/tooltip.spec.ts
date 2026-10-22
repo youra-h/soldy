@@ -18,15 +18,18 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TTooltip } from '@soldy-ui/core'
-import { TooltipDescriptor } from '@soldy-ui/setup'
+import { TComponentView, TFrame, TTooltip } from '@soldy-ui/core'
+import { TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
+import { TooltipDescriptor, usePlugins } from '@soldy-ui/setup'
 import {
+	TLocaleProviderElement,
 	TPopoverElement,
 	TTooltipElement,
 	type TPopoverElementProps,
 	type TTooltipElementProps,
 } from '@soldy-ui/webc'
 import { tooltipTemplate } from '../src/components/tooltip/tooltip.template'
+import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
 import { bareContext } from './template-context'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -430,5 +433,81 @@ describe('в открытом поповере', () => {
 		await flush()
 
 		expect(isOpen(popoverPanel())).toBe(true)
+	})
+})
+
+/**
+ * Подсказка, переставленная одной операцией под другой провайдер: якорь
+ * панели остаётся в её корне, в документе, а подсказка собирается заново.
+ * Панель идёт за ней сразу — собирается после подсказки с локалью нового места
+ * и снова уезжает в `body`.
+ */
+describe('перестановка одной операцией', () => {
+	/** Сборки — вид компонента и тег локали, по одной на связку. */
+	const assembled: (readonly [kind: string, locale: string])[] = []
+
+	const kindOf = (instance: unknown): string => {
+		if (instance instanceof TTooltip) return 'tooltip'
+
+		return instance instanceof TFrame ? 'frame' : 'other'
+	}
+
+	/** Плагин-зонд: сборка ставит его в набор, и на детали тоже (`scope: 'all'`). */
+	class TLocaleProbePlugin extends TBasePlugin<TComponentView> {
+		override install(ctx: IPluginContext, options?: unknown): void {
+			super.install(ctx, options)
+
+			assembled.push([kindOf(ctx.getInstance()), ctx.locale.locale.tag])
+		}
+	}
+
+	let dispose: (() => void) | undefined
+
+	afterEach(() => {
+		dispose?.()
+		dispose = undefined
+		assembled.length = 0
+	})
+
+	/** Провайдер локали по селектору. */
+	function provider(scope: ParentNode, selector: string): TLocaleProviderElement {
+		const node = scope.querySelector(selector)
+
+		if (!(node instanceof TLocaleProviderElement)) {
+			throw new Error(`${selector}: провайдера нет`)
+		}
+
+		return node
+	}
+
+	it('панель собрана заново сразу, с локалью нового места; панель — в body, якорь — в корне', async () => {
+		dispose = usePlugins(TComponentView, [TLocaleProbePlugin], { scope: 'all' })
+
+		const page = await mount(
+			`<so-locale-provider class="so-test-ru">${TOOLTIP()}</so-locale-provider>
+			<so-locale-provider class="so-test-zh"></so-locale-provider>`,
+			(node) => {
+				provider(node, '.so-test-ru').locale = ruRU
+				provider(node, '.so-test-zh').locale = zhCN
+			},
+		)
+		const tooltip = page.querySelector('[is="so-tooltip"]')
+
+		if (!isTooltip(tooltip)) throw new Error('<span is="so-tooltip"> нет')
+
+		assembled.length = 0
+		provider(page, '.so-test-zh').appendChild(tooltip)
+
+		// Подсказка, затем её панель — сразу, без ожидания
+		expect(assembled.filter(([kind]) => kind !== 'other')).toEqual([
+			['tooltip', zhCN.tag],
+			['frame', zhCN.tag],
+		])
+		expect(panel().parentElement).toBe(document.body)
+		expect(
+			[...tooltip.childNodes].filter(
+				(node) => node instanceof Comment && node.data === TELEPORT_ANCHOR,
+			),
+		).toHaveLength(1)
 	})
 })

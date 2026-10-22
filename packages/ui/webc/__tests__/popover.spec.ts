@@ -15,7 +15,9 @@
  * потребитель не может, и шаблон кладёт наборы `triggerAria` и
  * `triggerDataset` на первый элемент слота `trigger` — тот же узел, что
  * написал потребитель. И перенос: панель уезжает в цель силами базы Frame, и
- * ни перенос, ни `contained` не пересобирают кнопки в панели.
+ * ни перенос, ни `contained` не пересобирают кнопки в панели, а поповер,
+ * переставленный одной операцией, панель пересобирает — сразу после себя, с
+ * локалью нового места.
  *
  * Порядок Tab, который ведёт сам браузер, jsdom не считает: здесь проверены
  * переходы, которые делает плагин (Tab в панель, из неё, Shift+Tab на
@@ -24,11 +26,12 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { TButton, TComponentView, TPopover } from '@soldy-ui/core'
-import { TBasePlugin, ruRU, type IPluginContext } from '@soldy-ui/plugins'
+import { TButton, TComponentView, TFrame, TPopover } from '@soldy-ui/core'
+import { TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
 import { PopoverDescriptor, usePlugins } from '@soldy-ui/setup'
 import { TLocaleProviderElement, TPopoverElement, type TPopoverElementProps } from '@soldy-ui/webc'
 import { popoverTemplate } from '../src/components/popover/popover.template'
+import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
 import { bareContext } from './template-context'
 
 /** Отрисовка коалесцируется в микротаске — ждём её перед проверкой. */
@@ -868,6 +871,89 @@ describe('перенос', () => {
 		expect(find('.so-popover__close')).toBe(close)
 		expect([...assembled].sort()).toEqual(['', 'Действие', 'Открыть'])
 		expect(destroyed).toBe(0)
+	})
+})
+
+/**
+ * Поповер, переставленный одной операцией под другой провайдер: якорь панели
+ * остаётся в его корне, в документе, а поповер собирается заново. Панель идёт
+ * за ним сразу — возвращается к якорю, собирается после поповера с локалью
+ * нового места и снова уезжает в `body`; кнопка в её содержимом — тоже. Имя
+ * крестика здесь не довод: его пишет шаблон из набора поповера, и оно
+ * сменилось бы и без пересборки панели.
+ */
+describe('перестановка одной операцией', () => {
+	/** Сборки — вид компонента и тег локали, по одной на связку. */
+	const assembled: (readonly [kind: string, locale: string])[] = []
+
+	const kindOf = (instance: unknown): string => {
+		if (instance instanceof TPopover) return 'popover'
+		if (instance instanceof TFrame) return 'frame'
+
+		return instance instanceof TButton ? `button:${instance.text}` : 'other'
+	}
+
+	/** Плагин-зонд: сборка ставит его в набор, и на детали тоже (`scope: 'all'`). */
+	class TLocaleProbePlugin extends TBasePlugin<TComponentView> {
+		override install(ctx: IPluginContext, options?: unknown): void {
+			super.install(ctx, options)
+
+			assembled.push([kindOf(ctx.getInstance()), ctx.locale.locale.tag])
+		}
+	}
+
+	afterEach(() => {
+		assembled.length = 0
+	})
+
+	/** Провайдер локали по селектору. */
+	function provider(scope: ParentNode, selector: string): TLocaleProviderElement {
+		const node = scope.querySelector(selector)
+
+		if (!(node instanceof TLocaleProviderElement)) {
+			throw new Error(`${selector}: провайдера нет`)
+		}
+
+		return node
+	}
+
+	it('панель и кнопка в ней собраны заново сразу, с локалью нового места; панель — в body', async () => {
+		dispose = usePlugins(TComponentView, [TLocaleProbePlugin], { scope: 'all' })
+
+		const host = document.createElement('div')
+
+		host.innerHTML = `<so-locale-provider class="so-test-ru">
+				<span is="so-popover">${TRIGGER}<button is="so-button" class="so-test-action" text="Действие"></button></span>
+			</so-locale-provider>
+			<so-locale-provider class="so-test-zh"></so-locale-provider>`
+		provider(host, '.so-test-ru').locale = ruRU
+		provider(host, '.so-test-zh').locale = zhCN
+		document.body.appendChild(host)
+		await flush()
+
+		const popover = host.querySelector('[is="so-popover"]')
+		const action = find('.so-test-action')
+
+		if (!isPopover(popover)) throw new Error('<span is="so-popover"> нет')
+
+		assembled.length = 0
+		provider(host, '.so-test-zh').appendChild(popover)
+
+		// Поповер, затем его панель и кнопка в ней — сразу, без ожидания
+		expect(
+			assembled.filter(([kind]) => ['popover', 'frame', 'button:Действие'].includes(kind)),
+		).toEqual([
+			['popover', zhCN.tag],
+			['frame', zhCN.tag],
+			['button:Действие', zhCN.tag],
+		])
+		expect(panel().parentElement).toBe(document.body)
+		expect(find('.so-test-action')).toBe(action)
+		expect(
+			[...popover.childNodes].filter(
+				(node) => node instanceof Comment && node.data === TELEPORT_ANCHOR,
+			),
+		).toHaveLength(1)
 	})
 })
 

@@ -11,7 +11,9 @@
  * (`ui/webc/__tests__/frame.spec.ts`) лишь повторяет спецификацию. Здесь тот
  * же порядок сверяет Chromium: Frame и кнопка в панели собраны по разу, с
  * локалью провайдера вокруг Frame, перенос, `contained` и смена цели их не
- * пересобирают, а перестановка потребителем — пересобирает.
+ * пересобирают, а перестановка потребителем — пересобирает, и перестановка
+ * места одной операцией тоже: контейнера с якорем — наблюдатель документа,
+ * поповера — сразу после его новой сборки.
  *
  * Панели на Frame — Popover и Tooltip: их Frame — деталь шаблона, а якорь —
  * корень элемента. Раскладку jsdom не считает, и место открытой панели у
@@ -225,6 +227,63 @@ describe('<div is="so-frame"> · перенос в браузере', () => {
 		expect(anchors(other)).toHaveLength(1)
 		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
 		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+	})
+
+	/**
+	 * Контейнер с якорем переставлен одной операцией: якорь из документа не
+	 * ушёл, а место — уже под другим провайдером. Хозяина у места нет, и
+	 * перестановку ловит наблюдатель документа — микрозадачей позже.
+	 */
+	it('контейнер, переставленный одной операцией, пересобирает Frame и кнопку под новым провайдером', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+
+		const first = addTarget('first')
+		const root = stage(PANEL, ruRU)
+		const other = stage('', zhCN)
+		const place = root.querySelector('.place')
+
+		if (!place) throw new Error('места нет')
+
+		// Признак переноса первой сборки держится до микрозадачи
+		await flush()
+
+		other.appendChild(place)
+		await flush()
+
+		expect(frame().parentElement).toBe(first)
+		expect(anchors(root)).toHaveLength(0)
+		expect(anchors(other)).toHaveLength(1)
+		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+	})
+
+	/**
+	 * Поповер — хозяин места своей панели: его колбэки приходят тем же вызовом
+	 * DOM, и панель с кнопкой в ней собирается заново сразу после него. Зонд
+	 * стоит и на деталях: панель — Frame шаблона поповера.
+	 */
+	it('поповер, переставленный одной операцией, сразу пересобирает панель под новым провайдером', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin], { scope: 'all' })
+
+		const root = stage(
+			'<span is="so-popover"><button is="so-button" slot="trigger" text="Открыть"></button><button is="so-button" text="Действие"></button></span>',
+			ruRU,
+		)
+		const other = stage('', zhCN)
+		const popover = root.querySelector('[is="so-popover"]')
+
+		if (!popover) throw new Error('поповера нет')
+
+		await flush()
+		assembled.length = 0
+
+		other.appendChild(popover)
+
+		expect(assembledOf('frame')).toEqual([zhCN.tag])
+		// Триггер, кнопка в панели и крестик
+		expect(assembledOf('button')).toEqual([zhCN.tag, zhCN.tag, zhCN.tag])
+		expect(document.querySelector('.so-popover__panel')?.parentElement).toBe(document.body)
+		expect(anchors(popover)).toHaveLength(1)
 	})
 })
 

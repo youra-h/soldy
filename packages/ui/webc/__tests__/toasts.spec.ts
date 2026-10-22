@@ -24,10 +24,10 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { createEngineToasts } from '@soldy-ui/core'
+import { TComponentView, TToasts, TToastsItem, createEngineToasts } from '@soldy-ui/core'
 import type { IToastsItem, TToastsItemType } from '@soldy-ui/core'
-import { ruRU } from '@soldy-ui/plugins'
-import { ToastsDescriptor } from '@soldy-ui/setup'
+import { TBasePlugin, ruRU, type IPluginContext } from '@soldy-ui/plugins'
+import { ToastsDescriptor, usePlugins } from '@soldy-ui/setup'
 import {
 	TLocaleProviderElement,
 	TToastsElement,
@@ -290,6 +290,51 @@ describe('регион — корень в слое', () => {
 		await flush()
 
 		expect(document.querySelector('.so-toasts')).toBeNull()
+	})
+
+	/**
+	 * Менеджер, переставленный одной операцией: якорь региона — в самом
+	 * менеджере и из документа не уходит, а менеджер собирается заново. Регион —
+	 * панель своего хозяина: возвращается к якорю сразу после новой сборки
+	 * менеджера и снова уезжает в цель, а тост собирается после менеджера, в его
+	 * новой коллекции. Тосты живут в движке снаружи — своя коллекция менеджера
+	 * на перестановке новая.
+	 */
+	it('переставленный одной операцией — регион в body, тост собран заново после менеджера', async () => {
+		const assembled: string[] = []
+
+		class TAssemblyProbePlugin extends TBasePlugin<TComponentView> {
+			override install(ctx: IPluginContext, options?: unknown): void {
+				super.install(ctx, options)
+
+				const instance = ctx.getInstance()
+
+				if (instance instanceof TToasts) assembled.push('toasts')
+				if (instance instanceof TToastsItem) assembled.push('toast')
+			}
+		}
+
+		const dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+
+		try {
+			const manager = await render({ engine: createEngineToasts() })
+
+			await show('Сохранено')
+
+			const [toast] = toasts()
+
+			assembled.length = 0
+			document.body.appendChild(document.createElement('section')).appendChild(manager)
+
+			expect(assembled).toEqual(['toasts', 'toast'])
+			expect(region().parentElement).toBe(document.body)
+			expect(document.querySelectorAll('.so-toasts')).toHaveLength(1)
+			expect(anchors(manager)).toHaveLength(1)
+			expect(toasts()).toEqual([toast])
+			expect(texts()).toEqual(['Сохранено'])
+		} finally {
+			dispose()
+		}
 	})
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {

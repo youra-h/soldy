@@ -10,7 +10,8 @@
  * выполняет: стрелки по табам и списку ведёт плагин владельца, а по радио —
  * сам браузер, по общему `name` группы. Открытые панели меню и подменю с
  * частями стоят у триггера и у строки так же, как у Vue (замер
- * `panel-boxes.ts`), а стрелки ведут фокус по пунктам и между уровнями.
+ * `panel-boxes.ts`), а стрелки ведут фокус по пунктам и между уровнями — и в
+ * меню, переставленном одной операцией.
  * Разметку и наборы ядра сторожат `ui/webc/__tests__/tabs.spec.ts`,
  * `accordion.spec.ts`, `radio-group.spec.ts`, `list-box.spec.ts` и
  * `menu.spec.ts`.
@@ -542,5 +543,54 @@ describe('Menu · клавиатура', () => {
 		await userEvent.keyboard('{Escape}')
 		await expect.poll(active).toBe(trigger)
 		expect(trigger.getAttribute('aria-expanded')).toBe('false')
+	})
+
+	/**
+	 * Меню, переставленное одной операцией, собирается заново, а панель с
+	 * пунктами идёт за ним: собирается после меню, и пункты входят в его новую
+	 * коллекцию. Порядок колбэков здесь — настоящего браузера, а не jsdom.
+	 */
+	it('в меню, переставленном одной операцией, стрелки ходят по пунктам и в подменю', async () => {
+		const root = await show(
+			`<section class="so-test-from"><span is="so-menu"><button is="so-button" slot="trigger" class="so-test-trigger" text="Действия"></button><div is="so-menu-item" value="edit" text="Изменить"></div><div is="so-menu-submenu" value="share" text="Поделиться"><div is="so-menu-item" value="link" text="Ссылка"></div><div is="so-menu-item" value="mail" text="Почта"></div></div></span></section><section class="so-test-to"></section>`,
+		)
+		const menuRoot = find(root, '[is="so-menu"]', HTMLSpanElement)
+		const trigger = find(root, '.so-test-trigger', HTMLButtonElement)
+		const panelOf = (anchor: Element) =>
+			find(
+				document,
+				`#${CSS.escape(anchor.getAttribute('aria-controls') ?? '')}`,
+				HTMLElement,
+			)
+		const rowOf = (scope: HTMLElement, text: string): HTMLElement => {
+			const row = all(scope, '.so-menu-item > .so-button').find(
+				(candidate) =>
+					candidate.querySelector('.so-button__text')?.textContent?.trim() === text,
+			)
+
+			if (!row) throw new Error(`строки «${text}» нет`)
+
+			return row
+		}
+		const active = () => document.activeElement
+
+		find(root, '.so-test-to', HTMLElement).appendChild(menuRoot)
+		// Слушатели плагинов новой сборки — по `ready` узла, кадром позже
+		await nextFrame()
+		await nextFrame()
+
+		trigger.focus()
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(rowOf(panelOf(trigger), 'Изменить'))
+
+		await userEvent.keyboard('{ArrowDown}')
+		await expect.poll(active).toBe(rowOf(panelOf(trigger), 'Поделиться'))
+
+		const share = rowOf(panelOf(trigger), 'Поделиться')
+
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.poll(active).toBe(rowOf(panelOf(share), 'Ссылка'))
+		expect(panelOf(trigger).parentElement).toBe(document.body)
+		expect(menuRoot.contains(panelOf(trigger))).toBe(false)
 	})
 })
