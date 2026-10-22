@@ -10,6 +10,7 @@ import IconPreview from './IconPreview.svelte'
 import InputPreview from './InputPreview.svelte'
 import LabelPreview from './LabelPreview.svelte'
 import ListBoxPreview from './ListBoxPreview.svelte'
+import MenuPreview from './MenuPreview.svelte'
 import NumberInputPreview from './NumberInputPreview.svelte'
 import PaginationPreview from './PaginationPreview.svelte'
 import PopoverPreview from './PopoverPreview.svelte'
@@ -80,6 +81,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	pagination: PaginationPreview,
 	popover: PopoverPreview,
 	tooltip: TooltipPreview,
+	menu: MenuPreview,
 	dialog: DialogPreview,
 	drawer: DrawerPreview,
 	toasts: ToastsPreview,

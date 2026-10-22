@@ -2237,7 +2237,7 @@ Table — тот же рецепт, что ListBox, с окном `Virtual` и �
 
 ## Layer 8b: Svelte Adapter (`packages/ui/svelte/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Tags / Select / Table / Virtual / Scroller / Pagination / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Interactive / Control / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Tags / Select / Table / Virtual / Scroller / Pagination / DragAndDrop)
 
 Svelte 5 на рунах. Структура зеркалит React, потому что механика событий та же —
 колбэк-пропы:
@@ -2306,7 +2306,17 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   петле рядом с элементом. Опции Select стоят в его панели — Frame, а
   `Teleport` монтирует её отдельным корнем со всеми контекстами места: лифт
   Select опции и группы читают и там, и входят в коллекцию, когда панель
-  смонтирована. Поле Select — встроенный Input на экземпляре поля Select
+  смонтирована. Так же стоят пункты Menu — в его панели и в панелях подменю.
+  Пункты из данных у меню и подменю рисует одна разметка — сниппет
+  `drawItems`, экспортированный из `<script module>` подменю
+  (`components/menu/submenu/Submenu.svelte`): экспортированный сниппет
+  инстансного `<script>` не видит, и части меню и само подменю он берёт
+  импортами модуля, а запись подменю из данных (`submenus`) кладёт в пропсы
+  `Menu.Submenu` спредом, как `v-bind` у Vue. Подменю — три контекста на одном
+  наборе (свой, фасад пункта, фасад меню), и фасад пункта собирается раньше
+  фасада меню: `getContext` читает карту компонента вместе с его же
+  `setContext`, и после своего `down()` лифт отдал бы своё — временно, до
+  869fkthx3. Поле Select — встроенный Input на экземпляре поля Select
   (`ctrl={field}`), теги в нём в `multiple` — встроенный Tags на инстансе и
   коллекции тегов Select; слоты поля по сторонам Select отдаёт ему всегда, как
   Vue свои шаблоны `leading` и `trailing`. Петля — по ключу
@@ -2363,12 +2373,19 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `item-indicator-icon`, `item-icon` тостов) рисуется у каждого элемента
   вместо своего, и где у Vue и React пустой слот уступает место иконке, у
   Svelte остаётся пусто. Так же у таблицы: заданные `header` и `cell`
-  рисуются в каждом заголовке и ячейке вместо текста и значения.
+  рисуются в каждом заголовке и ячейке вместо текста и значения. Так же у
+  меню: заданные меню `item`, `item-header`, `item-arrow-icon` и
+  `item-content` рисуются у каждого пункта из данных вместо своего текста,
+  стрелки и пунктов подменю — где у Vue и Solid пустой `item-content`
+  оставляет подменю его пункты из данных, у Svelte панель такого подменю
+  пуста.
 - Опции Select разметкой (`<Select.Item>`, `<Select.Group>`) стоят в панели, а
   панели — `Frame` — на сервере нет, как у всех оверлеев: в коллекцию они
   входят только в браузере, после гидратации, и сервер рисует такой Select с
   пустым полем. Select из данных (`items`, `engine`) сервер рисует с текстом
   выбранного, в `multiple` — с тегами: его опции в коллекции с самой сборки.
+  Пункты Menu — и разметкой, и из данных — стоят в панели тоже: сервер рисует
+  меню его корнем с триггером, а панель с пунктами появляется в браузере.
 - Svelte не говорит компоненту, гидратация ли это, поэтому панель с
   `contained` с первой отрисовки `Teleport` рисует прямо на месте, как сервер,
   и при первом уходе с места она один раз собирается заново. Дальше смена
