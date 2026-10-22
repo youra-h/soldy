@@ -2108,7 +2108,7 @@ describe('подменю', () => {
 				expect(exported.engine.extensions.batch.items[0]).toBe(pdf)
 			})
 
-			/** Пункты шаблона и меню, чьи данные сменит тест; `trackBy` — у движка снаружи. */
+			/** Пункты шаблона и меню, чьи данные сменит тест; `trackBy`, где он есть, — у движка снаружи. */
 			@Component({
 				selector: 'probe-menu-item-content-patch',
 				standalone: true,
@@ -2155,6 +2155,45 @@ describe('подменю', () => {
 
 				expect(submenuOf(page.engine, 'export')).toBe(exported)
 				expect(values(exported.engine)).toEqual(['pdf', 'png'])
+				expect(texts(panelOf(row))).toEqual(['PDF', 'PNG'])
+
+				triggerNode().focus()
+				await press(triggerNode(), 'ArrowDown')
+				await press(row, 'ArrowRight')
+
+				expect(document.activeElement).toBe(rowIn(panelOf(row), 'PDF'))
+
+				await press(rowIn(panelOf(row), 'PDF'), 'ArrowDown')
+				await press(rowIn(panelOf(row), 'PNG'), 'Enter')
+
+				expect(page.chosen).toEqual(['png'])
+				expect(shown(rootPanel())).toBe(false)
+			})
+
+			/**
+			 * Без `trackBy` замена `items` пересобирает меню: подменю — новый пункт
+			 * с новым движком, и строку пункта петля рисует заново — `track` по
+			 * `uid`. Пункты шаблона входят в движок нового подменю: вложенный
+			 * состав на месте пропсы без `trackBy` не пишут, и снять их нечему.
+			 */
+			it('замена items без trackBy — подменю новое, пункты шаблона в его коллекции: стрелки и выбор идут по ним', async () => {
+				const fixture = await render(ItemContentPatchPage)
+				const page = fixture.componentInstance
+				const replaced = submenuOf(page.engine, 'export')
+
+				expect(values(replaced.engine)).toEqual(['pdf', 'png'])
+
+				page.items.set([{ value: 'export', text: 'Выгрузка', items: [] }])
+				check()
+
+				// Новый пункт и новый движок; пункты шаблона — в нём, прежний пуст
+				const row = submenuRow('Выгрузка')
+				const exported = submenuOf(page.engine, 'export')
+
+				expect(exported.ctrl).not.toBe(replaced.ctrl)
+				expect(exported.engine).not.toBe(replaced.engine)
+				expect(values(exported.engine)).toEqual(['pdf', 'png'])
+				expect(values(replaced.engine)).toEqual([])
 				expect(texts(panelOf(row))).toEqual(['PDF', 'PNG'])
 
 				triggerNode().focus()

@@ -1840,6 +1840,52 @@ describe('подменю', () => {
 			expect(texts(panelOf(submenuRow('Экспорт')))).toEqual(['CSV'])
 		})
 
+		/**
+		 * Без `trackBy` замена `items` пересобирает меню: подменю — новый пункт с
+		 * новым движком, и строку пункта петля строит заново — ключ `uid`.
+		 * Пункты копии `item-content` входят в движок нового подменю: вложенный
+		 * состав на месте свойства без `trackBy` не пишут, и снять их нечему.
+		 */
+		it('item-content и замена items без trackBy: подменю новое, пункты разметки — в его коллекции, стрелки и выбор идут по ним', async () => {
+			const engine = createEngineMenu()
+			const menu = await render({
+				props: { engine, items: [{ value: 'export', text: 'Экспорт', items: [] }] },
+				content: `<template slot="item-content"><div is="so-menu-item" value="pdf" text="PDF"></div><div is="so-menu-item" value="png" text="PNG"></div></template>`,
+			})
+			const chosen = chosenOf(menu)
+			const values = () =>
+				submenuOf(engine, 'export').engine.extensions.batch.items.map((item) => item.value)
+			const replaced = submenuOf(engine, 'export')
+
+			expect(values()).toEqual(['pdf', 'png'])
+
+			menu.items = [{ value: 'export', text: 'Выгрузка', items: [] }]
+			await flush()
+			await flush()
+			await nextFrame()
+
+			// Новый пункт и новый движок; пункты разметки — в нём, прежний пуст
+			const row = submenuRow('Выгрузка')
+
+			expect(submenuOf(engine, 'export').ctrl).not.toBe(replaced.ctrl)
+			expect(submenuOf(engine, 'export').engine).not.toBe(replaced.engine)
+			expect(values()).toEqual(['pdf', 'png'])
+			expect(replaced.engine.extensions.batch.items).toEqual([])
+			expect(texts(panelOf(row))).toEqual(['PDF', 'PNG'])
+
+			triggerNode().focus()
+			await press(triggerNode(), 'ArrowDown')
+			await press(row, 'ArrowRight')
+
+			expect(document.activeElement).toBe(rowOf('PDF', panelOf(row)))
+
+			await press(rowOf('PDF', panelOf(row)), 'ArrowDown')
+			await press(rowOf('PNG', panelOf(row)), 'Enter')
+
+			expect(chosen).toEqual(['png'])
+			expect(shown(rootPanel())).toBe(false)
+		})
+
 		/** Запись подменю из данных по значению пункта. */
 		function submenuOf(engine: TMenuCollection, value: string) {
 			const { batch, submenus } = engine.extensions

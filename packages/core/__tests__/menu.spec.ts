@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, expectTypeOf, vi } from 'vitest'
 import {
 	TMenu,
 	TMenuCheckboxItem,
@@ -1451,6 +1451,45 @@ describe('коллекция меню · подменю из данных', () =
 		expect(submenuAt(engine, 'export')).toBe(exported)
 		expect(exported.ctrl.text).toBe('Выгрузка')
 		expect(nested.batch.items).toEqual([pdf])
+	})
+
+	/**
+	 * Вложенный состав на месте пишет и код — `plain.update(пункт, изменения)`
+	 * с `items`. Поля `items` в типе изменений нет: вложенный состав приходит
+	 * источником пункта целиком. У меню с `trackBy` запись — сверка, и
+	 * удержанный пункт шаблона остаётся; без `trackBy` — пересборка, и он снят:
+	 * правило замены у всех коллекций одно. Пропсы адаптеров сюда не ведут: без
+	 * `trackBy` замена `items` меню пересоздаёт подменю, и разметка входит в
+	 * него заново — «item-content и замена items без trackBy» в спеках меню
+	 * адаптеров.
+	 */
+	it.each([
+		['с trackBy — сверка: удержанный пункт остаётся', true, ['pdf']],
+		['без trackBy — пересборка: удержанный пункт снят', false, []],
+	])('plain.update подменю источником с items: %s', (_case, keyed, after) => {
+		const engine = createEngineMenu()
+		const { batch, plain } = engine.extensions
+		const before: IMenuItemSource[] = [{ value: 'export', text: 'Экспорт', items: [] }]
+		const source: IMenuItemSource = { value: 'export', text: 'Выгрузка', items: [] }
+
+		if (keyed) batch.trackBy = (item) => item.value
+
+		batch.items = before
+
+		const exported = submenuAt(engine, 'export')
+		const nested = exported.engine.extensions
+
+		nested.batch.hold(nested.plain.push(new TMenuItem({ value: 'pdf', text: 'PDF' })))
+
+		// Изменения — свойства пункта: литерал с `items` не компилируется
+		expectTypeOf<Parameters<typeof plain.update>[1]>().not.toHaveProperty('items')
+
+		plain.update(exported.ctrl, source)
+
+		// Пункт и запись — те же: подменю правится на месте
+		expect(submenuAt(engine, 'export')).toBe(exported)
+		expect(exported.ctrl.text).toBe('Выгрузка')
+		expect(values(nested.batch.items)).toEqual(after)
 	})
 
 	it('trackBy движкам подменю — свой: новому при сборке, всем уровням — на смену', () => {
