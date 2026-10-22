@@ -1884,6 +1884,110 @@ describe('подменю', () => {
 })
 
 /**
+ * Меню, переставленное одной операцией: якорь панели остаётся в его корне и
+ * из документа не уходит, а меню собирается заново — новый фасад и новая
+ * коллекция. Панель с пунктами идёт за ним сразу, без ожидания: возвращается к
+ * якорю, собирается после меню и снова уезжает в `body`, а пункты входят в
+ * коллекцию новой сборки. Подменю в панели — так же, уровнем ниже. Без этого
+ * стрелки с триггера и наведение до пунктов не доходили.
+ */
+describe('перестановка', () => {
+	/** Строка пункта с подменю. */
+	const shareRow = () => find('.so-menu-item > [aria-haspopup="menu"]')
+	const rootPanel = () => panelOf(triggerNode())
+	const subPanel = () => panelOf(shareRow())
+	const share = () => part('[is="so-menu-submenu"]', isSubmenu)
+
+	/** Меню «Изменить · Поделиться → (Ссылка, Почта) · Удалить» разметкой. */
+	const MARKUP = `<div is="so-menu-item" value="edit" text="Изменить"></div>
+		<div is="so-menu-submenu" value="share" text="Поделиться">
+			<div is="so-menu-item" value="link" text="Ссылка"></div>
+			<div is="so-menu-item" value="mail" text="Почта"></div>
+		</div>
+		<div is="so-menu-item" value="remove" text="Удалить"></div>`
+
+	it('пункты — в коллекции новой сборки сразу, панели — в body, по одной', async () => {
+		const menu = await render({ content: MARKUP })
+
+		document.body.appendChild(document.createElement('section')).appendChild(menu)
+
+		expect(menu.state.items?.map((item) => item.value)).toEqual(['edit', 'share', 'remove'])
+		expect(share().state.items?.map((item) => item.value)).toEqual(['link', 'mail'])
+		expect(rootPanel().parentElement).toBe(document.body)
+		expect(subPanel().parentElement).toBe(document.body)
+		expect(menu.contains(rootPanel())).toBe(false)
+		expect(document.querySelectorAll('.so-menu__panel')).toHaveLength(2)
+	})
+
+	it('↓ с триггера — на первый пункт, стрелками до подменю, → открывает его на первом пункте', async () => {
+		const menu = await render({ content: MARKUP })
+
+		document.body.appendChild(document.createElement('section')).appendChild(menu)
+		// Слушатели плагинов новой сборки — кадром позже
+		await nextFrame()
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Изменить', rootPanel()))
+
+		await press(rowOf('Изменить', rootPanel()), 'ArrowDown')
+
+		expect(document.activeElement).toBe(shareRow())
+
+		await press(shareRow(), 'ArrowRight')
+
+		expect(shown(subPanel())).toBe(true)
+		expect(document.activeElement).toBe(rowOf('Ссылка', subPanel()))
+	})
+
+	/**
+	 * Пункты из данных строит первая отрисовка новой сборки — в панели, которая
+	 * уже вернулась к якорю: их подключения встают в очередь за панелью.
+	 */
+	it('пункты из данных — в коллекции новой сборки, ↓ с триггера — на первый', async () => {
+		const menu = await render({ props: { items: ITEMS } })
+
+		document.body.appendChild(document.createElement('section')).appendChild(menu)
+
+		expect(menu.state.items?.map((item) => item.value)).toEqual(['edit', 'remove'])
+		expect(rows()).toHaveLength(2)
+		expect(document.querySelectorAll('.so-menu__panel')).toHaveLength(1)
+
+		await nextFrame()
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Изменить'))
+	})
+
+	it('клик строки пункта — choose новой сборки меню', async () => {
+		const menu = await render({ content: MARKUP })
+
+		document.body.appendChild(document.createElement('section')).appendChild(menu)
+		await nextFrame()
+
+		const chosen = chosenOf(menu)
+
+		await open()
+		await click(rowOf('Удалить', rootPanel()))
+
+		expect(chosen).toEqual(['remove'])
+		expect(isOpen()).toBe(false)
+	})
+
+	it('снятое меню уводит панели из body сразу, без ожидания', async () => {
+		const menu = await render({ content: MARKUP })
+
+		menu.remove()
+
+		expect(document.querySelector('.so-menu__panel')).toBeNull()
+		expect(document.querySelector('.so-menu-item')).toBeNull()
+	})
+})
+
+/**
  * Пункт с панелью — `<div is="so-menu-popover-item">`: строка открывает сбоку
  * немодальную панель-диалог с любым содержимым. Переходы плагинов —
  * `plugins/__tests__/menu-popover-item.plugin.spec.ts`; здесь — что в Web

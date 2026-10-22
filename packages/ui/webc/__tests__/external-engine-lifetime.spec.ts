@@ -13,8 +13,8 @@
  * перехватчика, ни слушателя обмена. У таблицы — ещё строки, колонки и
  * «выбрать все»: их держат элементы частей и чекбоксы, а в окне `<so-virtual>`
  * — и выключатель обёртки. У меню пункты — в панели, увезённой в `body`: она
- * идёт за местом меню, когда его якорь ушёл из документа, поэтому меню здесь
- * не переставляется одной операцией, а снимается и вставляется снова.
+ * идёт за местом меню и пересобирается вместе с ним, а снятое меню уводит её
+ * сразу.
  *
  * Список над движком без `ctrl`, подключённый раньше, чем снят прежний, берёт
  * привязку владельца себе, хотя прежний ещё держит движок.
@@ -207,14 +207,17 @@ function watchBuses(buses: readonly TEvented<any>[]): () => string[] {
 }
 
 /**
- * Набор над движком и владельцем снаружи — переставленный трижды и снятый.
- * После каждой перестановки он собран по-настоящему (элементы на месте) и
- * одной сборкой — прежние ушли, а после снятия на шинах ничего.
+ * Набор над движком и владельцем снаружи — переставленный трижды одной
+ * операцией и снятый. После каждой перестановки он собран по-настоящему
+ * (элементы на месте) и одной сборкой — прежние ушли, а после снятия на шинах
+ * ничего, без ожидания. Элементы ищутся в самом наборе, а у меню — в документе:
+ * его пункты в панели, увезённой в `body`.
  */
 async function moveThriceAndRemove(
 	el: HTMLElement,
 	live: () => string[],
 	item: string,
+	scope: ParentNode = el,
 ): Promise<void> {
 	document.body.appendChild(el)
 	await flush()
@@ -230,7 +233,7 @@ async function moveThriceAndRemove(
 
 		mounted ??= live().sort()
 
-		expect(el.querySelectorAll(`.${item}`)).toHaveLength(ITEMS.length)
+		expect(scope.querySelectorAll(`.${item}`)).toHaveLength(ITEMS.length)
 		expect(live().sort()).toEqual(mounted)
 	}
 
@@ -281,14 +284,11 @@ describe('ListBox над движком и владельцем снаружи',
 /**
  * Меню — пункты из данных в панели, увезённой в `body`: каждое подключение
  * собирает и меню, и панель с пунктами над тем же движком и владельцем.
- * Панель идёт за местом меню, когда его якорь ушёл из документа — снятие
- * замечает наблюдатель документа микрозадачей позже, — поэтому меню
- * снимается и вставляется в другое место, а не переставляется одной
- * операцией: временно, до задачи 869fkq4nm (панель идёт за перестановкой
- * меню одной операцией).
+ * Панель идёт за местом меню: перестановка одной операцией собирает её заново
+ * сразу после меню, а снятое меню уводит её с собой тем же вызовом.
  */
 describe('Menu над движком и владельцем снаружи', () => {
-	it('снятое и вставленное трижды, потом снятое — на шинах владельца и движка ничего', async () => {
+	it('переставленное трижды и снятое — на шинах владельца и движка ничего', async () => {
 		const owner = new TMenu()
 		const engine = createEngineMenu({ owner, items: ITEMS })
 		const extensions = Object.values(engine.extensions).flatMap((extension) =>
@@ -296,35 +296,15 @@ describe('Menu над движком и владельцем снаружи', ()
 		)
 		const live = watchBuses([owner.events, engine.events, ...extensions])
 		const el = document.createElement('span', { is: 'so-menu' })
-		const items = () => document.querySelectorAll('.so-menu__panel .so-menu-item')
 
 		if (!isMenu(el)) throw new Error('<span is="so-menu"> нет')
 
 		el.ctrl = owner
 		el.engine = engine
-		document.body.appendChild(el)
-		await flush()
 
-		let mounted: string[] | undefined
+		await moveThriceAndRemove(el, live, 'so-menu-item', document)
 
-		for (let i = 0; i < 3; i++) {
-			el.remove()
-			await flush()
-
-			document.body.appendChild(document.createElement('section')).appendChild(el)
-			await flush()
-
-			mounted ??= live().sort()
-
-			expect(items()).toHaveLength(ITEMS.length)
-			expect(live().sort()).toEqual(mounted)
-		}
-
-		el.remove()
-		await flush()
-
-		expect(items()).toHaveLength(0)
-		expect(live()).toEqual([])
+		expect(document.querySelector('.so-menu-item')).toBeNull()
 	})
 })
 

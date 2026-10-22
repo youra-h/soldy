@@ -17,18 +17,42 @@
  * у его элементов приходит, когда они снова в документе, и по этому вместе с
  * признаком переноса (`isRelocating`) база отличает свой перенос от снятия —
  * снятый элемент в документе уже не стоит. Подключение при живой связке база
- * пропускает и так.
+ * пропускает и так. Тем же признаком наблюдатель места (`teleport.ts`)
+ * отличает свой перенос от перестановки потребителем: панель идёт за местом
+ * только за перестановкой.
  *
  * Признак держится до микрозадачи после переноса. В браузере колбэки приходят
  * тем же вызовом DOM, а с полифилом встроенных элементов (Safari) — его
  * наблюдателем, микрозадачей позже. Микрозадачу наблюдателя ставит в очередь
  * первая запись переноса, то есть раньше, чем признак снимается.
  *
+ * Бывает у базы и перенос с пересборкой (`rebuild`): панель идёт за местом —
+ * корень возвращается к якорю, и он и всё в панели по-настоящему отключаются
+ * и подключаются (`teleport.ts`). Его колбэки — настоящие, хотя признак
+ * прежнего переноса силами базы в узлах или над ними ещё держится: панель
+ * увезли или разложили её свет в той же задаче, а подменю возвращается к
+ * якорю в панели меню, которую только что увезли. Поэтому о колбэке решает
+ * последний перенос на пути от элемента вверх: силами базы — связку не
+ * трогать, с пересборкой — снять. Последний — и с полифилом, который приносит
+ * колбэки нескольких переносов одной пачкой.
+ *
  * В бочку адаптера не входит: это механика базы.
  */
 
-/** Узлы, которые переносит база: сколько их переносов ещё ждёт своей микрозадачи. */
-const moving = new Map<Node, number>()
+/** Перенос узлов: его номер по порядку и пересобирает ли он элементы в них. */
+type TTransfer = {
+	readonly order: number
+	readonly rebuilds: boolean
+}
+
+/**
+ * Узлы и переносы, чьей микрозадачи они ещё ждут. Набор, а не флаг: тот же
+ * узел могли перенести снова, пока признак прошлого переноса ещё держится.
+ */
+const moving = new Map<Node, Set<TTransfer>>()
+
+/** Номер последнего переноса. */
+let last = 0
 
 /** Узел выше по документу: родитель, а из теневого корня — его хост. */
 function above(node: Node): Node | null {
@@ -37,39 +61,65 @@ function above(node: Node): Node | null {
 	return parent instanceof ShadowRoot ? parent.host : parent
 }
 
-/**
- * Переносит узлы силами базы. `move` — операции DOM, после которых узлы
- * остаются в документе; колбэки элементов в них связку не тронут.
- */
-export function relocate(nodes: readonly Node[], move: () => void): void {
-	for (const node of nodes) moving.set(node, (moving.get(node) ?? 0) + 1)
+/** Переносит узлы; признак переноса держится до микрозадачи после него. */
+function transfer(nodes: readonly Node[], rebuilds: boolean, move: () => void): void {
+	const current: TTransfer = { order: ++last, rebuilds }
+
+	for (const node of nodes) {
+		const transfers = moving.get(node) ?? new Set<TTransfer>()
+
+		transfers.add(current)
+		moving.set(node, transfers)
+	}
 
 	try {
 		move()
 	} finally {
-		// Счётчик, а не флаг: тот же узел могли перенести снова, пока признак
-		// прошлого переноса ещё держится
 		queueMicrotask(() => {
 			for (const node of nodes) {
-				const left = (moving.get(node) ?? 1) - 1
+				const transfers = moving.get(node)
 
-				if (left > 0) moving.set(node, left)
-				else moving.delete(node)
+				transfers?.delete(current)
+
+				if (transfers?.size === 0) moving.delete(node)
 			}
 		})
 	}
 }
 
 /**
- * Пришёл ли колбэк элемента из переноса силами базы: элемент снова в
- * документе, а переносится он сам или узел над ним.
+ * Переносит узлы силами базы. `move` — операции DOM, после которых узлы
+ * остаются в документе; колбэки элементов в них связку не тронут.
  */
-export function isRelocating(element: Element): boolean {
-	if (moving.size === 0 || !element.isConnected) return false
+export function relocate(nodes: readonly Node[], move: () => void): void {
+	transfer(nodes, false, move)
+}
 
-	for (let node: Node | null = element; node !== null; node = above(node)) {
-		if (moving.has(node)) return true
+/**
+ * Переносит узлы с пересборкой: колбэки элементов в них — настоящие
+ * отключение и подключение, какой бы перенос силами базы ни держался над ними
+ * (см. шапку).
+ */
+export function rebuild(nodes: readonly Node[], move: () => void): void {
+	transfer(nodes, true, move)
+}
+
+/**
+ * Перенесла ли узел база: он снова в документе, а последний перенос на пути
+ * от него вверх — силами базы. Так база узнаёт свой перенос в колбэке
+ * элемента, а телепорт — в снятом узле на пути к месту панели
+ * (`teleport.ts`): якоре, контейнере.
+ */
+export function isRelocating(node: Node): boolean {
+	if (moving.size === 0 || !node.isConnected) return false
+
+	let latest: TTransfer | undefined
+
+	for (let each: Node | null = node; each !== null; each = above(each)) {
+		for (const transfer of moving.get(each) ?? []) {
+			if (latest === undefined || transfer.order > latest.order) latest = transfer
+		}
 	}
 
-	return false
+	return latest !== undefined && !latest.rebuilds
 }
