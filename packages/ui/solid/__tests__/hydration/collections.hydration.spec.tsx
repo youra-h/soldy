@@ -14,48 +14,18 @@
  *
  * Разметка сервера — фикстура из `markup/`: её пишет и сверяет серверный
  * прогон (`markup.server.spec.tsx`), а страница — та же (`pages.tsx`), только
- * собрана для браузера с метками гидратации. Контейнер стоит в документе:
- * узел вне документа Solid гидратацией не считает и пишет в него сам — спек
- * был бы зелёным и без раскладки корня.
+ * собрана для браузера с метками гидратации. В документ её кладёт и
+ * гидратирует `serve.ts`.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
-import type { JSX } from 'solid-js'
-import { hydrate } from 'solid-js/web'
+import { describe, it, expect } from 'vitest'
 import { createEngineTabs, createEngineTags } from '@soldy-ui/core'
 import { RootProbe, TabsActiveFirst, TabsActiveSecond, TagsSelectedSecond } from './pages'
+import { expectServedNodes, hydrateServed, serve } from './serve'
 import rootProbe from './markup/root-probe.html?raw'
 import tabsActiveFirst from './markup/tabs-active-first.html?raw'
 import tabsActiveSecond from './markup/tabs-active-second.html?raw'
 import tagsSelectedSecond from './markup/tags-selected-second.html?raw'
-
-const disposers: Array<() => void> = []
-
-afterEach(() => {
-	for (const dispose of disposers.splice(0).reverse()) dispose()
-
-	document.body.innerHTML = ''
-})
-
-/** Разметка сервера в документе — как её получает браузер. */
-function serve(markup: string): HTMLElement {
-	const container = document.createElement('div')
-
-	container.innerHTML = markup
-	document.body.append(container)
-
-	return container
-}
-
-/**
- * Гидратировать разметку сервера в `container` страницей `page`. Состояние
- * гидратации `_$HY` в страницу кладёт скрипт сервера приложения
- * (`generateHydrationScript`) — здесь его кладёт тест.
- */
-function hydrateServed(container: HTMLElement, page: () => JSX.Element): void {
-	Object.assign(globalThis, { _$HY: { events: [], completed: new WeakSet(), r: {}, fe() {} } })
-	disposers.push(hydrate(page, container))
-}
 
 /** Строки с ролью `role` — по порядку. */
 const rowsOf = (container: HTMLElement, role: string) => [
@@ -65,12 +35,6 @@ const rowsOf = (container: HTMLElement, role: string) => [
 /** Значение атрибута у каждой строки. */
 const attributeOf = (rows: readonly Element[], name: string) =>
 	rows.map((row) => row.getAttribute(name))
-
-/** Строки после гидратации — те же узлы, что прислал сервер. */
-function expectServedNodes(rows: readonly Element[], served: readonly Element[]): void {
-	expect(rows).toHaveLength(served.length)
-	rows.forEach((row, index) => expect(row).toBe(served[index]))
-}
 
 describe('Tabs · гидратация', () => {
 	it('табы разметки, активный вторым: у сервера остановок Tab две, после гидратации — одна, у активного', () => {

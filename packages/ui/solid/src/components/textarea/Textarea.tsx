@@ -1,6 +1,7 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
+	createPartProps,
 	createRootProps,
 	rootTag,
 	textareaText,
@@ -41,7 +42,12 @@ export function Textarea(props: TextareaProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	const control = () => toControlAttrs<TextareaAttributes>(binding.forwardProps())
+	// Полю — его `aria`, поверх — остальные атрибуты потребителя; счётчику — его набор
+	const aria = createPartProps(() => state.aria)
+	const control = createPartProps(() =>
+		toControlAttrs<TextareaAttributes>(binding.forwardProps()),
+	)
+	const counterAria = createPartProps(() => state.counterAria)
 	const text = textareaText(() => state.value)
 
 	return (
@@ -56,12 +62,12 @@ export function Textarea(props: TextareaProps): JSX.Element {
 					readonly={state.readonly}
 					required={state.required}
 					placeholder={state.placeholder}
-					{...state.aria}
+					{...aria()}
 					{...control()}
 					{...text}
 				/>
 				<Show when={state.counter}>
-					<div class="so-textarea__counter" {...state.counterAria}>
+					<div class="so-textarea__counter" {...counterAria()}>
 						{state.names_counter}
 					</div>
 				</Show>

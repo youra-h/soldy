@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
+	createPartProps,
 	createRootProps,
 	resolveSlot,
 	roleIcon,
@@ -66,6 +67,11 @@ export function CheckBox(props: CheckBoxProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
+	// Полю — его `aria`, поверх — остальные атрибуты потребителя
+	const aria = createPartProps(() => state.aria)
+	const control = createPartProps(() =>
+		toControlAttrs<CheckBoxAttributes>(binding.forwardProps()),
+	)
 	const scope = () => ({ value: state.value, indeterminate: state.indeterminate ?? false })
 
 	/** Содержимое корня — под слоем лифта флажка: зовёт его `Elevate`, внутри себя. */
@@ -81,8 +87,8 @@ export function CheckBox(props: CheckBoxProps): JSX.Element {
 					name={state.name}
 					disabled={state.disabled}
 					required={state.required}
-					{...state.aria}
-					{...toControlAttrs<CheckBoxAttributes>(binding.forwardProps())}
+					{...aria()}
+					{...control()}
 					checked={state.value}
 					prop:indeterminate={state.indeterminate}
 				/>

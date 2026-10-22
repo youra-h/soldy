@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	chainHandler,
+	createPartProps,
 	createRootProps,
 	resolveSlot,
 	rootTag,
@@ -57,8 +58,10 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 		() => ({ active: state.active ?? false }),
 	)
 
+	// Полю — его `aria`, поверх — атрибуты потребителя
+	const aria = createPartProps(() => state.aria)
 	/** Атрибуты поля — всё от потребителя, кроме класса и стиля; `change` — сначала выбор. */
-	const control = () => {
+	const control = createPartProps(() => {
 		const { onChange, ...attributes } = toControlAttrs<RadioGroupItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -67,7 +70,7 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 		}
 
 		return { ...attributes, onChange: chainHandler(choose, onChange) }
-	}
+	})
 
 	return (
 		<Show when={state.rendered}>
@@ -78,7 +81,7 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 					name={state.name}
 					value={state.value}
 					disabled={state.disabled}
-					{...state.aria}
+					{...aria()}
 					{...control()}
 					checked={state.active}
 				/>

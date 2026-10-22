@@ -1,6 +1,6 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { Elevate, createRootProps, renderSlot, rootTag } from '../../../adapter'
+import { Elevate, createPartProps, createRootProps, renderSlot, rootTag } from '../../../adapter'
 import { setupListBoxGroup } from './setup.component'
 import type { ListBoxGroupProps } from './base.component'
 
@@ -28,12 +28,14 @@ export function ListBoxGroup(props: ListBoxGroupProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Подписи — её набор: своего экземпляра у неё нет
+	const labelAria = createPartProps(() => state.labelAria)
 
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Show when={state.label}>
-					<div class="so-list-box-group__label" {...state.labelAria}>
+					<div class="so-list-box-group__label" {...labelAria()}>
 						{state.label}
 					</div>
 				</Show>

@@ -4,6 +4,7 @@ import {
 	Elevate,
 	KeyedFor,
 	ResolvedSlot,
+	createPartProps,
 	createRootProps,
 	relaySlot,
 	renderSlot,
@@ -82,8 +83,9 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	// Узлу списка — остальное от потребителя, поверх его `aria`
-	const control = () => toControlAttrs<ListBoxAttributes>(binding.forwardProps())
+	// Узлу списка — его `aria`, поверх — остальное от потребителя
+	const aria = createPartProps(() => state.aria)
+	const control = createPartProps(() => toControlAttrs<ListBoxAttributes>(binding.forwardProps()))
 
 	/** Элемент из данных — со слотами списка, проброшенными целиком. */
 	const drawItem = (item: IListBoxItem) => (
@@ -148,7 +150,7 @@ export function ListBox(props: ListBoxProps): JSX.Element {
 			<div {...root()} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					{renderSlot(props.header)}
-					<div class="so-list-box__list" tabindex="0" {...state.aria} {...control()}>
+					<div class="so-list-box__list" tabindex="0" {...aria()} {...control()}>
 						<ResolvedSlot
 							content={props.children}
 							fallback={

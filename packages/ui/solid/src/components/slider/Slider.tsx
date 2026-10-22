@@ -1,7 +1,14 @@
 import { Index, Show, type Accessor, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TSliderShownMark, TSliderThumb } from '@soldy-ui/core'
-import { Elevate, createRootProps, fieldText, resolveSlot, rootTag } from '../../adapter'
+import {
+	Elevate,
+	createPartProps,
+	createRootProps,
+	fieldText,
+	resolveSlot,
+	rootTag,
+} from '../../adapter'
 import { setupSlider } from './setup.component'
 import type { SliderProps } from './base.component'
 
@@ -61,13 +68,14 @@ export function Slider(props: SliderProps): JSX.Element {
 	 * по `:empty`.
 	 */
 	function mark(entry: Accessor<TSliderShownMark>): JSX.Element {
+		const dataset = createPartProps(() => entry().dataset)
 		const label = resolveSlot(
 			() => props.mark,
 			() => ({ value: entry().value, label: entry().label }),
 		)
 
 		return (
-			<span class="so-slider__mark" style={entry().style} {...entry().dataset}>
+			<span class="so-slider__mark" style={entry().style} {...dataset()}>
 				<span class="so-slider__mark-label">{label() ?? entry().label}</span>
 			</span>
 		)
@@ -102,10 +110,12 @@ export function Slider(props: SliderProps): JSX.Element {
 	 * указатель: тянет плагин, а не браузер.
 	 */
 	function thumb(entry: Accessor<TSliderThumb>, index: number): JSX.Element {
+		const dataset = createPartProps(() => entry().dataset)
+		const aria = createPartProps(() => entry().aria)
 		const value = fieldText(() => String(entry().value))
 
 		return (
-			<span class="so-slider__thumb" style={entry().style} {...entry().dataset}>
+			<span class="so-slider__thumb" style={entry().style} {...dataset()}>
 				<input
 					class="so-slider__input"
 					type="range"
@@ -114,7 +124,7 @@ export function Slider(props: SliderProps): JSX.Element {
 					step={entry().step}
 					name={state.name}
 					disabled={state.disabled}
-					{...entry().aria}
+					{...aria()}
 					{...value}
 				/>
 				<Show when={state.tooltipRendered}>{tooltip(entry, index)}</Show>
