@@ -4,12 +4,13 @@
  *
  * Статику разметки переносит база (`root-attributes.spec.ts`, спеки полей),
  * а привязки и слушатели Angular отдаёт рендереру шаблона потребителя — их
- * доносит рендерер адаптера. Таблица — по всем семнадцати компонентам, у
+ * доносит рендерер адаптера. Таблица — по всем двадцати компонентам, у
  * которых написанное на компоненте делится между корнем и узлом внутри
  * (`TRootSpec.control`, `'wrapped'`): поля и радио — `<input>` или
- * `<textarea>`, у NumberInput — ввод числа, элементы ListBox, Tabs и
- * Accordion и пункты меню — строка, ListBox и Tabs — узел списка с ролью,
- * Table — `table` в окне.
+ * `<textarea>`, у NumberInput — ввод числа, элементы ListBox, Tabs, Accordion,
+ * Select и Tags и пункты меню — строка, ListBox и Tabs — узел списка с ролью,
+ * Table — `table` в окне. У Select узел — `<input>` его поля, а поле само хост:
+ * написанное на Select проходит цепочку хостов, поле отдаёт его дальше.
  *
  * На корне остаётся вид — класс и стиль, — служебные атрибуты Angular, выходы
  * компонента и события движения. Та же таблица идёт ещё раз рядом со старыми
@@ -41,10 +42,14 @@ import {
 	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TSelectComponent,
+	TSelectItemComponent,
 	TSwitchComponent,
 	TTableComponent,
 	TTabsComponent,
 	TTabsItemComponent,
+	TTagsComponent,
+	TTagsItemComponent,
 	TTextareaComponent,
 } from '@soldy-ui/angular'
 import type { TTableColumnSource } from '@soldy-ui/core'
@@ -278,6 +283,46 @@ class TableProbe extends TForwardProbe {
 	readonly columns = TABLE_COLUMNS
 }
 
+/**
+ * Select: узел — `<input>` его поля, а поле — тоже хост. Привязки, статика и
+ * слушатели проходят цепочку — Select отдаёт их полю, поле — своему `<input>`.
+ */
+@Component({
+	selector: 'probe-forward-select',
+	imports: [TSelectComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-select ${WRITTEN}></div>
+	}`,
+})
+class SelectProbe extends TForwardProbe {}
+
+/**
+ * Опция — вне Select, сама по себе, как пункты меню: панель Select увезена в
+ * `body`, мимо разметки хоста, а делит написанное опция сама.
+ */
+@Component({
+	selector: 'probe-forward-select-item',
+	imports: [TSelectItemComponent],
+	styles: STYLES,
+	template: `@if (shown()) {
+		<div so-select-item value="a" text="A" ${WRITTEN}></div>
+	}`,
+})
+class SelectItemProbe extends TForwardProbe {}
+
+@Component({
+	selector: 'probe-forward-tags-item',
+	imports: [TTagsComponent, TTagsItemComponent],
+	styles: STYLES,
+	template: `<div so-tags>
+		@if (shown()) {
+			<div so-tags-item value="a" text="A" ${WRITTEN}></div>
+		}
+	</div>`,
+})
+class TagsItemProbe extends TForwardProbe {}
+
 /** Случай таблицы: компонент, хост его пробы, корень в разметке хоста и узел в корне. */
 type TForwardCase = {
 	readonly component: Type<unknown>
@@ -369,6 +414,28 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 		},
 	],
 	['Table', { component: TTableComponent, probe: TableProbe, root: '[so-table]', node: 'table' }],
+	[
+		'Select',
+		{ component: TSelectComponent, probe: SelectProbe, root: '[so-select]', node: 'input' },
+	],
+	[
+		'Select.Item',
+		{
+			component: TSelectItemComponent,
+			probe: SelectItemProbe,
+			root: '[so-select-item]',
+			node: '[so-button]',
+		},
+	],
+	[
+		'Tags.Item',
+		{
+			component: TTagsItemComponent,
+			probe: TagsItemProbe,
+			root: '[so-tags-item]',
+			node: '[so-button]',
+		},
+	],
 	[
 		'Menu.Item',
 		{
@@ -569,6 +636,96 @@ describe('рендерер адаптера', () => {
 	})
 
 	forwardSuite()
+})
+
+/**
+ * Цепочка хостов: узел Select — поле `<div so-input>`, а оно само хост. Что
+ * потребитель написал на Select, — статика, привязка, слушатель, — Select
+ * отдаёт полю, а поле — своему `<input>`: на `<div so-input>` написанное не
+ * задерживается. На каждом звене остаётся своё: класс и стиль — у корня
+ * Select, а свои класс и метки поля — у поля.
+ */
+describe('цепочка хостов: Select', () => {
+	@Component({
+		selector: 'probe-forward-chain',
+		imports: [TSelectComponent],
+		template: `@if (shown()) {
+			<div
+				so-select
+				class="mine"
+				autocomplete="off"
+				data-static="s"
+				[attr.data-probe]="probe()"
+				(focus)="events.push('focus')"
+			></div>
+		}`,
+	})
+	class ChainProbe {
+		readonly shown = signal(true)
+		readonly probe = signal<string | null>('a')
+		readonly events: string[] = []
+	}
+
+	function mount() {
+		const fixture = mountHost(ChainProbe)
+		const root = findIn(fixture, '[so-select]', HTMLElement)
+		const box = find(root, '[so-input]', HTMLElement)
+
+		return {
+			fixture,
+			page: fixture.componentInstance,
+			root,
+			box,
+			input: find(box, 'input', HTMLInputElement),
+		}
+	}
+
+	it('статика, привязка и слушатель — на <input> поля, поле и корень без них', () => {
+		const { page, root, box, input } = mount()
+
+		expect(input.getAttribute('autocomplete')).toBe('off')
+		expect(input.getAttribute('data-static')).toBe('s')
+		expect(input.getAttribute('data-probe')).toBe('a')
+
+		for (const node of [root, box]) {
+			for (const name of ['autocomplete', 'data-static', 'data-probe']) {
+				expect(node.hasAttribute(name), name).toBe(false)
+			}
+		}
+
+		input.dispatchEvent(new FocusEvent('focus'))
+		box.dispatchEvent(new FocusEvent('focus'))
+
+		expect(page.events).toEqual(['focus'])
+	})
+
+	it('на каждом звене остаётся своё: класс потребителя — у корня, класс поля — у поля', () => {
+		const { root, box, input } = mount()
+
+		expect(root.classList.contains('mine')).toBe(true)
+		expect(box.classList.contains('mine')).toBe(false)
+		expect(box.classList.contains('so-select__field')).toBe(true)
+		expect(input.classList.contains('mine')).toBe(false)
+		// Метка поля — его селектор — на нём, а не на `<input>`
+		expect(box.hasAttribute('so-input')).toBe(true)
+		expect(input.hasAttribute('so-input')).toBe(false)
+	})
+
+	it('снятая привязка снимается по цепочке, снятый Select — слушатель с <input>', () => {
+		const { fixture, page, input } = mount()
+
+		page.probe.set(null)
+		fixture.detectChanges()
+
+		expect(input.hasAttribute('data-probe')).toBe(false)
+
+		page.shown.set(false)
+		fixture.detectChanges()
+
+		input.dispatchEvent(new FocusEvent('focus'))
+
+		expect(page.events).toEqual([])
+	})
 })
 
 describe('рядом со старыми анимациями Angular', () => {

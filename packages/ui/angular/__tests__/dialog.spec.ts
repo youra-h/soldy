@@ -9,7 +9,8 @@
  * что у Vue (`ui/vue/__tests__/dialog.spec.ts`); открытость, которую Vue
  * держит `v-model`, здесь — вход `[visible]` и выход `(soChangeVisible)`.
  * Сценарии Vue с Select внутри — здесь с поповером, как у React: правило
- * слоёв одно, а Select у Angular ещё нет.
+ * слоёв одно, а Select внутри поповера и модального слоя проверяют
+ * `popover.spec.ts` и `hide-outside.spec.ts`.
  *
  * Своё у Angular — разметка и спутник корня. Корень — элемент потребителя
  * (`<div so-dialog>`), и в цель уезжает он сам. Подложку рисует шаблон

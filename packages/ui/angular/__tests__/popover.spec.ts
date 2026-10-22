@@ -5,9 +5,8 @@
  * здесь важно, что они сходятся: панель телепортирована и помечена владельцем,
  * триггер получает связку через scope, фокус уходит в панель и возвращается,
  * Escape и Tab закрывают только свой слой. Сценарии — те же, что у Vue
- * (`ui/vue/__tests__/popover.spec.ts`), кроме Select внутри: Select в Angular
- * ещё нет. `v-model` у Angular нет — открытость потребитель слышит выходом
- * `(soChangeOpen)`.
+ * (`ui/vue/__tests__/popover.spec.ts`), и Select внутри тоже. `v-model` у
+ * Angular нет — открытость потребитель слышит выходом `(soChangeOpen)`.
  *
  * Своё у Angular — разметка. Корень — элемент потребителя (`<span
  * so-popover>`), триггер — шаблон слота (`<ng-template slot="trigger">`), и
@@ -35,6 +34,8 @@ import {
 	SlotDirective,
 	TButtonComponent,
 	TPopoverComponent,
+	TSelectComponent,
+	TSelectItemComponent,
 } from '@soldy-ui/angular'
 import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
 import { find, nextFrame } from './mount'
@@ -204,6 +205,43 @@ class LocalePage {
 	</div>`,
 })
 class NestedPage {}
+
+/** Поповер с Select в панели: список Select — тоже панель в `body`, соседка. */
+@Component({
+	selector: 'probe-popover-select',
+	standalone: true,
+	imports: [
+		TPopoverComponent,
+		TButtonComponent,
+		TSelectComponent,
+		TSelectItemComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<div>
+		<button class="so-test-before">До</button>
+		<span so-popover>
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Открыть"
+					class="so-test-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+			<div so-select class="so-test-select">
+				<div so-select-item value="a" text="Первый"></div>
+				<div so-select-item value="b" text="Второй"></div>
+			</div>
+		</span>
+		<button class="so-test-after">После</button>
+	</div>`,
+})
+class SelectPage {}
 
 /** Поповеры — первым узлом представлений `@for`: Angular вставляет и двигает их корни. */
 @Component({
@@ -781,6 +819,50 @@ describe('вложенные слои', () => {
 
 		expect(isOpen(panelOf(node('.so-test-inner-trigger')))).toBe(false)
 		expect(isOpen(panelOf(trigger()))).toBe(true)
+	})
+})
+
+/**
+ * Список Select в панели — тоже панель в `body`, соседка панели поповера, а
+ * не её потомок: открытый — слой выше, Escape закрывает только его, а клик в
+ * него поповер не закрывает.
+ */
+describe('Select внутри', () => {
+	const field = () => find(document, '.so-test-select input', HTMLInputElement)
+	const selectPanel = () => node('.so-select__panel')
+
+	it('Escape в открытом Select закрывает только Select', async () => {
+		await render(SelectPage)
+		await open()
+		click(field())
+		await nextFrame()
+		check()
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(isOpen()).toBe(true)
+
+		// Второй Escape — уже поповеру: Select закрыт и клавишу не тратит
+		press('Escape')
+
+		expect(isOpen()).toBe(false)
+	})
+
+	it('клик в список Select поповер не закрывает', async () => {
+		await render(SelectPage)
+		await open()
+		click(field())
+		await nextFrame()
+		check()
+
+		click(node('.so-select__panel [role="option"]'))
+
+		expect(isOpen()).toBe(true)
+		expect(field().getAttribute('aria-expanded')).toBe('false')
+		expect(field().value).toBe('Первый')
 	})
 })
 
