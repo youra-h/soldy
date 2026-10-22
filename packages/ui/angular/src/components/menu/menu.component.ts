@@ -1,7 +1,13 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import {
+	AttributesDirective,
+	SlotDirective,
+	SlotOutletDirective,
+	provideElevator,
+	type TBinding,
+} from '../../adapter'
 import { TFrameComponent } from '../frame'
 import { TMenuItemComponent } from './item'
 import { TMenuSubmenuComponent } from './submenu'
@@ -56,6 +62,14 @@ import { setupMenu } from './setup.component'
  * (`groupSeparators`), пункт с вложенным `items` — подменю из данных
  * (`<div so-menu-submenu>` с записью `submenus`), остальные — действия.
  *
+ * Слоты пунктов из данных — шаблоны (`item`, `item-*`), и подменю из данных
+ * получает их под теми же именами. Его панель — шаблон `item-content` (scope
+ * `{ item }`): меню отдаёт его подменю шаблоном `default`, а выводит —
+ * директивой `[so-slot-outlet]` с инжектором места, и пункты, написанные в
+ * шаблоне, входят в коллекцию подменю, у которого он выведен, а не меню, где
+ * его написали. Шаблон непрозрачен: заданный, он заменяет пункты из данных у
+ * каждого подменю из данных.
+ *
  * `span[so-menu]` стоит первым: по первому селектору Angular выбирает тег
  * хоста, когда создаёт компонент сам (`createComponent`), — это тег ядра по
  * умолчанию.
@@ -69,6 +83,7 @@ import { setupMenu } from './setup.component'
 		NgTemplateOutlet,
 		AttributesDirective,
 		SlotDirective,
+		SlotOutletDirective,
 		TFrameComponent,
 		TMenuItemComponent,
 		TMenuSubmenuComponent,

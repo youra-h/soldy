@@ -8,8 +8,9 @@
  * строки действия закрывает меню и сообщает `choose`, флажок отмечается и
  * меню не закрывает. Сценарии — те же, что у Vue (`ui/vue/__tests__/menu.spec.ts`),
  * кроме глобального компонента приложения с именем подменю — реестра
- * компонентов у Angular нет, и подменю рисует себя само, — и `item-content`:
- * его проброс подменю из данных — отдельная задача (869fktew3). `v-model` у
+ * компонентов у Angular нет, и подменю рисует себя само. `item-content` —
+ * с поправкой на непрозрачный шаблон, как у Svelte: заданный, он рисуется у
+ * каждого подменю из данных вместо его пунктов. `v-model` у
  * Angular нет — открытость, отметку и значение потребитель отдаёт входом и
  * слышит выходом (`(soChangeOpen)`, `(soChangeSelected)`, `(soChangeValue)`).
  *
@@ -23,7 +24,9 @@
  * прежнего места и собирает на новом за одну проверку, и в обоих порядках
  * привязка владельца его движка остаётся у живого монтирования. Корень Angular
  * не снимается, а прячется, поэтому `rendered: false` меню и подменю передают
- * и своим панелям.
+ * и своим панелям. Шаблон `item-content` меню выводит с инжектором места
+ * (`[so-slot-outlet]`), и его пункты входят в коллекцию подменю, у которого он
+ * выведен, а не меню, где его написали.
  *
  * Порядок Tab, который ведёт сам браузер, jsdom не считает, а раскладку — тем
  * более: место панелей у якоря — `playground/vue/browser/angular-host.spec.ts`.
@@ -1922,6 +1925,222 @@ describe('подменю', () => {
 				expect(shown(subPanel())).toBe(false)
 			},
 		)
+
+		/**
+		 * `item-content` — панель подменю из данных шаблоном. Меню отдаёт его
+		 * подменю шаблоном `default`, а выводит с инжектором места
+		 * (`[so-slot-outlet]`), и пункты разметки из шаблона входят в коллекцию
+		 * того подменю, у которого он выведен, а не меню, где его написали.
+		 * Сценарий Vue — с поправкой на непрозрачный шаблон, как у сниппета
+		 * Svelte: заданный, он рисуется у каждого подменю из данных вместо его
+		 * пунктов, и где ничего не нарисовал, панель пуста, — у Vue и Solid
+		 * пустой слот оставляет подменю его пункты из данных.
+		 */
+		describe('item-content', () => {
+			/** Значения пунктов коллекции по порядку. */
+			const values = (engine: TMenuCollection) =>
+				engine.extensions.batch.items.map((item) => item.value)
+
+			const exportRow = () => submenuRow('Экспорт')
+
+			/**
+			 * «Поделиться» со своими пунктами и пустой «Экспорт»; шаблон снимает
+			 * сигнал. Шаблон в ветке `@if` уводит в слив шаблонов `ngProjectAs`:
+			 * корень ветки без него Angular проецирует в основную проекцию меню, и
+			 * она сняла бы пункты из данных.
+			 */
+			@Component({
+				selector: 'probe-menu-item-content',
+				standalone: true,
+				imports: [...BASE, TMenuItemComponent],
+				template: `<span
+					so-menu
+					[items]="items"
+					[engine]="engine"
+					(soChoose)="chosen.push($event.value)"
+				>
+					${TRIGGER}
+					@if (custom()) {
+						<ng-template
+							slot="item-content"
+							ngProjectAs="ng-template[slot]"
+							let-item="item"
+						>
+							@if (item.value === 'export') {
+								<div so-menu-item value="pdf" text="PDF"></div>
+								<div so-menu-item value="png" text="PNG"></div>
+							}
+						</ng-template>
+					}
+				</span>`,
+			})
+			class ItemContentPage {
+				readonly items: TItems = [
+					{ value: 'share', text: 'Поделиться', items: NESTED },
+					{ value: 'export', text: 'Экспорт', items: [] },
+				]
+				readonly engine = createEngineMenu()
+				readonly custom = signal(true)
+				readonly chosen: unknown[] = []
+			}
+
+			it('пункты одного подменю разметкой, у другого — пусто: стрелки и выбор идут по пунктам шаблона', async () => {
+				const fixture = await render(ItemContentPage)
+				const { engine, chosen } = fixture.componentInstance
+
+				expect(texts(subPanel())).toEqual([])
+				expect(texts(panelOf(exportRow()))).toEqual(['PDF', 'PNG'])
+				// Пункты шаблона — в коллекции «Экспорта», а не меню, где шаблон написан
+				expect(values(engine)).toEqual(['share', 'export'])
+				expect(values(submenuOf(engine, 'export').engine)).toEqual(['pdf', 'png'])
+
+				triggerNode().focus()
+				await press(triggerNode(), 'ArrowDown')
+				await press(shareRow(), 'ArrowDown')
+				await press(exportRow(), 'ArrowRight')
+
+				expect(document.activeElement).toBe(rowIn(panelOf(exportRow()), 'PDF'))
+
+				await press(rowIn(panelOf(exportRow()), 'PDF'), 'ArrowDown')
+				await press(rowIn(panelOf(exportRow()), 'PNG'), 'Enter')
+
+				expect(chosen).toEqual(['png'])
+				expect(shown(rootPanel())).toBe(false)
+			})
+
+			/**
+			 * Шаблон `default` подменю выбирает веткой, а не проекцией: снятый, он
+			 * возвращает подменю его пункты из данных, а пункты шаблона уходят из
+			 * коллекции вместе с ним.
+			 */
+			it('шаблон снят — подменю снова рисуют свои пункты из данных; задан снова — его пункты', async () => {
+				const fixture = await render(ItemContentPage)
+				const page = fixture.componentInstance
+				const exported = submenuOf(page.engine, 'export').engine
+
+				page.custom.set(false)
+				check()
+
+				expect(texts(subPanel())).toEqual(['Ссылка', 'Почта'])
+				expect(texts(panelOf(exportRow()))).toEqual([])
+				expect(values(exported)).toEqual([])
+
+				page.custom.set(true)
+				check()
+
+				expect(texts(subPanel())).toEqual([])
+				expect(texts(panelOf(exportRow()))).toEqual(['PDF', 'PNG'])
+				expect(values(exported)).toEqual(['pdf', 'png'])
+			})
+
+			/**
+			 * Владелец внутри шаблона — группа переключателей — своим пунктам
+			 * ближе места вывода: узлы шаблона Angular спрашивает раньше места.
+			 * Её ключ и саму группу переключатели берут лифтом из её слоя, а
+			 * движок — из слоя подменю, у которого шаблон выведен.
+			 */
+			@Component({
+				selector: 'probe-menu-item-content-radio',
+				standalone: true,
+				imports: [...BASE, ...RADIO],
+				template: `<span so-menu [items]="items" [engine]="engine">
+					${TRIGGER}
+					<ng-template slot="item-content">
+						<div
+							so-menu-radio-group
+							label="Сортировка"
+							[value]="sort()"
+							(soChangeValue)="sort.set($event.newValue)"
+						>
+							<div so-menu-radio-item value="name" text="По имени"></div>
+							<div so-menu-radio-item value="date" text="По дате"></div>
+						</div>
+					</ng-template>
+				</span>`,
+			})
+			class ItemContentRadioPage {
+				readonly items: TItems = [
+					{ value: 'edit', text: 'Изменить' },
+					{ value: 'view', text: 'Вид', items: [] },
+				]
+				readonly engine = createEngineMenu()
+				readonly sort = signal<TMenuRadioGroupValue>(null)
+			}
+
+			it('группа переключателей в шаблоне: ключ группы — у её переключателей, отмечен один', async () => {
+				const fixture = await render(ItemContentRadioPage)
+				const page = fixture.componentInstance
+				const view = submenuOf(page.engine, 'view').engine
+				const panel = panelOf(submenuRow('Вид'))
+				const checked = () =>
+					[...panel.querySelectorAll('[role="menuitemradio"]')].map((row) =>
+						row.getAttribute('aria-checked'),
+					)
+
+				expect(values(page.engine)).toEqual(['edit', 'view'])
+				expect(
+					view.extensions.group.sections.map(({ group, items }) => [
+						group === null ? null : (group.label ?? ''),
+						items.map((item) => item.value),
+					]),
+				).toEqual([['Сортировка', ['name', 'date']]])
+
+				await open()
+				click(submenuRow('Вид'))
+				click(rowIn(panel, 'По имени'))
+
+				expect(page.sort()).toBe('name')
+				expect(checked()).toEqual(['true', 'false'])
+
+				click(rowIn(panel, 'По дате'))
+
+				// В группе отмечен один, и переключатель меню не закрывает
+				expect(page.sort()).toBe('date')
+				expect(checked()).toEqual(['false', 'true'])
+				expect(shown(panel)).toBe(true)
+			})
+
+			/**
+			 * Подменю разметкой со своими пунктами из данных отдаёт свой
+			 * `item-content` их подменю, как меню: scope — пункт следующего
+			 * уровня, пункты шаблона — в коллекции того подменю.
+			 */
+			@Component({
+				selector: 'probe-menu-submenu-item-content',
+				standalone: true,
+				imports: [...BASE, TMenuItemComponent, TMenuSubmenuComponent],
+				template: `<span so-menu>
+					${TRIGGER}
+					<div
+						so-menu-submenu
+						value="share"
+						text="Поделиться"
+						[items]="items"
+						[engine]="engine"
+					>
+						<ng-template slot="item-content" let-item="item">
+							<div so-menu-item value="pdf" [text]="item.text + ' в PDF'"></div>
+						</ng-template>
+					</div>
+				</span>`,
+			})
+			class SubmenuItemContentPage {
+				readonly items: TMenuSubmenuComponent['items'] = [
+					{ value: 'export', text: 'Экспорт', items: [] },
+				]
+				readonly engine = createEngineMenu()
+			}
+
+			it('подменю разметкой отдаёт свой item-content подменю из данных: scope — их пункт', async () => {
+				const fixture = await render(SubmenuItemContentPage)
+				const { engine } = fixture.componentInstance
+
+				expect(texts(subPanel())).toEqual(['Экспорт'])
+				expect(texts(panelOf(exportRow()))).toEqual(['Экспорт в PDF'])
+				expect(values(engine)).toEqual(['export'])
+				expect(values(submenuOf(engine, 'export').engine)).toEqual(['pdf'])
+			})
+		})
 	})
 })
 

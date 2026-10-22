@@ -3,8 +3,8 @@
 	Vue, в том же порядке: триггер, панель, а в конце — слив шаблонов слотов.
 	Слоты контракта: trigger (scope { triggerAria, triggerDataset }), default —
 	пункты, группы и разделители; item (scope { item, text }), item-leading,
-	item-trailing, item-header (scope { item, text, open }) и item-arrow-icon
-	(scope { item }) — слоты пунктов из данных.
+	item-trailing, item-header (scope { item, text, open }), item-arrow-icon
+	(scope { item }) и item-content (scope { item }) — слоты пунктов из данных.
 
 	Триггер — шаблон слота: связку с панелью и вид «нажат» он получает в
 	контексте вывода. Новый контекст вывод отдаёт тому же представлению, поэтому
@@ -39,10 +39,14 @@
 	который `ngProjectAs` уводит в слив шаблонов пункта. Свои `item` и `item-*`
 	меню отдаёт подменю под теми же именами — слоты одни на все уровни.
 
-	`item-content` подменю из данных не пробрасывается: шаблон слота Angular
-	собирает с DI места объявления, и пункты из него вошли бы в коллекцию меню,
-	а не подменю. Временно, до https://app.clickup.com/t/869fktew3: подменю из
-	данных рисует свои пункты из данных.
+	`item-content` — панель подменю из данных: подменю получает его своим
+	шаблоном `default` и рисует вместо своих пунктов из данных. Внутри — вывод
+	с инжектором места (`[so-slot-outlet]`): DI шаблона слота Angular ведёт от
+	места объявления, и пункты из него вошли бы в коллекцию меню, а так
+	входят в коллекцию подменю, у которого шаблон выведен. Шаблон непрозрачен:
+	заданный, он рисуется у каждого подменю из данных — и там, где ничего не
+	нарисовал. Поэтому подменю следующего уровня `item-content` не получает:
+	подменю с этим шаблоном своих пунктов из данных не рисует.
 -->
 <ng-template #entries let-items>
 	@for (item of items; track item.uid) {
@@ -74,6 +78,14 @@
 						<ng-container
 							[ngTemplateOutlet]="arrow"
 							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-content'); as panel) {
+					<ng-template slot="default" ngProjectAs="ng-template[slot]">
+						<ng-container
+							[so-slot-outlet]="panel"
+							[so-slot-outlet-context]="{ item }"
 						/>
 					</ng-template>
 				}
