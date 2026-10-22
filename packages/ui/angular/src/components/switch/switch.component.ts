@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ISwitch } from '@soldy-ui/core'
-import { AttributesDirective, provideElevator, type TBinding } from '../../adapter'
-import { SwitchInputNames, TSwitchSurface } from './base.component'
+import { AttributesDirective, provideElevator } from '../../adapter'
+import { TSwitchSurface } from '../../generated/switch.metadata'
 import { setupSwitch } from './setup.component'
 
 /**
@@ -40,7 +40,6 @@ import { setupSwitch } from './setup.component'
  */
 @Component({
 	selector: 'span[so-switch], [so-switch]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,10 +47,6 @@ import { setupSwitch } from './setup.component'
 })
 export class TSwitchComponent extends TSwitchSurface<ISwitch> {
 	constructor() {
-		super(SwitchInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(ctrl: ISwitch | undefined, inputs: object): TBinding<ISwitch> {
-		return setupSwitch(ctrl, inputs)
+		super(setupSwitch, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 }

@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IPaginationItem, TPaginationItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../../adapter'
+import type { IPaginationItem } from '@soldy-ui/core'
+import { AttributesDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
-import { PaginationItemInputNames, TPaginationItemSurface } from './base.component'
+import { TPaginationItemSurface } from '../../../generated/pagination-item.metadata'
 import { setupPaginationItem } from './setup.component'
 
 /**
@@ -31,21 +31,13 @@ import { setupPaginationItem } from './setup.component'
  */
 @Component({
 	selector: 'li[so-pagination-item], [so-pagination-item]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, TButtonComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './pagination-item.component.html',
 })
 export class TPaginationItemComponent extends TPaginationItemSurface<IPaginationItem> {
 	constructor() {
-		super(PaginationItemInputNames, { strategy: 'host', sets: ['attrs', 'dataset'] })
-	}
-
-	protected createBinding(
-		ctrl: IPaginationItem | undefined,
-		inputs: object,
-	): TBinding<IPaginationItem, TPaginationItemCollectionFacade> {
-		return setupPaginationItem(ctrl, inputs)
+		super(setupPaginationItem, { strategy: 'host', sets: ['attrs', 'dataset'] })
 	}
 
 	/** Нажатие строки: страница становится текущей — активацией коллекции. */

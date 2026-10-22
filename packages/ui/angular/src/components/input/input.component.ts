@@ -6,11 +6,10 @@ import {
 	FieldTextDirective,
 	RoleIconDirective,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
-import { InputInputNames, TInputSurface } from './base.component'
+import { TInputSurface } from '../../generated/input.metadata'
 import { setupInput } from './setup.component'
 
 /**
@@ -62,7 +61,6 @@ import { setupInput } from './setup.component'
  */
 @Component({
 	selector: 'div[so-input], [so-input]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -77,11 +75,7 @@ import { setupInput } from './setup.component'
 })
 export class TInputComponent extends TInputSurface<IInput> {
 	constructor() {
-		super(InputInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(ctrl: IInput | undefined, inputs: object): TBinding<IInput> {
-		return setupInput(ctrl, inputs)
+		super(setupInput, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 
 	/**

@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IMenuCheckboxItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { IMenuCheckboxItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { MenuCheckboxItemInputNames, TMenuCheckboxItemSurface } from './base.component'
+import { TMenuCheckboxItemSurface } from '../../../generated/menu-checkbox-item.metadata'
 import { setupMenuCheckboxItem } from './setup.component'
 
 /**
@@ -37,7 +37,6 @@ import { setupMenuCheckboxItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-checkbox-item], [so-menu-checkbox-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -50,22 +49,10 @@ import { setupMenuCheckboxItem } from './setup.component'
 })
 export class TMenuCheckboxItemComponent extends TMenuCheckboxItemSurface<IMenuCheckboxItem> {
 	constructor() {
-		super(MenuCheckboxItemInputNames, {
+		super(setupMenuCheckboxItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(
-		ctrl: IMenuCheckboxItem | undefined,
-		inputs: object,
-	): TBinding<IMenuCheckboxItem, TMenuItemCollectionFacade> {
-		return setupMenuCheckboxItem(ctrl, inputs)
-	}
-
-	/** Клик по строке: отметка через меню — выключенному оно откажет. */
-	protected toggle(): void {
-		this.facade()?.context?.adapters.menu.toggle()
 	}
 }

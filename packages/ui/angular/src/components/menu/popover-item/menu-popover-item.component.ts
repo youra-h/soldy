@@ -1,12 +1,12 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IMenuPopoverItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { IMenuPopoverItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TFrameComponent } from '../../frame'
 import { TIconComponent } from '../../icon'
-import { MenuPopoverItemInputNames, TMenuPopoverItemSurface } from './base.component'
-import { setupMenuPopoverItem, type TMenuPopoverItemOutputs } from './setup.component'
+import { TMenuPopoverItemSurface } from '../../../generated/menu-popover-item.metadata'
+import { setupMenuPopoverItem } from './setup.component'
 
 /**
  * TMenuPopoverItemComponent — пункт с панелью: строка пункта в меню и своя
@@ -44,7 +44,6 @@ import { setupMenuPopoverItem, type TMenuPopoverItemOutputs } from './setup.comp
  */
 @Component({
 	selector: 'div[so-menu-popover-item], [so-menu-popover-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -58,22 +57,10 @@ import { setupMenuPopoverItem, type TMenuPopoverItemOutputs } from './setup.comp
 })
 export class TMenuPopoverItemComponent extends TMenuPopoverItemSurface<IMenuPopoverItem> {
 	constructor() {
-		super(MenuPopoverItemInputNames, {
+		super(setupMenuPopoverItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(
-		ctrl: IMenuPopoverItem | undefined,
-		inputs: object,
-	): TBinding<IMenuPopoverItem, TMenuItemCollectionFacade, TMenuPopoverItemOutputs> {
-		return setupMenuPopoverItem(ctrl, inputs)
-	}
-
-	/** Клик по строке: панель открывает меню — выключенному оно откажет. */
-	protected openPanel(): void {
-		this.facade()?.context?.adapters.menu.open()
 	}
 }

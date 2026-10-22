@@ -71,7 +71,7 @@
 			type="button"
 			class="so-toasts-item__close"
 			[so-attributes]="state()['closeAria']"
-			(click)="close()"
+			(click)="instance()?.close()"
 		>
 			@if (slot('close-icon'); as icon) {
 				<ng-container [ngTemplateOutlet]="icon" />

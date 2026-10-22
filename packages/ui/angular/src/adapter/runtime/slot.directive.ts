@@ -7,7 +7,6 @@ import { Directive, Input, TemplateRef } from '@angular/core'
 
 @Directive({
 	selector: 'ng-template[slot]',
-	standalone: true,
 })
 export class SlotDirective {
 	@Input('slot') name = ''

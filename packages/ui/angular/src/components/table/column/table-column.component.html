@@ -48,7 +48,7 @@
 			class="so-table-column__sort"
 			[disabled]="state()['disabled']"
 			[so-attributes]="state()['sortAria']"
-			(soActionPress)="toggleSort()"
+			(soActionPress)="instance()?.toggleSort()"
 		>
 			<span class="so-table-column__sort-icon" aria-hidden="true">
 				<svg so-icon embedded="table.sort-icon" so-role-icon="arrowUpward"></svg>

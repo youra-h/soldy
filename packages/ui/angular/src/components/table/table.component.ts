@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ITable, TTableCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { ITable } from '@soldy-ui/core'
+import { AttributesDirective, SlotDirective, provideElevator } from '../../adapter'
 import { TCheckBoxComponent } from '../check-box'
 import { TTableColumnComponent } from './column'
 import { TTableRowComponent } from './row'
-import { TableInputNames, TTableSurface } from './base.component'
+import { TTableSurface } from '../../generated/table.metadata'
 import { setupTable } from './setup.component'
 
 /**
@@ -52,7 +52,6 @@ import { setupTable } from './setup.component'
  */
 @Component({
 	selector: 'div[so-table], [so-table]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -68,13 +67,6 @@ import { setupTable } from './setup.component'
 })
 export class TTableComponent extends TTableSurface<ITable> {
 	constructor() {
-		super(TableInputNames, { strategy: 'wrapped' })
-	}
-
-	protected createBinding(
-		ctrl: ITable | undefined,
-		inputs: object,
-	): TBinding<ITable, TTableCollectionFacade> {
-		return setupTable(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupTable(ctrl, inputs, this.engine), { strategy: 'wrapped' })
 	}
 }

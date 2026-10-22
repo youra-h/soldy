@@ -6,14 +6,13 @@ import {
 	RoleIconDirective,
 	SlotDirective,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TCalendarComponent } from '../calendar'
 import { TDateInputComponent } from '../date-input'
 import { TFrameComponent } from '../frame'
 import { TIconComponent } from '../icon'
-import { DatePickerInputNames, TDatePickerSurface } from './base.component'
+import { TDatePickerSurface } from '../../generated/date-picker.metadata'
 import { setupDatePicker } from './setup.component'
 
 /**
@@ -63,7 +62,6 @@ import { setupDatePicker } from './setup.component'
  */
 @Component({
 	selector: 'div[so-date-picker], [so-date-picker]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -81,11 +79,7 @@ import { setupDatePicker } from './setup.component'
 })
 export class TDatePickerComponent extends TDatePickerSurface<IDatePicker> {
 	constructor() {
-		super(DatePickerInputNames, { strategy: 'host', aria: 'rootAria', id: 'id' })
-	}
-
-	protected createBinding(ctrl: IDatePicker | undefined, inputs: object): TBinding<IDatePicker> {
-		return setupDatePicker(ctrl, inputs)
+		super(setupDatePicker, { strategy: 'host', aria: 'rootAria', id: 'id' })
 	}
 
 	/**
@@ -106,10 +100,5 @@ export class TDatePickerComponent extends TDatePickerSurface<IDatePicker> {
 		const picker = this.instance()
 
 		if (picker) picker.open = false
-	}
-
-	/** «OK» подвала: черновик выбора — значение, панель закрыта. */
-	protected confirm(): void {
-		this.instance()?.confirm()
 	}
 }

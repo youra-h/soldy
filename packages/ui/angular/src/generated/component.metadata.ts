@@ -2,30 +2,30 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs } from '@soldy-ui/setup'
-import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import {
+	TComponentBase,
+	type TInputValue,
+	type TOutputEmitter,
+	type TRootSpec,
+	type TSetup,
+} from '../adapter/runtime'
 import type { descriptor } from '../components/component/manifest'
 
-export const ComponentInputs = ['embedded', 'pluginProps'] as const
-export const ComponentOutputs = ['soBundleCreate', 'soPluginEvent'] as const
+export const ComponentInputNames = ['embedded', 'pluginProps'] as const
+export const ComponentOutputNames = ['soBundleCreate', 'soPluginEvent'] as const
 
-/**
- * Поверхность Component в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular — поля их только
- * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
- * (`createOutput`), а выход, который никто не читал, его не заводит.
- * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база
- * получает третьим параметром.
- */
-@Directive({
-	standalone: true,
-	inputs: ['embedded', 'pluginProps'],
-	outputs: [...ComponentOutputs],
-})
+@Directive({ inputs: ['embedded', 'pluginProps'], outputs: [...ComponentOutputNames] })
 export abstract class TComponentSurface<TInstance extends IEntity> extends TComponentBase<
 	TInstance,
 	unknown,
 	DescriptorPluginOutputs<typeof descriptor>
 > {
+	constructor(
+		setup: TSetup<TInstance, unknown, DescriptorPluginOutputs<typeof descriptor>>,
+		spec?: TRootSpec,
+	) {
+		super(ComponentInputNames, setup, spec)
+	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {

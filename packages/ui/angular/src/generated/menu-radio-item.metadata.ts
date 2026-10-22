@@ -2,11 +2,17 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorInstance, DescriptorPluginOutputs } from '@soldy-ui/setup'
-import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import {
+	TComponentBase,
+	type TInputValue,
+	type TOutputEmitter,
+	type TRootSpec,
+	type TSetup,
+} from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor, facade } from '../components/menu/radio-item/manifest'
 
-export const MenuRadioItemInputs = [
+export const MenuRadioItemInputNames = [
 	'embedded',
 	'pluginProps',
 	'rendered',
@@ -23,7 +29,7 @@ export const MenuRadioItemInputs = [
 	'aria_describedBy',
 	'selected',
 ] as const
-export const MenuRadioItemOutputs = [
+export const MenuRadioItemOutputNames = [
 	'soBundleCreate',
 	'soPluginEvent',
 	'soShow',
@@ -68,20 +74,7 @@ export const MenuRadioItemOutputs = [
 	'soChangeSelected',
 ] as const
 
-/**
- * Поверхность MenuRadioItem в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular — поля их только
- * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
- * (`createOutput`), а выход, который никто не читал, его не заводит.
- * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
- * Контекстов у компонента два: входы и выходы фасада коллекции — здесь же,
- * после своих. Тип входа фасада — по дескриптору компонента, выхода — по
- * дескриптору фасада.
- * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база
- * получает третьим параметром.
- */
 @Directive({
-	standalone: true,
 	inputs: [
 		'embedded',
 		'pluginProps',
@@ -99,13 +92,23 @@ export const MenuRadioItemOutputs = [
 		'aria_describedBy',
 		{ name: 'selected', transform: booleanInput },
 	],
-	outputs: [...MenuRadioItemOutputs],
+	outputs: [...MenuRadioItemOutputNames],
 })
 export abstract class TMenuRadioItemSurface<TInstance extends IEntity> extends TComponentBase<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginOutputs<typeof descriptor>
 > {
+	constructor(
+		setup: TSetup<
+			TInstance,
+			DescriptorInstance<typeof facade>,
+			DescriptorPluginOutputs<typeof descriptor>
+		>,
+		spec?: TRootSpec,
+	) {
+		super(MenuRadioItemInputNames, setup, spec)
+	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>

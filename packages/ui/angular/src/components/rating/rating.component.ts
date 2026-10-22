@@ -7,9 +7,8 @@ import {
 	RoleIconDirective,
 	TextPipe,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
-import { RatingInputNames, TRatingSurface } from './base.component'
+import { TRatingSurface } from '../../generated/rating.metadata'
 import { setupRating } from './setup.component'
 
 /**
@@ -53,7 +52,6 @@ import { setupRating } from './setup.component'
  */
 @Component({
 	selector: 'span[so-rating], [so-rating]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -67,10 +65,6 @@ import { setupRating } from './setup.component'
 })
 export class TRatingComponent extends TRatingSurface<IRating> {
 	constructor() {
-		super(RatingInputNames, { strategy: 'host', sets: ['attrs', 'dataset'] })
-	}
-
-	protected createBinding(ctrl: IRating | undefined, inputs: object): TBinding<IRating> {
-		return setupRating(ctrl, inputs)
+		super(setupRating, { strategy: 'host', sets: ['attrs', 'dataset'] })
 	}
 }

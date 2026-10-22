@@ -64,7 +64,7 @@
 			type="button"
 			class="so-dialog__maximize"
 			[so-attributes]="state()['maximizeAria']"
-			(click)="toggleMaximized()"
+			(click)="instance()?.toggleMaximized()"
 		>
 			@if (state()['maximized']) {
 				@if (slot('restore-icon'); as icon) {
@@ -93,7 +93,7 @@
 			type="button"
 			class="so-dialog__close"
 			[so-attributes]="state()['closeAria']"
-			(click)="close()"
+			(click)="instance()?.requestClose('button')"
 		>
 			@if (slot('close-icon'); as icon) {
 				<ng-container [ngTemplateOutlet]="icon" />

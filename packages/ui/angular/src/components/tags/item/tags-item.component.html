@@ -19,7 +19,7 @@
 	[size]="state()['size']"
 	[variant]="state()['variant']"
 	[so-attributes]="state()['aria']"
-	(soActionPress)="toggle()"
+	(soActionPress)="facade()?.context?.adapters.selection.toggle()"
 >
 	<ng-container ngProjectAs="[slot=leading]">
 		<ng-content select="[slot=leading]" />

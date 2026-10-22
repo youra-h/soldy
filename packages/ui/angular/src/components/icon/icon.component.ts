@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IIcon } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { IconInputNames, TIconSurface } from './base.component'
+import { TIconSurface } from '../../generated/icon.metadata'
 import { setupIcon } from './setup.component'
 
 /**
@@ -29,16 +28,11 @@ import { setupIcon } from './setup.component'
  */
 @Component({
 	selector: 'span[so-icon], [so-icon]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: '',
 })
 export class TIconComponent extends TIconSurface<IIcon> {
 	constructor() {
-		super(IconInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IIcon | undefined, inputs: object): TBinding<IIcon> {
-		return setupIcon(ctrl, inputs)
+		super(setupIcon, { strategy: 'host' })
 	}
 }

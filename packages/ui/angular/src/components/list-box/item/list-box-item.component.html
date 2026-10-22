@@ -22,7 +22,7 @@
 	[size]="state()['size']"
 	[variant]="state()['variant']"
 	[so-attributes]="{ ...state()['aria'], ...state()['dataset'] }"
-	(click)="choose()"
+	(click)="facade()?.context?.adapters.list.choose()"
 >
 	<ng-container ngProjectAs="[slot=leading]">
 		@if (state()['indicator'] === 'start') {

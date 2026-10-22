@@ -1,2 +1,2 @@
-export * from './base.component'
+export * from '../../generated/stylable.metadata'
 export * from './setup.component'

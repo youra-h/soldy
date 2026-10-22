@@ -237,7 +237,7 @@
 						[size]="state()['size']"
 						[disabled]="state()['confirmDisabled']"
 						[text]="state()['names_confirm']"
-						(click)="confirm()"
+						(click)="instance()?.confirm()"
 					></button>
 				</ng-template>
 			}

@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IAccordion, TAccordionCollectionFacade } from '@soldy-ui/core'
-import { SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { IAccordion } from '@soldy-ui/core'
+import { SlotDirective, provideElevator } from '../../adapter'
 import { TAccordionItemComponent } from './item'
-import { AccordionInputNames, TAccordionSurface } from './base.component'
+import { TAccordionSurface } from '../../generated/accordion.metadata'
 import { setupAccordion } from './setup.component'
 
 /**
@@ -32,7 +32,6 @@ import { setupAccordion } from './setup.component'
  */
 @Component({
 	selector: 'div[so-accordion], [so-accordion]',
-	standalone: true,
 	imports: [NgTemplateOutlet, SlotDirective, TAccordionItemComponent],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,13 +39,9 @@ import { setupAccordion } from './setup.component'
 })
 export class TAccordionComponent extends TAccordionSurface<IAccordion> {
 	constructor() {
-		super(AccordionInputNames, { strategy: 'host', sets: ['attrs'] })
-	}
-
-	protected createBinding(
-		ctrl: IAccordion | undefined,
-		inputs: object,
-	): TBinding<IAccordion, TAccordionCollectionFacade> {
-		return setupAccordion(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupAccordion(ctrl, inputs, this.engine), {
+			strategy: 'host',
+			sets: ['attrs'],
+		})
 	}
 }

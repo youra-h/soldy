@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IProgressSpinner } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { ProgressSpinnerInputNames, TProgressSpinnerSurface } from './base.component'
+import { TProgressSpinnerSurface } from '../../generated/progress-spinner.metadata'
 import { setupProgressSpinner } from './setup.component'
 
 /**
@@ -27,19 +26,11 @@ import { setupProgressSpinner } from './setup.component'
  */
 @Component({
 	selector: 'span[so-progress-spinner], [so-progress-spinner]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './progress-spinner.component.html',
 })
 export class TProgressSpinnerComponent extends TProgressSpinnerSurface<IProgressSpinner> {
 	constructor() {
-		super(ProgressSpinnerInputNames, { strategy: 'host', style: 'fractionStyle' })
-	}
-
-	protected createBinding(
-		ctrl: IProgressSpinner | undefined,
-		inputs: object,
-	): TBinding<IProgressSpinner> {
-		return setupProgressSpinner(ctrl, inputs)
+		super(setupProgressSpinner, { strategy: 'host', style: 'fractionStyle' })
 	}
 }

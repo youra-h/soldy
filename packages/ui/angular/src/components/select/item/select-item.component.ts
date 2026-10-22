@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ISelectItem, TSelectItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { ISelectItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { SelectItemInputNames, TSelectItemSurface } from './base.component'
+import { TSelectItemSurface } from '../../../generated/select-item.metadata'
 import { setupSelectItem } from './setup.component'
 
 /**
@@ -52,7 +52,6 @@ import { setupSelectItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-select-item], [so-select-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -65,23 +64,11 @@ import { setupSelectItem } from './setup.component'
 })
 export class TSelectItemComponent extends TSelectItemSurface<ISelectItem> {
 	constructor() {
-		super(SelectItemInputNames, {
+		super(setupSelectItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 			order: 'order',
 		})
-	}
-
-	protected createBinding(
-		ctrl: ISelectItem | undefined,
-		inputs: object,
-	): TBinding<ISelectItem, TSelectItemCollectionFacade> {
-		return setupSelectItem(ctrl, inputs)
-	}
-
-	/** Клик по строке: выбор через Select — выключенной опции он откажет. */
-	protected choose(): void {
-		this.facade()?.context?.adapters.select.choose()
 	}
 }

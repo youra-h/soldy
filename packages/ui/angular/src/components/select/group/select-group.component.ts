@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IItemGroup } from '@soldy-ui/core'
-import { AttributesDirective, provideElevator, type TBinding } from '../../../adapter'
-import { SelectGroupInputNames, TSelectGroupSurface } from './base.component'
+import { AttributesDirective, provideElevator } from '../../../adapter'
+import { TSelectGroupSurface } from '../../../generated/select-group.metadata'
 import { setupSelectGroup } from './setup.component'
 
 /**
@@ -31,7 +31,6 @@ import { setupSelectGroup } from './setup.component'
  */
 @Component({
 	selector: 'div[so-select-group], [so-select-group]',
-	standalone: true,
 	imports: [AttributesDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,10 +38,6 @@ import { setupSelectGroup } from './setup.component'
 })
 export class TSelectGroupComponent extends TSelectGroupSurface<IItemGroup> {
 	constructor() {
-		super(SelectGroupInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IItemGroup | undefined, inputs: object): TBinding<IItemGroup> {
-		return setupSelectGroup(ctrl, inputs)
+		super(setupSelectGroup, { strategy: 'host' })
 	}
 }

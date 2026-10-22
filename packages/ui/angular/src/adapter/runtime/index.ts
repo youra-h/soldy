@@ -7,7 +7,7 @@ export type {
 	TOutputEmitter,
 	TOutputOf,
 } from './useAdapter'
-export { TComponentBase } from './component.base'
+export { TComponentBase, type TSetup } from './component.base'
 export type { TRootSet, TRootSpec, TRootTeleport } from './root/spec'
 // Host-директива базы: компилятор требует видеть её из точки входа (NG3001)
 export { SubtreeDirective as ɵSubtreeDirective } from './subtree.directive'

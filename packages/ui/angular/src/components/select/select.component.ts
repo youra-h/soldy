@@ -1,12 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ISelect, TSelectCollectionFacade } from '@soldy-ui/core'
+import type { ISelect } from '@soldy-ui/core'
 import {
 	AttributesDirective,
 	RoleIconDirective,
 	SlotDirective,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
 import { TFrameComponent } from '../frame'
 import { TIconComponent } from '../icon'
@@ -14,7 +13,7 @@ import { TInputComponent } from '../input'
 import { TTagsComponent } from '../tags'
 import { TSelectItemComponent } from './item'
 import { TSelectGroupComponent } from './group'
-import { SelectInputNames, TSelectSurface } from './base.component'
+import { TSelectSurface } from '../../generated/select.metadata'
 import { setupSelect } from './setup.component'
 
 /**
@@ -80,7 +79,6 @@ import { setupSelect } from './setup.component'
  */
 @Component({
 	selector: 'div[so-select], [so-select]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -99,13 +97,10 @@ import { setupSelect } from './setup.component'
 })
 export class TSelectComponent extends TSelectSurface<ISelect> {
 	constructor() {
-		super(SelectInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(
-		ctrl: ISelect | undefined,
-		inputs: object,
-	): TBinding<ISelect, TSelectCollectionFacade> {
-		return setupSelect(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupSelect(ctrl, inputs, this.engine), {
+			strategy: 'host',
+			sets: ['attrs', 'dataset'],
+			control: true,
+		})
 	}
 }

@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IProgressLinear } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { ProgressLinearInputNames, TProgressLinearSurface } from './base.component'
+import { TProgressLinearSurface } from '../../generated/progress-linear.metadata'
 import { setupProgressLinear } from './setup.component'
 
 /**
@@ -28,19 +27,11 @@ import { setupProgressLinear } from './setup.component'
  */
 @Component({
 	selector: 'span[so-progress-linear], [so-progress-linear]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './progress-linear.component.html',
 })
 export class TProgressLinearComponent extends TProgressLinearSurface<IProgressLinear> {
 	constructor() {
-		super(ProgressLinearInputNames, { strategy: 'host', style: 'percentStyle' })
-	}
-
-	protected createBinding(
-		ctrl: IProgressLinear | undefined,
-		inputs: object,
-	): TBinding<IProgressLinear> {
-		return setupProgressLinear(ctrl, inputs)
+		super(setupProgressLinear, { strategy: 'host', style: 'percentStyle' })
 	}
 }

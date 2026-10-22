@@ -8,7 +8,6 @@ import { Directive, ElementRef, Input, inject } from '@angular/core'
  */
 @Directive({
 	selector: 'input[so-field-text], textarea[so-field-text]',
-	standalone: true,
 })
 export class FieldTextDirective {
 	private readonly _field =

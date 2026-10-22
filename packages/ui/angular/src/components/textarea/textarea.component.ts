@@ -1,12 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { ITextarea } from '@soldy-ui/core'
-import {
-	AttributesDirective,
-	FieldTextDirective,
-	provideElevator,
-	type TBinding,
-} from '../../adapter'
-import { TextareaInputNames, TTextareaSurface } from './base.component'
+import { AttributesDirective, FieldTextDirective, provideElevator } from '../../adapter'
+import { TTextareaSurface } from '../../generated/textarea.metadata'
 import { setupTextarea } from './setup.component'
 
 /**
@@ -49,7 +44,6 @@ import { setupTextarea } from './setup.component'
  */
 @Component({
 	selector: 'div[so-textarea], [so-textarea]',
-	standalone: true,
 	imports: [AttributesDirective, FieldTextDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,10 +51,6 @@ import { setupTextarea } from './setup.component'
 })
 export class TTextareaComponent extends TTextareaSurface<ITextarea> {
 	constructor() {
-		super(TextareaInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(ctrl: ITextarea | undefined, inputs: object): TBinding<ITextarea> {
-		return setupTextarea(ctrl, inputs)
+		super(setupTextarea, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 }

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IMenuRadioGroup } from '@soldy-ui/core'
-import { AttributesDirective, provideElevator, type TBinding } from '../../../adapter'
-import { MenuRadioGroupInputNames, TMenuRadioGroupSurface } from './base.component'
+import { AttributesDirective, provideElevator } from '../../../adapter'
+import { TMenuRadioGroupSurface } from '../../../generated/menu-radio-group.metadata'
 import { setupMenuRadioGroup } from './setup.component'
 
 /**
@@ -23,7 +23,6 @@ import { setupMenuRadioGroup } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-radio-group], [so-menu-radio-group]',
-	standalone: true,
 	imports: [AttributesDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,13 +30,6 @@ import { setupMenuRadioGroup } from './setup.component'
 })
 export class TMenuRadioGroupComponent extends TMenuRadioGroupSurface<IMenuRadioGroup> {
 	constructor() {
-		super(MenuRadioGroupInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: IMenuRadioGroup | undefined,
-		inputs: object,
-	): TBinding<IMenuRadioGroup> {
-		return setupMenuRadioGroup(ctrl, inputs)
+		super(setupMenuRadioGroup, { strategy: 'host' })
 	}
 }

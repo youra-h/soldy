@@ -16,7 +16,7 @@
 	[size]="state()['size']"
 	[variant]="state()['variant']"
 	[so-attributes]="state()['aria']"
-	(click)="toggle()"
+	(click)="facade()?.context?.adapters.selection.toggle()"
 >
 	<ng-container ngProjectAs="[slot=leading]">
 		@if (state()['arrowPlacement'] === 'start' || slot('leading-icon')) {

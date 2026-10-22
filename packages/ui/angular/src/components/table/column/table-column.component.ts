@@ -6,11 +6,10 @@ import {
 	FieldTextDirective,
 	RoleIconDirective,
 	TextPipe,
-	type TBinding,
 } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { TableColumnInputNames, TTableColumnSurface } from './base.component'
+import { TTableColumnSurface } from '../../../generated/table-column.metadata'
 import { setupTableColumn } from './setup.component'
 
 /**
@@ -57,7 +56,6 @@ import { setupTableColumn } from './setup.component'
  */
 @Component({
 	selector: 'th[so-table-column], [so-table-column]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -72,21 +70,6 @@ import { setupTableColumn } from './setup.component'
 })
 export class TTableColumnComponent extends TTableColumnSurface<ITableColumn> {
 	constructor() {
-		super(TableColumnInputNames, { strategy: 'host', style: 'widthStyle' })
-	}
-
-	protected createBinding(
-		ctrl: ITableColumn | undefined,
-		inputs: object,
-	): TBinding<ITableColumn> {
-		return setupTableColumn(ctrl, inputs)
-	}
-
-	/**
-	 * Нажатие кнопки сортировки — просьба колонки (`sort:request`): сортирует
-	 * расширение коллекции строк по своим правилам.
-	 */
-	protected toggleSort(): void {
-		this.instance()?.toggleSort()
+		super(setupTableColumn, { strategy: 'host', style: 'widthStyle' })
 	}
 }

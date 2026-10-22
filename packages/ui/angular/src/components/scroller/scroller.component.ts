@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IScroller } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, TextPipe, type TBinding } from '../../adapter'
+import { AttributesDirective, RoleIconDirective, TextPipe } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
-import { ScrollerInputNames, TScrollerSurface } from './base.component'
+import { TScrollerSurface } from '../../generated/scroller.metadata'
 import { setupScroller } from './setup.component'
 
 /**
@@ -37,7 +37,6 @@ import { setupScroller } from './setup.component'
  */
 @Component({
 	selector: 'div[so-scroller], [so-scroller]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -51,10 +50,6 @@ import { setupScroller } from './setup.component'
 })
 export class TScrollerComponent extends TScrollerSurface<IScroller> {
 	constructor() {
-		super(ScrollerInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IScroller | undefined, inputs: object): TBinding<IScroller> {
-		return setupScroller(ctrl, inputs)
+		super(setupScroller, { strategy: 'host' })
 	}
 }

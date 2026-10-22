@@ -1,4 +1,4 @@
-export * from './base.component'
+export * from '../../generated/tabs.metadata'
 export * from './setup.component'
 export * from './tabs.component'
 export * from './item'

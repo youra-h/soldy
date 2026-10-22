@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IDrawer } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../adapter'
+import { AttributesDirective, RoleIconDirective } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
-import { DrawerInputNames, TDrawerSurface } from './base.component'
+import { TDrawerSurface } from '../../generated/drawer.metadata'
 import { setupDrawer } from './setup.component'
 
 /**
@@ -63,7 +63,6 @@ import { setupDrawer } from './setup.component'
  */
 @Component({
 	selector: 'div[so-drawer], [so-drawer]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -77,22 +76,10 @@ import { setupDrawer } from './setup.component'
 })
 export class TDrawerComponent extends TDrawerSurface<IDrawer> {
 	constructor() {
-		super(DrawerInputNames, {
+		super(setupDrawer, {
 			strategy: 'host',
 			teleport: { target: 'target', contained: 'contained', companion: true },
 			plugins: ['dismiss_ownerAttribute'],
 		})
-	}
-
-	protected createBinding(ctrl: IDrawer | undefined, inputs: object): TBinding<IDrawer> {
-		return setupDrawer(ctrl, inputs)
-	}
-
-	/**
-	 * Клик по крестику: панель просит закрыться — отменить может подписчик
-	 * `close:before`. Куда вернуть фокус, решает плагин фокуса.
-	 */
-	protected close(): void {
-		this.instance()?.requestClose('button')
 	}
 }

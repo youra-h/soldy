@@ -1,4 +1,4 @@
-export * from './base.component'
+export * from '../../generated/table.metadata'
 export * from './setup.component'
 export * from './table.component'
 export * from './column'

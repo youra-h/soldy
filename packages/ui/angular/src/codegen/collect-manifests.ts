@@ -1,30 +1,9 @@
 /**
- * collect-manifests — сканирует папки компонентов и собирает manifest.ts файлы.
- *
- * Каждый manifest экспортирует:
- *   - `name` — kebab-case имя (используется как имя файла и PascalCase-константы)
- *   - `descriptor` — фабрика дескриптора (без вызова), реэкспортом из setup:
- *     `export { ButtonDescriptor as descriptor } from '@soldy-ui/setup'`
- *   - `facade` — у коллекционного компонента ещё и фабрика дескриптора фасада
- *     коллекции, тем же реэкспортом:
- *     `export { ListBoxCollectionDescriptor as facade } from '@soldy-ui/setup'`.
- *     Контекстов у такого компонента два, и поверхность одна на оба
- *   - `ownerFacade` — у части, которая сразу и элемент коллекции над ней, и
- *     владелец своей (пункт с подменю), — фабрика дескриптора фасада владельца,
- *     своей коллекции; `facade` у неё — фасад элемента в коллекции над ней:
- *     `export { MenuSubmenuCollectionDescriptor as ownerFacade } from '@soldy-ui/setup'`.
- *     Контекстов три, и поверхность одна на все
- *
- * Сгенерированный файл берёт тип фабрики из самого манифеста
- * (`typeof descriptor` в типах входов и выходов), поэтому манифест попадает в
- * декларации пакета. Реэкспорт декларации называют по имени, а у
- * `const descriptor = ButtonDescriptor` выведенный тип пришлось бы выписать
- * целиком — сборка на нём падает (TS2883, TS7056).
- *
- * Манифесты лежат и во вложенных папках: части компонента — свои компоненты
- * Angular (`tabs/item/manifest.ts` — `tabs-item`). Папку манифеста генератор
- * получает отдельно от `name`: импорт ведёт в папку, а что `name` совпадает с
- * ней, — не контракт.
+ * Манифесты компонентов (`manifest.ts` в папках `components/`). Манифест
+ * реэкспортирует фабрики дескрипторов из setup: `descriptor`, у коллекционного
+ * компонента ещё `facade`, у пункта с подменю — `ownerFacade`. Реэкспортом, а
+ * не `const`: выведенный тип `const` декларации пакета выписать не могут
+ * (TS2883, TS7056). Имя — путь папки через дефис: `tabs/item` — `tabs-item`.
  */
 
 import * as fs from 'node:fs'
@@ -34,22 +13,13 @@ import type { IComponentDescriptor } from '@soldy-ui/setup'
 
 export type TManifest = {
 	name: string
-	/**
-	 * Папка манифеста в `components/`, через `/`: `button` для
-	 * `components/button/manifest.ts`, `tabs/item` — для части.
-	 */
+	/** Папка в `components/` через `/`. */
 	folder: string
 	descriptor: () => IComponentDescriptor
-	/** Фабрика дескриптора фасада коллекции — у коллекционного компонента. */
 	facade?: () => IComponentDescriptor
-	/**
-	 * Фабрика дескриптора фасада владельца — своей коллекции — у части, которая
-	 * сразу и элемент коллекции над ней (`facade`), и её владелец.
-	 */
 	ownerFacade?: () => IComponentDescriptor
 }
 
-/** Папки с манифестом в `dir` и глубже, путём от `root` через `/`, по порядку обхода. */
 function manifestFolders(root: string, dir: string = root): string[] {
 	const folders: string[] = []
 
@@ -73,19 +43,19 @@ export async function collectManifests(): Promise<TManifest[]> {
 	const manifests: TManifest[] = []
 
 	for (const folder of manifestFolders(componentsDir)) {
-		// tsx / ts-node / vite-node должны быть в окружении для динамического import
-		const moduleUrl = pathToFileURL(path.join(componentsDir, folder, 'manifest.ts')).href
-		const mod = await import(moduleUrl)
+		const mod = await import(
+			pathToFileURL(path.join(componentsDir, folder, 'manifest.ts')).href
+		)
 
-		if (typeof mod.name === 'string' && typeof mod.descriptor === 'function') {
-			manifests.push({
-				name: mod.name,
-				folder,
-				descriptor: mod.descriptor,
-				...(typeof mod.facade === 'function' ? { facade: mod.facade } : {}),
-				...(typeof mod.ownerFacade === 'function' ? { ownerFacade: mod.ownerFacade } : {}),
-			})
-		}
+		if (typeof mod.descriptor !== 'function') continue
+
+		manifests.push({
+			name: folder.split('/').join('-'),
+			folder,
+			descriptor: mod.descriptor,
+			...(typeof mod.facade === 'function' ? { facade: mod.facade } : {}),
+			...(typeof mod.ownerFacade === 'function' ? { ownerFacade: mod.ownerFacade } : {}),
+		})
 	}
 
 	return manifests

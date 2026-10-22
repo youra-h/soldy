@@ -1,4 +1,4 @@
-export * from './base.component'
+export * from '../../generated/list-box.metadata'
 export * from './setup.component'
 export * from './list-box.component'
 export * from './item'

@@ -5,7 +5,7 @@
  *
  * - конструктор: корень по описанию (`TRootSpec`, стратегии в `root/`) и
  *   признак поддерева для потомков;
- * - `ngOnInit`: сборка (`createBinding`) в контексте инъекции компонента и
+ * - `ngOnInit`: сборка setup-функцией компонента в контексте его инъекции и
  *   приёмник событий ядра;
  * - `ngOnChanges`: изменённые входы — в ядро;
  * - `ngOnDestroy`: отписка и `destroy()`.
@@ -42,13 +42,18 @@ import { SlotDirective } from './slot.directive'
 import { SUBTREE_PRESENT, SubtreeDirective } from './subtree.directive'
 import type { TBinding, TBindingState } from './useAdapter'
 
+/** Setup-функция компонента: сборка его контекстов в одну связку. */
+export type TSetup<TInstance, TFacade = unknown, TOutputs = unknown, TOwnerFacade = unknown> = (
+	ctrl: TInstance | undefined,
+	inputs: object,
+) => TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
+
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
 /** Пустое состояние — его база рисует на слое не на своём месте. */
 const NO_STATE: TStateSnapshot = Object.freeze({})
 
 @Directive({
-	standalone: true,
 	// `hostDirectives` наследник получает, а `providers` — нет
 	hostDirectives: [SubtreeDirective],
 	host: {
@@ -66,12 +71,8 @@ export abstract class TComponentBase<
 	/** Готовый инстанс ядра; нет — сборка создаёт свой. */
 	@Input() ctrl?: TInstance
 
-	protected abstract createBinding(
-		ctrl: TInstance | undefined,
-		inputs: object,
-	): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
-
 	private readonly _inputNames: readonly string[]
+	private readonly _setup: TSetup<TInstance, TFacade, TOutputs, TOwnerFacade>
 	private readonly _root: TRoot
 
 	/** Поддерево предка есть — им прячется только слой, увезённый из поддерева. */
@@ -146,8 +147,13 @@ export abstract class TComponentBase<
 		return this._slots().find((slot) => slot.name === name)?.template ?? null
 	}
 
-	constructor(inputNames: readonly string[], spec: TRootSpec = VIEW_ROOT) {
+	constructor(
+		inputNames: readonly string[],
+		setup: TSetup<TInstance, TFacade, TOutputs, TOwnerFacade>,
+		spec: TRootSpec = VIEW_ROOT,
+	) {
 		this._inputNames = inputNames
+		this._setup = setup
 
 		const above =
 			inject(SubtreeDirective, { skipSelf: true, optional: true })?.present ?? SUBTREE_PRESENT
@@ -194,9 +200,7 @@ export abstract class TComponentBase<
 
 		if (this._root.tag !== undefined) inputs['tag'] = this._root.tag
 
-		const binding = runInInjectionContext(this._injector, () =>
-			this.createBinding(this.ctrl, inputs),
-		)
+		const binding = runInInjectionContext(this._injector, () => this._setup(this.ctrl, inputs))
 
 		this._eventsCleanup = binding.syncEvents((name) => this._createdOutput(name))
 

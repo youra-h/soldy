@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IDialog } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../adapter'
+import { AttributesDirective, RoleIconDirective } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
-import { DialogInputNames, TDialogSurface } from './base.component'
+import { TDialogSurface } from '../../generated/dialog.metadata'
 import { setupDialog } from './setup.component'
 
 /**
@@ -65,7 +65,6 @@ import { setupDialog } from './setup.component'
  */
 @Component({
 	selector: 'div[so-dialog], [so-dialog]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -79,27 +78,10 @@ import { setupDialog } from './setup.component'
 })
 export class TDialogComponent extends TDialogSurface<IDialog> {
 	constructor() {
-		super(DialogInputNames, {
+		super(setupDialog, {
 			strategy: 'host',
 			teleport: { target: 'target', companion: true },
 			plugins: ['dismiss_ownerAttribute'],
 		})
-	}
-
-	protected createBinding(ctrl: IDialog | undefined, inputs: object): TBinding<IDialog> {
-		return setupDialog(ctrl, inputs)
-	}
-
-	/** Клик по развороту: окно развёрнуто или вернуло размер. */
-	protected toggleMaximized(): void {
-		this.instance()?.toggleMaximized()
-	}
-
-	/**
-	 * Клик по крестику: окно просит закрыться — отменить может подписчик
-	 * `close:before`. Куда вернуть фокус, решает плагин фокуса.
-	 */
-	protected close(): void {
-		this.instance()?.requestClose('button')
 	}
 }

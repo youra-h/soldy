@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IRadioGroup, TRadioGroupCollectionFacade } from '@soldy-ui/core'
-import { SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { IRadioGroup } from '@soldy-ui/core'
+import { SlotDirective, provideElevator } from '../../adapter'
 import { TRadioGroupItemComponent } from './item'
-import { RadioGroupInputNames, TRadioGroupSurface } from './base.component'
+import { TRadioGroupSurface } from '../../generated/radio-group.metadata'
 import { setupRadioGroup } from './setup.component'
 
 /**
@@ -33,7 +33,6 @@ import { setupRadioGroup } from './setup.component'
  */
 @Component({
 	selector: 'div[so-radio-group], [so-radio-group]',
-	standalone: true,
 	imports: [NgTemplateOutlet, SlotDirective, TRadioGroupItemComponent],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,13 +40,6 @@ import { setupRadioGroup } from './setup.component'
 })
 export class TRadioGroupComponent extends TRadioGroupSurface<IRadioGroup> {
 	constructor() {
-		super(RadioGroupInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: IRadioGroup | undefined,
-		inputs: object,
-	): TBinding<IRadioGroup, TRadioGroupCollectionFacade> {
-		return setupRadioGroup(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupRadioGroup(ctrl, inputs, this.engine), { strategy: 'host' })
 	}
 }

@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
-import type { ITabsContent, TTabsContentCollectionFacade } from '@soldy-ui/core'
-import type { TBinding } from '../../../adapter'
-import { TabsContentInputNames, TTabsContentSurface } from './base.component'
+import type { ITabsContent } from '@soldy-ui/core'
+import { TTabsContentSurface } from '../../../generated/tabs-content.metadata'
 import { setupTabsContent } from './setup.component'
 
 /**
@@ -28,23 +27,15 @@ import { setupTabsContent } from './setup.component'
  */
 @Component({
 	selector: 'div[so-tabs-content], [so-tabs-content]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './tabs-content.component.html',
 })
 export class TTabsContentComponent extends TTabsContentSurface<ITabsContent> {
 	constructor() {
-		super(TabsContentInputNames, {
+		super(setupTabsContent, {
 			strategy: 'host',
 			sets: ['attrs', 'aria'],
 			shownBy: 'active',
 		})
-	}
-
-	protected createBinding(
-		ctrl: ITabsContent | undefined,
-		inputs: object,
-	): TBinding<ITabsContent, TTabsContentCollectionFacade> {
-		return setupTabsContent(ctrl, inputs)
 	}
 }

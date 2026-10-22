@@ -1,17 +1,16 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IPagination, TPaginationCollectionFacade } from '@soldy-ui/core'
+import type { IPagination } from '@soldy-ui/core'
 import {
 	AttributesDirective,
 	RoleIconDirective,
 	SlotDirective,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
 import { TPaginationItemComponent } from './item'
-import { PaginationInputNames, TPaginationSurface } from './base.component'
+import { TPaginationSurface } from '../../generated/pagination.metadata'
 import { setupPagination } from './setup.component'
 
 /**
@@ -50,7 +49,6 @@ import { setupPagination } from './setup.component'
  */
 @Component({
 	selector: 'nav[so-pagination], [so-pagination]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -66,13 +64,6 @@ import { setupPagination } from './setup.component'
 })
 export class TPaginationComponent extends TPaginationSurface<IPagination> {
 	constructor() {
-		super(PaginationInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: IPagination | undefined,
-		inputs: object,
-	): TBinding<IPagination, TPaginationCollectionFacade> {
-		return setupPagination(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupPagination(ctrl, inputs, this.engine), { strategy: 'host' })
 	}
 }
