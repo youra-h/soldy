@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config'
-import solid from 'vite-plugin-solid'
+import solid, { type Options } from 'vite-plugin-solid'
+import type { Plugin } from 'vite'
 import path from 'node:path'
 
 /**
- * Два прогона одних исходников.
+ * Три прогона одних исходников — у каждого своя сборка JSX.
  *
  * - `client` — jsdom: JSX собран для браузера (`generate: 'dom'`). Solid
  *   отдаёт разные сборки по условиям экспорта, и без `development` и
@@ -11,12 +12,38 @@ import path from 'node:path'
  * - `server` — node, файлы `*.server.spec.tsx`: JSX собран для сервера
  *   (`solid({ ssr: true })` даёт `generate: 'ssr'`), рисует его
  *   `renderToString` из `solid-js/web`, как рисовал бы сервер приложения.
- *
- * Гидратацию пакет не проверит: в одном прогоне компоненты собраны под одно
- * окружение, а гидратации нужны обе сборки сразу.
+ * - `hydration` — jsdom, файлы `*.hydration.spec.tsx`: JSX собран для
+ *   браузера с метками гидратации (`hydratable`), как его собирает
+ *   приложение с серверным рендером, а `hydrate` из `solid-js/web`
+ *   гидратирует разметку сервера. Двух сборок сразу у прогона нет, поэтому
+ *   разметку сервера пишет серверный прогон — фикстурой, которую он же и
+ *   сверяет (`__tests__/hydration/markup.server.spec.tsx`).
  *
  * `hot: false` — solid-refresh ломается вне dev-сервера.
  */
+
+/**
+ * Плагин Solid со сборкой JSX — и её опции в ключе кэша трансформаций.
+ *
+ * Трансформированные модули Vitest кэширует на диске (`fsModuleCache`, по
+ * умолчанию включён), а в ключ модуля кладёт исходник, окружение и имена
+ * плагинов — без их опций. Окружение у `client` и `hydration` одно, и без
+ * опций в ключе их сборки подменяли бы друг друга: клиентский прогон получал
+ * JSX с метками гидратации. Опции в ключ кладёт `defineCacheKeyGenerator` —
+ * так Vitest велит делать плагину, который ставят с разными опциями.
+ */
+function solidBuild(options: Partial<Options>): Plugin[] {
+	return [
+		solid(options),
+		{
+			name: 'soldy:solid-build',
+			configureVitest({ defineCacheKeyGenerator }) {
+				defineCacheKeyGenerator(() => JSON.stringify(options))
+			},
+		},
+	]
+}
+
 export default defineConfig({
 	resolve: {
 		alias: {
@@ -35,22 +62,35 @@ export default defineConfig({
 		projects: [
 			{
 				extends: true,
-				plugins: [solid({ hot: false })],
+				plugins: solidBuild({ hot: false }),
 				resolve: { conditions: ['development', 'browser'] },
 				test: {
 					name: 'client',
 					environment: 'jsdom',
 					include: ['__tests__/**/*.spec.tsx'],
-					exclude: ['__tests__/**/*.server.spec.tsx'],
+					exclude: [
+						'__tests__/**/*.server.spec.tsx',
+						'__tests__/**/*.hydration.spec.tsx',
+					],
 				},
 			},
 			{
 				extends: true,
-				plugins: [solid({ hot: false, ssr: true })],
+				plugins: solidBuild({ hot: false, ssr: true }),
 				test: {
 					name: 'server',
 					environment: 'node',
 					include: ['__tests__/**/*.server.spec.tsx'],
+				},
+			},
+			{
+				extends: true,
+				plugins: solidBuild({ hot: false, solid: { generate: 'dom', hydratable: true } }),
+				resolve: { conditions: ['development', 'browser'] },
+				test: {
+					name: 'hydration',
+					environment: 'jsdom',
+					include: ['__tests__/**/*.hydration.spec.tsx'],
 				},
 			},
 		],

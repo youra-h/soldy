@@ -765,6 +765,178 @@ describe('Frame · содержимое панели', () => {
 	})
 })
 
+/**
+ * Панель ходит с местом и тогда, когда место переставили одной операцией: якорь
+ * из документа не уходит, а место — уже другое. Хозяин места — ближайший
+ * элемент soldy вверх от якоря: его колбэки приходят тем же вызовом DOM, и
+ * панель собирается заново сразу после его новой сборки, с его местом. Место
+ * без хозяина — Frame в обычном контейнере — и контейнер внутри хозяина
+ * сторожит наблюдатель документа, микрозадачей позже. Пересборка одна:
+ * перестановку выше хозяина наблюдатель оставляет его колбэку.
+ */
+describe('Frame · место переставлено одной операцией', () => {
+	/** Frame с кнопкой — панель в цели `#first`. */
+	const PANEL =
+		'<div is="so-frame" visible target="#first"><button is="so-button"></button></div>'
+
+	/**
+	 * Разметка под провайдером `ruRU` и пустой провайдер `zhCN` рядом — куда её
+	 * переставят.
+	 */
+	function stage(html: string): { place: HTMLElement; other: TLocaleProviderElement } {
+		const place = markup(`<so-locale-provider class="ru">${html}</so-locale-provider>`)
+		const other = markup('<so-locale-provider class="zh"></so-locale-provider>')
+
+		provider(place, '.ru').locale = ruRU
+		provider(other, '.zh').locale = zhCN
+		document.body.append(place, other)
+
+		return { place, other: provider(other, '.zh') }
+	}
+
+	it('Frame в элементе soldy — пересобран сразу после него, с локалью нового места', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+
+		const { place, other } = stage(`<div is="so-component-view" class="host">${PANEL}</div>`)
+		const host = find(place, '.host')
+		const node = frame()
+		const button = find(node, 'button')
+
+		// Признак переноса первой сборки держится до микрозадачи
+		await flush()
+		assembled.length = 0
+
+		other.appendChild(host)
+
+		expect(assembled).toEqual([
+			['other', zhCN.tag],
+			['frame', zhCN.tag],
+			['button', zhCN.tag],
+		])
+		expect(destroyed.sort()).toEqual(['button', 'frame', 'other'])
+		expect(node.parentElement?.id).toBe('first')
+		expect(find(node, 'button')).toBe(button)
+		expect(anchors(host)).toHaveLength(1)
+		expect(anchors(place)).toHaveLength(0)
+
+		// Наблюдатель документа второй пересборки не делает: перестановку выше
+		// хозяина обработал его колбэк
+		await flush()
+
+		expect(assembled).toHaveLength(3)
+	})
+
+	/**
+	 * Признак переноса, который ещё держится с первой сборки, — Frame увезли в
+	 * цель, кнопку разложили в его свет, — настоящий перенос панели за местом
+	 * снимает: иначе её отключение сошло бы за перенос базы.
+	 */
+	it('переставленный в той же задаче, что и собран, — тоже пересобран, панель в цели', () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+
+		const { place, other } = stage(`<div is="so-component-view" class="host">${PANEL}</div>`)
+		const host = find(place, '.host')
+
+		other.appendChild(host)
+
+		expect(assembledOf('frame')).toEqual([ruRU.tag, zhCN.tag])
+		expect(assembledOf('button')).toEqual([ruRU.tag, zhCN.tag])
+		expect(frame().parentElement?.id).toBe('first')
+		expect(anchors(host)).toHaveLength(1)
+	})
+
+	it('Frame в обычном контейнере — пересобран наблюдателем, якорь — на новом месте', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+
+		const { place, other } = stage(`<section class="box">${PANEL}</section>`)
+		const box = find(place, '.box')
+		const node = frame()
+
+		await flush()
+		assembled.length = 0
+
+		other.appendChild(box)
+
+		expect(assembled).toEqual([])
+
+		// Место без хозяина сторожит наблюдатель документа — микрозадачей позже
+		await flush()
+
+		expect(assembled).toEqual([
+			['frame', zhCN.tag],
+			['button', zhCN.tag],
+		])
+		expect(node.parentElement?.id).toBe('first')
+		expect(anchors(box)).toHaveLength(1)
+		expect(anchors(other)).toHaveLength(1)
+		expect(anchors(place)).toHaveLength(0)
+	})
+
+	/**
+	 * Хозяин места — элемент soldy — на месте, а контейнер с якорем переставлен
+	 * внутри него, под другой провайдер: колбэков у хозяина нет, и путь от якоря
+	 * до хозяина сторожит наблюдатель.
+	 */
+	it('контейнер внутри элемента soldy — пересобран наблюдателем, хозяин — нет', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+
+		const { place } = stage(`<div is="so-component-view" class="host">
+			<so-locale-provider class="inner"></so-locale-provider>
+			<section class="box">${PANEL}</section>
+		</div>`)
+		const inner = provider(place, '.inner')
+		const box = find(place, '.box')
+
+		inner.locale = zhCN
+		await flush()
+		assembled.length = 0
+
+		inner.appendChild(box)
+		await flush()
+
+		expect(assembled).toEqual([
+			['frame', zhCN.tag],
+			['button', zhCN.tag],
+		])
+		expect(frame().parentElement?.id).toBe('first')
+		expect(anchors(box)).toHaveLength(1)
+	})
+
+	it('с колбэками полифила — итог тот же', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
+		addTarget('first')
+
+		const observer = polyfillCallbacks()
+
+		try {
+			const { place, other } = stage(`<section class="box">${PANEL}</section>`)
+			const box = find(place, '.box')
+			const node = frame()
+
+			await flush()
+			await flush()
+			assembled.length = 0
+
+			other.appendChild(box)
+			await flush()
+			await flush()
+
+			expect(assembled).toEqual([
+				['frame', zhCN.tag],
+				['button', zhCN.tag],
+			])
+			expect(node.parentElement?.id).toBe('first')
+			expect(anchors(box)).toHaveLength(1)
+		} finally {
+			observer.disconnect()
+		}
+	})
+})
+
 describe('Frame · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('div')

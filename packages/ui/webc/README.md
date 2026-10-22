@@ -124,7 +124,8 @@ keeps it in place, inside the nearest positioned ancestor:
 Moving the panel rebuilds neither the frame nor anything inside it, and the panel keeps the place it
 was written in: the button above takes its language from the `<so-locale-provider>` around the
 card, not around `#layers`. Removing the card from the page takes the panel out of the target with
-it.
+it, and moving the card elsewhere — even with a single call, `other.appendChild(card)` — rebuilds
+the panel for the new place: under another provider the button takes that provider's language.
 
 A popover is a panel with any content at a trigger — a non-modal dialog — and a tooltip is a hint
 shown on hover and on keyboard focus. The trigger is your element in the `trigger` slot, the
@@ -389,10 +390,10 @@ markup items join again with what their attributes and properties say, so a choi
 (the active tab, an open section) does not survive the move. Items given as data in your own
 `engine` keep it.
 
-A menu's items live in its panel, and the panel is in `body`: it follows the menu when the menu
-leaves the document. A menu moved with a single DOM operation keeps its panel assembled for the old
-place — the items do not join the rebuilt menu, and the keyboard and the pointer no longer reach
-them, so remove the menu and insert it again instead.
+A menu's items live in its panel, and the panel is in `body`: it follows the menu. A removed menu
+takes the panel out of `body`, and a menu moved elsewhere — even with a single DOM call — is rebuilt
+together with its panel, so the items join the rebuilt menu and the keyboard and the pointer reach
+them as before.
 
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
 (`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,
