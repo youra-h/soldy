@@ -5,7 +5,6 @@ import {
 	AttributesDirective,
 	RoleIconDirective,
 	SlotDirective,
-	SlotOutletDirective,
 	provideElevator,
 	type TBinding,
 } from '../../../adapter'
@@ -61,8 +60,8 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
  * пунктов из данных; `item` и `item-*` — слоты пунктов из данных, как у меню:
  * подменю следующего уровня оно отдаёт их под теми же именами, а
  * `item-content` — его шаблоном `default`, выводом с инжектором места
- * (`[so-slot-outlet]`). Следующий уровень — сам компонент: автономный
- * компонент Angular видит себя в своём шаблоне без `imports`.
+ * (`ngTemplateOutletInjector="outlet"`). Следующий уровень — сам компонент:
+ * автономный компонент Angular видит себя в своём шаблоне без `imports`.
  *
  * Selector: div[so-menu-submenu], [so-menu-submenu]
  */
@@ -74,7 +73,6 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
 		AttributesDirective,
 		RoleIconDirective,
 		SlotDirective,
-		SlotOutletDirective,
 		TButtonComponent,
 		TFrameComponent,
 		TIconComponent,

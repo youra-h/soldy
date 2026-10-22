@@ -10,7 +10,6 @@ export type {
 export { TComponentBase } from './component.base'
 export type { TRootSet, TRootSpec, TRootTeleport } from './component.base'
 export { SlotDirective } from './slot.directive'
-export { SlotOutletDirective } from './slot-outlet.directive'
 export { AttributesDirective } from './attributes.directive'
 export { FieldTextDirective } from './field-text.directive'
 export { TextPipe } from './text.pipe'
