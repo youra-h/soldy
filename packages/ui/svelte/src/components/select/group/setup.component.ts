@@ -13,9 +13,9 @@
 
 import { SelectGroupDescriptor, TItemGroupExtension } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	useAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../../adapter'
 import type { SelectGroupProps } from './base.component'
@@ -25,11 +25,12 @@ export function setupSelectGroup(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const adapter = createSvelteAdapterContext(SelectGroupDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	}).use(TItemGroupExtension, { elevator: SvelteElevatorFactory })
+	}).use(TItemGroupExtension, { elevator })
 
 	return useAdapter(adapter, getProps, receive)
 }

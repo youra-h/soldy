@@ -25,11 +25,11 @@ import {
 	TVirtualCollectionExtension,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { ListBoxProps } from './base.component'
@@ -39,6 +39,7 @@ export function setupListBox(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(ListBoxDescriptor(), {
 		ctrl: props.ctrl,
@@ -59,11 +60,11 @@ export function setupListBox(
 		},
 		{ bundle: adapter.bundle },
 	)
-		.use(TCollectionExtension, { elevator: SvelteElevatorFactory })
-		.use(TDragAndDropCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TCollectionExtension, { elevator })
+		.use(TDragAndDropCollectionExtension, { elevator })
 		// Окно обёртки `Virtual` над списком: подхват при сборке, подписка на
 		// обёртку — при приёме, снятие — с уничтожением
-		.use(TVirtualCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TVirtualCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,

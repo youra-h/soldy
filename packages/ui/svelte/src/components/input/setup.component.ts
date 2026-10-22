@@ -19,19 +19,20 @@
 
 import { InputDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	useAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { InputProps } from './base.component'
 
 export function setupInput(getProps: () => InputProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const adapter = createSvelteAdapterContext(InputDescriptor(), {
 		ctrl: getProps().ctrl,
 		props: getProps(),
 		mountId,
-	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
+	}).use(TFieldControlExtension, { elevator })
 
 	// Текст в ядро несёт плагин ввода по `input` поля, имя кнопки очистки
 	// (`clearAria`) пишет плагин имён формы по локали поддерева

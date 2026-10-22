@@ -18,11 +18,11 @@ import {
 	TMenuRadioItemExtension,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../../adapter'
 import type { MenuRadioItemProps } from './base.component'
@@ -32,19 +32,20 @@ export function setupMenuRadioItem(
 	mountId: string,
 	receive: TRootReceiver,
 ) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(MenuRadioItemDescriptor(), {
 		ctrl: props.ctrl,
 		props,
 		mountId,
-	}).use(TMenuRadioItemExtension, { elevator: SvelteElevatorFactory })
+	}).use(TMenuRadioItemExtension, { elevator })
 	const owner = useAdapter(adapter, getProps, receive)
 
 	const item = createSvelteAdapterContext(
 		MenuCollectionRadioItemDescriptor(),
 		{ props, mountId },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator: SvelteElevatorFactory })
+	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
 	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
