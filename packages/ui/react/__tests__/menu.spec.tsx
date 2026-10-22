@@ -1877,23 +1877,11 @@ describe('подменю', () => {
 					...neighbours,
 				]
 
-				// Временно, до задачи 869fkqhv4 (https://app.clickup.com/t/869fkqhv4):
-				// сборка нового подменю на рендере ставит плагины на тот же пункт, его
-				// связки пишут в него id, и прежнее, ещё не снятое подменю React
-				// перерисовывает посреди чужого рендера — «Cannot update a component
-				// while rendering a different component». React печатает его раз на
-				// пару компонентов за прогон, поэтому заявлено «не больше этого»
-				const warnings = vi.spyOn(console, 'error').mockImplementation(() => {})
-
+				// Сборка нового подменю пишет id в тот же пункт, а прежнее, ещё не
+				// снятое, перечитывает их после сборки, а не посреди чужого рендера
+				// (`TAssembling`): предупреждения React нет, его роняет сторож консоли
 				rerender(view(moved, 'lg'))
 				await nextFrame()
-
-				expect(
-					warnings.mock.calls.filter(
-						([message]) => !String(message).startsWith('Cannot update a component'),
-					),
-				).toEqual([])
-				warnings.mockRestore()
 
 				// Перемонтировано — новые узлы, та же запись
 				expect(sections()).toEqual(['free'])

@@ -1,6 +1,6 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { createRootProps, rootTag } from '../../../adapter'
+import { createPartProps, createRootProps, rootTag } from '../../../adapter'
 import { CheckBox } from '../../check-box'
 import { TableRowCells } from './Cells'
 import { setupTableRow } from './setup.component'
@@ -39,12 +39,14 @@ export function TableRow(props: TableRowProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Ячейке колонки выбора — набор ячеек строки: экземпляра у неё нет
+	const cellAria = createPartProps(() => state.cellAria)
 
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Show when={state.selecting}>
-					<td class="so-table-row__select" {...state.cellAria}>
+					<td class="so-table-row__select" {...cellAria()}>
 						<CheckBox
 							embedded="table.select"
 							ctrl={context?.adapters.table.checkBox}

@@ -1,6 +1,13 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { createRootProps, fieldText, resolveSlot, roleIcon, rootTag } from '../../../adapter'
+import {
+	createPartProps,
+	createRootProps,
+	fieldText,
+	resolveSlot,
+	roleIcon,
+	rootTag,
+} from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
 import { setupTableColumn } from './setup.component'
@@ -61,6 +68,9 @@ export function TableColumn(props: TableColumnProps): JSX.Element {
 		forward: binding.forwardProps(),
 		style: state.widthStyle,
 	}))
+	// Подписи и полю ручки — их наборы: экземпляров у них нет
+	const textAria = createPartProps(() => state.textAria)
+	const resizerAria = createPartProps(() => state.resizerAria)
 	const caption = resolveSlot(
 		() => props.children,
 		() => ({ text: state.text ?? '', sortable: state.sortable ?? false }),
@@ -71,7 +81,7 @@ export function TableColumn(props: TableColumnProps): JSX.Element {
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<span class="so-table-column__content">
-					<span class="so-table-column__text" {...state.textAria}>
+					<span class="so-table-column__text" {...textAria()}>
 						{caption() ?? state.text}
 					</span>
 					<Show when={state.sortable}>
@@ -97,7 +107,7 @@ export function TableColumn(props: TableColumnProps): JSX.Element {
 								type="range"
 								min={resizer().min}
 								max={resizer().max}
-								{...state.resizerAria}
+								{...resizerAria()}
 								{...width}
 							/>
 						</span>

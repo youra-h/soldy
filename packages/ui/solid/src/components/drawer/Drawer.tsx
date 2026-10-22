@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Teleport,
+	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -87,6 +88,8 @@ export function Drawer(props: DrawerProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset, state.dismiss_ownerAttribute],
 		forward: binding.forwardProps(),
 	}))
+	// Заголовку — его набор: своего экземпляра у него нет
+	const titleAria = createPartProps(() => state.titleAria)
 	const closeIcon = resolveSlot(
 		() => props['close-icon'],
 		() => ({}),
@@ -105,7 +108,7 @@ export function Drawer(props: DrawerProps): JSX.Element {
 					<Show when={state.handleRendered}>
 						<div class="so-drawer__handle" aria-hidden="true" />
 					</Show>
-					<h2 class="so-drawer__title" {...state.titleAria}>
+					<h2 class="so-drawer__title" {...titleAria()}>
 						{renderSlot(props.title)}
 					</h2>
 					<div class="so-drawer__body">{renderSlot(props.children)}</div>

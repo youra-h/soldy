@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
+	createPartProps,
 	createRootProps,
 	fieldText,
 	resolveSlot,
@@ -72,7 +73,9 @@ export function Input(props: InputProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	const control = () => toControlAttrs<InputAttributes>(binding.forwardProps())
+	// Полю — его `aria`, поверх — остальные атрибуты потребителя
+	const aria = createPartProps(() => state.aria)
+	const control = createPartProps(() => toControlAttrs<InputAttributes>(binding.forwardProps()))
 	const text = fieldText(() => state.value)
 
 	function clear(event: MouseEvent): void {
@@ -108,7 +111,7 @@ export function Input(props: InputProps): JSX.Element {
 					readonly={state.readonly}
 					required={state.required}
 					placeholder={state.placeholder}
-					{...state.aria}
+					{...aria()}
 					{...control()}
 					{...text}
 				/>

@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Teleport,
+	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -93,6 +94,9 @@ export function Dialog(props: DialogProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset, state.dismiss_ownerAttribute],
 		forward: binding.forwardProps(),
 	}))
+	// Заголовку и телу — их наборы: своего экземпляра у них нет
+	const titleAria = createPartProps(() => state.titleAria)
+	const bodyAria = createPartProps(() => state.bodyAria)
 	const maximizeIcon = resolveSlot(
 		() => props['maximize-icon'],
 		() => ({}),
@@ -116,10 +120,10 @@ export function Dialog(props: DialogProps): JSX.Element {
 					component={rootTag(state.tag)}
 					ref={binding.ref}
 				>
-					<h2 class="so-dialog__title" {...state.titleAria}>
+					<h2 class="so-dialog__title" {...titleAria()}>
 						{renderSlot(props.title)}
 					</h2>
-					<div class="so-dialog__body" {...state.bodyAria}>
+					<div class="so-dialog__body" {...bodyAria()}>
 						{renderSlot(props.children)}
 					</div>
 					<div class="so-dialog__footer">{renderSlot(props.footer)}</div>

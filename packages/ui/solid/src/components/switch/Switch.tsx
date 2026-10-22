@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
+	createPartProps,
 	createRootProps,
 	liveScope,
 	renderSlot,
@@ -49,6 +50,9 @@ export function Switch(props: SwitchProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
+	// Полю — его `aria`, поверх — остальные атрибуты потребителя
+	const aria = createPartProps(() => state.aria)
+	const control = createPartProps(() => toControlAttrs<SwitchAttributes>(binding.forwardProps()))
 	const scope = liveScope(() => ({ value: state.value, ctrl }))
 
 	return (
@@ -61,8 +65,8 @@ export function Switch(props: SwitchProps): JSX.Element {
 						name={state.name}
 						disabled={state.disabled}
 						required={state.required}
-						{...state.aria}
-						{...toControlAttrs<SwitchAttributes>(binding.forwardProps())}
+						{...aria()}
+						{...control()}
 						checked={state.value}
 					/>
 					<span class="so-switch__track" aria-hidden="true">
