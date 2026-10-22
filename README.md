@@ -189,40 +189,40 @@ ships with the next alpha release; `future` — queued for development.
 
 | Component       | What it is                                                                                     | Frameworks | Release       |
 | --------------- | ---------------------------------------------------------------------------------------------- | ---------- | ------------- |
-| Button          | Button: text, icons in slots, four views                                                       | *          | 0.2.0         |
-| Input           | Text field with slots for icons and buttons                                                    | *          | 0.2.0         |
-| NumberInput     | Number field in the locale's format: step and bounds, arrow keys, − and + buttons with hold    | *          | 0.3.0-alpha.0 |
-| CheckBox        | Checkbox with a third, indeterminate state                                                     | *          | 0.2.0         |
-| Switch          | Switch: the same value as a checkbox, a different metaphor                                     | *          | 0.2.0         |
-| Label           | Control label: clicking the text toggles the control, and the text is its accessible name      | *          | 0.2.0         |
-| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        | *          | 0.2.0         |
-| Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | *          | 0.2.0         |
-| RadioGroup      | One option out of several: native radio buttons sharing a `name`                               | *          | 0.2.0         |
-| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | *          | 0.2.0         |
-| Calendar        | Month grids: pick a single date, several dates or a range                                      | *          | 0.2.0         |
-| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | *          | 0.2.0         |
-| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | *          | 0.2.0         |
-| Popover         | Panel at a trigger with any content: a non-modal dialog                                        | *          | 0.2.0         |
-| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | *          | 0.2.0         |
-| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | *          | 0.2.0         |
-| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | *          | 0.2.0         |
-| Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | *          | 0.2.0         |
-| Scroller        | Single-row strip of any content, paged with two buttons                                        | *          | 0.2.0         |
-| ListBox         | List with single or multiple selection                                                         | *          | 0.2.0         |
-| Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               | *          | 0.2.0         |
-| Tabs            | Tabs: a tab list and panels linked by value                                                    | *          | 0.2.0         |
-| Tags            | Tag set: close buttons, optional selection                                                     | *          | 0.2.0         |
-| Accordion       | Sections that expand one at a time or several at once                                          | *          | 0.2.0         |
-| Icon            | Icon from the registered pack, by role                                                         | *          | 0.2.0         |
-| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | *          | 0.2.0         |
-| ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown | *          | 0.2.0         |
-| Skeleton        | Placeholder while content loads                                                                | *          | 0.2.0         |
-| DragAndDrop     | Drag and drop of collection items                                                              | *          | 0.2.0         |
-| Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  | *          | 0.2.0         |
-| Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | *          | 0.2.0         |
-| Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | *          | 0.2.0         |
-| Textarea        | Multi-line text field that grows with its content                                              | *          | 0.3.0-alpha.0 |
-| Field           | Field wrapper: description, error message and invalid state linked to the control              | *          | 0.2.0         |
+| Button          | Button: text, icons in slots, four views                                                       | *          | 0.3.0-alpha.1 |
+| Input           | Text field with slots for icons and buttons                                                    | *          | 0.3.0-alpha.1 |
+| NumberInput     | Number field in the locale's format: step and bounds, arrow keys, − and + buttons with hold    | *          | 0.3.0-alpha.1 |
+| CheckBox        | Checkbox with a third, indeterminate state                                                     | *          | 0.3.0-alpha.1 |
+| Switch          | Switch: the same value as a checkbox, a different metaphor                                     | *          | 0.3.0-alpha.1 |
+| Label           | Control label: clicking the text toggles the control, and the text is its accessible name      | *          | 0.3.0-alpha.1 |
+| Slider          | Slider: a number or a range, set by dragging, with keys or with a screen reader gesture        | *          | 0.3.0-alpha.1 |
+| Rating          | Rating with stars: set by click, drag or arrow keys, halves, hover preview, read-only display  | *          | 0.3.0-alpha.1 |
+| RadioGroup      | One option out of several: native radio buttons sharing a `name`                               | *          | 0.3.0-alpha.1 |
+| Select          | Select field: an input plus a list in an overlay, the Combobox pattern                         | *          | 0.3.0-alpha.1 |
+| Calendar        | Month grids: pick a single date, several dates or a range                                      | *          | 0.3.0-alpha.1 |
+| DateInput       | Date and time field typed in parts in the locale's format, selected and copied as a whole      | *          | 0.3.0-alpha.1 |
+| DatePicker      | Date field and a calendar in a panel: a single date or a range                                 | *          | 0.3.0-alpha.1 |
+| Popover         | Panel at a trigger with any content: a non-modal dialog                                        | *          | 0.3.0-alpha.1 |
+| Tooltip         | Hint for an element, shown on hover and on keyboard focus                                      | *          | 0.3.0-alpha.1 |
+| Dialog          | Modal window: centered or at an edge of the screen, can be maximized to full screen            | *          | 0.3.0-alpha.1 |
+| Drawer          | Panel that slides in at an edge of the screen or a container, can be swiped away               | *          | 0.3.0-alpha.1 |
+| Toasts          | Pop-up notifications shown from code: a queue, auto-dismiss with a pause, swipe to close       | *          | 0.3.0-alpha.1 |
+| Scroller        | Single-row strip of any content, paged with two buttons                                        | *          | 0.3.0-alpha.1 |
+| ListBox         | List with single or multiple selection                                                         | *          | 0.3.0-alpha.1 |
+| Table           | Table: columns as data, sorting by column headers, row selection with checkboxes               | *          | 0.3.0-alpha.1 |
+| Tabs            | Tabs: a tab list and panels linked by value                                                    | *          | 0.3.0-alpha.1 |
+| Tags            | Tag set: close buttons, optional selection                                                     | *          | 0.3.0-alpha.1 |
+| Accordion       | Sections that expand one at a time or several at once                                          | *          | 0.3.0-alpha.1 |
+| Icon            | Icon from the registered pack, by role                                                         | *          | 0.3.0-alpha.1 |
+| ProgressLinear  | Linear progress indicator: the share done, or an indeterminate animation while it is unknown   | *          | 0.3.0-alpha.1 |
+| ProgressSpinner | Circular progress indicator: the share done, or an indeterminate animation while it is unknown | *          | 0.3.0-alpha.1 |
+| Skeleton        | Placeholder while content loads                                                                | *          | 0.3.0-alpha.1 |
+| DragAndDrop     | Drag and drop of collection items                                                              | *          | 0.3.0-alpha.1 |
+| Virtual         | Window for long lists: ListBox and Table inside render only the visible items                  | *          | 0.3.0-alpha.1 |
+| Pagination      | Page navigation: page numbers with gaps, previous and next, first and last                     | *          | 0.3.0-alpha.1 |
+| Menu            | Action menu at a button or on right click: submenus, checkbox and radio items                  | *          | 0.3.0-alpha.1 |
+| Textarea        | Multi-line text field that grows with its content                                              | *          | 0.3.0-alpha.1 |
+| Field           | Field wrapper: description, error message and invalid state linked to the control              | *          | 0.3.0-alpha.1 |
 | Alert           | Inline message by severity: info, success, warning, error                                      | -          | future        |
 | Badge           | Counter or status mark, on its own or over another element                                     | -          | future        |
 | Avatar          | User picture with a fallback to initials or an icon                                            | -          | future        |
