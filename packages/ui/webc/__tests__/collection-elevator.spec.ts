@@ -11,12 +11,15 @@
  * в связке). Подключение, пришедшее, пока подключается другой элемент soldy,
  * ждёт его конца и идёт сразу после него, в порядке прихода (ожидание):
  * раскладка света владельца переносит элементы разметки, и их колбэки
- * приходят внутри его подключения — раньше, чем он опустил движок. Поэтому
- * элементы разметки входят в коллекцию после владельца и в порядке документа
- * — и после `innerHTML`, и в разметке, написанной до регистрации элементов.
- * Связка у элемента новая на каждое подключение: владелец, переставленный в
- * документе, — новый движок, а элемент, переставленный к другому владельцу,
- * входит в его коллекцию.
+ * приходят внутри его подключения — раньше, чем он опустил движок. Разметку,
+ * написанную до регистрации элементов, база собирает очередью отсрочки по
+ * месту: владелец — раньше элементов под ним, в теневом корне обёртки и в
+ * увезённой панели тоже, соседи — в порядке документа. Поэтому элементы
+ * разметки входят в коллекцию после владельца и в порядке документа — и после
+ * `innerHTML`, и в разметке, написанной до регистрации, в каком бы порядке ни
+ * регистрировались их виды. Связка у элемента новая на каждое подключение:
+ * владелец, переставленный в документе, — новый движок, а элемент,
+ * переставленный к другому владельцу, входит в его коллекцию.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -310,10 +313,10 @@ describe('порядок входа', () => {
 	})
 
 	/**
-	 * Разметка написана раньше, чем зарегистрированы элементы: модуль
-	 * владельца регистрирует его раньше частей, и при апгрейде владелец
-	 * собирается первым — его элементы, ожившие следом, находят движок.
-	 * Имена — свои у теста: зарегистрированные пакетом уже живые.
+	 * Разметка написана раньше, чем зарегистрированы элементы: ожившую при
+	 * регистрации, её база собирает по месту — владельца раньше его элементов,
+	 * и они, собравшись следом, находят движок. Имена — свои у каждого теста:
+	 * зарегистрированные пакетом уже живые, а имя регистрируется один раз.
 	 */
 	it('разметка до регистрации — все элементы в коллекции, в порядке документа', async () => {
 		document.body.innerHTML = `<div is="so-test-accordion">
@@ -337,6 +340,85 @@ describe('порядок входа', () => {
 				header.getAttribute('aria-expanded'),
 			),
 		).toEqual(['false', 'true', 'false'])
+	})
+
+	/**
+	 * Порядок регистрации ничего не решает: браузер оживляет секции раньше
+	 * аккордеона, а собираются они после него, по месту.
+	 */
+	it('разметка до регистрации, секции зарегистрированы раньше аккордеона, — то же', async () => {
+		document.body.innerHTML = `<div is="so-test-late-accordion">
+			<div is="so-test-late-accordion-item" value="a" text="A"></div>
+			<div is="so-test-late-accordion-item" value="b" text="B" selected></div>
+			<div is="so-test-late-accordion-item" value="c" text="C"></div>
+		</div>`
+
+		defineElement('so-test-late-accordion-item', class extends TAccordionItemElement {}, 'div')
+		defineElement('so-test-late-accordion', class extends TAccordionElement {}, 'div')
+
+		await flush()
+		await flush()
+
+		const el = pick('[is="so-test-late-accordion"]', isAccordion)
+
+		expect(valuesOf(el)).toEqual(['a', 'b', 'c'])
+		expect(el.state.selected?.map((item) => item.value)).toEqual(['b'])
+	})
+
+	/**
+	 * Секция в открытом теневом корне обёртки — в коллекции аккордеона над
+	 * обёрткой: место из теневого корня идёт к хосту. Браузер оживляет и
+	 * теневые корни документа, и секция в нём ждёт аккордеон; стоит она по
+	 * месту обёртки — между соседями.
+	 */
+	it('разметка до регистрации — секция в теневом корне обёртки в коллекции аккордеона', async () => {
+		document.body.innerHTML = `<div is="so-test-shadow-accordion">
+			<div is="so-test-shadow-accordion-item" value="a" text="A"></div>
+			<div class="so-test-wrap"></div>
+			<div is="so-test-shadow-accordion-item" value="b" text="B"></div>
+		</div>`
+
+		const wrap = document.querySelector('.so-test-wrap')
+
+		if (!wrap) throw new Error('обёртки нет')
+
+		wrap.attachShadow({ mode: 'open' }).innerHTML =
+			'<div is="so-test-shadow-accordion-item" value="s" text="S"></div>'
+
+		defineElement('so-test-shadow-accordion-item', class extends TAccordionItemElement {}, 'div')
+		defineElement('so-test-shadow-accordion', class extends TAccordionElement {}, 'div')
+
+		await flush()
+		await flush()
+
+		expect(valuesOf(owner('[is="so-test-shadow-accordion"]'))).toEqual(['a', 's', 'b'])
+	})
+
+	/**
+	 * Frame в свете аккордеона собрался раньше него — его имя уже живое — и
+	 * увёз панель в цель выше аккордеона. По документу секция в панели стоит
+	 * раньше аккордеона, а по месту — у якоря панели, в его свете: она
+	 * собирается после аккордеона и входит в его коллекцию на месте Frame.
+	 */
+	it('разметка до регистрации — секция в увезённой панели Frame в коллекции аккордеона, на месте Frame', async () => {
+		document.body.innerHTML = `<div id="so-test-layers"></div>
+			<div is="so-test-frame-accordion">
+				<div is="so-test-frame-accordion-item" value="a" text="A"></div>
+				<div is="so-frame" target="#so-test-layers">
+					<div is="so-test-frame-accordion-item" value="p" text="P"></div>
+				</div>
+				<div is="so-test-frame-accordion-item" value="b" text="B"></div>
+			</div>`
+
+		expect(document.querySelector('#so-test-layers [value="p"]')).not.toBeNull()
+
+		defineElement('so-test-frame-accordion-item', class extends TAccordionItemElement {}, 'div')
+		defineElement('so-test-frame-accordion', class extends TAccordionElement {}, 'div')
+
+		await flush()
+		await flush()
+
+		expect(valuesOf(owner('[is="so-test-frame-accordion"]'))).toEqual(['a', 'p', 'b'])
 	})
 
 	/** Элемент, переставленный к другому владельцу, уходит из первой коллекции и входит во вторую. */

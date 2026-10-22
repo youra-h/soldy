@@ -46,13 +46,22 @@ export class TPlaceContext<T> {
 	}
 
 	/**
-	 * Узел выше по документу: родитель, а из теневого корня — его хост. Так место
+	 * Узел, который стоит на месте `node` в документе: у увезённого корня — его
+	 * якорь, у остальных — сам узел. По нему место сравнивают с соседями.
+	 */
+	static placeOf(node: Node): Node {
+		return TPlaceContext._anchors.get(node) ?? node
+	}
+
+	/**
+	 * Узел выше по месту: родитель, а из теневого корня — его хост. Так место
 	 * компонента внутри теневого дерева чужого элемента остаётся под провайдером,
 	 * который стоит над этим элементом. У увезённого корня выше — родитель его
-	 * якоря.
+	 * якоря. Тем же путём очередь отсрочки (`runtime/deferral.ts`) собирает
+	 * разметку по месту.
 	 */
-	private static _parentOf(node: Node): Node | null {
-		const parent = (TPlaceContext._anchors.get(node) ?? node).parentNode
+	static above(node: Node): Node | null {
+		const parent = TPlaceContext.placeOf(node).parentNode
 
 		return parent instanceof ShadowRoot ? parent.host : parent
 	}
@@ -69,11 +78,7 @@ export class TPlaceContext<T> {
 	 * от родителя. Выше значения нет — `undefined`.
 	 */
 	nearest(node: Node): T | undefined {
-		for (
-			let place = TPlaceContext._parentOf(node);
-			place;
-			place = TPlaceContext._parentOf(place)
-		) {
+		for (let place = TPlaceContext.above(node); place; place = TPlaceContext.above(place)) {
 			if (place instanceof Element && this._values.has(place)) return this._values.get(place)
 		}
 

@@ -1141,54 +1141,82 @@ describe('группы разметки', () => {
 	})
 
 	/**
-	 * Разметка написана раньше, чем зарегистрированы элементы: модуль меню
-	 * регистрирует части после меню, группы — раньше пунктов, подменю — раньше
-	 * остальных пунктов. При апгрейде группа успевает опустить ключ, когда
-	 * собираются пункты её света и подменю в ней, а подменю — свой движок,
-	 * когда собираются его пункты: они входят в его коллекцию, а не в меню.
-	 * Имена — свои у теста: зарегистрированные пакетом уже живые.
-	 *
-	 * Порядок в коллекции при апгрейде — порядок регистрации видов, а не
-	 * документа: подменю собирается раньше пунктов. Поэтому здесь сверяется
-	 * состав секций, а не порядок в них — временно, до задачи 869fkq4pf
-	 * (сборка разметки, ожившей при регистрации, в порядке документа).
+	 * Разметка написана раньше, чем зарегистрированы элементы: пункты разных
+	 * видов вперемешку — действия, флажки, группа переключателей, подменю в
+	 * группе, а в подменю своя группа. Ожившую при регистрации разметку база
+	 * собирает по месту, и порядок регистрации видов ничего не решает: меню,
+	 * группы и подменю собираются раньше своих пунктов, пункты входят в
+	 * коллекцию в порядке документа, подменю в группе берёт её ключ, а группа в
+	 * подменю даёт ключ его пунктам. Имена — свои у каждого порядка:
+	 * зарегистрированные пакетом уже живые, а имя регистрируется один раз.
 	 */
-	it('разметка до регистрации — пункты и подменю в группе берут её ключ, пункты подменю — в его коллекции', async () => {
-		document.body.innerHTML = `<span is="so-test-up-menu">
-			<div is="so-test-up-item" value="new" text="Новый"></div>
-			<div is="so-test-up-group" label="Правка">
-				<div is="so-test-up-item" value="cut" text="Вырезать"></div>
-				<div is="so-test-up-submenu" value="share" text="Поделиться">
-					<div is="so-test-up-item" value="link" text="Ссылка"></div>
+	describe('разметка до регистрации', () => {
+		/** Виды частей — в порядке модуля меню (`Menu.element.ts`): имя, класс и тег. */
+		const KINDS: readonly (readonly [string, () => CustomElementConstructor, string])[] = [
+			['menu', () => class extends TMenuElement {}, 'span'],
+			['group', () => class extends TMenuGroupElement {}, 'div'],
+			['radio-group', () => class extends TMenuRadioGroupElement {}, 'div'],
+			['submenu', () => class extends TMenuSubmenuElement {}, 'div'],
+			['item', () => class extends TMenuItemElement {}, 'div'],
+			['checkbox', () => class extends TMenuCheckboxItemElement {}, 'div'],
+			['radio', () => class extends TMenuRadioItemElement {}, 'div'],
+		]
+
+		/** Меню разметкой: имена частей — `<префикс>-<вид>`. */
+		const markup = (prefix: string) => `<span is="${prefix}-menu">
+			<div is="${prefix}-item" value="new" text="Новый"></div>
+			<div is="${prefix}-checkbox" value="grid" text="Сетка"></div>
+			<div is="${prefix}-radio-group" label="Сортировка" value="name">
+				<div is="${prefix}-radio" value="name" text="По имени"></div>
+				<div is="${prefix}-radio" value="date" text="По дате"></div>
+			</div>
+			<div is="${prefix}-group" label="Правка">
+				<div is="${prefix}-item" value="cut" text="Вырезать"></div>
+				<div is="${prefix}-submenu" value="share" text="Поделиться">
+					<div is="${prefix}-item" value="link" text="Ссылка"></div>
+					<div is="${prefix}-group" label="Почта">
+						<div is="${prefix}-item" value="mail" text="Письмо"></div>
+					</div>
 				</div>
 			</div>
+			<div is="${prefix}-checkbox" value="ruler" text="Линейка"></div>
 		</span>`
 
-		// Порядок — как в модуле меню
-		defineElement('so-test-up-menu', class extends TMenuElement {}, 'span')
-		defineElement('so-test-up-group', class extends TMenuGroupElement {}, 'div')
-		defineElement('so-test-up-submenu', class extends TMenuSubmenuElement {}, 'div')
-		defineElement('so-test-up-item', class extends TMenuItemElement {}, 'div')
+		/** Секции элемента коротко: подпись группы (`null` — без группы) и значения пунктов. */
+		const outline = (el: TMenuElementProps | TMenuSubmenuElementProps) =>
+			(el.state.sections ?? []).map(({ group, items }) => [
+				group === null ? null : (group.label ?? ''),
+				items.map((item) => item.value),
+			])
 
-		// Ожившие при регистрации собираются микрозадачей позже
-		await flush()
-		await flush()
+		it.each([
+			['в порядке модуля меню', 'so-test-up', KINDS],
+			['в обратном порядке', 'so-test-down', [...KINDS].reverse()],
+		] as const)('%s — секции меню и подменю в порядке документа', async (_order, prefix, kinds) => {
+			document.body.innerHTML = markup(prefix)
 
-		const menu = document.querySelector('[is="so-test-up-menu"]')
-		const submenu = document.querySelector('[is="so-test-up-submenu"]')
+			for (const [kind, extend, tag] of kinds) defineElement(`${prefix}-${kind}`, extend(), tag)
 
-		if (!isMenu(menu) || !isSubmenu(submenu)) throw new Error('меню нет')
+			// Ожившие при регистрации собираются микрозадачей позже
+			await flush()
+			await flush()
 
-		const sections = new Map(
-			menu.state.sections?.map(({ group, items }) => [
-				group?.label ?? null,
-				new Set(items.map((item) => item.value)),
-			]),
-		)
+			const menu = document.querySelector(`[is="${prefix}-menu"]`)
+			const submenu = document.querySelector(`[is="${prefix}-submenu"]`)
 
-		expect(sections.get('Правка')).toEqual(new Set(['cut', 'share']))
-		expect(sections.get(null)).toEqual(new Set(['new']))
-		expect(submenu.state.items?.map((item) => item.value)).toEqual(['link'])
+			if (!isMenu(menu) || !isSubmenu(submenu)) throw new Error('меню нет')
+
+			expect(outline(menu)).toEqual([
+				[null, ['new', 'grid']],
+				['Сортировка', ['name', 'date']],
+				['Правка', ['cut', 'share']],
+				[null, ['ruler']],
+			])
+			expect(outline(submenu)).toEqual([
+				[null, ['link']],
+				['Почта', ['mail']],
+			])
+		})
 	})
 })
 
