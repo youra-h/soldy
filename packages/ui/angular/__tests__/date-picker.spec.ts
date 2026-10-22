@@ -15,8 +15,8 @@
  * его кладёт база (`TRootSpec.id`). Поля — `<div so-date-input>` в шаблоне,
  * кнопки одной даты — шаблоны слотов поля. Панель — Frame в шаблоне, увезённый
  * в `body`; якорь панели — корень, его узел шаблону отдаёт база
- * (`rootElement()`). Корень Angular не снимается, а прячется, поэтому
- * `rendered: false` DatePicker передаёт и панели. Слоты — шаблоны: подвал
+ * (`rootElement()`). Корень Angular не снимается, а прячется, и при
+ * `rendered: false` панель прячет признак поддерева базы. Слоты — шаблоны: подвал
  * календарю и очистку полю DatePicker отдаёт, только когда в них есть что
  * рисовать.
  *
@@ -28,7 +28,12 @@ import { Component, signal, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import { TDatePicker, type TDatePickerValue, type TValuePayload } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
-import { LocaleProviderDirective, SlotDirective, TDatePickerComponent } from '@soldy-ui/angular'
+import {
+	LocaleProviderDirective,
+	SlotDirective,
+	TDatePickerComponent,
+	TFrameComponent,
+} from '@soldy-ui/angular'
 import { find, nextFrame } from './mount'
 
 /** Смонтированный хост теста — его перепроверяют действия. */
@@ -100,6 +105,20 @@ const root = () => node('.so-date-picker')
 const trigger = () => node('.so-date-picker__trigger')
 const panel = () => node('.so-date-picker__panel')
 const isOpen = () => panel().style.display !== 'none'
+
+/**
+ * Frame панели — компонент шаблона DatePicker'а: хост теста его выходы не
+ * пишет, поэтому тест находит его в дереве представлений.
+ */
+function panelFrame(fixture: ComponentFixture<unknown>): TFrameComponent {
+	const frame: unknown = fixture.debugElement.query(
+		(node) => node.componentInstance instanceof TFrameComponent,
+	).componentInstance
+
+	if (!(frame instanceof TFrameComponent)) throw new Error('Frame панели не найден')
+
+	return frame
+}
 
 /** Скрытые поля формы в корне — значения полей DatePicker'а. */
 const hiddenValues = () =>
@@ -426,25 +445,35 @@ describe('одна дата', () => {
 
 	/**
 	 * Корень Angular не снимается, а прячется, а панель увезена в `body`:
-	 * `rendered` DatePicker передаёт ей сам, иначе открытая панель осталась бы
-	 * на виду без своего поля. Снова отрисованный — панель на виду, как и была.
+	 * `rendered` ей не передаётся, её прячет признак поддерева базы, иначе
+	 * открытая панель осталась бы на виду без своего поля. Узла у снятой
+	 * панели нет и у плагинов, как от `v-if` у Vue: Frame отдаёт `removed`, а
+	 * снова отрисованный — тот же узел кадром позже. Панель на виду, как и была.
 	 */
-	it('rendered: false прячет корень и открытую панель', async () => {
+	it('rendered: false прячет корень и открытую панель и снимает её узел', async () => {
 		const fixture = await render(Page)
 
 		await click(trigger())
+
+		const frame = panelFrame(fixture)
+		const events: Array<Element | 'removed'> = []
+
+		frame.soElementReady.subscribe((node) => events.push(node))
+		frame.soElementRemoved.subscribe(() => events.push('removed'))
 
 		fixture.componentInstance.rendered.set(false)
 		check()
 
 		expect(root().style.display).toBe('none')
 		expect(isOpen()).toBe(false)
+		expect(events).toEqual(['removed'])
 
 		fixture.componentInstance.rendered.set(true)
-		check()
+		await settle()
 
 		expect(root().style.display).toBe('')
 		expect(isOpen()).toBe(true)
+		expect(events).toEqual(['removed', panel()])
 	})
 })
 
