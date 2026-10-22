@@ -16,7 +16,11 @@
  * панели, увезённой в `body`: она идёт за местом владельца и пересобирается
  * вместе с ним, а снятый владелец уводит её сразу. У Select ещё поле — деталь
  * Input над экземпляром поля владельца, — а в `multiple` и теги в поле над
- * экземпляром и коллекцией, которые держит его движок.
+ * экземпляром и коллекцией, которые держит его движок. У календаря — дни над
+ * днями движка и заголовки мест над поповерами и списками мест, которые
+ * держит его расширение `picker`, а у DatePicker — поля над его полями и
+ * календарь панели над его календарём и движком: панель в `body` идёт за
+ * местом DatePicker.
  *
  * Список над движком без `ctrl`, подключённый раньше, чем снят прежний, берёт
  * привязку владельца себе, хотя прежний ещё держит движок.
@@ -24,6 +28,8 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
+	TCalendar,
+	TDatePicker,
 	TEvented,
 	TListBox,
 	TMenu,
@@ -33,6 +39,7 @@ import {
 	TTabs,
 	TTags,
 	TVirtual,
+	createEngineCalendar,
 	createEngineListBox,
 	createEngineMenu,
 	createEnginePagination,
@@ -44,6 +51,8 @@ import {
 	type TTableCollection,
 } from '@soldy-ui/core'
 import {
+	TCalendarElement,
+	TDatePickerElement,
 	TListBoxElement,
 	TMenuElement,
 	TPaginationElement,
@@ -52,6 +61,8 @@ import {
 	TTabsElement,
 	TTagsElement,
 	TVirtualElement,
+	type TCalendarElementProps,
+	type TDatePickerElementProps,
 	type TListBoxElementProps,
 	type TMenuElementProps,
 	type TPaginationElementProps,
@@ -105,6 +116,14 @@ function isTable(node: Element): node is TTableElementProps {
 
 function isVirtual(node: Element): node is TVirtualElementProps {
 	return node instanceof TVirtualElement
+}
+
+function isCalendar(node: Element): node is TCalendarElementProps {
+	return node instanceof TCalendarElement
+}
+
+function isDatePicker(node: Element): node is TDatePickerElementProps {
+	return node instanceof TDatePickerElement
 }
 
 /**
@@ -554,5 +573,135 @@ describe('Table над движком и владельцем снаружи', (
 		// Подключение и три перестановки — окно на каждом, снятие — без окна
 		expect(windows).toEqual([true, false, true, false, true, false, true, false])
 		expect(engine.extensions.draw.virtual).toBe(false)
+	})
+})
+
+/** Шины расширений движка — каждого, кто есть: у календаря их пять, у списка панели места — свои. */
+function extensionBuses(engine: { readonly extensions: object }): TEvented<any>[] {
+	return Object.values(engine.extensions).flatMap((extension: unknown) =>
+		typeof extension === 'object' &&
+		extension !== null &&
+		'events' in extension &&
+		extension.events instanceof TEvented
+			? [extension.events]
+			: [],
+	)
+}
+
+/**
+ * Узел, переставленный трижды одной операцией и снятый: после каждой
+ * перестановки он собран заново одной сборкой — подписки те же, что после
+ * первой, — а после снятия на шинах ничего. Что собрано, сверяет `assert`.
+ * Не подключённый узел сначала подключается: подписки одной сборки — после
+ * первой перестановки, как у `moveThriceAndRemove`.
+ */
+async function moveThriceAndRemoveNode(
+	el: HTMLElement,
+	live: () => string[],
+	assert: () => void,
+): Promise<void> {
+	if (!el.isConnected) {
+		document.body.appendChild(el)
+		await flush()
+	}
+
+	let mounted: string[] | undefined
+
+	for (let i = 0; i < 3; i++) {
+		document.body.appendChild(document.createElement('section')).appendChild(el)
+		await flush()
+
+		mounted ??= live().sort()
+
+		assert()
+		expect(live().sort()).toEqual(mounted)
+	}
+
+	el.remove()
+
+	expect(live()).toEqual([])
+}
+
+/**
+ * Как у Pagination: дни кладёт в движок вид по месяцам сеток, а рисует шаблон
+ * — элементами дней над ними. Заголовок места — поповер на `div` над поповером
+ * места со списком в панели, их держит расширение `picker` движка. Каждая
+ * перестановка — новые связки календаря, дней и заголовков над теми же
+ * экземплярами: дни остаются в движке, пока показан их месяц.
+ */
+describe('Calendar над движком и владельцем снаружи', () => {
+	it('переставленный трижды и снятый — на шинах владельца, движка, дней и мест ничего', async () => {
+		const owner = new TCalendar({ months: ['2026-09-01'] })
+		const engine = createEngineCalendar()
+		const el = document.createElement('div', { is: 'so-calendar' })
+
+		if (!isCalendar(el)) throw new Error('<div is="so-calendar"> нет')
+
+		el.ctrl = owner
+		el.engine = engine
+		document.body.appendChild(el)
+		await flush()
+
+		const picker = engine.extensions.picker.pickers[0]
+
+		if (!picker) throw new Error('панели места нет')
+
+		// Панель открыта — список места собран: его подписки тоже в счёте
+		picker.popover.open = true
+		await flush()
+
+		const live = watchBuses([
+			owner.events,
+			engine.events,
+			...extensionBuses(engine),
+			...engine.extensions.batch.items.map((day) => day.events),
+			picker.popover.events,
+			picker.list.events,
+			picker.engine.events,
+			...extensionBuses(picker.engine),
+		])
+
+		await moveThriceAndRemoveNode(el, live, () => {
+			expect(el.querySelectorAll('.so-calendar-item')).toHaveLength(30)
+			expect(el.querySelectorAll('.so-calendar__heading')).toHaveLength(1)
+		})
+
+		expect(engine.options.get('owner')).toBeUndefined()
+	})
+})
+
+/**
+ * У DatePicker экземпляры свои на всю жизнь: поля, календарь и его движок. Поле
+ * — деталь DateInput над полем DatePicker, календарь панели — деталь Calendar
+ * над его календарём и движком, а панель в `body` идёт за местом DatePicker и
+ * пересобирается вместе с ним.
+ */
+describe('DatePicker над владельцем снаружи', () => {
+	it('переставленный трижды и снятый — на шинах владельца, полей, календаря и движка ничего', async () => {
+		const owner = new TDatePicker({ value: '2026-09-10' })
+		const live = watchBuses([
+			owner.events,
+			owner.field.events,
+			owner.start.events,
+			owner.end.events,
+			owner.calendar.events,
+			owner.engine.events,
+			...extensionBuses(owner.engine),
+		])
+		const el = document.createElement('div', { is: 'so-date-picker' })
+
+		if (!isDatePicker(el)) throw new Error('<div is="so-date-picker"> нет')
+
+		el.ctrl = owner
+
+		await moveThriceAndRemoveNode(el, live, () => {
+			expect(el.querySelectorAll('.so-date-picker__field')).toHaveLength(1)
+			expect(document.querySelectorAll('.so-date-picker__panel')).toHaveLength(1)
+			expect(
+				document.querySelectorAll('.so-date-picker__panel .so-calendar-item'),
+			).toHaveLength(30)
+		})
+
+		expect(document.querySelector('.so-date-picker__panel')).toBeNull()
 	})
 })

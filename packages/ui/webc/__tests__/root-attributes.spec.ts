@@ -24,7 +24,8 @@
  * разметки уходят ей, а с неё — на `<input>`.
  * Набор владельца на элементе шаблона и наборы самого элемента сходятся в
  * одном раскладчике элемента (`TElementAttributes`): набор владельца главнее
- * при любом порядке записи.
+ * при любом порядке записи. Поле даты, Calendar и DatePicker атрибуты разметки
+ * не делят: своего `<input>` под них нет, и всё остаётся на корне, как у Vue.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -33,8 +34,11 @@ import {
 	TAccordionElement,
 	TAccordionItemElement,
 	TButtonElement,
+	TCalendarElement,
 	TCheckBoxElement,
 	TComponentViewElement,
+	TDateInputElement,
+	TDatePickerElement,
 	TDialogElement,
 	TDrawerElement,
 	TFieldElement,
@@ -78,8 +82,11 @@ import {
 	type TAccordionElementProps,
 	type TAccordionItemElementProps,
 	type TButtonElementProps,
+	type TCalendarElementProps,
 	type TCheckBoxElementProps,
 	type TComponentViewElementProps,
+	type TDateInputElementProps,
+	type TDatePickerElementProps,
 	type TDialogElementProps,
 	type TDrawerElementProps,
 	type TFieldElementProps,
@@ -319,6 +326,18 @@ function isSelectGroup(node: Element | null): node is TSelectGroupElementProps {
 	return node instanceof TSelectGroupElement
 }
 
+function isDateInput(node: Element | null): node is TDateInputElementProps {
+	return node instanceof TDateInputElement
+}
+
+function isCalendar(node: Element | null): node is TCalendarElementProps {
+	return node instanceof TCalendarElement
+}
+
+function isDatePicker(node: Element | null): node is TDatePickerElementProps {
+	return node instanceof TDatePickerElement
+}
+
 /**
  * Элемент разметки, подключённый к документу; узел не того вида — тест падает
  * здесь. Элемент берётся до вставки — живым он стал уже в `innerHTML`: слой
@@ -461,6 +480,11 @@ const COMPONENTS: ReadonlyArray<
 		'[embedded="select.row"]',
 	],
 	['Select.Group', 'div', 'so-select-group', isSelectGroup, 'so-select-group', null],
+	// Поле даты — группа частей без `<input>`, календарь — сетки, DatePicker —
+	// якорь панели вокруг полей: атрибуты разметки остаются на корне, как у Vue
+	['DateInput', 'div', 'so-date-input', isDateInput, 'so-date-input', null],
+	['Calendar', 'div', 'so-calendar', isCalendar, 'so-calendar', null],
+	['DatePicker', 'div', 'so-date-picker', isDatePicker, 'so-date-picker', null],
 ]
 
 /** Корни без поля: атрибуты разметки стоят на них самих. */
@@ -765,6 +789,31 @@ describe('слой aria корня из другого выхода', () => {
 
 		expect(el.hasAttribute('aria-label')).toBe(false)
 		expect(el.querySelector('input')?.getAttribute('aria-label')).toBe('Громкость')
+	})
+
+	/**
+	 * У DatePicker — тоже `rootAria`: у диапазона корень — группа полей концов с
+	 * именем DatePicker, у одной даты группа — само поле, и набор корня пуст, а
+	 * `aria` DatePicker шаблон кладёт на поле.
+	 */
+	it('DatePicker: у диапазона на корне — группа, у одной даты имя — у поля', async () => {
+		const el = mount(
+			'<div is="so-date-picker" mode="range" aria_label="Поездка"></div>',
+			isDatePicker,
+		)
+
+		expect(el.getAttribute('role')).toBe('group')
+		expect(el.getAttribute('aria-label')).toBe('Поездка')
+
+		el.mode = 'single'
+		await flush()
+
+		const field = el.querySelector('.so-date-picker__field')
+
+		expect(el.hasAttribute('role')).toBe(false)
+		expect(el.hasAttribute('aria-label')).toBe(false)
+		expect(field?.getAttribute('role')).toBe('group')
+		expect(field?.getAttribute('aria-label')).toBe('Поездка')
 	})
 })
 
