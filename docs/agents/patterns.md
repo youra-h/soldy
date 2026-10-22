@@ -176,7 +176,7 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   на первый выбранный тег. Сторожат `core/__tests__/tags.spec.ts`,
   `plugins/__tests__/tags-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`,
-  `ui/solid/__tests__/tags.spec.tsx` и
+  `ui/solid/__tests__/tags.spec.tsx`, `ui/react/__tests__/tags.spec.tsx` и
   `playground/vue/browser/tags-keyboard.spec.ts`.
   **Тегам, которым не хватило ширины ряда, отвечает одно свойство —
   `overflow`** (`wrap` по умолчанию, `scroll`). В теме оно состоянием,
@@ -214,8 +214,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/tags-scroll.plugin.spec.ts`,
   `ui/vue/__tests__/tags-overflow.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`
   («переполнение», «слот default») и `select.spec.ts` («слот tags»), те же
-  группы в `ui/solid/__tests__/tags.spec.tsx` и `select.spec.tsx`,
-  `playground/vue/browser/tags-overflow.spec.ts`,
+  группы в `ui/solid/__tests__/tags.spec.tsx` и `select.spec.tsx` и в
+  `ui/react/__tests__/tags.spec.tsx` («переполнение», «дети-функция») и
+  `select.spec.tsx` («слот tags»), `playground/vue/browser/tags-overflow.spec.ts`,
   `playground/vue/browser/tags-variant.spec.ts` и
   `playground/vue/browser/select-tags.spec.ts`.
 - **Accordion** — одноимённый паттерн: `aria-expanded` на заголовке,
@@ -250,7 +251,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   начинается с опций и со списка, который прокручивается, — с ними работают
   сами. Сторожат `core/__tests__/select.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
-  `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx` и
+  `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx`,
+  `ui/react/__tests__/select.spec.tsx` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
   корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
   эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
@@ -267,7 +269,20 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   входят в коллекцию своего набора. Тело компонента выполняется один раз, и
   поле, ряд тегов и опции — узлы на всё монтирование: открытие, выбор и отбор
   их не пересоздают (сторожит «узлы — те же» в
-  `ui/solid/__tests__/select.spec.tsx`).
+  `ui/solid/__tests__/select.spec.tsx`). У React панель — портал Frame, как у
+  Menu: лифт Select приходит в неё контекстом React — портал его сохраняет, —
+  и опции разметкой входят в его коллекцию при коммите; на сервере портала
+  нет, и опции разметкой входят в коллекцию только после гидратации, а Select
+  из `items` сервер рисует с текстом выбранного и тегами. Якорь панели —
+  корень значением рендера (`useRootElement`). Поле и ряд тегов — компоненты
+  над экземплярами сборки Select (`field`, `tags`), и ключ у них — экземпляр:
+  пересобранный Select (StrictMode, `<Activity>`) без `ctrl` — новое поле, без
+  движка снаружи — новые теги, и `Input` и `Tags` над ними монтируются заново,
+  а не остаются над прежними; своё поле и свой ряд в слотах `field` и `tags`
+  ставят над экземплярами из scope тот же ключ. Между перерисовками поле, ряд
+  тегов и опции — те же узлы: React сверяет разметку по типу и ключу
+  (сторожат «узлы — те же» и группа «React» в
+  `ui/react/__tests__/select.spec.tsx`).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
   `role="switch"` на вложенном `<input>`, состояние сообщает нативный
   `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
@@ -412,8 +427,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `<Field helper="…"><Label text="…"><CheckBox /></Label></Field>`: имя даёт
   `Label`, справку — поле. Адаптеры: Vue, React, Solid, Svelte, Angular и Web
   Components; в пяти последних связку берут поля, которые в них есть, — Input,
-  NumberInput, CheckBox, Switch и RadioGroup, у Svelte — ещё Rating, Slider и
-  Select, у Solid — ещё Rating, Slider, Select, DateInput и DatePicker.
+  NumberInput, CheckBox, Switch и RadioGroup, у React и Svelte — ещё Rating,
+  Slider и Select, у Solid — ещё Rating, Slider, Select, DateInput и
+  DatePicker.
   Проводка у всех одна — поле ставит `TFieldExtension`, контрол —
   `TFieldControlExtension` на свой лифт, — а слой лифта каждый адаптер отдаёт
   своим механизмом. Поле ставит под свой слой
@@ -2436,10 +2452,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   из окна, собирается без окна и снимает окно с движка, вставленный обратно —
   снова в окне. Разметку, ожившую при регистрации, база собирает по месту
   (`ui/webc/src/adapter/runtime/deferral.ts`): обёртку — раньше списков в ней.
-  Стиль распорки — по свойствам из записи. Select в React, Angular и Web
-  Components нет — окно у него во
-  Vue, Svelte и Solid; у Svelte и Solid панель телепортирована, и окно рисует
-  опции в ней, по секциям нарисованного. Сторожат
+  Стиль распорки — по свойствам из записи. Select в Angular и Web Components
+  нет — окно у него во Vue, React, Svelte и Solid; у React, Svelte и Solid
+  панель телепортирована, и окно рисует опции в ней, по секциям нарисованного.
+  Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
   `core/__tests__/select-virtual.spec.ts`,
@@ -2450,8 +2466,9 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `setup/__tests__/virtual.spec.ts` (и фазы: подписка на обёртку — только у
   принятой коллекции), «окно» в `setup/__tests__/list-height.spec.ts`,
   `ui/vue/__tests__/virtual.spec.ts`, `ui/react/__tests__/virtual.spec.tsx`
-  (сверх сценариев Vue — элемент, оставшийся в окне, не перемонтируется,
-  StrictMode, сервер с гидратацией, подсветка дорисованного элемента), строки
+  (сверх сценариев Vue — элемент и опция Select, оставшиеся в окне, не
+  перемонтируются, StrictMode, сервер с гидратацией, подсветка дорисованного
+  элемента; Select в окне — распорки в списке панели), строки
   `Virtual` в `ui/react/__tests__/external-lifetime.spec.tsx`,
   `ui/solid/__tests__/virtual.spec.tsx` (вместо StrictMode — снятый список
   снимает окно с движка снаружи и отписан от обёртки; Select в окне —
