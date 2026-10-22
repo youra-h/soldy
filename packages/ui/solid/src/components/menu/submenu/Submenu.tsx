@@ -1,4 +1,4 @@
-import { For, Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { IMenuItem, TGroupSection, TMenuSubmenuEntries } from '@soldy-ui/core'
 import {
@@ -16,6 +16,7 @@ import {
 	toPartClass,
 	toRootForward,
 } from '../../../adapter'
+import { For, Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'

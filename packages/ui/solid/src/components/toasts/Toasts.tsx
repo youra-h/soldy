@@ -1,6 +1,7 @@
-import { For, Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Elevate, Teleport, createRootProps, relaySlot, renderSlot, rootTag } from '../../adapter'
+import { For, Show } from '../../adapter/runtime/flow'
 import { ToastsItem } from './item'
 import { setupToasts } from './setup.component'
 import type { ToastsProps } from './base.component'

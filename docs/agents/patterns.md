@@ -177,7 +177,7 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   `plugins/__tests__/tags-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`,
   `ui/solid/__tests__/tags.spec.tsx`, `ui/react/__tests__/tags.spec.tsx`,
-  `ui/webc/__tests__/tags.spec.ts`,
+  `ui/angular/__tests__/tags.spec.ts`, `ui/webc/__tests__/tags.spec.ts`,
   `playground/vue/browser/tags-keyboard.spec.ts` и
   `playground/vue/browser/webc-collections.spec.ts` («Tags · клавиатура»).
   **Тегам, которым не хватило ширины ряда, отвечает одно свойство —
@@ -222,9 +222,12 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   («переполнение», «слот default») и `select.spec.ts` («слот tags»), те же
   группы в `ui/solid/__tests__/tags.spec.tsx` и `select.spec.tsx` и в
   `ui/react/__tests__/tags.spec.tsx` («переполнение», «дети-функция») и
-  `select.spec.tsx` («слот tags»), в `ui/webc/__tests__/tags.spec.ts`
-  («переполнение», «слот default: своя раскладка тегов») и `select.spec.ts`
-  («слот tags»), `playground/vue/browser/tags-overflow.spec.ts`,
+  `select.spec.tsx` («слот tags»), в `ui/angular/__tests__/tags.spec.ts`
+  («переполнение», «шаблон default»: и в `<div so-scroller>` каждый тег
+  отрисован один раз) и `select.spec.ts` («слот tags»), в
+  `ui/webc/__tests__/tags.spec.ts` («переполнение», «слот default: своя
+  раскладка тегов») и `select.spec.ts` («слот tags»),
+  `playground/vue/browser/tags-overflow.spec.ts`,
   `playground/vue/browser/tags-variant.spec.ts` и
   `playground/vue/browser/select-tags.spec.ts`.
 - **Accordion** — одноимённый паттерн: `aria-expanded` на заголовке,
@@ -260,7 +263,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   сами. Сторожат `core/__tests__/select.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
   `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx`,
-  `ui/react/__tests__/select.spec.tsx`, `ui/webc/__tests__/select.spec.ts` и
+  `ui/react/__tests__/select.spec.tsx`, `ui/angular/__tests__/select.spec.ts`,
+  `ui/webc/__tests__/select.spec.ts` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
   корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
   эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
@@ -290,13 +294,27 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   ставят над экземплярами из scope тот же ключ. Между перерисовками поле, ряд
   тегов и опции — те же узлы: React сверяет разметку по типу и ключу
   (сторожат «узлы — те же» и группа «React» в
-  `ui/react/__tests__/select.spec.tsx`). У Web Components панель — деталь
-  Frame с якорем-корнем, как у Menu: в `body` её уводит база Frame, опции в
-  ней находят лифт Select от её якоря, а за местом Select она идёт с ним.
-  Поле — деталь Input над экземпляром поля Select, ряд тегов — деталь Tags
-  над экземпляром, который держит Select: сменился экземпляр — новая деталь,
-  а набор `aria` Select у детали с полем ложится на `<input>` комбобокса
-  (сторожит `ui/webc/__tests__/select.spec.ts`, «набор Select — на поле»,
+  `ui/react/__tests__/select.spec.tsx`). У Angular панель — Frame в шаблоне
+  Select, увезённый в `body`, как у Menu: опции разметки — основная проекция
+  Select, и его слой лифта они видят там, где их написали, — DI идёт по дереву
+  объявлений, — а в коллекцию входят в своём `ngOnInit`, и на сервере тоже.
+  Поэтому сервер рисует поле с текстом выбранного и у опций разметкой, в
+  `multiple` — с тегами, а от панели — пустой скрытый элемент Frame: слой есть
+  только в браузере. Якорь панели — корень значением (`rootElement()` базы).
+  Поле — `<div so-input>` в шаблоне Select, а оно само хост, который отдаёт
+  написанное своему `<input>`: набор `aria` Select (`[so-attributes]` на поле)
+  и всё, что потребитель написал на Select, кроме класса и стиля, доходят до
+  `<input>` цепочкой хостов, как `v-bind` на `<Input>` у Vue. Тело компонента
+  Angular собирается один раз, поэтому поле, ряд тегов и опции — узлы на всё
+  монтирование (сторожат «узлы — те же», «атрибуты» и «Angular» в
+  `ui/angular/__tests__/select.spec.ts`, Select в `field.spec.ts`,
+  `attrs.spec.ts` и `collections.server.spec.ts`). У Web Components панель —
+  деталь Frame с якорем-корнем, как у Menu: в `body` её уводит база Frame,
+  опции в ней находят лифт Select от её якоря, а за местом Select она идёт с
+  ним. Поле — деталь Input над экземпляром поля Select, ряд тегов — деталь
+  Tags над экземпляром, который держит Select: сменился экземпляр — новая
+  деталь, а набор `aria` Select у детали с полем ложится на `<input>`
+  комбобокса (сторожит `ui/webc/__tests__/select.spec.ts`, «набор Select — на поле»,
   «смена mode после сборки», «перестановка»).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
   `role="switch"` на вложенном `<input>`, состояние сообщает нативный
@@ -908,9 +926,8 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   другую группу, `rendered: false` у меню и подменю, классы панели рядом с
   классами Frame, снятый `item-content` возвращает подменю его пункты из
   данных, группа переключателей в `item-content` — ключ группы у её
-  переключателей, `item-content` подменю разметкой) и
-  `ui/angular/__tests__/slot-outlet.spec.ts` (вывод шаблона с инжектором
-  места),
+  переключателей, новое в scope `item-content` — те же узлы и пункты подменю,
+  `item-content` подменю разметкой),
   `ui/angular/__tests__/collections.server.spec.ts` (на сервере — пустая
   скрытая панель, после гидратации — пункты в коллекции, ↓ открывает меню) и
   `playground/vue/browser/angular-host.spec.ts` (панели меню и подменю стоят у
@@ -930,10 +947,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   контекстами, а слоты пунктов из данных — шаблоны, которые меню отдаёт
   подменю из данных под теми же именами. Панель подменю из данных — шаблон
   `item-content`: подменю рисует его вместо своих пунктов из данных, у
-  каждого, как сниппет у Svelte, а выводит с инжектором места
-  (`[so-slot-outlet]`), и пункты из шаблона входят в коллекцию подменю, а не
-  меню, где шаблон написан (`packages/ui/angular/AGENTS.md`, «Шаблон слота с
-  DI места вывода»).
+  каждого, как сниппет у Svelte, а выводит `ngTemplateOutlet` с инжектором
+  места (`ngTemplateOutletInjector="outlet"`), и пункты из шаблона входят в
+  коллекцию подменю, а не меню, где шаблон написан
+  (`packages/ui/angular/AGENTS.md`, «Шаблон слота с DI места вывода»).
 - **Tooltip** — Tooltip pattern: `role="tooltip"` и `id` на панели, фокус
   остаётся на триггере, кнопки закрытия нет. Отдельный компонент, а не режим
   Popover: роль и модель фокуса у них разные, общий у них только слой оверлея
@@ -2512,9 +2529,11 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   из окна, собирается без окна и снимает окно с движка, вставленный обратно —
   снова в окне. Разметку, ожившую при регистрации, база собирает по месту
   (`ui/webc/src/adapter/runtime/deferral.ts`): обёртку — раньше списков в ней.
-  Стиль распорки — по свойствам из записи. Select в Angular и Web Components
-  нет — окно у него во Vue, React, Svelte и Solid; у React, Svelte и Solid
-  панель телепортирована, и окно рисует опции в ней, по секциям нарисованного.
+  Стиль распорки — по свойствам из записи. Select в Web Components нет — окно
+  у него во Vue, React, Svelte, Solid и Angular; у React, Svelte, Solid и
+  Angular панель телепортирована, и окно рисует опции в ней, по секциям
+  нарисованного: у Angular подключение к окну Select читает из слоя, внутри
+  которого его написали, хотя панель уехала в `body`.
   Сторожат
   `core/__tests__/collection.draw.spec.ts`,
   `core/__tests__/list-box-virtual.spec.ts`,
@@ -2539,7 +2558,8 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   распорки в списке панели), «Virtual» в
   `ui/svelte/__tests__/collections.server.spec.ts`,
   `ui/angular/__tests__/virtual.spec.ts` (вместо StrictMode — то же снятие
-  списка и обёртки; обёртка без бокса), «Virtual» в
+  списка и обёртки; обёртка без бокса; Select в окне — распорки в списке
+  панели), «Virtual» в
   `ui/angular/__tests__/collections.server.spec.ts`,
   `ui/webc/__tests__/virtual.spec.ts` (вместо StrictMode — снятая обёртка
   снимает окно с движка снаружи, список, вынутый из окна, его теряет, а

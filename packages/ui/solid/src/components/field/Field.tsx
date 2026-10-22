@@ -1,4 +1,4 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
@@ -9,6 +9,7 @@ import {
 	roleIcon,
 	rootTag,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Icon } from '../icon'
 import { setupField } from './setup.component'
 import type { FieldProps } from './base.component'

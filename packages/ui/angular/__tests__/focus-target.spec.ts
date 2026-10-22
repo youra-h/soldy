@@ -3,7 +3,8 @@
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`) и React
  * (`focus-target.spec.tsx`), по компонентам адаптера. У поля корень — коробка
- * вокруг `<input>`, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
+ * вокруг `<input>`, у Select — рамка вокруг поля и тегов, у набора тегов — ряд
+ * вокруг строк и крестиков, у ползунка и оценки — дорожка вокруг полей ручек, у ListBox
  * — рамка вокруг узла списка, у Tabs — рамка со списком табов и панелями, у
  * группы радио и аккордеона — контейнер остановок, у пагинации — `nav` без
  * своей остановки, у ленты — ряд из кнопок и вьюпорта, у элемента коллекции —
@@ -37,10 +38,14 @@ import {
 	TRadioGroupItem,
 	TRating,
 	TScroller,
+	TSelect,
+	TSelectItem,
 	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTags,
+	TTagsItem,
 	TTextarea,
 	createEngineTabs,
 } from '@soldy-ui/core'
@@ -66,10 +71,14 @@ import {
 	TRadioGroupItemComponent,
 	TRatingComponent,
 	TScrollerComponent,
+	TSelectComponent,
+	TSelectItemComponent,
 	TSliderComponent,
 	TSwitchComponent,
 	TTabsComponent,
 	TTabsItemComponent,
+	TTagsComponent,
+	TTagsItemComponent,
 	TTextareaComponent,
 } from '@soldy-ui/angular'
 import { find, findIn, mountHost, nextFrame } from './mount'
@@ -436,6 +445,75 @@ class ScrollerHost {
 	readonly ctrl = new TScroller()
 }
 
+/** Select: фокус держит `<input>` поля, а корень — рамка вокруг поля и тегов. */
+@Component({
+	selector: 'probe-select-focus',
+	standalone: true,
+	imports: [TSelectComponent, TSelectItemComponent],
+	template: `<div so-select [ctrl]="ctrl">
+		<div so-select-item value="a" text="A"></div>
+	</div>`,
+})
+class SelectHost {
+	readonly ctrl = new TSelect()
+}
+
+/** Select с тегами: крестик тега — нативная остановка перед полем, фокус — на поле. */
+@Component({
+	selector: 'probe-select-tags-focus',
+	standalone: true,
+	imports: [TSelectComponent, TSelectItemComponent],
+	template: `<div so-select [ctrl]="ctrl" mode="multiple" [value]="value">
+		<div so-select-item value="a" text="A"></div>
+		<div so-select-item value="b" text="B"></div>
+	</div>`,
+})
+class SelectTagsHost {
+	readonly ctrl = new TSelect()
+	readonly value = ['a', 'b']
+}
+
+/** Набор тегов с выбором: остановка — выбранный тег, а не крестик первого. */
+@Component({
+	selector: 'probe-tags-single-focus',
+	standalone: true,
+	imports: [TTagsComponent, TTagsItemComponent],
+	template: `<div so-tags [ctrl]="ctrl" mode="single" closable>
+		<div so-tags-item value="a" text="A"></div>
+		<div so-tags-item value="b" text="B" selected class="target"></div>
+	</div>`,
+})
+class TagsSelectingHost {
+	readonly ctrl = new TTags()
+}
+
+/** Набор тегов без выбора: у строк остановки нет — остановка набора — крестик первого. */
+@Component({
+	selector: 'probe-tags-none-focus',
+	standalone: true,
+	imports: [TTagsComponent, TTagsItemComponent],
+	template: `<div so-tags [ctrl]="ctrl" closable>
+		<div so-tags-item value="a" text="A" class="target"></div>
+		<div so-tags-item value="b" text="B"></div>
+	</div>`,
+})
+class TagsPlainHost {
+	readonly ctrl = new TTags()
+}
+
+@Component({
+	selector: 'probe-tags-item-focus',
+	standalone: true,
+	imports: [TTagsComponent, TTagsItemComponent],
+	template: `<div so-tags closable>
+		<div so-tags-item value="a" text="A"></div>
+		<div so-tags-item class="target" [ctrl]="ctrl"></div>
+	</div>`,
+})
+class TagsItemHost {
+	readonly ctrl = new TTagsItem({ value: 'b', text: 'B' })
+}
+
 /**
  * Хост с инстансом, которому тест пишет `focused`. Тип инстанса — только
  * свойство: карта событий у каждого контрола своя.
@@ -471,6 +549,12 @@ const CASES: Record<string, TCase> = {
 		before: '.so-pagination__prev',
 	},
 	'Scroller со своими остановками': { host: ScrollerHost, target: '.target' },
+	Select: { host: SelectHost, target: '.so-select__field input' },
+	'Select multiple с тегами': {
+		host: SelectTagsHost,
+		target: '.so-select__field input',
+		before: '.so-tags-item__close',
+	},
 	'RadioGroup.Item': { host: RadioHost, target: '.target input' },
 	ListBox: { host: ListBoxHost, target: '[role="listbox"]' },
 	'ListBox с полем в header': {
@@ -494,6 +578,9 @@ const CASES: Record<string, TCase> = {
 		host: AccordionDisabledHost,
 		target: '.target .so-accordion-item__header',
 	},
+	'Tags с выбором': { host: TagsSelectingHost, target: '.target [role="option"]' },
+	'Tags без выбора': { host: TagsPlainHost, target: '.target .so-tags-item__close' },
+	'Tags.Item': { host: TagsItemHost, target: '.target [role="listitem"]' },
 	'Tabs.Item': { host: TabsItemHost, target: '.target [role="tab"]' },
 	'Accordion.Item': { host: AccordionItemHost, target: '.target .so-accordion-item__header' },
 	'ListBox.Item': { host: ListBoxItemHost, target: '.target [role="option"]' },
@@ -662,6 +749,47 @@ describe('RadioGroup · отметка по модели', () => {
 class ScrollerViewportHost {
 	readonly ctrl = new TScroller()
 }
+
+@Component({
+	selector: 'probe-select-item-focus',
+	standalone: true,
+	imports: [TSelectComponent, TSelectItemComponent],
+	template: `<div so-select [ctrl]="select">
+		<div so-select-item value="a" text="A"></div>
+		<div so-select-item [ctrl]="item"></div>
+	</div>`,
+})
+class SelectItemHost {
+	readonly select = new TSelect()
+	readonly item = new TSelectItem({ value: 'b', text: 'B' })
+}
+
+describe('Select.Item · фокус остаётся на поле', () => {
+	/**
+	 * У комбобокса DOM-фокус всегда на поле, а подсвеченную опцию объявляет
+	 * `aria-activedescendant`: правила у опции нет, и запись её `focused`
+	 * фокус с поля не уводит.
+	 */
+	it('focused = true у опции фокус с поля не уводит', async () => {
+		const fixture = mountHost(SelectItemHost)
+		const { select, item } = fixture.componentInstance
+
+		await nextFrame()
+		fixture.detectChanges()
+
+		select.focused = true
+		fixture.detectChanges()
+
+		const field = find(document, '.so-select__field input', HTMLElement)
+
+		expect(document.activeElement).toBe(field)
+
+		item.focused = true
+		fixture.detectChanges()
+
+		expect(document.activeElement).toBe(field)
+	})
+})
 
 describe('Scroller · вьюпорт — остановка', () => {
 	/**

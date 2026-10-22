@@ -40,7 +40,7 @@ import accordionLayerStreamed from './markup/accordion-layer-streamed.html?raw'
 
 /**
  * Открыто ли окно гидратации — условие `isHydrating` из `solid-js/web` без
- * узла, как у адаптера (`hydrating` в `src/adapter/common/root.ts`).
+ * узла, как у адаптера (`hydrating` в `src/adapter/common/hydration.ts`).
  */
 const hydrating = () => Boolean(sharedConfig.context) && !sharedConfig.done
 

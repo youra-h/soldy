@@ -1,5 +1,6 @@
 import { Directive, ElementRef, Input, inject } from '@angular/core'
 import type { TAttributesMap } from '@soldy-ui/core'
+import { TForwardRegistry } from '../attrs/registry'
 import { TElementAttributes, attributesOf } from './root-attributes'
 
 /**
@@ -31,6 +32,15 @@ import { TElementAttributes, attributesOf } from './root-attributes'
  * пишет себе сама, при любом порядке записи. Пишут оба через один раскладчик
  * элемента (`TElementAttributes`): набор владельца — его верхний слой.
  *
+ * Корень вложенного компонента бывает хостом, который отдаёт написанное на нём
+ * узлу внутри (рендерер адаптера, `provideAttrs()`): поле `<div so-input>` в
+ * шаблоне Select, элемент коллекции, ListBox и Tabs. Набор на нём — то же
+ * написанное на хосте, что статика и привязки, и ложится туда же: директива
+ * отдаёт его записи хоста (`TForwardedHost`), а та — своему узлу, `<input>`
+ * или строке, поверх набора, который туда кладёт шаблон самого компонента.
+ * Узел записи сам хост — набор идёт дальше по цепочке, как `v-bind` на
+ * `<Input>` у Vue. Так `aria` Select доходит до `<input>` его поля.
+ *
  * Своего набора у разметки без компонента нет: директива кладёт тот, что
  * держит владелец (`aria` поля, `clearAria`, у коллекций — `contentAria`).
  *
@@ -41,14 +51,22 @@ import { TElementAttributes, attributesOf } from './root-attributes'
 	standalone: true,
 })
 export class AttributesDirective {
-	/** Раскладчик элемента — общий с базой компонента, если элемент — его корень. */
-	private readonly _attributes = TElementAttributes.of(
-		inject<ElementRef<Element>>(ElementRef).nativeElement,
-	)
+	private readonly _element = inject<ElementRef<Element>>(ElementRef).nativeElement
+
+	/**
+	 * Реестр рендерера адаптера: элемент бывает хостом в нём, и набор тогда —
+	 * его записи. Без `provideAttrs()` реестра нет, а хостов в нём — тем более.
+	 */
+	private readonly _registry = inject(TForwardRegistry, { optional: true })
 
 	/** Набор владельца: снимок набора ядра (`aria`, `clearAria`); нет — пустой. */
 	@Input({ alias: 'so-attributes', required: true })
 	set attributes(set: TAttributesMap | null | undefined) {
-		this._attributes.set('markup', attributesOf(set))
+		// Хост компонент регистрирует в конструкторе, а он идёт раньше директив
+		// того же элемента: к первой записи набора запись хоста уже есть
+		const host = this._registry?.hostOf(this._element)
+
+		if (host) host.setMarkup(attributesOf(set))
+		else TElementAttributes.of(this._element).set('markup', attributesOf(set))
 	}
 }

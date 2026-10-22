@@ -58,8 +58,8 @@
 	порядку, ключ — `uid`. Слоты пункта пробрасываются целиком и только
 	заданные, а свои `item` и `item-*` подменю отдаёт следующему уровню под
 	теми же именами. `item-content` — панель подменю следующего уровня: его
-	шаблон `default` с выводом `[so-slot-outlet]`, как у меню (см. шаблон
-	меню).
+	шаблон `default` с выводом с инжектором места
+	(`ngTemplateOutletInjector="outlet"`), как у меню (см. шаблон меню).
 -->
 <ng-template #entries let-items>
 	@for (item of items; track item.uid) {
@@ -97,8 +97,9 @@
 				@if (slot('item-content'); as panel) {
 					<ng-template slot="default" ngProjectAs="ng-template[slot]">
 						<ng-container
-							[so-slot-outlet]="panel"
-							[so-slot-outlet-context]="{ item }"
+							[ngTemplateOutlet]="panel"
+							[ngTemplateOutletContext]="{ item }"
+							ngTemplateOutletInjector="outlet"
 						/>
 					</ng-template>
 				}

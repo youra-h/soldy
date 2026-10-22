@@ -6,10 +6,13 @@
  * пока задан её текст, ошибка — при `invalid` и на месте подсказки. С
  * контролом поле связывает проводка: поле опускает связку в свой слой лифта
  * (`provideElevator()`), контрол её берёт. Labelable-контрол (Input,
- * NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой) подпись
- * называет своим `for`, группу (RadioGroup, Slider с несколькими ручками) —
- * ссылкой `aria-labelledby`. Справку контрол получает в `aria-describedby`,
- * ошибку — `aria-invalid` и `data-invalid` на своём корне.
+ * NumberInput, Select, CheckBox, Switch, Rating, Slider с одной ручкой)
+ * подпись называет своим `for`, группу (RadioGroup, Slider с несколькими
+ * ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
+ * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
+ * корне. У Select связку берёт он сам, а не его поле — деталь его разметки:
+ * набор `aria` Select разметка кладёт на поле, а цепочка хостов доводит его до
+ * `<input>`, где фокус.
  *
  * Угол зрения здесь свой. Обёртки нет: корень — элемент потребителя
  * (`<div so-field>`), слот части — элемент с атрибутом `slot`, как у Label.
@@ -32,6 +35,8 @@ import {
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TRatingComponent,
+	TSelectComponent,
+	TSelectItemComponent,
 	TSliderComponent,
 	TSwitchComponent,
 } from '@soldy-ui/angular'
@@ -108,6 +113,7 @@ class SectionHost {}
 type TControl =
 	| 'input'
 	| 'number-input'
+	| 'select'
 	| 'check-box'
 	| 'switch'
 	| 'rating'
@@ -131,6 +137,8 @@ type TControl =
 		TSliderComponent,
 		TRadioGroupComponent,
 		TRadioGroupItemComponent,
+		TSelectComponent,
+		TSelectItemComponent,
 	],
 	template: `<div so-field [ctrl]="field">
 		@switch (control) {
@@ -139,6 +147,12 @@ type TControl =
 			}
 			@case ('number-input') {
 				<div so-number-input></div>
+			}
+			@case ('select') {
+				<div so-select>
+					<div so-select-item value="msk" text="Москва"></div>
+					<div so-select-item value="tver" text="Тверь"></div>
+				</div>
 			}
 			@case ('check-box') {
 				<span so-check-box></span>
@@ -267,12 +281,13 @@ describe('Field · разметка', () => {
 /**
  * Labelable-контрол: `for` подписи ведёт на его поле, а справка и ошибка — в
  * наборе поля. Селекторы — корень контрола и поле, которое называет подпись:
- * у NumberInput — ввод числа, а не скрытое поле формы, у оценки и ползунка с
- * одной ручкой — поле ручки.
+ * у NumberInput — ввод числа, а не скрытое поле формы, у Select — `<input>` его
+ * поля, у оценки и ползунка с одной ручкой — поле ручки.
  */
 const LABELABLES = [
 	['Input', 'input', '[so-input]', '[so-input] input'],
 	['NumberInput', 'number-input', '[so-number-input]', '.so-number-input__input'],
+	['Select', 'select', '[so-select]', '.so-select__field input'],
 	['CheckBox', 'check-box', '[so-check-box]', '[so-check-box] input'],
 	['Switch', 'switch', '[so-switch]', '[so-switch] input'],
 	['Rating', 'rating', '[so-rating]', '[so-rating] input'],
@@ -523,7 +538,23 @@ class OwnNameHost {}
 })
 class LabelledHost {}
 
+/** Select без поля формы: имя из `aria_label` — его набор, и он тоже на `<input>`. */
+@Component({
+	standalone: true,
+	imports: [TSelectComponent],
+	template: `<div so-select aria_label="Город"></div>`,
+})
+class SelectNameHost {}
+
 describe('Field · имя контрола', () => {
+	/** Набор `aria` Select разметка кладёт на его поле: имя — у элемента под фокусом. */
+	it('Select: aria_label доходит до комбобокса', () => {
+		const fixture = mountHost(SelectNameHost)
+
+		expect(input(fixture, '[so-select] input').getAttribute('aria-label')).toBe('Город')
+		expect(node(fixture, '[so-select]').hasAttribute('aria-label')).toBe(false)
+	})
+
 	it('своё имя контрола-группы главнее подписи поля', () => {
 		const fixture = mountHost(OwnNameHost)
 		const group = node(fixture, '[so-radio-group]')
