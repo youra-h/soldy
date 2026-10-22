@@ -39,8 +39,9 @@ defineElement('so-date-picker', TDatePickerElement, 'div')
 /**
  * `<div is="so-date-picker">` из JS: нативный `div`, своё элемента soldy
  * (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
- * плагинов (`aria_label`, `dismiss_enabled`) — без тех, что у `div` уже есть
- * (`id` — `id` корня), и без `HOST_PROPS` (`TSoldyElementProps`).
+ * плагинов (`aria_label`) — без тех, что у `div` уже есть (`id` — `id`
+ * корня), и без `HOST_PROPS` (`TSoldyElementProps`). Несколько дат — пару
+ * диапазона — DatePicker берёт свойством: атрибут `value` — одна дата.
  */
 export type TDatePickerElementProps = HTMLDivElement &
 	ISoldyElement<IDatePicker> &
