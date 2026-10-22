@@ -13,8 +13,10 @@ import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import { TComponentView } from '@soldy-ui/core'
-import { TComponentViewComponent } from '@soldy-ui/angular'
+import { TElementPlugin } from '@soldy-ui/plugins'
+import { TButtonComponent, TComponentViewComponent } from '@soldy-ui/angular'
 import { announced, elementPlugin } from './element-plugin'
+import { findIn } from './mount'
 
 /** Форма потребителя: корень — его элемент, роль на нём — тоже его. */
 @Component({
@@ -35,6 +37,28 @@ class SectionHost {
 class BoundRoleHost {
 	readonly ctrl = new TComponentView()
 	readonly role = signal<string | null>(null)
+}
+
+/**
+ * Кнопка в поддереве ComponentView: `rendered` предка — сигналом, плагин узла
+ * кнопки хост берёт из её `(soElementCreate)`.
+ */
+@Component({
+	selector: 'probe-component-view-subtree',
+	standalone: true,
+	imports: [TComponentViewComponent, TButtonComponent],
+	template: `<div so-component-view [rendered]="rendered()">
+		<button so-button text="Внутри" (soElementCreate)="created($event)"></button>
+	</div>`,
+})
+class SubtreeHost {
+	readonly rendered = signal<boolean | undefined>(undefined)
+	/** Плагин узла кнопки; до объявления набора его нет. */
+	plugin: TElementPlugin | null = null
+
+	created(plugin: unknown): void {
+		if (plugin instanceof TElementPlugin) this.plugin = plugin
+	}
 }
 
 function mountSection(): { fixture: ComponentFixture<SectionHost>; section: HTMLElement } {
@@ -231,5 +255,35 @@ describe('ComponentView · плагин узла', () => {
 		await announced()
 
 		expect(plugin().element).toBe(host(fixture))
+	})
+
+	/**
+	 * У Vue `v-if` корня снимает всё поддерево. Элемент потребителя Angular
+	 * только прячет, но корня у компонентов снятого поддерева у плагинов нет —
+	 * у любого, не только у слоя: кнопка внутри отдаёт `TElementPlugin` `null`,
+	 * а снова отрисованный предок возвращает ей тот же узел.
+	 */
+	it('rendered=false предка снимает узел кнопки внутри у TElementPlugin, true — возвращает тот же', async () => {
+		const fixture = TestBed.createComponent(SubtreeHost)
+		const page = fixture.componentInstance
+
+		fixture.detectChanges()
+
+		await announced()
+
+		const button = findIn(fixture, '[so-button]', HTMLButtonElement)
+
+		expect(page.plugin?.element).toBe(button)
+
+		page.rendered.set(false)
+		fixture.detectChanges()
+
+		expect(findIn(fixture, '[so-button]', HTMLButtonElement)).toBe(button)
+		expect(page.plugin?.element).toBeNull()
+
+		page.rendered.set(true)
+		fixture.detectChanges()
+
+		expect(page.plugin?.element).toBe(button)
 	})
 })

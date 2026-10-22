@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import type { TComponentVariant } from '@soldy-ui/core'
+import { TElementPlugin } from '@soldy-ui/plugins'
 import { TPopoverComponent, TSkeletonComponent } from '@soldy-ui/angular'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
@@ -32,11 +33,24 @@ class VariantHost {
 @Component({
 	standalone: true,
 	imports: [TSkeletonComponent],
-	template: `<div so-skeleton [visible]="visible()" [rendered]="rendered()"><b>Данные</b></div>`,
+	template: `<div
+		so-skeleton
+		[visible]="visible()"
+		[rendered]="rendered()"
+		(soElementCreate)="created($event)"
+	>
+		<b>Данные</b>
+	</div>`,
 })
 class ContentHost {
 	readonly visible = signal<boolean | undefined>(undefined)
 	readonly rendered = signal<boolean | undefined>(undefined)
+	/** Плагин узла корня — из `(soElementCreate)`; до объявления набора его нет. */
+	plugin: TElementPlugin | null = null
+
+	created(plugin: unknown): void {
+		if (plugin instanceof TElementPlugin) this.plugin = plugin
+	}
 }
 
 @Component({
@@ -117,6 +131,26 @@ describe('Skeleton · заглушка и содержимое', () => {
 		expect(el.querySelector('.so-skeleton__placeholder')).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 		expect(el.style.display).toBe('')
+	})
+
+	/**
+	 * Корня Skeleton `rendered` не снимает: у Vue `v-if` на нём не стоит. Узел у
+	 * `TElementPlugin` остаётся тем же, и плагинам отпускать нечего.
+	 */
+	it('rendered=false: узел корня у TElementPlugin остаётся', async () => {
+		const fixture = mountHost(ContentHost)
+		const page = fixture.componentInstance
+
+		await nextFrame()
+
+		const el = skeleton(fixture)
+
+		expect(page.plugin?.element).toBe(el)
+
+		page.rendered.set(false)
+		fixture.detectChanges()
+
+		expect(page.plugin?.element).toBe(el)
 	})
 
 	/**
