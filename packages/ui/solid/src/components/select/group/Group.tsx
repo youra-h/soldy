@@ -1,6 +1,6 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { Elevate, createRootProps, renderSlot, rootTag } from '../../../adapter'
+import { Elevate, createPartProps, createRootProps, renderSlot, rootTag } from '../../../adapter'
 import { setupSelectGroup } from './setup.component'
 import type { SelectGroupProps } from './base.component'
 
@@ -30,12 +30,14 @@ export function SelectGroup(props: SelectGroupProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Подписи — её набор: своего экземпляра у неё нет
+	const labelAria = createPartProps(() => state.labelAria)
 
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Show when={state.label}>
-					<div class="so-select-group__label" {...state.labelAria}>
+					<div class="so-select-group__label" {...labelAria()}>
 						{state.label}
 					</div>
 				</Show>

@@ -1,6 +1,13 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, resolveSlot, roleIcon, rootTag } from '../../adapter'
+import {
+	createPartProps,
+	createRootProps,
+	renderSlot,
+	resolveSlot,
+	roleIcon,
+	rootTag,
+} from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { setupScroller } from './setup.component'
@@ -54,6 +61,8 @@ export function Scroller(props: ScrollerProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Вьюпорту — его набор: роль ряда, имя
+	const viewportAria = createPartProps(() => state.viewportAria)
 	const prevIcon = resolveSlot(
 		() => props['prev-icon'],
 		() => ({}),
@@ -81,7 +90,7 @@ export function Scroller(props: ScrollerProps): JSX.Element {
 				<div
 					class="so-scroller__viewport"
 					tabindex={state.viewportTabIndex}
-					{...state.viewportAria}
+					{...viewportAria()}
 				>
 					{renderSlot(props.children)}
 				</div>

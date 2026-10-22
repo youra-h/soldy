@@ -5,6 +5,7 @@ export { renderSlot, hasSlot, resolveSlot, liveScope, relaySlot, type TSlotConte
 export { ResolvedSlot, type TResolvedSlotProps } from './ResolvedSlot'
 export { chainHandler, type THandlerUnion } from './handlers'
 export {
+	createPartProps,
 	createRootProps,
 	createWrappedRootProps,
 	toControlAttrs,

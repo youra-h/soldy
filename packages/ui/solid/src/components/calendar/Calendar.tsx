@@ -6,6 +6,7 @@ import {
 	Elevate,
 	KeyedFor,
 	ResolvedSlot,
+	createPartProps,
 	createRootProps,
 	relaySlot,
 	roleIcon,
@@ -116,15 +117,21 @@ export function Calendar(props: CalendarProps): JSX.Element {
 	}))
 
 	/** Ячейка недели: день — элемент коллекции, заполнитель — пустая ячейка. */
-	const cell = (entry: Accessor<TCalendarCell>) => (
-		<Show
-			when={entry().item}
-			keyed
-			fallback={<td class="so-calendar__filler" {...entry().aria} />}
-		>
-			{(item) => <CalendarItem ctrl={item}>{relaySlot(props.item, { item })}</CalendarItem>}
-		</Show>
-	)
+	const cell = (entry: Accessor<TCalendarCell>) => {
+		const aria = createPartProps(() => entry().aria)
+
+		return (
+			<Show
+				when={entry().item}
+				keyed
+				fallback={<td class="so-calendar__filler" {...aria()} />}
+			>
+				{(item) => (
+					<CalendarItem ctrl={item}>{relaySlot(props.item, { item })}</CalendarItem>
+				)}
+			</Show>
+		)
+	}
 
 	/** Неделя — семь ячеек, от первого дня недели. */
 	const week = (entry: Accessor<TCalendarCell[]>) => (
@@ -136,21 +143,25 @@ export function Calendar(props: CalendarProps): JSX.Element {
 	)
 
 	/** Заголовок месяца — кнопка-триггер панели выбора; текст и живая область внутри. */
-	const title = (grid: Accessor<TCalendarGrid>) => (scope: TTriggerScope) => (
-		<Button
-			embedded="calendar.title"
-			type="button"
-			class="so-calendar__title"
-			size={state.size}
-			disabled={state.disabled}
-			{...scope.triggerAria}
-			{...scope.triggerDataset}
-		>
-			<span class="so-calendar__title-text" {...grid().titleAria}>
-				{grid().title}
-			</span>
-		</Button>
-	)
+	const title = (grid: Accessor<TCalendarGrid>) => (scope: TTriggerScope) => {
+		const titleAria = createPartProps(() => grid().titleAria)
+
+		return (
+			<Button
+				embedded="calendar.title"
+				type="button"
+				class="so-calendar__title"
+				size={state.size}
+				disabled={state.disabled}
+				{...scope.triggerAria}
+				{...scope.triggerDataset}
+			>
+				<span class="so-calendar__title-text" {...titleAria()}>
+					{grid().title}
+				</span>
+			</Button>
+		)
+	}
 
 	/** Карточка панели выбора: список места, за ним — шапка. */
 	const card = (picker: Accessor<TCalendarPicker>) => (
@@ -231,41 +242,47 @@ export function Calendar(props: CalendarProps): JSX.Element {
 	)
 
 	/** Месяц места `index`: заголовок с панелью выбора, листание у первого, сетка. */
-	const month = (grid: Accessor<TCalendarGrid>, index: number) => (
-		<div class="so-calendar__month">
-			<Show when={state.pickers?.[index]}>
-				{(picker) => (
-					<Popover
-						embedded="calendar.picker"
-						class="so-calendar__heading"
-						tag="div"
-						contained
-						edge="top"
-						ctrl={picker().popover}
-						aria_labelledBy={picker().labelledBy}
-						trigger={title(grid)}
-					>
-						{card(picker)}
-					</Popover>
-				)}
-			</Show>
-			<Show when={index === 0}>{paging()}</Show>
-			<table class="so-calendar__grid" {...grid().gridAria}>
-				<thead aria-hidden="true">
-					<tr class="so-calendar__weekdays">
-						<Index each={state.weekdays}>
-							{(weekday) => <th class="so-calendar__weekday">{weekday().label}</th>}
-						</Index>
-					</tr>
-				</thead>
-				<tbody>
-					<KeyedFor each={grid().weeks} by={(days) => days[0]?.date}>
-						{week}
-					</KeyedFor>
-				</tbody>
-			</table>
-		</div>
-	)
+	const month = (grid: Accessor<TCalendarGrid>, index: number) => {
+		const gridAria = createPartProps(() => grid().gridAria)
+
+		return (
+			<div class="so-calendar__month">
+				<Show when={state.pickers?.[index]}>
+					{(picker) => (
+						<Popover
+							embedded="calendar.picker"
+							class="so-calendar__heading"
+							tag="div"
+							contained
+							edge="top"
+							ctrl={picker().popover}
+							aria_labelledBy={picker().labelledBy}
+							trigger={title(grid)}
+						>
+							{card(picker)}
+						</Popover>
+					)}
+				</Show>
+				<Show when={index === 0}>{paging()}</Show>
+				<table class="so-calendar__grid" {...gridAria()}>
+					<thead aria-hidden="true">
+						<tr class="so-calendar__weekdays">
+							<Index each={state.weekdays}>
+								{(weekday) => (
+									<th class="so-calendar__weekday">{weekday().label}</th>
+								)}
+							</Index>
+						</tr>
+					</thead>
+					<tbody>
+						<KeyedFor each={grid().weeks} by={(days) => days[0]?.date}>
+							{week}
+						</KeyedFor>
+					</tbody>
+				</table>
+			</div>
+		)
+	}
 
 	return (
 		<Show when={state.rendered}>

@@ -4,6 +4,7 @@ import {
 	Elevate,
 	KeyedFor,
 	ResolvedSlot,
+	createPartProps,
 	createRootProps,
 	relaySlot,
 	renderSlot,
@@ -115,6 +116,8 @@ export function Select(props: SelectProps): JSX.Element {
 	}))
 	// Полю — остальное от потребителя, поверх наборов Select
 	const control = () => toControlAttrs<SelectAttributes>(binding.forwardProps())
+	// Списку в панели — его набор: своего экземпляра у списка нет
+	const listAria = createPartProps(() => state.listAria)
 
 	/**
 	 * Ряд тегов поля — пока выбор множественный: инстанс тегов и его коллекция
@@ -251,7 +254,7 @@ export function Select(props: SelectProps): JSX.Element {
 						<Show when={state.handleRendered}>
 							<div class="so-select__handle" aria-hidden="true" />
 						</Show>
-						<div class="so-select__list" {...state.listAria}>
+						<div class="so-select__list" {...listAria()}>
 							<ResolvedSlot
 								content={props.children}
 								fallback={
