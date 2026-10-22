@@ -27,6 +27,8 @@ import {
 	RoleIconDirective,
 	SlotDirective,
 	TButtonComponent,
+	TDateInputComponent,
+	TDatePickerComponent,
 	TDialogComponent,
 	TDrawerComponent,
 	TFrameComponent,
@@ -1009,6 +1011,139 @@ describe('Dialog и Drawer · гидратация', () => {
 		expect(
 			document.querySelectorAll('.so-dialog__backdrop, .so-drawer__backdrop'),
 		).toHaveLength(2)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Поле даты и DatePicker со значениями. Части поля — разметка с наборами ядра,
+ * панель DatePicker'а — Frame в его шаблоне.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TDateInputComponent, TDatePickerComponent],
+	template: `<section class="place">
+		<div so-date-input class="date" name="birthday" value="2026-05-12"></div>
+		<div so-date-picker class="picker" id="when" value="2026-09-10"></div>
+	</section>`,
+})
+class DatesPage {}
+
+/** Дата `2026-05-12` в формате поля `en-US`: месяц, день и год с разделителями. */
+const DATE_TEXT = new Intl.DateTimeFormat(['en-US'], {
+	day: '2-digit',
+	month: '2-digit',
+	year: 'numeric',
+	calendar: 'gregory',
+	timeZone: 'UTC',
+}).format(Date.UTC(2026, 4, 12))
+
+/** Части поля даты внутри `scope`. */
+const segmentsOf = (scope: ParentNode): HTMLElement[] =>
+	[...scope.querySelectorAll('.so-date-input__segment')].filter(
+		(part): part is HTMLElement => part instanceof HTMLElement,
+	)
+
+/** Панель DatePicker'а, на которую ведёт кнопка календаря (`aria-controls`). */
+function pickerPanelOf(scope: Document, trigger: Element): HTMLElement {
+	const panel = scope.getElementById(trigger.getAttribute('aria-controls') ?? '')
+
+	if (!(panel instanceof HTMLElement)) throw new Error('aria-controls не ведёт на панель')
+
+	return panel
+}
+
+/**
+ * Поле даты на сервере — группа с частями: у каждой `id` от номера сборки и
+ * текст ядра, без пробелов по краям, и нередактируемая, а ряд — ровно дата с
+ * разделителями. DatePicker — корень со своим `id`, полем и кнопкой календаря,
+ * а панель — слой, и на сервере от неё в корне — пустой скрытый элемент Frame,
+ * на который ссылается кнопка.
+ */
+describe('DateInput и DatePicker · серверный рендер', () => {
+	it('DateInput — группа, части с id и текстом, ряд — дата с разделителями', async () => {
+		const page = await serverPage(DatesPage)
+		const root = find(page, '.date', HTMLDivElement)
+		const parts = segmentsOf(root)
+
+		expect(root.getAttribute('role')).toBe('group')
+		expect(parts.map((part) => part.dataset['type'])).toEqual(['month', 'day', 'year'])
+		expect(parts.map((part) => part.textContent)).toEqual(['05', '12', '2026'])
+		expect(parts.every((part) => part.id.endsWith(`-${part.dataset['type']}`))).toBe(true)
+		expect(parts.some((part) => part.hasAttribute('contenteditable'))).toBe(false)
+		expect(find(root, '.so-date-input__segments', HTMLElement).textContent).toBe(DATE_TEXT)
+	})
+
+	it('DatePicker — корень с id, поле с кнопкой календаря, панель в корне пустая и скрытая', async () => {
+		const page = await serverPage(DatesPage)
+		const root = find(page, '.picker', HTMLDivElement)
+		const field = find(root, '.so-date-picker__field', HTMLDivElement)
+		const trigger = find(field, '.so-date-picker__trigger', HTMLButtonElement)
+		const panel = pickerPanelOf(page, trigger)
+
+		expect(root.id).toBe('when')
+		expect(segmentsOf(field).map((part) => part.textContent)).toEqual(['09', '10', '2026'])
+		expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
+		expect(trigger.getAttribute('aria-expanded')).toBe('false')
+		expect(panel.parentElement).toBe(root)
+		expect(panel.getAttribute('role')).toBe('dialog')
+		expect(panel.style.display).toBe('none')
+		expect(panel.children).toHaveLength(0)
+		expect(page.querySelector('.so-calendar')).toBeNull()
+	})
+})
+
+/**
+ * После гидратации части поля и кнопка — узлы, которые напечатал сервер, с
+ * теми же `id`, а панель DatePicker'а — элемент Frame сервера: он уезжает в
+ * `body`, получает календарь и открывается кнопкой.
+ */
+describe('DateInput и DatePicker · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('те же части с теми же id, панель — в body и открывается; ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(DatesPage))
+
+		const parts = segmentsOf(document)
+		const ids = parts.map((part) => part.id)
+		const root = find(document, '.picker', HTMLDivElement)
+		const trigger = find(document, '.so-date-picker__trigger', HTMLButtonElement)
+		const panel = pickerPanelOf(document, trigger)
+		const app = await hydrate(DatesPage)
+
+		await app.whenStable()
+		await nextFrame()
+
+		expect(segmentsOf(document)).toEqual(parts)
+		expect(segmentsOf(document).map((part) => part.id)).toEqual(ids)
+		expect(
+			segmentsOf(find(document, '.date', HTMLDivElement)).map((part) => part.textContent),
+		).toEqual(['05', '12', '2026'])
+		expect(find(document, '.picker', HTMLDivElement)).toBe(root)
+		expect(root.id).toBe('when')
+		expect(find(document, '.so-date-picker__trigger', HTMLButtonElement)).toBe(trigger)
+		expect(pickerPanelOf(document, trigger)).toBe(panel)
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('none')
+
+		trigger.click()
+		await app.whenStable()
+		await nextFrame()
+		await app.whenStable()
+
+		expect(trigger.getAttribute('aria-expanded')).toBe('true')
+		expect(panel.style.display).toBe('')
+		expect(panel.querySelector('.so-calendar-item[aria-selected="true"]')?.textContent).toBe(
+			'10',
+		)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
 	})
