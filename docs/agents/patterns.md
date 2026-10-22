@@ -176,8 +176,10 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   на первый выбранный тег. Сторожат `core/__tests__/tags.spec.ts`,
   `plugins/__tests__/tags-keyboard.plugin.spec.ts`,
   `ui/vue/__tests__/tags-keyboard.spec.ts`, `ui/svelte/__tests__/tags.spec.ts`,
-  `ui/solid/__tests__/tags.spec.tsx`, `ui/react/__tests__/tags.spec.tsx` и
-  `playground/vue/browser/tags-keyboard.spec.ts`.
+  `ui/solid/__tests__/tags.spec.tsx`, `ui/react/__tests__/tags.spec.tsx`,
+  `ui/webc/__tests__/tags.spec.ts`,
+  `playground/vue/browser/tags-keyboard.spec.ts` и
+  `playground/vue/browser/webc-collections.spec.ts` («Tags · клавиатура»).
   **Тегам, которым не хватило ширины ряда, отвечает одно свойство —
   `overflow`** (`wrap` по умолчанию, `scroll`). В теме оно состоянием,
   `data-overflow`, и оба значения — раскладка темы: ряд не меряется и не
@@ -186,7 +188,11 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   разметке**: слот `default` отдаёт показанные теги (`shown`), и их
   раскладывают в `Scroller` или делят на ряд и `Popover`; у Select ряд в поле
   подменяет слот `tags` — scope `tags` и `engine`, те же, что встроенный
-  `Tags` берёт `:ctrl` и `:engine`. **Каждый тег отрисован ровно один раз** и
+  `Tags` берёт `:ctrl` и `:engine`. У Web Components scope нет: своя
+  раскладка — теги разметкой в слоте `default`, а свой ряд Select берёт
+  экземпляр и коллекцию тегов у элемента (`el.state.tags`,
+  `el.state.tags_engine`) или у движка снаружи (`engine.extensions.tags`).
+  **Каждый тег отрисован ровно один раз** и
   в своей разметке: вторая отрисовка перетёрла бы его запись в реестре
   bundles. Вид и вариант набора тема ставит тегу-потомку на любой глубине, и
   своя раскладка красится набором без копии матрицы видов. **В `scroll` тег
@@ -216,7 +222,9 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   («переполнение», «слот default») и `select.spec.ts` («слот tags»), те же
   группы в `ui/solid/__tests__/tags.spec.tsx` и `select.spec.tsx` и в
   `ui/react/__tests__/tags.spec.tsx` («переполнение», «дети-функция») и
-  `select.spec.tsx` («слот tags»), `playground/vue/browser/tags-overflow.spec.ts`,
+  `select.spec.tsx` («слот tags»), в `ui/webc/__tests__/tags.spec.ts`
+  («переполнение», «слот default: своя раскладка тегов») и `select.spec.ts`
+  («слот tags»), `playground/vue/browser/tags-overflow.spec.ts`,
   `playground/vue/browser/tags-variant.spec.ts` и
   `playground/vue/browser/select-tags.spec.ts`.
 - **Accordion** — одноимённый паттерн: `aria-expanded` на заголовке,
@@ -252,7 +260,7 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   сами. Сторожат `core/__tests__/select.spec.ts`,
   `plugins/__tests__/swipe.plugin.spec.ts`, `ui/vue/__tests__/select.spec.ts`,
   `ui/svelte/__tests__/select.spec.ts`, `ui/solid/__tests__/select.spec.tsx`,
-  `ui/react/__tests__/select.spec.tsx` и
+  `ui/react/__tests__/select.spec.tsx`, `ui/webc/__tests__/select.spec.ts` и
   `playground/vue/browser/anchored-swipe.spec.ts`. У Svelte панель — отдельный
   корень в обёртке, которую `Teleport` держит в `body`, и монтирует он его
   эффектом со всеми контекстами места: опции в ней читают лифт Select, а на
@@ -282,7 +290,14 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
   ставят над экземплярами из scope тот же ключ. Между перерисовками поле, ряд
   тегов и опции — те же узлы: React сверяет разметку по типу и ключу
   (сторожат «узлы — те же» и группа «React» в
-  `ui/react/__tests__/select.spec.tsx`).
+  `ui/react/__tests__/select.spec.tsx`). У Web Components панель — деталь
+  Frame с якорем-корнем, как у Menu: в `body` её уводит база Frame, опции в
+  ней находят лифт Select от её якоря, а за местом Select она идёт с ним.
+  Поле — деталь Input над экземпляром поля Select, ряд тегов — деталь Tags
+  над экземпляром, который держит Select: сменился экземпляр — новая деталь,
+  а набор `aria` Select у детали с полем ложится на `<input>` комбобокса
+  (сторожит `ui/webc/__tests__/select.spec.ts`, «набор Select — на поле»,
+  «смена mode после сборки», «перестановка»).
 - **Switch** — Switch pattern, вариант на `input[type="checkbox"]`:
   `role="switch"` на вложенном `<input>`, состояние сообщает нативный
   `checked`. `aria-checked` ядро не пишет ни Switch, ни CheckBox: на нативном
