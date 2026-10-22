@@ -22,10 +22,8 @@
  * атрибутом их пишут JSON), частей разметкой у таблицы нет: заголовки и
  * строки рисует она сама.
  *
- * Модуль регистрирует и части — после таблицы: заголовок колонки
- * `<th is="so-table-column">` и строку `<tr is="so-table-row">`. Элемент,
- * зарегистрированный раньше, собирается раньше, и таблица уже опустила
- * движок, когда собираются её строки.
+ * Модуль регистрирует и части: заголовок колонки `<th is="so-table-column">` и
+ * строку `<tr is="so-table-row">`.
  *
  * Разметка вынесена в table.template.ts, жизненный цикл — в SoldyElement.
  */
@@ -48,7 +46,6 @@ export const TTableElement = SoldyElement(HTMLDivElement, {
 })
 
 defineElement('so-table', TTableElement, 'div')
-// Части — после владельца (см. шапку)
 defineElement('so-table-column', TTableColumnElement, 'th')
 defineElement('so-table-row', TTableRowElement, 'tr')
 
