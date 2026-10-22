@@ -67,11 +67,13 @@ const CalendarGlyph = roleIcon('calendar')
  *
  * Календарь — готовый Calendar над экземпляром и движком ядра. Содержимое дня
  * — слот `item` DatePicker, отданный календарю под тем же именем. Подвал —
- * только при `confirmable` (`Show` в слоте `footer`: без него слот пуст, и
- * строки подвала нет): «Отмена» закрывает панель, а черновик сбрасывает само
- * закрытие, «OK» принимает выбор и выключена посреди диапазона
- * (`confirmDisabled`). Текст — выходы плагина имён (`names_cancel`,
- * `names_confirm`).
+ * только при `confirmable`: слот `footer` задан значением, пока он включён
+ * (`state.confirmable && …`), как у React. Строку подвала Calendar ставит по
+ * значению слота, а не по его узлам (`ResolvedSlot`), и ветка, пустая по
+ * состоянию, — `Show` в слоте — оставила бы пустую строку. «Отмена»
+ * закрывает панель, а черновик сбрасывает само закрытие, «OK» принимает выбор
+ * и выключена посреди диапазона (`confirmDisabled`). Текст — выходы плагина
+ * имён (`names_cancel`, `names_confirm`).
  *
  * Обработчиков в разметке больше нет: открытие, дни, листание и шапку панели
  * ловят плагины на корнях.
@@ -180,9 +182,9 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 		</>
 	)
 
-	/** Подвал календаря — только при `confirmable`: «Отмена», затем «OK». */
+	/** Подвал календаря: «Отмена», затем «OK». Задан он, только пока `confirmable`. */
 	const footer = () => (
-		<Show when={state.confirmable}>
+		<>
 			<Button
 				embedded="date-picker.cancel"
 				type="button"
@@ -202,7 +204,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 				text={state.names_confirm}
 				onClick={() => ctrl.confirm()}
 			/>
-		</Show>
+		</>
 	)
 
 	return (
@@ -234,7 +236,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 								ctrl={binding.calendar}
 								engine={binding.engine}
 								item={props.item}
-								footer={footer()}
+								footer={state.confirmable && footer()}
 							/>
 						</div>
 					</Frame>
