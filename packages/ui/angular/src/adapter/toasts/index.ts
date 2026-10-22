@@ -1,3 +1,2 @@
 export { useToasts } from './useToasts'
-export { isToastRender } from './render'
-export type { TToastRender } from './types'
+export { isToastRender, type TToastRender } from './render'

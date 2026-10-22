@@ -8,9 +8,8 @@ export type {
 	TOutputOf,
 } from './useAdapter'
 export { TComponentBase } from './component.base'
-export type { TRootSet, TRootSpec, TRootTeleport } from './component.base'
-// Закрытое имя, как закрытое API Angular: носитель — host-директива базы, и
-// компилятор библиотеки требует видеть его из точки входа (NG3001)
+export type { TRootSet, TRootSpec, TRootTeleport } from './root/spec'
+// Host-директива базы: компилятор требует видеть её из точки входа (NG3001)
 export { SubtreeDirective as ɵSubtreeDirective } from './subtree.directive'
 export { SlotDirective } from './slot.directive'
 export { AttributesDirective } from './attributes.directive'

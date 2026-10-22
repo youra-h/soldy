@@ -1,42 +1,16 @@
 import type { IToastsApi } from '@soldy-ui/core'
 import { TOASTS_ELEVATOR } from '@soldy-ui/setup'
 import { TAngularElevator } from '../elevator'
-import type { TToastRender } from './types'
+import type { TToastRender } from './render'
 
 /**
- * API тостов ближайшего `<div so-toasts>` выше по дереву:
+ * API тостов ближайшего `<div so-toasts>`. Звать в поле или конструкторе
+ * компонента под менеджером: слой берётся при вызове, а API — на каждый
+ * `show`. Менеджера нет — `show` бросает, чтобы не спрятать забытый менеджер.
  *
  * ```ts
- * export class SaveButton {
- * 	private readonly toasts = useToasts()
- *
- * 	save(): void {
- * 		this.toasts.show({ text: 'Сохранено', type: 'success' })
- * 	}
- * }
+ * private readonly toasts = useToasts()
  * ```
- *
- * Менеджер опускает API лифтом (`TToastsApiExtension`) в свой слой, и здесь он
- * берётся тем же лифтом — чтением «позже» (`TAngularElevator.upLater`): слой
- * над компонентом — при вызове, в контексте инъекции, как `inject`, поэтому
- * звать `useToasts()` можно только там — в поле или конструкторе компонента
- * под менеджером. А API из слоя читается на каждый `show`: компонент
- * приложения, написанный прямо в `<div so-toasts>`, Angular создаёт раньше,
- * чем зовёт `ngOnInit` менеджера, где сборка опускает API, — в конструкторе
- * его в слое ещё нет. DI идёт по дереву объявлений, а не по DOM, поэтому API
- * находит и компонент в окне или выезжающей панели под менеджером, и своё
- * содержимое тоста. `show` — поле со стрелкой: деструктуризация не теряет
- * `this`.
- *
- * API — очередь движка менеджера, а не своя: `show` отдаёт её `show`, и тост в
- * ответ — экземпляр ядра, тот же, что у кода с движком (`engine`).
- *
- * Своё содержимое (`render`) здесь типизировано компонентом Angular со входом
- * `toast` (`TToastRender`): ядро значение не читает, и тип ему даёт адаптер.
- *
- * Менеджера выше нет — `show` бросает ошибку: тост показать негде, и
- * молчаливый `show`, который ничего не делает, спрятал бы забытый
- * `<div so-toasts>`.
  */
 export function useToasts(): IToastsApi<TToastRender> {
 	const api = new TAngularElevator<IToastsApi>(TOASTS_ELEVATOR.name).upLater()

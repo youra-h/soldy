@@ -1,40 +1,15 @@
 /**
- * Рендерер адаптера — делегирующий `Renderer2` поверх рендерера Angular.
- *
- * Через рендерер шаблона потребителя проходит всё, что он написал на элементе
- * помимо статики: привязки атрибутов (`[attr.x]`, `[aria-label]`), свойств
- * (`[title]`, `[tabIndex]`) и слушатели (`(focus)`), — и только через него:
- * компонент их не видит. Команду на хост, зарегистрированный в реестре
- * (`TForwardRegistry`), рендерер отдаёт его записи — та ставит значение на
- * внутренний узел компонента, — а всё остальное, и то, что остаётся на хосте
- * (класс, стиль, служебные атрибуты Angular, метки soldy, входы, выходы
- * `so*`), отдаёт рендереру Angular как есть. Классы и стили (`addClass`,
- * `setStyle`) — вид хоста, и у хоста с коробкой рендерер их не трогает; у
- * хоста без коробки (обёртка региона тостов) внешний узел компонента — узел
- * внутри, и их рендерер тоже отдаёт записи хоста (`keepsLook`).
- *
- * Запись получает с командой сам рендерер адаптера, а не рендерер Angular под
- * ним, и на свой узел пишет через него же. Поэтому узел записи, который сам
- * хост из реестра, — поле `<div so-input>` в шаблоне Select, — получает
- * команду тем же путём: его запись по своим правилам отдаёт её дальше, на свой
- * `<input>`. Так написанное на хосте проходит цепочку хостов до узла, где
- * работает, — как `v-bind` на `<Input>` у Vue, — а на каждом звене остаётся
- * то, что звено держит у себя (`keeps*`). Снятие и переезд на новый узел идут
- * той же цепочкой.
- *
- * Класс, а не `Proxy`: команды рендерера — его методы, и каждый виден
- * типами `Renderer2`.
+ * Рендерер адаптера — делегирующий `Renderer2`: команду на хост из реестра
+ * отдаёт его записи (`TForwardedHost`) вместе с собой, остальное — рендереру
+ * Angular. Класс, а не `Proxy`: каждый метод виден типами `Renderer2`.
  */
 
 import { Renderer2, type RendererStyleFlags2 } from '@angular/core'
-import type { TListenerCallback, TListenerOptions } from './host'
+import type { TForwardedHost, TListenerCallback, TListenerOptions } from './host'
 import type { TForwardRegistry } from './registry'
 
 export class TForwardingRenderer extends Renderer2 {
-	/**
-	 * Как у рендерера Angular: без `destroyNode` (у рендерера DOM он `null`)
-	 * Angular не обходит узлы снятого представления по одному.
-	 */
+	/** Как у рендерера DOM: при `null` Angular не обходит узлы снятого представления по одному. */
 	override destroyNode: ((node: unknown) => void) | null
 
 	constructor(
@@ -102,51 +77,51 @@ export class TForwardingRenderer extends Renderer2 {
 	}
 
 	setAttribute(el: unknown, name: string, value: string, namespace?: string | null): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, (host) => host.keepsAttribute(name))
 
-		if (host && !host.keepsAttribute(name)) host.setAttribute(this, name, value, namespace)
+		if (host) host.setAttribute(this, name, value, namespace)
 		else this._delegate.setAttribute(el, name, value, namespace)
 	}
 
 	removeAttribute(el: unknown, name: string, namespace?: string | null): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, (host) => host.keepsAttribute(name))
 
-		if (host && !host.keepsAttribute(name)) host.removeAttribute(this, name, namespace)
+		if (host) host.removeAttribute(this, name, namespace)
 		else this._delegate.removeAttribute(el, name, namespace)
 	}
 
 	addClass(el: unknown, name: string): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, keepsLook)
 
-		if (host && !host.keepsLook) host.addClass(this, name)
+		if (host) host.addClass(this, name)
 		else this._delegate.addClass(el, name)
 	}
 
 	removeClass(el: unknown, name: string): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, keepsLook)
 
-		if (host && !host.keepsLook) host.removeClass(this, name)
+		if (host) host.removeClass(this, name)
 		else this._delegate.removeClass(el, name)
 	}
 
 	setStyle(el: unknown, style: string, value: unknown, flags?: RendererStyleFlags2): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, keepsLook)
 
-		if (host && !host.keepsLook) host.setStyle(this, style, value, flags)
+		if (host) host.setStyle(this, style, value, flags)
 		else this._delegate.setStyle(el, style, value, flags)
 	}
 
 	removeStyle(el: unknown, style: string, flags?: RendererStyleFlags2): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, keepsLook)
 
-		if (host && !host.keepsLook) host.removeStyle(this, style, flags)
+		if (host) host.removeStyle(this, style, flags)
 		else this._delegate.removeStyle(el, style, flags)
 	}
 
 	setProperty(el: unknown, name: string, value: unknown): void {
-		const host = this._registry.hostOf(el)
+		const host = this._forwardee(el, (host) => host.keepsProperty(name))
 
-		if (host && !host.keepsProperty(name)) host.setProperty(this, name, value)
+		if (host) host.setProperty(this, name, value)
 		else this._delegate.setProperty(el, name, value)
 	}
 
@@ -160,10 +135,24 @@ export class TForwardingRenderer extends Renderer2 {
 		callback: TListenerCallback,
 		options?: TListenerOptions,
 	): () => void {
-		const host = this._registry.hostOf(target)
+		const host = this._forwardee(target, (host) => host.keepsListener(eventName))
 
-		return host && !host.keepsListener(eventName)
+		return host
 			? host.listen(this, eventName, callback, options)
 			: this._delegate.listen(target, eventName, callback, options)
 	}
+
+	/** Запись, которой уходит команда: `el` — хост, и команду он у себя не держит. */
+	private _forwardee(
+		el: unknown,
+		keeps: (host: TForwardedHost) => boolean,
+	): TForwardedHost | undefined {
+		const host = this._registry.hostOf(el)
+
+		return host && !keeps(host) ? host : undefined
+	}
+}
+
+function keepsLook(host: TForwardedHost): boolean {
+	return host.keepsLook
 }
