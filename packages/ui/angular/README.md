@@ -50,7 +50,7 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 npm install @soldy-ui/angular @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-`@angular/core`, `@angular/common` and `@angular/platform-browser` (Angular 21.1 or 22) are peer
+`@angular/core`, `@angular/common` and `@angular/platform-browser` (Angular 22.1.6+) are peer
 dependencies. A theme and an icon pack are separate packages — pick the ones you want.
 
 Add `provideAttrs()` to the providers of your application config — the one shared by the browser and
@@ -322,7 +322,7 @@ and the item slots are templates — `item`, `item-leading`, `item-trailing`, `i
 The `item-content` template is the panel of a submenu from data: write menu items in it, and they
 belong to the submenu it is drawn in, not to the menu you wrote it in. Given, it replaces the items
 from data in every submenu from data, even where it draws nothing. A group, a radio group or a
-submenu written inside the template keeps its own items from Angular 22.1.6 on.
+submenu written inside the template keeps its own items.
 
 ```ts
 template: `<span so-menu (soChoose)="run($event.value)">
