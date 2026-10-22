@@ -14,11 +14,25 @@
  * его делят состояние и события. На монтирование у обмена — линии, ячейки и
  * эти слушатели; маршрутов, подписок и замыканий на каждое событие нет.
  *
+ * Пока над кем-то из участников идёт сборка другого монтирования
+ * (`TAssembling`), обмен отдаёт фреймворку итог сборки, а не каждый её шаг:
+ * состояние и уведомления копятся и уходят одной микрозадачей после неё —
+ * сначала состояние, потом уведомления в том порядке, в каком пришли.
+ * Отменяемое событие (`TActionEvent`) — вопрос, ответ на который нужен
+ * сейчас: оно уходит сразу, и `preventDefault` приёмника отменяет запись
+ * сборки, как вне её. Пока очередь не выпущена, в неё встают и уведомления,
+ * пришедшие после сборки, — иначе они обогнали бы накопленные. Уведомление
+ * получают приёмники, слушавшие в момент события, даже если до выпуска они
+ * отписались: прежнее монтирование снимается тем же проходом фреймворка, а
+ * случилось событие при нём (`TEventRelay.later`).
+ *
  * Свойство, у которого нет участника, линии не получает: описание плагина,
  * которого нет в чужом наборе, молча пропускается.
  */
 
+import { TActionEvent } from '@soldy-ui/core'
 import type { TSurface } from '../surface'
+import { assembling } from './assembling.class'
 import { TEventRelay } from './event-relay.class'
 import { TInputPort } from './input-port.class'
 import type { TLine } from './line.class'
@@ -27,11 +41,19 @@ import { TRouting } from './routing.class'
 import { TStateStore } from './state-store.class'
 import { TTap } from './tap.class'
 
+/** Отменяемое событие: аргумент — `TActionEvent`, приёмник отвечает на него `preventDefault`. */
+function isCancelable(args: readonly unknown[]): boolean {
+	return args[0] instanceof TActionEvent
+}
+
 export class TExchange {
 	readonly lines: readonly TLine[]
 	readonly state: TStateStore
 	readonly inputs: TInputPort
 	readonly events: TEventRelay
+
+	/** Доставки уведомлений, отложенных до конца чужой сборки, — пока очередь не выпущена. */
+	private _queue?: Array<() => void>
 
 	constructor(
 		members: readonly TMember[],
@@ -40,18 +62,26 @@ export class TExchange {
 	) {
 		const routing = TRouting.of(surface, members)
 		const lines = routing.lines(members)
+		const owners = members.map((member) => member.owner)
 		// Порядок — правило обмена, а не очерёдность подписок: сначала состояние,
 		// потом событие и его модели
 		const tap = new TTap(members, routing.routes, (route, args) => {
-			this.state.refresh(route.cells)
-			this.events.publish(route, args)
+			if (this._queue === undefined && !assembling.covers(owners)) {
+				this.state.refresh(route.cells)
+				this.events.publish(route, args)
+			} else if (isCancelable(args)) {
+				// Вопрос — сейчас; состояние перечитает выпуск очереди
+				this._defer()
+				this.events.publish(route, args)
+			} else {
+				this._defer().push(this.events.later(route, args))
+			}
 		})
 
 		this.lines = lines
 		this.state = new TStateStore(
 			routing.readable.map((index) => lines[index]),
 			tap,
-			members.map((member) => member.owner),
 		)
 		this.inputs = new TInputPort(
 			routing.writable.map((index) => lines[index]),
@@ -63,5 +93,25 @@ export class TExchange {
 	/** Пропсы, которые компонент не съел: уходят атрибутами в корневой узел. */
 	forward<TProps extends object>(props: TProps): Partial<TProps> {
 		return this.surface.forward(props)
+	}
+
+	/** Очередь до конца чужой сборки: первая запись планирует её выпуск. */
+	private _defer(): Array<() => void> {
+		if (this._queue === undefined) {
+			this._queue = []
+			assembling.defer(() => this._release())
+		}
+
+		return this._queue
+	}
+
+	/** Выпуск после сборки: сначала состояние целиком, потом уведомления по порядку. */
+	private _release(): void {
+		const queue = this._queue ?? []
+
+		this._queue = undefined
+		this.state.refreshAll()
+
+		for (const deliver of queue) deliver()
 	}
 }

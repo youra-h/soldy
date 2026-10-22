@@ -5,14 +5,21 @@
  * Смена `key` собирает новый компонент на рендере, пока прежний ещё
  * смонтирован. Плагины связок новой сборки пишут в `ctrl` свои `id`, и
  * прежний слышит эту запись. Сборка над инстансом для остальных его
- * монтирований атомарна (`TAssembling`, setup): их состояние перечитывается
- * после сборки, а не посреди неё. Иначе React получал обновление чужого
- * компонента в фазе рендера — «Cannot update a component while rendering a
- * different component», его роняет сторож консоли, — а в `Suspense` каждый
- * повтор рендера писал в `ctrl` и будил прежний снова, без конца.
+ * монтирований атомарна (`TAssembling`, setup): их состояние и уведомления —
+ * перерисовка и обработчики потребителя — приходят после сборки, а не посреди
+ * неё. Иначе React получал обновление чужого компонента в фазе рендера —
+ * «Cannot update a component while rendering a different component», его
+ * роняет сторож консоли, — а в `Suspense` каждый повтор рендера писал в `ctrl`
+ * и будил прежний снова, без конца. Отменяемые события уходят сразу: вето
+ * прежнего в окне сборки работает, как вне его.
  *
  * Сборки, которые `Suspense` выбросил, освобождает `TDrafts`: после снятия на
  * шине `ctrl` не остаётся ничего.
+ *
+ * Обработчики потребителя, меняющие состояние родителя, — в своих файлах
+ * (`remount-ctrl-notify.spec.tsx`, `remount-ctrl-hide.spec.tsx`): React
+ * печатает это предупреждение раз на компонент за прогон файла, и в общем
+ * файле первый сценарий прятал бы регрессию второго.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -20,7 +27,7 @@ import { Suspense, act, use } from 'react'
 import type { ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { TPopover, TTabsItem } from '@soldy-ui/core'
-import type { TEvented } from '@soldy-ui/core'
+import type { TActionEvent, TEvented } from '@soldy-ui/core'
 import { Popover, Tabs } from '@soldy-ui/react'
 import { find, mount, nextFrame, track } from './mount'
 
@@ -89,6 +96,26 @@ describe('React: перемонтирование над тем же ctrl', () =
 
 		expect(ctrl.triggerAria.get('aria-controls')).not.toBe(before)
 		expect(document.querySelectorAll('.so-popover__panel')).toHaveLength(1)
+	})
+
+	it('вето прежнего на отменяемое событие в окне сборки работает, как вне его', async () => {
+		const ctrl = new TPopover()
+		const veto = vi.fn((event: TActionEvent) => event.preventDefault())
+		const { render } = mount(
+			<Popover key="a" ctrl={ctrl} onHideBefore={veto}>
+				x
+			</Popover>,
+		)
+
+		render(
+			<Popover key="b" ctrl={ctrl} visible={false}>
+				x
+			</Popover>,
+		)
+		await nextFrame()
+
+		expect(veto).toHaveBeenCalledTimes(1)
+		expect(ctrl.visible).toBe(true)
 	})
 
 	it('Tabs.Item со сменой key: id в разметке — от нового монтирования', async () => {
