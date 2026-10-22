@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import semver from 'semver'
 
@@ -243,9 +243,67 @@ export function readTree(root: string): TCopy[] {
 }
 
 /**
+ * Каталог копии в корне: манифест и lock корня, какими они были до подмены.
+ * Лежит вне `node_modules` — там дерево переставляет npm, а `npm ci` сносит
+ * его целиком, — и стоит в `.gitignore`.
+ */
+export const SAVED_DIR = '.min-peers'
+
+/** Файлы корня, которые правит подмена. */
+const ROOT_FILES = ['package.json', 'package-lock.json']
+
+/**
+ * Сохраняет манифест и lock корня `root` в каталог копии — до подмены, чтобы
+ * вернуть их `restoreRoot`. Копия уже есть — ошибка: прошлая подмена не
+ * возвращена, и новая копия затёрла бы оригинал подменёнными файлами. Оба
+ * файла читаются до того, как заведён каталог: без одного из них копии нет
+ * вовсе, а не половина.
+ */
+export function saveRoot(root: string): void {
+	const saved = join(root, SAVED_DIR)
+
+	if (existsSync(saved)) {
+		throw new Error(`${saved}: копия уже есть — прошлая подмена не возвращена (restore)`)
+	}
+
+	const files = ROOT_FILES.map((file) => ({ file, content: readFileSync(join(root, file)) }))
+
+	mkdirSync(saved)
+
+	for (const { file, content } of files) {
+		writeFileSync(join(saved, file), content)
+	}
+}
+
+/**
+ * Возвращает манифест и lock корня `root` из каталога копии, байт в байт, и
+ * убирает копию. Копии нет — ошибка, и файлы корня не тронуты. Не версия из
+ * `HEAD`: она стёрла бы и незакоммиченную правку, с которой граница
+ * поднимается. npm здесь не зовётся — дерево к возвращённым файлам приводит
+ * `npm install` из `cli.ts`.
+ */
+export function restoreRoot(root: string): void {
+	const saved = join(root, SAVED_DIR)
+
+	if (!existsSync(saved)) {
+		throw new Error(`${saved}: копии нет — возвращать нечего`)
+	}
+
+	const files = ROOT_FILES.map((file) => ({ file, content: readFileSync(join(saved, file)) }))
+
+	for (const { file, content } of files) {
+		writeFileSync(join(root, file), content)
+	}
+
+	rmSync(saved, { recursive: true })
+}
+
+/**
  * Подменяет пакеты списка во всём дереве каталога `root`: пишет их в
  * `overrides` манифеста корня и разрешает заново. Правит манифест корня, lock
  * и `node_modules` — это для раннера CI, в репозиторий подмена не попадает.
+ * До правки сохраняет манифест и lock (`saveRoot`), и локально их возвращает
+ * `restoreRoot`; копия, оставшаяся от прошлой подмены, роняет новую до правки.
  *
  * Разрешает их `npm update` по именам, а не `npm install`: тот новые
  * `overrides` в дереве из lock применяет не везде, и копия, которую lock уже
@@ -266,6 +324,7 @@ export function pinTree(root: string, pins: readonly TPin[]): void {
 		...Object.fromEntries(pins.map(({ name, version }) => [name, version])),
 	}
 
+	saveRoot(root)
 	writeFileSync(path, `${JSON.stringify({ ...parsed, overrides }, null, 2)}\n`)
 	execSync(`npm update ${pins.map(({ name }) => name).join(' ')} --no-audit --no-fund`, {
 		cwd: root,
