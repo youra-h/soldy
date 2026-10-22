@@ -18,6 +18,7 @@ import { createSignal, type JSX } from 'solid-js'
 import type { TAttributesMap, TTabsCollection, TTagsCollection } from '@soldy-ui/core'
 import {
 	Field,
+	ListBox,
 	Input,
 	RadioGroup,
 	Tabs,
@@ -128,5 +129,19 @@ export function FieldGroup(): JSX.Element {
 				<RadioGroup.Item value="a">А</RadioGroup.Item>
 			</RadioGroup>
 		</Field>
+	)
+}
+
+/**
+ * ListBox разметкой со слотом пустого списка: слот стоит после элементов, и
+ * сервер решает, рисовать ли его, когда элементы уже вошли в коллекцию, —
+ * его в разметке нет. Браузер при гидратации обязан решить так же
+ * (`list-box.hydration.spec.tsx`).
+ */
+export function ListBoxWithEmpty(): JSX.Element {
+	return (
+		<ListBox empty={<span class="empty">Пусто</span>}>
+			<ListBox.Item value="a" text="A" />
+		</ListBox>
 	)
 }

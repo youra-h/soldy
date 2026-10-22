@@ -16,6 +16,7 @@ import { renderToString } from 'solid-js/web'
 import {
 	FieldGroup,
 	FieldOwnId,
+	ListBoxWithEmpty,
 	PartProbe,
 	RootProbe,
 	TabsActiveFirst,
@@ -32,6 +33,7 @@ const PAGES: ReadonlyArray<readonly [fixture: string, page: () => JSX.Element]> 
 	['part-probe', () => <PartProbe />],
 	['field-own-id', () => <FieldOwnId />],
 	['field-group', () => <FieldGroup />],
+	['list-box-with-empty', () => <ListBoxWithEmpty />],
 ]
 
 describe('разметка сервера для гидратации', () => {
