@@ -385,7 +385,11 @@ describe('порядок входа', () => {
 		wrap.attachShadow({ mode: 'open' }).innerHTML =
 			'<div is="so-test-shadow-accordion-item" value="s" text="S"></div>'
 
-		defineElement('so-test-shadow-accordion-item', class extends TAccordionItemElement {}, 'div')
+		defineElement(
+			'so-test-shadow-accordion-item',
+			class extends TAccordionItemElement {},
+			'div',
+		)
 		defineElement('so-test-shadow-accordion', class extends TAccordionElement {}, 'div')
 
 		await flush()

@@ -1192,31 +1192,36 @@ describe('группы разметки', () => {
 		it.each([
 			['в порядке модуля меню', 'so-test-up', KINDS],
 			['в обратном порядке', 'so-test-down', [...KINDS].reverse()],
-		] as const)('%s — секции меню и подменю в порядке документа', async (_order, prefix, kinds) => {
-			document.body.innerHTML = markup(prefix)
+		] as const)(
+			'%s — секции меню и подменю в порядке документа',
+			async (_order, prefix, kinds) => {
+				document.body.innerHTML = markup(prefix)
 
-			for (const [kind, extend, tag] of kinds) defineElement(`${prefix}-${kind}`, extend(), tag)
+				for (const [kind, extend, tag] of kinds) {
+					defineElement(`${prefix}-${kind}`, extend(), tag)
+				}
 
-			// Ожившие при регистрации собираются микрозадачей позже
-			await flush()
-			await flush()
+				// Ожившие при регистрации собираются микрозадачей позже
+				await flush()
+				await flush()
 
-			const menu = document.querySelector(`[is="${prefix}-menu"]`)
-			const submenu = document.querySelector(`[is="${prefix}-submenu"]`)
+				const menu = document.querySelector(`[is="${prefix}-menu"]`)
+				const submenu = document.querySelector(`[is="${prefix}-submenu"]`)
 
-			if (!isMenu(menu) || !isSubmenu(submenu)) throw new Error('меню нет')
+				if (!isMenu(menu) || !isSubmenu(submenu)) throw new Error('меню нет')
 
-			expect(outline(menu)).toEqual([
-				[null, ['new', 'grid']],
-				['Сортировка', ['name', 'date']],
-				['Правка', ['cut', 'share']],
-				[null, ['ruler']],
-			])
-			expect(outline(submenu)).toEqual([
-				[null, ['link']],
-				['Почта', ['mail']],
-			])
-		})
+				expect(outline(menu)).toEqual([
+					[null, ['new', 'grid']],
+					['Сортировка', ['name', 'date']],
+					['Правка', ['cut', 'share']],
+					[null, ['ruler']],
+				])
+				expect(outline(submenu)).toEqual([
+					[null, ['link']],
+					['Почта', ['mail']],
+				])
+			},
+		)
 	})
 })
 

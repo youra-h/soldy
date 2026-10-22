@@ -355,7 +355,10 @@ describe('defineElement · сборка по месту', () => {
 		try {
 			registerPartsFirst(names)
 			// Парсер дописывает разметку: имя уже зарегистрировано
-			pending?.insertAdjacentHTML('beforeend', `<label is="${names.radio}" value="c"></label>`)
+			pending?.insertAdjacentHTML(
+				'beforeend',
+				`<label is="${names.radio}" value="c"></label>`,
+			)
 			await microtask()
 		} finally {
 			readyState.mockRestore()
@@ -368,6 +371,37 @@ describe('defineElement · сборка по месту', () => {
 		document.dispatchEvent(new Event('DOMContentLoaded'))
 
 		expect(valuesOf(el)).toEqual(['a', 'b', 'c'])
+	})
+
+	/**
+	 * Классический скрипт зарегистрировал владельца, пока документ разбирался, а
+	 * модуль — элементы после разбора, но до `DOMContentLoaded`. Элементы ожили
+	 * при регистрации, а над ними ждёт владелец в очереди документа: они встают
+	 * к нему и его не обгоняют.
+	 */
+	it('ожившие при регистрации под владельцем, который ждёт разбора, ждут вместе с ним', async () => {
+		const names = freshGroup()
+
+		document.body.innerHTML = groupMarkup(names, ['a', 'b'])
+
+		const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading')
+
+		try {
+			defineElement(names.group, class extends TRadioGroupElement {}, 'div')
+			readyState.mockReturnValue('interactive')
+			defineElement(names.radio, class extends TRadioGroupItemElement {}, 'label')
+			await microtask()
+		} finally {
+			readyState.mockRestore()
+		}
+
+		const el = group(names)
+
+		expect(el.ctrl).toBeUndefined()
+
+		document.dispatchEvent(new Event('DOMContentLoaded'))
+
+		expect(valuesOf(el)).toEqual(['a', 'b'])
 	})
 
 	/**
