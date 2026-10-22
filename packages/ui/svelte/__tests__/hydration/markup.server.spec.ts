@@ -20,6 +20,9 @@ import DatePickerValue from './DatePickerValue.test.svelte'
 import FieldText from './FieldText.test.svelte'
 import FrameContained from './FrameContained.test.svelte'
 import PopoverContained from './PopoverContained.test.svelte'
+import TabsActiveFirst from './TabsActiveFirst.test.svelte'
+import TabsActiveSecond from './TabsActiveSecond.test.svelte'
+import TagsSelectedSecond from './TagsSelectedSecond.test.svelte'
 import { useToday } from './today'
 
 useToday()
@@ -36,6 +39,9 @@ const PAGES: ReadonlyArray<readonly [fixture: string, body: () => string]> = [
 	['popover-contained', () => render(PopoverContained).body],
 	['button-style-hidden', () => render(ButtonStyle, { props: { visible: false } }).body],
 	['field-text', () => render(FieldText).body],
+	['tabs-active-second', () => render(TabsActiveSecond).body],
+	['tabs-active-first', () => render(TabsActiveFirst).body],
+	['tags-selected-second', () => render(TagsSelectedSecond).body],
 ]
 
 describe('разметка сервера для гидратации', () => {
