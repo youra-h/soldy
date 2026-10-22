@@ -1643,8 +1643,14 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `plugins/__tests__/calendar-pointer.plugin.spec.ts`,
   `ui/vue/__tests__/calendar.spec.ts`, `ui/solid/__tests__/calendar.spec.tsx`
   (у Solid ещё — кнопка заголовка, её поповер и живая область те же при
-  листании и выборе месяца, панель выбора — прямой потомок корня поповера) и
-  `playground/vue/browser/calendar.spec.ts`.
+  листании и выборе месяца, панель выбора — прямой потомок корня поповера),
+  `playground/vue/browser/calendar.spec.ts` и серверные спеки Solid:
+  «Calendar · серверный рендер» и «id и name — от createUniqueId()» в
+  `ui/solid/__tests__/collections.server.spec.tsx` (сетки названы
+  заголовками, дни — полными датами и с одной остановкой Tab, заполнители
+  скрыты, панель выбора — на месте, скрытая и без карточки, `id` двух
+  рендеров одни) и `ui/solid/__tests__/locale.server.spec.tsx` (заголовок
+  месяца и имена кнопок листания — на языке своего запроса).
 - **DateInput** — поле даты из частей (`spinbutton`) в группе, с
   `kind: 'datetime'` — даты и времени, с `timePrecision: 'second'` — до
   секунды: корень — `role="group"`, имя — `aria_label` или `aria_labelledBy`
