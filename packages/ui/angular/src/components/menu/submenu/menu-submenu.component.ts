@@ -39,7 +39,7 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
  * к корню пункта у конца строки (`end-start`), пометка владельцем. На неё
  * ложится набор панели (`panelAria`: `role="menu"`, `id` и `aria-labelledby`
  * на строку) и пометка `dismiss_ownerAttribute`. Открытость — `visible`
- * панели, `rendered` подменю панель получает сама, как у меню. Классы —
+ * панели, как у меню. Классы —
  * привязка `[class]` из `panelClasses`: блок панели меню с размером подменю и
  * вариантом его панели — своим вариантом, а без него вариантом меню над ним.
  *

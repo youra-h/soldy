@@ -14,8 +14,8 @@ import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import type { TComponentVariant } from '@soldy-ui/core'
-import { TSkeletonComponent } from '@soldy-ui/angular'
-import { findIn, mountHost } from './mount'
+import { TPopoverComponent, TSkeletonComponent } from '@soldy-ui/angular'
+import { find, findIn, mountHost, nextFrame } from './mount'
 
 const variantClasses = (el: HTMLElement) =>
 	[...el.classList].filter((name) => name.includes('--variant-'))
@@ -45,6 +45,19 @@ class ContentHost {
 	template: `<div so-skeleton [width]="120" height="1em"></div>`,
 })
 class SizedHost {}
+
+/** Открытый поповер в содержимом: его панель уехала в `body`. */
+@Component({
+	selector: 'probe-skeleton-popover',
+	standalone: true,
+	imports: [TSkeletonComponent, TPopoverComponent],
+	template: `<div so-skeleton [rendered]="rendered()">
+		<span so-popover open><button class="so-test-inside">В поповере</button></span>
+	</div>`,
+})
+class PopoverHost {
+	readonly rendered = signal<boolean | undefined>(undefined)
+}
 
 /** Корень Skeleton в разметке хоста. */
 const skeleton = (fixture: ComponentFixture<unknown>) =>
@@ -104,6 +117,28 @@ describe('Skeleton · заглушка и содержимое', () => {
 		expect(el.querySelector('.so-skeleton__placeholder')).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 		expect(el.style.display).toBe('')
+	})
+
+	/**
+	 * `rendered` Skeleton снимает одну заглушку, а не поддерево: у Vue его
+	 * корень `v-if` не носит, и слои в содержимом остаются на виду.
+	 */
+	it('rendered=false: открытая панель поповера в содержимом остаётся на виду', async () => {
+		const fixture = mountHost(PopoverHost)
+
+		await nextFrame()
+
+		const panel = find(document, '.so-popover__panel', HTMLElement)
+
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
+
+		fixture.componentInstance.rendered.set(false)
+		fixture.detectChanges()
+
+		expect(skeleton(fixture).querySelector('.so-skeleton__placeholder')).toBeNull()
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
 	})
 
 	/** Содержимое проецируется вне ветки заглушки: смена ветки его не теряет. */
