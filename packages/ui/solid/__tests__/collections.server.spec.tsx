@@ -27,9 +27,9 @@
  *
  * Гидратацию проверяет отдельный прогон пакета (`hydration` в
  * `vitest.config.ts`): в одном прогоне компоненты собраны под одно окружение,
- * и разметку сервера ему отдаёт фикстура, которую сверяет серверный прогон
- * (`hydration/markup.server.spec.tsx`). Лишнюю остановку Tab гидратация
- * снимает — `hydration/collections.hydration.spec.tsx`.
+ * и разметку сервера ему рисует перед прогоном его `globalSetup`
+ * (`hydration/server.tsx`). Лишнюю остановку Tab гидратация снимает —
+ * `hydration/collections.hydration.spec.tsx`.
  */
 
 import { describe, it, expect } from 'vitest'

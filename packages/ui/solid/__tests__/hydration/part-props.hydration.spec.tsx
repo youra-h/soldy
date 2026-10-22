@@ -10,18 +10,17 @@
  * бы его как записанный, и до узла он не дошёл бы
  * (`src/adapter/common/root.ts`, `createLayoutMemo`).
  *
- * Разметка сервера — фикстура из `markup/`, её пишет и сверяет серверный
- * прогон (`markup.server.spec.tsx`); страница — та же (`pages.tsx`).
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.tsx`);
+ * страница — та же (`pages.tsx`).
  */
 
 import { describe, it, expect } from 'vitest'
 import { PartProbe } from './pages'
-import { expectServedNodes, hydrateServed, serve } from './serve'
-import partProbe from './markup/part-probe.html?raw'
+import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
 
 describe('набор части · гидратация', () => {
 	it('набор, которого у сервера не было, после гидратации — в узле', () => {
-		const container = serve(partProbe)
+		const container = serve(markupOf('part-probe'))
 		const served = [...container.querySelectorAll('span')]
 
 		expect(served.map((node) => node.hasAttribute('data-probe'))).toEqual([false])

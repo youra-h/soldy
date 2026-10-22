@@ -15,9 +15,9 @@
  * в регионе, который браузер нарисовал сам. И основным: вход соседа меняет
  * источник структуры, которую браузер уже собрал до него.
  *
- * Разметка сервера и поток — фикстуры из `markup/`, их пишет и сверяет
- * серверный прогон (`markup.server.spec.tsx`); страницы — те же (`pages.tsx`).
- * Поток в документ кладёт, досылает и разрешает `serveStreamed` из `serve.ts`.
+ * Разметку сервера и поток рисует перед прогоном его `globalSetup`
+ * (`server.tsx`); страницы — те же (`pages.tsx`). Поток в документ кладёт,
+ * досылает и разрешает `serveStreamed` из `serve.ts`.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -29,11 +29,7 @@ import {
 	TabsContentStreamed,
 	ToastsBodyStreamed,
 } from './pages'
-import { expectServedNodes, hydrateServed, serve, serveStreamed } from './serve'
-import listBoxEmptyStreamed from './markup/list-box-empty-streamed.html?raw'
-import structureProbe from './markup/structure-probe.html?raw'
-import tabsContentStreamed from './markup/tabs-content-streamed.html?raw'
-import toastsBodyStreamed from './markup/toasts-body-streamed.html?raw'
+import { expectServedNodes, hydrateServed, markupOf, serve, serveStreamed } from './serve'
 
 /** Строки с ролью `role` — по порядку. */
 const rowsOf = (scope: ParentNode, role: string) => [...scope.querySelectorAll(`[role="${role}"]`)]
@@ -45,7 +41,7 @@ const attributeOf = (rows: readonly Element[], name: string) =>
 describe('Tabs · структура в позднем окне', () => {
 	it('панель вне границы Suspense, её таб за ней: после поздней гидратации панель в документе, остановка Tab одна', async () => {
 		const engine = createEngineTabs()
-		const streamed = serveStreamed(tabsContentStreamed)
+		const streamed = serveStreamed(markupOf('tabs-content-streamed'))
 
 		hydrateServed(
 			streamed.container,
@@ -76,7 +72,7 @@ describe('Tabs · структура в позднем окне', () => {
 describe('ListBox · структура в позднем окне', () => {
 	it('слот пустого списка вне границы Suspense, элемент за ней: после поздней гидратации слота нет', async () => {
 		const engine = createEngineListBox()
-		const streamed = serveStreamed(listBoxEmptyStreamed)
+		const streamed = serveStreamed(markupOf('list-box-empty-streamed'))
 
 		hydrateServed(
 			streamed.container,
@@ -102,7 +98,7 @@ describe('ListBox · структура в позднем окне', () => {
 	it('после поздней гидратации структура живая: приложение сняло элемент — слот пустого списка вернулся', async () => {
 		const engine = createEngineListBox()
 		const [present, setPresent] = createSignal(true)
-		const streamed = serveStreamed(listBoxEmptyStreamed)
+		const streamed = serveStreamed(markupOf('list-box-empty-streamed'))
 
 		hydrateServed(
 			streamed.container,
@@ -124,7 +120,7 @@ describe('ListBox · структура в позднем окне', () => {
 
 describe('Toasts · структура в позднем окне', () => {
 	it('тост, показанный из тела компонента за границей Suspense: после поздней гидратации он в регионе', async () => {
-		const streamed = serveStreamed(toastsBodyStreamed)
+		const streamed = serveStreamed(markupOf('toasts-body-streamed'))
 
 		hydrateServed(streamed.container, () => <ToastsBodyStreamed />, streamed.options)
 
@@ -149,7 +145,7 @@ describe('Toasts · структура в позднем окне', () => {
 
 describe('структура · основное окно', () => {
 	it('Show, For, Index и KeyedFor, чей источник после них сменил сосед: после гидратации — сменившаяся структура', () => {
-		const container = serve(structureProbe)
+		const container = serve(markupOf('structure-probe'))
 		const root = container.firstElementChild
 		const entry = container.querySelector('i')
 

@@ -11,18 +11,17 @@
  * «Гидратация»): придержанный стор показал бы `Show` список без элементов, и
  * Solid искал бы узлы слота, которых сервер не печатал (`Hydration Mismatch`).
  *
- * Разметка сервера — фикстура из `markup/`, её пишет и сверяет серверный
- * прогон (`markup.server.spec.tsx`); страница — та же (`pages.tsx`).
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.tsx`);
+ * страница — та же (`pages.tsx`).
  */
 
 import { describe, it, expect } from 'vitest'
 import { ListBoxWithEmpty } from './pages'
-import { expectServedNodes, hydrateServed, serve } from './serve'
-import listBoxWithEmpty from './markup/list-box-with-empty.html?raw'
+import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
 
 describe('ListBox · гидратация', () => {
 	it('слот пустого списка после элементов: у сервера его нет, у браузера — тоже', () => {
-		const container = serve(listBoxWithEmpty)
+		const container = serve(markupOf('list-box-with-empty'))
 		const served = [...container.querySelectorAll('[role="option"]')]
 
 		expect(served).toHaveLength(1)

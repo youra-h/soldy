@@ -2810,8 +2810,8 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   (`*.server.spec.tsx`, `solid({ ssr: true })`, `renderToString`), гидратацию
   — третий (`*.hydration.spec.tsx`, JSX с метками гидратации): разметку
   сервера, а у границы `Suspense`, досланной позже, — поток (`renderToStream`)
-  для него пишет и сверяет фикстурами серверный прогон
-  (`__tests__/hydration/markup.server.spec.tsx`).
+  для него рисует перед прогоном его `globalSetup` той же версией solid-js
+  (`__tests__/hydration/global-setup.ts`, `server.tsx`).
 - **Компоненты компилирует приложение.** Кроме бандла под браузер пакет
   отдаёт исходник с JSX (`dist/source`) под условием `solid` в `exports`: по
   нему плагин Solid приложения компилирует компоненты под сервер, браузер и

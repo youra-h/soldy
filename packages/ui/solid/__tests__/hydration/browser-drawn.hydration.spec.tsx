@@ -21,9 +21,9 @@
  * писать выбор в набор панели — узел отстанет от состояния, и сторож
  * покраснеет.
  *
- * Поток сервера — фикстура из `markup/`, её пишет и сверяет серверный прогон
- * (`markup.server.spec.tsx`); страница — та же (`pages.tsx`). Поток в
- * документ кладёт, досылает и разрешает `serveStreamed` из `serve.ts`.
+ * Поток сервера рисует перед прогоном его `globalSetup` (`server.tsx`);
+ * страница — та же (`pages.tsx`). Поток в документ кладёт, досылает и
+ * разрешает `serveStreamed` из `serve.ts`.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -35,8 +35,7 @@ import {
 	type TAttributesMap,
 } from '@soldy-ui/core'
 import { AccordionLayerStreamed } from './pages'
-import { hydrateServed, serveStreamed } from './serve'
-import accordionLayerStreamed from './markup/accordion-layer-streamed.html?raw'
+import { hydrateServed, markupOf, serveStreamed } from './serve'
 
 /**
  * Открыто ли окно гидратации — условие `isHydrating` из `solid-js/web` без
@@ -99,7 +98,7 @@ function inNode(set: TAttributesMap): Record<string, string> {
 describe('часть, нарисованная браузером · чужое окно гидратации', () => {
 	it('сосед по коллекции вошёл в позднем окне: выбор ушёл из секции в панели слоя, узел панели — её набор', async () => {
 		const engine = createEngineAccordion()
-		const streamed = serveStreamed(accordionLayerStreamed)
+		const streamed = serveStreamed(markupOf('accordion-layer-streamed'))
 
 		hydrateServed(
 			streamed.container,

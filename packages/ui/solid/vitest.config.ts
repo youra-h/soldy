@@ -16,8 +16,10 @@ import path from 'node:path'
  *   браузера с метками гидратации (`hydratable`), как его собирает
  *   приложение с серверным рендером, а `hydrate` из `solid-js/web`
  *   гидратирует разметку сервера. Двух сборок сразу у прогона нет, поэтому
- *   разметку сервера пишет серверный прогон — фикстурой, которую он же и
- *   сверяет (`__tests__/hydration/markup.server.spec.tsx`).
+ *   разметку сервера рисует его `globalSetup` перед прогоном
+ *   (`__tests__/hydration/global-setup.ts`): страницы собирает сборкой JSX
+ *   проекта `server` отдельный сервер Vite с этим конфигом. Сервер и браузер
+ *   — одной версии solid-js, той, что стоит в дереве.
  *
  * `hot: false` — solid-refresh ломается вне dev-сервера.
  */
@@ -91,6 +93,7 @@ export default defineConfig({
 					name: 'hydration',
 					environment: 'jsdom',
 					include: ['__tests__/**/*.hydration.spec.tsx'],
+					globalSetup: ['./__tests__/hydration/global-setup.ts'],
 				},
 			},
 		],

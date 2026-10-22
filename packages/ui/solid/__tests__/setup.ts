@@ -1,6 +1,8 @@
 /**
- * Окружение тестов Solid — общее для клиентского и серверного прогона
- * (`setupFiles` в `vitest.config.ts`).
+ * Окружение тестов Solid — общее для всех прогонов (`setupFiles` в
+ * `vitest.config.ts`) и для разметки сервера, которую рисует прогону
+ * гидратации `hydration/server.tsx`: его грузит не прогон, и окружение он
+ * импортирует сам.
  */
 
 import { useIcons } from '@soldy-ui/setup'

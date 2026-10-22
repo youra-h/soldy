@@ -13,10 +13,9 @@
  * то, что в узле, в любом окне гидратации, а после окна отдаёт живое
  * (`src/adapter/common/root.ts`, шапка, «Гидратация»).
  *
- * Поток сервера и острова — фикстуры из `markup/`, их пишет и сверяет
- * серверный прогон (`markup.server.spec.tsx`); страницы — те же
- * (`pages.tsx`). Поток в документ кладёт, досылает и разрешает
- * `serveStreamed` из `serve.ts`.
+ * Поток сервера и острова рисует перед прогоном его `globalSetup`
+ * (`server.tsx`); страницы — те же (`pages.tsx`). Поток в документ кладёт,
+ * досылает и разрешает `serveStreamed` из `serve.ts`.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -31,14 +30,7 @@ import {
 	TabsStreamed,
 	TagsSelectedStreamed,
 } from './pages'
-import { expectServedNodes, hydrateServed, serve, serveStreamed } from './serve'
-import fieldControlStreamed from './markup/field-control-streamed.html?raw'
-import islandEntry from './markup/island-entry.html?raw'
-import islandProbe from './markup/island-probe.html?raw'
-import rootProbeStreamed from './markup/root-probe-streamed.html?raw'
-import tabsActiveStreamed from './markup/tabs-active-streamed.html?raw'
-import tabsStreamed from './markup/tabs-streamed.html?raw'
-import tagsSelectedStreamed from './markup/tags-selected-streamed.html?raw'
+import { expectServedNodes, hydrateServed, markupOf, serve, serveStreamed } from './serve'
 
 /** Строки с ролью `role` — по порядку. */
 const rowsOf = (container: HTMLElement, role: string) => [
@@ -52,7 +44,7 @@ const attributeOf = (rows: readonly Element[], name: string) =>
 describe('Tabs · поздняя гидратация', () => {
 	it('табы целиком за границей Suspense: после её гидратации остановка Tab одна, у активного', async () => {
 		const engine = createEngineTabs()
-		const streamed = serveStreamed(tabsStreamed)
+		const streamed = serveStreamed(markupOf('tabs-streamed'))
 
 		hydrateServed(streamed.container, () => <TabsStreamed engine={engine} />, streamed.options)
 
@@ -76,7 +68,7 @@ describe('Tabs · поздняя гидратация', () => {
 
 	it('активный за границей Suspense: таб выше гидратирован раньше, после поздней гидратации остановка Tab одна', async () => {
 		const engine = createEngineTabs()
-		const streamed = serveStreamed(tabsActiveStreamed)
+		const streamed = serveStreamed(markupOf('tabs-active-streamed'))
 
 		hydrateServed(
 			streamed.container,
@@ -104,7 +96,7 @@ describe('Tabs · поздняя гидратация', () => {
 
 	it('после поздней гидратации раскладка живая: активировали первый таб — остановка Tab у него', async () => {
 		const engine = createEngineTabs()
-		const streamed = serveStreamed(tabsActiveStreamed)
+		const streamed = serveStreamed(markupOf('tabs-active-streamed'))
 
 		hydrateServed(
 			streamed.container,
@@ -124,7 +116,7 @@ describe('Tabs · поздняя гидратация', () => {
 describe('Tags · поздняя гидратация', () => {
 	it('выбранный за границей Suspense: тег выше гидратирован раньше, после поздней гидратации остановка Tab одна', async () => {
 		const engine = createEngineTags()
-		const streamed = serveStreamed(tagsSelectedStreamed)
+		const streamed = serveStreamed(markupOf('tags-selected-streamed'))
 
 		hydrateServed(
 			streamed.container,
@@ -150,7 +142,7 @@ describe('Tags · поздняя гидратация', () => {
 
 describe('Field · поздняя гидратация', () => {
 	it('контрол со своим id за границей Suspense: for подписи после поздней гидратации — на него', async () => {
-		const streamed = serveStreamed(fieldControlStreamed)
+		const streamed = serveStreamed(markupOf('field-control-streamed'))
 		const label = streamed.container.querySelector('label')
 
 		hydrateServed(streamed.container, () => <FieldControlStreamed />, streamed.options)
@@ -177,7 +169,7 @@ describe('Field · поздняя гидратация', () => {
  */
 describe('раскладка корня · поздняя гидратация', () => {
 	it('набор, сменившийся и в основной гидратации, и в поздней: в узле — последний', async () => {
-		const streamed = serveStreamed(rootProbeStreamed)
+		const streamed = serveStreamed(markupOf('root-probe-streamed'))
 		const root = streamed.container.querySelector('[data-probe]')
 
 		expect(root?.getAttribute('data-probe')).toBe('served')
@@ -195,8 +187,8 @@ describe('раскладка корня · поздняя гидратация',
 
 	it('набор корня острова сменил вход в другом острове, пока тот гидратировался: в узле — новый', () => {
 		const [mark, setMark] = createSignal('served')
-		const first = serve(islandProbe)
-		const second = serve(islandEntry)
+		const first = serve(markupOf('island-probe'))
+		const second = serve(markupOf('island-entry'))
 		const root = first.querySelector('[data-probe]')
 
 		hydrateServed(first, () => <IslandProbe mark={mark} />, { renderId: 'a' })

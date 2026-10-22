@@ -46,7 +46,7 @@
     "@soldy-ui/setup": "0.3.0-alpha.0"
   },
   "peerDependencies": {
-    "solid-js": "^1.9.16"
+    "solid-js": "^1.9.10"
   },
   "devDependencies": {
     "@soldy-ui/icons-material": "0.3.0-alpha.0",
