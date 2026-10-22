@@ -12,15 +12,16 @@
  * компонент стоит в ячейке так же, как компонент хоста Vue, — то же место и
  * тот же размер. У превью с обёрткой и содержимым так же стоят и обёртка, и
  * части: подпись вокруг флажка, ползунка и оценки, ручки и звёзды, элементы
- * коллекций, страницы пагинации, панель активного таба, — а у таблицы её окно,
- * корень, заголовки и строки: ширину колонок плагин раскладки мерит по окну, и
- * раскладка совпадает, только если окно он нашёл.
+ * коллекций, теги, поле Select с обёртками и стрелкой, страницы пагинации,
+ * панель активного таба, — а у таблицы её окно, корень, заголовки и строки:
+ * ширину колонок плагин раскладки мерит по окну, и раскладка совпадает, только
+ * если окно он нашёл; у окна Virtual — его ряд: список, Select и таблица.
  *
- * Панели поповера и подсказки увезены в `body`, мимо ячейки, и стоят у
- * якоря — корня, который Angular отдаёт панели значением (`rootElement()`
- * базы). Открытая панель с частями сверяется с Vue от угла триггера
- * (`panel-boxes.ts`, как у Web Components): превью обоих хостов — в одном
- * блоке, по очереди. Окно и выезжающая панель — тоже в `body`, с
+ * Панели поповера, подсказки и список Select увезены в `body`, мимо ячейки, и
+ * стоят у якоря — корня, который Angular отдаёт панели значением
+ * (`rootElement()` базы). Открытая панель с частями сверяется с Vue от угла
+ * триггера, а список Select с опциями — от угла корня Select (`panel-boxes.ts`,
+ * как у Web Components): превью обоих хостов — в одном блоке, по очереди. Окно и выезжающая панель — тоже в `body`, с
  * подложкой-спутником перед собой, и стоят у края или по центру окна: в ячейке
  * от них остаётся кнопка, а открытые, с подложкой и частями, сверяются с Vue от
  * угла окна. Регион тостов — тоже в `body`: в ячейке от менеджера без коробки
@@ -73,11 +74,11 @@ const propRow = (name: string): HTMLElement => {
  * неактивного таба Angular держит в разметке скрытой — это элемент
  * потребителя, — а Vue её не рисует.
  */
-async function boxesOf(framework: string, component: string, selector: string) {
+async function boxesOf(framework: string, component: string, selector: string, row = 'visible') {
 	await router.push(`/${framework}/${component}`)
 	await settle()
 
-	const stage = propRow('visible').querySelector('.pg-col__stage')
+	const stage = propRow(row).querySelector('.pg-col__stage')
 	const parts = [...(stage?.querySelectorAll(selector) ?? [])].filter(
 		(part) => part.getClientRects().length > 0,
 	)
@@ -140,6 +141,12 @@ describe('хост Angular', () => {
 		['field', '.so-field, .so-field__label, .so-field__control, .so-input, .so-field__helper'],
 		['radio-group', '.so-radio-group, .so-radio-group-item'],
 		['list-box', '.so-list-box, .so-list-box-item'],
+		['tags', '.so-tags, .so-tags-item, .so-tags-item .so-button__text'],
+		// Поле Select с обёртками по сторонам и стрелкой: список увезён в `body`
+		[
+			'select',
+			'.so-select, .so-select__field, .so-input__leading, .so-select__field input, .so-input__trailing, .so-select__arrow, .so-select__arrow svg',
+		],
 		['tabs', '.so-tabs, .so-tabs-item, .so-tabs__panel'],
 		['accordion', '.so-accordion, .so-accordion-item'],
 		// Стрелки, страницы и пропуски — в одну строку
@@ -154,9 +161,7 @@ describe('хост Angular', () => {
 			'.so-scroller, .so-scroller__prev, .so-scroller__viewport, .so-scroller__viewport > *, .so-scroller__next',
 		],
 		['progress-linear', '.so-progress-linear, .so-progress-linear__range'],
-		// Таблица — окно, корень, заголовки и строки: рамку превью задаёт хост.
-		// Окна Virtual здесь нет — у Vue в его ряду ещё и Select, которого у
-		// Angular нет
+		// Таблица — окно, корень, заголовки и строки: рамку превью задаёт хост
 		['table', '.so-table__viewport, .so-table, .so-table-column, .so-table-row'],
 		// Корень и триггер в нём: панели в ячейке нет — она увезена в `body`
 		['popover', '.so-popover, .so-popover > .so-button'],
@@ -172,6 +177,22 @@ describe('хост Angular', () => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)
 
+		expect(angular[0].width).toBeGreaterThan(0)
+		expect(angular).toEqual(vue)
+	})
+
+	/**
+	 * Ряд окна: список с пределом строк, Select в колонке своей ширины и
+	 * таблица в обёртке. Строки `visible` у окна нет — оно без представления, —
+	 * и сцена берётся из строки его выключателя.
+	 */
+	it('virtual: ряд окна стоит в ячейке так же, как у Vue', async () => {
+		const selector =
+			'.so-list-box, .so-list-box-item, .so-select, .so-select__field, .so-table__viewport, .so-table, .so-table-row'
+		const vue = await boxesOf('vue', 'virtual', selector, 'enabled')
+		const angular = await boxesOf('angular', 'virtual', selector, 'enabled')
+
+		expect(angular.length).toBeGreaterThan(3)
 		expect(angular[0].width).toBeGreaterThan(0)
 		expect(angular).toEqual(vue)
 	})
@@ -226,6 +247,48 @@ describe('хост Angular · панель у триггера', () => {
 			expect(angular).toEqual(vue)
 		},
 	)
+})
+
+/** Части открытого списка Select: панель, список и опции со строками. */
+const SELECT_PARTS =
+	'.so-select__panel, .so-select__list, .so-select-item, .so-select-item > .so-button'
+
+/**
+ * Превью Select хоста в блоке — открытым (`open`): рамки корня и списка с
+ * опциями от угла корня — якоря панели. Меряется и снимается — следующей
+ * отрисовке оно не мешает.
+ */
+async function selectOf(framework: string): Promise<TBox[]> {
+	const host = await loadHost(framework)
+	const node = document.createElement('div')
+
+	node.style.cssText = BOX
+	document.body.appendChild(node)
+
+	const handle = host.mount(node, { component: 'select', props: { open: true } })
+
+	try {
+		return await measure(() => node.querySelector('.so-select'), SELECT_PARTS)
+	} finally {
+		handle.unmount()
+		node.remove()
+	}
+}
+
+describe('хост Angular · список Select', () => {
+	beforeEach(() => {
+		document.documentElement.dataset.soTheme = 'oren'
+	})
+
+	it('открытый список с опциями стоит у поля так же, как у Vue', async () => {
+		const vue = await selectOf('vue')
+		const angular = await selectOf('angular')
+
+		// Корень, панель, список и пять опций со строками
+		expect(angular).toHaveLength(13)
+		expect(angular[1].height).toBeGreaterThan(0)
+		expect(angular).toEqual(vue)
+	})
 })
 
 /** Части панели меню — группы с подписью, разделители, пункты со строками и их колонки. */

@@ -10,14 +10,30 @@
  * снаружи у Vue и React: `role="option"` строки перекрывает `role="button"`,
  * который кнопка на `div` пишет себе сама, — при любом порядке записи. Пишут
  * оба через один раскладчик элемента (`TElementAttributes`).
+ *
+ * Корень вложенного компонента бывает хостом, который отдаёт написанное на нём
+ * узлу внутри (`provideAttrs()`): поле, элемент коллекции, ListBox, Tabs. Набор
+ * на таком хосте — то же написанное, что статика и привязки, и ложится туда же:
+ * на `<input>` или строку, поверх набора, который туда кладёт шаблон самого
+ * компонента. Узел — сам хост (поле `<div so-input>` в шаблоне Select), и набор
+ * идёт дальше по цепочке, а на общем имени главнее набор внешнего звена.
  */
 
 import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
+import { TestBed } from '@angular/core/testing'
 import type { TAttributesMap } from '@soldy-ui/core'
-import { AttributesDirective, TButtonComponent } from '@soldy-ui/angular'
+import {
+	AttributesDirective,
+	TButtonComponent,
+	TInputComponent,
+	TListBoxComponent,
+	TListBoxItemComponent,
+	TSelectComponent,
+} from '@soldy-ui/angular'
+import { TForwardRegistry } from '../src/adapter/attrs/registry'
 import { TElementAttributes } from '../src/adapter/runtime/root-attributes'
-import { findIn, mountHost } from './mount'
+import { find, findIn, mountHost } from './mount'
 
 @Component({
 	standalone: true,
@@ -167,5 +183,190 @@ describe('раскладчик элемента', () => {
 		const node = document.createElement('div')
 
 		expect(TElementAttributes.of(node)).toBe(TElementAttributes.of(node))
+	})
+})
+
+/**
+ * Набор на хосте с узлом внутри — узлу, как статика и привязки на этом хосте:
+ * `aria` поля, написанный на `<div so-input>`, называет `<input>`, а не рамку
+ * без роли. Набор снаружи главнее набора, который на узел кладёт шаблон
+ * самого компонента, — как `controlAttrs` поверх `aria` на `<input>` у Vue.
+ */
+describe('набор на хосте с узлом внутри', () => {
+	@Component({
+		selector: 'probe-attributes-input',
+		imports: [TInputComponent, AttributesDirective],
+		template: `<div so-input aria_label="Своё" [so-attributes]="set()"></div>`,
+	})
+	class InputHost {
+		readonly set = signal<TAttributesMap>({
+			'aria-label': 'Снаружи',
+			'aria-describedby': 'hint',
+		})
+	}
+
+	it('ложится на узел, а не на хост, — поверх набора поля', () => {
+		const fixture = mountHost(InputHost)
+		const host = findIn(fixture, '[so-input]', HTMLElement)
+		const input = find(host, 'input', HTMLInputElement)
+
+		expect(input.getAttribute('aria-label')).toBe('Снаружи')
+		expect(input.getAttribute('aria-describedby')).toBe('hint')
+		expect(host.hasAttribute('aria-label')).toBe(false)
+		expect(host.hasAttribute('aria-describedby')).toBe(false)
+	})
+
+	it('перестал называть имя — на узле снова значение поля; набора нет — пусто', () => {
+		const fixture = mountHost(InputHost)
+		const input = findIn(fixture, '[so-input] input', HTMLInputElement)
+
+		fixture.componentInstance.set.set({ 'aria-describedby': 'other' })
+		fixture.detectChanges()
+
+		expect(input.getAttribute('aria-label')).toBe('Своё')
+		expect(input.getAttribute('aria-describedby')).toBe('other')
+
+		fixture.componentInstance.set.set({})
+		fixture.detectChanges()
+
+		expect(input.getAttribute('aria-label')).toBe('Своё')
+		expect(input.hasAttribute('aria-describedby')).toBe(false)
+	})
+
+	/** Элемент коллекции: набор на `<div so-list-box-item>` — строке, рядом с её ролью. */
+	it('на элементе коллекции — на строке', () => {
+		@Component({
+			selector: 'probe-attributes-item',
+			imports: [TListBoxComponent, TListBoxItemComponent, AttributesDirective],
+			template: `<div so-list-box>
+				<div
+					so-list-box-item
+					value="a"
+					text="A"
+					[so-attributes]="{ 'data-mark': 'x' }"
+				></div>
+			</div>`,
+		})
+		class ItemHost {}
+
+		const fixture = mountHost(ItemHost)
+		const item = findIn(fixture, '[so-list-box-item]', HTMLElement)
+		const row = find(item, '[role="option"]', HTMLElement)
+
+		expect(row.getAttribute('data-mark')).toBe('x')
+		expect(item.hasAttribute('data-mark')).toBe(false)
+	})
+
+	/**
+	 * Цепочка: набор на Select уходит его полю, а поле — тоже хост, и набор
+	 * доходит до `<input>`. На общем имени главнее набор снаружи — внешнего
+	 * звена, — а набор Select, который его шаблон кладёт на поле, под ним.
+	 */
+	it('цепочка: набор на Select — на <input> его поля, поверх набора Select', () => {
+		@Component({
+			selector: 'probe-attributes-select',
+			imports: [TSelectComponent, AttributesDirective],
+			template: `<div so-select aria_label="Своё" [so-attributes]="set()"></div>`,
+		})
+		class SelectHost {
+			readonly set = signal<TAttributesMap>({ 'aria-label': 'Снаружи', 'data-mark': 'x' })
+		}
+
+		const fixture = mountHost(SelectHost)
+		const root = findIn(fixture, '[so-select]', HTMLElement)
+		const box = find(root, '[so-input]', HTMLElement)
+		const input = find(box, 'input', HTMLInputElement)
+
+		expect(input.getAttribute('aria-label')).toBe('Снаружи')
+		expect(input.getAttribute('data-mark')).toBe('x')
+		expect(input.getAttribute('role')).toBe('combobox')
+
+		for (const node of [root, box]) {
+			expect(node.hasAttribute('aria-label')).toBe(false)
+			expect(node.hasAttribute('data-mark')).toBe(false)
+		}
+
+		fixture.componentInstance.set.set({ 'data-mark': 'y' })
+		fixture.detectChanges()
+
+		// Набор снаружи имя отпустил — на `<input>` снова имя Select
+		expect(input.getAttribute('aria-label')).toBe('Своё')
+		expect(input.getAttribute('data-mark')).toBe('y')
+	})
+})
+
+/**
+ * Запись хоста в реестре — без компонента: узла до отрисовки нет, и он бывает
+ * новым, а узел бывает хостом сам.
+ */
+describe('набор в записи хоста', () => {
+	const registry = () => TestBed.inject(TForwardRegistry)
+
+	it('ждёт узел и переезжает с ним: со старого снят', () => {
+		const host = document.createElement('div')
+		const forwarded = registry().register(host, [])
+		const first = document.createElement('input')
+		const second = document.createElement('input')
+
+		forwarded.setMarkup({ 'aria-label': 'Имя', 'aria-hidden': null })
+
+		// Узла ещё нет — набор ждёт его, на хост он не ложится
+		expect(host.hasAttribute('aria-label')).toBe(false)
+
+		forwarded.attach(first)
+
+		expect(first.getAttribute('aria-label')).toBe('Имя')
+		expect(first.hasAttribute('aria-hidden')).toBe(false)
+
+		forwarded.attach(second)
+
+		expect(first.hasAttribute('aria-label')).toBe(false)
+		expect(second.getAttribute('aria-label')).toBe('Имя')
+
+		forwarded.release()
+	})
+
+	/** Набор ложится поверх набора, который на узел кладёт его компонент. */
+	it('верхний слой узла: шаблон компонента под ним', () => {
+		const forwarded = registry().register(document.createElement('div'), [])
+		const node = document.createElement('input')
+
+		TElementAttributes.of(node).set('markup', { role: 'combobox', 'aria-label': 'Своё' })
+		forwarded.attach(node)
+		forwarded.setMarkup({ 'aria-label': 'Снаружи' })
+
+		expect(node.getAttribute('role')).toBe('combobox')
+		expect(node.getAttribute('aria-label')).toBe('Снаружи')
+
+		forwarded.setMarkup({})
+
+		expect(node.getAttribute('aria-label')).toBe('Своё')
+
+		forwarded.release()
+	})
+
+	it('узел — хост: набор уходит его записи, на общем имени главнее внешний', () => {
+		const outer = document.createElement('div')
+		const inner = document.createElement('div')
+		const node = document.createElement('input')
+		const outerHost = registry().register(outer, [])
+		const innerHost = registry().register(inner, [])
+
+		innerHost.attach(node)
+		innerHost.setMarkup({ 'aria-label': 'Внутренний', 'aria-invalid': 'true' })
+		outerHost.setMarkup({ 'aria-label': 'Внешний' })
+		outerHost.attach(inner)
+
+		expect(node.getAttribute('aria-label')).toBe('Внешний')
+		expect(node.getAttribute('aria-invalid')).toBe('true')
+		expect(inner.hasAttribute('aria-label')).toBe(false)
+
+		// Внешнее звено ушло с хоста — его набор снят, свой у звена остался
+		outerHost.attach(null)
+
+		expect(node.getAttribute('aria-label')).toBe('Внутренний')
+
+		outerHost.release()
+		innerHost.release()
 	})
 })

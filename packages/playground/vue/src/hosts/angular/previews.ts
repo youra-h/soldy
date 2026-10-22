@@ -37,6 +37,8 @@ import {
 	TRadioGroupItemComponent,
 	TRatingComponent,
 	TScrollerComponent,
+	TSelectComponent,
+	TSelectItemComponent,
 	TSkeletonComponent,
 	TSliderComponent,
 	TSwitchComponent,
@@ -44,6 +46,7 @@ import {
 	TTabsComponent,
 	TTabsContentComponent,
 	TTabsItemComponent,
+	TTagsComponent,
 	TTextareaComponent,
 } from '@soldy-ui/angular'
 
@@ -368,6 +371,31 @@ export const PREVIEWS: Record<string, TPreview> = {
 						element: tag('div'),
 						props: { ...item },
 					})),
+	},
+
+	// Опции — частями разметки, а пришли данными (`items` блока групп страницы)
+	// — из них: части заменили бы данные, а группы Select рисует из данных.
+	// Опции встают в список панели, увезённой в `body`, а слой лифта Select
+	// видят по инжектору владельца
+	select: {
+		component: TSelectComponent,
+		content: (bind) =>
+			bind.items
+				? []
+				: ITEMS.map((item) => ({
+						component: TSelectItemComponent,
+						element: tag('div'),
+						props: { ...item },
+					})),
+	},
+
+	// Теги — данными, как у Vue: ряд во всю ширину ячейки, иначе переполнению
+	// не с чем сравнивать — во флексе сцены ряд держал бы ширину по своим тегам
+	tags: {
+		component: TTagsComponent,
+		element: tag('div'),
+		frame: FULL_WIDTH,
+		props: () => ({ items: ITEMS }),
 	},
 
 	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы

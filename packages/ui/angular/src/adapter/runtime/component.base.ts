@@ -202,6 +202,7 @@ import {
 	OnChanges,
 	OnDestroy,
 	OnInit,
+	Renderer2,
 	SimpleChanges,
 	TemplateRef,
 	afterRenderEffect,
@@ -1095,6 +1096,11 @@ export abstract class TComponentBase<
 	 * называет ядро, остаётся за ядром, как на корне. Зовётся из конструктора:
 	 * `HostAttributeToken` разрешается только там, а эффекту нужен injection
 	 * context.
+	 *
+	 * Ставит их рендерер компонента — рендерер адаптера, — а не запись в узел:
+	 * узел бывает хостом сам (поле `<div so-input>` в шаблоне Select), и статика
+	 * идёт к его узлу тем же путём, что привязки, — записью хоста, по её
+	 * правилам (`attrs/host.ts`, «Цепочка хостов»).
 	 */
 	private _moveAttributes(
 		host: Element,
@@ -1117,12 +1123,14 @@ export abstract class TComponentBase<
 
 		if (moved.size === 0) return
 
+		const renderer = inject(Renderer2)
+
 		effect(() => {
 			const node = target()
 
 			if (!node) return
 
-			for (const [name, value] of moved) node.setAttribute(name, value)
+			for (const [name, value] of moved) renderer.setAttribute(node, name, value)
 		})
 	}
 

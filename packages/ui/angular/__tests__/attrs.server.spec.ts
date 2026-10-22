@@ -10,7 +10,10 @@
  *
  * После гидратации узлы — те же, что напечатал сервер, второго нет, консоль
  * чиста (её сторожит окружение спеков), а смена привязки и слушатель идут на
- * тот же узел. Таблица — те же двенадцать компонентов, что в `attrs.spec.ts`.
+ * тот же узел. Таблица — тринадцать компонентов из `attrs.spec.ts`: поля,
+ * коллекции, таблица и Select. Узел Select — `<input>` его поля, а поле само
+ * хост: написанное на Select проходит цепочку хостов и на сервере, и после
+ * гидратации.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -26,6 +29,7 @@ import {
 	TNumberInputComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
+	TSelectComponent,
 	TSwitchComponent,
 	TTableComponent,
 	TTabsComponent,
@@ -64,6 +68,7 @@ const TABLE_COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя' }]
 		TAccordionComponent,
 		TAccordionItemComponent,
 		TTableComponent,
+		TSelectComponent,
 	],
 	template: `<div so-input ${WRITTEN}></div>
 		<div so-number-input ${WRITTEN}></div>
@@ -76,7 +81,8 @@ const TABLE_COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя' }]
 		<div so-tabs ${WRITTEN}><div so-tabs-item value="a" text="A" active></div></div>
 		<div so-tabs><div so-tabs-item value="b" text="B" active ${WRITTEN}></div></div>
 		<div so-accordion><div so-accordion-item value="a" text="A" ${WRITTEN}></div></div>
-		<div so-table [items]="items" [columns]="columns" ${WRITTEN}></div>`,
+		<div so-table [items]="items" [columns]="columns" ${WRITTEN}></div>
+		<div so-select ${WRITTEN}></div>`,
 })
 class AttrsPage {
 	readonly probe = signal('a')
@@ -100,6 +106,7 @@ const CASES: ReadonlyArray<readonly [string, string, string]> = [
 	['Tabs.Item', '.probe[so-tabs-item]', '[so-button]'],
 	['Accordion.Item', '.probe[so-accordion-item]', '.so-accordion-item__header'],
 	['Table', '.probe[so-table]', 'table'],
+	['Select', '.probe[so-select]', '.so-select__field input'],
 ]
 
 /** Страница сервера, разобранная документом, — как её получил бы браузер. */

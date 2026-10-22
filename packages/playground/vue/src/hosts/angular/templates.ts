@@ -28,6 +28,7 @@ import {
 	TMenuSeparatorComponent,
 	TMenuSubmenuComponent,
 	TPopoverComponent,
+	TSelectComponent,
 	TTableComponent,
 	TTabsComponent,
 	TTabsContentComponent,
@@ -667,24 +668,28 @@ export class DragAndDropPreview implements TFixture {
 }
 
 /**
- * Virtual: окно на списке и таблице по тысяче элементов — на пяти его не
- * видно, — `<ng-container so-virtual>` вокруг ряда. ListBox с пределом строк
- * прокручивается сам, таблица — в окне прокрутки высотой 320 px; строка
- * `enabled` включает и выключает окно у обоих. Элементы — данными (`items`):
- * элементы разметкой окно не прячет. Ряд — граница ширины, как у Vue и React.
- * Select в Angular нет, и его окна рядом тоже. Переставленную колонку таблица
- * ведёт целиком, с ячейками строк (`reorderPreview="column"`): в окне это
- * сотни ячеек, а не тысячи.
+ * Virtual: окно на трёх списках по тысяче элементов — на пяти его не видно, —
+ * `<ng-container so-virtual>` вокруг ряда. ListBox с пределом строк
+ * прокручивается сам, у Select прокручивается список его панели, таблица — в
+ * окне прокрутки высотой 320 px; строка `enabled` включает и выключает окно у
+ * всех разом. Элементы — данными (`items`): элементы разметкой окно не прячет.
+ * Ряд — граница ширины, как у Vue и React, а Select — в колонке своей ширины:
+ * поле во всю ширину места, и в ряду оно забрало бы место таблицы.
+ * Переставленную колонку таблица ведёт целиком, с ячейками строк
+ * (`reorderPreview="column"`): в окне это сотни ячеек, а не тысячи.
  */
 @Component({
 	selector: 'pg-virtual-preview',
-	imports: [TVirtualComponent, TListBoxComponent, TTableComponent],
+	imports: [TVirtualComponent, TListBoxComponent, TSelectComponent, TTableComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
 		<ng-container so-virtual [ctrl]="ctrl()" [enabled]="enabled()">
 			<div style="display: flex; gap: 24px; align-items: flex-start; width: 100%">
 				<div so-list-box [items]="items" [maxRows]="8" aria_label="Пункты"></div>
+				<div style="flex: none; width: 220px">
+					<div so-select [items]="items" placeholder="Выберите"></div>
+				</div>
 				<div style="flex: 1; min-width: 0; height: 320px; overflow: auto">
 					<div
 						so-table

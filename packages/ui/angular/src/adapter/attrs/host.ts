@@ -29,10 +29,29 @@
  * не в общем правиле атрибута: какой у хоста вид, решает его компонент.
  * Статические атрибуты разметки сюда не попадают: Angular ставит их ещё до
  * конструктора компонента, и переносит их база
- * (`TComponentBase._moveAttributes`) — по тому же правилу, что у его записи.
+ * (`TComponentBase._moveAttributes`) — по тому же правилу, что у его записи, и
+ * тем же рендерером адаптера.
+ *
+ * **Цепочка хостов.** Узел записи бывает сам хостом из реестра: поле Select —
+ * `<div so-input>`, у которого свой `<input>`. Пишет запись через рендерер
+ * адаптера, который пришёл с командой, а он команду на такой узел отдаёт его
+ * записи — по её правилам. Так написанное на Select доходит до `<input>` поля,
+ * а на каждом звене остаётся то, что звено держит у себя. Снятие и переезд на
+ * новый узел — тем же путём.
+ *
+ * **Набор на хосте.** Директива набора (`[so-attributes]`) на хосте из реестра
+ * отдаёт набор его записи (`setMarkup`): всё, что написано на хосте, — узлу, и
+ * набор тоже, как `v-bind` на `<Input>` у Vue. Запись кладёт его на свой узел
+ * слоем `forwarded` раскладчика узла (`TElementAttributes`) — поверх набора,
+ * который на узел кладёт шаблон самого компонента (`markup`): `aria` Select
+ * ложится на `<input>` поверх набора комбобокса поля. Пока узла нет, набор
+ * ждёт его, а сменился узел — уходит со старого на новый. Узел — сам хост:
+ * сумму запись отдаёт его записи (`receive`), и та кладёт её поверх своего
+ * набора — на общем имени главнее набор внешнего звена.
  */
 
 import type { Renderer2, RendererStyleFlags2 } from '@angular/core'
+import { TElementAttributes, attributesOf } from '../runtime/root-attributes'
 
 /** Обработчик события — как его принимает `Renderer2.listen`. */
 export type TListenerCallback = Parameters<Renderer2['listen']>[2]
@@ -199,6 +218,12 @@ function attributeKey(name: string, namespace: string | null | undefined): strin
 	return `${namespace ?? ''}|${name}`
 }
 
+/** Набора нет — один пустой на всех: снятый слой раскладчик снимает с узла. */
+const NO_SET: object = Object.freeze({})
+
+/** Запись хоста по узлу — у реестра: узел записи бывает хостом сам. */
+export type THostLookup = (node: Element) => TForwardedHost | undefined
+
 /** Запись хоста в реестре — см. шапку. */
 export class TForwardedHost {
 	/** Внутренний узел, куда ложится написанное на хосте; до отрисовки — `null`. */
@@ -213,16 +238,28 @@ export class TForwardedHost {
 	private readonly _styles = new Map<string, TForwardedStyle>()
 	private readonly _listeners = new Set<TForwardedListener>()
 
+	/** Набор, который разметка владельца положила на хост (`[so-attributes]`). */
+	private _markup: object = NO_SET
+
+	/** Набор, который отдала запись внешнего звена: её узел — этот хост. */
+	private _received: object = NO_SET
+
+	/** Сумма наборов — то, что уходит на узел; внешний главнее на общем имени. */
+	private _set: object = NO_SET
+
 	/**
 	 * @param _own имена входов компонента и `ctrl`, строчными: атрибут с именем
 	 *   входа — запись входа, а не атрибут поля, и остаётся на хосте
 	 * @param _boxless своей коробки у хоста нет: класс и стиль — тоже узлу внутри
 	 *   (`TForwardOptions.boxless`)
+	 * @param _hostOf запись хоста по узлу — у реестра: узел записи бывает хостом
+	 *   сам, и набор тогда уходит его записи
 	 * @param _onRelease снять хост с реестра
 	 */
 	constructor(
 		private readonly _own: ReadonlySet<string>,
 		private readonly _boxless: boolean,
+		private readonly _hostOf: THostLookup,
 		private readonly _onRelease: () => void,
 	) {}
 
@@ -335,10 +372,30 @@ export class TForwardedHost {
 	}
 
 	/**
+	 * Набор, который разметка владельца положила на хост (`[so-attributes]`), —
+	 * узлу, слоем `forwarded`: что называет набор, ложится туда же, куда
+	 * остальное, написанное на хосте. Пока узла нет — ждёт его.
+	 */
+	setMarkup(set: object): void {
+		this._markup = attributesOf(set)
+		this._sum()
+	}
+
+	/**
+	 * Набор, который отдала запись внешнего звена цепочки: её узел — этот хост
+	 * (поле `<div so-input>` в шаблоне Select). Ложится поверх своего набора
+	 * хоста и уходит дальше, на узел. Пустой — внешнее звено ушло с хоста.
+	 */
+	receive(set: object): void {
+		this._received = attributesOf(set)
+		this._sum()
+	}
+
+	/**
 	 * Внутренний узел — отрисованный или новый: написанное на хосте ложится на
-	 * него, а со старого снимаются атрибуты, классы, стиль и слушатели. Свойство
-	 * со старого не снять — его значение там и остаётся, как у узла, который
-	 * Angular убрал.
+	 * него, а со старого снимаются атрибуты, классы, стиль, слушатели и набор.
+	 * Свойство со старого не снять — его значение там и остаётся, как у узла,
+	 * который Angular убрал.
 	 */
 	attach(node: Element | null): void {
 		if (this._released || node === this._node) return
@@ -362,7 +419,42 @@ export class TForwardedHost {
 		this._onRelease()
 	}
 
+	/**
+	 * Сумма наборов: свой набор хоста, поверх него — набор внешнего звена. Что не
+	 * строкой, имени не называет и своего не перекрывает, как у слоёв
+	 * раскладчика. Считается на смену одного из наборов, а раскладчик узла
+	 * пишет по своей памяти только сменившееся.
+	 */
+	private _sum(): void {
+		const sum: Record<string, string> = {}
+
+		for (const set of [this._markup, this._received]) {
+			for (const [name, value] of Object.entries(set)) {
+				if (typeof value === 'string') sum[name] = value
+			}
+		}
+
+		this._set = sum
+
+		if (this._node) this._send(this._node, sum)
+	}
+
+	/**
+	 * Набор — узлу: на его раскладчик слоем `forwarded`, а у узла-хоста — его
+	 * записи, следующему звену.
+	 */
+	private _send(node: Element, set: object): void {
+		const next = this._hostOf(node)
+
+		if (next) next.receive(set)
+		else TElementAttributes.of(node).set('forwarded', set)
+	}
+
 	private _apply(node: Element): void {
+		// Набор — раньше привязок: на общем имени при первой раскладке главнее
+		// написанное потребителем, как `controlAttrs` поверх `aria` у Vue
+		if (this._set !== NO_SET) this._send(node, this._set)
+
 		for (const { renderer, name, namespace, value } of this._attributes.values()) {
 			if (value === null) renderer.removeAttribute(node, name, namespace)
 			else renderer.setAttribute(node, name, value, namespace)
@@ -386,6 +478,8 @@ export class TForwardedHost {
 	}
 
 	private _detach(node: Element): void {
+		if (this._set !== NO_SET) this._send(node, NO_SET)
+
 		for (const { renderer, name, namespace, value } of this._attributes.values()) {
 			if (value !== null) renderer.removeAttribute(node, name, namespace)
 		}

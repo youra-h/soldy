@@ -29,7 +29,8 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > locale's format with − and + step buttons; the form gets the number), Textarea (multi-line,
 > growing with its text, with a character counter), CheckBox, Switch, Slider (`<span so-slider>`),
 > Rating (`<span so-rating>`), the form field `<div so-field>` (label, helper and error linked to
-> the control inside it), Scroller (`<div so-scroller>`), RadioGroup, ListBox, Tabs, Accordion,
+> the control inside it), Scroller (`<div so-scroller>`), RadioGroup, ListBox, Tags
+> (`<div so-tags>`), Select (`<div so-select>`, a field with a list in a panel), Tabs, Accordion,
 > Pagination (`<nav so-pagination>`), Table, the `Virtual` window for long lists and the
 > `<ng-container so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and
 > Accordion by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
@@ -66,8 +67,8 @@ export const appConfig: ApplicationConfig = {
 ```
 
 It lets the bindings and listeners you write on a component reach the node inside it they belong to
-(see the fields below). It is required: without it a field, a collection item, ListBox, Tabs,
-Table and Toasts throw an error telling you to add it. Put it in the application config, not in the providers
+(see the fields below). It is required: without it a field, Select, a collection item, ListBox,
+Tabs, Table and Toasts throw an error telling you to add it. Put it in the application config, not in the providers
 of a route or a component — there it cannot replace the renderer of the application.
 
 ## Usage
@@ -211,11 +212,53 @@ template: `<div so-radio-group [items]="options">
 </div>`
 ```
 
+The `[so-attributes]` directive on such a component goes the same way as the rest of your markup:
+the set lands on the `<input>`, the row or the list, on top of what the component puts there
+itself.
+
 A slot by which a part decides whether to render its own default — the close icon of a tab, the
 arrows of an accordion section, the edges of the tab list — is an `<ng-template slot>` only, and a
 template given to the owner renders in every item in place of its own. A tab panel that is not
 active stays in place hidden, its content not inserted; a markup tab closed with its close button
 is hidden the same way — the element is yours.
+
+A tag set, `<div so-tags>`, is the row itself: your markup stays on it, next to its role. Tags are
+`<div so-tags-item>` parts or come from `items`; with `mode` they become selectable, and with
+`closable` every tag gets a close button. To lay the shown tags out yourself — in a scroller strip,
+or a row with the rest in a popover — give the set a `default` template: its context carries
+`shown`, and every tag is rendered in it exactly once.
+
+```ts
+template: `<div so-tags closable [items]="cities" (soChangeValue)="pick($event.newValue)"></div>
+<div so-tags overflow="scroll" [items]="cities">
+  <ng-template slot="default" let-shown="shown">
+    <div so-scroller>
+      @for (tag of shown; track tag.uid) {
+        <div so-tags-item [ctrl]="tag"></div>
+      }
+    </div>
+  </ng-template>
+</div>`
+```
+
+A select, `<div so-select>`, is a field with the list in a panel anchored to the element, moved into
+`body` like a Frame. Options are `<div so-select-item>` parts, grouped with
+`<div so-select-group label="…">`, or come from `items`; with `mode="multiple"` the chosen ones
+show as tags in the field, `editable` lets you type, and `editableMode="filter"` narrows the list.
+It splits your markup like a field: `class` and `style` stay on the element, while everything else
+— `aria-label`, `id`, `[attr.x]`, `(keyup)` — goes to the `<input>` of its field. The `field`,
+`tags`, `clear`, `arrow-icon` and item slots are templates; `leading`, `trailing` and `empty` are
+elements by the `slot` attribute. Options join the collection on the server too, so the server
+renders the field with the chosen text; the panel exists only in the browser.
+
+```ts
+template: `<div so-select placeholder="City" aria-label="City" (soChangeValue)="pick($event.newValue)">
+  <div so-select-item value="msk" text="Moscow"></div>
+  <div so-select-group label="Volga">
+    <div so-select-item value="kzn" text="Kazan"></div>
+  </div>
+</div>`
+```
 
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages` — and
 has no content of its own: a page is an inner part, `<li so-pagination-item>` with a button in it,

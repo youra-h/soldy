@@ -1,5 +1,5 @@
 /**
- * Virtual под Angular — окно над ListBox на настоящей разметке.
+ * Virtual под Angular — окно над ListBox и Select на настоящей разметке.
  *
  * Своего узла у окна нет: корня у компонента нет, он директива и пишется
  * атрибутом на `<ng-container>` (`<ng-container so-virtual>`), а на месте
@@ -25,9 +25,14 @@
 import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { createEngineListBox } from '@soldy-ui/core'
-import type { TListBoxCollection } from '@soldy-ui/core'
-import { SlotDirective, TListBoxComponent, TVirtualComponent } from '@soldy-ui/angular'
+import { createEngineListBox, createEngineSelect } from '@soldy-ui/core'
+import type { TListBoxCollection, TSelectCollection } from '@soldy-ui/core'
+import {
+	SlotDirective,
+	TListBoxComponent,
+	TSelectComponent,
+	TVirtualComponent,
+} from '@soldy-ui/angular'
 import { mountHost, nextFrame } from './mount'
 
 /** `count` элементов: значение `v1`… и текст. */
@@ -380,5 +385,146 @@ describe('ListBox в окне — цикл Angular', () => {
 		expect(
 			fillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual([`${179 * 30}px`])
+	})
+})
+
+/**
+ * Select в окне: список панели — увезённой в `body` — рисует только видимые
+ * опции. Панель закрыта: она в документе всегда, открытость — её `display`, и
+ * опции в ней собраны с первой отрисовки. Подключение к окну Select читает из
+ * слоя, внутри которого его написали, — панель уехала, а DI идёт по дереву
+ * объявлений.
+ */
+describe('Select в окне', () => {
+	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
+	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.so-select__filler')]
+
+	/** Строка опции: на ней набор `aria` опции. */
+	function selectRow(text: string): HTMLElement {
+		const row = [
+			...document.querySelectorAll<HTMLElement>('.so-select-item > .so-button'),
+		].find((node) => node.textContent?.trim() === text)
+
+		if (!row) throw new Error(`${text}: строки нет`)
+
+		return row
+	}
+
+	@Component({
+		standalone: true,
+		imports: [TSelectComponent],
+		template: `<div so-select [items]="items"></div>`,
+	})
+	class BareSelectHost {
+		readonly items = items(80)
+	}
+
+	@Component({
+		standalone: true,
+		imports: [TSelectComponent, TVirtualComponent],
+		template: `<ng-container so-virtual [enabled]="enabled()">
+			<div so-select [items]="items"></div>
+		</ng-container>`,
+	})
+	class SelectWindowHost {
+		readonly items = items(80)
+		readonly enabled = signal(true)
+	}
+
+	@Component({
+		standalone: true,
+		imports: [TSelectComponent, TVirtualComponent],
+		template: `<ng-container so-virtual
+			><div so-select [engine]="engine()"></div
+		></ng-container>`,
+	})
+	class SelectEngineHost {
+		readonly engine = signal<TSelectCollection | undefined>(undefined)
+	}
+
+	/** Смонтировать окно над Select с движком снаружи: тест подаёт ему замер. */
+	function mountSelect(engine: TSelectCollection): ComponentFixture<SelectEngineHost> {
+		const fixture = TestBed.createComponent(SelectEngineHost)
+
+		fixture.componentInstance.engine.set(engine)
+		fixture.detectChanges()
+
+		return fixture
+	}
+
+	/** Замер рисованию движка Select, как его подаёт плагин окна. */
+	function measureSelect(
+		fixture: ComponentFixture<unknown>,
+		engine: TSelectCollection,
+		top: number,
+		bottom: number,
+	): void {
+		engine.extensions.draw.notifyViewport({ top, bottom, step: 30 })
+		fixture.detectChanges()
+	}
+
+	it('без обёртки — все опции, распорок нет', () => {
+		mountHost(BareSelectHost)
+
+		expect(selectOptions()).toHaveLength(80)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
+		mountHost(SelectWindowHost)
+
+		expect(selectOptions()).toHaveLength(50)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('`enabled: false` — все опции', () => {
+		const fixture = TestBed.createComponent(SelectWindowHost)
+
+		fixture.componentInstance.enabled.set(false)
+		fixture.detectChanges()
+
+		expect(selectOptions()).toHaveLength(80)
+	})
+
+	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', () => {
+		const engine = createEngineSelect({ items: items(200) })
+		const fixture = mountSelect(engine)
+
+		// Видны места 100–109: с запасом — 90–119
+		measureSelect(fixture, engine, 3000, 3300)
+
+		const list = document.querySelector('.so-select__list')
+
+		if (!list) throw new Error('списка нет')
+
+		expect(selectFillers().map((filler) => filler.getAttribute('aria-hidden'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(
+			selectFillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
+		).toEqual(['2700px', '2400px'])
+		expect(list.firstElementChild).toBe(selectFillers()[0])
+		expect(list.lastElementChild).toBe(selectFillers()[1])
+		expect(selectOptions()).toHaveLength(30)
+		expect(selectRow('Пункт 91').getAttribute('aria-setsize')).toBe('200')
+		expect(selectRow('Пункт 91').getAttribute('aria-posinset')).toBe('91')
+	})
+
+	/**
+	 * Опции и распорки — одной петлёй с ключом записи, как у ListBox: опцию,
+	 * которая осталась в окне, Angular не пересоздаёт.
+	 */
+	it('сдвиг окна не перемонтирует оставшуюся опцию — тот же узел', () => {
+		const engine = createEngineSelect({ items: items(200) })
+		const fixture = mountSelect(engine)
+
+		measureSelect(fixture, engine, 3000, 3300)
+
+		const kept = selectRow('Пункт 101')
+
+		measureSelect(fixture, engine, 3300, 3600)
+
+		expect(selectRow('Пункт 101')).toBe(kept)
 	})
 })
