@@ -10,16 +10,19 @@
  * и обёртка, и части: подпись вокруг контрола, элементы коллекций, теги,
  * поле Select с обёртками и стрелкой, панель активного таба, ручки и заливка
  * ползунка, звёзды оценки, кнопки и вьюпорт ленты, страницы и стрелки
- * пагинации, — а у таблицы её окно, корень, заголовки и строки; у окна
- * Virtual — его ряд: список, Select и таблица.
+ * пагинации, части и разделители поля даты, заголовок, кнопки листания,
+ * подписи недели и дни календаря, — а у таблицы её окно, корень, заголовки и
+ * строки; у окна Virtual — его ряд: список, Select и таблица.
  *
  * Оверлеи — дважды. В ячейке — то, что стоит на месте: корень поповера,
  * подсказки и меню с триггером, кнопки окна, выезжающей панели и тостов, поле
- * Select. И открытые: панель поповера, список Select с опциями, панель меню с
- * группами, разделителями и пунктами, окно и выезжающая панель с подложкой и
- * частями, регион с тостом — телепортированы в `body`, мимо сцены, и их рамки
- * сверяются от угла окна, когда доиграли переходы темы. Пробелы Svelte внутри
- * панелей jsdom не видит: раскладку считает только браузер.
+ * Select, поле DatePicker с кнопкой календаря. И открытые: панель поповера,
+ * список Select с опциями, панель меню с группами, разделителями и пунктами,
+ * окно и выезжающая панель с подложкой и частями, регион с тостом, панель
+ * DatePicker с календарём — телепортированы в `body`, мимо сцены, — и панель
+ * выбора месяца и года, которая остаётся в календаре; их рамки сверяются от
+ * угла окна, когда доиграли переходы темы. Пробелы Svelte внутри панелей jsdom
+ * не видит: раскладку считает только браузер.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -207,6 +210,19 @@ describe('хост Svelte', () => {
 			'pagination',
 			'.so-pagination, .so-pagination__prev, .so-pagination-item, .so-pagination__ellipsis, .so-pagination__next, .so-pagination svg',
 		],
+		[
+			'date-input',
+			'.so-date-input, .so-date-input__segments, .so-date-input__segment, .so-date-input__literal',
+		],
+		[
+			'calendar',
+			'.so-calendar, .so-calendar__month, .so-calendar__heading, .so-calendar__title, .so-calendar__prev, .so-calendar__next, .so-calendar svg, .so-calendar__grid, .so-calendar__weekday, .so-calendar-item, .so-calendar__filler',
+		],
+		// Панель DatePicker телепортирована мимо сцены: в ячейке — поле с кнопкой
+		[
+			'date-picker',
+			'.so-date-picker, .so-date-picker__field, .so-date-input__segment, .so-date-input__literal, .so-date-input__trailing, .so-date-picker__trigger, .so-date-picker__trigger svg',
+		],
 		// Оверлеи в ячейке: корень с триггером, кнопки, которые открывают окно,
 		// панель и тосты, — панели и регион телепортированы мимо сцены
 		['popover', '.so-popover, .so-popover .so-button'],
@@ -245,8 +261,11 @@ describe('хост Svelte', () => {
 	// разделители, пункты со строками и видимые обёртки строк (отметки,
 	// сочетания, стрелки); у тостов — регион с тостом (пустые регионы других
 	// колонок стоят у того же края), тост, плашка, значок, текст, кнопка
-	// «Отменить» и крестик. Число частей — чтобы неоткрывшийся оверлей не
-	// сошёлся сам с собой
+	// «Отменить» и крестик; у календаря — панель выбора месяца и года, карточка,
+	// список с 12 месяцами и шапка с годом и стрелками; у DatePicker — панель,
+	// содержимое, календарь, месяц, заголовок с кнопкой, кнопки листания, сетка
+	// и подписи недели — без дней: их число зависит от месяца. Число частей —
+	// чтобы неоткрывшийся оверлей не сошёлся сам с собой
 	it.each([
 		[
 			'popover',
@@ -283,6 +302,19 @@ describe('хост Svelte', () => {
 			button('обычное'),
 			'.so-toasts:has(.so-toasts-item), .so-toasts-item, .so-toasts-item__card, .so-toasts-item__icon, .so-toasts-item__text, .so-toasts-item__content > *, .so-toasts-item__close',
 			7,
+		],
+		// Панель выбора месяца и года — в календаре (`contained`), а не в `body`
+		[
+			'calendar',
+			node('.so-calendar__title'),
+			'.so-calendar .so-popover__panel, .so-calendar__picker, .so-calendar__picker-list, .so-calendar__picker .so-list-box-item, .so-calendar__picker-header, .so-calendar__picker-heading, .so-calendar__picker-prev, .so-calendar__picker-next',
+			19,
+		],
+		[
+			'date-picker',
+			node('.so-date-picker__trigger'),
+			'.so-date-picker__panel, .so-date-picker__content, .so-date-picker__calendar, .so-date-picker__panel .so-calendar__month, .so-date-picker__panel .so-calendar__heading, .so-date-picker__panel .so-calendar__title, .so-date-picker__panel .so-calendar__prev, .so-date-picker__panel .so-calendar__next, .so-date-picker__panel .so-calendar__grid, .so-date-picker__panel .so-calendar__weekday',
+			16,
 		],
 	])('%s: открытый стоит так же, как у Vue', async (component, opener, selector, parts) => {
 		const vue = await openedBoxesOf('vue', component, opener, selector)

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { createRenderEffect, createRoot, createSignal, type JSX } from 'solid-js'
+import { Show, createRenderEffect, createRoot, createSignal, type JSX } from 'solid-js'
 import {
 	ButtonDescriptor,
 	type CheckBoxDescriptor,
@@ -482,6 +482,123 @@ describe('живой scope', () => {
 		dispose()
 
 		expect(runs).toBe(1)
+	})
+})
+
+/**
+ * `ResolvedSlot` решает, задан ли слот, по его значению — по тому, что вернул
+ * геттер пропа, — а не по узлам, которые из него развернулись. Компонент в
+ * слоте — содержимое, что бы он ни нарисовал: так элемент разметки, удалённый
+ * из коллекции движком, перестаёт рисоваться, но не уступает место элементам
+ * из данных. Пустое по правилам JSX — `{cond() && …}` при ложном условии —
+ * слот не задаёт. Правило одно на запасное и на обёртку.
+ */
+describe('ResolvedSlot: задан ли слот — по значению', () => {
+	/** Компонент потребителя, который рисует своё, только пока `shown`. */
+	function Probe(props: { shown: boolean; onCreate?: () => void }): JSX.Element {
+		props.onCreate?.()
+
+		return (
+			<Show when={props.shown}>
+				<b class="own">своё</b>
+			</Show>
+		)
+	}
+
+	it('компонент, переставший рисовать, — содержимое: запасного нет, собран один раз', () => {
+		const [shown, setShown] = createSignal(true)
+		let created = 0
+		const { container } = mount(() => (
+			<div>
+				<ResolvedSlot
+					content={<Probe shown={shown()} onCreate={() => (created += 1)} />}
+					fallback={<i class="fallback">запасное</i>}
+				/>
+			</div>
+		))
+
+		expect(container.querySelector('.own')).not.toBeNull()
+
+		setShown(false)
+
+		expect(container.querySelector('.own')).toBeNull()
+		expect(container.querySelector('.fallback')).toBeNull()
+		expect(created).toBe(1)
+	})
+
+	it('компонент, ничего не нарисовавший с самого начала, — тоже содержимое', () => {
+		const { container } = mount(() => (
+			<div>
+				<ResolvedSlot
+					content={<Probe shown={false} />}
+					fallback={<i class="fallback">запасное</i>}
+				/>
+			</div>
+		))
+
+		expect(container.querySelector('.fallback')).toBeNull()
+		expect(container.firstElementChild?.innerHTML).toBe('')
+	})
+
+	it('{cond() && …} — запасное при ложном условии, содержимое при истинном', () => {
+		const [on, setOn] = createSignal(false)
+		const { container } = mount(() => (
+			<div>
+				<ResolvedSlot
+					content={on() && <b class="own">своё</b>}
+					fallback={<i class="fallback">запасное</i>}
+				/>
+			</div>
+		))
+		const content = () => container.firstElementChild?.innerHTML
+
+		expect(content()).toBe('<i class="fallback">запасное</i>')
+
+		setOn(true)
+
+		expect(content()).toBe('<b class="own">своё</b>')
+
+		setOn(false)
+
+		expect(content()).toBe('<i class="fallback">запасное</i>')
+	})
+
+	it('обёртка стоит при заданном слоте, даже если компонент в нём ничего не нарисовал', () => {
+		const [shown, setShown] = createSignal(true)
+		const { container } = mount(() => (
+			<div>
+				<ResolvedSlot content={<Probe shown={shown()} />}>
+					{(nodes) => <p class="wrap">{nodes()}</p>}
+				</ResolvedSlot>
+			</div>
+		))
+
+		expect(container.querySelector('.wrap .own')).not.toBeNull()
+
+		setShown(false)
+
+		expect(container.querySelector('.wrap')?.innerHTML).toBe('')
+	})
+
+	it('обёртки нет, пока слот пуст по правилам JSX', () => {
+		const [on, setOn] = createSignal(false)
+		const { container } = mount(() => (
+			<div>
+				<ResolvedSlot content={on() && <b class="own">своё</b>}>
+					{(nodes) => <p class="wrap">{nodes()}</p>}
+				</ResolvedSlot>
+			</div>
+		))
+
+		expect(container.querySelector('.wrap')).toBeNull()
+
+		setOn(true)
+
+		expect(container.querySelector('.wrap .own')).not.toBeNull()
+
+		setOn(false)
+
+		expect(container.querySelector('.wrap')).toBeNull()
 	})
 })
 

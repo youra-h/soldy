@@ -24,7 +24,11 @@ import {
 } from '@soldy-ui/setup'
 import {
 	Button,
+	type CalendarItemProps,
+	type CalendarProps,
 	type CheckBoxProps,
+	type DateInputProps,
+	type DatePickerProps,
 	type FrameProps,
 	type InputProps,
 	type LabelProps,
@@ -175,6 +179,24 @@ describe('содержимое — только слот default', () => {
 		expectTypeOf<InputProps>().not.toHaveProperty('children')
 		expectTypeOf<LabelProps>().toHaveProperty('children')
 		expectTypeOf<LabelProps['children']>().toEqualTypeOf<Snippet | undefined>()
+	})
+
+	/**
+	 * Части поля даты, дни календаря и поля DatePicker рисует сам компонент:
+	 * дни кладёт в коллекцию вид по месяцам сеток, и день из разметки попал бы
+	 * в неё мимо вида. Содержимое дня — сниппет `item` со scope, а у самого дня
+	 * содержимое — его `children`, со scope `{ text }`.
+	 */
+	it('у DateInput, Calendar и DatePicker children нет, у Calendar.Item — есть, со scope', () => {
+		expectTypeOf<DateInputProps>().not.toHaveProperty('children')
+		expectTypeOf<CalendarProps>().not.toHaveProperty('children')
+		expectTypeOf<DatePickerProps>().not.toHaveProperty('children')
+		expectTypeOf<CalendarProps>().toHaveProperty('item')
+		expectTypeOf<DatePickerProps>().toHaveProperty('item')
+		expectTypeOf<CalendarItemProps>().toHaveProperty('children')
+		expectTypeOf<CalendarItemProps['children']>().toEqualTypeOf<
+			Snippet<[{ text: string }]> | undefined
+		>()
 	})
 })
 

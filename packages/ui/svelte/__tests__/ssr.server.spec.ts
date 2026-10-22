@@ -20,6 +20,8 @@ import type { TAriaAttributes } from '@soldy-ui/core'
 import {
 	Button,
 	CheckBox,
+	DateInput,
+	DatePicker,
 	Dialog,
 	Drawer,
 	Frame,
@@ -160,6 +162,85 @@ describe('оверлеи · серверный рендер', () => {
 		const body = markup(render(Toasts, { props: { children: content } }).body)
 
 		expect(body).toBe('<span>Панель</span>')
+	})
+})
+
+/**
+ * Поле даты и DatePicker на сервере. Части сервер рисует нередактируемыми, с
+ * `id` от `$props.id()` и текстом ядра содержимым узла: в браузере текст части
+ * пишет `TextSpan` свойством `textContent`, а на сервере attachment-ов нет.
+ * Панели DatePicker на сервере нет, как у всех оверлеев: сервер рисует его
+ * полем с кнопкой календаря, а панель с календарём появляется в браузере.
+ */
+describe('DateInput и DatePicker · серверный рендер', () => {
+	/** Части поля по порядку — с открывающим тегом и текстом. */
+	const segmentsOf = (body: string) =>
+		body.match(/<span class="so-date-input__segment"[^>]*>[^<]*<\/span>/g) ?? []
+
+	/** Тип части — по её `data-type`. */
+	const typeOf = (segment: string) => /data-type="([^"]+)"/.exec(segment)?.[1]
+
+	it('DateInput — группа, части с id и текстом, нередактируемые; значение — в скрытом поле', () => {
+		const body = markup(
+			render(DateInput, { props: { value: '2026-05-12', name: 'birthday' } }).body,
+		)
+		const segments = segmentsOf(body)
+
+		expect(body).toMatch(/^<div [^>]*role="group"[^>]*class="so-date-input /)
+		// en-US: месяц, день, год — по `formatToParts`
+		expect(segments.map(typeOf)).toEqual(['month', 'day', 'year'])
+		expect(segments.map((segment) => />([^<]*)<\/span>$/.exec(segment)?.[1])).toEqual([
+			'05',
+			'12',
+			'2026',
+		])
+		expect(
+			segments.every((segment) => new RegExp(`id="[^"]+-${typeOf(segment)}"`).test(segment)),
+		).toBe(true)
+		expect(segments.every((segment) => segment.includes('role="spinbutton"'))).toBe(true)
+		expect(body).not.toContain('contenteditable')
+		expect(body).not.toContain('inputmode')
+		expect(body).toMatch(/<span class="so-date-input__literal" aria-hidden="true">\/<\/span>/)
+		expect(body).toMatch(/<input type="hidden" name="birthday" value="2026-05-12"\/?>/)
+		// Ряд — дата с разделителями, без текста между частями
+		expect(
+			/<span class="so-date-input__segments"[^>]*>([\s\S]*?)<\/span><input/
+				.exec(body)?.[1]
+				?.replace(/<[^>]*>/g, ''),
+		).toBe('05/12/2026')
+	})
+
+	it('DatePicker — поле и кнопка календаря со связкой, панели и календаря нет', () => {
+		const body = markup(render(DatePicker, { props: { value: '2026-09-10' } }).body)
+		const [, controls] = /aria-controls="([^"]+)"/.exec(body) ?? []
+
+		expect(body).toMatch(/^<div [^>]*class="so-date-picker /)
+		expect(body).toMatch(
+			/<div role="group"[^>]*class="so-date-input [^"]*so-date-picker__field/,
+		)
+		expect(body).toMatch(/<button [^>]*class="[^"]*so-date-picker__trigger[^"]*"/)
+		expect(body).toContain('aria-haspopup="dialog"')
+		expect(body).toContain('aria-expanded="false"')
+		expect(body).toContain('data-selected="false"')
+		// Ссылка кнопки ведёт на `id` панели, которая появится в браузере
+		expect(controls).toBeTruthy()
+		expect(body).not.toContain(`id="${controls}"`)
+		expect(body).not.toContain('so-date-picker__panel')
+		expect(body).not.toContain('so-calendar')
+		expect(body).toContain('value="2026-09-10"')
+	})
+
+	it('DatePicker с диапазоном — корень-группа, поля концов названы', () => {
+		const body = markup(
+			render(DatePicker, { props: { mode: 'range', aria_label: 'Поездка' } }).body,
+		)
+
+		expect(body).toMatch(/^<div [^>]*role="group"/)
+		expect(body).toMatch(/^<div [^>]*aria-label="Поездка"/)
+		expect(body).toMatch(/class="so-date-input [^"]*so-date-picker__start/)
+		expect(body).toContain('aria-label="Start date"')
+		expect(body).toContain('aria-label="End date"')
+		expect(body).toContain('<span class="so-date-picker__dash" aria-hidden="true">–</span>')
 	})
 })
 

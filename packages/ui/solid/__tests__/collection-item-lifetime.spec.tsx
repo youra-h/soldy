@@ -8,13 +8,28 @@
  * отпустило, копил бы на движке подписчиков с каждым показом. Сторож по всем
  * коллекциям — `setup/__tests__/item-context-lifetime.spec.ts`, здесь —
  * настоящий цикл монтирования Solid, как у Vue, Svelte и Angular.
+ *
+ * Второй конец контекста — удаление элемента из коллекции, пока он
+ * смонтирован: элемент разметки перестаёт рисоваться, но остаётся содержимым
+ * владельца, и владелец не подменяет его элементами из данных.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import type { Component } from 'solid-js'
-import { TEvented, TListBox, createEngine, createEngineListBox } from '@soldy-ui/core'
+import type { Component, JSX } from 'solid-js'
+import {
+	TEvented,
+	TListBox,
+	createEngine,
+	createEngineAccordion,
+	createEngineListBox,
+	createEngineMenu,
+	createEngineRadioGroup,
+	createEngineSelect,
+	createEngineTabs,
+	createEngineTags,
+} from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
-import { Accordion, ListBox, RadioGroup, Tabs } from '@soldy-ui/solid'
+import { Accordion, ListBox, Menu, RadioGroup, Select, Tabs, Tags } from '@soldy-ui/solid'
 import { mount } from './mount'
 
 afterEach(() => {
@@ -108,5 +123,120 @@ describe('движок снаружи', () => {
 		destroy()
 
 		expect(live()).toBe(0)
+	})
+})
+
+/**
+ * Владельцы с элементом разметки над движком снаружи (`engine`): движок
+ * владельца и разметка с одним элементом. Узел элемента помечен классом
+ * потребителя (`probe`): класс уходит корню элемента.
+ */
+const MARKUP: ReadonlyArray<
+	readonly [
+		string,
+		() => TCollectionEngine<any, any>,
+		(engine: TCollectionEngine<any, any>) => JSX.Element,
+	]
+> = [
+	[
+		'ListBox',
+		createEngineListBox,
+		(engine) => (
+			<ListBox engine={engine}>
+				<ListBox.Item class="probe" value="a" text="A" />
+			</ListBox>
+		),
+	],
+	[
+		'Select',
+		createEngineSelect,
+		(engine) => (
+			<Select engine={engine}>
+				<Select.Item class="probe" value="a" text="A" />
+			</Select>
+		),
+	],
+	[
+		'Tabs',
+		createEngineTabs,
+		(engine) => (
+			<Tabs engine={engine}>
+				<Tabs.Item class="probe" value="a" text="A" />
+			</Tabs>
+		),
+	],
+	[
+		'Accordion',
+		createEngineAccordion,
+		(engine) => (
+			<Accordion engine={engine}>
+				<Accordion.Item class="probe" value="a" text="A" />
+			</Accordion>
+		),
+	],
+	[
+		'RadioGroup',
+		createEngineRadioGroup,
+		(engine) => (
+			<RadioGroup engine={engine}>
+				<RadioGroup.Item class="probe" value="a">
+					A
+				</RadioGroup.Item>
+			</RadioGroup>
+		),
+	],
+	[
+		'Tags',
+		createEngineTags,
+		(engine) => (
+			<Tags engine={engine}>
+				<Tags.Item class="probe" value="a" text="A" />
+			</Tags>
+		),
+	],
+	[
+		'Menu',
+		createEngineMenu,
+		(engine) => (
+			<Menu engine={engine}>
+				<Menu.Item class="probe" value="a" text="A" />
+			</Menu>
+		),
+	],
+	[
+		'Menu.Submenu',
+		createEngineMenu,
+		(engine) => (
+			<Menu>
+				<Menu.Submenu value="share" text="Поделиться" engine={engine}>
+					<Menu.Item class="probe" value="a" text="A" />
+				</Menu.Submenu>
+			</Menu>
+		),
+	],
+]
+
+/**
+ * Удалили элемент разметки движком, пока он смонтирован, — контекст элемента
+ * уничтожен, и элемент не рисуется (`rendered = false`). Содержимым владельца
+ * он остаётся: слот задан значением, а не узлами (`ResolvedSlot`), поэтому
+ * запасное — элементы из данных по ещё не обновлённому показанному — не
+ * включается и удалённый элемент в коллекцию не возвращает. Узел элемента
+ * ищется по документу: панели Select и Menu телепортированы.
+ */
+describe.each(MARKUP)('%s: элемент разметки, удалённый движком', (_name, create, draw) => {
+	it('коллекция пуста, узла элемента нет', () => {
+		const engine = create()
+
+		mount(() => draw(engine))
+
+		expect(engine.extensions.batch.items).toHaveLength(1)
+		expect(document.querySelectorAll('.probe')).toHaveLength(1)
+
+		engine.extensions.batch.remove([...engine.extensions.batch.items])
+
+		expect(engine.extensions.batch.items).toEqual([])
+		expect(engine.extensions.batch.shown).toEqual([])
+		expect(document.querySelector('.probe')).toBeNull()
 	})
 })

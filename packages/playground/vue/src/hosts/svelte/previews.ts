@@ -1,7 +1,10 @@
 import type { Component } from 'svelte'
 import AccordionPreview from './AccordionPreview.svelte'
 import ButtonPreview from './ButtonPreview.svelte'
+import CalendarPreview from './CalendarPreview.svelte'
 import CheckBoxPreview from './CheckBoxPreview.svelte'
+import DateInputPreview from './DateInputPreview.svelte'
+import DatePickerPreview from './DatePickerPreview.svelte'
 import DialogPreview from './DialogPreview.svelte'
 import DragAndDropPreview from './DragAndDropPreview.svelte'
 import DrawerPreview from './DrawerPreview.svelte'
@@ -67,6 +70,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 	'radio-group': RadioGroupPreview,
 	'list-box': ListBoxPreview,
 	select: SelectPreview,
+	calendar: CalendarPreview,
+	'date-input': DateInputPreview,
+	'date-picker': DatePickerPreview,
 	tags: TagsPreview,
 	table: TablePreview,
 	tabs: TabsPreview,
