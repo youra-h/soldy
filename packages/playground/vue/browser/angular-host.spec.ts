@@ -33,13 +33,12 @@
  * остаётся в календаре (`contained`) и сверяется от угла заголовка месяца.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render } from 'vitest-browser-vue'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import App from '../src/App.vue'
 import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
+import { renderStand } from './stand'
 import {
 	BOX,
 	DIALOG_PARTS,
@@ -107,13 +106,11 @@ async function boxesOf(framework: string, component: string, selector: string, r
 
 describe('хост Angular', () => {
 	beforeEach(async () => {
-		// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
-		vi.spyOn(console, 'log').mockImplementation(() => {})
 		document.documentElement.dataset.soTheme = 'oren'
 
 		await router.push('/vue')
 
-		render(App, { global: { plugins: [router] } })
+		renderStand()
 
 		await settle()
 	})

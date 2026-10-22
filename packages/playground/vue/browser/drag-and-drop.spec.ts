@@ -17,7 +17,7 @@
  * `ui/<адаптер>/__tests__/drag-and-drop.spec.*`.
  */
 
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
@@ -26,9 +26,9 @@ import * as material from '@soldy-ui/icons-material'
 import { Accordion, DragAndDrop, ListBox, Tabs } from '@soldy-ui/vue'
 import type { IDragAndDropMove } from '@soldy-ui/core'
 import { COLLECTION_ITEMS } from '@soldy-ui/playground-shared'
-import App from '../src/App.vue'
 import { FRAMEWORKS } from '../src/hosts'
 import { router } from '../src/router'
+import { renderStand } from './stand'
 
 import '@soldy-ui/theme-oren'
 import '../src/styles.css'
@@ -243,13 +243,11 @@ const PAGES = FRAMEWORKS.flatMap(({ id }) =>
 
 describe('перестановка на странице стенда', () => {
 	beforeEach(async () => {
-		// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
-		vi.spyOn(console, 'log').mockImplementation(() => {})
 		document.documentElement.dataset.soTheme = 'oren'
 
 		await router.push('/vue')
 
-		render(App, { global: { plugins: [router] } })
+		renderStand()
 
 		await settle()
 	})

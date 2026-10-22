@@ -43,13 +43,12 @@
  */
 
 import { afterEach, describe, it, expect } from 'vitest'
-import { render } from 'vitest-browser-vue'
 import { page, userEvent } from 'vitest/browser'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import App from '../src/App.vue'
 import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
+import { renderStand } from './stand'
 
 import { reducedMotion } from './media'
 import { settled } from './transitions'
@@ -81,7 +80,7 @@ const open = async (width: number, path: string) => {
 	await page.viewport(width, HEIGHT)
 	await router.push(path)
 
-	render(App, { global: { plugins: [router] } })
+	renderStand()
 
 	await settle()
 }

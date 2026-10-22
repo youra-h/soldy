@@ -14,12 +14,11 @@
  * `webc-*.spec.ts`.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render } from 'vitest-browser-vue'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import App from '../src/App.vue'
 import { router } from '../src/router'
+import { renderStand } from './stand'
 
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
@@ -113,13 +112,11 @@ async function openedBoxesOf(
 }
 
 beforeEach(async () => {
-	// Колонки пишут события компонентов в консоль — в отчёте прогона это шум
-	vi.spyOn(console, 'log').mockImplementation(() => {})
 	document.documentElement.dataset.soTheme = 'oren'
 
 	await router.push('/vue')
 
-	render(App, { global: { plugins: [router] } })
+	renderStand()
 
 	await settle()
 })

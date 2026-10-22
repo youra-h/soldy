@@ -15,13 +15,12 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render } from 'vitest-browser-vue'
 import { page, userEvent } from 'vitest/browser'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import type { TFieldPosition } from '@soldy-ui/core'
-import App from '../src/App.vue'
 import { router } from '../src/router'
+import { renderStand } from './stand'
 
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
@@ -158,7 +157,7 @@ describe('строка position на странице компонента', () 
 			await page.viewport(width, HEIGHT)
 			await router.push('/vue/field')
 
-			render(App, { global: { plugins: [router] } })
+			renderStand()
 
 			await settle()
 
