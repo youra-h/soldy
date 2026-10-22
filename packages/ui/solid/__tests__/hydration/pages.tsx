@@ -20,8 +20,15 @@
  */
 
 import { Show, Suspense, createResource, createSignal, type Accessor, type JSX } from 'solid-js'
-import type { TAttributesMap, TTabsCollection, TTagsCollection } from '@soldy-ui/core'
+import type {
+	TAccordionCollection,
+	TAttributesMap,
+	TTabsCollection,
+	TTagsCollection,
+} from '@soldy-ui/core'
 import {
+	Accordion,
+	Dialog,
 	Field,
 	ListBox,
 	Input,
@@ -37,6 +44,9 @@ export type TTabsPageProps = { readonly engine?: TTabsCollection }
 
 /** Движок тегов страницы — только у гидратации. */
 export type TTagsPageProps = { readonly engine?: TTagsCollection }
+
+/** Движок секций страницы — только у гидратации. */
+export type TAccordionPageProps = { readonly engine?: TAccordionCollection }
 
 /** Табы разметкой, активный вторым: у сервера остановок Tab две (`collections.md`, «Цена»). */
 export function TabsActiveSecond(props: TTabsPageProps): JSX.Element {
@@ -258,6 +268,34 @@ export function RootProbeStreamed(props: TStreamedPageProps): JSX.Element {
 				</WithData>
 			</Suspense>
 		</div>
+	)
+}
+
+/**
+ * Секция в панели слоя, соседняя — за границей `Suspense`. Панель Dialog
+ * сервер не печатает — портала у него нет, — и секцию A браузер рисует сам,
+ * после основной гидратации, а её набор панели (`contentAria`) помощник части
+ * не держит. Выбор у секций одиночный, и секция B, выбранная и вошедшая в
+ * коллекцию в позднем окне, забирает его у секции A.
+ */
+export function AccordionLayerStreamed(
+	props: TAccordionPageProps & TStreamedPageProps,
+): JSX.Element {
+	return (
+		<Accordion engine={props.engine}>
+			<Dialog visible title="Окно">
+				<Accordion.Item value="a" text="A" selected>
+					Ответ A
+				</Accordion.Item>
+			</Dialog>
+			<Suspense>
+				<WithData wait={props.wait}>
+					<Accordion.Item value="b" text="B" selected>
+						Ответ B
+					</Accordion.Item>
+				</WithData>
+			</Suspense>
+		</Accordion>
 	)
 }
 

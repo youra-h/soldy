@@ -24,6 +24,7 @@ import { describe, it, expect } from 'vitest'
 import type { JSX } from 'solid-js'
 import { renderToStream, renderToString } from 'solid-js/web'
 import {
+	AccordionLayerStreamed,
 	FieldControlStreamed,
 	FieldGroup,
 	FieldOwnId,
@@ -63,6 +64,7 @@ const STREAMED: ReadonlyArray<
 	['tags-selected-streamed', (props) => <TagsSelectedStreamed wait={props.wait} />],
 	['field-control-streamed', (props) => <FieldControlStreamed wait={props.wait} />],
 	['root-probe-streamed', (props) => <RootProbeStreamed wait={props.wait} />],
+	['accordion-layer-streamed', (props) => <AccordionLayerStreamed wait={props.wait} />],
 ]
 
 /** Остров, его фикстура и ключ гидратации — тот же у `hydrate()` острова в браузере. */
