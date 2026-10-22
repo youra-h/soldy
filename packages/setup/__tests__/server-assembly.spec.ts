@@ -1,6 +1,6 @@
 /**
  * Сторож: сборка компонента идёт и на сервере, где нет ни узла, ни
- * `requestAnimationFrame`.
+ * `requestAnimationFrame`, ни типов DOM.
  *
  * Адаптер собирает компонент и на сервере (Vue — `setup()`, React — рендер,
  * Svelte — инициализация): плагины подписываются, движок привязывается,
@@ -11,15 +11,19 @@
  * браузере. Работе на кадр он нужен — высоте, чтобы мерить, прокрутке, чтобы
  * крутить, подчёркиванию таба, чтобы найти таб, — поэтому плагин планирует
  * кадр, только пока узел у него есть (`ready` … `removed` своего
- * `TElementPlugin`). Что сменилось до узла, применяет `ready`.
+ * `TElementPlugin`). Что сменилось до узла, применяет `ready`. Проверка узла
+ * — тоже работа при узле: где стоит DOM-фокус, клавиатура календаря узнаёт
+ * по `instanceof Element` и `instanceof Node`, и без корня она выходит раньше
+ * проверки.
  *
- * Окружение — `node`, как у сервера: `requestAnimationFrame` в нём нет, и
- * сторож его не подкладывает. Кадр, запланированный без узла, бросает
- * `ReferenceError`. Подписчик прямо на эмиттере роняет им сборку, а подписчика
- * проброса (`relayAll` — так `plain` отдаёт события драйвера) шина не роняет:
- * ошибку она печатает в `console.error`. Поэтому `console.error` под шпионом
- * на каждом тесте файла. Серверные тесты Vue и React идут в jsdom, где кадр
- * есть, и этого не видят.
+ * Окружение — `node`, как у сервера: `requestAnimationFrame`, `Element` и
+ * `Node` в нём нет, и сторож их не подкладывает. Кадр, запланированный без
+ * узла, и проверка узла без узла бросают `ReferenceError`. Подписчик прямо на
+ * эмиттере роняет им сборку, а подписчика проброса (`relayAll` — так `plain`
+ * отдаёт события драйвера) шина не роняет: ошибку она печатает в
+ * `console.error`. Поэтому `console.error` под шпионом на каждом тесте файла.
+ * Серверные тесты Vue и React идут в jsdom, где есть и кадр, и типы DOM, и
+ * этого не видят.
  *
  * Сборка — как у адаптеров: свой контекст и контекст фасада на общем наборе,
  * обмен подписан на состояние, приём (`attach`) — по порядку сборки. Узла нет:
@@ -29,6 +33,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 import {
+	TCalendarKeyboardPlugin,
 	TListHeightPlugin,
 	TListScrollPlugin,
 	TTabsActiveTabPlugin,
@@ -36,6 +41,8 @@ import {
 } from '@soldy-ui/plugins'
 import { FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
 import {
+	CalendarCollectionDescriptor,
+	CalendarDescriptor,
 	DialogDescriptor,
 	DrawerDescriptor,
 	FrameDescriptor,
@@ -205,6 +212,29 @@ function assembleTabs(props: object, markup: readonly object[] = []) {
 	return { facade, unmount: () => unmountAll(accepted) }
 }
 
+/**
+ * Calendar, собранный как в адаптере Solid: свой контекст и контекст фасада на
+ * общем наборе. Дни кладёт в коллекцию вид по месяцам сеток — дней разметкой
+ * у календаря нет.
+ */
+function assembleCalendar(props: object) {
+	const { factory: elevator } = createElevatorFactory()
+	const calendar = createAdapterContext(CalendarDescriptor(), { props })
+	const ownAccepted = accept(calendar)
+	const facade = createAdapterContext(
+		CalendarCollectionDescriptor(),
+		{ props, options: { owner: calendar.instance } },
+		{ bundle: calendar.bundle },
+	).use(TCollectionExtension, { elevator })
+	const facadeAccepted = accept(facade)
+
+	return {
+		facade,
+		inputs: ownAccepted.exchange.inputs,
+		unmount: () => unmountAll([ownAccepted, facadeAccepted]),
+	}
+}
+
 /** Значения элементов по порядку. */
 const valuesOf = (items: ReadonlyArray<{ readonly value?: unknown }>) =>
 	items.map((item) => item.value)
@@ -361,6 +391,67 @@ describe('сторож: сборка Tabs без узла и без requestAnima
 
 		expect(moved).toEqual(['c'])
 		expect(removed).toEqual(['c', 'b', 'a'])
+	})
+})
+
+/**
+ * Клавиатура календаря ведёт DOM-фокус за фокусом коллекции, листанием и
+ * панелями выбора месяца и года — и все три события приходят уже при сборке:
+ * плагины связок и имён пишут наборы мест, а смена месяцев и границ двигает
+ * фокус и листание. Где стоит DOM-фокус, плагин узнаёт проверкой узла
+ * (`instanceof Element`, `instanceof Node`), а в Node типов DOM нет: без корня
+ * плагин выходит раньше проверки — так же, как без узла не планируют кадр.
+ */
+describe('сторож: сборка Calendar без узла и без типов DOM', () => {
+	/** Иначе сторож молча перестанет ловить проверку узла без узла. */
+	it('в окружении нет Element и Node — как на сервере', () => {
+		expect('Element' in globalThis).toBe(false)
+		expect('Node' in globalThis).toBe(false)
+	})
+
+	/** Иначе сценарий ниже прошёл бы без того, кто проверяет узел. */
+	it('плагин клавиатуры стоит в наборе Calendar', () => {
+		const calendar = createAdapterContext(CalendarDescriptor(), { props: {} })
+
+		expect(calendar.bundle?.get(TCalendarKeyboardPlugin)).toBeDefined()
+
+		calendar.destroy()
+	})
+
+	it('две сетки в range: сборка, приём, смена months, min и max, уничтожение', () => {
+		const props = {
+			months: ['2026-09-01', '2026-10-01'],
+			mode: 'range',
+			value: ['2026-09-10', '2026-09-14'],
+		}
+		const { facade, inputs, unmount } = assembleCalendar(props)
+		const { batch, focus, picker, view } = facade.instance.engine.extensions
+		const heard = new Set<string>()
+
+		// Наборы мест плагин связок написал при сборке: `change:pickers` уже было
+		expect(batch.items).toHaveLength(61)
+		expect(focus.focusedDate).toBe('2026-09-10')
+		expect(picker.pickers.map((place) => place.labelledBy)).toEqual([
+			expect.stringMatching(/\S/),
+			expect.stringMatching(/\S/),
+		])
+
+		focus.events.on('change:focusedDate', () => heard.add('change:focusedDate'))
+		view.events.on('change:paging', () => heard.add('change:paging'))
+		picker.events.on('change:pickers', () => heard.add('change:pickers'))
+
+		const months = ['2026-11-01', '2026-12-01']
+
+		inputs.full({ ...props, months })
+		inputs.full({ ...props, months, min: '2026-11-15', max: '2026-12-20' })
+
+		expect(view.months).toEqual(months)
+		expect(focus.focusedDate).toBe('2026-11-15')
+		expect([view.prevDisabled, view.nextDisabled]).toEqual([true, true])
+		// Иначе сценарий прошёл бы мимо всех трёх подписок клавиатуры
+		expect([...heard].sort()).toEqual(['change:focusedDate', 'change:paging', 'change:pickers'])
+
+		unmount()
 	})
 })
 

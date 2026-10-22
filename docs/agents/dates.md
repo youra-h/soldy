@@ -464,7 +464,11 @@ DatePicker (`TDatePicker`, `core/src/components/custom/date-picker`) — пол�
 `ui/vue/__tests__/date-input.spec.ts` и `ui/solid/__tests__/date-input.spec.tsx`
 (у Solid узел части тот же при наборе и при смене локали, а текст — `textContent`
 узла), сетки, дни и панели выбора месяца и года на разметке —
-`ui/vue/__tests__/calendar.spec.ts` и `ui/solid/__tests__/calendar.spec.tsx`; рамку ошибки коробки
+`ui/vue/__tests__/calendar.spec.ts` и `ui/solid/__tests__/calendar.spec.tsx`;
+их же в разметке сервера Solid — имена сеток, дни с одной остановкой Tab,
+панель выбора на месте, `id` двух рендеров, заголовок месяца на языке своего
+запроса — `ui/solid/__tests__/collections.server.spec.tsx` и
+`ui/solid/__tests__/locale.server.spec.tsx`; рамку ошибки коробки
 диапазона, квадрат кнопки очистки в обоих режимах и Tab до «OK» —
 `playground/vue/browser/date-picker.spec.ts`; подпись колонки по обе
 стороны правила — короткие `ru-RU`, `fr-FR`, `zh-CN`, `hi-IN` и узкие
