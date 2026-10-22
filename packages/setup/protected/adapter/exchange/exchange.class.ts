@@ -51,6 +51,7 @@ export class TExchange {
 		this.state = new TStateStore(
 			routing.readable.map((index) => lines[index]),
 			tap,
+			members.map((member) => member.owner),
 		)
 		this.inputs = new TInputPort(
 			routing.writable.map((index) => lines[index]),

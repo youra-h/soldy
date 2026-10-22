@@ -12,9 +12,14 @@
  * для чьих свойств событие — триггер. На свои ячейки состояние не
  * подписывается: что значение сменилось, оно узнаёт из ответа `set()`.
  *
+ * Пока над инстансом идёт сборка другого монтирования (`TAssembling`),
+ * триггер ячеек не перечитывает: состояние перечитается целиком одной
+ * микрозадачей после сборки.
+ *
  * `subscribe` и `getSnapshot` — стрелки: их отдают `useSyncExternalStore` без `this`.
  */
 
+import { assembling } from './assembling.class'
 import { TCell } from './cell.class'
 import type { TLine } from './line.class'
 import type { TTap } from './tap.class'
@@ -27,14 +32,18 @@ export class TStateStore {
 	private _listeners?: readonly TStateListener[]
 	private _snapshot: TStateSnapshot | null = null
 	private _primed = false
+	/** Триггер пришёл во время чужой сборки: перечитать после неё уже запланировано. */
+	private _deferred = false
 
 	/**
 	 * @param _lines линии с триггерами: ячейка `i` — линия `i`
 	 * @param _tap слушатель участников, общий с событиями обмена
+	 * @param _owners владельцы участников: сборка над кем-то из них — тишина
 	 */
 	constructor(
 		private readonly _lines: readonly TLine[],
 		private readonly _tap: TTap,
+		private readonly _owners: readonly object[],
 	) {
 		// Значения читаются при первом обращении, а не при создании: обмену плагина,
 		// поставленного снаружи, состояние не нужно — ему хватает входов и событий
@@ -94,7 +103,25 @@ export class TStateStore {
 	refresh(cells: readonly number[]): void {
 		if (this._listeners === undefined) return
 
+		if (assembling.covers(this._owners)) {
+			this._defer()
+
+			return
+		}
+
 		for (const index of cells) this._read(index)
+	}
+
+	/** Триггер во время чужой сборки: перечитать всё после неё — один раз на сборку. */
+	private _defer(): void {
+		if (this._deferred) return
+
+		this._deferred = true
+		assembling.defer(() => {
+			this._deferred = false
+
+			if (this._listeners !== undefined) this._refresh()
+		})
 	}
 
 	private _refresh(): void {
