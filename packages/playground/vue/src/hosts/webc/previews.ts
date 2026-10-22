@@ -293,10 +293,9 @@ const menuPart = (
 /**
  * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
  * переключателей — отмечен один, — действия с подсказками сочетаний в слоте
- * `trailing`, подменю с подменю внутри, пункт с панелью, которая монтируется с
- * первым открытием, выключенное действие и «опасный» пункт своего варианта.
- * Календаря в Web Components нет, и в панели «Срок» — поле числа дней, как у
- * Solid.
+ * `trailing`, подменю с подменю внутри, пункт с панелью — календарём, который
+ * монтируется с первым открытием, — выключенное действие и «опасный» пункт
+ * своего варианта.
  */
 const MENU_ITEMS: readonly TContent[] = [
 	menuPart(
@@ -354,20 +353,7 @@ const MENU_ITEMS: readonly TContent[] = [
 	menuPart(
 		'so-menu-popover-item',
 		{ value: 'due', text: 'Срок', lazyMount: true },
-		{
-			default: [
-				{
-					tag: 'div',
-					is: 'so-field',
-					props: { label: 'Через, дней' },
-					slots: {
-						default: [
-							{ tag: 'div', is: 'so-number-input', props: { value: 3, min: 0 } },
-						],
-					},
-				},
-			],
-		},
+		{ default: [{ tag: 'div', is: 'so-calendar' }] },
 	),
 	menuPart('so-menu-item', { value: 'archive', text: 'В архив', disabled: true }),
 	menuPart('so-menu-separator'),
@@ -703,6 +689,18 @@ export const PREVIEWS: Record<string, TPreview> = {
 					})),
 		}),
 	},
+
+	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам сеток,
+	// а рисует их шаблон. Языка у превью нет: это локаль провайдера вокруг
+	// корня хоста — выбор языка в шапке (`setLocale` хоста)
+	calendar: { tag: 'div', is: 'so-calendar' },
+
+	// Язык — из шапки стенда, как у календаря
+	'date-input': { tag: 'div', is: 'so-date-input' },
+
+	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
+	// из шапки стенда, как у поля и календаря
+	'date-picker': { tag: 'div', is: 'so-date-picker' },
 
 	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы
 	// нет. Элемент — окно таблицы, а обёртка вокруг — граница ширины, с

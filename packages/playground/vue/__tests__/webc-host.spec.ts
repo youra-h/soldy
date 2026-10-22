@@ -838,6 +838,150 @@ describe('хост Web Components · оверлеи', () => {
 	})
 })
 
+/**
+ * Даты — как у Vue: содержимого у календаря, поля даты и DatePicker нет, язык —
+ * локаль провайдера корня хоста (шапка стенда). Дни календаря рисует его
+ * шаблон, у DatePicker поле стоит в ячейке, а панель с календарём уехала в
+ * `body`. Пропсы строки и слушатели — у компонента. У меню календарь — в
+ * панели пункта «Срок», как у Vue.
+ */
+describe('хост Web Components · даты', () => {
+	/** День по номеру в первой сетке узла. */
+	function dayOf(root: ParentNode, text: string): HTMLElement {
+		const day = [...root.querySelectorAll('.so-calendar-item')].find(
+			(cell) => cell.textContent?.trim() === text,
+		)
+
+		if (!(day instanceof HTMLElement)) throw new Error(`дня «${text}» нет`)
+
+		return day
+	}
+
+	it('превью Calendar: сетка месяца с днями, выбор дня — событием в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'calendar',
+			props: { months: ['2026-09-01'] },
+			onEvent: (name) => events.push(name),
+		})
+		const calendar = find(node, ':scope > so-locale-provider > .so-calendar')
+
+		expect(find(calendar, '.so-calendar__title-text').textContent?.trim()).toBe(
+			'September 2026',
+		)
+		expect(calendar.querySelectorAll('.so-calendar-item')).toHaveLength(30)
+		expect(find(calendar, '.so-calendar__heading').localName).toBe('div')
+
+		await nextFrame()
+		events.length = 0
+		dayOf(calendar, '12').click()
+		await flush()
+
+		expect(events).toContain('change:value')
+		expect(dayOf(calendar, '12').dataset.selected).toBe('true')
+
+		handle.update({ months: ['2026-10-01'] })
+		await flush()
+
+		expect(find(calendar, '.so-calendar__title-text').textContent?.trim()).toBe('October 2026')
+
+		handle.unmount()
+	})
+
+	it('превью DateInput: части в ряду, имя — из пропсов превью, набор — событием в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'date-input',
+			props: { aria_label: 'Дата', value: '2026-05-12' },
+			onEvent: (name) => events.push(name),
+		})
+		const field = find(node, '.so-date-input')
+
+		expect(field.getAttribute('role')).toBe('group')
+		expect(field.getAttribute('aria-label')).toBe('Дата')
+		// Язык шапки — английский: месяц, день, год
+		expect(
+			[...field.querySelectorAll('.so-date-input__segment')].map((part) =>
+				part.getAttribute('data-type'),
+			),
+		).toEqual(['month', 'day', 'year'])
+
+		handle.update({ aria_label: 'Дата', value: '2026-05-13' })
+		await flush()
+
+		expect(find(field, '.so-date-input__segment[data-type="day"]').textContent).toBe('13')
+
+		handle.unmount()
+	})
+
+	it('превью DatePicker: поле в ячейке, панель с календарём в body; открытие и выбор — в журнал', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'date-picker',
+			props: { aria_label: 'Дата' },
+			onEvent: (name) => events.push(name),
+		})
+		const picker = find(node, '.so-date-picker')
+		const trigger = find(picker, '.so-date-picker__field .so-date-picker__trigger')
+		const panel = find(document.body, ':scope > .so-date-picker__panel')
+
+		expect(find(picker, '.so-date-picker__field').getAttribute('aria-label')).toBe('Дата')
+		expect(trigger.getAttribute('aria-controls')).toBe(panel.id)
+		expect(panel.querySelector('.so-date-picker__calendar .so-calendar__grid')).not.toBeNull()
+		expect(panel.style.display).toBe('none')
+
+		await nextFrame()
+		events.length = 0
+		trigger.click()
+		await flush()
+
+		expect(events).toContain('change:open')
+		expect(panel.style.display).toBe('')
+
+		dayOf(panel, '12').click()
+		await flush()
+
+		expect(events).toContain('change:value')
+		expect(panel.style.display).toBe('none')
+
+		handle.unmount()
+
+		expect(document.querySelector('.so-date-picker__panel')).toBeNull()
+	})
+
+	it('превью Menu: в панели пункта «Срок» — календарь, с первым открытием', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'menu', props: {} })
+		const trigger = find(node, '.so-menu > .so-button')
+
+		expect(document.querySelector('.so-menu-popover-item .so-calendar')).toBeNull()
+
+		await nextFrame()
+		trigger.click()
+		await flush()
+		await nextFrame()
+
+		const due = [...document.querySelectorAll('[role^="menuitem"]')].find(
+			(row) => row.querySelector('.so-button__text')?.textContent?.trim() === 'Срок',
+		)
+
+		if (!(due instanceof HTMLElement)) throw new Error('строки «Срок» нет')
+
+		due.click()
+		await flush()
+		await nextFrame()
+
+		const panel = document.getElementById(due.getAttribute('aria-controls') ?? '')
+
+		expect(panel?.querySelector('.so-calendar .so-calendar__grid')).not.toBeNull()
+
+		handle.unmount()
+	})
+})
+
 /** Узел по селектору; нет его — тест падает здесь. */
 function find(root: ParentNode, selector: string): HTMLElement {
 	const node = root.querySelector(selector)
