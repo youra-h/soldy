@@ -12,15 +12,13 @@
  * что напечатал сервер, после — живое, и разницу спред дописывает в узел
  * (`src/adapter/common/root.ts`, шапка).
  *
- * Разметка сервера — фикстура из `markup/`, её пишет и сверяет серверный
- * прогон (`markup.server.spec.tsx`); страница — та же (`pages.tsx`).
+ * Разметку сервера рисует перед прогоном его `globalSetup` (`server.tsx`);
+ * страница — та же (`pages.tsx`).
  */
 
 import { describe, it, expect } from 'vitest'
 import { FieldGroup, FieldOwnId } from './pages'
-import { expectServedNodes, hydrateServed, serve } from './serve'
-import fieldGroup from './markup/field-group.html?raw'
-import fieldOwnId from './markup/field-own-id.html?raw'
+import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
 
 /** Подпись поля и узлы поля под ней — по порядку документа. */
 const nodesOf = (container: HTMLElement) => [
@@ -38,7 +36,7 @@ function labelOf(container: HTMLElement): HTMLLabelElement {
 
 describe('Field · гидратация', () => {
 	it('контрол со своим id: у сервера for подписи не на него, после гидратации — на него', () => {
-		const container = serve(fieldOwnId)
+		const container = serve(markupOf('field-own-id'))
 		const served = nodesOf(container)
 
 		expect(labelOf(container).getAttribute('for')).not.toBe('email')
@@ -51,7 +49,7 @@ describe('Field · гидратация', () => {
 	})
 
 	it('группа: у сервера for подписи есть, после гидратации — нет, называет её ссылка', () => {
-		const container = serve(fieldGroup)
+		const container = serve(markupOf('field-group'))
 		const served = nodesOf(container)
 		const label = labelOf(container)
 
