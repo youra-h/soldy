@@ -37,6 +37,7 @@ import {
 	LocaleProviderDirective,
 	SlotDirective,
 	TDialogComponent,
+	TPopoverComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
 	TToastsComponent,
@@ -291,6 +292,19 @@ class DialogPage {
 	readonly inside = viewChild.required(InsideProbe)
 }
 
+/** Открытый поповер в приложении под менеджером; `rendered` менеджера — сигналом. */
+@Component({
+	selector: 'probe-toasts-popover',
+	standalone: true,
+	imports: [TToastsComponent, TPopoverComponent],
+	template: `<div so-toasts [rendered]="rendered()">
+		<span so-popover open><button class="so-test-inside">В поповере</button></span>
+	</div>`,
+})
+class PopoverPage {
+	readonly rendered = signal<boolean | undefined>(undefined)
+}
+
 /** Смонтированный хост теста — его перепроверяют действия. */
 let current: ComponentFixture<unknown> | null = null
 
@@ -408,6 +422,26 @@ describe('Toasts · менеджер и API', () => {
 		expect(region().style.display).toBe('none')
 		expect(manager().style.display).toBe('contents')
 		expect(node('.so-test-app').textContent).toBe('Приложение')
+	})
+
+	/**
+	 * `rendered` менеджера снимает регион, а не приложение: у Vue `v-if` стоит
+	 * на регионе, а слот с приложением — вне его. Поэтому и слои приложения —
+	 * открытая панель поповера в `body` — остаются на виду.
+	 */
+	it('rendered: false прячет регион, а открытая панель поповера в приложении остаётся на виду', () => {
+		const fixture = render(PopoverPage)
+		const panel = node('.so-popover__panel')
+
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
+
+		fixture.componentInstance.rendered.set(false)
+		check()
+
+		expect(region().style.display).toBe('none')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
 	})
 
 	/**

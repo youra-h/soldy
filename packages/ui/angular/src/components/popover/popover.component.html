@@ -28,9 +28,8 @@
 	— фокус встаёт на саму панель, когда внутри нечего фокусировать.
 
 	Якорь — корень (`rootElement()` базы): на сервере и до первой отрисовки его
-	нет. `rendered` поповера панель получает сама: корень Angular только
-	прячется, а панель увезена в `body`. `visible` поповера ей не передаётся, как
-	у Vue, где `v-show` корня до телепортированной панели не доходит.
+	нет. `visible` поповера панели не передаётся, как у Vue, где `v-show` корня
+	до телепортированной панели не доходит.
 -->
 <div
 	so-frame
@@ -39,7 +38,6 @@
 	tabindex="-1"
 	position="fixed"
 	[visible]="state()['open']"
-	[rendered]="state()['rendered']"
 	[contained]="state()['contained']"
 	[anchor_anchor]="rootElement()"
 	[anchor_placement]="state()['placement']"

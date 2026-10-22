@@ -23,8 +23,10 @@
  * пункта. Подменю из данных, переехавшее в другую группу, Angular снимает с
  * прежнего места и собирает на новом за одну проверку, и в обоих порядках
  * привязка владельца его движка остаётся у живого монтирования. Корень Angular
- * не снимается, а прячется, поэтому `rendered: false` меню и подменю передают
- * и своим панелям. Шаблон `item-content` меню выводит `ngTemplateOutlet` с
+ * не снимается, а прячется, поэтому `rendered: false` меню и подменю прячет и
+ * открытые панели под ними — свою и вложенных уровней: база отдаёт поддереву
+ * признак, что его нет, как у Vue `v-if` корня снимает всё поддерево. Шаблон
+ * `item-content` меню выводит `ngTemplateOutlet` с
  * инжектором места (`ngTemplateOutletInjector="outlet"`), и его пункты входят
  * в коллекцию подменю, у которого он выведен, а не меню, где его написали.
  *
@@ -1292,6 +1294,7 @@ describe('подменю', () => {
 				so-menu
 				[size]="size()"
 				[variant]="variant()"
+				[rendered]="rendered()"
 				(soChoose)="root.push($event.value)"
 			>
 				${TRIGGER}
@@ -1317,6 +1320,7 @@ describe('подменю', () => {
 	class SharePage {
 		readonly size = signal<TMenuComponent['size']>(undefined)
 		readonly variant = signal<TMenuComponent['variant']>(undefined)
+		readonly rendered = signal<TMenuComponent['rendered']>(undefined)
 		readonly own = signal<TMenuSubmenuComponent['variant']>(undefined)
 		readonly shareRendered = signal<TMenuSubmenuComponent['rendered']>(undefined)
 		readonly shareOpen = signal(false)
@@ -1508,8 +1512,8 @@ describe('подменю', () => {
 
 	/**
 	 * Корень подменю Angular не снимается, а прячется, а его панель увезена в
-	 * `body`: `rendered` подменю передаёт ей сам, иначе открытая панель осталась
-	 * бы на виду без своей строки.
+	 * `body`: она прячется по признаку поддерева подменю, иначе открытая панель
+	 * осталась бы на виду без своей строки.
 	 */
 	it('rendered: false у подменю прячет его корень и открытую панель', async () => {
 		const fixture = await render(SharePage)
@@ -1529,6 +1533,37 @@ describe('подменю', () => {
 		page.shareRendered.set(true)
 		check()
 
+		expect(shown(subPanel())).toBe(true)
+	})
+
+	/**
+	 * Панель подменю увезена в `body` отдельно от панели меню, и скрытый корень
+	 * меню до неё не доходит. У Vue `v-if` корня меню снимает всё поддерево — с
+	 * подменю и его панелью, — а у Angular подменю прячет свою панель по
+	 * признаку поддерева меню над ним. Снова отрисованное меню — обе панели на
+	 * виду, как и были.
+	 */
+	it('rendered: false у меню прячет и открытую панель подменю', async () => {
+		const fixture = await render(SharePage)
+		const page = fixture.componentInstance
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+
+		expect(shown(subPanel())).toBe(true)
+
+		page.rendered.set(false)
+		check()
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(subPanel())).toBe(false)
+		expect(subPanel().parentElement).toBe(document.body)
+		expect(page.shareOpen()).toBe(true)
+
+		page.rendered.set(true)
+		check()
+
+		expect(shown(rootPanel())).toBe(true)
 		expect(shown(subPanel())).toBe(true)
 	})
 
@@ -2213,7 +2248,12 @@ describe('пункт с панелью', () => {
 		standalone: true,
 		imports: [...BASE, TMenuItemComponent, TMenuPopoverItemComponent, TMenuSubmenuComponent],
 		template: `<div>
-			<span so-menu [size]="size()" (soChoose)="chosen.push($event.value)">
+			<span
+				so-menu
+				[size]="size()"
+				[rendered]="rendered()"
+				(soChoose)="chosen.push($event.value)"
+			>
 				${TRIGGER}
 				<div so-menu-item value="edit" text="Изменить"></div>
 				<div
@@ -2237,6 +2277,7 @@ describe('пункт с панелью', () => {
 	})
 	class DuePage {
 		readonly size = signal<TMenuComponent['size']>(undefined)
+		readonly rendered = signal<TMenuComponent['rendered']>(undefined)
 		readonly lazyMount = signal<TMenuPopoverItemComponent['lazyMount']>(undefined)
 		readonly variant = signal<TMenuPopoverItemComponent['variant']>(undefined)
 		readonly dueOpen = signal(false)
@@ -2437,6 +2478,34 @@ describe('пункт с панелью', () => {
 		expect(shown(duePanel())).toBe(false)
 	})
 
+	/**
+	 * Панель пункта увезена в `body`, как панель подменю: скрытое меню прячет
+	 * и её — пункт стоит в поддереве меню, и у Vue его снял бы `v-if` корня
+	 * меню.
+	 */
+	it('rendered: false у меню прячет и открытую панель пункта', async () => {
+		const fixture = await render(DuePage)
+		const page = fixture.componentInstance
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+
+		expect(shown(duePanel())).toBe(true)
+
+		page.rendered.set(false)
+		check()
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(duePanel())).toBe(false)
+		expect(page.dueOpen()).toBe(true)
+
+		page.rendered.set(true)
+		check()
+
+		expect(shown(rootPanel())).toBe(true)
+		expect(shown(duePanel())).toBe(true)
+	})
+
 	/** Слоты строки: значок проекцией, текст и стрелка — шаблонами, содержимое панели. */
 	@Component({
 		selector: 'probe-menu-due-slots',
@@ -2504,9 +2573,10 @@ describe('Angular', () => {
 	})
 
 	/**
-	 * Корень Angular не снимается, а прячется, а панель увезена в `body`:
-	 * `rendered` меню передаёт ей сам, иначе открытая панель осталась бы на виду
-	 * без своего триггера. Снова отрисованное — панель на виду, как и была.
+	 * Корень Angular не снимается, а прячется, а панель увезена в `body`: Frame
+	 * в шаблоне меню прячет её по признаку поддерева меню, иначе открытая
+	 * панель осталась бы на виду без своего триггера. Снова отрисованное —
+	 * панель на виду, как и была.
 	 */
 	it('rendered: false прячет корень и открытую панель', async () => {
 		const fixture = await render(ItemsPage)

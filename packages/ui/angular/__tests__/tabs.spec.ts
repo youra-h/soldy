@@ -27,6 +27,7 @@ import type { ComponentFixture } from '@angular/core/testing'
 import type { TTabsOrientation } from '@soldy-ui/core'
 import {
 	SlotDirective,
+	TPopoverComponent,
 	TTabsComponent,
 	TTabsContentComponent,
 	TTabsItemComponent,
@@ -247,6 +248,81 @@ describe('показ панели по активному табу', () => {
 		await nextFrame()
 
 		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Панель таба у Vue — `v-if="rendered && active"`: неактивная или снятая, она
+ * снимает всё своё поддерево, и открытую панель поповера в ней, увезённую в
+ * `body`, тоже. У Angular панель таба только прячется, а поповер прячет свою
+ * панель по признаку её поддерева.
+ */
+describe('поповер в панели таба', () => {
+	/** Открытый поповер в панели первого таба; `rendered` панели — сигналом. */
+	@Component({
+		selector: 'probe-tabs-popover',
+		standalone: true,
+		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent, TPopoverComponent],
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="First" active></div>
+			<div so-tabs-item value="b" text="Second"></div>
+			<div so-tabs-content slot="content" value="a" [rendered]="rendered()">
+				<span so-popover open><button class="so-test-inside">В поповере</button></span>
+			</div>
+			<div so-tabs-content slot="content" value="b">Панель B</div>
+		</div>`,
+	})
+	class PopoverHost {
+		readonly rendered = signal<boolean | undefined>(undefined)
+	}
+
+	/** Панель поповера в документе; нет её — тест падает здесь. */
+	const popoverPanel = () => find(document, '.so-popover__panel', HTMLElement)
+
+	/**
+	 * Место неактивной панели Angular вынимает из документа (`@if` вокруг её
+	 * `<ng-content>`), и панель поповера уходит за ним, — а скрыта она по
+	 * признаку поддерева. Назад — тот же узел снова в `body` и на виду.
+	 */
+	it('другой таб — открытая панель поповера скрыта, назад — снова на виду', async () => {
+		const fixture = mountHost(PopoverHost)
+
+		await nextFrame()
+
+		const opened = popoverPanel()
+
+		expect(opened.parentElement).toBe(document.body)
+		expect(opened.style.display).toBe('')
+
+		click(fixture, tab('Second'))
+
+		expect(opened.style.display).toBe('none')
+
+		click(fixture, tab('First'))
+
+		expect(popoverPanel()).toBe(opened)
+		expect(opened.parentElement).toBe(document.body)
+		expect(opened.style.display).toBe('')
+	})
+
+	/** Снятая панель активного таба держит содержимое в документе, но прячет его поддерево. */
+	it('rendered: false у панели таба прячет и открытую панель поповера', async () => {
+		const fixture = mountHost(PopoverHost)
+
+		await nextFrame()
+
+		const opened = popoverPanel()
+
+		fixture.componentInstance.rendered.set(false)
+		fixture.detectChanges()
+
+		expect(opened.parentElement).toBe(document.body)
+		expect(opened.style.display).toBe('none')
+
+		fixture.componentInstance.rendered.set(true)
+		fixture.detectChanges()
+
+		expect(opened.style.display).toBe('')
 	})
 })
 
