@@ -126,6 +126,24 @@ Angular.** Общий файл настройки прогона (`packages/ui/r
 файл; как сторож устроен там — `packages/ui/angular/AGENTS.md`,
 «Angular-специфика».
 
+## Рабочие папки (критично)
+
+Рядом с репозиторием — постоянный набор worktree, и **новых агент не
+заводит**: ни `git worktree add`, ни `EnterWorktree`, ни агента с изоляцией
+`worktree`. Стережёт хук `tools/agent-flow/no-new-worktree.mjs`
+(`.claude/settings.json`). Нужна ещё папка — сказать владельцу.
+
+- `soldy` — основная, всегда на `main`. Ветку в ней не переключают: на ней
+  идут процессы владельца.
+- `soldy-<буква>` — пул `/drive` (`.claude/commands/drive.md`, `/pool`).
+- `soldy-conflicts` — конфликт в чужом PR или ветке задачи. Замок —
+  `mkdir <git>/agent-locks/soldy-conflicts` (занят — стоп), папка должна быть
+  чистой. Ветку берут без локальной: `git fetch origin` и
+  `git switch --detach origin/<ветка>` — так она не столкнётся с той же
+  веткой в папке пула. Разрешил — `git push origin HEAD:<ветка>`, затем
+  `git switch --detach origin/main` и снять замок. Изменился
+  `package-lock.json` — `npm install` в этой папке.
+
 ## Где остальное (читать перед задачей)
 
 Корень держит только сквозные правила. Знание одной области вынесено в
