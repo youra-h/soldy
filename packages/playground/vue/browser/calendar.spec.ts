@@ -29,6 +29,7 @@ import type { TSwipe } from '@soldy-ui/core'
 import { enUS, extendLocale } from '@soldy-ui/plugins'
 import type { TLocale } from '@soldy-ui/plugins'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
+import { loadHost } from '../src/hosts'
 
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
@@ -952,6 +953,46 @@ describe('выбор месяца и года', () => {
 		).toHaveLength(1)
 		expectCard()
 	})
+
+	/**
+	 * Панель с `contained` адаптер вправе держать в своих узлах без коробки:
+	 * `Teleport` React на клиенте кладёт её в узел места и обёртку, оба с
+	 * `display: contents`. Тема находит её потомком корня поповера, а не прямым
+	 * ребёнком, и у превью стенда в React подложка и карточка стоят так же, как
+	 * у Vue. Превью рисует хост фреймворка, как на странице стенда.
+	 */
+	it.each([
+		['vue', true],
+		['react', false],
+	])(
+		'превью стенда %s: подложка во весь календарь, карточка у верхнего края',
+		async (framework, direct) => {
+			const host = await loadHost(framework)
+			const node = document.createElement('div')
+
+			document.body.appendChild(node)
+
+			const handle = host.mount(node, {
+				component: 'calendar',
+				props: { months: ['2026-09-01'] },
+			})
+
+			try {
+				await nextFrame()
+				await nextFrame()
+				await open()
+
+				// У Vue панель — прямой ребёнок корня поповера, у React — в обёртках
+				expect(
+					find('.so-popover__panel').parentElement === find('.so-calendar__heading'),
+				).toBe(direct)
+				expectCard()
+			} finally {
+				handle.unmount()
+				node.remove()
+			}
+		},
+	)
 
 	/**
 	 * Тень и кромка-кольцо — слои `box-shadow`. У подложки они сняты и

@@ -6,11 +6,12 @@
  * ошибка — при `invalid` и на месте подсказки. С контролом поле связывает
  * проводка: поле опускает связку по лифту (`Elevate`), контрол её берёт.
  * Labelable-контрол (Input, NumberInput, Select, CheckBox, Switch, Rating,
- * Slider с одной ручкой) подпись называет своим `for`, группу (RadioGroup,
- * Slider с несколькими ручками) — ссылкой `aria-labelledby`. Справку контрол
- * получает в `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на
- * своём корне. У Select связку берёт он сам, а не его поле — деталь его
- * разметки: набор `aria` Select разметка кладёт на `<input>` поля.
+ * Slider с одной ручкой) подпись называет своим `for`, группу (DateInput,
+ * DatePicker, RadioGroup, Slider с несколькими ручками) — ссылкой
+ * `aria-labelledby`. Справку контрол получает в `aria-describedby`, ошибку —
+ * `aria-invalid` и `data-invalid` на своём корне. У Select связку берёт он
+ * сам, а не его поле — деталь его разметки: набор `aria` Select разметка
+ * кладёт на `<input>` поля.
  *
  * Своё у React — момент приёма: контрол сообщает полю о себе при коммите, а
  * эффекты детей React зовёт раньше родителя. Контрол в слоте поля поэтому
@@ -28,6 +29,8 @@ import { renderToString } from 'react-dom/server'
 import { TField, TInput, TSlider } from '@soldy-ui/core'
 import {
 	CheckBox,
+	DateInput,
+	DatePicker,
 	Field,
 	Input,
 	Label,
@@ -224,6 +227,50 @@ describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
 	})
 })
 
+/**
+ * Поле даты и DatePicker — группы: подпись называет их ссылкой, `for` нет.
+ * Селектор — элемент с именем группы: у одной даты группа — само поле
+ * DatePicker, у диапазона — его корень. Поля DatePicker — детали его разметки
+ * (`embedded`): связку поля формы берёт DatePicker и отдаёт её полю своим
+ * набором `aria`.
+ */
+const GROUPS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
+	['DateInput', () => <DateInput />, '.so-date-input'],
+	['DatePicker', () => <DatePicker />, '.so-date-picker__field'],
+	['DatePicker range', () => <DatePicker mode="range" />, '.so-date-picker'],
+]
+
+describe.each(GROUPS)('%s в поле', (_name, control, selector) => {
+	const group = () => find(document, selector, HTMLElement)
+
+	it('for у подписи нет, группа ссылается на подпись', () => {
+		mount(<Field label="Подпись">{control()}</Field>)
+
+		expect(label().hasAttribute('for')).toBe(false)
+		expect(label().id).not.toBe('')
+		expect(refsOf(group(), 'aria-labelledby')).toEqual([label().id])
+	})
+
+	it('справка и ошибка — у группы', () => {
+		const ctrl = new TField({ label: 'Подпись', helper: 'Подсказка', error: 'Ошибка' })
+
+		mount(<Field ctrl={ctrl}>{control()}</Field>)
+
+		expect(refsOf(group(), 'aria-describedby')).toEqual([
+			find(document, '.so-field__helper', HTMLElement).id,
+		])
+
+		act(() => {
+			ctrl.invalid = true
+		})
+
+		expect(refsOf(group(), 'aria-describedby')).toEqual([
+			find(document, '.so-field__error', HTMLElement).id,
+		])
+		expect(group().getAttribute('aria-invalid')).toBe('true')
+	})
+})
+
 /** Группа: подпись называет её ссылкой, `for` нет. */
 describe('RadioGroup в поле', () => {
 	const group = () => find(document, '.so-radio-group', HTMLElement)
@@ -416,6 +463,19 @@ describe('Field · имя контрола', () => {
 		)
 
 		const group = find(document, '.so-radio-group', HTMLElement)
+
+		expect(group.getAttribute('aria-label')).toBe('Своё')
+		expect(group.hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('своё имя поля даты главнее подписи поля', () => {
+		mount(
+			<Field label="Подпись">
+				<DateInput aria_label="Своё" />
+			</Field>,
+		)
+
+		const group = find(document, '.so-date-input', HTMLElement)
 
 		expect(group.getAttribute('aria-label')).toBe('Своё')
 		expect(group.hasAttribute('aria-labelledby')).toBe(false)
@@ -685,6 +745,28 @@ describe('Field · серверный рендер', () => {
 		])
 		expect(label(client).hasAttribute('for')).toBe(false)
 	})
+
+	it.each(GROUPS)(
+		'%s в поле формы: сервер рисует ссылки на подпись и справку, у браузера они те же',
+		(_name, control, selector) => {
+			const { server, client, onRecoverableError } = hydrate(
+				<Field label="Дата" helper="Подсказка">
+					{control()}
+				</Field>,
+			)
+			const group = find(server, selector, HTMLElement)
+
+			expect(onRecoverableError).not.toHaveBeenCalled()
+			expect(refsOf(group, 'aria-labelledby')).toEqual([label(server).id])
+			expect(refsOf(group, 'aria-describedby')).toEqual([
+				find(server, '.so-field__helper', HTMLElement).id,
+			])
+			expect(refsOf(find(client, selector, HTMLElement), 'aria-labelledby')).toEqual([
+				label(server).id,
+			])
+			expect(label(client).hasAttribute('for')).toBe(false)
+		},
+	)
 
 	it('ползунок с несколькими ручками: сервер рисует группу со ссылками на подпись и справку', () => {
 		const { server, client, onRecoverableError } = hydrate(
