@@ -704,13 +704,20 @@ describe('раскладчик элемента', () => {
 
 describe('корень связан с TElementPlugin', () => {
 	/**
+	 * Панель таба вне Tabs корня не имеет — таба, по которому её показывать,
+	 * нет, — как у Vue с `v-if="rendered && active"`, и узла у плагинов у неё
+	 * нет тоже. Её сторож — панель активного таба в наборе (ниже).
+	 */
+	const ALONE = COMPONENTS.filter(([name]) => name !== 'Tabs.Content')
+
+	/**
 	 * До элемента доходит только его `so:element:ready`. Элементы soldy, которые
 	 * построил его шаблон, — детали (строка таба, стрелки пагинации) и элементы
 	 * из данных (страницы пагинации), — разметка владельца: их события слышно
 	 * только на них самих. Это общий сторож: ни одна часть шаблона не всплывает
 	 * ни у одного компонента таблицы.
 	 */
-	it.each(COMPONENTS)('%s: so:element:ready приходит с корнем', async (_name, tag, is, guard) => {
+	it.each(ALONE)('%s: so:element:ready приходит с корнем', async (_name, tag, is, guard) => {
 		const el = document.createElement(tag, { is })
 		const ready: unknown[] = []
 
@@ -720,6 +727,29 @@ describe('корень связан с TElementPlugin', () => {
 			if (event instanceof CustomEvent) ready.push(event.detail)
 		})
 		document.body.appendChild(el)
+		await nextFrame()
+
+		expect(ready).toEqual([el])
+	})
+
+	it('Tabs.Content: so:element:ready приходит с корнем панели активного таба', async () => {
+		const host = document.createElement('div')
+
+		host.innerHTML = `<div is="so-tabs">
+			<div is="so-tabs-item" value="a" text="First" active></div>
+			<div is="so-tabs-content" slot="content" value="a"></div>
+		</div>`
+
+		const el = host.querySelector('[is="so-tabs-content"]')
+		const ready: unknown[] = []
+
+		if (!isTabsContent(el)) throw new Error('<div is="so-tabs-content"> нет')
+
+		el.addEventListener('so:element:ready', (event) => {
+			if (event instanceof CustomEvent) ready.push(event.detail)
+		})
+		document.body.appendChild(host)
+		await flush()
 		await nextFrame()
 
 		expect(ready).toEqual([el])

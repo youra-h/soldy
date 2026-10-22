@@ -19,6 +19,33 @@ import { bareContext } from './template-context'
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
 
+/** `TElementPlugin` объявляет узел через кадр. */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/**
+ * Что `TElementPlugin` элемента сообщил о своём узле, по порядку: узел из
+ * `so:element:ready` и `'removed'`. События элементов внутри, всплывшие до
+ * него, — не его.
+ */
+function elementEvents(el: Element): (Element | 'removed')[] {
+	const events: (Element | 'removed')[] = []
+
+	el.addEventListener('so:element:ready', (event) => {
+		if (
+			event.target === el &&
+			event instanceof CustomEvent &&
+			event.detail instanceof Element
+		) {
+			events.push(event.detail)
+		}
+	})
+	el.addEventListener('so:element:removed', (event) => {
+		if (event.target === el) events.push('removed')
+	})
+
+	return events
+}
+
 const variantClasses = (el: HTMLElement) =>
 	[...el.classList].filter((name) => name.includes('--variant-'))
 
@@ -111,6 +138,34 @@ describe('Skeleton · заглушка и содержимое', () => {
 		expect(placeholder(el)).toBeNull()
 		expect(el.querySelector('b')?.textContent).toBe('Данные')
 		expect(el.style.display).toBe('')
+	})
+
+	/**
+	 * Корня Skeleton `rendered` не снимает: у Vue `v-if` на нём не стоит. Узел у
+	 * плагинов остаётся тем же — `so:element:removed` не приходит, — и у
+	 * элемента в содержимом тоже: поддерево на виду.
+	 */
+	it('rendered=false: узел корня и элемента в содержимом у плагинов остаётся', async () => {
+		const el = mount('<div is="so-skeleton"><button is="so-button"></button></div>')
+		const button = el.querySelector('button')
+
+		if (!button) throw new Error('кнопки нет')
+
+		const own = elementEvents(el)
+		const inner = elementEvents(button)
+
+		await nextFrame()
+
+		expect(own).toEqual([el])
+		expect(inner).toEqual([button])
+
+		el.rendered = false
+		await flush()
+		await nextFrame()
+
+		expect(placeholder(el)).toBeNull()
+		expect(own).toEqual([el])
+		expect(inner).toEqual([button])
 	})
 
 	/**

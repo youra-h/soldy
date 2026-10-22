@@ -129,6 +129,12 @@ const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'no
 const opener = () => find('.so-test-opener')
 const place = () => find('.so-test-place')
 
+/**
+ * Узлы страницы, спрятанные от скринридера: фон окна в `body` — его соседи.
+ * Узлы внутри окна (иконка крестика) сюда не входят.
+ */
+const muted = () => [...document.querySelectorAll('body > [aria-hidden="true"]')]
+
 /** Якоря телепорта в поддереве — комментарии на месте увезённых корней. */
 function anchors(scope: Node): Comment[] {
 	const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
@@ -1096,6 +1102,45 @@ describe('фон под окном', () => {
 		await nextFrame()
 
 		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
+		expect(document.documentElement.style.overflow).toBe('')
+	})
+
+	/**
+	 * Элемент потребителя компонент не снимает, а прячет, но корня у окна с
+	 * `rendered=false`, как у Vue с `v-if`, нет и у плагинов: открытое окно
+	 * отпускает прокрутку и пометки фона сразу, оставаясь открытым. Снова
+	 * показанное — запирает страницу заново, кадром `ready` своего узла, а
+	 * закрытое потом отпускает всё: счёт замка и пометок сошёлся.
+	 */
+	it('rendered=false у открытого окна отпускает страницу, rendered=true — запирает снова', async () => {
+		const dialog = await render()
+
+		await open(dialog)
+
+		expect(muted()).not.toEqual([])
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		dialog.rendered = false
+		await flush()
+
+		expect(dialog.visible).toBe(true)
+		expect(isOpen()).toBe(false)
+		expect(muted()).toEqual([])
+		expect(document.documentElement.style.overflow).toBe('')
+
+		dialog.rendered = true
+		await flush()
+		await nextFrame()
+
+		expect(isOpen()).toBe(true)
+		expect(opener().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		dialog.visible = false
+		await flush()
+		await nextFrame()
+
+		expect(muted()).toEqual([])
 		expect(document.documentElement.style.overflow).toBe('')
 	})
 })

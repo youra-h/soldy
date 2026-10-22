@@ -129,6 +129,30 @@ async function show(...inputs: Parameters<ReturnType<typeof api>['show']>[0][]) 
 	return shown
 }
 
+/**
+ * Что `TElementPlugin` элемента сообщил о своём узле, по порядку: узел из
+ * `so:element:ready` и `'removed'`. События элементов внутри, всплывшие до
+ * него, — не его.
+ */
+function elementEvents(el: Element): (Element | 'removed')[] {
+	const events: (Element | 'removed')[] = []
+
+	el.addEventListener('so:element:ready', (event) => {
+		if (
+			event.target === el &&
+			event instanceof CustomEvent &&
+			event.detail instanceof Element
+		) {
+			events.push(event.detail)
+		}
+	})
+	el.addEventListener('so:element:removed', (event) => {
+		if (event.target === el) events.push('removed')
+	})
+
+	return events
+}
+
 /** Тост по его экземпляру; нет его — тест падает здесь. */
 function only<T>(value: T | undefined): T {
 	if (value === undefined) throw new Error('тоста нет')
@@ -218,6 +242,39 @@ describe('менеджер и API', () => {
 		expect(region().style.display).toBe('none')
 		expect(panel.parentElement).toBe(document.body)
 		expect(panel.style.display).toBe('')
+	})
+
+	/**
+	 * Узла региона у плагинов снятого менеджера нет, как у Vue, где `v-if`
+	 * стоит на регионе: `so:element:removed` менеджера — о нём, а снова
+	 * показанный менеджер возвращает тот же регион и `so:element:ready`,
+	 * кадром. Поддерево с приложением менеджер не снимает: кнопка в нём свой
+	 * узел держит.
+	 */
+	it('rendered=false снимает узел региона у плагинов, кнопка приложения свой держит; rendered=true возвращает регион', async () => {
+		const manager = await render({
+			content: '<button is="so-button" class="so-test-soldy" text="Сохранить"></button>',
+		})
+		const button = find('.so-test-soldy')
+		const own = elementEvents(manager)
+		const inner = elementEvents(button)
+
+		await nextFrame()
+
+		expect(own).toEqual([region()])
+		expect(inner).toEqual([button])
+
+		manager.rendered = false
+		await flush()
+
+		expect(own).toEqual([region(), 'removed'])
+
+		manager.rendered = true
+		await flush()
+		await nextFrame()
+
+		expect(own).toEqual([region(), 'removed', region()])
+		expect(inner).toEqual([button])
 	})
 })
 

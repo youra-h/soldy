@@ -294,23 +294,15 @@ describe('<button is="so-button"> · разметка потребителя', (
 	 * Скрытие — `display: none` поверх инлайнового `display` потребителя, как
 	 * `v-show`; при показе возвращается прежнее значение. Кнопку потребителя
 	 * компонент убрать не может, поэтому `rendered` прячет, как `visible`:
-	 * содержимое на месте, и `TElementPlugin` связан с кнопкой всё время.
+	 * элемент в документе, содержимое на месте.
 	 */
 	it('visible=false и rendered=false прячут кнопку, при показе display прежний', async () => {
 		const el = createButton()
-		let bundle: unknown
 
-		el.addEventListener('so:bundle:create', (event) => {
-			if (event instanceof CustomEvent) bundle = event.detail
-		})
 		el.setAttribute('text', 'Сохранить')
 		el.setAttribute('style', 'display: inline-flex')
 		document.body.appendChild(el)
 		await flush()
-
-		if (!(bundle instanceof TPluginBundle)) throw new Error('so:bundle:create не пришёл')
-
-		const plugin = bundle.get(TElementPlugin)
 
 		el.visible = false
 		await flush()
@@ -329,12 +321,91 @@ describe('<button is="so-button"> · разметка потребителя', (
 		expect(el.isConnected).toBe(true)
 		expect(el.style.display).toBe('none')
 		expect(text(el)).toBe('Сохранить')
-		expect(plugin?.element).toBe(el)
 
 		el.rendered = true
 		await flush()
 
 		expect(el.style.display).toBe('inline-flex')
+	})
+
+	/**
+	 * Корня у кнопки с `rendered=false`, как у Vue с `v-if`, нет и у плагинов:
+	 * `TElementPlugin` получает `null` и сообщает `so:element:removed`, а снова
+	 * показанная кнопка — тот же элемент и `so:element:ready` заново, кадром.
+	 * `visible` — это `v-show`: узел у плагина остаётся.
+	 */
+	it('rendered=false снимает узел кнопки у TElementPlugin, visible=false — нет; rendered=true возвращает тот же', async () => {
+		const el = createButton()
+		const events: (Element | 'removed')[] = []
+		let bundle: unknown
+
+		el.addEventListener('so:bundle:create', (event) => {
+			if (event instanceof CustomEvent) bundle = event.detail
+		})
+		el.addEventListener('so:element:ready', (event) => {
+			if (event instanceof CustomEvent && event.detail instanceof Element) {
+				events.push(event.detail)
+			}
+		})
+		el.addEventListener('so:element:removed', () => events.push('removed'))
+		document.body.appendChild(el)
+		await nextFrame()
+
+		if (!(bundle instanceof TPluginBundle)) throw new Error('so:bundle:create не пришёл')
+
+		const plugin = bundle.get(TElementPlugin)
+
+		expect(plugin?.element).toBe(el)
+		expect(events).toEqual([el])
+
+		el.visible = false
+		await flush()
+		await nextFrame()
+
+		expect(plugin?.element).toBe(el)
+		expect(events).toEqual([el])
+
+		el.visible = true
+		el.rendered = false
+		await flush()
+
+		expect(plugin?.element).toBeNull()
+		expect(events).toEqual([el, 'removed'])
+
+		el.rendered = true
+		await flush()
+
+		expect(plugin?.element).toBe(el)
+		expect(events).toEqual([el, 'removed'])
+
+		await nextFrame()
+
+		expect(events).toEqual([el, 'removed', el])
+	})
+
+	/**
+	 * Собранная снятой кнопка узла не получает вовсе — ни `so:element:ready`,
+	 * ни пары с `so:element:removed`: узел отдаёт первая отрисовка, уже от
+	 * `rendered`. Показанная — получает его, кадром.
+	 */
+	it('собранная с rendered=false кнопка узла не получает, показанная — получает', async () => {
+		const el = createButton()
+		const ready = collect(el, 'so:element:ready')
+		const removed = collect(el, 'so:element:removed')
+
+		el.rendered = false
+		document.body.appendChild(el)
+		await flush()
+		await nextFrame()
+
+		expect(ready).toEqual([])
+
+		el.rendered = true
+		await flush()
+		await nextFrame()
+
+		expect(ready).toEqual([el])
+		expect(removed).toEqual([])
 	})
 
 	/** `display`, поменянный потребителем у скрытой кнопки, база при показе не трогает. */
