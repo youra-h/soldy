@@ -28,6 +28,20 @@ import {
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */
 const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
 
+/** `TElementPlugin` объявляет узел через кадр. */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/** Значения `detail` событий с этим именем на элементе. */
+function collect(el: Element, name: string): unknown[] {
+	const seen: unknown[] = []
+
+	el.addEventListener(name, (event) => {
+		if (event instanceof CustomEvent) seen.push(event.detail)
+	})
+
+	return seen
+}
+
 /** Теги локали, которые видел плагин кнопки при установке, — по одному на сборку. */
 const installed: string[] = []
 
@@ -178,6 +192,46 @@ describe('<div is="so-component-view"> · нативный div', () => {
 		await flush()
 
 		expect(el.style.display).toBe('')
+	})
+
+	/**
+	 * У Vue `v-if` корня снимает всё поддерево. Элемент потребителя только
+	 * прячется, но корня у элементов снятого поддерева нет и у плагинов — у
+	 * любого, не только у слоя: кнопка внутри сообщает `so:element:removed`, а
+	 * снова показанный предок возвращает ей тот же узел и `so:element:ready`,
+	 * кадром. `visible` предка — это `v-show`: узел кнопки остаётся.
+	 */
+	it('rendered=false снимает узел и у кнопки внутри, visible=false — нет; rendered=true возвращает тот же', async () => {
+		const el = mount('<div is="so-component-view"><button is="so-button"></button></div>')
+		const button = el.querySelector('button')
+
+		if (!button) throw new Error('кнопки нет')
+
+		const ready = collect(button, 'so:element:ready')
+		const removed = collect(button, 'so:element:removed')
+
+		await nextFrame()
+
+		expect(ready).toEqual([button])
+
+		el.visible = false
+		await flush()
+		await nextFrame()
+
+		expect(removed).toEqual([])
+
+		el.visible = true
+		el.rendered = false
+		await flush()
+
+		expect(removed).toHaveLength(1)
+
+		el.rendered = true
+		await flush()
+		await nextFrame()
+
+		expect(ready).toEqual([button, button])
+		expect(removed).toHaveLength(1)
 	})
 })
 

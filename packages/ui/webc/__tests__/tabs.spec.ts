@@ -11,10 +11,11 @@
  * собирается: движок набора он находит лифтом вверх по документу, а
  * подключение таба, пришедшее во время подключения набора, ждёт его конца.
  * Неактивную панель убрать нельзя — элемент написал потребитель, — поэтому она
- * скрыта, а её содержимое вне документа. Слоты таба — свет его строки и кнопки
- * закрытия (свет детали). Scope у слотов нет: слоты табов из данных — образцы
- * (`<template slot="item-leading">`), копию которых получает каждый таб.
- * Отрисовка — микрозадачей после смены ядра, слушатели плагинов — кадром позже.
+ * скрыта, её содержимое вне документа, а плагинам её узел не отдаётся. Слоты
+ * таба — свет его строки и кнопки закрытия (свет детали). Scope у слотов нет:
+ * слоты табов из данных — образцы (`<template slot="item-leading">`), копию
+ * которых получает каждый таб. Отрисовка — микрозадачей после смены ядра,
+ * слушатели плагинов — кадром позже.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
@@ -148,6 +149,30 @@ function panel(): HTMLElement {
 	return shown[0]
 }
 
+/**
+ * Что `TElementPlugin` элемента сообщил о своём узле, по порядку: узел из
+ * `so:element:ready` и `'removed'`. События элементов внутри, всплывшие до
+ * него, — не его.
+ */
+function elementEvents(el: Element): (Element | 'removed')[] {
+	const events: (Element | 'removed')[] = []
+
+	el.addEventListener('so:element:ready', (event) => {
+		if (
+			event.target === el &&
+			event instanceof CustomEvent &&
+			event.detail instanceof Element
+		) {
+			events.push(event.detail)
+		}
+	})
+	el.addEventListener('so:element:removed', (event) => {
+		if (event.target === el) events.push('removed')
+	})
+
+	return events
+}
+
 /** Клик и отрисовка того, что он поменял. */
 async function click(element: HTMLElement): Promise<void> {
 	element.click()
@@ -220,6 +245,40 @@ describe('показ панели по активному табу', () => {
 
 		expect(document.querySelector('[role="tablist"] .so-tabs__panel')).toBeNull()
 		expect(panels()).toHaveLength(1)
+	})
+
+	/**
+	 * Неактивную панель элемент потребителя держит скрытой, а корня у неё, как
+	 * у Vue с `v-if="rendered && active"`, нет и у плагинов: `so:element:ready`
+	 * приходит только панели активного таба. Активированная получает свой узел,
+	 * кадром, а прежняя отдаёт свой — `so:element:removed`.
+	 */
+	it('узел у плагинов — только у панели активного таба; переключение передаёт его', async () => {
+		const host = document.createElement('div')
+
+		host.innerHTML = HARNESS
+
+		const [first, second] = [...host.querySelectorAll('[is="so-tabs-content"]')]
+
+		if (!first || !second) throw new Error('панелей нет')
+
+		const a = elementEvents(first)
+		const b = elementEvents(second)
+
+		document.body.appendChild(host)
+		await flush()
+		await nextFrame()
+
+		expect(a).toEqual([first])
+		expect(b).toEqual([])
+
+		await click(tab('Second'))
+
+		expect(a).toEqual([first, 'removed'])
+
+		await nextFrame()
+
+		expect(b).toEqual([second])
 	})
 
 	it('панель вне Tabs скрыта и пуста: таба, по которому её показывать, нет', async () => {

@@ -126,6 +126,12 @@ const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'no
 const opener = () => find('.so-test-opener')
 const host = () => find('.so-test-host')
 
+/**
+ * Узлы страницы, спрятанные от скринридера: фон панели поверх страницы в
+ * `body` — её соседи. Узлы внутри панели (иконка крестика) сюда не входят.
+ */
+const muted = () => [...document.querySelectorAll('body > [aria-hidden="true"]')]
+
 /** Якоря телепорта в поддереве — комментарии на месте увезённых корней. */
 function anchors(scope: Node): Comment[] {
 	const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
@@ -551,6 +557,45 @@ describe('фон под панелью', () => {
 		await nextFrame()
 
 		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
+		expect(document.documentElement.style.overflow).toBe('')
+	})
+
+	/**
+	 * Элемент потребителя компонент не снимает, а прячет, но корня у панели с
+	 * `rendered=false`, как у Vue с `v-if`, нет и у плагинов: открытая панель
+	 * отпускает прокрутку и пометки фона сразу, оставаясь открытой. Снова
+	 * показанная — запирает страницу заново, кадром `ready` своего узла, а
+	 * закрытая потом отпускает всё: счёт замка и пометок сошёлся.
+	 */
+	it('rendered=false у открытой панели отпускает страницу, rendered=true — запирает снова', async () => {
+		const drawer = await render()
+
+		await open(drawer)
+
+		expect(muted()).not.toEqual([])
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		drawer.rendered = false
+		await flush()
+
+		expect(drawer.visible).toBe(true)
+		expect(isOpen()).toBe(false)
+		expect(muted()).toEqual([])
+		expect(document.documentElement.style.overflow).toBe('')
+
+		drawer.rendered = true
+		await flush()
+		await nextFrame()
+
+		expect(isOpen()).toBe(true)
+		expect(opener().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		drawer.visible = false
+		await flush()
+		await nextFrame()
+
+		expect(muted()).toEqual([])
 		expect(document.documentElement.style.overflow).toBe('')
 	})
 

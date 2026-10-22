@@ -527,6 +527,40 @@ describe('Frame · поддерево предка', () => {
 		expect(frame().style.display).toBe('none')
 	})
 
+	/**
+	 * Корня у Frame в снятом поддереве нет и у плагинов, как у Vue, где `v-if`
+	 * контейнера снимает и его. Узел плагинам отдаёт первая отрисовка, уже от
+	 * признака предка, поэтому собранный под скрытым контейнером Frame узла не
+	 * получает вовсе — ни `so:element:ready`, ни пары с `so:element:removed`.
+	 * Показанный контейнер отдаёт ему узел, кадром.
+	 */
+	it('Frame, собранный под скрытым контейнером, узла не получает; показанный контейнер — отдаёт', async () => {
+		const place = markup(
+			'<div is="so-component-view" class="box"><div is="so-frame" visible></div></div>',
+		)
+		const node = place.querySelector('[is="so-frame"]')
+
+		if (!isFrame(node)) throw new Error('<div is="so-frame"> нет')
+
+		const ready = collect(node, 'so:element:ready')
+		const removed = collect(node, 'so:element:removed')
+
+		view(place, '.box').rendered = false
+		document.body.appendChild(place)
+		await flush()
+		await nextFrame()
+
+		expect(ready).toEqual([])
+
+		view(place, '.box').rendered = true
+		await flush()
+		await nextFrame()
+
+		expect(node.style.display).toBe('')
+		expect(ready).toEqual([node])
+		expect(removed).toEqual([])
+	})
+
 	/** Перенос силами базы — смена цели и `contained` — не пересборка: подписка на предка остаётся. */
 	it('смена цели и contained туда-обратно подписку на предка не теряют', async () => {
 		addTarget('first')

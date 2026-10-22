@@ -135,6 +135,12 @@ const trigger = () => find('.so-test-trigger')
 const panel = (scope: ParentNode = document) => find('.so-popover__panel', scope)
 const isOpen = (element: HTMLElement = panel()) => element.style.display !== 'none'
 
+/**
+ * Узлы страницы, спрятанные от скринридера: фон модального слоя в `body` — его
+ * соседи. Узлы внутри слоя (иконка крестика) сюда не входят.
+ */
+const muted = () => [...document.querySelectorAll('body > [aria-hidden="true"]')]
+
 /** Значения `detail` событий с этим именем на элементе. */
 function collect(el: Element, name: string): unknown[] {
 	const seen: unknown[] = []
@@ -866,9 +872,13 @@ describe('вложенные слои', () => {
 	/**
 	 * Окно в панели — тоже слой: его корень и подложка-спутник уехали в `body`
 	 * мимо панели поповера, и скрытый поповер прячет обоих тем же признаком
-	 * поддерева. Открытость окна при этом не меняется.
+	 * поддерева. Открытость окна при этом не меняется. И страницу окно
+	 * отпускает: у Vue `v-if` корня поповера снимает и окно в его панели, а у
+	 * Web Components корня у окна в снятом поддереве нет и у плагинов — замок
+	 * прокрутки и пометки фона уходят. Снова показанный поповер возвращает окну
+	 * узел, и оно запирает страницу заново, кадром `ready`.
 	 */
-	it('rendered=false прячет и открытое окно в панели вместе с подложкой', async () => {
+	it('rendered=false прячет и открытое окно в панели вместе с подложкой и отпускает страницу', async () => {
 		const el = await render({
 			content: `<button class="so-test-first">Первая</button>
 				<div is="so-dialog" class="so-test-dialog"><button class="so-test-in-dialog">В окне</button></div>`,
@@ -888,6 +898,8 @@ describe('вложенные слои', () => {
 		expect(dialog.parentElement).toBe(document.body)
 		expect(isOpen(dialog)).toBe(true)
 		expect(isOpen(shade)).toBe(true)
+		expect(muted()).not.toEqual([])
+		expect(document.documentElement.style.overflow).toBe('hidden')
 
 		el.rendered = false
 		await flush()
@@ -895,12 +907,26 @@ describe('вложенные слои', () => {
 		expect(isOpen(dialog)).toBe(false)
 		expect(isOpen(shade)).toBe(false)
 		expect(dialog.visible).toBe(true)
+		expect(muted()).toEqual([])
+		expect(document.documentElement.style.overflow).toBe('')
 
 		el.rendered = true
 		await flush()
 
 		expect(isOpen(dialog)).toBe(true)
 		expect(isOpen(shade)).toBe(true)
+
+		await nextFrame()
+
+		expect(trigger().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		dialog.visible = false
+		await flush()
+		await nextFrame()
+
+		expect(muted()).toEqual([])
+		expect(document.documentElement.style.overflow).toBe('')
 	})
 })
 
