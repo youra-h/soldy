@@ -16,16 +16,17 @@
 
 import { TCollectionExtension, TagsCollectionDescriptor, TagsDescriptor } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { TagsProps } from './base.component'
 
 export function setupTags(getProps: () => TagsProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(TagsDescriptor(), {
 		ctrl: props.ctrl,
@@ -45,7 +46,7 @@ export function setupTags(getProps: () => TagsProps, mountId: string, receive: T
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
-	).use(TCollectionExtension, { elevator: SvelteElevatorFactory })
+	).use(TCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,

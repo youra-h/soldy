@@ -36,22 +36,23 @@ import {
 	TVirtualCollectionExtension,
 } from '@soldy-ui/setup'
 import {
-	SvelteElevatorFactory,
 	createSvelteAdapterContext,
 	joinState,
 	useAdapter,
 	useCollectionAdapter,
+	useElevator,
 	type TRootReceiver,
 } from '../../adapter'
 import type { SelectProps } from './base.component'
 
 export function setupSelect(getProps: () => SelectProps, mountId: string, receive: TRootReceiver) {
+	const elevator = useElevator()
 	const props = getProps()
 	const adapter = createSvelteAdapterContext(SelectDescriptor(), {
 		ctrl: props.ctrl,
 		props,
 		mountId,
-	}).use(TFieldControlExtension, { elevator: SvelteElevatorFactory })
+	}).use(TFieldControlExtension, { elevator })
 
 	// Выход `dismiss_ownerAttribute` разметка кладёт спредом на панель
 	const owner = useAdapter(adapter, getProps, receive)
@@ -68,11 +69,11 @@ export function setupSelect(getProps: () => SelectProps, mountId: string, receiv
 		},
 		{ bundle: adapter.bundle },
 	)
-		.use(TCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TCollectionExtension, { elevator })
 		// Окно обёртки `Virtual` над Select: список панели рисует только
 		// видимые опции. Подхват при сборке, подписка на обёртку — при приёме,
 		// снятие — с уничтожением
-		.use(TVirtualCollectionExtension, { elevator: SvelteElevatorFactory })
+		.use(TVirtualCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(
 		collectionAdapter,

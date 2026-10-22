@@ -5,7 +5,9 @@
  * (`setContext` в сборке), элемент читает их при своей инициализации
  * (`getContext`). Контекст Svelte наследуют все компоненты, которые список
  * рисует, — и содержимое, которое ему передали сниппетом, — а соседям и
- * предкам он не виден.
+ * предкам он не виден. Лифты сборки — одной фабрики (`useElevator`): они
+ * делят её слой, и `up()` отдаёт значение предка и после своего `down()` по
+ * тому же ключу.
  *
  * В коллекцию элемент входит при инициализации — когда его контекст принят
  * (`attach` в `useAdapter`). Дети инициализируются в порядке документа, и
@@ -16,6 +18,7 @@
 import { describe, it, expect } from 'vitest'
 import { flushSync, type ComponentProps } from 'svelte'
 import Elevator from './Elevator.test.svelte'
+import ElevatorLayer, { type TElevatorLevel } from './ElevatorLayer.test.svelte'
 import AccordionHarness from './Accordion.test.svelte'
 import ListBoxHarness from './ListBox.test.svelte'
 import TabsHarness from './Tabs.test.svelte'
@@ -137,6 +140,59 @@ describe('лифт', () => {
 
 		expect(probe.values()).toEqual(['a', 'c'])
 		expect(rows()).toHaveLength(2)
+	})
+})
+
+/** Что прочли уровни цепочки лифтом: имя уровня и значение, по порядку сборки. */
+function readings(levels: readonly TElevatorLevel[]): [string, string | undefined][] {
+	const log: [string, string | undefined][] = []
+
+	mount(ElevatorLayer, { levels, onUp: (name, value) => log.push([name, value]) })
+
+	return log
+}
+
+/**
+ * Лифт сборки (`useElevator`): компонент, который по одному ключу и берёт
+ * значение предка, и опускает своё детям, — как пункт с подменю. Карта
+ * контекста Svelte после своего `setContext` отдаёт своё, а `up()` обещает
+ * значение предка в любом порядке, как у Vue, React, Solid и Angular.
+ */
+describe('лифт сборки', () => {
+	it.each([
+		['опускает своё, потом берёт', [{ down: 'подменю' }, 'up']],
+		['берёт, потом опускает своё', ['up', { down: 'подменю' }]],
+	] as const)('%s: сборка получает значение предка, её дети — её', (_, steps) => {
+		expect(
+			readings([
+				{ name: 'меню', steps: [{ down: 'меню' }] },
+				{ name: 'подменю', steps },
+				{ name: 'пункт', steps: ['up'] },
+			]),
+		).toEqual([
+			['подменю', 'меню'],
+			['пункт', 'подменю'],
+		])
+	})
+
+	it('предка нет — значения нет и после своего down()', () => {
+		expect(readings([{ name: 'меню', steps: [{ down: 'меню' }, 'up'] }])).toEqual([
+			['меню', undefined],
+		])
+	})
+
+	it('повторный down() по тому же ключу: up() — значение предка, дети — последнее своё', () => {
+		expect(
+			readings([
+				{ name: 'меню', steps: [{ down: 'меню' }] },
+				{ name: 'подменю', steps: [{ down: 'первое' }, 'up', { down: 'второе' }, 'up'] },
+				{ name: 'пункт', steps: ['up'] },
+			]),
+		).toEqual([
+			['подменю', 'меню'],
+			['подменю', 'меню'],
+			['пункт', 'второе'],
+		])
 	})
 })
 
