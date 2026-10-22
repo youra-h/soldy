@@ -482,7 +482,8 @@ describe('нажатие пунктов', () => {
 			grid: {
 				selected: true,
 				'indicator-icon': scopeMarkup<{ selected: boolean }>(
-					({ selected }) => `<i class="so-test-mark" data-mark="${String(selected)}"></i>`,
+					({ selected }) =>
+						`<i class="so-test-mark" data-mark="${String(selected)}"></i>`,
 				),
 			},
 		})
@@ -657,7 +658,8 @@ describe('переключатели', () => {
 			group: { value: 'name' },
 			name: {
 				'indicator-icon': scopeMarkup<{ selected: boolean }>(
-					({ selected }) => `<i class="so-test-mark" data-mark="${String(selected)}"></i>`,
+					({ selected }) =>
+						`<i class="so-test-mark" data-mark="${String(selected)}"></i>`,
 				),
 			},
 		})
@@ -1575,7 +1577,8 @@ describe('подменю', () => {
 					({ text, open }) => (open ? `${text} ▸` : text),
 				),
 				'item-arrow-icon': scopeMarkup<{ item: IMenuItem }>(
-					({ item }) => `<b class="so-test-arrow" data-value="${String(item.value)}"></b>`,
+					({ item }) =>
+						`<b class="so-test-arrow" data-value="${String(item.value)}"></b>`,
 				),
 			})
 
