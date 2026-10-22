@@ -569,6 +569,43 @@ describe('фон под панелью', () => {
 	})
 
 	/**
+	 * Элемент потребителя Angular не снимает, а прячет, но корня у панели с
+	 * `rendered: false`, как у Vue с `v-if`, у плагинов нет: открытая панель
+	 * отпускает прокрутку и пометки фона сразу, оставаясь открытой. Снова
+	 * отрисованная — запирает страницу заново, кадром `ready` своего узла.
+	 */
+	it('rendered: false у открытой панели отпускает страницу, true — запирает снова', async () => {
+		const fixture = await render(Page)
+		const page = fixture.componentInstance
+
+		await open(page)
+
+		expect(opener().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		page.rendered.set(false)
+		check()
+
+		expect(page.shown()).toBe(true)
+		expect(isOpen()).toBe(false)
+		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
+		expect(document.documentElement.style.overflow).toBe('')
+
+		page.rendered.set(true)
+		await settle()
+
+		expect(isOpen()).toBe(true)
+		expect(opener().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		page.shown.set(false)
+		await settle()
+
+		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
+		expect(document.documentElement.style.overflow).toBe('')
+	})
+
+	/**
 	 * Внутри контейнера панель модальна так же — фон немой, фокус в ней, — но
 	 * прокрутку документа не запирает: страница за контейнером та же.
 	 */

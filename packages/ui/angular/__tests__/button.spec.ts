@@ -27,7 +27,8 @@ import { NgClass } from '@angular/common'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import { TButton, type TComponentSize } from '@soldy-ui/core'
 import { SlotDirective, TButtonComponent } from '@soldy-ui/angular'
-import { announced, elementPlugin } from './element-plugin'
+import { elementPlugin } from './element-plugin'
+import { nextFrame } from './mount'
 
 /** Button сам по себе: корень — `<button>`, тег первого селектора. */
 function mount(inputs: Record<string, unknown> = {}): ComponentFixture<TButtonComponent> {
@@ -205,27 +206,35 @@ describe('Button · входы', () => {
 
 	/**
 	 * Элемент потребителя компонент убрать не может, поэтому `rendered` его
-	 * прячет, как `visible`: элемент тот же, содержимое на месте, и
-	 * `TElementPlugin` связан с ним всё время.
+	 * прячет, как `visible`: элемент тот же, содержимое на месте. Но корня, как
+	 * у Vue с `v-if`, у плагинов нет: `TElementPlugin` получает `null` и
+	 * сообщает `element:removed`, а снова отрисованный корень — тот же элемент и
+	 * `element:ready` заново, кадром. `visible` — это `v-show`: узел у плагина
+	 * остаётся.
 	 */
-	it('visible=false и rendered=false прячут корень, элемент тот же и связан с TElementPlugin', async () => {
+	it('visible=false прячет корень, rendered=false ещё и снимает его узел у TElementPlugin, true — возвращает тот же', async () => {
 		const fixture = TestBed.createComponent(TButtonComponent, { inferTagName: true })
 		const plugin = elementPlugin(fixture)
+		const events: Array<Element | 'removed'> = []
 
+		fixture.componentInstance.soElementReady.subscribe((node) => events.push(node))
+		fixture.componentInstance.soElementRemoved.subscribe(() => events.push('removed'))
 		fixture.componentRef.setInput('text', 'Сохранить')
 		fixture.detectChanges()
 
-		await announced()
+		await nextFrame()
 
 		const el = root(fixture)
 
 		expect(plugin().element).toBe(el)
+		expect(events).toEqual([el])
 		expect(el.style.display).toBe('')
 
 		fixture.componentRef.setInput('visible', false)
 		fixture.detectChanges()
 
 		expect(el.style.display).toBe('none')
+		expect(plugin().element).toBe(el)
 
 		fixture.componentRef.setInput('visible', true)
 		fixture.componentRef.setInput('rendered', false)
@@ -234,12 +243,18 @@ describe('Button · входы', () => {
 		expect(root(fixture)).toBe(el)
 		expect(el.style.display).toBe('none')
 		expect(text(el)).toBe('Сохранить')
-		expect(plugin().element).toBe(el)
+		expect(plugin().element).toBeNull()
+		expect(events).toEqual([el, 'removed'])
 
 		fixture.componentRef.setInput('rendered', true)
 		fixture.detectChanges()
 
 		expect(el.style.display).toBe('')
+		expect(plugin().element).toBe(el)
+
+		await nextFrame()
+
+		expect(events).toEqual([el, 'removed', el])
 	})
 })
 

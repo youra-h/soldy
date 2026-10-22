@@ -1075,6 +1075,43 @@ describe('фон под окном', () => {
 		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
 		expect(document.documentElement.style.overflow).toBe('')
 	})
+
+	/**
+	 * Элемент потребителя Angular не снимает, а прячет, но корня у окна с
+	 * `rendered: false`, как у Vue с `v-if`, у плагинов нет: открытое окно
+	 * отпускает прокрутку и пометки фона сразу, оставаясь открытым. Снова
+	 * отрисованное — запирает страницу заново, кадром `ready` своего узла.
+	 */
+	it('rendered: false у открытого окна отпускает страницу, true — запирает снова', async () => {
+		const fixture = await render(Page)
+		const page = fixture.componentInstance
+
+		await open(page)
+
+		expect(opener().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		page.rendered.set(false)
+		check()
+
+		expect(page.shown()).toBe(true)
+		expect(isOpen()).toBe(false)
+		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
+		expect(document.documentElement.style.overflow).toBe('')
+
+		page.rendered.set(true)
+		check()
+		await nextFrame()
+
+		expect(isOpen()).toBe(true)
+		expect(opener().closest('[aria-hidden="true"]')).not.toBeNull()
+		expect(document.documentElement.style.overflow).toBe('hidden')
+
+		await close(page)
+
+		expect(opener().closest('[aria-hidden="true"]')).toBeNull()
+		expect(document.documentElement.style.overflow).toBe('')
+	})
 })
 
 /**

@@ -9,11 +9,11 @@
  * (`<div so-tabs>`): атрибуты потребителя у него делятся между корнем и
  * списком табов. Корень панели — элемент потребителя (`<div so-tabs-content
  * slot="content">`), таб — `<div so-tabs-item>`. Неактивную панель убрать
- * компонент не может — элемент написал потребитель, — поэтому она скрыта, а
- * её содержимое в документ не вставлено. Слоты со scope и слоты, по которым
- * таб решает, рисовать ли своё
- * (`close-icon`), — шаблоны; шаблон, заданный набору, рисуется у каждого таба
- * вместо своего, как сниппет у Svelte.
+ * компонент не может — элемент написал потребитель, — поэтому она скрыта, её
+ * содержимое в документ не вставлено, а плагинам её узел не отдаётся. Слоты
+ * со scope и слоты, по которым таб решает, рисовать ли своё (`close-icon`), —
+ * шаблоны; шаблон, заданный набору, рисуется у каждого таба вместо своего, как
+ * сниппет у Svelte.
  *
  * Таб разметки входит в коллекцию в своём `ngOnInit`, и панель, что стоит в
  * разметке после табов, находит свой таб уже в сборке. Крестик гасит всплытие
@@ -25,6 +25,7 @@ import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
 import { Component, signal, type EventEmitter } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
 import type { TTabsOrientation } from '@soldy-ui/core'
+import { TElementPlugin } from '@soldy-ui/plugins'
 import {
 	SlotDirective,
 	TPopoverComponent,
@@ -32,6 +33,7 @@ import {
 	TTabsContentComponent,
 	TTabsItemComponent,
 } from '@soldy-ui/angular'
+import { announced } from './element-plugin'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
 afterEach(() => {
@@ -128,6 +130,31 @@ function press(fixture: ComponentFixture<unknown>, target: Element, key: string)
 })
 class Harness {}
 
+/** Те же табы и панели; плагины узла панелей хост берёт из их `(soElementCreate)`. */
+@Component({
+	selector: 'probe-tabs-element',
+	standalone: true,
+	imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-item value="b" text="Second"></div>
+		<div so-tabs-content slot="content" value="a" (soElementCreate)="created('a', $event)">
+			Панель A
+		</div>
+		<div so-tabs-content slot="content" value="b" (soElementCreate)="created('b', $event)">
+			Панель B
+		</div>
+	</div>`,
+})
+class ElementHost {
+	/** Плагин узла панели по её `value`. */
+	readonly plugins = new Map<string, TElementPlugin>()
+
+	created(value: string, plugin: unknown): void {
+		if (plugin instanceof TElementPlugin) this.plugins.set(value, plugin)
+	}
+}
+
 const ITEMS = [
 	{ value: 'a', text: 'A', _: { active: true } },
 	{ value: 'b', text: 'B' },
@@ -166,6 +193,29 @@ describe('показ панели по активному табу', () => {
 		// Попади она в основную проекцию, оказалась бы внутри [role=tablist]
 		expect(document.querySelector('[role="tablist"] .so-tabs__panel')).toBeNull()
 		expect(panels()).toHaveLength(1)
+	})
+
+	/**
+	 * Неактивную панель элемент потребителя держит скрытой, а корня у неё, как
+	 * у Vue с `v-if="rendered && active"`, нет и у плагинов: `TElementPlugin`
+	 * получает `null`. Активированная панель получает свой узел, а прежняя
+	 * отдаёт свой.
+	 */
+	it('панель неактивного таба отдаёт TElementPlugin null, активированная — свой узел', async () => {
+		const fixture = mountHost(ElementHost)
+		const { plugins } = fixture.componentInstance
+
+		await announced()
+
+		const [first, second] = [...document.querySelectorAll('[so-tabs-content]')]
+
+		expect(plugins.get('a')?.element).toBe(first)
+		expect(plugins.get('b')?.element).toBeNull()
+
+		click(fixture, tab('Second'))
+
+		expect(plugins.get('a')?.element).toBeNull()
+		expect(plugins.get('b')?.element).toBe(second)
 	})
 
 	it('панель вне Tabs скрыта и пуста: таба, по которому её показывать, нет', () => {

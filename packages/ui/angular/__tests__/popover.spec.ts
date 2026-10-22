@@ -941,6 +941,50 @@ describe('вложенные слои', () => {
 		expect(isOpen(dialog)).toBe(true)
 		expect(isOpen(backdrop)).toBe(true)
 	})
+
+	/**
+	 * Корня у окна в снятом поддереве нет и у плагинов, как у Vue, где `v-if`
+	 * внешнего поповера снимает и окно в его панели: открытое окно отпускает
+	 * прокрутку страницы и пометки фона. Снова отрисованный внешний возвращает
+	 * окну узел, и оно запирает страницу заново, кадром `ready`.
+	 */
+	it('rendered: false у внешнего отпускает страницу из-под открытого окна в панели, true — запирает снова', async () => {
+		const fixture = await render(LayersPage)
+		const page = fixture.componentInstance
+
+		/** Спрятан ли узел от скринридера — сам или через предка. */
+		const muted = (element: Element) => element.closest('[aria-hidden="true"]') !== null
+
+		await open()
+		page.dialog.set(true)
+		check()
+		await nextFrame()
+
+		expect(document.documentElement.style.overflow).toBe('hidden')
+		expect(muted(trigger())).toBe(true)
+
+		page.rendered.set(false)
+		check()
+
+		expect(page.dialog()).toBe(true)
+		expect(document.documentElement.style.overflow).toBe('')
+		expect(muted(trigger())).toBe(false)
+
+		page.rendered.set(true)
+		check()
+		await nextFrame()
+
+		expect(isOpen(node('.so-dialog'))).toBe(true)
+		expect(document.documentElement.style.overflow).toBe('hidden')
+		expect(muted(trigger())).toBe(true)
+
+		page.dialog.set(false)
+		check()
+		await nextFrame()
+
+		expect(document.documentElement.style.overflow).toBe('')
+		expect(muted(trigger())).toBe(false)
+	})
 })
 
 /**
@@ -1127,6 +1171,37 @@ describe('Angular', () => {
 
 		expect(node('.so-popover').style.display).toBe('')
 		expect(isOpen()).toBe(true)
+	})
+
+	/**
+	 * Корень значением (`rootElement()`) идёт за узлом плагинов: у снятого
+	 * поповера якоря нет, как у Vue, где снята и сама панель. Снова
+	 * отрисованный отдаёт корень заново, и открытая панель, получив свой узел,
+	 * снова следит за якорем — встаёт у его нового места.
+	 */
+	it('снова отрисованный поповер возвращает якорь: открытая панель встаёт у нового места корня', async () => {
+		const fixture = await render(Page)
+		const rect = vi
+			.spyOn(node('.so-popover'), 'getBoundingClientRect')
+			.mockReturnValue(new DOMRect(100, 50, 80, 20))
+
+		await open()
+
+		expect(panel().style.top).toBe('78px')
+
+		fixture.componentInstance.rendered.set(false)
+		check()
+
+		rect.mockReturnValue(new DOMRect(200, 150, 80, 20))
+		fixture.componentInstance.rendered.set(true)
+		check()
+		// Место считает `ready` узла панели, кадром; координаты ядра — в разметку
+		await nextFrame()
+		check()
+
+		expect(isOpen()).toBe(true)
+		expect(panel().style.left).toBe('200px')
+		expect(panel().style.top).toBe('178px')
 	})
 
 	/**

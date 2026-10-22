@@ -30,12 +30,14 @@ import { Component, Input, input, signal, viewChild, type Type } from '@angular/
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import { createEngineRadioGroup, createEngineToasts } from '@soldy-ui/core'
 import type { IToastsItem, IToastsProps, TToastsItemType, TToastsLayout } from '@soldy-ui/core'
-import { ruRU } from '@soldy-ui/plugins'
+import { TElementPlugin, ruRU } from '@soldy-ui/plugins'
 import { getIcon } from '@soldy-ui/setup'
 import type { TIconRole } from '@soldy-ui/setup'
 import {
+	AttributesDirective,
 	LocaleProviderDirective,
 	SlotDirective,
+	TButtonComponent,
 	TDialogComponent,
 	TPopoverComponent,
 	TRadioGroupComponent,
@@ -305,6 +307,49 @@ class PopoverPage {
 	readonly rendered = signal<boolean | undefined>(undefined)
 }
 
+/**
+ * Поповер с триггером в приложении под менеджером; `rendered` менеджера —
+ * сигналом, плагин узла региона хост берёт из `(soElementCreate)` менеджера.
+ */
+@Component({
+	selector: 'probe-toasts-trigger',
+	standalone: true,
+	imports: [
+		TToastsComponent,
+		TPopoverComponent,
+		TButtonComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<div so-toasts [rendered]="rendered()" (soElementCreate)="created($event)">
+		<button class="so-test-outside">Мимо</button>
+		<span so-popover>
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Открыть"
+					class="so-test-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+			<button class="so-test-inside">В поповере</button>
+		</span>
+	</div>`,
+})
+class TriggerPage {
+	readonly rendered = signal<boolean | undefined>(undefined)
+	/** Плагин узла региона; до объявления набора его нет. */
+	region: TElementPlugin | null = null
+
+	created(plugin: unknown): void {
+		if (plugin instanceof TElementPlugin) this.region = plugin
+	}
+}
+
 /** Смонтированный хост теста — его перепроверяют действия. */
 let current: ComponentFixture<unknown> | null = null
 
@@ -442,6 +487,49 @@ describe('Toasts · менеджер и API', () => {
 		expect(region().style.display).toBe('none')
 		expect(panel.parentElement).toBe(document.body)
 		expect(panel.style.display).toBe('')
+	})
+
+	/**
+	 * Узла региона у плагинов снятого менеджера нет, как у Vue, где `v-if`
+	 * стоит на регионе. А корни приложения остаются: поддерево с приложением
+	 * менеджер не снимает, и поповер в нём открывается кликом и закрывается
+	 * нажатием мимо — его плагины держат свои узлы.
+	 */
+	it('rendered: false снимает узел региона, а поповер в приложении открывается и закрывается', async () => {
+		const fixture = render(TriggerPage)
+		const page = fixture.componentInstance
+
+		await nextFrame()
+
+		expect(page.region?.element).toBe(region())
+
+		page.rendered.set(false)
+		check()
+
+		expect(page.region?.element).toBeNull()
+
+		const panel = node('.so-popover__panel')
+		const trigger = node('.so-test-trigger')
+
+		expect(panel.style.display).toBe('none')
+
+		trigger.dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+		)
+		trigger.focus()
+		trigger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+		check()
+		await nextFrame()
+
+		expect(panel.style.display).toBe('')
+		expect(document.activeElement).toBe(node('.so-test-inside'))
+
+		node('.so-test-outside').dispatchEvent(
+			new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }),
+		)
+		check()
+
+		expect(panel.style.display).toBe('none')
 	})
 
 	/**
