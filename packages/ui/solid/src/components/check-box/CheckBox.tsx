@@ -1,4 +1,4 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
@@ -10,6 +10,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { setupCheckBox } from './setup.component'
 import type { CheckBoxAttributes, CheckBoxProps } from './base.component'
 

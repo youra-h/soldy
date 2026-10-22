@@ -1,4 +1,4 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Teleport,
@@ -9,6 +9,7 @@ import {
 	roleIcon,
 	rootTag,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { setupDrawer } from './setup.component'

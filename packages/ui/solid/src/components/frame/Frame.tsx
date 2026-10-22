@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Teleport, createRootProps, renderSlot, rootTag } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { setupFrame } from './setup.component'
 import type { FrameProps } from './base.component'
 

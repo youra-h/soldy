@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { createRootProps, resolveSlot, rootTag } from '../../../adapter'
+import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
 import { setupPaginationItem } from './setup.component'
 import type { PaginationItemProps } from './base.component'

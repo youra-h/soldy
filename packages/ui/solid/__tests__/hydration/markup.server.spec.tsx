@@ -30,16 +30,20 @@ import {
 	FieldOwnId,
 	IslandEntry,
 	IslandProbe,
+	ListBoxEmptyStreamed,
 	ListBoxWithEmpty,
 	PartProbe,
 	RootProbe,
 	RootProbeStreamed,
+	StructureProbe,
 	TabsActiveFirst,
 	TabsActiveSecond,
 	TabsActiveStreamed,
+	TabsContentStreamed,
 	TabsStreamed,
 	TagsSelectedSecond,
 	TagsSelectedStreamed,
+	ToastsBodyStreamed,
 	type TStreamedPageProps,
 } from './pages'
 
@@ -50,6 +54,7 @@ const PAGES: ReadonlyArray<readonly [fixture: string, page: () => JSX.Element]> 
 	['tags-selected-second', () => <TagsSelectedSecond />],
 	['root-probe', () => <RootProbe />],
 	['part-probe', () => <PartProbe />],
+	['structure-probe', () => <StructureProbe />],
 	['field-own-id', () => <FieldOwnId />],
 	['field-group', () => <FieldGroup />],
 	['list-box-with-empty', () => <ListBoxWithEmpty />],
@@ -65,6 +70,9 @@ const STREAMED: ReadonlyArray<
 	['field-control-streamed', (props) => <FieldControlStreamed wait={props.wait} />],
 	['root-probe-streamed', (props) => <RootProbeStreamed wait={props.wait} />],
 	['accordion-layer-streamed', (props) => <AccordionLayerStreamed wait={props.wait} />],
+	['tabs-content-streamed', (props) => <TabsContentStreamed wait={props.wait} />],
+	['list-box-empty-streamed', (props) => <ListBoxEmptyStreamed wait={props.wait} />],
+	['toasts-body-streamed', (props) => <ToastsBodyStreamed wait={props.wait} />],
 ]
 
 /** Остров, его фикстура и ключ гидратации — тот же у `hydrate()` острова в браузере. */

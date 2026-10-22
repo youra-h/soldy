@@ -1,4 +1,4 @@
-import { Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import type { ISelectItem, TDrawnEntry, TDrawnSection } from '@soldy-ui/core'
 import {
 	Elevate,
@@ -12,6 +12,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { Frame } from '../frame'
 import { Icon } from '../icon'
 import { Input } from '../input'
