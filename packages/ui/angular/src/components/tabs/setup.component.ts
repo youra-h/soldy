@@ -14,19 +14,7 @@ import {
 } from '../../adapter'
 import type { TBinding } from '../../adapter'
 
-/**
- * setupTabs — setup-слой Tabs.
- *
- * Два контекста, как у Vue и Svelte: свой (`TabsDescriptor`) и фасада
- * коллекции (`TabsCollectionDescriptor`) на общем наборе, одной связкой.
- *
- * Расширения коллекции опускают движок и регистратор табов лифтом — в слой
- * набора (`provideElevator()` в его `providers`): его читают и табы, и панели
- * — таб входит в коллекцию набора, панель находит в её движке свой таб.
- *
- * `engine` — готовая коллекция снаружи, вход набора: фасад работает на ней, а
- * без неё собирает свою (`completeEngine`).
- */
+/** Tabs: движок и регистратор лифт опускает в слой набора — их берут и табы, и панели. */
 export function setupTabs(
 	ctrl: ITabs | undefined,
 	props: object,

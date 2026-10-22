@@ -17,19 +17,7 @@ import type { TBinding } from '../../../adapter'
 /** Выходы плагинов пункта с панелью — их читает шаблон: пометку панели владельцем. */
 export type TMenuPopoverItemOutputs = DescriptorPluginOutputs<typeof MenuPopoverItemDescriptor>
 
-/**
- * setupMenuPopoverItem — setup-слой пункта с панелью.
- *
- * Два контекста, как у пункта-действия: собственный
- * (`MenuPopoverItemDescriptor` — текст, открытость, наборы панели) и фасада
- * (`MenuCollectionItemDescriptor` — вход в коллекцию меню). Своей коллекции у
- * пункта с панелью нет, как и своего слоя лифта: в панели лежит что угодно.
- *
- * Логики здесь нет: стрелка к концу строки — `TMenuPopoverItemKeyboardPlugin`,
- * фокус, Escape и Tab — `TMenuPopoverItemFocusPlugin`, нажатие и уход фокуса
- * мимо — `TDismissPlugin`, координаты панели у строки — `TAnchorPlugin` её
- * Frame, одна открытая панель на меню — коллекция меню.
- */
+/** Пункт с панелью: своей коллекции и слоя лифта нет — в панели лежит что угодно. */
 export function setupMenuPopoverItem(
 	ctrl: IMenuPopoverItem | undefined,
 	props: object,

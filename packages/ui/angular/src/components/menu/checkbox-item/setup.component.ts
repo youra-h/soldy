@@ -13,14 +13,7 @@ import {
 } from '../../../adapter'
 import type { TBinding } from '../../../adapter'
 
-/**
- * setupMenuCheckboxItem — setup-слой флажка меню.
- *
- * Два контекста, как у пункта: собственный (`MenuCheckboxItemDescriptor` —
- * текст и значение) и фасада (`MenuCollectionCheckboxItemDescriptor` — вход в
- * коллекцию меню и отметка: это выбор коллекции, а не своё состояние,
- * записываемый вход `selected` и выход `(soChangeSelected)`).
- */
+/** Флажок меню: отметка — у фасада, это выбор коллекции меню, а не своё состояние. */
 export function setupMenuCheckboxItem(
 	ctrl: IMenuCheckboxItem | undefined,
 	props: object,

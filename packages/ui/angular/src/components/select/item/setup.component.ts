@@ -13,19 +13,7 @@ import {
 } from '../../../adapter'
 import type { TBinding } from '../../../adapter'
 
-/**
- * setupSelectItem — setup-слой опции Select.
- *
- * Два контекста, как у элементов Vue и Svelte: собственный
- * (`SelectItemDescriptor` — текст и значение опции) и фасада
- * (`SelectCollectionItemDescriptor` — выбор, порядок и сторона отметки поля).
- * Расширение элемента берёт лифтом из слоя Select движок и регистратор и
- * отдаёт фасаду контекст опции.
- *
- * В коллекцию опция входит, когда контекст фасада принят, — в `ngOnInit`: и
- * опция разметки в панели, увезённой в `body`, — DI идёт по дереву
- * объявлений, и слой Select она видит там, где её написали.
- */
+/** Опция в увезённой панели видит слой Select там, где её написали: DI идёт по объявлениям. */
 export function setupSelectItem(
 	ctrl: ISelectItem | undefined,
 	props: object,

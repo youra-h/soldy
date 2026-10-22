@@ -6,26 +6,7 @@ import { TButtonComponent } from '../../button'
 import { TMenuRadioItemSurface } from '../../../generated/menu-radio-item.metadata'
 import { setupMenuRadioItem } from './setup.component'
 
-/**
- * TMenuRadioItemComponent — переключатель меню: строка пункта с отметкой-точкой
- * в начале, как `Menu.RadioItem` у Vue. Стоит в группе переключателей
- * (`<div so-menu-radio-group>`): в ней отмечен один.
- *
- * Корень и строка — как у флажка (`TMenuCheckboxItemComponent`): на строке —
- * ARIA переключателя (роль `menuitemradio`, `aria-checked` и `tabindex="-1"`
- * от меню). Отметка — выбор коллекции меню: вход `selected` и выход
- * `(soChangeSelected)` — у фасада переключателя, значение — у группы.
- *
- * Нажатие — клик строки, решает меню (`adapters.menu.check()`): выключенному
- * отказывает, а доступный отмечает — с остальных переключателей группы отметка
- * снимается — и остаётся открытым. Отмеченный нажатием не снимается.
- *
- * Обёртка отметки — у неотмеченного переключателя тоже, точка внутри — только
- * у отмеченного; её рисует тема (`so-menu-item__dot`), без иконки, а шаблон
- * слота `indicator-icon` (scope `{ selected }`) её подменяет.
- *
- * Selector: div[so-menu-radio-item], [so-menu-radio-item]
- */
+/** Переключатель меню: строка, как у флажка, с точкой; в группе отмечен один. */
 @Component({
 	selector: 'div[so-menu-radio-item], [so-menu-radio-item]',
 	imports: [NgTemplateOutlet, AttributesDirective, TButtonComponent],

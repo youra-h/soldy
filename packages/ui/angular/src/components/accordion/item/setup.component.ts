@@ -13,18 +13,6 @@ import {
 } from '../../../adapter'
 import type { TBinding } from '../../../adapter'
 
-/**
- * setupAccordionItem — setup-слой секции Accordion.
- *
- * Два контекста, как у элементов Vue и Svelte: собственный
- * (`AccordionItemDescriptor` — текст, значение, сторона стрелки) и фасада
- * (`AccordionCollectionItemDescriptor` — раскрыта ли секция, порядок, вид).
- * Расширение элемента берёт лифтом из слоя аккордеона движок и регистратор и
- * отдаёт фасаду контекст секции.
- *
- * В коллекцию секция входит, когда контекст фасада принят, — в `ngOnInit`, и
- * на сервере тоже.
- */
 export function setupAccordionItem(
 	ctrl: IAccordionItem | undefined,
 	props: object,
