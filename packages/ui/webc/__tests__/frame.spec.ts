@@ -39,6 +39,7 @@ import {
 	TLocaleProviderElement,
 	defineElement,
 	type TButtonElementProps,
+	type TComponentViewElementProps,
 	type TFrameElementProps,
 } from '@soldy-ui/webc'
 import { frameTemplate } from '../src/components/frame/frame.template'
@@ -438,6 +439,153 @@ describe('Frame · rendered и visible', () => {
 
 		expect(el.parentElement).toBe(document.body)
 		expect(ready).toEqual([el])
+	})
+})
+
+/**
+ * Скрытый элемент soldy прячет и слой своего поддерева: у Vue `v-if` корня
+ * снимает всё поддерево — и панель, увезённую в цель, — а `display: none`
+ * элемента до неё не доходит. Признак поддерева Frame берёт у ближайшего
+ * предка по месту — от якоря — на каждую сборку: перенос силами базы подписку
+ * не трогает, а переставленный потребителем Frame находит нового предка.
+ */
+describe('Frame · поддерево предка', () => {
+	function isView(node: Element | null): node is TComponentViewElementProps {
+		return node instanceof TComponentViewElement
+	}
+
+	/** Контейнер soldy по селектору; нет его — тест падает здесь. */
+	function view(root: ParentNode, selector: string): TComponentViewElementProps {
+		const node = root.querySelector(selector)
+
+		if (!isView(node)) throw new Error(`${selector}: контейнера нет`)
+
+		return node
+	}
+
+	it('rendered=false у контейнера прячет открытую панель в цели, rendered=true — снова на виду', async () => {
+		const place = mount(
+			'<div is="so-component-view" class="box"><div is="so-frame" visible></div></div>',
+		)
+		const box = view(place, '.box')
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().style.display).toBe('')
+
+		box.rendered = false
+		await flush()
+
+		expect(box.style.display).toBe('none')
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().style.display).toBe('none')
+		expect(frame().visible).toBe(true)
+
+		box.rendered = true
+		await flush()
+
+		expect(frame().style.display).toBe('')
+	})
+
+	/** `visible` — это `v-show`: у Vue до увезённой панели он не доходит. */
+	it('visible=false у контейнера панель в цели не прячет', async () => {
+		const place = mount(
+			'<div is="so-component-view" class="box"><div is="so-frame" visible></div></div>',
+		)
+
+		view(place, '.box').visible = false
+		await flush()
+
+		expect(frame().style.display).toBe('')
+	})
+
+	/** Скрыт предок через уровень: признак идёт по цепочке элементов soldy. */
+	it('скрытый контейнер над контейнером прячет панель', async () => {
+		const place = mount(`<div is="so-component-view" class="outer">
+			<section><div is="so-component-view" class="inner"><div is="so-frame" visible></div></div></section>
+		</div>`)
+
+		view(place, '.outer').rendered = false
+		await flush()
+
+		expect(frame().style.display).toBe('none')
+
+		view(place, '.outer').rendered = true
+		await flush()
+
+		expect(frame().style.display).toBe('')
+	})
+
+	it('Frame, собранный под скрытым контейнером, — сразу скрыт', () => {
+		const place = markup(
+			'<div is="so-component-view" class="box"><div is="so-frame" visible></div></div>',
+		)
+
+		view(place, '.box').rendered = false
+		document.body.appendChild(place)
+
+		expect(frame().parentElement).toBe(document.body)
+		expect(frame().style.display).toBe('none')
+	})
+
+	/** Перенос силами базы — смена цели и `contained` — не пересборка: подписка на предка остаётся. */
+	it('смена цели и contained туда-обратно подписку на предка не теряют', async () => {
+		addTarget('first')
+		addTarget('second')
+
+		const place = mount(
+			'<div is="so-component-view" class="box"><div is="so-frame" visible target="#first"></div></div>',
+		)
+		const node = frame()
+
+		node.target = '#second'
+		await flush()
+		node.contained = true
+		await flush()
+		node.contained = false
+		await flush()
+
+		expect(node.parentElement?.id).toBe('second')
+
+		view(place, '.box').rendered = false
+		await flush()
+
+		expect(node.style.display).toBe('none')
+
+		view(place, '.box').rendered = true
+		await flush()
+
+		expect(node.style.display).toBe('')
+	})
+
+	/**
+	 * Перестановка потребителем — новая сборка: Frame ищет предка заново, от
+	 * нового места, и под видимым контейнером панель снова на виду. Прежний
+	 * предок его больше не прячет.
+	 */
+	it('Frame, переставленный из скрытого контейнера в видимый, — снова на виду', async () => {
+		const place =
+			mount(`<div is="so-component-view" class="hidden"><div is="so-frame" visible></div></div>
+			<div is="so-component-view" class="shown"></div>`)
+		const hidden = view(place, '.hidden')
+		const node = frame()
+
+		hidden.rendered = false
+		await flush()
+
+		expect(node.style.display).toBe('none')
+
+		view(place, '.shown').appendChild(node)
+		await flush()
+
+		expect(node.parentElement).toBe(document.body)
+		expect(node.style.display).toBe('')
+
+		hidden.rendered = true
+		await flush()
+		hidden.rendered = false
+		await flush()
+
+		expect(node.style.display).toBe('')
 	})
 })
 

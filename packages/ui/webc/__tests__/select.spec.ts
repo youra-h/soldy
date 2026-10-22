@@ -715,7 +715,10 @@ describe('панель как телепортированный Frame', () => {
 		expect(isOpen()).toBe(false)
 	})
 
-	/** Корень Select при `rendered=false` прячется, а до увезённой панели это скрытие не доходит. */
+	/**
+	 * Корень Select при `rendered=false` прячется, а до увезённой панели это
+	 * скрытие не доходит: её прячет база Frame по признаку поддерева Select.
+	 */
 	it('rendered=false прячет и корень, и панель', async () => {
 		const el = await render()
 

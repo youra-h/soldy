@@ -16,7 +16,9 @@
  * написал потребитель. И перенос: панель уезжает в цель силами базы Frame, и
  * ни перенос, ни `contained` не пересобирают кнопки в панели, а поповер,
  * переставленный одной операцией, панель пересобирает — сразу после себя, с
- * локалью нового места.
+ * локалью нового места. Корень только прячется, поэтому `rendered: false`
+ * поповера прячет и открытые панели в `body` — свою и вложенных слоёв —
+ * признаком своего поддерева: у Vue их снимает `v-if` корня.
  *
  * Порядок Tab, который ведёт сам браузер, jsdom не считает: здесь проверены
  * переходы, которые делает плагин (Tab в панель, из неё, Shift+Tab на
@@ -29,9 +31,13 @@ import { TButton, TComponentView, TFrame, TPopover } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
 import { PopoverDescriptor, usePlugins } from '@soldy-ui/setup'
 import {
+	TComponentViewElement,
+	TDialogElement,
 	TLocaleProviderElement,
 	TPopoverElement,
 	registerPopoverTag,
+	type TComponentViewElementProps,
+	type TDialogElementProps,
 	type TPopoverElementProps,
 } from '@soldy-ui/webc'
 import { popoverTemplate } from '../src/components/popover/popover.template'
@@ -55,6 +61,14 @@ afterEach(() => {
 
 function isPopover(node: Element | null): node is TPopoverElementProps {
 	return node instanceof TPopoverElement
+}
+
+function isView(node: Element | null): node is TComponentViewElementProps {
+	return node instanceof TComponentViewElement
+}
+
+function isDialog(node: Element | null): node is TDialogElementProps {
+	return node instanceof TDialogElement
 }
 
 /** Содержимое с двумя остановками Tab. */
@@ -462,8 +476,8 @@ describe('открытие и закрытие', () => {
 	/**
 	 * Корень — элемент потребителя, и `rendered=false` его прячет, а не
 	 * снимает. Панель уехала в `body`, и скрытие корня до неё не доходит:
-	 * прячется она своим `rendered`, который ей пишет шаблон. Открытость при
-	 * этом не меняется — показанный снова поповер открыт, как был.
+	 * прячет её база Frame по признаку поддерева поповера. Открытость при этом
+	 * не меняется — показанный снова поповер открыт, как был.
 	 */
 	it('rendered=false прячет корень и открытую панель в body, rendered=true — панель снова открыта', async () => {
 		const el = await render()
@@ -484,6 +498,39 @@ describe('открытие и закрытие', () => {
 		expect(el.style.display).toBe('')
 		expect(isOpen()).toBe(true)
 		expect(panel().dataset.open).toBe('true')
+	})
+
+	/**
+	 * Предка поповер находит на сборке, от места, где стоит. Переставленный
+	 * потребителем из скрытого контейнера в видимый, он собран заново под новым
+	 * предком, а панель — следом за ним, и открытая панель снова на виду.
+	 */
+	it('поповер, переставленный из скрытого контейнера в видимый, — открытая панель снова на виду', async () => {
+		const host = document.createElement('div')
+
+		host.innerHTML = `<div is="so-component-view" class="so-test-hidden">
+				<span is="so-popover" open>${TRIGGER}${INSIDE}</span>
+			</div>
+			<div is="so-component-view" class="so-test-shown"></div>`
+
+		const hidden = host.querySelector('.so-test-hidden')
+		const popover = host.querySelector('[is="so-popover"]')
+
+		if (!isView(hidden) || !isPopover(popover)) throw new Error('разметки нет')
+
+		hidden.rendered = false
+		document.body.appendChild(host)
+		await flush()
+
+		expect(panel().parentElement).toBe(document.body)
+		expect(isOpen()).toBe(false)
+
+		find('.so-test-shown').appendChild(popover)
+		await flush()
+
+		expect(panel().parentElement).toBe(document.body)
+		expect(isOpen()).toBe(true)
+		expect(document.querySelectorAll('.so-popover__panel')).toHaveLength(1)
 	})
 })
 
@@ -782,6 +829,78 @@ describe('вложенные слои', () => {
 		expect(inner.parentElement).toBe(document.body)
 		expect(outer.contains(inner)).toBe(false)
 		expect(Number(inner.dataset.layer)).toBeGreaterThan(Number(outer.dataset.layer))
+	})
+
+	/**
+	 * Панель вложенного поповера увезена в `body` сама, и скрытый корень
+	 * внешнего до неё не доходит. У Vue `v-if` корня внешнего снимает всё его
+	 * поддерево, а у Web Components вложенный прячет свою панель по признаку
+	 * поддерева внешнего. Снова отрисованный внешний — обе панели на виду, как
+	 * и были.
+	 */
+	it('rendered=false у внешнего прячет и открытую панель вложенного, rendered=true — обе снова на виду', async () => {
+		const el = await nested()
+
+		await open()
+		await open(find('.so-test-inner-trigger'))
+
+		const outer = panelOf(trigger())
+		const inner = panelOf(find('.so-test-inner-trigger'))
+
+		expect(isOpen(inner)).toBe(true)
+
+		el.rendered = false
+		await flush()
+
+		expect(isOpen(outer)).toBe(false)
+		expect(isOpen(inner)).toBe(false)
+		expect(inner.parentElement).toBe(document.body)
+
+		el.rendered = true
+		await flush()
+
+		expect(isOpen(outer)).toBe(true)
+		expect(isOpen(inner)).toBe(true)
+	})
+
+	/**
+	 * Окно в панели — тоже слой: его корень и подложка-спутник уехали в `body`
+	 * мимо панели поповера, и скрытый поповер прячет обоих тем же признаком
+	 * поддерева. Открытость окна при этом не меняется.
+	 */
+	it('rendered=false прячет и открытое окно в панели вместе с подложкой', async () => {
+		const el = await render({
+			content: `<button class="so-test-first">Первая</button>
+				<div is="so-dialog" class="so-test-dialog"><button class="so-test-in-dialog">В окне</button></div>`,
+		})
+		const dialog = document.querySelector('.so-test-dialog')
+
+		if (!isDialog(dialog)) throw new Error('<div is="so-dialog"> нет')
+
+		await open()
+
+		dialog.visible = true
+		await flush()
+		await nextFrame()
+
+		const shade = find('.so-dialog__backdrop')
+
+		expect(dialog.parentElement).toBe(document.body)
+		expect(isOpen(dialog)).toBe(true)
+		expect(isOpen(shade)).toBe(true)
+
+		el.rendered = false
+		await flush()
+
+		expect(isOpen(dialog)).toBe(false)
+		expect(isOpen(shade)).toBe(false)
+		expect(dialog.visible).toBe(true)
+
+		el.rendered = true
+		await flush()
+
+		expect(isOpen(dialog)).toBe(true)
+		expect(isOpen(shade)).toBe(true)
 	})
 })
 

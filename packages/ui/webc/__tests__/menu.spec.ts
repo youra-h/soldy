@@ -18,7 +18,10 @@
  * Popover. Слоты пунктов из данных — образцы (`<template slot="item-leading">`),
  * копию которых получает каждый пункт, а подменю из данных — ещё и образцы
  * своих пунктов, под теми же именами. Пункт с подменю — часть с тремя
- * контекстами: пункт меню над ним и меню своих пунктов.
+ * контекстами: пункт меню над ним и меню своих пунктов. Корень меню и части
+ * только прячется, поэтому `rendered=false` меню, подменю и пункта с панелью
+ * прячет и открытые панели в `body` под ними — свою и вложенных уровней —
+ * признаком своего поддерева: у Vue их снимает `v-if` корня.
  *
  * Отрисовка — микрозадачей после смены ядра, слушатели плагинов — кадром позже.
  */
@@ -505,7 +508,7 @@ describe('открытие', () => {
 	/**
 	 * Корень — элемент потребителя, и `rendered=false` его прячет, а не
 	 * снимает. Панель уехала в `body`, и скрытие корня до неё не доходит:
-	 * прячется она своим `rendered`, который ей пишет шаблон.
+	 * прячет её база Frame по признаку поддерева меню.
 	 */
 	it('rendered=false прячет корень и открытую панель в body, rendered=true — панель снова открыта', async () => {
 		const el = await render({ props: { items: ITEMS } })
@@ -1492,6 +1495,60 @@ describe('подменю', () => {
 		expect(shown(subPanel())).toBe(false)
 	})
 
+	/**
+	 * Корень подменю только прячется, а его панель увезена в `body`: она
+	 * прячется по признаку поддерева подменю, иначе открытая панель осталась бы
+	 * на виду без своей строки.
+	 */
+	it('rendered=false у подменю прячет его корень и открытую панель', async () => {
+		await render({ content: MARKUP() })
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+
+		share().rendered = false
+		await flush()
+
+		expect(share().style.display).toBe('none')
+		expect(shown(subPanel())).toBe(false)
+		expect(share().open).toBe(true)
+
+		share().rendered = true
+		await flush()
+
+		expect(shown(subPanel())).toBe(true)
+	})
+
+	/**
+	 * Панель подменю увезена в `body` отдельно от панели меню, и скрытый корень
+	 * меню до неё не доходит. У Vue `v-if` корня меню снимает всё поддерево — с
+	 * подменю и его панелью, — а у Web Components подменю прячет свою панель по
+	 * признаку поддерева меню над ним. Снова отрисованное меню — обе панели на
+	 * виду, как и были.
+	 */
+	it('rendered=false у меню прячет и открытую панель подменю, rendered=true — обе снова на виду', async () => {
+		const menu = await render({ content: MARKUP() })
+
+		await openOnShare()
+		await press(shareRow(), 'ArrowRight')
+
+		expect(shown(subPanel())).toBe(true)
+
+		menu.rendered = false
+		await flush()
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(subPanel())).toBe(false)
+		expect(subPanel().parentElement).toBe(document.body)
+		expect(share().open).toBe(true)
+
+		menu.rendered = true
+		await flush()
+
+		expect(shown(rootPanel())).toBe(true)
+		expect(shown(subPanel())).toBe(true)
+	})
+
 	it('размер меню — у панели подменю и у его пунктов', async () => {
 		await render({ attrs: 'size="lg"', content: MARKUP() })
 
@@ -2293,6 +2350,52 @@ describe('пункт с панелью', () => {
 		await flush()
 
 		expect(shown(duePanel())).toBe(false)
+	})
+
+	/** Корень пункта только прячется, а его панель увезена в `body`: её прячет признак поддерева пункта. */
+	it('rendered=false у пункта прячет его корень и открытую панель', async () => {
+		await render({ content: MARKUP() })
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+
+		due().rendered = false
+		await flush()
+
+		expect(due().style.display).toBe('none')
+		expect(shown(duePanel())).toBe(false)
+		expect(due().open).toBe(true)
+
+		due().rendered = true
+		await flush()
+
+		expect(shown(duePanel())).toBe(true)
+	})
+
+	/**
+	 * Панель пункта увезена в `body`, как панель подменю: скрытое меню прячет и
+	 * её — пункт стоит в поддереве меню, и у Vue его снял бы `v-if` корня меню.
+	 */
+	it('rendered=false у меню прячет и открытую панель пункта, rendered=true — обе снова на виду', async () => {
+		const menu = await render({ content: MARKUP() })
+
+		await openOnDue()
+		await press(dueRow(), 'ArrowRight')
+
+		expect(shown(duePanel())).toBe(true)
+
+		menu.rendered = false
+		await flush()
+
+		expect(shown(rootPanel())).toBe(false)
+		expect(shown(duePanel())).toBe(false)
+		expect(due().open).toBe(true)
+
+		menu.rendered = true
+		await flush()
+
+		expect(shown(rootPanel())).toBe(true)
+		expect(shown(duePanel())).toBe(true)
 	})
 
 	it('слоты строки: значок, свой текст и своя стрелка', async () => {

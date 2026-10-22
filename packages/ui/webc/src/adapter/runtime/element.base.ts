@@ -111,7 +111,9 @@
  *                          значение. Элемент потребителя компонент убрать не
  *                          может, поэтому `rendered=false` прячет, как
  *                          `visible=false`: содержимое остаётся на месте, а
- *                          `TElementPlugin` связан с элементом всё время
+ *                          `TElementPlugin` связан с элементом всё время. До
+ *                          слоёв поддерева, увезённых в цель, скрытие доводит
+ *                          признак поддерева (см. «Поддерево» ниже)
  * Что у компонентов разное, называет описание корня (`TRootSpec`): имя
  * стиль-выхода (`fractionStyle` у ProgressSpinner), прячет ли видимость корень
  * (у Skeleton нет — она убирает только заглушку), стоит ли корень по месту в
@@ -246,6 +248,29 @@
  * настоящие отключение и подключение, и признак прежнего переноса, который
  * ещё держится в панели или над ней, их не глушит.
  *
+ * Поддерево (`subtree.ts`). У Vue корень с `v-if` снимает всё поддерево — и
+ * панели вложенных слоёв, увезённые в `body`: подменю, поповер в панели
+ * поповера, окно в панели, — а `display: none` элемента до них не доходит.
+ * Поэтому то, что у Vue снимает корень, база отдаёт своему месту признаком
+ * «поддерева нет», а слой (`TRootSpec.teleport`) прячется и по признаку
+ * предка, как без цели, вместе со спутником. Снимают поддерево
+ * `rendered === false` у элемента, видимость которого прячет его самого
+ * вместе со светом, и выход `shownBy`, пока он не `true` (у Vue панель таба —
+ * `v-if="rendered && active"`). Не снимают: `visible` — у Vue это `v-show`, и
+ * до увезённых панелей он не доходит; `rendered` Skeleton (`hides: false`) —
+ * он убирает только заглушку; `rendered` менеджера тостов — он прячет регион,
+ * а приложение в элементе на виду. Признак прячет слой, а не снимает: классы и
+ * наборы на нём остаются, ядру потомков `rendered` не пишется, и их панели не
+ * закрываются. Свою панель компонент прячет тем же признаком: деталь Frame
+ * `rendered` от шаблона не получает, проброс был бы вторым путём к тому же
+ * факту. Свой признак элемент отдаёт месту при создании, один на всё время
+ * жизни, — раньше, чем соберётся кто-то под ним. Признак ближайшего элемента
+ * выше по месту — от якоря у увезённого корня — он берёт на каждую сборку и
+ * подписывается на него: перенос силами базы подписку не трогает, настоящее
+ * отключение её снимает, а переставленный элемент находит нового предка.
+ * Смена у предка доходит сразу, тем же вызовом, и вся цепочка вложенных слоёв
+ * прячется за одну отрисовку предка.
+ *
  * Обновления точечные. Подписка на связку (`subscribe`) сообщает, какой именно проп
  * изменился; имена копятся в `_dirty`, а на флаше применяются только те
  * привязки, которые за эти пропы отвечают. Сам флаш откладывается в
@@ -334,6 +359,7 @@ import {
 } from './root-attributes'
 import { isSlotMark } from './slot-mark'
 import { markSoldyElement } from './soldy-mark'
+import { TSubtree, nearestSubtree, provideSubtree } from './subtree'
 import { TTeleport, type TTeleportPlace } from './teleport'
 import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
 import { connecting, isConnecting, wait } from './waiting'
@@ -523,15 +549,17 @@ export type TSoldyElementProps<
  *   Ложится поверх выхода плагина раскладки;
  * - `hides` — прячут ли `visible` и `rendered` корень, по умолчанию да. У
  *   Skeleton нет: они убирают только заглушку, а содержимое в корне остаётся
- *   на виду;
+ *   на виду, — и слоёв в поддереве `rendered` тоже не прячет;
  * - `order` — корень встаёт по месту в коллекции: `order` фасада элемента
  *   уходит в стиль корня поверх стиль-выхода. У элементов Tabs и Accordion да
  *   — их ряд флексбокс, и элемент стоит по номеру в коллекции, а не по месту
  *   в разметке, как у Vue. У радио нет: радио одной группы стоят где угодно, и
  *   номер увёл бы радио по чужому флекс-ряду. Как у Angular;
  * - `shownBy` — выход состояния, без которого корень скрыт: пока он не
- *   `true`, корень прячется, как при `visible=false`. У панели таба это
- *   `active` фасада — панель видна, только пока активен её таб. Как у Angular;
+ *   `true`, корень прячется, как при `visible=false`, а слои в поддереве — как
+ *   при `rendered=false` (у Vue панель таба — `v-if="rendered && active"`). У
+ *   панели таба это `active` фасада — панель видна, только пока активен её
+ *   таб. Как у Angular;
  * - `teleport` — корень уезжает в слой: имена выходов состояния с селектором
  *   цели и с признаком «на месте» (`{ target: 'target', contained: 'contained' }`
  *   у Frame и Drawer, у Dialog и Toasts — только цель), их называет
@@ -540,7 +568,8 @@ export type TSoldyElementProps<
  *   первой раскладке связки и на смене этих выходов. Спутник корня, который
  *   строит шаблон (`TTemplateParts.companion`, подложка окна), стоит прямо
  *   перед ним и ездит с ним. Цели нет — корень на месте и скрыт вместе со
- *   спутником. Нет — корень стоит, где его написали, и спутника у него нет;
+ *   спутником. Скрыт он и тогда, когда поддерева нет у предка (см. шапку,
+ *   «Поддерево»). Нет — корень стоит, где его написали, и спутника у него нет;
  * - `sets` — какие наборы ядра база кладёт на корень, по умолчанию все три. У
  *   поля — `attrs` и `dataset`: его `aria` стоит на `<input>`, его кладёт
  *   шаблон (`ownerAttributes`), а `dataset` — на корне, где его читает тема,
@@ -574,7 +603,8 @@ export type TSoldyElementProps<
  *   приложением — и у Vue узла не имеет вовсе. Поэтому атрибуты разметки
  *   элемента, класс и стиль тоже, база при построении переносит на корень,
  *   кроме `is`, `slot`, входов пропов и своих атрибутов, а скрытие ложится на
- *   корень — приложение в элементе остаётся на виду. Нет — корень сам элемент.
+ *   корень — приложение в элементе остаётся на виду, и слои в нём тоже. Нет —
+ *   корень сам элемент.
  */
 export type TRootSpec = {
 	readonly style?: string
@@ -740,6 +770,13 @@ export function SoldyElement<
 	const hides = spec.root?.hides ?? true
 	/** Имена выходов слоя (`TRootSpec.teleport`); нет — корень в слой не уезжает. */
 	const layer = spec.root?.teleport
+	/**
+	 * Снимает ли `rendered=false` поддерево (см. шапку, «Поддерево»): видимость
+	 * прячет сам элемент вместе со светом. У Skeleton (`hides: false`) — нет, и у
+	 * обёртки корня в слое (`<so-toasts>`) — тоже: прячется её регион, а
+	 * приложение в элементе на виду.
+	 */
+	const unrenders = hides && !(wrapped && layer !== undefined)
 
 	class TSoldyElement extends Native implements ISoldyElement<TInstance, TFacade, TOwnerFacade> {
 		static get observedAttributes(): string[] {
@@ -809,13 +846,25 @@ export function SoldyElement<
 		private _companionDisplay: THiddenDisplay = undefined
 
 		/**
+		 * Признак своего поддерева (см. шапку, «Поддерево»): его видят элементы
+		 * ниже по месту. Один на всё время жизни — сборка его пересчитывает.
+		 */
+		private readonly _subtree = new TSubtree()
+		/** Признак поддерева предка по месту — на эту сборку; предка нет — `undefined`. */
+		private _above?: TSubtree
+		/** Отписка от признака предка — на эту сборку. */
+		private _unfollow?: () => void
+
+		/**
 		 * Параметры — нативного класса тега: конструктор миксина передаёт их ему
 		 * как есть. Элемент soldy — хозяин места панелей, чей якорь стоит в нём
-		 * (см. шапку): метку база ставит при создании.
+		 * (см. шапку): метку база ставит при создании. Тогда же — признак своего
+		 * поддерева месту: раньше, чем соберётся кто-то под элементом.
 		 */
 		constructor(...args: ConstructorParameters<TNativeElementClass>) {
 			super(...args)
 			markSoldyElement(this)
+			provideSubtree(this, this._subtree)
 
 			// Набор владельца на элементе с полем ждёт поля (см. шапку): деталь
 			// владелец строит раньше, чем она собирается
@@ -873,6 +922,7 @@ export function SoldyElement<
 			if (keepsBinding(this)) return
 
 			this._connected = false
+			this._unfollowAbove()
 			this._binding?.destroy()
 			this._binding = undefined
 			// Увезённый корень сняли или переставили: якорь уходит с места
@@ -948,6 +998,7 @@ export function SoldyElement<
 			}
 
 			this._assemble().bindElement(this._root)
+			this._followAbove()
 
 			// Панели места — к якорям: соберутся следом, с новым лифтом, а пункты
 			// из данных, которые строит первая отрисовка, встанут в очередь за
@@ -955,6 +1006,34 @@ export function SoldyElement<
 			if (again) TTeleport.recall(this)
 
 			this._flush(true)
+		}
+
+		/**
+		 * Признак поддерева предка — на эту сборку (см. шапку, «Поддерево»):
+		 * ближайший выше по месту, от якоря у увезённого корня, и подписка на его
+		 * смену. Свой признак первая отрисовка пересчитает уже от него.
+		 */
+		private _followAbove(): void {
+			const above = nearestSubtree(this)
+
+			this._above = above
+			this._unfollow = above?.subscribe(this._onAbove)
+		}
+
+		/** Настоящее отключение: признак предка этой сборки больше не нужен. */
+		private _unfollowAbove(): void {
+			this._unfollow?.()
+			this._unfollow = undefined
+			this._above = undefined
+		}
+
+		/**
+		 * Признак предка сменился — скрытие и свой признак пересчитываются сразу,
+		 * тем же вызовом: так смена доходит до всей цепочки слоёв за одну
+		 * отрисовку предка.
+		 */
+		private readonly _onAbove = (): void => {
+			this._hide(this.state)
 		}
 
 		/**
@@ -1411,37 +1490,57 @@ export function SoldyElement<
 
 			if (placing) this._placed = teleport.place(placeOf(snapshot, layer))
 
-			// Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка,
-			// ни потребитель. Прячут корень `rendered` и `visible`, если видимость
-			// его прячет, выход, без которого корня нет (`shownBy`), и слой без
-			// цели: корень на месте, а места у панели нет. Прячется внешний узел
-			// компонента: элемент, и у окна таблицы тоже — спрятано окно, спрятан и
-			// корень в нём, — а у корня в слое — сам корень. Спутник — вместе с ним
+			// Скрытие и свой признак поддерева — до привязок шаблона: элементы,
+			// которые они вставят, соберутся уже под новым признаком
 			if (
 				changed('rendered') ||
 				changed('visible') ||
 				placing ||
 				(shownBy !== undefined && changed(shownBy))
 			) {
-				const unseen =
-					hides && (snapshot['rendered'] === false || snapshot['visible'] === false)
-				const absent = shownBy !== undefined && snapshot[shownBy] !== true
-				const hidden = unseen || absent || !this._placed
-
-				this._hiddenDisplay = applyHidden(this._outer, hidden, this._hiddenDisplay)
-
-				if (this._companion) {
-					this._companionDisplay = applyHidden(
-						this._companion,
-						hidden,
-						this._companionDisplay,
-					)
-				}
+				this._hide(snapshot)
 			}
 
 			for (const binding of spec.template.bindings) {
 				if (full || binding.props.some(changed)) binding.apply(this._view)
 			}
+		}
+
+		/**
+		 * Скрытие — поверх стиля: `display: none` не перекрывает ни раскладка, ни
+		 * потребитель. Прячут корень `rendered` и `visible`, если видимость его
+		 * прячет, выход, без которого корня нет (`shownBy`), и слой без цели:
+		 * корень на месте, а места у панели нет. Слой прячется и без поддерева у
+		 * предка: корень увезён из-под предка, и `display: none` предка до него не
+		 * доходит (см. шапку, «Поддерево»). Прячется внешний узел компонента:
+		 * элемент, и у окна таблицы тоже — спрятано окно, спрятан и корень в нём,
+		 * — а у корня в слое — сам корень. Спутник — вместе с ним.
+		 *
+		 * Тут же — признак своего поддерева: оно есть у предка, и элемент его не
+		 * снял — `rendered=false`, если оно снимает поддерево, или выходом
+		 * `shownBy`. `visible` поддерева не снимает. Сменившийся признак подписчики
+		 * получают сразу.
+		 */
+		private _hide(snapshot: TStateSnapshot): void {
+			/** Поддерево есть у предка; предка нет — есть. */
+			const above = this._above?.present ?? true
+			const unseen =
+				hides && (snapshot['rendered'] === false || snapshot['visible'] === false)
+			const absent = shownBy !== undefined && snapshot[shownBy] !== true
+			const hidden = unseen || absent || !this._placed || (layer !== undefined && !above)
+
+			this._hiddenDisplay = applyHidden(this._outer, hidden, this._hiddenDisplay)
+
+			if (this._companion) {
+				this._companionDisplay = applyHidden(
+					this._companion,
+					hidden,
+					this._companionDisplay,
+				)
+			}
+
+			this._subtree.present =
+				above && !(unrenders && snapshot['rendered'] === false) && !absent
 		}
 
 		/**

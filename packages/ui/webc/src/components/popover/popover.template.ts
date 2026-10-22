@@ -25,16 +25,17 @@
  *   в 8 px от него, сторону у края окна выбирает `TAnchorPlugin` поверх
  *   `placement`; неизменное шаблон пишет панели при построении, как оно
  *   стоит в разметке Vue. Открытость — `visible` панели, а не `rendered`:
- *   закрытие её прячет. А `rendered` панели — `rendered` поповера: корень
- *   при `rendered=false` база прячет, а до панели, увезённой в цель, это
- *   скрытие не доходит, и открытая панель осталась бы на странице; у
- *   остальных адаптеров `rendered=false` снимает её вместе с корнем. На
- *   панель — `aria` поповера (`role="dialog"`, `id`, на который ссылается
- *   `aria-controls` триггера, имя от `TAriaPlugin`), `panelDataset`
- *   (`data-swiping`, у панели в контейнере — `data-edge`) и пометка
- *   владельцем `dismiss_ownerAttribute` — одним слоем владельца, в порядке
- *   Vue. Открытость для темы (`data-open`) Frame пишет сам: это видимость
- *   его слоя, а `data-open` корня до телепортированной панели не доходит.
+ *   закрытие её прячет. `rendered` панели шаблон не пишет: до панели,
+ *   увезённой в цель, скрытие корня не доходит, и прячет её база Frame по
+ *   признаку поддерева поповера (`SoldyElement`, «Поддерево») — так же, как
+ *   слои в его содержимом; у остальных адаптеров `rendered=false` снимает её
+ *   вместе с корнем. На панель — `aria` поповера (`role="dialog"`, `id`, на
+ *   который ссылается `aria-controls` триггера, имя от `TAriaPlugin`),
+ *   `panelDataset` (`data-swiping`, у панели в контейнере — `data-edge`) и
+ *   пометка владельцем `dismiss_ownerAttribute` — одним слоем владельца, в
+ *   порядке Vue. Открытость для темы (`data-open`) Frame пишет сам: это
+ *   видимость его слоя, а `data-open` корня до телепортированной панели не
+ *   доходит.
  * - В панели по порядку — свет детали (`lend`): полоса жеста
  *   `div.so-popover__handle` под `aria-hidden`, пока жест включён
  *   (`handleRendered`), — первой; обёртка содержимого
@@ -160,16 +161,14 @@ export const popoverTemplate: ITemplate<IPopover, unknown, TPopoverOutputs> = {
 
 	bindings: [
 		// Пропсы панели — только сменившиеся
-		bind(['rendered', 'open', 'contained', 'placement'], ({ root, state }) => {
+		bind(['open', 'contained', 'placement'], ({ root, state }) => {
 			const panel = parts.get(root)?.panel
 
 			if (!panel) return
 
-			const rendered = state.rendered !== false
 			const visible = state.open === true
 			const contained = state.contained === true
 
-			if (panel.rendered !== rendered) panel.rendered = rendered
 			if (panel.visible !== visible) panel.visible = visible
 			if (panel.contained !== contained) panel.contained = contained
 			if (panel.anchor_placement !== state.placement) {

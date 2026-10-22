@@ -30,9 +30,10 @@
  *   владельца. Классы — свой набор (`panelClasses`): блок панели меню с
  *   размером подменю и вариантом его панели. Открытость — `visible` панели, а
  *   не `rendered`: пункты входят в коллекцию подменю при монтировании, и
- *   закрытие не должно её вычищать. А `rendered` панели — `rendered` пункта:
- *   корень Web Components только прячется, а до увезённой панели это скрытие
- *   не доходит.
+ *   закрытие не должно её вычищать. `rendered` панели шаблон не пишет: корень
+ *   Web Components только прячется, до увезённой панели это скрытие не
+ *   доходит, и прячет её база Frame по признаку поддерева пункта
+ *   (`SoldyElement`, «Поддерево») — и у скрытого меню над ним тоже.
  * - В панели — список `div.so-menu__list`: то, что прокручивается. В нём —
  *   слот `default`, пункты подменю разметкой, а без них — свои пункты из
  *   данных по секциям (`items.ts`). Пункты списка — в коллекции подменю: лифт
@@ -141,16 +142,11 @@ export const menuSubmenuTemplate: ITemplate<
 		bind('size', ({ root, state }) => iconSize(parts.get(root)?.arrow ?? null, state.size)),
 
 		// Пропсы панели — только сменившиеся
-		bind(['rendered', 'open'], ({ root, state }) => {
+		bind('open', ({ root, state }) => {
 			const panel = parts.get(root)?.panel
-
-			if (!panel) return
-
-			const rendered = state.rendered !== false
 			const visible = state.open === true
 
-			if (panel.rendered !== rendered) panel.rendered = rendered
-			if (panel.visible !== visible) panel.visible = visible
+			if (panel && panel.visible !== visible) panel.visible = visible
 		}),
 
 		bind('panelClasses', ({ root, state }) => {

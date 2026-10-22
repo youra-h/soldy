@@ -113,6 +113,29 @@ describe('Skeleton · заглушка и содержимое', () => {
 		expect(el.style.display).toBe('')
 	})
 
+	/**
+	 * `rendered` Skeleton снимает одну заглушку, а не поддерево: у Vue его
+	 * корень `v-if` не носит, и слои в содержимом остаются на виду.
+	 */
+	it('rendered=false: открытая панель поповера в содержимом остаётся на виду', async () => {
+		const el = mount(`<div is="so-skeleton">
+			<span is="so-popover" open><button class="so-test-inside">В поповере</button></span>
+		</div>`)
+		const panel = document.querySelector('.so-popover__panel')
+
+		if (!(panel instanceof HTMLElement)) throw new Error('панели поповера нет')
+
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
+
+		el.rendered = false
+		await flush()
+
+		expect(placeholder(el)).toBeNull()
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
+	})
+
 	it('заглушка уходит и возвращается со сменой visible, содержимое — тот же узел', async () => {
 		const el = mount('<div is="so-skeleton"><b>Данные</b></div>')
 		const content = el.querySelector('b')

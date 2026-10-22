@@ -42,11 +42,12 @@
  *   tabindex="-1">` с классом `so-date-picker__panel`: телепорт, слой,
  *   привязка к корню (`fixed`, в 4 px от него) — неизменное шаблон пишет при
  *   построении. Открытость — `visible` панели, а не `rendered`: закрытая
- *   панель прячется, а не размонтируется; `rendered` — от DatePicker, как у
- *   Select (до увезённой панели скрытие корня не доходит). Наборы панели —
- *   `panelAria` (`role="dialog"`, `aria-modal`, имя, `id`), `panelDataset`
- *   (`data-swiping`) и пометка владельцем `dismiss_ownerAttribute` — одним
- *   слоем владельца.
+ *   панель прячется, а не размонтируется. `rendered` панели шаблон не пишет:
+ *   до увезённой панели скрытие корня не доходит, и прячет её база Frame по
+ *   признаку поддерева DatePicker (`SoldyElement`, «Поддерево»), как у Select.
+ *   Наборы панели — `panelAria` (`role="dialog"`, `aria-modal`, имя, `id`),
+ *   `panelDataset` (`data-swiping`) и пометка владельцем
+ *   `dismiss_ownerAttribute` — одним слоем владельца.
  * - В панели — свет детали: полоса жеста `div.so-date-picker__handle` под
  *   `aria-hidden`, пока жест включён (`handleRendered`), — первой; обёртка
  *   содержимого `div.so-date-picker__content` — она прокручивается, а не
@@ -563,16 +564,11 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		}),
 
 		// Пропсы панели — только сменившиеся
-		bind(['rendered', 'open'], ({ root, state }) => {
+		bind('open', ({ root, state }) => {
 			const panel = parts.get(root)?.panel
-
-			if (!panel) return
-
-			const rendered = state.rendered !== false
 			const visible = state.open === true
 
-			if (panel.rendered !== rendered) panel.rendered = rendered
-			if (panel.visible !== visible) panel.visible = visible
+			if (panel && panel.visible !== visible) panel.visible = visible
 		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue

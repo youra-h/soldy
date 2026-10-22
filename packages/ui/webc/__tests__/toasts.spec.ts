@@ -196,6 +196,29 @@ describe('менеджер и API', () => {
 		expect(manager.style.display).toBe('')
 		expect(region().style.display).toBe('none')
 	})
+
+	/**
+	 * `rendered` менеджера снимает регион, а не приложение: у Vue `v-if` стоит
+	 * на регионе, а слот с приложением — вне его. Поэтому и слои приложения —
+	 * открытая панель поповера в `body` — остаются на виду.
+	 */
+	it('rendered=false прячет регион, а открытая панель поповера в приложении остаётся на виду', async () => {
+		const manager = await render({
+			content:
+				'<span is="so-popover" open><button class="so-test-inside">В поповере</button></span>',
+		})
+		const panel = find('.so-popover__panel')
+
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
+
+		manager.rendered = false
+		await flush()
+
+		expect(region().style.display).toBe('none')
+		expect(panel.parentElement).toBe(document.body)
+		expect(panel.style.display).toBe('')
+	})
 })
 
 /**
