@@ -13,7 +13,8 @@
  * Своё у Angular — разметка: корень — элемент компонента, своя остановка
  * перед главной частью — шаблон слота (`leading`) или проекция (`header`). И
  * такт: смену состояния шаблон применяет на проверке изменений, и до неё
- * разметка отстаёт от модели.
+ * разметка отстаёт от модели. Узел фокуса тест ищет в документе: у пунктов
+ * меню он в панели, увезённой в `body`, мимо разметки хоста.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -25,6 +26,11 @@ import {
 	TInput,
 	TListBox,
 	TListBoxItem,
+	TMenuCheckboxItem,
+	TMenuItem,
+	TMenuPopoverItem,
+	TMenuRadioItem,
+	TMenuSubmenu,
 	TNumberInput,
 	TPagination,
 	TRadioGroup,
@@ -39,6 +45,7 @@ import {
 	createEngineTabs,
 } from '@soldy-ui/core'
 import {
+	AttributesDirective,
 	SlotDirective,
 	TAccordionComponent,
 	TAccordionItemComponent,
@@ -46,6 +53,13 @@ import {
 	TInputComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TMenuCheckboxItemComponent,
+	TMenuComponent,
+	TMenuItemComponent,
+	TMenuPopoverItemComponent,
+	TMenuRadioGroupComponent,
+	TMenuRadioItemComponent,
+	TMenuSubmenuComponent,
 	TNumberInputComponent,
 	TPaginationComponent,
 	TRadioGroupComponent,
@@ -287,6 +301,91 @@ class ListBoxItemHost {
 	readonly ctrl = new TListBoxItem({ value: 'b', text: 'B' })
 }
 
+/**
+ * Меню, открытое с первой отрисовки, с пунктом `a` перед пунктом теста: фокус
+ * встаёт на строку своего пункта, а не на первую строку меню.
+ */
+const MENU_TRIGGER = `<ng-template slot="trigger" let-triggerAria="triggerAria">
+	<button [so-attributes]="triggerAria">M</button>
+</ng-template>`
+
+/** Что импортирует хост пункта меню, кроме самого пункта. */
+const MENU = [TMenuComponent, TMenuItemComponent, SlotDirective, AttributesDirective]
+
+@Component({
+	selector: 'probe-menu-item-focus',
+	standalone: true,
+	imports: MENU,
+	template: `<span so-menu open>
+		${MENU_TRIGGER}
+		<div so-menu-item value="a" text="A"></div>
+		<div so-menu-item class="target" [ctrl]="ctrl"></div>
+	</span>`,
+})
+class MenuItemHost {
+	readonly ctrl = new TMenuItem({ value: 'b', text: 'B' })
+}
+
+@Component({
+	selector: 'probe-menu-checkbox-item-focus',
+	standalone: true,
+	imports: [...MENU, TMenuCheckboxItemComponent],
+	template: `<span so-menu open>
+		${MENU_TRIGGER}
+		<div so-menu-item value="a" text="A"></div>
+		<div so-menu-checkbox-item class="target" [ctrl]="ctrl"></div>
+	</span>`,
+})
+class MenuCheckboxItemHost {
+	readonly ctrl = new TMenuCheckboxItem({ value: 'b', text: 'B' })
+}
+
+@Component({
+	selector: 'probe-menu-radio-item-focus',
+	standalone: true,
+	imports: [...MENU, TMenuRadioGroupComponent, TMenuRadioItemComponent],
+	template: `<span so-menu open>
+		${MENU_TRIGGER}
+		<div so-menu-item value="a" text="A"></div>
+		<div so-menu-radio-group label="Вид">
+			<div so-menu-radio-item class="target" [ctrl]="ctrl"></div>
+		</div>
+	</span>`,
+})
+class MenuRadioItemHost {
+	readonly ctrl = new TMenuRadioItem({ value: 'b', text: 'B' })
+}
+
+@Component({
+	selector: 'probe-menu-submenu-focus',
+	standalone: true,
+	imports: [...MENU, TMenuSubmenuComponent],
+	template: `<span so-menu open>
+		${MENU_TRIGGER}
+		<div so-menu-item value="a" text="A"></div>
+		<div so-menu-submenu class="target" [ctrl]="ctrl">
+			<div so-menu-item value="x" text="X"></div>
+		</div>
+	</span>`,
+})
+class MenuSubmenuHost {
+	readonly ctrl = new TMenuSubmenu({ value: 'b', text: 'B' })
+}
+
+@Component({
+	selector: 'probe-menu-popover-item-focus',
+	standalone: true,
+	imports: [...MENU, TMenuPopoverItemComponent],
+	template: `<span so-menu open>
+		${MENU_TRIGGER}
+		<div so-menu-item value="a" text="A"></div>
+		<div so-menu-popover-item class="target" [ctrl]="ctrl"><p>Панель</p></div>
+	</span>`,
+})
+class MenuPopoverItemHost {
+	readonly ctrl = new TMenuPopoverItem({ value: 'b', text: 'B' })
+}
+
 /** Оценка: фокус держит поле ручки, а корень — ряд звёзд вокруг. */
 @Component({
 	selector: 'probe-rating-focus',
@@ -398,6 +497,14 @@ const CASES: Record<string, TCase> = {
 	'Tabs.Item': { host: TabsItemHost, target: '.target [role="tab"]' },
 	'Accordion.Item': { host: AccordionItemHost, target: '.target .so-accordion-item__header' },
 	'ListBox.Item': { host: ListBoxItemHost, target: '.target [role="option"]' },
+	'Menu.Item': { host: MenuItemHost, target: '.target [role="menuitem"]' },
+	'Menu.CheckboxItem': {
+		host: MenuCheckboxItemHost,
+		target: '.target [role="menuitemcheckbox"]',
+	},
+	'Menu.RadioItem': { host: MenuRadioItemHost, target: '.target [role="menuitemradio"]' },
+	'Menu.Submenu': { host: MenuSubmenuHost, target: '.target [role="menuitem"]' },
+	'Menu.PopoverItem': { host: MenuPopoverItemHost, target: '.target [role="menuitem"]' },
 }
 
 describe.each(Object.entries(CASES))('%s', (_name, { host, target, before }) => {
@@ -414,7 +521,7 @@ describe.each(Object.entries(CASES))('%s', (_name, { host, target, before }) => 
 		ctrl.focused = true
 		fixture.detectChanges()
 
-		expect(document.activeElement).toBe(findIn(fixture, target, HTMLElement))
+		expect(document.activeElement).toBe(find(document, target, HTMLElement))
 		expect(ctrl.focused).toBe(true)
 
 		ctrl.focused = false

@@ -1699,7 +1699,7 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
 
 ## Layer 8: Angular Adapter (`packages/ui/angular/src`)
 
-### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
+### ✅ IMPLEMENTED (Component / ComponentView / Stylable / Control / Interactive / ValueControl / InputControl / Textable / Button / Icon / Label / Field / Frame / Popover / Tooltip / Menu / Dialog / Drawer / Toasts / ProgressSpinner / ProgressLinear / Skeleton / Input / NumberInput / Textarea / CheckBox / Switch / Slider / Rating / RadioGroup / ListBox / Tabs / Accordion / Pagination / Scroller / Table / Virtual / DragAndDrop)
 
 **Структура** зеркалит Vue/React: `adapter/{common,runtime,locale,elevator}` + `components/*`.
 
@@ -1721,7 +1721,8 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   рисунок иконки по роли на `<svg>` Icon: `viewBox` и содержимое из реестра.
 - `adapter/runtime/` — `useAdapter(adapter)` → `TBinding` поверх связки
   `adapter.connect(AngularProfile)` (у фасада коллекции — `useCollectionAdapter`,
-  без `ctrl` и узла, а две связки компонента базе сводит `joinBindings`):
+  без `ctrl` и узла, а две связки компонента базе сводит `joinBindings`, у
+  пункта с подменю — три: третий параметр — фасад владельца, своей коллекции):
   `state` (сигнал), `syncInputs`
   (`inputs.delta` связки: `ngOnChanges` отдаёт только изменившиеся входы, а
   заданные при монтировании `ngOnInit` отдаёт в сборку контекста), `syncEvents`
@@ -1761,7 +1762,9 @@ There is no `adapter/static/`: React takes prop names from the descriptor types,
   во вложенных папках частей (`tabs/item` — `tabs-item`), а манифест
   коллекции называет ещё и дескриптор фасада: поверхность одна на оба
   контекста. Базе поверхность называет фасад и выходы плагинов дескриптора
-  (`DescriptorPluginOutputs`) — их шаблон читает из `state()`.
+  (`DescriptorPluginOutputs`) — их шаблон читает из `state()`. Манифест пункта
+  с подменю называет ещё и фасад владельца (`ownerFacade`): поверхность одна на
+  три контекста, а базе он — четвёртый параметр.
 
 ### Почему Angular нужен кодогенератор
 
@@ -1863,10 +1866,12 @@ Zone.js и молча ломалось бы под `provideZonelessChangeDetecti
 `span[so-progress-spinner], [so-progress-spinner]` у ProgressSpinner,
 `[so-skeleton]` у Skeleton, `div[so-frame], [so-frame]` у Frame,
 `span[so-popover], [so-popover]` у Popover, `span[so-tooltip], [so-tooltip]` у
-Tooltip, `div[so-dialog], [so-dialog]` у Dialog, `div[so-drawer], [so-drawer]`
-у Drawer, `label[so-label], [so-label]` у Label, у владельцев коллекций и панели таба —
-`div[so-accordion]`, `div[so-radio-group]`, `div[so-tabs-content]` (и `[…]`
-без тега). Потребитель
+Tooltip, `span[so-menu], [so-menu]` у Menu, `div[so-dialog], [so-dialog]` у
+Dialog, `div[so-drawer], [so-drawer]` у Drawer, `label[so-label], [so-label]` у
+Label, у владельцев коллекций и панели таба —
+`div[so-accordion]`, `div[so-radio-group]`, `div[so-tabs-content]`, у групп и
+разделителя меню — `div[so-menu-group]`, `div[so-menu-radio-group]`,
+`div[so-menu-separator]` (и `[…]` без тега). Потребитель
 пишет `<button so-button>`, `<a so-button href>`, `<div so-button>`, и этот
 элемент — корень: какой тег написан, так он себя и ведёт, а класс, стиль,
 атрибуты и события на нём работают без проброса. Раньше `<so-button>` был
@@ -1874,7 +1879,8 @@ Tooltip, `div[so-dialog], [so-dialog]` у Dialog, `div[so-drawer], [so-drawer]`
 Первым стоит селектор с тегом умолчания ядра: по первому селектору Angular
 выбирает тег хоста, когда создаёт компонент сам (`createComponent`), а для
 `[…]` берёт `div`. У поля (`so-input`, `so-check-box`, `so-switch`), элемента
-коллекции (`so-list-box-item`, `so-tabs-item`, `so-accordion-item`) и у
+коллекции (`so-list-box-item`, `so-tabs-item`, `so-accordion-item`, пункты
+меню — `so-menu-item` и соседи) и у
 ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный: атрибуты
 потребителя у них делятся между корнем и вложенным `<input>`, строкой или
 узлом списка с ролью (`listbox`, `tablist`), и корень — сам элемент
@@ -2055,15 +2061,19 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 она отдала `TElementPlugin`, — `null` на сервере и до первой отрисовки, после
 неё — узел, как `rootElement` у Vue, Solid и Svelte и `useRootElement` у React.
 Пишет его тот же эффект после отрисовки. Свой хост компонент взять не может
-(`inject` в компонентах запрещён), а якорь панели — корень: Popover и Tooltip
-отдают его своему Frame (`[anchor_anchor]="rootElement()"`). Корень у них —
-элемент потребителя (`<span so-popover>`), обёртка триггера; триггер — шаблон
+(`inject` в компонентах запрещён), а якорь панели — корень: Popover, Tooltip и
+Menu отдают его своему Frame (`[anchor_anchor]="rootElement()"`), пункты меню
+со своей панелью — тоже. Корень у них — элемент потребителя
+(`<span so-popover>`, `<span so-menu>`), обёртка триггера; триггер — шаблон
 слота (`<ng-template slot="trigger">`), и связку с панелью из его контекста
-(`triggerAria`, у Popover ещё `triggerDataset`) потребитель кладёт на свой
-элемент директивой `[so-attributes]`. Новый контекст вывод шаблона отдаёт тому
-же представлению, и триггер — тот же узел при каждом открытии. `rendered`
+(`triggerAria`, у Popover и Menu ещё `triggerDataset`) потребитель кладёт на
+свой элемент директивой `[so-attributes]`. Новый контекст вывод шаблона отдаёт
+тому же представлению, и триггер — тот же узел при каждом открытии. `rendered`
 панели они передают сами: корень Angular не снимается, а прячется, а панель
-увезена в `body`.
+увезена в `body`. Классы панели меню (`panelClasses`) — привязка `[class]` на
+Frame: Angular ставит классы привязки по одному, а база Frame снимает только
+свои. Пункт с подменю — часть с тремя контекстами (свой, фасад элемента и
+фасад владельца), и связку базе из трёх сводит `joinBindings`.
 
 Иконку из пакета иконок на `<svg>` Icon кладёт директива адаптера
 `RoleIconDirective` — `<svg so-icon so-role-icon="close">`: `viewBox` из

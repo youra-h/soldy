@@ -29,21 +29,31 @@
  * Своего узла у окна и у обёртки перестановки нет ни на сервере, ни после
  * гидратации: директиву на `<ng-container>` сервер печатает комментарием.
  *
+ * Меню — коллекция в слое: пункты разметки и из данных входят в его коллекцию
+ * и на сервере, а панель, как у Frame, есть только в браузере. Сервер отдаёт
+ * корень с триггером и связкой и пустую скрытую панель в корне, а после
+ * гидратации панель уезжает в `body` с пунктами, и стрелки ходят по ним.
+ *
  * Разметка сервера проверяется разобранной документом: порядок атрибутов у
  * сервера свой (`server.ts`).
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { Component, type ApplicationRef, type Type } from '@angular/core'
-import type { TTableColumnSource } from '@soldy-ui/core'
+import { createEngineMenu, type TTableColumnSource } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import {
+	AttributesDirective,
 	LocaleProviderDirective,
+	SlotDirective,
 	TAccordionComponent,
 	TAccordionItemComponent,
+	TButtonComponent,
 	TDragAndDropComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
+	TMenuComponent,
+	TMenuItemComponent,
 	TPaginationComponent,
 	TRadioGroupComponent,
 	TRadioGroupItemComponent,
@@ -879,5 +889,200 @@ describe('DragAndDrop · серверный рендер и гидратация
 		expect(rootChildren(document)).toEqual(DRAG_AND_DROP_CHILDREN)
 		expect(error).not.toHaveBeenCalled()
 		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * Меню разметкой и меню из данных — триггер в шаблоне слота, связку с панелью
+ * он кладёт на себя директивой набора. Движки — снаружи: по ним видно, что
+ * пункты в коллекции.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [
+		TMenuComponent,
+		TMenuItemComponent,
+		TButtonComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<section class="place">
+		<span so-menu class="markup" [engine]="markup">
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Разметка"
+					class="markup-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+			<div so-menu-item value="edit" text="Изменить"></div>
+			<div so-menu-item value="remove" text="Удалить"></div>
+		</span>
+		<span so-menu class="data" [engine]="data" [items]="items">
+			<ng-template
+				slot="trigger"
+				let-triggerAria="triggerAria"
+				let-triggerDataset="triggerDataset"
+			>
+				<button
+					so-button
+					text="Данные"
+					class="data-trigger"
+					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+				></button>
+			</ng-template>
+		</span>
+	</section>`,
+})
+class MenusPage {
+	readonly markup = createEngineMenu()
+	readonly data = createEngineMenu()
+	readonly items = [
+		{ value: 'a', text: 'Первый' },
+		{ value: 'b', text: 'Второй' },
+	]
+}
+
+/** Меню страницы: корень, его триггер и тексты строк пунктов в панели. */
+const MENUS = [
+	['.markup', '.markup-trigger', ['Изменить', 'Удалить']],
+	['.data', '.data-trigger', ['Первый', 'Второй']],
+] as const
+
+/** Панель, на которую ведёт ссылка триггера (`aria-controls`). */
+function menuPanel(page: Document, trigger: Element): HTMLElement {
+	const panel = page.getElementById(trigger.getAttribute('aria-controls') ?? '')
+
+	if (!(panel instanceof HTMLElement)) throw new Error('aria-controls не ведёт на панель')
+
+	return panel
+}
+
+/** Триггер меню по селектору; нет его — тест падает здесь. */
+function menuTrigger(page: ParentNode, selector: string): HTMLButtonElement {
+	const trigger = page.querySelector(selector)
+
+	if (!(trigger instanceof HTMLButtonElement)) throw new Error(`${selector}: триггера нет`)
+
+	return trigger
+}
+
+/**
+ * Пункты входят в коллекцию в своём `ngOnInit`, и на сервере тоже, а панель —
+ * слой, и слой есть только в браузере, как у Frame: на сервере от панели
+ * остаётся элемент Frame в корне — пустой и скрытый, без пунктов. Связка у него
+ * от меню — роль и `id`, — и ссылка триггера ведёт на него уже в разметке
+ * сервера.
+ */
+describe('Menu · серверный рендер', () => {
+	it.each(MENUS)(
+		'%s — корень с триггером и связкой, панель в корне пустая и скрытая',
+		async (rootSelector, triggerSelector) => {
+			const page = await serverPage(MenusPage)
+			const root = page.querySelector(rootSelector)
+			const trigger = menuTrigger(page, triggerSelector)
+			const panel = menuPanel(page, trigger)
+
+			expect(root?.classList).toContain('so-menu')
+			expect(root?.contains(trigger)).toBe(true)
+			expect(trigger.getAttribute('aria-haspopup')).toBe('menu')
+			expect(trigger.getAttribute('aria-expanded')).toBe('false')
+			expect(panel.parentElement).toBe(root)
+			expect(panel.getAttribute('role')).toBe('menu')
+			expect(panel.getAttribute('aria-labelledby')).toBe(trigger.id)
+			expect(panel.style.display).toBe('none')
+			expect(panel.children).toHaveLength(0)
+			expect(panel.textContent).toBe('')
+		},
+	)
+})
+
+/**
+ * После гидратации триггер — узел сервера, а панель — элемент Frame, который
+ * напечатал сервер: он уезжает в `body` и получает пункты — разметки и из
+ * данных, в коллекции меню, — а стрелки ходят по ним. Номера сборки у сервера
+ * и браузера одни, поэтому и `id` связки — те же.
+ */
+describe('Menu · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('тот же триггер и та же панель — в body, с пунктами в коллекции; id сходятся, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(MenusPage))
+
+		const triggers = MENUS.map(([, selector]) => menuTrigger(document, selector))
+		const links = triggers.map((trigger) => trigger.getAttribute('aria-controls'))
+		const panels = triggers.map((trigger) => menuPanel(document, trigger))
+		const app = await hydrate(MenusPage)
+
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		const page = app.components[0].instance
+
+		if (!(page instanceof MenusPage)) throw new Error('страницы меню нет')
+
+		expect(MENUS.map(([, selector]) => menuTrigger(document, selector))).toEqual(triggers)
+		expect(triggers.map((trigger) => trigger.getAttribute('aria-controls'))).toEqual(links)
+		expect(triggers.map((trigger) => menuPanel(document, trigger))).toEqual(panels)
+		expect(panels.map((panel) => panel.parentElement)).toEqual([document.body, document.body])
+		expect(
+			panels.map((panel) =>
+				all(panel, '[role="menuitem"]').map((row) => row.textContent?.trim()),
+			),
+		).toEqual(MENUS.map(([, , texts]) => texts))
+		expect(
+			[page.markup, page.data].map((engine) =>
+				engine.extensions.batch.items.map((item) => item.value),
+			),
+		).toEqual([
+			['edit', 'remove'],
+			['a', 'b'],
+		])
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	it('↓ на триггере открывает меню на первом пункте', async () => {
+		loadPage(await renderOnServer(MenusPage))
+
+		const app = await hydrate(MenusPage)
+
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		for (const [, selector, texts] of MENUS) {
+			const trigger = menuTrigger(document, selector)
+
+			trigger.focus()
+			trigger.dispatchEvent(
+				new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+			)
+			await app.whenStable()
+			await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+			const panel = menuPanel(document, trigger)
+			const [first] = all(panel, '[role="menuitem"]')
+
+			expect(panel.style.display).toBe('')
+			expect(first?.textContent?.trim()).toBe(texts[0])
+			expect(document.activeElement).toBe(first)
+
+			first?.dispatchEvent(
+				new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+			)
+			await app.whenStable()
+		}
 	})
 })

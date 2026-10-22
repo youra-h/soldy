@@ -236,6 +236,11 @@ function drawPreview(
 
 	if ('template' in preview) return drawTemplate(outlet, preview.template, props, listeners)
 
+	// Разметка превью — от пропсов постановки, как содержимое превью описанием
+	if ('templateFor' in preview) {
+		return drawTemplate(outlet, preview.templateFor(props), props, listeners)
+	}
+
 	const built: ComponentRef<unknown>[] = []
 	let unlisten = (): void => {}
 	let reframe: (next: TProps) => void = () => {}

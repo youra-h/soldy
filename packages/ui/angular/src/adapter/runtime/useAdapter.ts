@@ -23,7 +23,10 @@
  * фасад связывает `useCollectionAdapter`: всё то же, кроме `ctrl` и привязки
  * узла, они принадлежат компоненту. Базе компонента (`TComponentBase`) нужна
  * одна связка, поэтому две сводит `joinBindings`: состояние — одним видом,
- * входы, события и уничтожение — в обе, узел — только в свою.
+ * входы, события и уничтожение — в обе, узел — только в свою. У части, которая
+ * сразу и элемент коллекции над ней, и владелец своей, — пункта с подменю, —
+ * контекстов три: свой, фасад элемента и фасад владельца — своей коллекции, —
+ * и `joinBindings` сводит их так же, третьим параметром.
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
@@ -92,9 +95,12 @@ export type TOutputEmitter<
 /**
  * Состояние компонента, как его читает шаблон: свойства инстанса, выходы
  * плагинов дескриптора (`names_selectAll` у Table, `layout_styles`) и, у
- * коллекционного компонента, свойства фасада. Одноимённых у них нет: имена
- * пропсов фасада префиксуются (`tab_closable`), выходов плагинов — тоже
- * (`names_`, `layout_`).
+ * коллекционного компонента, свойства фасада, а у части, которая сразу и
+ * элемент коллекции над ней, и владелец своей (пункт с подменю), — ещё и
+ * свойства фасада владельца, своей коллекции (`TOwnerFacade`: `sections`,
+ * `submenus`). Одноимённых у них нет: имена пропсов фасада префиксуются
+ * (`tab_closable`), выходов плагинов — тоже (`names_`, `layout_`), а у фасада
+ * элемента пункта с подменю пропсов нет вовсе.
  *
  * Выходы — в том же виде, что у остальных адаптеров (`TAdapterState` из
  * setup): геттер плагина читается, как свойство инстанса. Без них в типе
@@ -105,7 +111,11 @@ export type TBindingState<
 	TInstance,
 	TFacade = unknown,
 	TOutputs = unknown,
-> = TInstanceState<TInstance> & TInstanceState<TFacade> & TInstanceState<TOutputs>
+	TOwnerFacade = unknown,
+> = TInstanceState<TInstance> &
+	TInstanceState<TFacade> &
+	TInstanceState<TOutputs> &
+	TInstanceState<TOwnerFacade>
 
 /** Поиск эмиттера выхода по имени: заведённый — эмиттер, иначе `undefined`. */
 export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
@@ -114,16 +124,28 @@ export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
  * Связка компонента для базы (`TComponentBase`). `TFacade` — фасад коллекции у
  * компонента с двумя контекстами (`joinBindings`); у остальных его нет.
  * `TOutputs` — выходы плагинов дескриптора компонента (`DescriptorPluginOutputs`):
- * их тоже читает шаблон.
+ * их тоже читает шаблон. `TOwnerFacade` — фасад владельца, своей коллекции, у
+ * части с тремя контекстами (пункт с подменю): тогда `TFacade` — её фасад
+ * элемента в коллекции над ней.
  */
-export type TBinding<TInstance = any, TFacade = unknown, TOutputs = unknown> = {
+export type TBinding<
+	TInstance = any,
+	TFacade = unknown,
+	TOutputs = unknown,
+	TOwnerFacade = unknown,
+> = {
 	/**
-	 * Свойства инстанса, выходы плагинов и свойства фасада со снимком через
+	 * Свойства инстанса, выходы плагинов и свойства фасадов со снимком через
 	 * `valueOf()` — см. `TInstanceState`.
 	 */
-	readonly state: Signal<TBindingState<TInstance, TFacade, TOutputs>>
+	readonly state: Signal<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>>
 	readonly ctrl: TInstance
-	/** Фасад коллекции: шаблон зовёт через его контекст команды коллекции. */
+	/**
+	 * Фасад коллекции: шаблон зовёт через его контекст команды коллекции. У
+	 * части с тремя контекстами — фасад элемента: команды пункта с подменю — это
+	 * команды меню над ним (открыть его панель). Фасад владельца отдельно не
+	 * выходит: его свойства шаблон читает из `state`.
+	 */
 	readonly facade: TFacade
 	readonly plugins: IPluginBundle | null
 	syncInputs(inputs: object): void
@@ -242,6 +264,9 @@ export function useCollectionAdapter<C extends IComponentContract>(
 	return { ...useExchange(adapter), facade: adapter.instance }
 }
 
+/** Входы, события и уничтожение — то, что `joinBindings` раздаёт компоненту и фасадам. */
+type TJoined = Pick<TCollectionBinding, 'syncInputs' | 'syncEvents' | 'destroy'>
+
 /**
  * Связка компонента с двумя контекстами — для базы, которой нужна одна:
  *
@@ -251,24 +276,37 @@ export function useCollectionAdapter<C extends IComponentContract>(
  * - узел — только свой: у фасада его нет;
  * - уничтожение — фасад раньше компонента, в порядке, обратном приёму, как у
  *   React: элемент выходит из коллекции, пока его набор плагинов цел.
+ *
+ * Третий параметр — фасад владельца у части с тремя контекстами (пункт с
+ * подменю: фасад элемента — вход в коллекцию меню над ним, фасад владельца —
+ * свои пункты). Он идёт тем же путём, что фасад элемента: его свойства — в
+ * том же виде состояния, входы и события — ему тоже, уничтожение — после
+ * фасада элемента и раньше компонента. Наружу как фасад выходит фасад
+ * элемента: через его контекст шаблон зовёт нажатие строки.
  */
-export function joinBindings<TInstance, TFacade, TOutputs>(
+export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknown>(
 	owner: TBinding<TInstance, unknown, TOutputs>,
 	facade: TCollectionBinding<TFacade>,
-): TBinding<TInstance, TFacade, TOutputs> {
+	ownerFacade?: TCollectionBinding<TOwnerFacade>,
+): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade> {
+	// Фасады — по порядку уничтожения: элемент выходит из коллекции над ним
+	// раньше, чем снимется своя
+	const facades: readonly TJoined[] = ownerFacade ? [facade, ownerFacade] : [facade]
+
 	return {
-		state: computed(() => ({ ...facade.state(), ...owner.state() })),
+		state: computed(() => ({ ...ownerFacade?.state(), ...facade.state(), ...owner.state() })),
 		ctrl: owner.ctrl,
 		facade: facade.facade,
 		plugins: owner.plugins,
 
 		syncInputs(inputs: object): void {
 			owner.syncInputs(inputs)
-			facade.syncInputs(inputs)
+
+			for (const each of facades) each.syncInputs(inputs)
 		},
 
 		syncEvents(outputOf: TOutputOf): () => void {
-			const stops = [owner.syncEvents(outputOf), facade.syncEvents(outputOf)]
+			const stops = [owner, ...facades].map((each) => each.syncEvents(outputOf))
 
 			return () => {
 				for (const stop of stops) stop()
@@ -280,7 +318,8 @@ export function joinBindings<TInstance, TFacade, TOutputs>(
 		},
 
 		destroy(): void {
-			facade.destroy()
+			for (const each of facades) each.destroy()
+
 			owner.destroy()
 		},
 	}

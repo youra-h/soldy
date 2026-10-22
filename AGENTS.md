@@ -452,10 +452,10 @@ Angular-компоненты собирают контекст через `creat
 приложению — `useToasts()` (`src/adapter/toasts/`): слой лифта над компонентом
 он берёт в контексте инъекции его поля, а API из слоя — на каждый `show`, и
 лифт за адаптерный слой не выходит. Корень значением — якорь панели
-Popover и Tooltip, `[anchor_anchor]="rootElement()"`, — шаблону отдаёт тоже
-база, сигналом `rootElement()`: тот узел, который она отдала `TElementPlugin`,
-`null` на сервере и до первой отрисовки, — а не `inject(ElementRef)` в
-компоненте.
+Popover, Tooltip, Menu и пунктов меню со своей панелью,
+`[anchor_anchor]="rootElement()"`, — шаблону отдаёт тоже база, сигналом
+`rootElement()`: тот узел, который она отдала `TElementPlugin`, `null` на
+сервере и до первой отрисовки, — а не `inject(ElementRef)` в компоненте.
 Сборку мимо обёртки ловит тот же сторож: `createAdapterContext` из
 `@soldy-ui/setup` в компонентах Angular запрещён, как и `inject` из
 `@angular/core`.

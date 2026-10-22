@@ -10,6 +10,8 @@ import {
 	DialogPreview,
 	DragAndDropPreview,
 	DrawerPreview,
+	MenuItemsPreview,
+	MenuPreview,
 	PopoverPreview,
 	ToastsPreview,
 	TooltipPreview,
@@ -160,10 +162,18 @@ export type TPreview = TComponentPreview | TTemplatePreview
  * строит: `createComponent` строит только компонент. Ставит такое превью хост
  * путём фикстуры: пропсы оболочки уходят входам компонента превью, а выходы
  * хост слушает у компонента в его разметке (`subject`).
+ *
+ * Разметка превью бывает от пропсов оболочки: меню, состав которого пришёл
+ * данными, рисуется без пунктов разметки — они заменили бы данные. Тогда
+ * компонент превью выбирает функция пропсов (`templateFor`), когда превью
+ * ставится, а смена пропсов его не перестраивает, как содержимое превью
+ * описанием. Не ветка `@if` в одном шаблоне: компонент в ветке появляется
+ * только на первой проверке, а выходы хост слушает у него раньше — сразу
+ * после создания превью, как подписки на выходы в шаблоне.
  */
-export type TTemplatePreview = {
-	readonly template: Type<TFixture>
-}
+export type TTemplatePreview =
+	| { readonly template: Type<TFixture> }
+	| { readonly templateFor: (props: TProps) => Type<TFixture> }
 
 /** Превью описанием: компонент адаптера, обёртка или рамка вокруг него и содержимое. */
 export type TComponentPreview = TPreviewBase &
@@ -425,6 +435,11 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// Триггер — Button, ссылку на панель он берёт из scope слота. Текст
 	// подсказки — содержимым: пропа текста у неё нет
 	tooltip: { template: TooltipPreview },
+
+	// Триггер — Button, а у контекстного меню — область, связку с меню они
+	// берут из scope слота; пункты — разметкой, а пришли данными — меню из них
+	// (см. `MenuPreview`)
+	menu: { templateFor: (bind) => (bind.items ? MenuItemsPreview : MenuPreview) },
 
 	// Кнопка открывает окно, окно — на своём состоянии превью (см. `DialogPreview`)
 	dialog: { template: DialogPreview },

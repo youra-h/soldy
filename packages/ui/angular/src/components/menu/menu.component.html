@@ -1,0 +1,250 @@
+<!--
+	Корень — сам хост (`<span so-menu>`), поэтому шаблон — то, что внутри корня
+	Vue, в том же порядке: триггер, панель, а в конце — слив шаблонов слотов.
+	Слоты контракта: trigger (scope { triggerAria, triggerDataset }), default —
+	пункты, группы и разделители; item (scope { item, text }), item-leading,
+	item-trailing, item-header (scope { item, text, open }) и item-arrow-icon
+	(scope { item }) — слоты пунктов из данных.
+
+	Триггер — шаблон слота: связку с панелью и вид «нажат» он получает в
+	контексте вывода. Новый контекст вывод отдаёт тому же представлению, поэтому
+	триггер — тот же узел при каждом открытии и закрытии, и фокус на нём
+	остаётся.
+-->
+@if (slot('trigger'); as trigger) {
+	<ng-container
+		[ngTemplateOutlet]="trigger"
+		[ngTemplateOutletContext]="{
+			triggerAria: state()['triggerAria'] ?? {},
+			triggerDataset: state()['triggerDataset'] ?? {},
+		}"
+	/>
+}
+<!--
+	Пункты секции из данных — действия и подменю (флажки ставят разметкой), по
+	порядку, ключ — `uid`. Шаблон один на группу и на пункты без неё, и пункты в
+	нём видят слой лифта меню и внутри группы: DI идёт по дереву объявлений.
+
+	Пункт с вложенным `items` — подменю из данных: коллекция отдаёт его запись
+	(`submenus`), и она ложится во входы `<div so-menu-submenu>` — пункт
+	(`ctrl`) и движок его пунктов (`engine`), — тем же входом, что у подменю
+	разметкой с движком снаружи. Остальные — действия.
+
+	Слоты пункта пробрасываются целиком и только заданные: у каждого слота
+	строки есть `item-<слот>`, scope — scope слота строки плюс сам пункт
+	(`item`). Слот без scope (`leading`, `trailing`) пункт проецирует, и
+	проброс — `ng-container` с `ngProjectAs`; слот со scope (`default`,
+	`header`) и слот, по которому пункт решает, рисовать ли своё
+	(`arrow-icon`), пункт берёт шаблоном, и проброс — `<ng-template slot>`,
+	который `ngProjectAs` уводит в слив шаблонов пункта. Свои `item` и `item-*`
+	меню отдаёт подменю под теми же именами — слоты одни на все уровни.
+
+	`item-content` подменю из данных не пробрасывается: шаблон слота Angular
+	собирает с DI места объявления, и пункты из него вошли бы в коллекцию меню,
+	а не подменю. Временно, до https://app.clickup.com/t/869fktew3: подменю из
+	данных рисует свои пункты из данных.
+-->
+<ng-template #entries let-items>
+	@for (item of items; track item.uid) {
+		@if (state()['submenus']?.get(item); as submenu) {
+			<div so-menu-submenu [ctrl]="submenu.ctrl" [engine]="submenu.engine">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item-header'); as header) {
+					<ng-template
+						slot="header"
+						ngProjectAs="ng-template[slot]"
+						let-text="text"
+						let-open="open"
+					>
+						<ng-container
+							[ngTemplateOutlet]="header"
+							[ngTemplateOutletContext]="{ item, text, open }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-arrow-icon'); as arrow) {
+					<ng-template slot="arrow-icon" ngProjectAs="ng-template[slot]">
+						<ng-container
+							[ngTemplateOutlet]="arrow"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item'); as content) {
+					<ng-template
+						slot="item"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+						let-text="text"
+					>
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item: child, text }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-leading'); as leading) {
+					<ng-template
+						slot="item-leading"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+					>
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item: child }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-template
+						slot="item-trailing"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+					>
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item: child }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-header'); as header) {
+					<ng-template
+						slot="item-header"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+						let-text="text"
+						let-open="open"
+					>
+						<ng-container
+							[ngTemplateOutlet]="header"
+							[ngTemplateOutletContext]="{ item: child, text, open }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-arrow-icon'); as arrow) {
+					<ng-template
+						slot="item-arrow-icon"
+						ngProjectAs="ng-template[slot]"
+						let-child="item"
+					>
+						<ng-container
+							[ngTemplateOutlet]="arrow"
+							[ngTemplateOutletContext]="{ item: child }"
+						/>
+					</ng-template>
+				}
+			</div>
+		} @else {
+			<div so-menu-item [ctrl]="item">
+				@if (slot('item-leading'); as leading) {
+					<ng-container ngProjectAs="[slot=leading]">
+						<ng-container
+							[ngTemplateOutlet]="leading"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+				@if (slot('item'); as content) {
+					<ng-template slot="default" ngProjectAs="ng-template[slot]" let-text="text">
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item, text }"
+						/>
+					</ng-template>
+				}
+				@if (slot('item-trailing'); as trailing) {
+					<ng-container ngProjectAs="[slot=trailing]">
+						<ng-container
+							[ngTemplateOutlet]="trailing"
+							[ngTemplateOutletContext]="{ item }"
+						/>
+					</ng-container>
+				}
+			</div>
+		}
+	}
+</ng-template>
+<!--
+	Панель — Frame: телепорт, слой, привязка к корню (`TAnchorPlugin`, отступ
+	4px, как у Select) и пометка владельцем для закрытия по нажатию мимо. На неё
+	ложится `aria` меню — `role="menu"`, `id`, на который ссылается
+	`aria-controls` триггера, и `aria-labelledby` на триггер (имя меню), — и
+	пометка владельцем `dismiss_ownerAttribute`, одним объектом: директива
+	набора на элементе одна. `tabindex="-1"` — фокус встаёт на саму панель, пока
+	ни один пункт не подсвечен.
+
+	У контекстного меню панель встаёт у точки вызова (`point`): точка главнее
+	корня, пока задана, и выбирает между ними якорь, а не шаблон. Корень
+	остаётся якорем на случай, когда точки нет; на сервере и до первой
+	отрисовки его нет (`rootElement()` базы).
+
+	Классы панели — привязка `[class]` из `panelClasses`: блок `so-menu__panel`
+	с размером и вариантом меню, — модификаторы корня до телепортированной панели
+	не доходят. Классы привязки Angular ставит и снимает по одному, а свои
+	(`so-frame`) база Frame снимает только свои, поэтому оба набора стоят рядом.
+	`rendered` меню панель получает сама: корень Angular не снимается, а
+	прячется, а панель увезена в `body`.
+-->
+<div
+	so-frame
+	embedded="menu.frame"
+	tabindex="-1"
+	position="fixed"
+	[class]="state()['panelClasses']"
+	[visible]="state()['open']"
+	[rendered]="state()['rendered']"
+	[anchor_anchor]="rootElement()"
+	[anchor_point]="state()['point']"
+	[anchor_placement]="state()['placement']"
+	[anchor_offset]="4"
+	[so-attributes]="{ ...state()['aria'], ...state()['dismiss_ownerAttribute'] }"
+>
+	<!--
+		Список — то, что прокручивается: поле внутри прокрутки, и подсвеченная
+		строка не прижата к кромке. Роль `menu` — у панели, а не здесь: фокус без
+		подсветки держит панель, и узел с ролью и фокусом должен быть один.
+
+		Пункты разметки — основная проекция меню, а без них — пункты из данных
+		по секциям показанного (`sections`), ключ — ключ секции: группа с
+		подписью — в `<div so-menu-group>`, пункты без группы — прямо в списке,
+		между соседними секциями, пока его просит меню (`groupSeparators`), —
+		разделитель. Секции идут порядком показанного, поэтому стрелки ходят так
+		же, как пункты стоят на экране. Без групп секция одна — ни обёртки, ни
+		разделителя.
+	-->
+	<div class="so-menu__list">
+		<ng-content>
+			@for (section of state()['sections'] ?? []; track section.key; let first = $first) {
+				@if (state()['groupSeparators'] && !first) {
+					<div so-menu-separator></div>
+				}
+				@if (section.group; as group) {
+					<div so-menu-group [label]="group.label">
+						<ng-container
+							[ngTemplateOutlet]="entries"
+							[ngTemplateOutletContext]="{ $implicit: section.items }"
+						/>
+					</div>
+				} @else {
+					<ng-container
+						[ngTemplateOutlet]="entries"
+						[ngTemplateOutletContext]="{ $implicit: section.items }"
+					/>
+				}
+			}
+		</ng-content>
+	</div>
+</div>
+<!--
+	Шаблоны слотов, которые потребитель написал в меню, — в слив, в конце корня:
+	Angular считает их содержимым, и в основной проекции они сняли бы запасное
+	содержимое — меню из данных не нарисовалось бы.
+-->
+<ng-content select="ng-template[slot]" />
