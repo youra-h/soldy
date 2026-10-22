@@ -13,6 +13,7 @@ import {
 	TAccordionComponent,
 	TAccordionItemComponent,
 	TButtonComponent,
+	TCalendarComponent,
 	TDialogComponent,
 	TDragAndDropComponent,
 	TDrawerComponent,
@@ -258,9 +259,8 @@ const MENU_TRIGGER = `
 /**
  * Menu: пункты — разметкой, как у Vue: группа флажков с подписью, группа
  * переключателей — отмечен один, — действия с подсказками сочетаний, подменю с
- * подменю внутри, пункт с панелью, которая монтируется с первым открытием, —
- * выключенное действие и «опасный» пункт своего варианта. Календаря в Angular
- * нет, и в панели «Срок» — текст и кнопка.
+ * подменю внутри, пункт с панелью — календарём, который монтируется с первым
+ * открытием, — выключенное действие и «опасный» пункт своего варианта.
  *
  * Пришли данными (`items` блока групп страницы и пресета строки
  * `groupSeparators`) — превью другое, `MenuItemsPreview`: разметка заменила бы
@@ -283,6 +283,7 @@ const MENU_TRIGGER = `
 		TMenuSeparatorComponent,
 		TMenuSubmenuComponent,
 		TMenuPopoverItemComponent,
+		TCalendarComponent,
 		TButtonComponent,
 		SlotDirective,
 		AttributesDirective,
@@ -317,8 +318,7 @@ const MENU_TRIGGER = `
 				</div>
 			</div>
 			<div so-menu-popover-item value="due" text="Срок" lazyMount>
-				<p style="margin: 0 0 8px">Срок задачи — через неделю</p>
-				<button so-button text="Подтвердить"></button>
+				<div so-calendar></div>
 			</div>
 			<div so-menu-item value="archive" text="В архив" disabled></div>
 			<div so-menu-separator></div>

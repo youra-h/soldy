@@ -22,7 +22,10 @@ import {
 	TAccordionComponent,
 	TAccordionItemComponent,
 	TButtonComponent,
+	TCalendarComponent,
 	TCheckBoxComponent,
+	TDateInputComponent,
+	TDatePickerComponent,
 	TFieldComponent,
 	TIconComponent,
 	TInputComponent,
@@ -388,6 +391,18 @@ export const PREVIEWS: Record<string, TPreview> = {
 						props: { ...item },
 					})),
 	},
+
+	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
+	// сеток. Языка у превью нет: это локаль провайдера корня хоста — выбор
+	// языка в шапке (`setLocale` хоста)
+	calendar: { component: TCalendarComponent },
+
+	// Язык — из шапки стенда, как у календаря
+	'date-input': { component: TDateInputComponent },
+
+	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
+	// из шапки стенда, как у поля и календаря
+	'date-picker': { component: TDatePickerComponent },
 
 	// Теги — данными, как у Vue: ряд во всю ширину ячейки, иначе переполнению
 	// не с чем сравнивать — во флексе сцены ряд держал бы ширину по своим тегам
