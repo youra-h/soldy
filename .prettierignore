@@ -11,6 +11,10 @@ packages/ui/angular/src/generated
 # Он же в .gitignore пакета; у eslint исключён в globalIgnores.
 **/.angular/**
 
+# Разметку сервера для гидратации Solid пишет vitest (`toMatchFileSnapshot` в
+# `markup.server.spec.tsx`, обновление — `vitest -u`) и сверяет её байт в байт.
+packages/ui/solid/__tests__/hydration/markup
+
 # Лок-файл пишет npm.
 package-lock.json
 
