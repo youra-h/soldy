@@ -53,6 +53,7 @@ jobs:
         run: |
           npm run test:core
           npm run test:eslint
+          npm run test:min-peers
           npm run test:setup
           npm run test:plugins
           npm run test:vue
@@ -157,6 +158,48 @@ jobs:
       # темы вычистил бы её же `dist/setup` — у CSS-сборки `emptyOutDir`.
       - name: Сборка стенда
         run: npm run build --workspace=@soldy-ui/playground-vue
+
+  # Нижние границы peer адаптеров (см. docs/agents/build.md, «Версии пакетов»):
+  # `check` гоняет спеки на версиях из lock, и обещание в peerDependencies без
+  # этой задачи ничем не проверялось — так пакет Angular обещал 21.1, а меню в
+  # нём работало верно только с 22.1.6.
+  min-peers:
+    name: Минимальные версии
+    runs-on: ubuntu-latest
+    strategy:
+      # Красный адаптер не снимает прогон остальных: граница у каждого своя.
+      fail-fast: false
+      matrix:
+        adapter: [vue, react, svelte, solid, angular]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 24, а не 22: подмене нужен npm 11. У npm 10 overrides корня не
+      # доходят до зависимостей воркспейсов, и копия из devDependencies адаптера
+      # осталась бы версией lock — «Проверка дерева» её поймала бы.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Пакеты фреймворка — нижними границами peer адаптера во всём дереве:
+      # overrides в манифесте корня и npm update по ним. Только в раннере —
+      # манифест и lock репозитория не меняются. Список выводит скрипт из
+      # манифеста адаптера, руками версии нигде не выписаны.
+      - name: Нижние границы peer
+        run: node tools/min-peers/cli.ts pin @soldy-ui/${{ matrix.adapter }}
+
+      # Копию другой версии, оставшуюся в дереве, взяли бы спеки или инструменты
+      # тестов, и прогон был бы зелёным впустую.
+      - name: Проверка дерева
+        run: node tools/min-peers/cli.ts verify @soldy-ui/${{ matrix.adapter }}
+
+      # Только спеки: сборка, типы и браузерный прогон идут в `check`.
+      - name: Спеки
+        run: npm run test:${{ matrix.adapter }}
 
   lint:
     name: Линт
