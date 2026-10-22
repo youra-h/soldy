@@ -1,5 +1,41 @@
 # @soldy-ui/plugins
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- 4fc4efa: DragAndDrop сообщает о перестановке перетаскиванием: `move:before` (отменить — `preventDefault()`) и `move` с `engine`, `item`, `oldIndex`, `newIndex`. Выключенный элемент не перетаскивается, коллекции внутри элементов другой коллекции перестановку не наследуют. Ломающее: `TDragPlugin.activate` принимает вторым аргументом обёртку, `DRAG_CONTEXT_ELEVATOR` перестановку больше не включает — коллекции оборачивают в `DragAndDrop`.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- b74ddc6: Calendar больше не падает при серверном рендере в Node
+- e7d4c96: Плагины полей находят поле одним правилом (`fieldOf`); поведение не меняется.
+- 434d622: DragAndDrop пальцем: элемент берёт долгое нажатие (450 мс), сдвиг раньше — прокрутка. На телефонах перетаскивание раньше не начиналось.
+- 9d181a3: Меню: пункт с панелью открывается наведением мыши или пера, фокус остаётся на строке; стрелка к концу строки ведёт фокус в уже открытую панель.
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- 8d55e75: Textarea: скринридер читает счётчик символов вместе с полем
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [88078c4]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

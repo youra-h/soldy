@@ -1,5 +1,63 @@
 # @soldy-ui/svelte
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+- 9e146cc: Всё, что React и Svelte уводят телепортом, — панели Frame, Popover и Tooltip, окно Dialog, выезжающая панель Drawer, а у Svelte ещё список Select и регион Toasts, — лежит в обёртке `<div style="display: contents">`, а с `contained` — ещё и в таком же узле места. Смена `contained` и `target` переносит панель тем же узлом, набранное в ней остаётся. Цель, пропавшая на лету, вынимает панель из документа, а вернувшаяся получает тот же узел. Панель, начавшая на месте (у React — после серверной разметки), при первом уходе с места один раз собирается заново. Селекторы прямого потомка через телепорт (`body > .so-frame`) замените селекторами потомка.
+- 1173b40: Минимальная версия Svelte — 5.55.10 (была 5.29): ниже смена сниппета `cell` у Table не доходит до ячеек, а на более ранних версиях не проходят и другие спеки адаптера — значки по роли, жесты, attachment корня. Обновите svelte до 5.55.10 или новее.
+- 1b9fb76: Svelte: лифт сборки — `useElevator()`, `SvelteElevatorFactory` удалён; `up()` отдаёт значение предка и после своего `down()`. Своя коллекция на адаптере: `const elevator = useElevator()` в начале setup вместо `SvelteElevatorFactory`.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+- 7137eaa: Группы из разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`, `Select.Group`) входят в группировку коллекции, и `sections` описывают их с подписью. Элемент без группы больше не уходит в конец, а остаётся на своём месте среди незаявленных групп; чтобы вернуть прежний порядок, заявите группы в `groups`.
+- 8d4064e: `onChangeSelected` элемента коллекции (`ListBox.Item`, `Select.Item`, `Tags.Item`, `Accordion.Item`, `Table.Row`, флажки и переключатели `Menu`) и `onChangeActive` (`Tabs.Item`, `Tabs.Content`, `RadioGroup.Item`) приходят только элементу, чьё состояние сменилось, и несут новое значение: `onChangeSelected={(selected) => …}`. `change:selection` владельца вторым аргументом отдаёт элементы, чья отметка сменилась, `change:activation` — прежний активный; в Web Components `detail` этих двух событий — пара: где читали `detail`, читайте `detail[0]`.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- 4fd99b0: Svelte: Slider, Rating, ProgressLinear, Scroller и Pagination — по разметке Vue. Ползунок и оценка — нативные поля `range` в ручках; значение возвращает колбэк `onChangeValue` в той форме, в какой его задали, `onCommit` — одно на действие. В поле формы `Field` подпись называет оценку и ползунок с одной ручкой своим `for`, а ползунок с несколькими ручками — группу ссылкой. Пагинация — коллекция страниц окна с пропусками: страница — внутренняя часть и наружу не выходит, слоты — `item`, `prev-icon` и `next-icon`, имена стрелок и цифры номеров — от локали поддерева, окно и текущая страница — уже в серверной разметке. У ленты кнопки — вне вьюпорта, роль ряда — `viewportAria`. Атрибуты потребителя у всех пяти ложатся на корень. Слои без разметки — `setupInteractive`, `setupValueControl` и `setupInputControl` с типами пропсов.
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- b930b18: Svelte: Popover, Tooltip, Dialog, Drawer и Toasts — панель у триггера, подсказка, модальное окно, выезжающая панель и тосты из кода (`useToasts()`; своё содержимое тоста — компонент Svelte с пропом `toast`).
+- 74f6de3: Svelte: Tags (`<Tags.Item>` или `items`, выбор, крестики, `wrap`/`scroll`) и Select (`<Select.Item>`, `<Select.Group>` или `items`, `editable`, отбор, теги в `multiple`, окно `Virtual`). Атрибуты Select, кроме класса и стиля, — на `<input>` поля. Scope слота `default` у Tags — `shown` только для чтения (`ReadonlyArray`), как его отдаёт коллекция.
+- 309ce24: Svelte: состояние ядра, сменившееся посреди отрисовки Svelte, больше не роняет `state_unsafe_mutation` — например, `focusout` элемента в фокусе, который петля переставила при перестановке жестом
+- 309ce24: DragAndDrop во всех адаптерах: перестановка элементов Tabs, ListBox и Accordion перетаскиванием, события `move:before` и `move` (`onMoveBefore`/`onMove`, `(soMoveBefore)`/`(soMove)`, `so:move:before`/`so:move`); в Angular — `<ng-container so-drag-and-drop>`, в Web Components — `<so-drag-and-drop>`
+- 9b3a3f5: NumberInput в React, Solid, Svelte и Web Components (`<div is="so-number-input">`) — поле числа в формате языка: шаг и границы, клавиши, кнопки «−» и «+» с удержанием, число уходит в форму скрытым полем, как во Vue
+- 743c56c: Textarea в React, Solid, Svelte, Angular и Web Components — многострочное поле с авторостом и счётчиком символов, как во Vue
+- 5d746c4: Svelte: DateInput, Calendar с частью `Calendar.Item` и DatePicker — по разметке Vue. Поле даты — части по формату локали; календарь — сетки месяцев с панелью выбора месяца и года, слоты `item`, `prev-icon`, `next-icon`, `footer`; DatePicker — одна дата или диапазон и календарь в панели, выбор с подтверждением. В поле формы `Field` поле даты и DatePicker — группа со ссылкой на подпись; `id` частей, сеток и заголовков — от `$props.id()`, уже в серверной разметке.
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- 9a268e0: Svelte: Menu — меню действий у кнопки и контекстное меню: `Menu.Item`, `Menu.CheckboxItem`, `Menu.RadioGroup` с `Menu.RadioItem`, `Menu.Group`, `Menu.Separator`, подменю `Menu.Submenu` (разметкой и из данных) и пункт с панелью `Menu.PopoverItem`.
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

@@ -1,5 +1,59 @@
 # @soldy-ui/theme-oren
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+
+### Patch Changes
+
+- 90b3e60: Тема oren: заливка ProgressLinear и ProgressSpinner и полоса активного таба — та же ступень, что у Switch и Slider.
+- d50ba46: Тема oren: у цветной плашки тоста нет серой кромки.
+- ace4c2b: Тема oren: ручка Slider — с той же тенью, что ручка Switch.
+- 6f03f25: Тема oren: подложка Tabs `contained` и заглушка Skeleton — полупрозрачной заливкой; в тёмной схеме на панели они больше не темнее панели.
+- 01c91ee: Тема oren: блик волны Skeleton в тёмной схеме — цвета поверхности, а не белый.
+- 3e998c6: Тема oren: откат правок контраста — насыщенная заливка под белым текстом (Button и Tags filled, Pagination, Calendar, CheckBox filled) снова прежней ступени, цветная графика и границы контролов — как до них.
+- a45bdcb: CSS темы меньше примерно на 52 КБ: у `color-mix()` больше нет запасного значения для браузеров без этой функции — оно было неверным, первым цветом смеси. Тема рассчитана на браузеры с `color-mix()` и `oklch()`.
+- 6abfad2: Тема oren: счётчик Textarea и описание тоста без типа — той же ступени, что остальные подсказки.
+- e56bc11: Линия ручки ширины Table встаёт сразу и при нажатии во время задержки наведения
+- aa1e8dc: Тема oren: кольцо фокуса в светлой схеме заметнее — ступень 400.
+- 3d66e54: Тема oren: ореол ручки Slider — той же плотности, что подсветка остальных компонентов.
+- 956d0c2: Подпись группы у Menu, ListBox и Select — заглавными, цветом и начертанием подсказки Field и на ступень мельче её кегля, отступ снизу — как сверху. Для размера `sm` в теме — ступень кегля мельче `text-xs`: токены `--so-text-2xs` и `--so-text-2xs--line-height` (10px и 14px)
+- 83a21ad: React: поле даты DateInput, календарь Calendar (Calendar.Item) и DatePicker; тема oren находит панель выбора месяца и года календаря и в разметке React
+- 2d7ca58: Тема oren: крестик тега — цвета подписи пилюли, на цветной пилюле белый.
+- f0d7336: Тема oren: цветная плашка тоста — та же ступень, что у кнопки filled своего цвета (500), и в обеих схемах светлее прежней. Токены `--so-component-solid-{accent,positive,caution,negative}` удалены: вместо них — ступень 500 семейства, `var(--so-accent-500)` и соседи.
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

@@ -1,5 +1,68 @@
 # @soldy-ui/solid
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+- 391b7c7: Solid: слот, по которому компонент выбирает между вашим содержимым и своим (элементы из данных у коллекций, значки по умолчанию, обёртки краёв Tabs и подвала Calendar, `ResolvedSlot`), теперь задан по значению: компонент в слоте — содержимое, даже если ничего не нарисовал. Элемент разметки, удалённый движком, больше не возвращается в коллекцию невидимым. `<Show when={false}>` в таком слоте запасное больше не включает — если оно нужно, пишите условие значением: `{cond() && <X />}`.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+- 7137eaa: Группы из разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`, `Select.Group`) входят в группировку коллекции, и `sections` описывают их с подписью. Элемент без группы больше не уходит в конец, а остаётся на своём месте среди незаявленных групп; чтобы вернуть прежний порядок, заявите группы в `groups`.
+- 8d4064e: `onChangeSelected` элемента коллекции (`ListBox.Item`, `Select.Item`, `Tags.Item`, `Accordion.Item`, `Table.Row`, флажки и переключатели `Menu`) и `onChangeActive` (`Tabs.Item`, `Tabs.Content`, `RadioGroup.Item`) приходят только элементу, чьё состояние сменилось, и несут новое значение: `onChangeSelected={(selected) => …}`. `change:selection` владельца вторым аргументом отдаёт элементы, чья отметка сменилась, `change:activation` — прежний активный; в Web Components `detail` этих двух событий — пара: где читали `detail`, читайте `detail[0]`.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- dece2aa: Solid: содержимое слотов со scope — подсказки ручек Slider, пунктов, табов, секций и ячеек Table — больше не пересоздаётся при каждой смене scope, если читать его в разметке (`scope.text`)
+- 72cc6e8: Frame и Popover в Solid при смене `contained` на лету переносят панель тем же узлом: содержимое не пересобирается, набранное в полях сохраняется.
+- 43b6270: В Solid — DateInput, Calendar с `Calendar.Item` и DatePicker: поле даты по частям, сетки месяцев с выбором месяца и года и поле с календарём в панели.
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- 4a66001: Slider, Rating, ProgressLinear, Pagination и Scroller в Solid: ползунок с одной или несколькими ручками — метки, подсказка со значением, слоты `mark` и `thumb`; оценка звёздами — половинки, предпросмотр наведением, только для показа, обязательность, слот `icon`; индикатор выполнения линией; постраничная навигация — окно с пропусками, стрелки, движок снаружи, слоты `item`, `prev-icon` и `next-icon`; лента со стрелками — `viewportAria` и слоты значков. Ползунок и оценка берут связку поля формы `Field`, как Input. Сервер рисует их целиком: окно и текущую страницу, ручки, звёзды и значения полей. Базовые слои Interactive, ValueControl и InputControl — типы пропсов и `setupInteractive`, `setupValueControl`, `setupInputControl`, как у Control.
+- 62de756: Dialog, Drawer и Toasts в Solid: модальное окно, выезжающая панель (смахивание, `contained`) и уведомления из кода — `useToasts()` под `<Toasts>`; своё содержимое тоста — компонент Solid с пропом `toast` (`TToastRender`).
+- 309ce24: DragAndDrop во всех адаптерах: перестановка элементов Tabs, ListBox и Accordion перетаскиванием, события `move:before` и `move` (`onMoveBefore`/`onMove`, `(soMoveBefore)`/`(soMove)`, `so:move:before`/`so:move`); в Angular — `<ng-container so-drag-and-drop>`, в Web Components — `<so-drag-and-drop>`
+- 49b6b0f: Solid: поздняя гидратация границы `Suspense`, досланной потоком, больше не падает и не оставляет лишних узлов вне границы. Панель `Tabs.Content` появляется, слот `empty` у ListBox и Select уходит, тост, показанный из тела компонента за границей, рисуется: ветки и петли компонентов, сменившиеся в окне гидратации, перестраиваются после него.
+- fb5643a: Solid: атрибуты корня, сменившиеся во время гидратации, теперь доходят до разметки — у табов и тегов разметкой, где активный не первый, после гидратации остаётся одна остановка Tab
+- 9b3a3f5: NumberInput в React, Solid, Svelte и Web Components (`<div is="so-number-input">`) — поле числа в формате языка: шаг и границы, клавиши, кнопки «−» и «+» с удержанием, число уходит в форму скрытым полем, как во Vue
+- 743c56c: Textarea в React, Solid, Svelte, Angular и Web Components — многострочное поле с авторостом и счётчиком символов, как во Vue
+- c51c055: Solid: набор тегов Tags (`Tags.Item`) и поле выбора Select (`Select.Item`, `Select.Group`) — панель со списком, отбор, теги выбранного, окно `Virtual`; `ResolvedSlot` принимает scope слота.
+- 95be535: Menu в Solid: меню у кнопки и контекстное меню (`openOn="contextmenu"`), части `Menu.Item`, `Menu.CheckboxItem`, `Menu.RadioGroup` с `Menu.RadioItem`, `Menu.Submenu`, `Menu.PopoverItem`, `Menu.Group`, `Menu.Separator` и плоские имена; пункты разметкой и данными — `items`, группы, подменю из вложенных `items`. Новый помощник адаптера — классы части строкой (`toPartClass`).
+- 83a21ad: React: поле даты DateInput, календарь Calendar (Calendar.Item) и DatePicker; тема oren находит панель выбора месяца и года календаря и в разметке React
+- 80cbd5c: Solid: атрибуты, сменившиеся в поздней гидратации — у границы `Suspense`, которую сервер дослал потоком, и у острова, — доходят до разметки: у табов и тегов, где активный за такой границей, остаётся одна остановка Tab, а `for` подписи Field ведёт на контрол за ней
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- de85cf3: Popover и Tooltip в Solid: панель с произвольным содержимым у триггера и подсказка по наведению и фокусу — поведение, разметка и слоты как у Vue. Scope слота `trigger` читайте в разметке — `trigger={(scope) => <Button {...scope.triggerAria} />}`: так триггер не пересоздаётся при открытии
+- 85060e4: Solid: атрибуты внутренних узлов (подписи Field, `<input>` полей, ячеек таблицы и др.), сменившиеся во время гидратации, доходят до разметки — например, `for` подписи Field у поля со своим `id`
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes

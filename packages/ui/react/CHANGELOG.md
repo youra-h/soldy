@@ -1,5 +1,63 @@
 # @soldy-ui/react
 
+## 0.3.0-alpha.1
+
+### Minor Changes
+
+- ad16bef: Разделитель между секциями группировки включается свойством `groupSeparators` у ListBox, Select, Menu и `Menu.Submenu`. Ломающее: у ListBox и Select разделителя между группами по умолчанию больше нет — как вернуть: `groupSeparators` (`<ListBox group-separators>`, `groupSeparators={true}`). У Menu и подменю он по умолчанию есть, выключить — `groupSeparators: false`; ручной `Menu.Separator` свойство не трогает. Тема oren без разделителя оставляет его место пустым, и секции не слипаются.
+- 9e146cc: Всё, что React и Svelte уводят телепортом, — панели Frame, Popover и Tooltip, окно Dialog, выезжающая панель Drawer, а у Svelte ещё список Select и регион Toasts, — лежит в обёртке `<div style="display: contents">`, а с `contained` — ещё и в таком же узле места. Смена `contained` и `target` переносит панель тем же узлом, набранное в ней остаётся. Цель, пропавшая на лету, вынимает панель из документа, а вернувшаяся получает тот же узел. Панель, начавшая на месте (у React — после серверной разметки), при первом уходе с места один раз собирается заново. Селекторы прямого потомка через телепорт (`body > .so-frame`) замените селекторами потомка.
+- 0091f1d: Пакет иконок подключается через `useIcons` вместо `setIcons` — в ряд с `useTheme`, `usePlugins`, `useExtensions` и `useMotion`. Как обновиться: `setIcons(…)` → `useIcons(…)`, аргументы и поведение те же.
+- 7137eaa: Группы из разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`, `Select.Group`) входят в группировку коллекции, и `sections` описывают их с подписью. Элемент без группы больше не уходит в конец, а остаётся на своём месте среди незаявленных групп; чтобы вернуть прежний порядок, заявите группы в `groups`.
+- 8d4064e: `onChangeSelected` элемента коллекции (`ListBox.Item`, `Select.Item`, `Tags.Item`, `Accordion.Item`, `Table.Row`, флажки и переключатели `Menu`) и `onChangeActive` (`Tabs.Item`, `Tabs.Content`, `RadioGroup.Item`) приходят только элементу, чьё состояние сменилось, и несут новое значение: `onChangeSelected={(selected) => …}`. `change:selection` владельца вторым аргументом отдаёт элементы, чья отметка сменилась, `change:activation` — прежний активный; в Web Components `detail` этих двух событий — пара: где читали `detail`, читайте `detail[0]`.
+- 2b5f080: Коллекция над движком, который держит другой компонент, больше не бросает «движок уже принадлежит другому компоненту»: привязка владельца — у последнего принятого монтирования, а его снятие возвращает её предыдущему живому. Смена `key` и перенос без `ctrl` над внешним движком больше не падают. Обновиться: на ошибку не опираться — второй компонент на том же движке теперь молча забирает его у первого.
+
+### Patch Changes
+
+- 5c4558e: Подсказка, открытая разметкой или из кода, больше не закрывается уходом курсора, прихода которого не было: панель, вставшая на место из-под неподвижного курсора, остаётся открытой
+- 0179add: `focused = true` (проп или `ctrl.focused`) ставит фокус туда, где он у компонента живёт: в поле — у Input, NumberInput, Textarea, CheckBox, Switch, Rating, Slider, Select и радио, в узел списка — у ListBox, на таб-остановку — у Tabs; раньше запись меняла только свойство. У плагина действия — опция `focusTarget`, правило узла фокуса (`fieldOf`, `listOf`, `tabStopOf`).
+- f6863bb: В React появились ProgressLinear, Slider, Rating, Pagination и Scroller — с той же разметкой и тем же поведением, что во Vue, — и базовые слои Interactive, ValueControl и InputControl (типы пропсов и хуки `useSetupInteractive`, `useSetupValueControl`, `useSetupInputControl`). Значение ползунков Slider и Rating ведёт поле адаптера `NativeInput`: `live.value` принимает и число, в узел оно уходит строкой.
+- 5dfcc0c: Popover, Tooltip, Dialog и Drawer в React: панель у триггера, подсказка, модальное окно и выезжающая панель — как во Vue. Хук адаптера `useRootElement` отдаёт корень компонента значением рендера
+- 309ce24: DragAndDrop во всех адаптерах: перестановка элементов Tabs, ListBox и Accordion перетаскиванием, события `move:before` и `move` (`onMoveBefore`/`onMove`, `(soMoveBefore)`/`(soMove)`, `so:move:before`/`so:move`); в Angular — `<ng-container so-drag-and-drop>`, в Web Components — `<so-drag-and-drop>`
+- 63eaf38: Menu в React: меню у кнопки и контекстное меню с подменю (в том числе из данных), группами, флажками, переключателями и пунктом с панелью — как во Vue. Помощник адаптера `toPartClass` отдаёт классы части строкой для `className`.
+- b45c170: Компонент над тем же `ctrl`, перемонтированный в другом месте, больше не трогает прежний посреди чужого рендера: сборка над инстансом атомарна для остальных его монтирований. Их состояние и уведомления приходят после сборки — уведомление получает и прежний, снятый тем же проходом, один раз; отменяемые события (`*:before`) уходят сразу, и `preventDefault` работает, как вне перемонтирования. В React смена `key` над внешним `ctrl` больше не печатает «Cannot update a component while rendering a different component», в том числе из обработчиков, меняющих состояние родителя, а в `Suspense` — не зацикливается: повтор рендера берёт id монтирования отброшенной сборки.
+- a588e35: Toasts и хук useToasts() в React: менеджер оборачивает приложение, потомок показывает тост через useToasts().show(…)
+- 9b3a3f5: NumberInput в React, Solid, Svelte и Web Components (`<div is="so-number-input">`) — поле числа в формате языка: шаг и границы, клавиши, кнопки «−» и «+» с удержанием, число уходит в форму скрытым полем, как во Vue
+- 743c56c: Textarea в React, Solid, Svelte, Angular и Web Components — многострочное поле с авторостом и счётчиком символов, как во Vue
+- 83a21ad: React: поле даты DateInput, календарь Calendar (Calendar.Item) и DatePicker; тема oren находит панель выбора месяца и года календаря и в разметке React
+- 0da817b: `focused = true` ставит фокус и у DateInput, DatePicker, Calendar, RadioGroup, Accordion, Tags, Pagination, Scroller и у элементов коллекций — табов, секций, пунктов ListBox, Tags и Menu; раньше у них запись меняла только свойство.
+- 132cffc: Запись `focused = true` в одном такте со сменой остановки — листание Calendar, страница Pagination за окном, новый таб или тег — ставит фокус, как только узел новой остановки нарисован; раньше фокус не вставал, а `focused` оставался `true`.
+- 9764543: Tags и Select в React: набор тегов с закрытием и выбором и поле выбора с панелью — одиночный и множественный выбор с тегами в поле, ввод с поиском и отбором, группы, окно `Virtual`, — как во Vue.
+- Updated dependencies [5c4558e]
+- Updated dependencies [0f59387]
+- Updated dependencies [ad16bef]
+- Updated dependencies [7e375e6]
+- Updated dependencies [0179add]
+- Updated dependencies [b74ddc6]
+- Updated dependencies [89db4ae]
+- Updated dependencies [e7d4c96]
+- Updated dependencies [88078c4]
+- Updated dependencies [434d622]
+- Updated dependencies [74f6de3]
+- Updated dependencies [ba30620]
+- Updated dependencies [4fc4efa]
+- Updated dependencies [b45c170]
+- Updated dependencies [0091f1d]
+- Updated dependencies [7137eaa]
+- Updated dependencies [9d181a3]
+- Updated dependencies [d7ee0bc]
+- Updated dependencies [fba7c84]
+- Updated dependencies [d495df8]
+- Updated dependencies [0da817b]
+- Updated dependencies [132cffc]
+- Updated dependencies [8d4064e]
+- Updated dependencies [b3cb2f3]
+- Updated dependencies [2b5f080]
+- Updated dependencies [8d55e75]
+- Updated dependencies [2036526]
+  - @soldy-ui/plugins@0.3.0-alpha.1
+  - @soldy-ui/setup@0.3.0-alpha.1
+  - @soldy-ui/core@0.3.0-alpha.1
+
 ## 0.3.0-alpha.0
 
 ### Minor Changes
