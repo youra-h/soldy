@@ -1,6 +1,14 @@
 import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { Elevate, createRootProps, renderSlot, resolveSlot, roleIcon, rootTag } from '../../adapter'
+import {
+	Elevate,
+	createPartProps,
+	createRootProps,
+	renderSlot,
+	resolveSlot,
+	roleIcon,
+	rootTag,
+} from '../../adapter'
 import { Icon } from '../icon'
 import { setupField } from './setup.component'
 import type { FieldProps } from './base.component'
@@ -50,6 +58,11 @@ export function Field(props: FieldProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Наборы частей: подпись напечатана раньше, чем контрол вошёл в поле, и её
+	// `for`, сменившийся за гидратацию, помощник допишет в узел после неё
+	const labelAria = createPartProps(() => state.labelAria)
+	const helperAria = createPartProps(() => state.helperAria)
+	const errorAria = createPartProps(() => state.errorAria)
 
 	/** Части поля — под слоем его лифта: зовёт их `Elevate`, внутри себя. */
 	function parts(): JSX.Element {
@@ -69,18 +82,18 @@ export function Field(props: FieldProps): JSX.Element {
 		return (
 			<>
 				<Show when={state.label}>
-					<label class="so-field__label" {...state.labelAria}>
+					<label class="so-field__label" {...labelAria()}>
 						{label() ?? state.label}
 					</label>
 				</Show>
 				<div class="so-field__control">{renderSlot(props.children)}</div>
 				<Show when={state.helperRendered}>
-					<div class="so-field__helper" {...state.helperAria}>
+					<div class="so-field__helper" {...helperAria()}>
 						{helper() ?? state.helper}
 					</div>
 				</Show>
 				<Show when={state.errorRendered}>
-					<div class="so-field__error" {...state.errorAria}>
+					<div class="so-field__error" {...errorAria()}>
 						<Icon
 							embedded="field.error-icon"
 							class="so-field__error-icon"

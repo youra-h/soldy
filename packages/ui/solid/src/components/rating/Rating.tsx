@@ -1,7 +1,15 @@
 import { Index, Show, type Accessor, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TRatingStar } from '@soldy-ui/core'
-import { Elevate, createRootProps, fieldText, resolveSlot, roleIcon, rootTag } from '../../adapter'
+import {
+	Elevate,
+	createPartProps,
+	createRootProps,
+	fieldText,
+	resolveSlot,
+	roleIcon,
+	rootTag,
+} from '../../adapter'
 import { setupRating } from './setup.component'
 import type { RatingProps } from './base.component'
 
@@ -60,6 +68,8 @@ export function Rating(props: RatingProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Полю — его `aria`: имя, `aria-valuetext`, `aria-readonly`
+	const aria = createPartProps(() => state.aria)
 	const value = fieldText(() => (state.value === undefined ? undefined : String(state.value)))
 
 	/** Значок одного слоя звезды: слот `icon` со scope звезды и слоя или иконка роли `star`. */
@@ -104,7 +114,7 @@ export function Rating(props: RatingProps): JSX.Element {
 								id={state.id}
 								name={state.name}
 								disabled={state.disabled}
-								{...state.aria}
+								{...aria()}
 								{...value}
 							/>
 						</span>

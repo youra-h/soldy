@@ -10,8 +10,6 @@ export * from './textable'
 export * from './button'
 export * from './icon'
 export * from './label'
-// Поле формы — раньше полей: при апгрейде разметки элемент, зарегистрированный
-// раньше, собирается раньше, и контрол в поле находит его связку
 export * from './field'
 export * from './check-box'
 export * from './switch'
@@ -29,15 +27,11 @@ export * from './popover'
 export * from './tooltip'
 export * from './dialog'
 export * from './drawer'
-// Менеджер тостов — слой и коллекция: модуль менеджера регистрирует тост после
-// себя
+// Менеджер тостов — слой и коллекция: модуль менеджера регистрирует и тост
 export * from './toasts'
-// Окно и перестановка — раньше коллекций: при апгрейде разметки элемент,
-// зарегистрированный раньше, собирается раньше, и коллекции в обёртке его
-// находят
 export * from './virtual'
 export * from './drag-and-drop'
-// Коллекции: модуль владельца регистрирует свои части после себя
+// Коллекции: модуль владельца регистрирует и свои части
 export * from './radio-group'
 export * from './tabs'
 export * from './accordion'

@@ -66,8 +66,28 @@ export class TEventRelay {
 	 * перечитывает состояние.
 	 */
 	publish(route: IRoute, args: readonly unknown[]): void {
-		const { event, models } = route
+		this._deliver(route, args, this._sinks)
+	}
+
+	/**
+	 * Событие случилось, а отдать его обмен должен позже (`TExchange`, чужая
+	 * сборка): доставка — тем приёмникам, что слушали в момент события. Приёмник,
+	 * снятый до доставки, событие получает — оно случилось при нём; пришедший
+	 * после — нет: для него это начальное состояние. Список не правится на
+	 * месте, поэтому запомнить его — запомнить ссылку.
+	 */
+	later(route: IRoute, args: readonly unknown[]): () => void {
 		const sinks = this._sinks
+
+		return () => this._deliver(route, args, sinks)
+	}
+
+	private _deliver(
+		route: IRoute,
+		args: readonly unknown[],
+		sinks: readonly TEventSink[] | undefined,
+	): void {
+		const { event, models } = route
 
 		if (event === undefined || sinks === undefined) return
 

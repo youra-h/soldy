@@ -400,8 +400,12 @@ Solid-компоненты собирают контекст через `createS
 компонент. Чего тело компонента Solid само не может, дают помощники адаптера:
 атрибуты корня — мемо `createRootProps`, а корня внутри обёртки (окно
 таблицы вокруг `table`) — мемо `createWrappedRootProps` с половинами `ref`
-адаптера (`consumerRef` обёртке, `bindRef` корню), привязанный корень узлом
-(якорь панели Popover, Tooltip и Menu) — аксессор `rootElement` из
+адаптера (`consumerRef` обёртке, `bindRef` корню), атрибуты внутреннего узла
+— набор части (`labelAria` подписи Field) и атрибуты потребителя контролу —
+аксессор `createPartProps` (сменившееся во время гидратации все три
+дописывают в узел после неё: `ui/solid/src/adapter/common/root.ts`, шапка),
+привязанный корень узлом (якорь панели Popover, Tooltip и Menu) — аксессор
+`rootElement` из
 `useAdapter`, классы части без своего экземпляра строкой для `class` (панель
 Menu и подменю на их Frame) — `toPartClass`, слот, по которому разметка
 выбирает запасное (текст Button), — `resolveSlot` поверх `children()`, scope
@@ -417,7 +421,13 @@ scope, — `ResolvedSlot`, петля по ключу записи `drawn` и с
 состояние двух контекстов одним видом — `joinState`,
 своё, затем обработчик потребителя, — `chainHandler`. Сборку мимо обёртки
 ловит тот же сторож: `createAdapterContext` из `@soldy-ui/setup` в
-компонентах Solid запрещён.
+компонентах Solid запрещён. Спред на узле разметки компонента (на нативном
+элементе и на `Dynamic`) — только от этих помощников: `{...x()}`,
+`{...x().поле}` или `{...x}`, где `x` — `const` из `createRootProps`,
+`createWrappedRootProps`, `createPartProps`, `fieldText` или `textareaText`.
+Прямой спред состояния (`{...state.contentAria}`) смену за гидратацию до узла
+не донёс бы, и его ловит блок eslint `soldy/solid-part-props`
+(`eslint.config.ts`, правило — `tools/eslint/rules/solid-part-props.ts`).
 
 Angular-компоненты собирают контекст через `createAngularAdapterContext`
 (`packages/ui/angular/src/adapter/common/`): она берёт локаль поддерева —

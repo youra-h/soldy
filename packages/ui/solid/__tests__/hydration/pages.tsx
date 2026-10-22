@@ -4,7 +4,7 @@
  * Серверный прогон собирает их для сервера и сверяет их разметку с фикстурой
  * (`markup.server.spec.tsx` → `markup/*.html`), прогон гидратации собирает
  * для браузера с метками гидратации и гидратирует фикстуру той же страницей
- * (`collections.hydration.spec.tsx`). Узлы сервера браузер находит по ключам
+ * (`*.hydration.spec.tsx`). Узлы сервера браузер находит по ключам
  * гидратации, а ключи выводятся из места компонента в дереве — поэтому
  * страница у обоих прогонов одна.
  *
@@ -14,9 +14,18 @@
  * же порядке.
  */
 
-import type { JSX } from 'solid-js'
-import type { TTabsCollection, TTagsCollection } from '@soldy-ui/core'
-import { Tabs, Tags, createRootProps } from '@soldy-ui/solid'
+import { createSignal, type JSX } from 'solid-js'
+import type { TAttributesMap, TTabsCollection, TTagsCollection } from '@soldy-ui/core'
+import {
+	Field,
+	ListBox,
+	Input,
+	RadioGroup,
+	Tabs,
+	Tags,
+	createPartProps,
+	createRootProps,
+} from '@soldy-ui/solid'
 
 /** Движок табов страницы — только у гидратации. */
 export type TTabsPageProps = { readonly engine?: TTabsCollection }
@@ -69,4 +78,70 @@ export function RootProbe(props: TRootProbeProps): JSX.Element {
 	})
 
 	return <div {...root()} />
+}
+
+/** Вход соседа зонда части: задаёт набор узлу выше при своей сборке, как контрол — `for` подписи. */
+function PartProbeEntry(props: { readonly enter: () => void }): JSX.Element {
+	props.enter()
+
+	return <i />
+}
+
+/**
+ * Узел, у которого набора до входа соседа нет (`undefined`), — зонд первого
+ * значения помощника части (`createPartProps`): сосед ниже задаёт набор,
+ * когда узел уже напечатан, — у сервера в разметке, у браузера во время
+ * гидратации.
+ */
+export function PartProbe(): JSX.Element {
+	const [set, setSet] = createSignal<TAttributesMap>()
+	const part = createPartProps(set)
+
+	return (
+		<div>
+			<span {...part()} />
+			<PartProbeEntry enter={() => setSet({ 'data-probe': 'entered' })} />
+		</div>
+	)
+}
+
+/**
+ * Поле с контролом со своим `id`: подпись сервер печатает раньше, чем контрол
+ * вошёл в поле, и её `for` ведёт на `id` поля контрола от поля
+ * (`<id монтирования>-control`), а не на `email` (`field.server.spec.tsx`).
+ */
+export function FieldOwnId(): JSX.Element {
+	return (
+		<Field label="Почта">
+			<Input id="email" />
+		</Field>
+	)
+}
+
+/**
+ * Поле с группой: группу подпись называет ссылкой `aria-labelledby`, а `for`
+ * сервер печатает — подпись у него раньше, чем группа вошла в поле.
+ */
+export function FieldGroup(): JSX.Element {
+	return (
+		<Field label="Выбор">
+			<RadioGroup>
+				<RadioGroup.Item value="a">А</RadioGroup.Item>
+			</RadioGroup>
+		</Field>
+	)
+}
+
+/**
+ * ListBox разметкой со слотом пустого списка: слот стоит после элементов, и
+ * сервер решает, рисовать ли его, когда элементы уже вошли в коллекцию, —
+ * его в разметке нет. Браузер при гидратации обязан решить так же
+ * (`list-box.hydration.spec.tsx`).
+ */
+export function ListBoxWithEmpty(): JSX.Element {
+	return (
+		<ListBox empty={<span class="empty">Пусто</span>}>
+			<ListBox.Item value="a" text="A" />
+		</ListBox>
+	)
 }

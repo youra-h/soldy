@@ -4,6 +4,7 @@ import type { ITableRow, TDrawnEntry } from '@soldy-ui/core'
 import {
 	Elevate,
 	KeyedFor,
+	createPartProps,
 	createWrappedRootProps,
 	relaySlot,
 	renderSlot,
@@ -92,6 +93,9 @@ export function Table(props: TableProps): JSX.Element {
 		forward: binding.forwardProps(),
 		wrapper: 'so-table__viewport',
 	}))
+	// Строке шапки и ячейке колонки выбора — наборы коллекции: экземпляров у них нет
+	const headRowAria = createPartProps(() => state.headRowAria)
+	const cellAria = createPartProps(() => state.cellAria)
 
 	/** Запись `drawn`: строка или распорка на месте пропущенных. */
 	const drawEntry = (entry: Accessor<TDrawnEntry<ITableRow>>) => (
@@ -114,16 +118,16 @@ export function Table(props: TableProps): JSX.Element {
 				<Dynamic {...layout().root} component={rootTag(state.tag)} ref={binding.bindRef}>
 					<Elevate layer={binding.layer}>
 						<thead class="so-table__head">
-							<tr class="so-table__head-row" {...state.headRowAria}>
+							<tr class="so-table__head-row" {...headRowAria()}>
 								<Show
 									when={state.mode === 'multiple'}
 									fallback={
 										<Show when={state.mode === 'single'}>
-											<td class="so-table__select" {...state.cellAria} />
+											<td class="so-table__select" {...cellAria()} />
 										</Show>
 									}
 								>
-									<th class="so-table__select" {...state.cellAria}>
+									<th class="so-table__select" {...cellAria()}>
 										<CheckBox
 											embedded="table.select-all"
 											ctrl={facade.selectAll}

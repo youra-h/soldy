@@ -34,8 +34,10 @@ Safari does not support customized built-ins, so the package imports the
 does nothing where the browser supports them natively. With the polyfill an element comes to life a
 microtask after it is inserted, so right after `innerHTML` its `ctrl` is not there yet. Elements
 already in the page when the package is imported are assembled a microtask after the import in every
-browser, so the theme, icons and plugins your entry point sets up right after the import (before any
-top-level `await`) apply to them too.
+browser (with the polyfill, once it has brought them all to life), so the theme, icons and plugins
+your entry point sets up right after the import (before any top-level `await`) apply to them too.
+They are assembled in document order, each owner before the items inside it, whatever order their
+names are registered in; an element your code puts inside such markup before then waits for it.
 
 Shadow DOM is not used — a theme styles global BEM classes, so light DOM is distributed by the
 `slot` attribute by hand. Content for a slot the component does not have is not rendered, and slots
@@ -391,9 +393,7 @@ markup items join again with what their attributes and properties say, so a choi
 A menu's items live in its panel, and the panel is in `body`: it follows the menu. A removed menu
 takes the panel out of `body`, and a menu moved elsewhere — even with a single DOM call — is rebuilt
 together with its panel, so the items join the rebuilt menu and the keyboard and the pointer reach
-them as before. In markup written before the package is imported, items of different kinds —
-actions, checkboxes, radio items, submenus — join a menu one kind after another rather than in
-document order, and the arrows follow that order.
+them as before.
 
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
 (`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,

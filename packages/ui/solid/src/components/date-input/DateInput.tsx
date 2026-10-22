@@ -1,7 +1,15 @@
 import { Show, type Accessor, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TDateInputPart, TDateInputSegment } from '@soldy-ui/core'
-import { Elevate, KeyedFor, createRootProps, resolveSlot, roleIcon, rootTag } from '../../adapter'
+import {
+	Elevate,
+	KeyedFor,
+	createPartProps,
+	createRootProps,
+	resolveSlot,
+	roleIcon,
+	rootTag,
+} from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { setupDateInput } from './setup.component'
@@ -80,6 +88,8 @@ export function DateInput(props: DateInputProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
+	// Ряду частей — его набор: направление и язык
+	const segmentsAttrs = createPartProps(() => state.segmentsAttrs)
 
 	function clear(event: MouseEvent): void {
 		event.stopPropagation()
@@ -92,26 +102,29 @@ export function DateInput(props: DateInputProps): JSX.Element {
 	 * одна на всё его время.
 	 */
 	function segment(entry: Accessor<TDateInputSegment>): JSX.Element {
+		const aria = createPartProps(() => entry().aria)
+
 		return (
 			<Show
 				when={partOf(entry())}
 				fallback={
-					<span
-						class="so-date-input__literal"
-						{...entry().aria}
-						textContent={entry().text}
-					/>
+					<span class="so-date-input__literal" {...aria()} textContent={entry().text} />
 				}
 			>
-				{(part) => (
-					<span
-						class="so-date-input__segment"
-						{...part().attrs}
-						{...part().aria}
-						{...part().dataset}
-						textContent={part().text}
-					/>
-				)}
+				{(part) => {
+					const attrs = createPartProps(() => part().attrs)
+					const dataset = createPartProps(() => part().dataset)
+
+					return (
+						<span
+							class="so-date-input__segment"
+							{...attrs()}
+							{...aria()}
+							{...dataset()}
+							textContent={part().text}
+						/>
+					)
+				}}
 			</Show>
 		)
 	}
@@ -136,7 +149,7 @@ export function DateInput(props: DateInputProps): JSX.Element {
 				<Show when={leadingSlot()}>
 					<div class="so-date-input__leading">{leadingSlot()}</div>
 				</Show>
-				<span class="so-date-input__segments" {...state.segmentsAttrs}>
+				<span class="so-date-input__segments" {...segmentsAttrs()}>
 					<KeyedFor each={state.segments} by={(entry) => entry.key}>
 						{segment}
 					</KeyedFor>

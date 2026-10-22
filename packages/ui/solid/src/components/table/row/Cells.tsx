@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
-import { KeyedFor, liveScope, renderSlot } from '../../../adapter'
+import { KeyedFor, createPartProps, liveScope, renderSlot } from '../../../adapter'
 import type { TableRowProps } from './base.component'
 
 /** Входы ячеек — то, что строка уже получила, и сама строка для scope слота. */
@@ -54,6 +54,9 @@ type TTableRowCellsProps = {
  * тысячи, и ячейке без слота он ни к чему.
  */
 export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
+	// Набор ячеек строки — один на все её ячейки
+	const cellAria = createPartProps(() => props.cellAria)
+
 	/** Содержимое ячейки: слот, а без него и на месте пустого — значение текстом. */
 	const content = (cell: Accessor<TTableCell>): JSX.Element => {
 		const slot = props.cell
@@ -66,18 +69,23 @@ export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
 	}
 
 	/** Ячейка колонки — заголовок строки или обычная. */
-	const drawCell = (cell: Accessor<TTableCell>) => (
-		<Dynamic
-			component={cell().rowHeader ? 'th' : 'td'}
-			class="so-table-row__cell"
-			scope={cell().rowHeader ? 'row' : undefined}
-			{...cell().dataset}
-			{...props.cellAria}
-			{...cell().aria}
-		>
-			{content(cell)}
-		</Dynamic>
-	)
+	const drawCell = (cell: Accessor<TTableCell>) => {
+		const dataset = createPartProps(() => cell().dataset)
+		const aria = createPartProps(() => cell().aria)
+
+		return (
+			<Dynamic
+				component={cell().rowHeader ? 'th' : 'td'}
+				class="so-table-row__cell"
+				scope={cell().rowHeader ? 'row' : undefined}
+				{...dataset()}
+				{...cellAria()}
+				{...aria()}
+			>
+				{content(cell)}
+			</Dynamic>
+		)
+	}
 
 	return (
 		<KeyedFor each={props.cells} by={(cell) => cell.column.uid}>

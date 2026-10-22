@@ -2,6 +2,7 @@ import { Show, type Accessor, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	chainHandler,
+	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -54,6 +55,8 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 		sets: [state.dataset, state.attrs],
 		forward: toRootForward(binding.forwardProps()),
 	}))
+	// Набор панели: своего корня у неё нет
+	const contentAria = createPartProps(() => state.contentAria)
 	const title = resolveSlot(
 		() => props.header,
 		() => ({ text: state.text ?? '', selected: state.selected ?? false }),
@@ -117,7 +120,7 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 					{title() ?? state.text}
 				</Button>
 				<div class="so-accordion-item__body">
-					<div class="so-accordion-item__content" {...state.contentAria}>
+					<div class="so-accordion-item__content" {...contentAria()}>
 						{renderSlot(props.children)}
 					</div>
 				</div>

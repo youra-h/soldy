@@ -169,18 +169,24 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
 		const scope = new TReactElevatorScope(layer)
 		const held: object[] = []
+		// Повтор выброшенного рендера над тем же `ctrl` собирается с id
+		// выброшенного (см. `TDrafts.take`)
+		let id = mountId
 		// Id монтирования и локаль, заданные опцией явно, остаются за тем, кто
 		// их задал
 		const create: TCreateAdapterContext = (descriptor, options, config) => {
-			held.push(...drafts.take(options))
+			const taken = drafts.take(options)
 
-			return createAdapterContext(descriptor, { mountId, locale, ...options }, config)
+			held.push(...taken.held)
+			id = taken.mountId ?? id
+
+			return createAdapterContext(descriptor, { mountId: id, locale, ...options }, config)
 		}
 		const built = new TBuilt(factory(create, scope.elevator), scope, held)
 
 		// Черновик уничтожает та же стрелка сборки: стрелка отсюда держала бы
 		// область хука, пока черновик не приняли
-		drafts.add(held, built.destroy)
+		drafts.add(held, built.destroy, id)
 
 		return built
 	}

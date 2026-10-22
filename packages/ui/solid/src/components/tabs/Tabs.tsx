@@ -2,6 +2,7 @@ import { For, Show, type JSX } from 'solid-js'
 import {
 	Elevate,
 	ResolvedSlot,
+	createPartProps,
 	createRootProps,
 	relaySlot,
 	renderSlot,
@@ -51,14 +52,15 @@ export function Tabs(props: TabsProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	// Списку табов — остальное от потребителя, поверх его `aria`
-	const control = () => toControlAttrs<TabsAttributes>(binding.forwardProps())
+	// Списку табов — его `aria`, поверх — остальное от потребителя
+	const aria = createPartProps(() => state.aria)
+	const control = createPartProps(() => toControlAttrs<TabsAttributes>(binding.forwardProps()))
 
 	return (
 		<Show when={state.rendered}>
 			<div {...root()} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
-					<div class="so-tabs__list" {...state.aria} {...control()}>
+					<div class="so-tabs__list" {...aria()} {...control()}>
 						<ResolvedSlot content={props.leading}>
 							{(leading) => <div class="so-tabs__list--leading">{leading()}</div>}
 						</ResolvedSlot>

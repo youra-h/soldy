@@ -15,7 +15,8 @@
  * сервера `for` остаётся, а называет её ссылка — точная.
  *
  * Гидратацию проверяет отдельный прогон пакета (`hydration` в
- * `vitest.config.ts`) — пока только у коллекций разметкой.
+ * `vitest.config.ts`): `for` подписи, сменившийся за неё, — в
+ * `hydration/field.hydration.spec.tsx`.
  */
 
 import { describe, it, expect } from 'vitest'

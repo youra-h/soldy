@@ -2,6 +2,7 @@ import { Show, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
+	createPartProps,
 	createRootProps,
 	fieldText,
 	resolveSlot,
@@ -79,7 +80,13 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	const control = () => toControlAttrs<NumberInputAttributes>(binding.forwardProps())
+	// Вводу — его наборы в порядке Vue, поверх — остальные атрибуты потребителя
+	const inputAttrs = createPartProps(() => state.inputAttrs)
+	const aria = createPartProps(() => state.aria)
+	const inputAria = createPartProps(() => state.inputAria)
+	const control = createPartProps(() =>
+		toControlAttrs<NumberInputAttributes>(binding.forwardProps()),
+	)
 	const text = fieldText(() => state.text)
 
 	function clear(event: MouseEvent): void {
@@ -125,9 +132,9 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
 					required={state.required}
 					autocomplete="off"
 					spellcheck="false"
-					{...state.inputAttrs}
-					{...state.aria}
-					{...state.inputAria}
+					{...inputAttrs()}
+					{...aria()}
+					{...inputAria()}
 					{...control()}
 					{...text}
 				/>

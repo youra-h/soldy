@@ -260,5 +260,20 @@ export default defineConfigWithVueTs(
 			],
 		},
 	},
+	// Атрибуты узла разметки компонента Solid — от помощника адаптера, а не
+	// спредом прямо из состояния: набор, сменившийся во время гидратации, спред
+	// запомнил бы как записанный, и до узла он не дошёл бы
+	// (packages/ui/solid/src/adapter/common/root.ts, шапка, «Гидратация»).
+	// Своё правило, а не `no-restricted-syntax`: flat config заменил бы им
+	// селекторы `soldy/no-casts` на этих путях. Что блок включён, проверяет
+	// tools/eslint/__tests__.
+	{
+		name: 'soldy/solid-part-props',
+		files: ['packages/ui/solid/src/components/**/*.tsx'],
+		plugins: { soldy },
+		rules: {
+			'soldy/solid-part-props': 'error',
+		},
+	},
 	skipFormatting,
 )

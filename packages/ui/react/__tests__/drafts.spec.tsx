@@ -5,8 +5,9 @@
  * React об отброшенной сборке не сообщает, поэтому её освобождает следующая
  * сборка того же `ctrl` или движка. Сборка, отброшенная без следующей, живёт
  * до неё — и освобождается, как только тот же `ctrl` или движок собирают
- * снова. Настоящий цикл React сторожит `external-lifetime.spec.tsx`, здесь —
- * правила без фреймворка.
+ * снова. Сборка на месте отброшенной над тем же `ctrl` берёт её id
+ * монтирования. Настоящий цикл React сторожат `external-lifetime.spec.tsx` и
+ * `remount-ctrl.spec.tsx`, здесь — правила без фреймворка.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -18,7 +19,7 @@ describe('TDrafts', () => {
 		const ctrl = {}
 		const destroy = vi.fn()
 
-		drafts.add(drafts.take({ ctrl }), destroy)
+		drafts.add(drafts.take({ ctrl }).held, destroy, 'a')
 		drafts.take({ ctrl })
 		drafts.take({ ctrl })
 
@@ -30,7 +31,7 @@ describe('TDrafts', () => {
 		const ctrl = {}
 		const destroy = vi.fn()
 
-		drafts.add(drafts.take({ ctrl }), destroy)
+		drafts.add(drafts.take({ ctrl }).held, destroy, 'a')
 		drafts.take({ ctrl: {} })
 
 		expect(destroy).not.toHaveBeenCalled()
@@ -44,9 +45,9 @@ describe('TDrafts', () => {
 		const drafts = new TDrafts()
 		const ctrl = {}
 		const destroy = vi.fn()
-		const held = drafts.take({ ctrl })
+		const { held } = drafts.take({ ctrl })
 
-		drafts.add(held, destroy)
+		drafts.add(held, destroy, 'a')
 		drafts.accept(held)
 		drafts.take({ ctrl })
 
@@ -58,7 +59,7 @@ describe('TDrafts', () => {
 		const engine = {}
 		const destroy = vi.fn()
 
-		drafts.add(drafts.take({ options: { owner: {}, engine } }), destroy)
+		drafts.add(drafts.take({ options: { owner: {}, engine } }).held, destroy, 'a')
 		drafts.take({ options: { engine } })
 
 		expect(destroy).toHaveBeenCalledTimes(1)
@@ -70,7 +71,11 @@ describe('TDrafts', () => {
 		const engine = {}
 		const destroy = vi.fn()
 
-		drafts.add([...drafts.take({ ctrl }), ...drafts.take({ options: { engine } })], destroy)
+		drafts.add(
+			[...drafts.take({ ctrl }).held, ...drafts.take({ options: { engine } }).held],
+			destroy,
+			'a',
+		)
 		drafts.take({ options: { engine } })
 		drafts.take({ ctrl })
 
@@ -80,6 +85,40 @@ describe('TDrafts', () => {
 	it('без ctrl и движка сборка ничего не берёт и не запоминается', () => {
 		const drafts = new TDrafts()
 
-		expect(drafts.take({ props: { text: 'x' }, options: { owner: {} } })).toEqual([])
+		expect(drafts.take({ props: { text: 'x' }, options: { owner: {} } })).toEqual({
+			held: [],
+			mountId: undefined,
+		})
+	})
+
+	describe('id монтирования', () => {
+		it('сборка на месте отброшенной над тем же ctrl берёт её id', () => {
+			const drafts = new TDrafts()
+			const ctrl = {}
+
+			drafts.add(drafts.take({ ctrl }).held, vi.fn(), 'a')
+
+			expect(drafts.take({ ctrl }).mountId).toBe('a')
+		})
+
+		it('у принятой сборки id не берут: следующее монтирование — своё', () => {
+			const drafts = new TDrafts()
+			const ctrl = {}
+			const { held } = drafts.take({ ctrl })
+
+			drafts.add(held, vi.fn(), 'a')
+			drafts.accept(held)
+
+			expect(drafts.take({ ctrl }).mountId).toBeUndefined()
+		})
+
+		it('движок без ctrl id не передаёт: компоненты на нём пишут id каждый в свой инстанс', () => {
+			const drafts = new TDrafts()
+			const engine = {}
+
+			drafts.add(drafts.take({ options: { engine } }).held, vi.fn(), 'a')
+
+			expect(drafts.take({ options: { engine } }).mountId).toBeUndefined()
+		})
 	})
 })
