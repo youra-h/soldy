@@ -35,7 +35,9 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > Accordion by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
 > `contained` it stays in place. Popover (`<span so-popover>`) and Tooltip (`<span so-tooltip>`)
-> are panels on a Frame anchored to the element you write them on. The modal window Dialog
+> are panels on a Frame anchored to the element you write them on. Menu (`<span so-menu>`) is an
+> action menu at a button or, with `openOn="contextmenu"`, on right click, with submenus,
+> checkbox and radio items and an item with its own panel. The modal window Dialog
 > (`<div so-dialog>`) and the sliding panel Drawer (`<div so-drawer>`) are layers themselves, with a
 > backdrop placed before them. Toasts (`<div so-toasts>` around the application, a toast from code
 > with `useToasts().show(…)`) show notifications at an edge of the window. `so-locale-provider`
@@ -302,6 +304,34 @@ template: `<span so-popover aria_label="Filters" (soChangeOpen)="opened.set($eve
     <button so-button text="Save" [so-attributes]="triggerAria"></button>
   </ng-template>
   Save a draft
+</span>`
+```
+
+A menu is written on your element too, `<span so-menu>`, with its trigger template as in a popover
+— a button, or with `openOn="contextmenu"` the area it is called over by a right click, a long
+touch or Shift+F10, and then the panel opens at that point. The items are parts on your own
+elements: `<div so-menu-item>` (an action — `(soChoose)` on the menu tells which one was chosen),
+`<div so-menu-checkbox-item>`, `<div so-menu-radio-item>` inside `<div so-menu-radio-group>`
+(the group's `[value]` and `(soChangeValue)`), `<div so-menu-group label="…">`,
+`<div so-menu-separator>`, `<div so-menu-submenu>` with items of its own and
+`<div so-menu-popover-item>` with any content in its own side panel. A checkbox or a radio item is
+checked with `[selected]` and `(soChangeSelected)`. Without items in the markup, the menu draws them
+from `[items]`: an item with nested `items` is a submenu, groups come from `_.group` or `groupBy`,
+and the item slots are templates — `item`, `item-leading`, `item-trailing`, `item-header` and
+`item-arrow-icon`, with the item in the context; a submenu from data gets them under the same names.
+
+```ts
+template: `<span so-menu (soChoose)="run($event.value)">
+  <ng-template slot="trigger" let-triggerAria="triggerAria" let-triggerDataset="triggerDataset">
+    <button so-button text="Actions" [so-attributes]="{ ...triggerAria, ...triggerDataset }"></button>
+  </ng-template>
+  <div so-menu-item value="edit" text="Edit"><span slot="trailing">Ctrl+E</span></div>
+  <div so-menu-submenu value="share" text="Share">
+    <div so-menu-item value="link" text="Link"></div>
+    <div so-menu-item value="mail" text="Mail"></div>
+  </div>
+  <div so-menu-separator></div>
+  <div so-menu-item value="remove" text="Delete"></div>
 </span>`
 ```
 

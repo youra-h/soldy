@@ -14,7 +14,8 @@
  * Своё у Web Components — спутник корня: подложку ставит прямо перед панелью,
  * увозит в цель и возвращает на место с `contained`, уводит за местом и прячет
  * база элемента. И перенос: ни `contained` туда и обратно, ни смена цели не
- * пересобирают ни панель, ни кнопки в ней.
+ * пересобирают ни панель, ни кнопки в ней, а панель, переставленная
+ * потребителем одной операцией, собирает их заново — с локалью нового места.
  *
  * Раскладку, анимацию темы и настоящий указатель jsdom не выполняет — край,
  * размер, контейнер и жест мышью — браузерные спеки Vue и
@@ -24,11 +25,12 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { TButton, TComponentView, TDrawer } from '@soldy-ui/core'
 import type { TCloseEvent, TCloseReason } from '@soldy-ui/core'
-import { TBasePlugin, type IPluginContext } from '@soldy-ui/plugins'
+import { TBasePlugin, ruRU, zhCN, type IPluginContext } from '@soldy-ui/plugins'
 import { DrawerDescriptor, usePlugins } from '@soldy-ui/setup'
 import {
 	TDialogElement,
 	TDrawerElement,
+	TLocaleProviderElement,
 	type TDialogElementProps,
 	type TDrawerElementProps,
 } from '@soldy-ui/webc'
@@ -107,6 +109,15 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: HTML-узла нет`)
 
 	return element
+}
+
+/** Провайдер локали по селектору; нет его — тест падает здесь. */
+function localeProvider(selector: string, scope: ParentNode = document): TLocaleProviderElement {
+	const node = scope.querySelector(selector)
+
+	if (!(node instanceof TLocaleProviderElement)) throw new Error(`${selector}: провайдера нет`)
+
+	return node
 }
 
 const panel = (scope: ParentNode = document) => find('.so-drawer', scope)
@@ -650,10 +661,12 @@ describe('открытость — visible', () => {
 
 /**
  * Сборки считает плагин-зонд при установке набора: `contained` туда и обратно
- * и смена цели связку не трогают ни у панели, ни у кнопок в ней.
+ * и смена цели связку не трогают ни у панели, ни у кнопок в ней, а панель,
+ * переставленная потребителем, собирает их заново.
  */
 describe('перенос', () => {
-	const assembled: string[] = []
+	/** Сборки кнопок — их текст и тег локали, по одной на связку. */
+	const assembled: (readonly [text: string, locale: string])[] = []
 
 	let destroyed = 0
 
@@ -667,7 +680,7 @@ describe('перенос', () => {
 
 			if (instance instanceof TButton) {
 				this._button = true
-				assembled.push(instance.text)
+				assembled.push([instance.text, ctx.locale.locale.tag])
 			}
 		}
 
@@ -677,6 +690,12 @@ describe('перенос', () => {
 			super.destroy()
 		}
 	}
+
+	/** Тексты собранных кнопок — по порядку текста: у крестика он пуст. */
+	const texts = () => assembled.map(([text]) => text).sort()
+
+	/** Теги локали сборок кнопок. */
+	const locales = () => assembled.map(([, locale]) => locale)
 
 	// Перед тестом, а не после: общий `afterEach` файла чистит `body` позже
 	// хука группы, и связки прошлого теста уничтожаются уже после сброса
@@ -693,7 +712,7 @@ describe('перенос', () => {
 		})
 		const action = find('.so-test-action')
 
-		expect([...assembled].sort()).toEqual(['', 'Применить'])
+		expect(texts()).toEqual(['', 'Применить'])
 
 		drawer.contained = true
 		await flush()
@@ -705,8 +724,47 @@ describe('перенос', () => {
 
 		expect(drawer.parentElement).toBe(document.body)
 		expect(find('.so-test-action')).toBe(action)
-		expect([...assembled].sort()).toEqual(['', 'Применить'])
+		expect(texts()).toEqual(['', 'Применить'])
 		expect(destroyed).toBe(0)
+	})
+
+	/**
+	 * Панель переставлена одной операцией, без снятия: её новая сборка увозит
+	 * панель в цель, и отключение кнопок в ней браузер доводит внутри этого
+	 * переноса, — а оно всё равно настоящее. Имя крестика тут не довод: его
+	 * пишет шаблон панели из `closeAria`, и сменилось бы оно и без пересборки
+	 * крестика.
+	 */
+	it('панель, переставленная одной операцией, собирает крестик и кнопку под новым провайдером', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin], { scope: 'all' })
+
+		const page = document.createElement('div')
+
+		page.innerHTML = `<so-locale-provider class="so-test-ru"><div is="so-drawer"><button is="so-button" class="so-test-action" text="Применить"></button></div></so-locale-provider>
+			<so-locale-provider class="so-test-zh"></so-locale-provider>`
+		localeProvider('.so-test-ru', page).locale = ruRU
+		localeProvider('.so-test-zh', page).locale = zhCN
+		document.body.appendChild(page)
+		// Признак переноса первой сборки держится до микрозадачи
+		await flush()
+
+		const drawer = panel()
+		const action = find('.so-test-action')
+		const other = localeProvider('.so-test-zh')
+
+		expect(locales()).toEqual([ruRU.tag, ruRU.tag])
+
+		assembled.length = 0
+		other.appendChild(drawer)
+
+		expect(texts()).toEqual(['', 'Применить'])
+		expect(locales()).toEqual([zhCN.tag, zhCN.tag])
+		expect(destroyed).toBe(2)
+		expect(drawer.parentElement).toBe(document.body)
+		expect(backdrop().nextElementSibling).toBe(drawer)
+		expect(find('.so-test-action')).toBe(action)
+		expect(anchors(localeProvider('.so-test-ru'))).toHaveLength(0)
+		expect(anchors(other)).toHaveLength(1)
 	})
 
 	/**
@@ -758,7 +816,7 @@ describe('перенос', () => {
 
 			expect(drawer.parentElement).toBe(document.body)
 			expect(backdrop().nextElementSibling).toBe(drawer)
-			expect([...assembled].sort()).toEqual(['', 'Применить'])
+			expect(texts()).toEqual(['', 'Применить'])
 			expect(destroyed).toBe(0)
 		} finally {
 			observer.disconnect()

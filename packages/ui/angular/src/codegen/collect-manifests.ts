@@ -9,6 +9,11 @@
  *     коллекции, тем же реэкспортом:
  *     `export { ListBoxCollectionDescriptor as facade } from '@soldy-ui/setup'`.
  *     Контекстов у такого компонента два, и поверхность одна на оба
+ *   - `ownerFacade` — у части, которая сразу и элемент коллекции над ней, и
+ *     владелец своей (пункт с подменю), — фабрика дескриптора фасада владельца,
+ *     своей коллекции; `facade` у неё — фасад элемента в коллекции над ней:
+ *     `export { MenuSubmenuCollectionDescriptor as ownerFacade } from '@soldy-ui/setup'`.
+ *     Контекстов три, и поверхность одна на все
  *
  * Сгенерированный файл берёт тип фабрики из самого манифеста
  * (`typeof descriptor` в типах входов и выходов), поэтому манифест попадает в
@@ -37,6 +42,11 @@ export type TManifest = {
 	descriptor: () => IComponentDescriptor
 	/** Фабрика дескриптора фасада коллекции — у коллекционного компонента. */
 	facade?: () => IComponentDescriptor
+	/**
+	 * Фабрика дескриптора фасада владельца — своей коллекции — у части, которая
+	 * сразу и элемент коллекции над ней (`facade`), и её владелец.
+	 */
+	ownerFacade?: () => IComponentDescriptor
 }
 
 /** Папки с манифестом в `dir` и глубже, путём от `root` через `/`, по порядку обхода. */
@@ -73,6 +83,7 @@ export async function collectManifests(): Promise<TManifest[]> {
 				folder,
 				descriptor: mod.descriptor,
 				...(typeof mod.facade === 'function' ? { facade: mod.facade } : {}),
+				...(typeof mod.ownerFacade === 'function' ? { ownerFacade: mod.ownerFacade } : {}),
 			})
 		}
 	}

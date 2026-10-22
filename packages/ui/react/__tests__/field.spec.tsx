@@ -5,11 +5,13 @@
  * адаптере есть. Части — разметка поля: часть стоит, пока задан её текст,
  * ошибка — при `invalid` и на месте подсказки. С контролом поле связывает
  * проводка: поле опускает связку по лифту (`Elevate`), контрол её берёт.
- * Labelable-контрол (Input, NumberInput, CheckBox, Switch, Rating, Slider с
- * одной ручкой) подпись называет своим `for`, группу (DateInput, DatePicker,
- * RadioGroup, Slider с несколькими ручками) — ссылкой `aria-labelledby`.
- * Справку контрол получает в `aria-describedby`, ошибку — `aria-invalid` и
- * `data-invalid` на своём корне.
+ * Labelable-контрол (Input, NumberInput, Select, CheckBox, Switch, Rating,
+ * Slider с одной ручкой) подпись называет своим `for`, группу (DateInput,
+ * DatePicker, RadioGroup, Slider с несколькими ручками) — ссылкой
+ * `aria-labelledby`. Справку контрол получает в `aria-describedby`, ошибку —
+ * `aria-invalid` и `data-invalid` на своём корне. У Select связку берёт он
+ * сам, а не его поле — деталь его разметки: набор `aria` Select разметка
+ * кладёт на `<input>` поля.
  *
  * Своё у React — момент приёма: контрол сообщает полю о себе при коммите, а
  * эффекты детей React зовёт раньше родителя. Контрол в слоте поля поэтому
@@ -35,6 +37,7 @@ import {
 	NumberInput,
 	RadioGroup,
 	Rating,
+	Select,
 	Slider,
 	Switch,
 } from '@soldy-ui/react'
@@ -162,6 +165,17 @@ describe('Field · разметка', () => {
 const LABELABLES: ReadonlyArray<readonly [string, () => ReactNode, string, string]> = [
 	['Input', () => <Input />, '.so-input', '.so-input input'],
 	['NumberInput', () => <NumberInput />, '.so-number-input', '.so-number-input__input'],
+	[
+		'Select',
+		() => (
+			<Select>
+				<Select.Item value="msk" text="Москва" />
+				<Select.Item value="tver" text="Тверь" />
+			</Select>
+		),
+		'.so-select',
+		'.so-select input',
+	],
 	['CheckBox', () => <CheckBox />, '.so-check-box', '.so-check-box input'],
 	['Switch', () => <Switch />, '.so-switch', '.so-switch input'],
 	['Rating', () => <Rating />, '.so-rating', '.so-rating input'],
@@ -467,6 +481,15 @@ describe('Field · имя контрола', () => {
 		expect(group.hasAttribute('aria-labelledby')).toBe(false)
 	})
 
+	/** Набор `aria` Select разметка кладёт на его поле: имя — у элемента под фокусом. */
+	it('Select: aria_label доходит до комбобокса', () => {
+		mount(<Select aria_label="Город" />)
+
+		expect(
+			find(document, '.so-select input', HTMLInputElement).getAttribute('aria-label'),
+		).toBe('Город')
+	})
+
 	it('флажок в подписи Label внутри поля: Label называет его, поле даёт справку', () => {
 		mount(
 			<Field helper="Можно отказаться в любой момент">
@@ -500,6 +523,25 @@ describe('Field · одно поле — один контрол', () => {
 		expect(second.id).toBe('')
 		expect(second.hasAttribute('aria-describedby')).toBe(false)
 		expect(label().htmlFor).toBe(find(document, '.so-input input', HTMLInputElement).id)
+	})
+
+	/**
+	 * Поле Select — деталь его разметки (`embedded`): связку берёт Select, а
+	 * своему содержимому опускает пустую — его `Input` её не берёт, и `for`
+	 * подписи ведёт на комбобокс через `id` Select.
+	 */
+	it('поле Select — деталь его разметки: связку берёт Select, а не его Input', () => {
+		mount(
+			<Field label="Город">
+				<Select />
+			</Field>,
+		)
+
+		const combobox = find(document, '.so-select input', HTMLInputElement)
+
+		expect(combobox.getAttribute('role')).toBe('combobox')
+		expect(combobox.id).not.toBe('')
+		expect(label().htmlFor).toBe(combobox.id)
 	})
 
 	/**

@@ -1,0 +1,16 @@
+<div data-hk="00100" class="so-field so-field--size-normal so-field--position-top " style="" ><label data-hk="00101000" class="so-field__label " id="000-label" for="000-control">Почта</label><div data-hk="0010101" class="so-field__control"><template id="pl-00101020"></template><!--pl-00101020--></div></div><script>self.$R=self.$R||[];_$HY.r["0010102000"]=$R[0]=($R[1]=($R[2]=() => {
+	const resolver = {
+		p: 0,
+		s: 0,
+		f: 0
+	};
+	resolver.p = new Promise((resolve, reject) => {
+		resolver.s = resolve;
+		resolver.f = reject;
+	});
+	return resolver;
+})()).p;_$HY.r["00101020"]=$R[3]=($R[4]=$R[2]()).p;</script><template id="00101020"><div data-hk="00101020010100" data-disabled="false" class="so-input so-input--size-normal " style="" ><input data-hk="0010102001010101" type="text" id="email" name="" placeholder="" /></div></template><script>$df("00101020");function $df(e,n,o,t){if(n=document.getElementById(e),o=document.getElementById("pl-"+e)){for(;o&&8!==o.nodeType&&o.nodeValue!=="pl-"+e;)t=o.nextSibling,o.remove(),o=t;_$HY.done?o.remove():o.replaceWith(n.content)}n.remove(),_$HY.fe(e)};($R[5]=(resolver, data) => {
+	resolver.s(data);
+	resolver.p.s = 1;
+	resolver.p.v = data;
+})($R[1],!0);$R[5]($R[4],!0);</script>

@@ -452,10 +452,10 @@ Angular-компоненты собирают контекст через `creat
 приложению — `useToasts()` (`src/adapter/toasts/`): слой лифта над компонентом
 он берёт в контексте инъекции его поля, а API из слоя — на каждый `show`, и
 лифт за адаптерный слой не выходит. Корень значением — якорь панели
-Popover и Tooltip, `[anchor_anchor]="rootElement()"`, — шаблону отдаёт тоже
-база, сигналом `rootElement()`: тот узел, который она отдала `TElementPlugin`,
-`null` на сервере и до первой отрисовки, — а не `inject(ElementRef)` в
-компоненте.
+Popover, Tooltip, Menu и пунктов меню со своей панелью,
+`[anchor_anchor]="rootElement()"`, — шаблону отдаёт тоже база, сигналом
+`rootElement()`: тот узел, который она отдала `TElementPlugin`, `null` на
+сервере и до первой отрисовки, — а не `inject(ElementRef)` в компоненте.
 Сборку мимо обёртки ловит тот же сторож: `createAdapterContext` из
 `@soldy-ui/setup` в компонентах Angular запрещён, как и `inject` из
 `@angular/core`.
@@ -485,9 +485,9 @@ React-компоненты держат adapter-context между рендер�
 сам, `memo`, а обёрткой адаптера `withRenderBoundary` (там же): под ней строки
 `Table` и их ячейки — таблица перерисовывается на каждый выбор, а их
 перерисовывают только своё состояние и смена входов. Корень значением
-рендера — якорь панели Popover, Tooltip, Menu и пунктов меню со своей панелью
-(`Menu.Submenu`, `Menu.PopoverItem`), `:anchor_anchor="rootElement"` у
-Vue, — компонент тоже берёт не своим `useState` из ref-функции, а хуком
+рендера — якорь панели Popover, Tooltip, Menu, пунктов меню со своей панелью
+(`Menu.Submenu`, `Menu.PopoverItem`) и Select, `:anchor_anchor="rootElement"`
+у Vue, — компонент тоже берёт не своим `useState` из ref-функции, а хуком
 адаптера `useRootElement` (там же) от `root` связки: `null` на сервере и до
 коммита, узел после, а подписку на корень заводит только он — остальные
 компоненты лишней перерисовки после монтирования не получают (сторожит

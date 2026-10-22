@@ -2,11 +2,12 @@
  * Запись `focused = true` ставит фокус туда, где он у компонента живёт.
  *
  * Сценарии — те же, что у Vue (`focus-target.spec.ts`), по компонентам
- * адаптера. У поля корень — коробка вокруг `<input>`, у ListBox — рамка
- * вокруг узла списка, у Tabs — рамка со списком табов и панелями, у группы
- * радио и аккордеона — контейнер остановок, у элемента коллекции — обёртка
- * вокруг строки; узел фокуса называет правило дескриптора (`focusTarget`
- * плагина действия).
+ * адаптера. У поля корень — коробка вокруг `<input>`, у Select — рамка вокруг
+ * поля и тегов, у ListBox — рамка вокруг узла списка, у Tabs — рамка со
+ * списком табов и панелями, у набора тегов — ряд, у группы радио и
+ * аккордеона — контейнер остановок, у элемента коллекции — обёртка вокруг
+ * строки; узел фокуса называет правило дескриптора (`focusTarget` плагина
+ * действия).
  *
  * Своё у React — `act`: запись `focused` и фокус меняют состояние компонентов
  * (у Tabs — ещё и таба), и обновление мимо `act` роняет тест сторожем консоли.
@@ -35,10 +36,14 @@ import {
 	TRadioGroupItem,
 	TRating,
 	TScroller,
+	TSelect,
+	TSelectItem,
 	TSlider,
 	TSwitch,
 	TTabs,
 	TTabsItem,
+	TTags,
+	TTagsItem,
 	TTextarea,
 	createEngineCalendar,
 	createEngineTabs,
@@ -58,9 +63,11 @@ import {
 	RadioGroup,
 	Rating,
 	Scroller,
+	Select,
 	Slider,
 	Switch,
 	Tabs,
+	Tags,
 	Textarea,
 } from '@soldy-ui/react'
 import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
@@ -197,6 +204,40 @@ const CASES: Record<string, TCase> = {
 			}
 		},
 		target: '.target',
+	},
+	// Фокус держит `<input>` поля, а корень — рамка вокруг поля и тегов
+	Select: {
+		render: () => {
+			const ctrl = new TSelect()
+
+			return {
+				ctrl,
+				node: (
+					<Select ctrl={ctrl}>
+						<Select.Item value="a" text="A" />
+					</Select>
+				),
+			}
+		},
+		target: '.so-select__field input',
+	},
+	'Select multiple с тегами': {
+		render: () => {
+			const ctrl = new TSelect()
+
+			return {
+				ctrl,
+				node: (
+					<Select ctrl={ctrl} mode="multiple" value={['a', 'b']}>
+						<Select.Item value="a" text="A" />
+						<Select.Item value="b" text="B" />
+					</Select>
+				),
+			}
+		},
+		target: '.so-select__field input',
+		// Крестик тега — нативная остановка перед полем
+		before: '.so-tags-item__close',
 	},
 	'RadioGroup.Item': {
 		render: () => {
@@ -390,6 +431,56 @@ const CASES: Record<string, TCase> = {
 			}
 		},
 		target: '.target .so-accordion-item__header',
+	},
+	'Tags с выбором': {
+		render: () => {
+			const ctrl = new TTags()
+
+			return {
+				ctrl,
+				node: (
+					<Tags ctrl={ctrl} mode="single" closable>
+						<Tags.Item value="a" text="A" />
+						<Tags.Item value="b" text="B" selected className="target" />
+					</Tags>
+				),
+			}
+		},
+		// Остановка — выбранный тег, а не крестик первого и не первая строка
+		target: '.target [role="option"]',
+	},
+	'Tags без выбора': {
+		render: () => {
+			const ctrl = new TTags()
+
+			return {
+				ctrl,
+				node: (
+					<Tags ctrl={ctrl} closable>
+						<Tags.Item value="a" text="A" className="target" />
+						<Tags.Item value="b" text="B" />
+					</Tags>
+				),
+			}
+		},
+		// У строк остановки нет — остановка набора — крестик первого тега
+		target: '.target .so-tags-item__close',
+	},
+	'Tags.Item': {
+		render: () => {
+			const ctrl = new TTagsItem({ value: 'b', text: 'B' })
+
+			return {
+				ctrl,
+				node: (
+					<Tags closable>
+						<Tags.Item value="a" text="A" />
+						<Tags.Item ctrl={ctrl} className="target" />
+					</Tags>
+				),
+			}
+		},
+		target: '.target [role="listitem"]',
 	},
 	'Tabs.Item': {
 		render: () => {
@@ -741,6 +832,40 @@ describe('RadioGroup · отметка по модели', () => {
 		})
 
 		expect(document.activeElement).toBe(target())
+	})
+})
+
+describe('Select.Item · фокус остаётся на поле', () => {
+	/**
+	 * У комбобокса DOM-фокус всегда на поле, а подсвеченную опцию объявляет
+	 * `aria-activedescendant`: правила у опции нет, и запись её `focused`
+	 * фокус с поля не уводит.
+	 */
+	it('focused = true у опции фокус с поля не уводит', async () => {
+		const select = new TSelect()
+		const item = new TSelectItem({ value: 'b', text: 'B' })
+
+		mount(
+			<Select ctrl={select}>
+				<Select.Item value="a" text="A" />
+				<Select.Item ctrl={item} />
+			</Select>,
+		)
+		await nextFrame()
+
+		act(() => {
+			select.focused = true
+		})
+
+		const field = find(document, '.so-select__field input', HTMLElement)
+
+		expect(document.activeElement).toBe(field)
+
+		act(() => {
+			item.focused = true
+		})
+
+		expect(document.activeElement).toBe(field)
 	})
 })
 

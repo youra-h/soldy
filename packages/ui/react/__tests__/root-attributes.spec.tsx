@@ -14,15 +14,16 @@
  * адаптера: у всех компонентов, у полей и элементов коллекций тоже — корень, а
  * не `<input>` и не строку, у таблицы — окно, её внешний узел.
  *
- * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`) делит
- * атрибуты потребителя, как у Vue: класс и стиль — корню, остальное — строке
- * (у радио — полю), поверх её набора `aria`. Корень остаётся за адаптером и у
- * него. Пункт меню — любого вида — делит их так же, как элемент коллекции:
- * остальное — строке с ролью `menuitem*`. ListBox и Tabs делят их так же:
- * остальное — узлу списка с ролью (`listbox`, `tablist`), поверх его `aria`.
- * Table — между окном и корнем `table` в нём: класс, стиль и `ref` — окну,
- * остальное — `table`. Поле даты, Calendar и DatePicker их не делят: своего
- * `<input>` под них нет, и всё уходит корню, как у Vue.
+ * Элемент коллекции (`Tabs.Item`, `Accordion.Item`, `RadioGroup.Item`,
+ * `Tags.Item`, `Select.Item`) делит атрибуты потребителя, как у Vue: класс и
+ * стиль — корню, остальное — строке (у радио — полю), поверх её набора
+ * `aria`. Корень остаётся за адаптером и у него. Пункт меню — любого вида —
+ * делит их так же, как элемент коллекции: остальное — строке с ролью
+ * `menuitem*`. ListBox и Tabs делят их так же: остальное — узлу списка с ролью
+ * (`listbox`, `tablist`), поверх его `aria`. Select — как поле: остальное —
+ * `<input>` его поля. Table — между окном и корнем `table` в нём: класс, стиль
+ * и `ref` — окну, остальное — `table`. Поле даты, Calendar и DatePicker их
+ * не делят: своего `<input>` под них нет, и всё уходит корню, как у Vue.
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -42,6 +43,7 @@ import {
 	TCheckBox,
 	TInput,
 	TNumberInput,
+	TSelect,
 	TSwitch,
 	TTextarea,
 	type TTableColumnSource,
@@ -71,11 +73,13 @@ import {
 	RadioGroup,
 	Rating,
 	Scroller,
+	Select,
 	Skeleton,
 	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Tags,
 	Textarea,
 	Toasts,
 	Tooltip,
@@ -108,12 +112,16 @@ import {
 	type RadioGroupProps,
 	type RatingProps,
 	type ScrollerProps,
+	type SelectGroupProps,
+	type SelectItemProps,
 	type SkeletonProps,
 	type SliderProps,
 	type TableProps,
 	type TabsContentProps,
 	type TabsItemProps,
 	type TabsProps,
+	type TagsItemProps,
+	type TagsProps,
 	type ToastsProps,
 	type TooltipProps,
 	toControlAttrs,
@@ -155,6 +163,11 @@ function MenuProbe({ direction, dir }: Pick<MenuProps, 'direction' | 'dir'>): Re
 	return <Menu direction={direction} dir={dir} />
 }
 
+/** Tags — пробником, по той же причине, что Menu. */
+function TagsProbe({ direction, dir }: Pick<TagsProps, 'direction' | 'dir'>): ReactNode {
+	return <Tags direction={direction} dir={dir} />
+}
+
 /** Панель рисуется, пока активен её таб, — и только внутри набора. */
 function TabsContentProbe(props: TabsContentProps): ReactNode {
 	return (
@@ -194,6 +207,7 @@ const COMPONENTS: ReadonlyArray<
 	['Dialog', Dialog, '.so-dialog', {}],
 	['Drawer', Drawer, '.so-drawer', {}],
 	['Toasts', Toasts, '.so-toasts', {}],
+	['Tags', TagsProbe, '.so-tags', {}],
 ]
 
 /** Общие пропсы поля даты, календаря и DatePicker. */
@@ -291,6 +305,38 @@ function MenuPopoverItemProbe(props: MenuPopoverItemProps): ReactNode {
 	)
 }
 
+/** Тег — в наборе: роль и `tabindex` строке пишет коллекция. */
+function TagsItemProbe(props: TagsItemProps): ReactNode {
+	return (
+		<Tags>
+			<Tags.Item value="a" text="A" {...props} />
+		</Tags>
+	)
+}
+
+/**
+ * Опция — в Select: `id` строке пишет плагин связок. Панель телепортирована,
+ * и опция ищется по документу.
+ */
+function SelectItemProbe(props: SelectItemProps): ReactNode {
+	return (
+		<Select>
+			<Select.Item value="a" text="A" {...props} />
+		</Select>
+	)
+}
+
+/** Группа опций — в Select, в его телепортированной панели. */
+function SelectGroupProbe(props: SelectGroupProps): ReactNode {
+	return (
+		<Select>
+			<Select.Group label="Фрукты" {...props}>
+				<Select.Item value="a" text="A" />
+			</Select.Group>
+		</Select>
+	)
+}
+
 /** Строка пункта меню любого вида — узел с ролью `menuitem*` прямо в его корне. */
 const MENU_ROW = '.so-menu-item > [role^="menuitem"]'
 
@@ -304,6 +350,8 @@ const ITEMS: ReadonlyArray<readonly [string, ComponentType<TItemProbeProps>, str
 	['Menu.RadioItem', MenuRadioItemProbe, '.so-menu-item', MENU_ROW],
 	['Menu.Submenu', MenuSubmenuProbe, '.so-menu-item', MENU_ROW],
 	['Menu.PopoverItem', MenuPopoverItemProbe, '.so-menu-item', MENU_ROW],
+	['Tags.Item', TagsItemProbe, '.so-tags-item', '.so-tags-item [role="listitem"]'],
+	['Select.Item', SelectItemProbe, '.so-select-item', '.so-select-item [role="option"]'],
 ]
 
 describe('атрибут снаружи перекрывает набор ядра', () => {
@@ -409,6 +457,7 @@ const FIELDS: ReadonlyArray<readonly [string, () => ReactNode, string]> = [
 		() => <Textarea ctrl={invalid(new TTextarea({ disabled: true }))} />,
 		'.so-textarea',
 	],
+	['Select', () => <Select ctrl={invalid(new TSelect({ disabled: true }))} />, '.so-select'],
 ]
 
 /**
@@ -671,6 +720,22 @@ const ROOTS: ReadonlyArray<
 		'.so-list-box-item',
 		'.so-list-box-item',
 	],
+	['Tags', (props) => <Tags {...props} />, '.so-tags', '.so-tags'],
+	['Tags.Item', (props) => <TagsItemProbe {...props} />, '.so-tags-item', '.so-tags-item'],
+	// Корень Select — рамка вокруг поля, а не `<input>` и не телепортированная панель
+	['Select', (props) => <Select {...props} />, '.so-select', '.so-select'],
+	[
+		'Select.Item',
+		(props) => <SelectItemProbe {...props} />,
+		'.so-select-item',
+		'.so-select-item',
+	],
+	[
+		'Select.Group',
+		(props) => <SelectGroupProbe {...props} />,
+		'.so-select-group',
+		'.so-select-group',
+	],
 	[
 		'Table',
 		(props) => (
@@ -689,7 +754,15 @@ const ROOTS: ReadonlyArray<
 
 /** Поля: `ref` потребителя — корень, а не `<input>` или `<textarea>`. */
 const FIELD_ROOTS = ROOTS.filter(([name]) =>
-	['Input', 'NumberInput', 'Textarea', 'CheckBox', 'Switch', 'RadioGroup.Item'].includes(name),
+	[
+		'Input',
+		'NumberInput',
+		'Textarea',
+		'CheckBox',
+		'Switch',
+		'RadioGroup.Item',
+		'Select',
+	].includes(name),
 )
 
 /** Узлы, которые получила `ref`-функция потребителя, — по порядку вызовов. */

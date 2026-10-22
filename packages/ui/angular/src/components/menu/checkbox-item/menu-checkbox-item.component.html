@@ -1,0 +1,53 @@
+<!--
+	Корень — сам хост (`<div so-menu-checkbox-item>`), строка — `Button` на
+	`div`, помечена `#control`, как у пункта-действия. Слоты контракта:
+	indicator-icon (scope { selected }), leading, default (scope { text,
+	selected }), trailing.
+
+	В колонке значка — сначала обёртка отметки, у каждого флажка, потом обёртка
+	значка. Пустые обёртки тема прячет по `:empty`, поэтому внутри них — только
+	проекция и рисунок.
+-->
+<div
+	so-button
+	#control
+	embedded="menu.row"
+	[size]="state()['size']"
+	[disabled]="state()['disabled']"
+	[so-attributes]="state()['aria']"
+	(click)="toggle()"
+>
+	<ng-container ngProjectAs="[slot=leading]">
+		<span class="so-menu-item__indicator" aria-hidden="true">
+			@if (slot('indicator-icon'); as indicator) {
+				<ng-container
+					[ngTemplateOutlet]="indicator"
+					[ngTemplateOutletContext]="{ selected: state()['selected'] ?? false }"
+				/>
+			} @else if (state()['selected']) {
+				<svg
+					so-icon
+					embedded="menu.indicator"
+					so-role-icon="check"
+					[size]="state()['size']"
+				></svg>
+			}
+		</span>
+		<span class="so-menu-item__icon"><ng-content select="[slot=leading]" /></span>
+	</ng-container>
+	@if (slot('default'); as content) {
+		<ng-container
+			[ngTemplateOutlet]="content"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				selected: state()['selected'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content>{{ state()['text'] }}</ng-content>
+	}
+	<span class="so-menu-item__shortcut" ngProjectAs="[slot=trailing]">
+		<ng-content select="[slot=trailing]" />
+	</span>
+</div>
+<ng-content select="ng-template[slot]" />

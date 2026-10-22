@@ -54,11 +54,13 @@ import {
 	TRadioGroup,
 	TRating,
 	TScroller,
+	TSelect,
 	TSkeleton,
 	TSlider,
 	TSwitch,
 	TTable,
 	TTabs,
+	TTags,
 	TTextarea,
 	TToasts,
 	TTooltip,
@@ -69,11 +71,18 @@ import {
 	createEngineMenu,
 	createEnginePagination,
 	createEngineRadioGroup,
+	createEngineSelect,
 	createEngineTable,
 	createEngineTabs,
+	createEngineTags,
 	createEngineToasts,
 } from '@soldy-ui/core'
-import type { TCalendarCollection, TListBoxCollection, TTableCollection } from '@soldy-ui/core'
+import type {
+	TCalendarCollection,
+	TListBoxCollection,
+	TSelectCollection,
+	TTableCollection,
+} from '@soldy-ui/core'
 import {
 	Accordion,
 	Button,
@@ -100,11 +109,13 @@ import {
 	RadioGroup,
 	Rating,
 	Scroller,
+	Select,
 	Skeleton,
 	Slider,
 	Switch,
 	Table,
 	Tabs,
+	Tags,
 	Textarea,
 	Toasts,
 	Tooltip,
@@ -239,6 +250,23 @@ function openFirstPlace(engine: TCalendarCollection): void {
 	if (!place) throw new Error('мест у движка календаря нет')
 
 	place.popover.open = true
+}
+
+/**
+ * Шины Select снаружи: владелец и его поле, движок, расширения и опции, а в
+ * `multiple` — инстанс тегов и его движок с расширениями и тегами. Поле и ряд
+ * тегов собираются над ними, как над `ctrl` и `engine` снаружи.
+ */
+function selectBuses(ctrl: TSelect, engine: TSelectCollection): TEvented<any>[] {
+	const { tags, engine: tagsEngine } = engine.extensions.tags
+
+	return [
+		ctrl.events,
+		ctrl.field.events,
+		...engineBuses(engine),
+		...(tags ? [tags.events] : []),
+		...(tagsEngine ? engineBuses(tagsEngine) : []),
+	]
 }
 
 /** Ждёт обещания на рендере — так сосед ждёт данных. */
@@ -690,6 +718,47 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 			),
 		),
 	},
+	/**
+	 * Открытый Select: у открытого подписаны нажатие мимо и якорь панели —
+	 * корень значением рендера. Опции из данных — экземпляры движка, а теги
+	 * выбранных — элементы движка тегов, который заводит коллекция Select в
+	 * `multiple`: поле, ряд тегов, теги и опции в телепортированной панели
+	 * собираются над ними, как над `ctrl` и `engine` снаружи. Опции разметкой
+	 * входят в движок с монтированием и уходят с ним, а их теги — с ними.
+	 */
+	Select: {
+		'ctrl открыт и движок, опции данными, теги в multiple': () => {
+			const ctrl = new TSelect({ open: true, value: ['a', 'b'] })
+			const engine = createEngineSelect({ owner: ctrl, items: ITEMS })
+
+			engine.extensions.selection.mode = 'multiple'
+
+			for (const item of engine.extensions.batch.items) {
+				engine.extensions.selection.select(item)
+			}
+
+			return {
+				node: <Select ctrl={ctrl} engine={engine} />,
+				buses: selectBuses(ctrl, engine),
+			}
+		},
+		'ctrl и движок, опции разметкой, теги в multiple': () => {
+			const ctrl = new TSelect()
+			const engine = createEngineSelect({ owner: ctrl })
+
+			engine.extensions.selection.mode = 'multiple'
+
+			return {
+				node: (
+					<Select ctrl={ctrl} engine={engine}>
+						<Select.Item value="a" text="A" selected />
+						<Select.Item value="b" text="B" />
+					</Select>
+				),
+				buses: selectBuses(ctrl, engine),
+			}
+		},
+	},
 	Skeleton: {
 		ctrl: overCtrl(
 			() => new TSkeleton(),
@@ -739,6 +808,32 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 
 			return {
 				node: <TabsOver engine={engine} />,
+				buses: engineBuses(engine),
+			}
+		},
+	},
+	Tags: {
+		'ctrl и движок, элементы из данных': () => {
+			const ctrl = new TTags({ closable: true })
+			const engine = createEngineTags({ items: ITEMS })
+
+			engine.extensions.selection.mode = 'multiple'
+
+			return {
+				node: <Tags ctrl={ctrl} engine={engine} />,
+				buses: [ctrl.events, ...engineBuses(engine)],
+			}
+		},
+		'движок, элементы в разметке': () => {
+			const engine = createEngineTags()
+
+			return {
+				node: (
+					<Tags engine={engine} closable>
+						<Tags.Item value="a" text="A" />
+						<Tags.Item value="b" text="B" />
+					</Tags>
+				),
 				buses: engineBuses(engine),
 			}
 		},

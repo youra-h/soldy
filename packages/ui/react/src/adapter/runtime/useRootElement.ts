@@ -3,7 +3,7 @@
  * коммита, узел — после.
  *
  * Во Vue корень, привязанный к `TElementPlugin`, — `ref`, и шаблон читает его
- * реактивно: Popover и Tooltip отдают его своему Frame якорем
+ * реактивно: Popover, Tooltip, Menu и Select отдают его своему Frame якорем
  * (`:anchor_anchor="rootElement"`). У React корень приходит только в ref-функцию
  * при коммите, и значением рендера его делает этот хук: подписка на ref корня
  * связки (`binding.root`, `TRootRef`) через `useSyncExternalStore`. Своего

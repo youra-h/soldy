@@ -170,7 +170,11 @@
  * читает из того же `state()`, а сам фасад база отдаёт шаблону сигналом
  * `facade()`, как инстанс — `instance()`. Третий — выходы плагинов
  * дескриптора компонента (`names_selectAll` у Table): шаблон читает их из
- * того же `state()`.
+ * того же `state()`. У части, которая сразу и элемент коллекции над ней, и
+ * владелец своей (пункт с подменю), контекстов три, и четвёртый параметр —
+ * фасад владельца, своей коллекции: его свойства (`sections`, `submenus`)
+ * шаблон читает из того же `state()`, а `facade()` — фасад элемента, через
+ * который строка зовёт команды меню над ней.
  *
  * Эмиттеров заранее база не заводит. Выход — геттер, который кодогенератор
  * пишет в `T<Имя>Surface`, по одному на класс; первое чтение выхода — привязка
@@ -515,6 +519,7 @@ export abstract class TComponentBase<
 	TInstance extends IEntity,
 	TFacade = unknown,
 	TOutputs = unknown,
+	TOwnerFacade = unknown,
 >
 	implements OnInit, OnChanges, OnDestroy
 {
@@ -524,7 +529,7 @@ export abstract class TComponentBase<
 	protected abstract createBinding(
 		ctrl: TInstance | undefined,
 		inputs: object,
-	): TBinding<TInstance, TFacade, TOutputs>
+	): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
 
 	private readonly _inputNames: readonly string[]
 
@@ -564,9 +569,9 @@ export abstract class TComponentBase<
 	 */
 	protected readonly placed: Signal<boolean>
 
-	private readonly _binding = signal<TBinding<TInstance, TFacade, TOutputs> | undefined>(
-		undefined,
-	)
+	private readonly _binding = signal<
+		TBinding<TInstance, TFacade, TOutputs, TOwnerFacade> | undefined
+	>(undefined)
 	private _eventsCleanup?: () => void
 
 	/** Узел, который база отдала `TElementPlugin`, — его читает шаблон (`rootElement`). */
@@ -598,9 +603,10 @@ export abstract class TComponentBase<
 
 	/**
 	 * Состояние Core с выходами плагинов — у коллекционного компонента вместе
-	 * со свойствами фасада. Сигнал, т.к. binding появляется только в ngOnInit.
+	 * со свойствами фасада, у части с тремя контекстами (пункт с подменю) — и
+	 * фасада владельца. Сигнал, т.к. binding появляется только в ngOnInit.
 	 */
-	readonly state = computed<TBindingState<TInstance, TFacade, TOutputs>>(
+	readonly state = computed<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>>(
 		() => this._binding()?.state() ?? {},
 	)
 

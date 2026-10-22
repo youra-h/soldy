@@ -1,0 +1,43 @@
+<!--
+	Корень — сам хост (`<div so-menu-radio-item>`), строка — `Button` на `div`,
+	помечена `#control`, как у флажка. Слоты контракта: indicator-icon (scope
+	{ selected }), leading, default (scope { text, selected }), trailing.
+-->
+<div
+	so-button
+	#control
+	embedded="menu.row"
+	[size]="state()['size']"
+	[disabled]="state()['disabled']"
+	[so-attributes]="state()['aria']"
+	(click)="check()"
+>
+	<ng-container ngProjectAs="[slot=leading]">
+		<span class="so-menu-item__indicator" aria-hidden="true">
+			@if (slot('indicator-icon'); as indicator) {
+				<ng-container
+					[ngTemplateOutlet]="indicator"
+					[ngTemplateOutletContext]="{ selected: state()['selected'] ?? false }"
+				/>
+			} @else if (state()['selected']) {
+				<span class="so-menu-item__dot"></span>
+			}
+		</span>
+		<span class="so-menu-item__icon"><ng-content select="[slot=leading]" /></span>
+	</ng-container>
+	@if (slot('default'); as content) {
+		<ng-container
+			[ngTemplateOutlet]="content"
+			[ngTemplateOutletContext]="{
+				text: state()['text'] ?? '',
+				selected: state()['selected'] ?? false,
+			}"
+		/>
+	} @else {
+		<ng-content>{{ state()['text'] }}</ng-content>
+	}
+	<span class="so-menu-item__shortcut" ngProjectAs="[slot=trailing]">
+		<ng-content select="[slot=trailing]" />
+	</span>
+</div>
+<ng-content select="ng-template[slot]" />

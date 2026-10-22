@@ -15,7 +15,8 @@
  * Своё у Web Components — спутник корня. Подложку строит шаблон, а ставит
  * прямо перед окном, увозит в цель и обратно, уводит за местом и прячет база
  * элемента. И перенос: окно уезжает силами базы, и ни перенос, ни смена цели
- * не пересобирают кнопки в нём.
+ * не пересобирают кнопки в нём, а окно, переставленное потребителем одной
+ * операцией, собирает их заново — с локалью нового места.
  *
  * Раскладку, переходы темы и действие `mousedown` jsdom не выполняет: место,
  * размер, появление и исчезание — `playground/vue/browser/webc-frame.spec.ts`
@@ -26,7 +27,13 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { TButton, TComponentView, TDialog } from '@soldy-ui/core'
 import type { TCloseEvent, TCloseReason } from '@soldy-ui/core'
-import { TBasePlugin, ruRU, type IPluginContext, type TDialogOffsetEvent } from '@soldy-ui/plugins'
+import {
+	TBasePlugin,
+	ruRU,
+	zhCN,
+	type IPluginContext,
+	type TDialogOffsetEvent,
+} from '@soldy-ui/plugins'
 import { DialogDescriptor, usePlugins } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { TDialogElement, TLocaleProviderElement, type TDialogElementProps } from '@soldy-ui/webc'
@@ -106,6 +113,15 @@ function find(selector: string, scope: ParentNode = document): HTMLElement {
 	if (!(element instanceof HTMLElement)) throw new Error(`${selector}: HTML-узла нет`)
 
 	return element
+}
+
+/** Провайдер локали по селектору; нет его — тест падает здесь. */
+function localeProvider(selector: string, scope: ParentNode = document): TLocaleProviderElement {
+	const node = scope.querySelector(selector)
+
+	if (!(node instanceof TLocaleProviderElement)) throw new Error(`${selector}: провайдера нет`)
+
+	return node
 }
 
 const panel = (scope: ParentNode = document) => find('.so-dialog', scope)
@@ -1023,11 +1039,12 @@ describe('фон под окном', () => {
 
 /**
  * Сборки считает плагин-зонд при установке набора: перенос, смена цели и
- * подложка рядом связку не трогают ни у окна, ни у кнопок в нём.
+ * подложка рядом связку не трогают ни у окна, ни у кнопок в нём, а окно,
+ * переставленное потребителем, собирает их заново.
  */
 describe('перенос', () => {
-	/** Сборки кнопок — их текст, по одной на связку. */
-	const assembled: string[] = []
+	/** Сборки кнопок — их текст и тег локали, по одной на связку. */
+	const assembled: (readonly [text: string, locale: string])[] = []
 
 	/** Уничтоженные связки кнопок. */
 	let destroyed = 0
@@ -1042,7 +1059,7 @@ describe('перенос', () => {
 
 			if (instance instanceof TButton) {
 				this._button = true
-				assembled.push(instance.text)
+				assembled.push([instance.text, ctx.locale.locale.tag])
 			}
 		}
 
@@ -1052,6 +1069,12 @@ describe('перенос', () => {
 			super.destroy()
 		}
 	}
+
+	/** Тексты собранных кнопок — по порядку текста: у крестика он пуст. */
+	const texts = () => assembled.map(([text]) => text).sort()
+
+	/** Теги локали сборок кнопок. */
+	const locales = () => assembled.map(([, locale]) => locale)
 
 	// Перед тестом, а не после: общий `afterEach` файла чистит `body` позже
 	// хука группы, и связки прошлого теста уничтожаются уже после сброса
@@ -1073,7 +1096,7 @@ describe('перенос', () => {
 		const action = find('.so-test-action')
 
 		// Кнопка в окне и крестик без текста — по одной сборке
-		expect([...assembled].sort()).toEqual(['', 'Действие'])
+		expect(texts()).toEqual(['', 'Действие'])
 
 		dialog.target = '#so-test-second'
 		await flush()
@@ -1082,7 +1105,46 @@ describe('перенос', () => {
 
 		expect(panel().parentElement).toBe(document.body)
 		expect(find('.so-test-action')).toBe(action)
-		expect([...assembled].sort()).toEqual(['', 'Действие'])
+		expect(texts()).toEqual(['', 'Действие'])
 		expect(destroyed).toBe(0)
+	})
+
+	/**
+	 * Окно переставлено одной операцией, без снятия: его новая сборка увозит
+	 * окно в цель, и отключение кнопок в нём браузер доводит внутри этого
+	 * переноса, — а оно всё равно настоящее. Имя крестика тут не довод: его
+	 * пишет шаблон окна из `closeAria`, и сменилось бы оно и без пересборки
+	 * крестика.
+	 */
+	it('окно, переставленное одной операцией, собирает крестик и кнопку под новым провайдером', async () => {
+		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin], { scope: 'all' })
+
+		const page = document.createElement('div')
+
+		page.innerHTML = `<so-locale-provider class="so-test-ru"><div is="so-dialog">${TITLE}<button is="so-button" class="so-test-action" text="Действие"></button></div></so-locale-provider>
+			<so-locale-provider class="so-test-zh"></so-locale-provider>`
+		localeProvider('.so-test-ru', page).locale = ruRU
+		localeProvider('.so-test-zh', page).locale = zhCN
+		document.body.appendChild(page)
+		// Признак переноса первой сборки держится до микрозадачи
+		await flush()
+
+		const dialog = panel()
+		const action = find('.so-test-action')
+		const other = localeProvider('.so-test-zh')
+
+		expect(locales()).toEqual([ruRU.tag, ruRU.tag])
+
+		assembled.length = 0
+		other.appendChild(dialog)
+
+		expect(texts()).toEqual(['', 'Действие'])
+		expect(locales()).toEqual([zhCN.tag, zhCN.tag])
+		expect(destroyed).toBe(2)
+		expect(dialog.parentElement).toBe(document.body)
+		expect(backdrop().nextElementSibling).toBe(dialog)
+		expect(find('.so-test-action')).toBe(action)
+		expect(anchors(localeProvider('.so-test-ru'))).toHaveLength(0)
+		expect(anchors(other)).toHaveLength(1)
 	})
 })
