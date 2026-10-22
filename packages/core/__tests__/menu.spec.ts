@@ -1424,6 +1424,35 @@ describe('коллекция меню · подменю из данных', () =
 		expect(announced).not.toHaveBeenCalled()
 	})
 
+	/**
+	 * Пункты подменю из данных бывают разметкой — шаблоном `item-content`: их
+	 * вносит в движок подменю регистратор разметки и держит (`batch.hold`), —
+	 * здесь кодом. Вложенный состав из данных у такого подменю — `[]`, и патч
+	 * меню пишет его в движок подменю сверкой: удержанные она не снимает.
+	 */
+	it('пункт, удержанный в движке подменю, переживает патч меню с тем же items: []; неудержанный — снят', () => {
+		const engine = createEngineMenu()
+		const { batch } = engine.extensions
+		const before: IMenuItemSource[] = [{ value: 'export', text: 'Экспорт', items: [] }]
+		const after: IMenuItemSource[] = [{ value: 'export', text: 'Выгрузка', items: [] }]
+
+		batch.trackBy = (item) => item.value
+		batch.items = before
+
+		const exported = submenuAt(engine, 'export')
+		const nested = exported.engine.extensions
+		const pdf = nested.plain.push(new TMenuItem({ value: 'pdf', text: 'PDF' }))
+
+		nested.plain.push(new TMenuItem({ value: 'png', text: 'PNG' }))
+		nested.batch.hold(pdf)
+
+		batch.items = after
+
+		expect(submenuAt(engine, 'export')).toBe(exported)
+		expect(exported.ctrl.text).toBe('Выгрузка')
+		expect(nested.batch.items).toEqual([pdf])
+	})
+
 	it('trackBy движкам подменю — свой: новому при сборке, всем уровням — на смену', () => {
 		const engine = createEngineMenu({
 			items: [{ value: 'share', items: [{ value: 'messengers', items: [] }] }],

@@ -2108,6 +2108,68 @@ describe('подменю', () => {
 				expect(exported.engine.extensions.batch.items[0]).toBe(pdf)
 			})
 
+			/** Пункты шаблона и меню, чьи данные сменит тест; `trackBy` — у движка снаружи. */
+			@Component({
+				selector: 'probe-menu-item-content-patch',
+				standalone: true,
+				imports: [...BASE, TMenuItemComponent],
+				template: `<span
+					so-menu
+					[items]="items()"
+					[engine]="engine"
+					(soChoose)="chosen.push($event.value)"
+				>
+					${TRIGGER}
+					<ng-template slot="item-content">
+						<div so-menu-item value="pdf" text="PDF"></div>
+						<div so-menu-item value="png" text="PNG"></div>
+					</ng-template>
+				</span>`,
+			})
+			class ItemContentPatchPage {
+				readonly items = signal<TItems>([{ value: 'export', text: 'Экспорт', items: [] }])
+				readonly engine = createEngineMenu()
+				readonly chosen: unknown[] = []
+			}
+
+			/**
+			 * Вложенный состав из данных у подменю с пунктами шаблона — `[]`, и
+			 * патч меню по `trackBy` пишет его в движок подменю сверкой. Пункты
+			 * шаблона держит регистратор подменю, пока они в разметке, и сверка
+			 * их не снимает.
+			 */
+			it('патч по trackBy — пункты шаблона остаются в коллекции подменю: стрелки и выбор идут по ним', async () => {
+				const fixture = await render(ItemContentPatchPage, (page) => {
+					page.engine.extensions.batch.trackBy = (item) => item.value
+				})
+				const page = fixture.componentInstance
+				const exported = submenuOf(page.engine, 'export')
+
+				expect(values(exported.engine)).toEqual(['pdf', 'png'])
+
+				page.items.set([{ value: 'export', text: 'Выгрузка', items: [] }])
+				check()
+
+				// Тот же пункт с новым текстом, пункты шаблона — в его коллекции
+				const row = submenuRow('Выгрузка')
+
+				expect(submenuOf(page.engine, 'export')).toBe(exported)
+				expect(values(exported.engine)).toEqual(['pdf', 'png'])
+				expect(texts(panelOf(row))).toEqual(['PDF', 'PNG'])
+
+				triggerNode().focus()
+				await press(triggerNode(), 'ArrowDown')
+				await press(row, 'ArrowRight')
+
+				expect(document.activeElement).toBe(rowIn(panelOf(row), 'PDF'))
+
+				await press(rowIn(panelOf(row), 'PDF'), 'ArrowDown')
+				await press(rowIn(panelOf(row), 'PNG'), 'Enter')
+
+				expect(page.chosen).toEqual(['png'])
+				expect(shown(rootPanel())).toBe(false)
+			})
+
 			/**
 			 * Владелец внутри шаблона — группа переключателей — своим пунктам
 			 * ближе места вывода: узлы шаблона Angular спрашивает раньше места.

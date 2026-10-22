@@ -179,6 +179,148 @@ describe('TPatchCommand — базовое поведение', () => {
 	})
 })
 
+/**
+ * Удержанный (`batch.hold`) — элемент, чей состав задаёт не вход сверки, а тот,
+ * кто держит: элемент разметки держит регистратор коллекции, пока элемент в
+ * разметке. Сверка по ключу его не снимает, явное удаление — снимает.
+ */
+describe('удержанные элементы', () => {
+	type TCollection = ReturnType<typeof createCollection>
+
+	/** Состав из данных и элемент, вошедший поштучно и удержанный, — как его держит регистратор. */
+	function withHeld() {
+		const col = createCollection()
+		const { batch, plain } = col.extensions
+
+		batch.set(seed())
+
+		const held = plain.push({ id: 9, name: 'markup' })
+		const release = batch.hold(held)
+
+		return { col, batch, plain, held, release }
+	}
+
+	const ids = (col: TCollection) => col.extensions.batch.items.map((item) => item.id)
+
+	it('удержанный переживает сверку — и с пустым входом, и записью items', () => {
+		const { col, batch, held } = withHeld()
+
+		batch.patch([{ id: 2, name: 'beta-2' }])
+
+		expect(ids(col)).toEqual([2, 9])
+		expect(batch.items[1]).toBe(held)
+
+		batch.patch([])
+
+		expect(batch.items).toEqual([held])
+
+		batch.items = [{ id: 1, name: 'alpha' }]
+
+		expect(ids(col)).toEqual([9, 1])
+		expect(batch.items[0]).toBe(held)
+	})
+
+	it('совпавший по ключу обновлён на месте, без дубля', () => {
+		const { col, batch, held } = withHeld()
+		const removed = vi.fn()
+
+		col.extensions.plain.events.on('item:removed', removed)
+		batch.patch([{ id: 9, name: 'from-data' }])
+
+		expect(batch.items).toEqual([held])
+		expect(batch.items[0]).toBe(held)
+		expect(held.name).toBe('from-data')
+		// Сняты три элемента данных, удержанный — нет
+		expect(removed).toHaveBeenCalledTimes(3)
+	})
+
+	const REMOVALS: ReadonlyArray<readonly [string, (setup: ReturnType<typeof withHeld>) => void]> =
+		[
+			['batch.remove', ({ batch, held }) => batch.remove([held])],
+			['plain.remove', ({ plain, held }) => plain.remove(held)],
+			['batch.clear', ({ batch }) => batch.clear()],
+		]
+
+	it.each(REMOVALS)(
+		'%s удаляет удержанный, и вернувшийся без удержания снимает следующая сверка',
+		(_name, remove) => {
+			const setup = withHeld()
+			const { batch, plain, held } = setup
+
+			remove(setup)
+
+			expect(batch.items).not.toContain(held)
+
+			plain.push(held)
+			batch.patch([{ id: 1, name: 'alpha' }])
+
+			expect(batch.items).not.toContain(held)
+		},
+	)
+
+	it('замена без trackBy — пересборка: удержанный снят', () => {
+		const { batch, held } = withHeld()
+
+		batch.trackBy = undefined
+		batch.items = [{ id: 1, name: 'alpha' }]
+
+		expect(batch.items).not.toContain(held)
+	})
+
+	it('отпущенный снимает следующая сверка', () => {
+		const { batch, release } = withHeld()
+
+		release()
+		batch.patch([])
+
+		expect(batch.items).toEqual([])
+	})
+
+	it('удержаний несколько — удержан, пока не отпущено последнее; повторное «отпустить» чужого не снимает', () => {
+		const { batch, held, release } = withHeld()
+		const second = batch.hold(held)
+
+		release()
+		release()
+		batch.patch([])
+
+		expect(batch.items).toEqual([held])
+
+		second()
+		batch.patch([])
+
+		expect(batch.items).toEqual([])
+	})
+
+	it('«отпустить» после ухода из состава не снимает нового удержания вернувшегося', () => {
+		const { batch, plain, held, release } = withHeld()
+
+		plain.remove(held)
+		plain.push(held)
+		batch.hold(held)
+		release()
+		batch.patch([])
+
+		expect(batch.items).toEqual([held])
+	})
+
+	it('hold вне состава ничего не держит', () => {
+		const col = createCollection()
+		const { batch, plain } = col.extensions
+		const outside: Item = { id: 9, name: 'outside' }
+
+		batch.set(seed())
+
+		const release = batch.hold(outside)
+
+		plain.push(outside)
+		batch.patch([{ id: 1, name: 'alpha' }])
+
+		expect(batch.items).not.toContain(outside)
+		expect(() => release()).not.toThrow()
+	})
+})
+
 describe('TPatchCommand при активной выборке — сверка идёт по storage', () => {
 	it('полный набор при сужённой выборке ничего не теряет и не дублирует', () => {
 		const col = createCollection()
