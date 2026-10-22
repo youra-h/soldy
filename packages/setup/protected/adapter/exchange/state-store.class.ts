@@ -97,6 +97,14 @@ export class TStateStore {
 		for (const index of cells) this._read(index)
 	}
 
+	/**
+	 * Перечитать все ячейки: триггеры пришли во время чужой сборки, и обмен
+	 * отложил их (`TExchange`). Пока состояние не слушают — как у `refresh`.
+	 */
+	refreshAll(): void {
+		if (this._listeners !== undefined) this._refresh()
+	}
+
 	private _refresh(): void {
 		this._primed = true
 

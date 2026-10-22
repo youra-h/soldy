@@ -39,30 +39,47 @@ function isObject(value: unknown): value is object {
 	return typeof value === 'object' && value !== null
 }
 
+type TDraft = {
+	readonly held: readonly object[]
+	readonly destroy: () => void
+	/** Id монтирования, с которым черновик собран: его `id` уже лежат в `ctrl`. */
+	readonly mountId: string
+}
+
+/** Что сборка взяла снаружи и id монтирования выброшенного черновика того же `ctrl`, если он был. */
+export type TTaken = { readonly held: object[]; readonly mountId?: string }
+
 export class TDrafts {
 	/** Непринятые сборки — по каждому объекту, который они взяли снаружи. */
-	private readonly _drafts = new WeakMap<
-		object,
-		{ readonly held: readonly object[]; readonly destroy: () => void }
-	>()
+	private readonly _drafts = new WeakMap<object, TDraft>()
 
 	/**
 	 * Что сборка контекста берёт снаружи: `ctrl` и движок фасада коллекции
 	 * (опция `engine`). Непринятую сборку, взявшую то же, React отбросил — она
 	 * уничтожается здесь.
+	 *
+	 * Сборка на месте выброшенной над тем же `ctrl` — повтор того же рендера:
+	 * она берёт id монтирования выброшенной. `useId` на повторе отдаёт новый, и
+	 * плагины связок писали бы в `ctrl` новые `id` на каждый повтор, а прежнее
+	 * монтирование `ctrl`, ещё живое, перерисовывалось бы от каждого — и его
+	 * перерисовка снова повторяет рендер `Suspense`, без конца. Движок без
+	 * `ctrl` id не передаёт: компоненты на нём пишут `id` каждый в свой
+	 * инстанс, а два живых компонента на одном движке законны и id делить не
+	 * должны.
 	 */
-	take(options: IAdapterContextOptions): object[] {
+	take(options: IAdapterContextOptions): TTaken {
 		const engine: unknown = options.options ? Reflect.get(options.options, 'engine') : undefined
 		const held = [options.ctrl, engine].filter(isObject)
+		const mountId = options.ctrl ? this._drafts.get(options.ctrl)?.mountId : undefined
 
 		for (const value of held) this._discard(value)
 
-		return held
+		return { held, mountId }
 	}
 
 	/** Собранное — черновик, пока его не приняли. */
-	add(held: readonly object[], destroy: () => void): void {
-		const draft = { held, destroy }
+	add(held: readonly object[], destroy: () => void, mountId: string): void {
+		const draft = { held, destroy, mountId }
 
 		for (const value of held) this._drafts.set(value, draft)
 	}

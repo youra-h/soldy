@@ -14,12 +14,16 @@
  *    пропсы сборки, а состояние, входы и события соберёт `connect()`.
  * 6. Завершение набора: плагины реестра и объявление наружу на микрозадаче.
  *
+ * Шаги 2–6 идут над инстансом атомарно для остальных его монтирований
+ * (`TAssembling`): их состояние перечитается после сборки, а не посреди неё.
+ *
  * Имя пропа одно во всех фреймворках, поэтому профиль адаптера сборке не нужен:
  * начальные значения идут в общем формате имён (`CommonProfile`).
  */
 
 import { CommonProfile, PLUGIN_PROPS } from '../../naming'
 import type { IComponentDescriptor, IPluginsContract } from '../../define'
+import { assembling } from '../exchange/assembling.class'
 import { TInputPort } from '../exchange/input-port.class'
 import { TMember } from '../exchange/member.class'
 import { TRouting } from '../exchange/routing.class'
@@ -95,35 +99,38 @@ export function createAdapterContext<TInstance extends object, TPlugins extends 
 	// 1. Инстанс
 	const instance = options.ctrl ?? new descriptor.ctor(props, options.options ?? {})
 
-	// 2–3. Набор: компоненту без своих плагинов реестр набора не создаёт
-	const tenancy: IBundleTenancy =
-		config.bundle === undefined && descriptor.plugins.length > 0
-			? new TOwnBundle(descriptor, instance, { embedded }, options)
-			: new TSharedBundle(descriptor, config.bundle ?? null)
+	// Остальные монтирования инстанса слышат итог сборки, а не каждый её шаг
+	return assembling.run(instance, () => {
+		// 2–3. Набор: компоненту без своих плагинов реестр набора не создаёт
+		const tenancy: IBundleTenancy =
+			config.bundle === undefined && descriptor.plugins.length > 0
+				? new TOwnBundle(descriptor, instance, { embedded }, options)
+				: new TSharedBundle(descriptor, config.bundle ?? null)
 
-	// 4. Участники
-	const owner = new TMember(instance, instanceSpecOf(descriptor))
-	const members = [owner, ...tenancy.members]
+		// 4. Участники
+		const owner = new TMember(instance, instanceSpecOf(descriptor))
+		const members = [owner, ...tenancy.members]
 
-	// 5. Начальные значения
-	const seeded = options.ctrl ? [owner, ...tenancy.seeded] : tenancy.seeded
+		// 5. Начальные значения
+		const seeded = options.ctrl ? [owner, ...tenancy.seeded] : tenancy.seeded
 
-	if (seeded.length > 0) {
-		TInputPort.seed(
-			TRouting.of(TSurface.of(descriptor, CommonProfile), seeded).lines(seeded),
+		if (seeded.length > 0) {
+			TInputPort.seed(
+				TRouting.of(TSurface.of(descriptor, CommonProfile), seeded).lines(seeded),
+				props,
+			)
+		}
+
+		// 6. Плагины реестра и объявление набора
+		tenancy.complete()
+
+		return new TAdapterContext<TContextContract<TInstance, TPlugins>>(
+			descriptor,
+			instance,
+			tenancy,
+			members,
 			props,
+			embedded,
 		)
-	}
-
-	// 6. Плагины реестра и объявление набора
-	tenancy.complete()
-
-	return new TAdapterContext<TContextContract<TInstance, TPlugins>>(
-		descriptor,
-		instance,
-		tenancy,
-		members,
-		props,
-		embedded,
-	)
+	})
 }
