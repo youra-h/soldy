@@ -1,6 +1,6 @@
 /**
- * Virtual под Web Components — окно `<so-virtual>` над ListBox на настоящей
- * разметке.
+ * Virtual под Web Components — окно `<so-virtual>` над ListBox и Select на
+ * настоящей разметке.
  *
  * Окно подхватывает коллекция внутри (`TVirtualCollectionExtension`), и список
  * рисует только видимые элементы, а на месте остальных — распорки под
@@ -20,11 +20,12 @@
  */
 
 import { describe, it, expect, expectTypeOf, afterEach } from 'vitest'
-import { createEngineListBox } from '@soldy-ui/core'
+import { createEngineListBox, createEngineSelect } from '@soldy-ui/core'
 import type { TListBoxCollection } from '@soldy-ui/core'
 import { VirtualDescriptor } from '@soldy-ui/setup'
 import {
 	TListBoxElement,
+	TSelectElement,
 	TVirtualElement,
 	type TListBoxElementProps,
 	type TVirtualElementProps,
@@ -382,6 +383,98 @@ describe('ListBox в окне — элемент Web Components', () => {
 		expect(
 			fillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
 		).toEqual([`${179 * 30}px`])
+	})
+})
+
+/**
+ * Select в окне: список панели — увезённой в `body` — рисует только видимые
+ * опции. Панель закрыта: она в документе всегда, открытость — её `display`, и
+ * опции в ней собраны с первой отрисовки. Окно Select находит тем же лифтом
+ * вверх по документу, что список.
+ */
+describe('Select в окне', () => {
+	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
+	const selectFillers = () => [...document.querySelectorAll<HTMLElement>('.so-select__filler')]
+
+	/** Строка опции: на ней набор `aria` опции. */
+	function selectRow(text: string): HTMLElement {
+		const row = [
+			...document.querySelectorAll<HTMLElement>('.so-select-item > .so-button'),
+		].find((node) => node.textContent?.trim() === text)
+
+		if (!row) throw new Error(`${text}: строки нет`)
+
+		return row
+	}
+
+	/** Select кодом: свойства — до вставки. */
+	function createSelect(props: Record<string, unknown>): HTMLElement {
+		const el = document.createElement('div', { is: 'so-select' })
+
+		if (!(el instanceof TSelectElement)) throw new Error('<div is="so-select"> нет')
+
+		for (const [name, value] of Object.entries(props)) Reflect.set(el, name, value)
+
+		return el
+	}
+
+	it('без обёртки — все опции, распорок нет', async () => {
+		document.body.appendChild(createSelect({ items: items(80) }))
+		await settle()
+
+		expect(selectOptions()).toHaveLength(80)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('в обёртке — до замера первые 50 опций из 80, без распорок', async () => {
+		const virtual = createVirtual()
+
+		virtual.appendChild(createSelect({ items: items(80) }))
+		document.body.appendChild(virtual)
+		await settle()
+
+		expect(selectOptions()).toHaveLength(50)
+		expect(selectFillers()).toEqual([])
+	})
+
+	it('`enabled: false` — все опции', async () => {
+		const virtual = createVirtual({ enabled: false })
+
+		virtual.appendChild(createSelect({ items: items(80) }))
+		document.body.appendChild(virtual)
+		await settle()
+
+		expect(selectOptions()).toHaveLength(80)
+	})
+
+	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', async () => {
+		const engine = createEngineSelect({ items: items(200) })
+		const virtual = createVirtual()
+
+		virtual.appendChild(createSelect({ engine }))
+		document.body.appendChild(virtual)
+		await settle()
+
+		// Видны места 100–109: с запасом — 90–119
+		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })
+		await settle()
+
+		const list = document.querySelector('.so-select__list')
+
+		if (!list) throw new Error('списка нет')
+
+		expect(selectFillers().map((filler) => filler.getAttribute('aria-hidden'))).toEqual([
+			'true',
+			'true',
+		])
+		expect(
+			selectFillers().map((filler) => filler.style.getPropertyValue('--so-filler-height')),
+		).toEqual(['2700px', '2400px'])
+		expect(list.firstElementChild).toBe(selectFillers()[0])
+		expect(list.lastElementChild).toBe(selectFillers()[1])
+		expect(selectOptions()).toHaveLength(30)
+		expect(selectRow('Пункт 91').getAttribute('aria-setsize')).toBe('200')
+		expect(selectRow('Пункт 91').getAttribute('aria-posinset')).toBe('91')
 	})
 })
 

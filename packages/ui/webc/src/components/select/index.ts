@@ -1,0 +1,5 @@
+export { setupSelect, type TSelectOutputs } from './setup.component'
+export { TSelectElement, type TSelectElementProps } from './Select.element'
+export { selectTemplate, SELECT_ITEM_SLOTS } from './select.template'
+export * from './item'
+export * from './group'

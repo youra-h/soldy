@@ -32,6 +32,16 @@
  * раскладчик элемента (`TElementAttributes`): каждый свой слой, на элемент —
  * их сумма, набор владельца поверх наборов самого элемента.
  *
+ * Набор владельца на детали с полем (`TRootSpec.control`) ложится не на её
+ * корень, а на её поле: `aria` Select — имя, ссылки поля формы, ошибка — на
+ * детали Input уходит на `<input>`, где стоит фокус, как атрибуты снаружи у
+ * Vue (`controlAttrs` поля). На поле он — слой `detail`, над набором самой
+ * детали (`owner` поля: `aria` комбобокса, который туда кладёт шаблон Input),
+ * а атрибут потребителя, перенесённый на поле, главнее обоих. Деталь
+ * собирается после владельца, и набор, записанный до построения её поля, ждёт
+ * его: раскладчик детали держит его у себя и отдаёт полю, когда база детали
+ * его построила (`awaitField`, `bindField`).
+ *
  * Стиль — по тому же правилу, по каждому свойству отдельно, а не атрибутом
  * `style` целиком: в инлайновый стиль корня пишут и потребитель (`style` в
  * разметке, `el.style.x` из кода), и плагины мимо разметки
@@ -179,9 +189,12 @@ export function applyAttributes(
  *   элемент (база, `SoldyElement`), в порядке шаблона Vue;
  * - `owner` — набор, который на элемент кладёт разметка компонента-владельца
  *   (`ownerAttributes`): `aria` поля — на `<input>`, `clearAria` поля — на
- *   вложенную кнопку очистки.
+ *   вложенную кнопку очистки;
+ * - `detail` — набор, который владелец детали с полем положил на саму деталь:
+ *   он ложится на её поле, поверх набора детали (см. шапку). `aria` Select на
+ *   детали Input — на `<input>` над набором комбобокса.
  */
-export const ATTRIBUTE_LAYERS = ['attrs', 'aria', 'dataset', 'owner'] as const
+export const ATTRIBUTE_LAYERS = ['attrs', 'aria', 'dataset', 'owner', 'detail'] as const
 
 /** Слой атрибутов элемента — см. `ATTRIBUTE_LAYERS`. */
 export type TAttributeLayer = (typeof ATTRIBUTE_LAYERS)[number]
@@ -250,6 +263,13 @@ const LAID_OUT = new WeakMap<Element, TElementAttributes>()
  * перекрыл набор владельца, правило входа не действует. `null` в наборе имя не
  * называет и нижний слой не перекрывает. Память — у раскладчика, а он — у
  * элемента: связка у элемента новая на каждое подключение.
+ *
+ * У элемента с полем слой владельца — не его (см. шапку): раскладчик держит
+ * его и отдаёт раскладчику поля слоем `detail`. Что у элемента есть поле,
+ * объявляет его база при создании (`awaitField`): до построения поля слой
+ * ждёт, на корень он не ложится. Построила — отдаёт поле (`bindField`), и
+ * записанный раньше слой уходит на него тем же вызовом, а каждая следующая
+ * запись — сразу.
  */
 export class TElementAttributes {
 	/** Раскладчик элемента: тот же у всех, кто на него пишет. */
@@ -267,15 +287,49 @@ export class TElementAttributes {
 	private readonly _layers = new Map<TAttributeLayer, TLayer>()
 	private _applied: TAppliedAttributes = new Map()
 
+	/**
+	 * Поле элемента — куда уходит его слой владельца: раскладчик поля, `null` —
+	 * поле ещё не построено, и слой ждёт, `undefined` — поля у элемента нет, и
+	 * слой владельца ложится на него самого.
+	 */
+	private _field: TElementAttributes | null | undefined = undefined
+	/** Слой владельца элемента с полем: его получает поле, а не элемент. */
+	private _held: object = NO_SET
+
 	private constructor(private readonly _element: Element) {}
 
 	/**
 	 * Слой `layer` теперь — `set`; на элементе — сумма слоёв. `inputs` — атрибуты-
-	 * входы пропов элемента: их называет база вместе со своими наборами.
+	 * входы пропов элемента: их называет база вместе со своими наборами. Слой
+	 * владельца элемента с полем уходит полю (см. шапку класса).
 	 */
 	set(layer: TAttributeLayer, set: object, inputs: ReadonlySet<string> = NO_INPUTS): void {
+		if (layer === 'owner' && this._field !== undefined) {
+			this._held = set
+			this._field?.set('detail', set)
+
+			return
+		}
+
 		this._layers.set(layer, { set, inputs })
 		this._applied = applyAttributes(this._element, this._sum(), this._applied)
+	}
+
+	/**
+	 * У элемента есть поле (`TRootSpec.control`): слой владельца — его, и до
+	 * построения поля он ждёт. Объявляет база элемента при создании — раньше,
+	 * чем владелец пишет набор (см. шапку класса).
+	 */
+	awaitField(): void {
+		if (this._field === undefined) this._field = null
+	}
+
+	/** Поле построено: слой владельца — ему, слоем `detail`, записанный раньше — тоже. */
+	bindField(field: Element): void {
+		const target = TElementAttributes.of(field)
+
+		this._field = target
+		target.set('detail', this._held)
 	}
 
 	/**

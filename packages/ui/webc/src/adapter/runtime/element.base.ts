@@ -157,6 +157,15 @@
  * таблицы своего `id` нет, и атрибут разметки едет на поле вместе со всеми,
  * как `controlAttrs` у Vue.
  *
+ * Набор владельца на элементе с полем — тоже полю: поле Select — деталь Input,
+ * и `aria` Select (имя, ссылки поля формы, ошибка), который шаблон Select
+ * кладёт на неё (`ownerAttributes`), ложится на `<input>`, поверх набора
+ * комбобокса, — как атрибуты снаружи у Vue (`controlAttrs` поля). На корень
+ * детали он не ложится: что поле есть, база объявляет раскладчику элемента
+ * при создании, и набор, записанный до построения, ждёт поля, а построенное
+ * поле база отдаёт ему после переноса атрибутов разметки — те главнее
+ * (`TElementAttributes`, `awaitField` и `bindField`, `root-attributes.ts`).
+ *
  * Поле с `id` бывает и у корня, чьи атрибуты разметки никуда не едут
  * (`fieldId`): у Rating, как у Vue, атрибуты потребителя остаются корню —
  * указатель поле не ловит, и обработчик на поле не сработал бы никогда, — а
@@ -261,6 +270,13 @@
  * назначением шаблон отдаёт детали свою разметку (`lend`), а владелец
  * коллекции — копии образцов в элемент из данных.
  *
+ * Метка слота (`slot-mark.ts`) — пустой комментарий, который шаблон владельца
+ * кладёт в слот детали (`lendMark`): слот с меткой при построении задан, даже
+ * когда больше в нём ничего нет, и обёртку слота деталь строит. Метка встаёт в
+ * точку слота вместе с остальным светом, а узлы владельца — перед ней
+ * (`lendBefore`): до сборки детали — в её свет, после — в слот. Так поле Select
+ * держит обёртку `leading` и в `single`, а теги ставит в неё на смену режима.
+ *
  * Точка-образец (`sample`) — слот, содержимое которого база не выводит, а
  * держит у себя: слот задан (`hasSlot`), а копию — содержимого `<template>`
  * или самого узла — отдаёт контекст (`sample`). Так владелец коллекции берёт
@@ -316,6 +332,7 @@ import {
 	type TAppliedStyles,
 	type THiddenDisplay,
 } from './root-attributes'
+import { isSlotMark } from './slot-mark'
 import { markSoldyElement } from './soldy-mark'
 import { TTeleport, type TTeleportPlace } from './teleport'
 import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
@@ -799,6 +816,10 @@ export function SoldyElement<
 		constructor(...args: ConstructorParameters<TNativeElementClass>) {
 			super(...args)
 			markSoldyElement(this)
+
+			// Набор владельца на элементе с полем ждёт поля (см. шапку): деталь
+			// владелец строит раньше, чем она собирается
+			if (control) TElementAttributes.of(this).awaitField()
 		}
 
 		get state(): TBindingState<TInstance, TFacade, unknown, TOwnerFacade> {
@@ -1027,15 +1048,20 @@ export function SoldyElement<
 		 *
 		 * Свет известен раньше, чем шаблон строит структуру: обёртку слота шаблон
 		 * строит, только когда в неё есть что положить, а контекст, который он
-		 * получает, видит заданные слоты уже при построении.
+		 * получает, видит заданные слоты уже при построении. Слот с меткой
+		 * владельца задан и пустым (см. шапку): владелец положит в него узлы
+		 * позже.
 		 */
 		private _build(): void {
 			const groups = groupBySlot(Array.from(this.childNodes))
 			const light = new Map<string, ChildNode[]>()
 
-			// Слот без содержимого (`isContent`) не задан — см. `_distribute`
+			// Слот без содержимого (`isContent`) и без метки не задан — см.
+			// `_distribute`
 			for (const [name, nodes] of groups) {
-				if (nodes.some(isContent)) light.set(name, nodes)
+				if (nodes.some((node) => isContent(node) || isSlotMark(node))) {
+					light.set(name, nodes)
+				}
 			}
 
 			this._light = light
@@ -1043,9 +1069,17 @@ export function SoldyElement<
 			const parts = spec.template.create(this, (name) => light.has(name), this._view)
 
 			// `id` поля — пропом первой сборки, с корня снят; остальное — полю,
-			// если корень с полем (см. шапку)
+			// если корень с полем, а за атрибутами разметки — и набор владельца:
+			// они главнее его (см. шапку)
 			if (fieldId) this._takeFieldId()
-			if (control) this._handOver(this._controlOf(parts.control), ROOT_ONLY)
+
+			if (control) {
+				const field = this._controlOf(parts.control)
+
+				this._handOver(field, ROOT_ONLY)
+				TElementAttributes.of(this).bindField(field)
+			}
+
 			if (wrapped) this._root = this._wrappedRoot(parts.root)
 
 			// Обёрнутый корень в слое — внешний узел: атрибуты разметки и скрытие —
@@ -1165,11 +1199,12 @@ export function SoldyElement<
 		 * остаются в свете — копию шаблон берёт у контекста.
 		 *
 		 * Узлы без места снимаются:
-		 * - слот без содержимого (`isContent`) не задан. Иначе пробелы вокруг
-		 *   `<svg slot="leading">` на своей строке стали бы слотом по умолчанию и
-		 *   заглушили бы проп `text` — компилятор Vue такие пробелы и комментарии
-		 *   выбрасывает, и одна разметка вела бы себя по-разному. Пробелы внутри
-		 *   содержимого (`<b>Сохранить</b> <i>файл</i>`) остаются;
+		 * - слот без содержимого (`isContent`) и без метки владельца не задан.
+		 *   Иначе пробелы вокруг `<svg slot="leading">` на своей строке стали бы
+		 *   слотом по умолчанию и заглушили бы проп `text` — компилятор Vue такие
+		 *   пробелы и комментарии выбрасывает, и одна разметка вела бы себя
+		 *   по-разному. Пробелы внутри содержимого (`<b>Сохранить</b> <i>файл</i>`)
+		 *   остаются;
 		 * - слот, которого шаблон не объявил, места в разметке не имеет, и его
 		 *   содержимое не выводится: в корне оно оказалось бы там, где компонент
 		 *   его не ждёт, — текст внутри кольца ProgressSpinner вошёл бы в узел с

@@ -36,11 +36,12 @@
  *   текущей связки. Значок — по состоянию окна: «развернуть», пока окно не
  *   развёрнуто (слот `maximize-icon` или иконка роли `arrowsOutward`), и
  *   «вернуть размер» — у развёрнутого (`restore-icon` или `arrowsInward`).
- *   Видимый значок стоит в кнопке перед меткой — комментарием, которого шаблон
- *   кладёт в её слот по умолчанию: метка остаётся там, куда кнопка, собравшись,
- *   положила свой слот, и значок встаёт туда же и до, и после её сборки, без
- *   обёртки, которой нет у Vue. Слоты значков выводит привязка (`showSlot`),
- *   свои иконки — шаблон, у скрытого варианта узлов в документе нет.
+ *   Видимый значок стоит в кнопке перед меткой — комментарием, который шаблон
+ *   кладёт в её слот по умолчанию (`lendMark`): метка остаётся там, куда
+ *   кнопка, собравшись, положила свой слот, и значок встаёт туда же и до, и
+ *   после её сборки (`lendBefore`), без обёртки, которой нет у Vue. Слоты
+ *   значков выводит привязка (`showSlot`), свои иконки — шаблон, у скрытого
+ *   варианта узлов в документе нет.
  * - Крестик — деталь `<button is="so-button" embedded="dialog.close"
  *   type="button">` с классом `so-dialog__close`, последним в окне — пока
  *   `closable`. Имя — набор `closeAria` (от локали, пишет плагин имён), нажатие
@@ -63,6 +64,8 @@ import {
 	bind,
 	createDetail,
 	lend,
+	lendBefore,
+	lendMark,
 	ownerAttributes,
 	ownerStyles,
 	type ITemplate,
@@ -130,7 +133,7 @@ function toggleIcon(icon: TIconElementProps | null, mark: Comment, shown: boolea
 	if (!shown) {
 		icon.remove()
 	} else if (icon.nextSibling !== mark) {
-		mark.before(icon)
+		lendBefore(mark, icon)
 	}
 }
 
@@ -152,16 +155,15 @@ export const dialogTemplate: ITemplate<IDialog, unknown, TDialogOutputs> = {
 		const footer = ownerDocument.createElement('div')
 		const maximize = buttonOf(ownerDocument, 'dialog.maximize', 'so-dialog__maximize')
 		const close = buttonOf(ownerDocument, 'dialog.close', 'so-dialog__close')
-		const mark = ownerDocument.createComment('')
 
 		backdrop.className = 'so-dialog__backdrop'
 		title.className = 'so-dialog__title'
 		body.className = 'so-dialog__body'
 		footer.className = 'so-dialog__footer'
 
-		// Метка — в слот по умолчанию кнопки разворота; свои иконки — только без
-		// слота своего варианта: заданный слот заменяет иконку целиком
-		lend(maximize, DEFAULT_SLOT, mark)
+		// Метка — в слот по умолчанию кнопки разворота (`lendMark`); свои иконки —
+		// только без слота своего варианта: заданный слот заменяет иконку целиком
+		const mark = lendMark(maximize, DEFAULT_SLOT)
 
 		const outward = hasSlot('maximize-icon')
 			? null

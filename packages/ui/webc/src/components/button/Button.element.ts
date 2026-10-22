@@ -16,11 +16,12 @@
  * Кнопка на другом теге — тот же Button под своим именем: одно имя элемента
  * расширяет один тег (`customElements.define` с `extends`). Её регистрирует
  * фабрика `registerButtonTag` там, где тег впервые нужен разметке библиотеки:
- * `<div is="so-button-div">` — строка элемента ListBox. Имя — имя компонента и
+ * `<div is="so-button-div">` — строка элемента ListBox, тега и пункта меню,
+ * `<span is="so-button-span">` — строка опции Select. Имя — имя компонента и
  * тег через дефис. Описание элемента у всех тегов одно (`BUTTON`), отличается
  * только нативный класс, а тег ядро получает от элемента, как всегда: на `div`
- * оно пишет кнопке `role="button"`, `tabindex` и `aria-disabled` вместо
- * нативного `disabled`.
+ * и `span` оно пишет кнопке `role="button"`, `tabindex` и `aria-disabled`
+ * вместо нативного `disabled`.
  *
  * Разметка вынесена в button.template.ts, жизненный цикл — в SoldyElement.
  */
@@ -51,54 +52,65 @@ defineElement('so-button', TButtonElement, 'button')
 /**
  * Теги, на которых Button регистрируется ещё раз (`registerButtonTag`), —
  * сверх своего `button`. Тег здесь — значит, у кнопки на нём есть место в
- * разметке библиотеки: `div` — строка элемента ListBox.
+ * разметке библиотеки: `div` — строка элемента ListBox, тега и пункта меню,
+ * `span` — строка опции Select (под этот тег ядро пишет опции ARIA,
+ * `TSelectItem._ariaTag`, как `tag="span"` у Vue).
  */
-export type TButtonTag = 'div'
-
-/**
- * Нативный класс каждого тега. Тип карты сверяет класс с тегом: класс чужого
- * тега (`div: HTMLSpanElement`) не компилируется, как и тег без класса.
- */
-const NATIVE_CLASSES: { readonly [K in TButtonTag]: new () => HTMLElementTagNameMap[K] } = {
-	div: HTMLDivElement,
-}
+export type TButtonTag = 'div' | 'span'
 
 /** Класс Button на теге `K`: нативный класс тега и своё элемента soldy. */
 export type TButtonTagClass<K extends TButtonTag> = (new () => HTMLElementTagNameMap[K]) &
 	TSoldyElementClass<IButton>
 
-/** Классы, уже зарегистрированные на тегах: у тега класс один. */
-const registered: { [K in TButtonTag]?: TButtonTagClass<K> } = {}
+/**
+ * Регистрация Button на теге: класс на нативном классе тега создаётся и
+ * регистрируется при первом обращении, каждое следующее отдаёт тот же — у тега
+ * класс один. Тип сверяет нативный класс с тегом: класс чужого тега
+ * (`registration('div', HTMLSpanElement)`) не компилируется.
+ */
+function registration<K extends TButtonTag>(
+	tag: K,
+	Native: new () => HTMLElementTagNameMap[K],
+): () => TButtonTagClass<K> {
+	let element: TButtonTagClass<K> | undefined
+
+	return () => {
+		if (!element) {
+			element = SoldyElement(Native, BUTTON)
+			defineElement(`so-button-${tag}`, element, tag)
+		}
+
+		return element
+	}
+}
+
+/** Регистрация каждого тега: тег без неё не компилируется (`TButtonTag`). */
+const REGISTRATIONS: { readonly [K in TButtonTag]: () => TButtonTagClass<K> } = {
+	div: registration('div', HTMLDivElement),
+	span: registration('span', HTMLSpanElement),
+}
 
 /**
- * Button на теге `tag` — `<div is="so-button-div">`: класс регистрируется при
- * первом вызове, и каждый следующий отдаёт тот же. Зовёт её разметка там, где
- * тег впервые нужен; класс нужен ей для проверки вида детали (`createDetail`),
- * потребителю — для `instanceof`.
+ * Button на теге `tag` — `<div is="so-button-div">`, `<span is="so-button-span">`:
+ * класс регистрируется при первом вызове, и каждый следующий отдаёт тот же.
+ * Зовёт её разметка там, где тег впервые нужен; класс нужен ей для проверки
+ * вида детали (`createDetail`), потребителю — для `instanceof`.
  *
  * Своей логики у кнопки на теге нет: описание элемента — то же, что у
  * `<button is="so-button">` (`BUTTON`), повторяется только регистрация.
  */
 export function registerButtonTag<K extends TButtonTag>(tag: K): TButtonTagClass<K> {
-	const ready = registered[tag]
-
-	if (ready) return ready
-
-	const element = SoldyElement(NATIVE_CLASSES[tag], BUTTON)
-
-	registered[tag] = element
-	defineElement(`so-button-${tag}`, element, tag)
-
-	return element
+	return REGISTRATIONS[tag]()
 }
 
 /**
  * Button из JS: нативный элемент тега (по умолчанию `<button is="so-button">`,
- * `TButtonElementProps<HTMLDivElement>` — `<div is="so-button-div">`), своё
+ * `TButtonElementProps<HTMLDivElement>` — `<div is="so-button-div">`,
+ * `TButtonElementProps<HTMLSpanElement>` — `<span is="so-button-span">`), своё
  * элемента soldy (`ctrl`, `state`) и свойства пропов дескриптора вместе с
  * пропсами его плагинов (`aria_label`) — без тех, что у тега уже есть, и без
- * `HOST_PROPS` (`TSoldyElementProps`). У `div` своего `disabled` нет, и
- * `disabled` там — свойство пропа.
+ * `HOST_PROPS` (`TSoldyElementProps`). У `div` и `span` своего `disabled`
+ * нет, и `disabled` там — свойство пропа.
  */
 export type TButtonElementProps<TNative extends HTMLElement = HTMLButtonElement> = TNative &
 	ISoldyElement<IButton> &
