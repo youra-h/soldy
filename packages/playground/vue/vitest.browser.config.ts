@@ -233,6 +233,15 @@ export default defineConfig({
 		// `__tests__/setup.ts` — общий с jsdom (заглушки и иконки),
 		// `browser/setup.ts` — сторож ошибок окна, только для браузера.
 		setupFiles: ['./__tests__/setup.ts', './browser/setup.ts'],
+		// Консоль страницы в прогон не пересылается. Журнал сценариев стенда
+		// (`shared/src/scenarios/journal.ts`) печатает каждое событие вместе с
+		// аргументами — экземплярами ядра и плагинов, — а перехват Vitest
+		// раскладывает каждый аргумент целиком на странице и гонит по RPC:
+		// около полумиллиона строк за прогон, и к концу прогона Chromium в CI
+		// отваливался (`VITEST_BROWSER_CONNECTION_CLOSED`) на случайном спеке.
+		// Шпионы `vi.spyOn(console, …)` работают на странице и от перехвата не
+		// зависят; ошибки окна ловит `browser/setup.ts`.
+		disableConsoleIntercept: true,
 		browser: {
 			enabled: true,
 			headless: true,
