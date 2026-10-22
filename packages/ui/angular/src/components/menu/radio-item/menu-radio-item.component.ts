@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IMenuRadioItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../../adapter'
+import type { IMenuRadioItem } from '@soldy-ui/core'
+import { AttributesDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
-import { MenuRadioItemInputNames, TMenuRadioItemSurface } from './base.component'
+import { TMenuRadioItemSurface } from '../../../generated/menu-radio-item.metadata'
 import { setupMenuRadioItem } from './setup.component'
 
 /**
@@ -28,29 +28,16 @@ import { setupMenuRadioItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-radio-item], [so-menu-radio-item]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, TButtonComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './menu-radio-item.component.html',
 })
 export class TMenuRadioItemComponent extends TMenuRadioItemSurface<IMenuRadioItem> {
 	constructor() {
-		super(MenuRadioItemInputNames, {
+		super(setupMenuRadioItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(
-		ctrl: IMenuRadioItem | undefined,
-		inputs: object,
-	): TBinding<IMenuRadioItem, TMenuItemCollectionFacade> {
-		return setupMenuRadioItem(ctrl, inputs)
-	}
-
-	/** Клик по строке: отметка через меню — выключенному оно откажет. */
-	protected check(): void {
-		this.facade()?.context?.adapters.menu.check()
 	}
 }

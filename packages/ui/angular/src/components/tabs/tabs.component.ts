@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ITabs, TTabsCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { ITabs } from '@soldy-ui/core'
+import { AttributesDirective, SlotDirective, provideElevator } from '../../adapter'
 import { TTabsItemComponent } from './item'
-import { TabsInputNames, TTabsSurface } from './base.component'
+import { TTabsSurface } from '../../generated/tabs.metadata'
 import { setupTabs } from './setup.component'
 
 /**
@@ -40,7 +40,6 @@ import { setupTabs } from './setup.component'
  */
 @Component({
 	selector: 'div[so-tabs], [so-tabs]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, SlotDirective, TTabsItemComponent],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,13 +47,10 @@ import { setupTabs } from './setup.component'
 })
 export class TTabsComponent extends TTabsSurface<ITabs> {
 	constructor() {
-		super(TabsInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(
-		ctrl: ITabs | undefined,
-		inputs: object,
-	): TBinding<ITabs, TTabsCollectionFacade> {
-		return setupTabs(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupTabs(ctrl, inputs, this.engine), {
+			strategy: 'host',
+			sets: ['attrs', 'dataset'],
+			control: true,
+		})
 	}
 }

@@ -1,7 +1,7 @@
 import { Directive } from '@angular/core'
 import type { IVirtual } from '@soldy-ui/core'
-import { provideElevator, type TBinding } from '../../adapter'
-import { TVirtualSurface, VirtualInputNames } from './base.component'
+import { provideElevator } from '../../adapter'
+import { TVirtualSurface } from '../../generated/virtual.metadata'
 import { setupVirtual } from './setup.component'
 
 /**
@@ -37,15 +37,10 @@ import { setupVirtual } from './setup.component'
  */
 @Directive({
 	selector: '[so-virtual]',
-	standalone: true,
 	providers: [provideElevator()],
 })
 export class TVirtualComponent extends TVirtualSurface<IVirtual> {
 	constructor() {
-		super(VirtualInputNames)
-	}
-
-	protected createBinding(ctrl: IVirtual | undefined, inputs: object): TBinding<IVirtual> {
-		return setupVirtual(ctrl, inputs)
+		super(setupVirtual)
 	}
 }

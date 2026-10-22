@@ -1,8 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IButton } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { ButtonInputNames, TButtonSurface } from './base.component'
+import { TButtonSurface } from '../../generated/button.metadata'
 import { setupButton } from './setup.component'
 
 /**
@@ -30,17 +29,12 @@ import { setupButton } from './setup.component'
  */
 @Component({
 	selector: 'button[so-button], [so-button]',
-	standalone: true,
 	imports: [NgTemplateOutlet],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './button.component.html',
 })
 export class TButtonComponent extends TButtonSurface<IButton> {
 	constructor() {
-		super(ButtonInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IButton | undefined, inputs: object): TBinding<IButton> {
-		return setupButton(ctrl, inputs)
+		super(setupButton, { strategy: 'host' })
 	}
 }

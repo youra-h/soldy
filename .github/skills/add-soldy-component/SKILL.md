@@ -163,7 +163,7 @@ React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `Slot
 
 ### 5. Angular adapter — `packages/ui/angular/src/components/<name>/`
 
-Файлы — как у Button: `manifest.ts`, `base.component.ts`, `setup.component.ts`,
+Файлы — как у Button: `manifest.ts`, `setup.component.ts`,
 `<name>.component.ts` с разметкой в `<name>.component.html` и `index.ts`. Отличие
 от Vue/React: имена inputs/outputs **генерируются заранее**, т.к. Angular AOT
 требует литеральные массивы в декораторе.
@@ -174,24 +174,22 @@ React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `Slot
 
 ```ts
 export { <Name>Descriptor as descriptor } from '@soldy-ui/setup'
-
-export const name = '<name>'
 ```
 
+Имя берётся из пути папки через дефис: `tabs/item` — `tabs-item`.
+
 - Запусти `npm run generate --workspace=@soldy-ui/angular` → появится
-  `src/generated/<name>.metadata.ts` с `<Name>Inputs` / `<Name>Outputs` и
+  `src/generated/<name>.metadata.ts` с `<Name>InputNames` / `<Name>OutputNames` и
   `T<Name>Surface` — абстрактной директивой, которая объявляет входы и выходы
   компонента вместе с их типами для строгого шаблона. **Файл коммитится**, CI
   проверяет, что он не разъехался с дескриптором.
 
-- `base.component.ts` — только переэкспорт сгенерированного:
+- `index.ts` реэкспортирует сгенерированное оттуда же:
 
 ```ts
-export {
-  <Name>Inputs as <Name>InputNames,
-  <Name>Outputs as <Name>OutputNames,
-  T<Name>Surface,
-} from '../../generated/<name>.metadata'
+export * from '../../generated/<name>.metadata'
+export * from './setup.component'
+export * from './<name>.component'
 ```
 
 - `setup.component.ts` — сборка через обёртку адаптера
@@ -216,8 +214,10 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 - `<name>.component.ts` — оболочка. Наследует сгенерированный `T<Name>Surface`
   (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
   состояние читается как `state()` (сигнал). Корень ведёт база: компонент
-  зовёт только `super(<Name>InputNames, { strategy: 'host' })` — описание
-  корня (`TRootSpec`) — и реализует `createBinding`. Своему стилю, который
+  зовёт только `super(setup<Name>, { strategy: 'host' })` — свою setup-функцию
+  и описание корня (`TRootSpec`); имена входов подставляет `T<Name>Surface`.
+  Владелец коллекции отдаёт в setup свой вход `engine` стрелкой:
+  `super((ctrl, inputs) => setup<Name>(ctrl, inputs, this.engine), …)`. Своему стилю, который
   считает ядро, компонент называет имя выхода (`style: 'fractionStyle'` у
   ProgressSpinner), а корень, который видимость не прячет, — `hides: false`
   (Skeleton). Эмиттеры выходов компонент не заводит: геттер выхода в
@@ -230,25 +230,19 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { I<Name> } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { <Name>InputNames, T<Name>Surface } from './base.component'
+import { T<Name>Surface } from '../../generated/<name>.metadata'
 import { setup<Name> } from './setup.component'
 
 @Component({
   // Первым — селектор с тегом умолчания ядра: его берёт createComponent
   selector: '<tag>[so-<name>], [so-<name>]',
-  standalone: true,
   imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './<name>.component.html',
 })
 export class T<Name>Component extends T<Name>Surface<I<Name>> {
   constructor() {
-    super(<Name>InputNames, { strategy: 'host' })
-  }
-
-  protected createBinding(ctrl: I<Name> | undefined, inputs: object): TBinding<I<Name>> {
-    return setup<Name>(ctrl, inputs)
+    super(setup<Name>, { strategy: 'host' })
   }
 }
 ```

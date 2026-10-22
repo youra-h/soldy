@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { ILabel } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { LabelInputNames, TLabelSurface } from './base.component'
+import { TLabelSurface } from '../../generated/label.metadata'
 import { setupLabel } from './setup.component'
 
 /**
@@ -28,16 +27,11 @@ import { setupLabel } from './setup.component'
  */
 @Component({
 	selector: 'label[so-label], [so-label]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './label.component.html',
 })
 export class TLabelComponent extends TLabelSurface<ILabel> {
 	constructor() {
-		super(LabelInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: ILabel | undefined, inputs: object): TBinding<ILabel> {
-		return setupLabel(ctrl, inputs)
+		super(setupLabel, { strategy: 'host' })
 	}
 }

@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IComponentView } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { ComponentViewInputNames, TComponentViewSurface } from './base.component'
+import { TComponentViewSurface } from '../../generated/component-view.metadata'
 import { setupComponentView } from './setup.component'
 
 /**
@@ -21,19 +20,11 @@ import { setupComponentView } from './setup.component'
  */
 @Component({
 	selector: '[so-component-view]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `<ng-content></ng-content>`,
 })
 export class TComponentViewComponent extends TComponentViewSurface<IComponentView> {
 	constructor() {
-		super(ComponentViewInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: IComponentView | undefined,
-		inputs: object,
-	): TBinding<IComponentView> {
-		return setupComponentView(ctrl, inputs)
+		super(setupComponentView, { strategy: 'host' })
 	}
 }

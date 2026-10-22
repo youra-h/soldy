@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ITableRow, TTableRowCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../../adapter'
+import type { ITableRow } from '@soldy-ui/core'
+import { AttributesDirective } from '../../../adapter'
 import { TCheckBoxComponent } from '../../check-box'
-import { TableRowInputNames, TTableRowSurface } from './base.component'
+import { TTableRowSurface } from '../../../generated/table-row.metadata'
 import { setupTableRow } from './setup.component'
 
 /**
@@ -37,20 +37,12 @@ import { setupTableRow } from './setup.component'
  */
 @Component({
 	selector: 'tr[so-table-row], [so-table-row]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, TCheckBoxComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './table-row.component.html',
 })
 export class TTableRowComponent extends TTableRowSurface<ITableRow> {
 	constructor() {
-		super(TableRowInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: ITableRow | undefined,
-		inputs: object,
-	): TBinding<ITableRow, TTableRowCollectionFacade> {
-		return setupTableRow(ctrl, inputs)
+		super(setupTableRow, { strategy: 'host' })
 	}
 }

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IItemGroup } from '@soldy-ui/core'
-import { AttributesDirective, provideElevator, type TBinding } from '../../../adapter'
-import { ListBoxGroupInputNames, TListBoxGroupSurface } from './base.component'
+import { AttributesDirective, provideElevator } from '../../../adapter'
+import { TListBoxGroupSurface } from '../../../generated/list-box-group.metadata'
 import { setupListBoxGroup } from './setup.component'
 
 /**
@@ -30,7 +30,6 @@ import { setupListBoxGroup } from './setup.component'
  */
 @Component({
 	selector: 'div[so-list-box-group], [so-list-box-group]',
-	standalone: true,
 	imports: [AttributesDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,10 +37,6 @@ import { setupListBoxGroup } from './setup.component'
 })
 export class TListBoxGroupComponent extends TListBoxGroupSurface<IItemGroup> {
 	constructor() {
-		super(ListBoxGroupInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IItemGroup | undefined, inputs: object): TBinding<IItemGroup> {
-		return setupListBoxGroup(ctrl, inputs)
+		super(setupListBoxGroup, { strategy: 'host' })
 	}
 }

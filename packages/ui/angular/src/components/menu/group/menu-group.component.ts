@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IItemGroup } from '@soldy-ui/core'
-import { AttributesDirective, provideElevator, type TBinding } from '../../../adapter'
-import { MenuGroupInputNames, TMenuGroupSurface } from './base.component'
+import { AttributesDirective, provideElevator } from '../../../adapter'
+import { TMenuGroupSurface } from '../../../generated/menu-group.metadata'
 import { setupMenuGroup } from './setup.component'
 
 /**
@@ -29,7 +29,6 @@ import { setupMenuGroup } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-group], [so-menu-group]',
-	standalone: true,
 	imports: [AttributesDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,10 +36,6 @@ import { setupMenuGroup } from './setup.component'
 })
 export class TMenuGroupComponent extends TMenuGroupSurface<IItemGroup> {
 	constructor() {
-		super(MenuGroupInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IItemGroup | undefined, inputs: object): TBinding<IItemGroup> {
-		return setupMenuGroup(ctrl, inputs)
+		super(setupMenuGroup, { strategy: 'host' })
 	}
 }

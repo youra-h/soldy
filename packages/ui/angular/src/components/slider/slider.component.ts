@@ -1,14 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ISlider } from '@soldy-ui/core'
-import {
-	AttributesDirective,
-	FieldTextDirective,
-	TextPipe,
-	provideElevator,
-	type TBinding,
-} from '../../adapter'
-import { SliderInputNames, TSliderSurface } from './base.component'
+import { AttributesDirective, FieldTextDirective, TextPipe, provideElevator } from '../../adapter'
+import { TSliderSurface } from '../../generated/slider.metadata'
 import { setupSlider } from './setup.component'
 
 /**
@@ -52,7 +46,6 @@ import { setupSlider } from './setup.component'
  */
 @Component({
 	selector: 'span[so-slider], [so-slider]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, FieldTextDirective, TextPipe],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,10 +53,6 @@ import { setupSlider } from './setup.component'
 })
 export class TSliderComponent extends TSliderSurface<ISlider> {
 	constructor() {
-		super(SliderInputNames, { strategy: 'host', aria: 'rootAria' })
-	}
-
-	protected createBinding(ctrl: ISlider | undefined, inputs: object): TBinding<ISlider> {
-		return setupSlider(ctrl, inputs)
+		super(setupSlider, { strategy: 'host', aria: 'rootAria' })
 	}
 }

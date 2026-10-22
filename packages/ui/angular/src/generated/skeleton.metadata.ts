@@ -2,11 +2,17 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs } from '@soldy-ui/setup'
-import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import {
+	TComponentBase,
+	type TInputValue,
+	type TOutputEmitter,
+	type TRootSpec,
+	type TSetup,
+} from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor } from '../components/skeleton/manifest'
 
-export const SkeletonInputs = [
+export const SkeletonInputNames = [
 	'embedded',
 	'pluginProps',
 	'rendered',
@@ -18,7 +24,7 @@ export const SkeletonInputs = [
 	'width',
 	'height',
 ] as const
-export const SkeletonOutputs = [
+export const SkeletonOutputNames = [
 	'soBundleCreate',
 	'soPluginEvent',
 	'soShow',
@@ -49,17 +55,7 @@ export const SkeletonOutputs = [
 	'soLayoutChangeStyles',
 ] as const
 
-/**
- * Поверхность Skeleton в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular — поля их только
- * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
- * (`createOutput`), а выход, который никто не читал, его не заводит.
- * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
- * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база
- * получает третьим параметром.
- */
 @Directive({
-	standalone: true,
 	inputs: [
 		'embedded',
 		'pluginProps',
@@ -72,13 +68,19 @@ export const SkeletonOutputs = [
 		'width',
 		'height',
 	],
-	outputs: [...SkeletonOutputs],
+	outputs: [...SkeletonOutputNames],
 })
 export abstract class TSkeletonSurface<TInstance extends IEntity> extends TComponentBase<
 	TInstance,
 	unknown,
 	DescriptorPluginOutputs<typeof descriptor>
 > {
+	constructor(
+		setup: TSetup<TInstance, unknown, DescriptorPluginOutputs<typeof descriptor>>,
+		spec?: TRootSpec,
+	) {
+		super(SkeletonInputNames, setup, spec)
+	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>

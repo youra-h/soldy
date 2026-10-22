@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IAccordionItem, TAccordionItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { IAccordionItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { AccordionItemInputNames, TAccordionItemSurface } from './base.component'
+import { TAccordionItemSurface } from '../../../generated/accordion-item.metadata'
 import { setupAccordionItem } from './setup.component'
 
 /**
@@ -40,7 +40,6 @@ import { setupAccordionItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-accordion-item], [so-accordion-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -53,23 +52,11 @@ import { setupAccordionItem } from './setup.component'
 })
 export class TAccordionItemComponent extends TAccordionItemSurface<IAccordionItem> {
 	constructor() {
-		super(AccordionItemInputNames, {
+		super(setupAccordionItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 			order: 'order',
 		})
-	}
-
-	protected createBinding(
-		ctrl: IAccordionItem | undefined,
-		inputs: object,
-	): TBinding<IAccordionItem, TAccordionItemCollectionFacade> {
-		return setupAccordionItem(ctrl, inputs)
-	}
-
-	/** Клик по заголовку: раскрыть или свернуть секцию через выбор коллекции. */
-	protected toggle(): void {
-		this.facade()?.context?.adapters.selection.toggle()
 	}
 }

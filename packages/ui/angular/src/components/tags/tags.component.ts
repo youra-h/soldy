@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ITags, TTagsCollectionFacade } from '@soldy-ui/core'
-import { SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { ITags } from '@soldy-ui/core'
+import { SlotDirective, provideElevator } from '../../adapter'
 import { TTagsItemComponent } from './item'
-import { TagsInputNames, TTagsSurface } from './base.component'
+import { TTagsSurface } from '../../generated/tags.metadata'
 import { setupTags } from './setup.component'
 
 /**
@@ -41,7 +41,6 @@ import { setupTags } from './setup.component'
  */
 @Component({
 	selector: 'div[so-tags], [so-tags]',
-	standalone: true,
 	imports: [NgTemplateOutlet, SlotDirective, TTagsItemComponent],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,13 +48,6 @@ import { setupTags } from './setup.component'
 })
 export class TTagsComponent extends TTagsSurface<ITags> {
 	constructor() {
-		super(TagsInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: ITags | undefined,
-		inputs: object,
-	): TBinding<ITags, TTagsCollectionFacade> {
-		return setupTags(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupTags(ctrl, inputs, this.engine), { strategy: 'host' })
 	}
 }

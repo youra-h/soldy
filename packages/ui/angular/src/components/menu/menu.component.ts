@@ -1,13 +1,13 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { IMenu } from '@soldy-ui/core'
+import { AttributesDirective, SlotDirective, provideElevator } from '../../adapter'
 import { TFrameComponent } from '../frame'
 import { TMenuItemComponent } from './item'
 import { TMenuSubmenuComponent } from './submenu'
 import { TMenuGroupComponent } from './group'
 import { TMenuSeparatorComponent } from './separator'
-import { MenuInputNames, TMenuSurface } from './base.component'
+import { TMenuSurface } from '../../generated/menu.metadata'
 import { setupMenu } from './setup.component'
 
 /**
@@ -70,7 +70,6 @@ import { setupMenu } from './setup.component'
  */
 @Component({
 	selector: 'span[so-menu], [so-menu]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -87,13 +86,9 @@ import { setupMenu } from './setup.component'
 })
 export class TMenuComponent extends TMenuSurface<IMenu> {
 	constructor() {
-		super(MenuInputNames, { strategy: 'host', sets: ['attrs', 'dataset'] })
-	}
-
-	protected createBinding(
-		ctrl: IMenu | undefined,
-		inputs: object,
-	): TBinding<IMenu, TMenuCollectionFacade> {
-		return setupMenu(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupMenu(ctrl, inputs, this.engine), {
+			strategy: 'host',
+			sets: ['attrs', 'dataset'],
+		})
 	}
 }

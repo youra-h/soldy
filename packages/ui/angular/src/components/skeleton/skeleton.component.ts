@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { ISkeleton } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { SkeletonInputNames, TSkeletonSurface } from './base.component'
+import { TSkeletonSurface } from '../../generated/skeleton.metadata'
 import { setupSkeleton } from './setup.component'
 
 /**
@@ -22,16 +21,11 @@ import { setupSkeleton } from './setup.component'
  */
 @Component({
 	selector: '[so-skeleton]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './skeleton.component.html',
 })
 export class TSkeletonComponent extends TSkeletonSurface<ISkeleton> {
 	constructor() {
-		super(SkeletonInputNames, { strategy: 'host', hides: false })
-	}
-
-	protected createBinding(ctrl: ISkeleton | undefined, inputs: object): TBinding<ISkeleton> {
-		return setupSkeleton(ctrl, inputs)
+		super(setupSkeleton, { strategy: 'host', hides: false })
 	}
 }

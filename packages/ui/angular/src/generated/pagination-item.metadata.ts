@@ -2,18 +2,24 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorInstance, DescriptorPluginOutputs } from '@soldy-ui/setup'
-import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import {
+	TComponentBase,
+	type TInputValue,
+	type TOutputEmitter,
+	type TRootSpec,
+	type TSetup,
+} from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor, facade } from '../components/pagination/item/manifest'
 
-export const PaginationItemInputs = [
+export const PaginationItemInputNames = [
 	'embedded',
 	'pluginProps',
 	'rendered',
 	'visible',
 	'direction',
 ] as const
-export const PaginationItemOutputs = [
+export const PaginationItemOutputNames = [
 	'soBundleCreate',
 	'soPluginEvent',
 	'soShow',
@@ -44,20 +50,7 @@ export const PaginationItemOutputs = [
 	'soChangeText',
 ] as const
 
-/**
- * Поверхность PaginationItem в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular — поля их только
- * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
- * (`createOutput`), а выход, который никто не читал, его не заводит.
- * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
- * Контекстов у компонента два: входы и выходы фасада коллекции — здесь же,
- * после своих. Тип входа фасада — по дескриптору компонента, выхода — по
- * дескриптору фасада.
- * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база
- * получает третьим параметром.
- */
 @Directive({
-	standalone: true,
 	inputs: [
 		'embedded',
 		'pluginProps',
@@ -65,13 +58,23 @@ export const PaginationItemOutputs = [
 		{ name: 'visible', transform: booleanInput },
 		'direction',
 	],
-	outputs: [...PaginationItemOutputs],
+	outputs: [...PaginationItemOutputNames],
 })
 export abstract class TPaginationItemSurface<TInstance extends IEntity> extends TComponentBase<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginOutputs<typeof descriptor>
 > {
+	constructor(
+		setup: TSetup<
+			TInstance,
+			DescriptorInstance<typeof facade>,
+			DescriptorPluginOutputs<typeof descriptor>
+		>,
+		spec?: TRootSpec,
+	) {
+		super(PaginationItemInputNames, setup, spec)
+	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>

@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ITabsItem, TTabsItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { ITabsItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { TabsItemInputNames, TTabsItemSurface } from './base.component'
+import { TTabsItemSurface } from '../../../generated/tabs-item.metadata'
 import { setupTabsItem } from './setup.component'
 
 /**
@@ -44,7 +44,6 @@ import { setupTabsItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-tabs-item], [so-tabs-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -57,19 +56,12 @@ import { setupTabsItem } from './setup.component'
 })
 export class TTabsItemComponent extends TTabsItemSurface<ITabsItem> {
 	constructor() {
-		super(TabsItemInputNames, {
+		super(setupTabsItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 			order: 'order',
 		})
-	}
-
-	protected createBinding(
-		ctrl: ITabsItem | undefined,
-		inputs: object,
-	): TBinding<ITabsItem, TTabsItemCollectionFacade> {
-		return setupTabsItem(ctrl, inputs)
 	}
 
 	/** Клик по строке: таб становится активным, если активация не отменена. */

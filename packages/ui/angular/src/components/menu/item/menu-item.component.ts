@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IMenuItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../../adapter'
+import type { IMenuItem } from '@soldy-ui/core'
+import { AttributesDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
-import { MenuItemInputNames, TMenuItemSurface } from './base.component'
+import { TMenuItemSurface } from '../../../generated/menu-item.metadata'
 import { setupMenuItem } from './setup.component'
 
 /**
@@ -42,25 +42,12 @@ import { setupMenuItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-item], [so-menu-item]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, TButtonComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './menu-item.component.html',
 })
 export class TMenuItemComponent extends TMenuItemSurface<IMenuItem> {
 	constructor() {
-		super(MenuItemInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(
-		ctrl: IMenuItem | undefined,
-		inputs: object,
-	): TBinding<IMenuItem, TMenuItemCollectionFacade> {
-		return setupMenuItem(ctrl, inputs)
-	}
-
-	/** Клик по строке: нажатие через меню — выключенному оно откажет. */
-	protected choose(): void {
-		this.facade()?.context?.adapters.menu.choose()
+		super(setupMenuItem, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
 	}
 }

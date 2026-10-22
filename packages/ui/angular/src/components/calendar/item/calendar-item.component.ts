@@ -1,8 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ICalendarItem, TCalendarItemCollectionFacade } from '@soldy-ui/core'
-import type { TBinding } from '../../../adapter'
-import { CalendarItemInputNames, TCalendarItemSurface } from './base.component'
+import type { ICalendarItem } from '@soldy-ui/core'
+import { TCalendarItemSurface } from '../../../generated/calendar-item.metadata'
 import { setupCalendarItem } from './setup.component'
 
 /**
@@ -38,20 +37,12 @@ import { setupCalendarItem } from './setup.component'
  */
 @Component({
 	selector: 'td[so-calendar-item], [so-calendar-item]',
-	standalone: true,
 	imports: [NgTemplateOutlet],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './calendar-item.component.html',
 })
 export class TCalendarItemComponent extends TCalendarItemSurface<ICalendarItem> {
 	constructor() {
-		super(CalendarItemInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: ICalendarItem | undefined,
-		inputs: object,
-	): TBinding<ICalendarItem, TCalendarItemCollectionFacade> {
-		return setupCalendarItem(ctrl, inputs)
+		super(setupCalendarItem, { strategy: 'host' })
 	}
 }

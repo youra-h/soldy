@@ -2,11 +2,17 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorInstance, DescriptorPluginOutputs } from '@soldy-ui/setup'
-import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import {
+	TComponentBase,
+	type TInputValue,
+	type TOutputEmitter,
+	type TRootSpec,
+	type TSetup,
+} from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
 import type { descriptor, facade, ownerFacade } from '../components/menu/submenu/manifest'
 
-export const MenuSubmenuInputs = [
+export const MenuSubmenuInputNames = [
 	'embedded',
 	'pluginProps',
 	'rendered',
@@ -30,7 +36,7 @@ export const MenuSubmenuInputs = [
 	'groupBy',
 	'groups',
 ] as const
-export const MenuSubmenuOutputs = [
+export const MenuSubmenuOutputNames = [
 	'soBundleCreate',
 	'soPluginEvent',
 	'soShow',
@@ -109,21 +115,7 @@ export const MenuSubmenuOutputs = [
 	'soChangeSubmenus',
 ] as const
 
-/**
- * Поверхность MenuSubmenu в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular — поля их только
- * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
- * (`createOutput`), а выход, который никто не читал, его не заводит.
- * Булевы входы проходят `booleanInput`: атрибут без значения включает проп.
- * Контекстов у компонента три: входы и выходы фасада элемента и фасада
- * владельца — здесь же, после своих. Тип входа фасадов — по дескриптору
- * компонента, выхода — по дескриптору фасада. Свойства фасада владельца
- * шаблон читает из `state()`: их тип база получает четвёртым параметром.
- * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база
- * получает третьим параметром.
- */
 @Directive({
-	standalone: true,
 	inputs: [
 		'embedded',
 		'pluginProps',
@@ -148,7 +140,7 @@ export const MenuSubmenuOutputs = [
 		'groupBy',
 		'groups',
 	],
-	outputs: [...MenuSubmenuOutputs],
+	outputs: [...MenuSubmenuOutputNames],
 })
 export abstract class TMenuSubmenuSurface<TInstance extends IEntity> extends TComponentBase<
 	TInstance,
@@ -156,6 +148,17 @@ export abstract class TMenuSubmenuSurface<TInstance extends IEntity> extends TCo
 	DescriptorPluginOutputs<typeof descriptor>,
 	DescriptorInstance<typeof ownerFacade>
 > {
+	constructor(
+		setup: TSetup<
+			TInstance,
+			DescriptorInstance<typeof facade>,
+			DescriptorPluginOutputs<typeof descriptor>,
+			DescriptorInstance<typeof ownerFacade>
+		>,
+		spec?: TRootSpec,
+	) {
+		super(MenuSubmenuInputNames, setup, spec)
+	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>

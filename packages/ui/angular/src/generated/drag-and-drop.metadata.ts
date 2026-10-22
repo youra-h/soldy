@@ -2,35 +2,35 @@
 import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs } from '@soldy-ui/setup'
-import { TComponentBase, type TInputValue, type TOutputEmitter } from '../adapter/runtime'
+import {
+	TComponentBase,
+	type TInputValue,
+	type TOutputEmitter,
+	type TRootSpec,
+	type TSetup,
+} from '../adapter/runtime'
 import type { descriptor } from '../components/drag-and-drop/manifest'
 
-export const DragAndDropInputs = ['embedded', 'pluginProps'] as const
-export const DragAndDropOutputs = [
+export const DragAndDropInputNames = ['embedded', 'pluginProps'] as const
+export const DragAndDropOutputNames = [
 	'soBundleCreate',
 	'soPluginEvent',
 	'soMoveBefore',
 	'soMove',
 ] as const
 
-/**
- * Поверхность DragAndDrop в Angular: входы и выходы компонента с типами для
- * строгой проверки шаблона. Значения входов пишет Angular — поля их только
- * объявляют. Выход — геттер: эмиттер заводит первое чтение выхода
- * (`createOutput`), а выход, который никто не читал, его не заводит.
- * Выходы плагинов дескриптора шаблон читает из `state()`: их тип база
- * получает третьим параметром.
- */
-@Directive({
-	standalone: true,
-	inputs: ['embedded', 'pluginProps'],
-	outputs: [...DragAndDropOutputs],
-})
+@Directive({ inputs: ['embedded', 'pluginProps'], outputs: [...DragAndDropOutputNames] })
 export abstract class TDragAndDropSurface<TInstance extends IEntity> extends TComponentBase<
 	TInstance,
 	unknown,
 	DescriptorPluginOutputs<typeof descriptor>
 > {
+	constructor(
+		setup: TSetup<TInstance, unknown, DescriptorPluginOutputs<typeof descriptor>>,
+		spec?: TRootSpec,
+	) {
+		super(DragAndDropInputNames, setup, spec)
+	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {

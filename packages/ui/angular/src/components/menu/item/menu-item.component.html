@@ -18,7 +18,7 @@
 	[size]="state()['size']"
 	[disabled]="state()['disabled']"
 	[so-attributes]="state()['aria']"
-	(click)="choose()"
+	(click)="facade()?.context?.adapters.menu.choose()"
 >
 	<span class="so-menu-item__icon" ngProjectAs="[slot=leading]">
 		<ng-content select="[slot=leading]" />

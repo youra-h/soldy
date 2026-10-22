@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IPopover } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../adapter'
+import { AttributesDirective, RoleIconDirective } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TFrameComponent } from '../frame'
 import { TIconComponent } from '../icon'
-import { PopoverInputNames, TPopoverSurface } from './base.component'
+import { TPopoverSurface } from '../../generated/popover.metadata'
 import { setupPopover } from './setup.component'
 
 /**
@@ -57,7 +57,6 @@ import { setupPopover } from './setup.component'
  */
 @Component({
 	selector: 'span[so-popover], [so-popover]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -71,11 +70,7 @@ import { setupPopover } from './setup.component'
 })
 export class TPopoverComponent extends TPopoverSurface<IPopover> {
 	constructor() {
-		super(PopoverInputNames, { strategy: 'host', sets: ['attrs', 'dataset'] })
-	}
-
-	protected createBinding(ctrl: IPopover | undefined, inputs: object): TBinding<IPopover> {
-		return setupPopover(ctrl, inputs)
+		super(setupPopover, { strategy: 'host', sets: ['attrs', 'dataset'] })
 	}
 
 	/** Клик по крестику: поповер закрыт. Куда вернуть фокус, решает плагин фокуса. */

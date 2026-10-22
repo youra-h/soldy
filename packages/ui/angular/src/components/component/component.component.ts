@@ -1,7 +1,6 @@
 import { Directive } from '@angular/core'
 import type { IComponent } from '@soldy-ui/core'
-import type { TBinding } from '../../adapter'
-import { ComponentInputNames, TComponentSurface } from './base.component'
+import { TComponentSurface } from '../../generated/component.metadata'
 import { setupComponent } from './setup.component'
 
 /**
@@ -25,14 +24,9 @@ import { setupComponent } from './setup.component'
  */
 @Directive({
 	selector: '[so-component]',
-	standalone: true,
 })
 export class TComponentComponent extends TComponentSurface<IComponent> {
 	constructor() {
-		super(ComponentInputNames)
-	}
-
-	protected createBinding(ctrl: IComponent | undefined, inputs: object): TBinding<IComponent> {
-		return setupComponent(ctrl, inputs)
+		super(setupComponent)
 	}
 }

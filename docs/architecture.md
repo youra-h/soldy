@@ -1790,7 +1790,7 @@ Angular AOT статически анализирует декоратор: `inp
 сверяет с полем входа, а вход без поля пропускает молча, с любым значением.
 Поэтому рядом с массивами генератор пишет абстрактную директиву
 `T<Имя>Surface extends TComponentBase` —
-`@Directive({ standalone: true, inputs: [...], outputs: [...] })`, — и
+`@Directive({ inputs: [...], outputs: [...] })`, — и
 компонент наследует её, а своих `inputs` и `outputs` не объявляет. Входам она
 даёт поля `declare <вход>: TInputValue<typeof descriptor, '<вход>'>` (тип
 пропа дескриптора со служебными `embedded` и `pluginProps`), выходам —
@@ -1899,7 +1899,8 @@ ListBox и Tabs (`so-list-box`, `so-tabs`) селектор элементный
 Корень ведёт базовый `TComponentBase` по описанию корня (`TRootSpec`), которое
 компонент передаёт в конструктор, — своих привязок хоста и эффектов у
 компонента нет. Стратегия `'host'` — корень сам хост
-(`super(ButtonInputNames, { strategy: 'host' })`):
+(`super(setupButton, { strategy: 'host' })` — setup-функция и описание корня,
+имена входов подставляет `TButtonSurface`):
 
 - тег — `localName` элемента: база отдаёт его ядру пропом при сборке, внешнему
   `ctrl` — сеттером. Входа `tag` нет: имя тега у живого элемента не меняется,
@@ -2116,7 +2117,7 @@ DOM-эмуляция серверного рендера Angular запись `i
 корня.
 
 Сборка — `createAngularAdapterContext` в контексте инъекции компонента:
-`ngOnInit` базы зовёт `createBinding` внутри `runInInjectionContext`, и
+`ngOnInit` базы зовёт setup-функцию компонента внутри `runInInjectionContext`, и
 обёртка берёт из DI источник локали ближайшего `LocaleProviderDirective` и id
 монтирования — номер сборки компонента в его приложении с префиксом `APP_ID`:
 полная гидратация собирает компоненты в том же порядке, что и сервер, и номер

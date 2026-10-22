@@ -1,13 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ICheckBox } from '@soldy-ui/core'
-import {
-	AttributesDirective,
-	RoleIconDirective,
-	provideElevator,
-	type TBinding,
-} from '../../adapter'
-import { CheckBoxInputNames, TCheckBoxSurface } from './base.component'
+import { AttributesDirective, RoleIconDirective, provideElevator } from '../../adapter'
+import { TCheckBoxSurface } from '../../generated/check-box.metadata'
 import { setupCheckBox } from './setup.component'
 
 /**
@@ -54,7 +49,6 @@ import { setupCheckBox } from './setup.component'
  */
 @Component({
 	selector: 'span[so-check-box], [so-check-box]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, RoleIconDirective],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,14 +56,10 @@ import { setupCheckBox } from './setup.component'
 })
 export class TCheckBoxComponent extends TCheckBoxSurface<ICheckBox> {
 	constructor() {
-		super(CheckBoxInputNames, {
+		super(setupCheckBox, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(ctrl: ICheckBox | undefined, inputs: object): TBinding<ICheckBox> {
-		return setupCheckBox(ctrl, inputs)
 	}
 }

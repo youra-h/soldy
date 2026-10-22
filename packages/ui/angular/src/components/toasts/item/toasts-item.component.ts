@@ -1,18 +1,17 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgComponentOutlet, NgTemplateOutlet } from '@angular/common'
-import type { IToastsItem, TToastsItemCollectionFacade, TToastsItemType } from '@soldy-ui/core'
+import type { IToastsItem, TToastsItemType } from '@soldy-ui/core'
 import type { TIconRole } from '@soldy-ui/setup'
 import {
 	AttributesDirective,
 	RoleIconDirective,
 	isToastRender,
-	type TBinding,
 	type TToastRender,
 } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
 import { TProgressSpinnerComponent } from '../../progress-spinner'
-import { ToastsItemInputNames, TToastsItemSurface } from './base.component'
+import { TToastsItemSurface } from '../../../generated/toasts-item.metadata'
 import { setupToastsItem } from './setup.component'
 
 /**
@@ -66,7 +65,6 @@ const NOTIFICATION_ROLE: TIconRole = 'notification'
  */
 @Component({
 	selector: 'li[so-toasts-item], [so-toasts-item]',
-	standalone: true,
 	imports: [
 		NgComponentOutlet,
 		NgTemplateOutlet,
@@ -81,14 +79,7 @@ const NOTIFICATION_ROLE: TIconRole = 'notification'
 })
 export class TToastsItemComponent extends TToastsItemSurface<IToastsItem> {
 	constructor() {
-		super(ToastsItemInputNames, { strategy: 'host', order: '--so-toasts-depth' })
-	}
-
-	protected createBinding(
-		ctrl: IToastsItem | undefined,
-		inputs: object,
-	): TBinding<IToastsItem, TToastsItemCollectionFacade> {
-		return setupToastsItem(ctrl, inputs)
+		super(setupToastsItem, { strategy: 'host', order: '--so-toasts-depth' })
 	}
 
 	/** Роль значка вида; у обычного сообщения — своя. */
@@ -103,10 +94,5 @@ export class TToastsItemComponent extends TToastsItemSurface<IToastsItem> {
 		const render: unknown = this.state()['render']
 
 		return isToastRender(render) ? render : null
-	}
-
-	/** Нажатие крестика: тост закрывается — окончательно, как жестом и Escape. */
-	protected close(): void {
-		this.instance()?.close()
 	}
 }

@@ -9,7 +9,6 @@ import { getIcon } from '@soldy-ui/setup'
  */
 @Directive({
 	selector: 'svg[so-role-icon]',
-	standalone: true,
 	host: {
 		'[attr.viewBox]': '_icon().viewBox',
 	},

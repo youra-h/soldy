@@ -1,19 +1,18 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ICalendar, TCalendarCollectionFacade } from '@soldy-ui/core'
+import type { ICalendar } from '@soldy-ui/core'
 import {
 	AttributesDirective,
 	RoleIconDirective,
 	SlotDirective,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
 import { TListBoxComponent } from '../list-box'
 import { TPopoverComponent } from '../popover'
 import { TCalendarItemComponent } from './item'
-import { CalendarInputNames, TCalendarSurface } from './base.component'
+import { TCalendarSurface } from '../../generated/calendar.metadata'
 import { setupCalendar } from './setup.component'
 
 /**
@@ -54,7 +53,6 @@ import { setupCalendar } from './setup.component'
  */
 @Component({
 	selector: 'div[so-calendar], [so-calendar]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -72,13 +70,6 @@ import { setupCalendar } from './setup.component'
 })
 export class TCalendarComponent extends TCalendarSurface<ICalendar> {
 	constructor() {
-		super(CalendarInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: ICalendar | undefined,
-		inputs: object,
-	): TBinding<ICalendar, TCalendarCollectionFacade> {
-		return setupCalendar(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupCalendar(ctrl, inputs, this.engine), { strategy: 'host' })
 	}
 }

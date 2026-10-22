@@ -1,13 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { IField } from '@soldy-ui/core'
-import {
-	AttributesDirective,
-	RoleIconDirective,
-	provideElevator,
-	type TBinding,
-} from '../../adapter'
+import { AttributesDirective, RoleIconDirective, provideElevator } from '../../adapter'
 import { TIconComponent } from '../icon'
-import { FieldInputNames, TFieldSurface } from './base.component'
+import { TFieldSurface } from '../../generated/field.metadata'
 import { setupField } from './setup.component'
 
 /**
@@ -43,7 +38,6 @@ import { setupField } from './setup.component'
  */
 @Component({
 	selector: 'div[so-field], [so-field]',
-	standalone: true,
 	imports: [AttributesDirective, RoleIconDirective, TIconComponent],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,10 +45,6 @@ import { setupField } from './setup.component'
 })
 export class TFieldComponent extends TFieldSurface<IField> {
 	constructor() {
-		super(FieldInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(ctrl: IField | undefined, inputs: object): TBinding<IField> {
-		return setupField(ctrl, inputs)
+		super(setupField, { strategy: 'host' })
 	}
 }

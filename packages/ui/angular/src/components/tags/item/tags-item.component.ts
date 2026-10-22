@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { ITagsItem, TTagsItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { ITagsItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { TagsItemInputNames, TTagsItemSurface } from './base.component'
+import { TTagsItemSurface } from '../../../generated/tags-item.metadata'
 import { setupTagsItem } from './setup.component'
 
 /**
@@ -63,7 +63,6 @@ import { setupTagsItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-tags-item], [so-tags-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -76,24 +75,12 @@ import { setupTagsItem } from './setup.component'
 })
 export class TTagsItemComponent extends TTagsItemSurface<ITagsItem> {
 	constructor() {
-		super(TagsItemInputNames, {
+		super(setupTagsItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 			order: 'order',
 		})
-	}
-
-	protected createBinding(
-		ctrl: ITagsItem | undefined,
-		inputs: object,
-	): TBinding<ITagsItem, TTagsItemCollectionFacade> {
-		return setupTagsItem(ctrl, inputs)
-	}
-
-	/** `press` строки: выбор тега — переключить. Выключенному `press` не приходит. */
-	protected toggle(): void {
-		this.facade()?.context?.adapters.selection.toggle()
 	}
 
 	/** Клик по крестику: закрыть тег; клик не всплывает, как `@click.stop` у Vue. */

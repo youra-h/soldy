@@ -1,15 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IDateInput } from '@soldy-ui/core'
-import {
-	AttributesDirective,
-	RoleIconDirective,
-	provideElevator,
-	type TBinding,
-} from '../../adapter'
+import { AttributesDirective, RoleIconDirective, provideElevator } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
-import { DateInputInputNames, TDateInputSurface } from './base.component'
+import { TDateInputSurface } from '../../generated/date-input.metadata'
 import { setupDateInput } from './setup.component'
 
 /**
@@ -59,7 +54,6 @@ import { setupDateInput } from './setup.component'
  */
 @Component({
 	selector: 'div[so-date-input], [so-date-input]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -73,11 +67,7 @@ import { setupDateInput } from './setup.component'
 })
 export class TDateInputComponent extends TDateInputSurface<IDateInput> {
 	constructor() {
-		super(DateInputInputNames, { strategy: 'host', id: 'id' })
-	}
-
-	protected createBinding(ctrl: IDateInput | undefined, inputs: object): TBinding<IDateInput> {
-		return setupDateInput(ctrl, inputs)
+		super(setupDateInput, { strategy: 'host', id: 'id' })
 	}
 
 	/**

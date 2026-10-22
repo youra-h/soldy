@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ITooltip } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../adapter'
+import { AttributesDirective } from '../../adapter'
 import { TFrameComponent } from '../frame'
-import { TTooltipSurface, TooltipInputNames } from './base.component'
+import { TTooltipSurface } from '../../generated/tooltip.metadata'
 import { setupTooltip } from './setup.component'
 
 /**
@@ -40,17 +40,12 @@ import { setupTooltip } from './setup.component'
  */
 @Component({
 	selector: 'span[so-tooltip], [so-tooltip]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective, TFrameComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './tooltip.component.html',
 })
 export class TTooltipComponent extends TTooltipSurface<ITooltip> {
 	constructor() {
-		super(TooltipInputNames, { strategy: 'host', sets: ['attrs', 'dataset'] })
-	}
-
-	protected createBinding(ctrl: ITooltip | undefined, inputs: object): TBinding<ITooltip> {
-		return setupTooltip(ctrl, inputs)
+		super(setupTooltip, { strategy: 'host', sets: ['attrs', 'dataset'] })
 	}
 }

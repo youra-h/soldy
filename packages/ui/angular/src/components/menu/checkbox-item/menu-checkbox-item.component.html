@@ -15,7 +15,7 @@
 	[size]="state()['size']"
 	[disabled]="state()['disabled']"
 	[so-attributes]="state()['aria']"
-	(click)="toggle()"
+	(click)="facade()?.context?.adapters.menu.toggle()"
 >
 	<ng-container ngProjectAs="[slot=leading]">
 		<span class="so-menu-item__indicator" aria-hidden="true">

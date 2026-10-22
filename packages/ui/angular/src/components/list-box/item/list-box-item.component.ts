@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IListBoxItem, TListBoxItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, RoleIconDirective, type TBinding } from '../../../adapter'
+import type { IListBoxItem } from '@soldy-ui/core'
+import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TIconComponent } from '../../icon'
-import { ListBoxItemInputNames, TListBoxItemSurface } from './base.component'
+import { TListBoxItemSurface } from '../../../generated/list-box-item.metadata'
 import { setupListBoxItem } from './setup.component'
 
 /**
@@ -45,7 +45,6 @@ import { setupListBoxItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-list-box-item], [so-list-box-item]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -58,23 +57,11 @@ import { setupListBoxItem } from './setup.component'
 })
 export class TListBoxItemComponent extends TListBoxItemSurface<IListBoxItem> {
 	constructor() {
-		super(ListBoxItemInputNames, {
+		super(setupListBoxItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 			order: 'order',
 		})
-	}
-
-	protected createBinding(
-		ctrl: IListBoxItem | undefined,
-		inputs: object,
-	): TBinding<IListBoxItem, TListBoxItemCollectionFacade> {
-		return setupListBoxItem(ctrl, inputs)
-	}
-
-	/** Клик по строке: выбор через список — выключенному он откажет. */
-	protected choose(): void {
-		this.facade()?.context?.adapters.list.choose()
 	}
 }

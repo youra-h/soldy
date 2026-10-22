@@ -9,7 +9,7 @@ export const SUBTREE_PRESENT: Signal<boolean> = signal(true).asReadonly()
  * Наружу — как `ɵSubtreeDirective` (NG3001). AGENTS.md (Angular), «Скрытый
  * компонент прячет и слои своего поддерева».
  */
-@Directive({ standalone: true })
+@Directive()
 export class SubtreeDirective {
 	private _present: Signal<boolean> = SUBTREE_PRESENT
 

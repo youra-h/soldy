@@ -12,7 +12,6 @@ import { TElementAttributes, attributesOf } from './root-attributes'
  */
 @Directive({
 	selector: '[so-attributes]',
-	standalone: true,
 })
 export class AttributesDirective {
 	private readonly _element = inject<ElementRef<Element>>(ElementRef).nativeElement

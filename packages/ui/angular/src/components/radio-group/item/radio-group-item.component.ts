@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IRadioGroupItem, TRadioGroupItemCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, type TBinding } from '../../../adapter'
-import { RadioGroupItemInputNames, TRadioGroupItemSurface } from './base.component'
+import type { IRadioGroupItem } from '@soldy-ui/core'
+import { AttributesDirective } from '../../../adapter'
+import { TRadioGroupItemSurface } from '../../../generated/radio-group-item.metadata'
 import { setupRadioGroupItem } from './setup.component'
 
 /**
@@ -41,25 +41,17 @@ import { setupRadioGroupItem } from './setup.component'
  */
 @Component({
 	selector: 'label[so-radio-group-item], [so-radio-group-item]',
-	standalone: true,
 	imports: [NgTemplateOutlet, AttributesDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './radio-group-item.component.html',
 })
 export class TRadioGroupItemComponent extends TRadioGroupItemSurface<IRadioGroupItem> {
 	constructor() {
-		super(RadioGroupItemInputNames, {
+		super(setupRadioGroupItem, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(
-		ctrl: IRadioGroupItem | undefined,
-		inputs: object,
-	): TBinding<IRadioGroupItem, TRadioGroupItemCollectionFacade> {
-		return setupRadioGroupItem(ctrl, inputs)
 	}
 
 	/** `change` поля: браузер отметил радио, коллекция делает его активным. */

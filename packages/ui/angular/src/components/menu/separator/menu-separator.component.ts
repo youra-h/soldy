@@ -1,7 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import type { TMenuSeparator } from '@soldy-ui/core'
-import type { TBinding } from '../../../adapter'
-import { MenuSeparatorInputNames, TMenuSeparatorSurface } from './base.component'
+import { TMenuSeparatorSurface } from '../../../generated/menu-separator.metadata'
 import { setupMenuSeparator } from './setup.component'
 
 /**
@@ -18,19 +17,11 @@ import { setupMenuSeparator } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-separator], [so-menu-separator]',
-	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: '',
 })
 export class TMenuSeparatorComponent extends TMenuSeparatorSurface<TMenuSeparator> {
 	constructor() {
-		super(MenuSeparatorInputNames, { strategy: 'host' })
-	}
-
-	protected createBinding(
-		ctrl: TMenuSeparator | undefined,
-		inputs: object,
-	): TBinding<TMenuSeparator> {
-		return setupMenuSeparator(ctrl, inputs)
+		super(setupMenuSeparator, { strategy: 'host' })
 	}
 }

@@ -1,12 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IMenuSubmenu, TMenuCollectionFacade, TMenuItemCollectionFacade } from '@soldy-ui/core'
+import type { IMenuSubmenu } from '@soldy-ui/core'
 import {
 	AttributesDirective,
 	RoleIconDirective,
 	SlotDirective,
 	provideElevator,
-	type TBinding,
 } from '../../../adapter'
 import { TButtonComponent } from '../../button'
 import { TFrameComponent } from '../../frame'
@@ -14,8 +13,8 @@ import { TIconComponent } from '../../icon'
 import { TMenuItemComponent } from '../item'
 import { TMenuGroupComponent } from '../group'
 import { TMenuSeparatorComponent } from '../separator'
-import { MenuSubmenuInputNames, TMenuSubmenuSurface } from './base.component'
-import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
+import { TMenuSubmenuSurface } from '../../../generated/menu-submenu.metadata'
+import { setupMenuSubmenu } from './setup.component'
 
 /**
  * TMenuSubmenuComponent — пункт с подменю: строка пункта в меню над ним и своя
@@ -67,7 +66,6 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-submenu], [so-menu-submenu]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -86,27 +84,10 @@ import { setupMenuSubmenu, type TMenuSubmenuOutputs } from './setup.component'
 })
 export class TMenuSubmenuComponent extends TMenuSubmenuSurface<IMenuSubmenu> {
 	constructor() {
-		super(MenuSubmenuInputNames, {
+		super((ctrl, inputs) => setupMenuSubmenu(ctrl, inputs, this.engine), {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(
-		ctrl: IMenuSubmenu | undefined,
-		inputs: object,
-	): TBinding<
-		IMenuSubmenu,
-		TMenuItemCollectionFacade,
-		TMenuSubmenuOutputs,
-		TMenuCollectionFacade
-	> {
-		return setupMenuSubmenu(ctrl, inputs, this.engine)
-	}
-
-	/** Клик по строке: подменю открывает меню над ним — выключенному оно откажет. */
-	protected openPanel(): void {
-		this.facade()?.context?.adapters.menu.open()
 	}
 }

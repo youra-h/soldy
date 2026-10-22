@@ -7,11 +7,10 @@ import {
 	RoleIconDirective,
 	TextPipe,
 	provideElevator,
-	type TBinding,
 } from '../../adapter'
 import { TButtonComponent } from '../button'
 import { TIconComponent } from '../icon'
-import { NumberInputInputNames, TNumberInputSurface } from './base.component'
+import { TNumberInputSurface } from '../../generated/number-input.metadata'
 import { setupNumberInput } from './setup.component'
 
 /**
@@ -71,7 +70,6 @@ import { setupNumberInput } from './setup.component'
  */
 @Component({
 	selector: 'div[so-number-input], [so-number-input]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -87,18 +85,11 @@ import { setupNumberInput } from './setup.component'
 })
 export class TNumberInputComponent extends TNumberInputSurface<INumberInput> {
 	constructor() {
-		super(NumberInputInputNames, {
+		super(setupNumberInput, {
 			strategy: 'host',
 			sets: ['attrs', 'dataset'],
 			control: true,
 		})
-	}
-
-	protected createBinding(
-		ctrl: INumberInput | undefined,
-		inputs: object,
-	): TBinding<INumberInput> {
-		return setupNumberInput(ctrl, inputs)
 	}
 
 	/**

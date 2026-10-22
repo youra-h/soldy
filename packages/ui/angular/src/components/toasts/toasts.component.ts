@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IToasts, TToastsCollectionFacade } from '@soldy-ui/core'
-import { SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { IToasts } from '@soldy-ui/core'
+import { SlotDirective, provideElevator } from '../../adapter'
 import { TToastsItemComponent } from './item'
-import { ToastsInputNames, TToastsSurface } from './base.component'
+import { TToastsSurface } from '../../generated/toasts.metadata'
 import { setupToasts } from './setup.component'
 
 /**
@@ -64,7 +64,6 @@ import { setupToasts } from './setup.component'
  */
 @Component({
 	selector: 'div[so-toasts], [so-toasts]',
-	standalone: true,
 	imports: [NgTemplateOutlet, SlotDirective, TToastsItemComponent],
 	providers: [provideElevator()],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,13 +71,9 @@ import { setupToasts } from './setup.component'
 })
 export class TToastsComponent extends TToastsSurface<IToasts> {
 	constructor() {
-		super(ToastsInputNames, { strategy: 'wrapped', teleport: { target: 'target' } })
-	}
-
-	protected createBinding(
-		ctrl: IToasts | undefined,
-		inputs: object,
-	): TBinding<IToasts, TToastsCollectionFacade> {
-		return setupToasts(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupToasts(ctrl, inputs, this.engine), {
+			strategy: 'wrapped',
+			teleport: { target: 'target' },
+		})
 	}
 }

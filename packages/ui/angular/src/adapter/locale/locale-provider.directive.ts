@@ -10,7 +10,6 @@ import { LOCALE_SOURCE } from './context'
  */
 @Directive({
 	selector: '[so-locale-provider]',
-	standalone: true,
 	providers: [{ provide: LOCALE_SOURCE, useFactory: () => new TLocaleSource(enUS) }],
 })
 export class LocaleProviderDirective {

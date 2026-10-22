@@ -1,7 +1,7 @@
 import { Directive } from '@angular/core'
 import type { IDragAndDrop } from '@soldy-ui/core'
-import { provideElevator, type TBinding } from '../../adapter'
-import { DragAndDropInputNames, TDragAndDropSurface } from './base.component'
+import { provideElevator } from '../../adapter'
+import { TDragAndDropSurface } from '../../generated/drag-and-drop.metadata'
 import { setupDragAndDrop } from './setup.component'
 
 /**
@@ -38,18 +38,10 @@ import { setupDragAndDrop } from './setup.component'
  */
 @Directive({
 	selector: '[so-drag-and-drop]',
-	standalone: true,
 	providers: [provideElevator()],
 })
 export class TDragAndDropComponent extends TDragAndDropSurface<IDragAndDrop> {
 	constructor() {
-		super(DragAndDropInputNames)
-	}
-
-	protected createBinding(
-		ctrl: IDragAndDrop | undefined,
-		inputs: object,
-	): TBinding<IDragAndDrop> {
-		return setupDragAndDrop(ctrl, inputs)
+		super(setupDragAndDrop)
 	}
 }

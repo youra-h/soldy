@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
-import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
-import { AttributesDirective, SlotDirective, provideElevator, type TBinding } from '../../adapter'
+import type { IListBox } from '@soldy-ui/core'
+import { AttributesDirective, SlotDirective, provideElevator } from '../../adapter'
 import { TListBoxItemComponent } from './item'
 import { TListBoxGroupComponent } from './group'
-import { ListBoxInputNames, TListBoxSurface } from './base.component'
+import { TListBoxSurface } from '../../generated/list-box.metadata'
 import { setupListBox } from './setup.component'
 
 /**
@@ -45,7 +45,6 @@ import { setupListBox } from './setup.component'
  */
 @Component({
 	selector: 'div[so-list-box], [so-list-box]',
-	standalone: true,
 	imports: [
 		NgTemplateOutlet,
 		AttributesDirective,
@@ -59,13 +58,10 @@ import { setupListBox } from './setup.component'
 })
 export class TListBoxComponent extends TListBoxSurface<IListBox> {
 	constructor() {
-		super(ListBoxInputNames, { strategy: 'host', sets: ['attrs', 'dataset'], control: true })
-	}
-
-	protected createBinding(
-		ctrl: IListBox | undefined,
-		inputs: object,
-	): TBinding<IListBox, TListBoxCollectionFacade> {
-		return setupListBox(ctrl, inputs, this.engine)
+		super((ctrl, inputs) => setupListBox(ctrl, inputs, this.engine), {
+			strategy: 'host',
+			sets: ['attrs', 'dataset'],
+			control: true,
+		})
 	}
 }
