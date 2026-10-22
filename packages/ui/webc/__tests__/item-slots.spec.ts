@@ -30,9 +30,11 @@ import {
 	MENU_SUBMENU_TEMPLATES,
 	PAGINATION_ITEM_SLOTS,
 	RADIO_GROUP_ITEM_SLOTS,
+	SELECT_ITEM_SLOTS,
 	TABLE_COLUMN_SLOTS,
 	TABLE_ROW_SLOTS,
 	TABS_ITEM_SLOTS,
+	TAGS_ITEM_SLOTS,
 	TOASTS_ITEM_SLOTS,
 	type TItemSlots,
 } from '@soldy-ui/webc'
@@ -67,6 +69,8 @@ describe('карта копий образцов — строки таблицы
 		['Accordion', ACCORDION_ITEM_SLOTS],
 		['RadioGroup', RADIO_GROUP_ITEM_SLOTS],
 		['ListBox', LIST_BOX_ITEM_SLOTS],
+		['Tags', TAGS_ITEM_SLOTS],
+		['Select', SELECT_ITEM_SLOTS],
 		['Pagination', PAGINATION_ITEM_SLOTS],
 		['Toasts', TOASTS_ITEM_SLOTS],
 	] as const)('%s', (owner, slots) => {

@@ -6,10 +6,9 @@
  * здесь важно, что они сходятся: панель — деталь Frame, уехала в `body` и
  * помечена владельцем, якорь панели — корень поповера, фокус уходит в панель и
  * возвращается, Escape и Tab закрывают только свой слой. Сценарии — те же, что
- * у Vue (`ui/vue/__tests__/popover.spec.ts`); открытость, которую Vue держит
- * `v-model`, здесь видна событиями `so:change:open`. Сценарии Vue с Select
- * внутри — здесь с вложенным поповером: правило слоёв одно, а Select у Web
- * Components ещё нет.
+ * у Vue (`ui/vue/__tests__/popover.spec.ts`), и с Select внутри тоже;
+ * открытость, которую Vue держит `v-model`, здесь видна событиями
+ * `so:change:open`. Вложенный поповер — то же правило слоёв.
  *
  * Своё у Web Components — триггер без scope. Привязать связку с панелью
  * потребитель не может, и шаблон кладёт наборы `triggerAria` и
@@ -692,10 +691,9 @@ describe('Tab', () => {
 
 /**
  * Поповер в панели поповера. Слой вложенного выше: нажатие и фокус в его
- * панели внешний считает своими, а Escape закрывает только верхний слой. У
- * Vue так же проверяется Select внутри поповера — у Web Components Select ещё
- * нет, и его сценарии здесь — с вложенным поповером: список Select тоже слой
- * в `body` выше панели владельца.
+ * панели внешний считает своими, а Escape закрывает только верхний слой —
+ * так же, как у Select внутри (ниже): список Select тоже слой в `body` выше
+ * панели владельца.
  */
 describe('вложенные слои', () => {
 	/** Внешний поповер, в панели которого — внутренний. */
@@ -779,6 +777,67 @@ describe('вложенные слои', () => {
 		expect(inner.parentElement).toBe(document.body)
 		expect(outer.contains(inner)).toBe(false)
 		expect(Number(inner.dataset.layer)).toBeGreaterThan(Number(outer.dataset.layer))
+	})
+})
+
+/**
+ * Select в панели поповера, как у Vue: его список — тоже слой в `body`, выше
+ * панели владельца. Escape закрывает только Select, а клик в его список —
+ * нажатие внутри: поповер остаётся открытым.
+ */
+describe('Select внутри', () => {
+	const withSelect = () =>
+		render({
+			content: `<div is="so-select" class="so-test-select">
+				<div is="so-select-item" value="a" text="Первый"></div>
+				<div is="so-select-item" value="b" text="Второй"></div>
+			</div>`,
+		})
+
+	const field = () => find('.so-test-select input')
+	const selectPanel = () => find('.so-select__panel')
+
+	/** Открыть Select кликом по его полю: открытость доходит до панели второй отрисовкой. */
+	async function openSelect(): Promise<void> {
+		await click(field())
+		await flush()
+	}
+
+	it('Escape в открытом Select закрывает только Select', async () => {
+		await withSelect()
+		await open()
+		await openSelect()
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+		await flush()
+		await flush()
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(isOpen()).toBe(true)
+
+		// Второй Escape — уже поповеру: Select закрыт и клавишу не тратит
+		press('Escape')
+		await flush()
+
+		expect(isOpen()).toBe(false)
+	})
+
+	it('клик в список Select поповер не закрывает', async () => {
+		await withSelect()
+		await open()
+		await openSelect()
+
+		const option = find('.so-select__panel [role="option"]')
+
+		pointerDown(option)
+		option.click()
+		await flush()
+		await flush()
+
+		expect(isOpen()).toBe(true)
+		expect(field().getAttribute('aria-expanded')).toBe('false')
 	})
 })
 

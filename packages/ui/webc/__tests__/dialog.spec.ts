@@ -6,11 +6,10 @@
  * нажатия мимо — плагины; здесь важно, что они сходятся: окно уехало в цель,
  * подложка — его соседка с тем же слоем, окно помечено владельцем, кнопки
  * шапки говорят с ядром, три причины закрытия проходят через запрос, а окно
- * поверх окна и поповер внутри закрывают только свой слой. Сценарии — те же,
- * что у Vue (`ui/vue/__tests__/dialog.spec.ts`); открытость, которую Vue
- * держит `v-model`, здесь видна событиями `so:change:visible`. Сценарии Vue с
- * Select внутри — здесь с поповером: правило слоёв одно, а Select у Web
- * Components ещё нет.
+ * поверх окна, Select и поповер внутри закрывают только свой слой. Сценарии —
+ * те же, что у Vue (`ui/vue/__tests__/dialog.spec.ts`); открытость, которую
+ * Vue держит `v-model`, здесь видна событиями `so:change:visible`. Поповер
+ * внутри — то же правило слоёв, что у Select.
  *
  * Своё у Web Components — спутник корня. Подложку строит шаблон, а ставит
  * прямо перед окном, увозит в цель и обратно, уводит за местом и прячет база
@@ -964,9 +963,73 @@ describe('окно поверх окна', () => {
 })
 
 /**
- * У Vue здесь Select внутри окна: его список — слой в `body` выше окна. У Web
- * Components Select ещё нет, и тот же случай — поповер в окне: его панель
- * тоже слой в `body`, соседка окна.
+ * Select в окне, как у Vue: его список — слой в `body` выше окна, соседка
+ * окна. Нажатие в него — нажатие внутри, а Escape закрывает только список.
+ */
+describe('Select внутри', () => {
+	const withSelect = `${INSIDE}<div is="so-select" class="so-test-select">
+		<div is="so-select-item" value="a" text="Первый"></div>
+		<div is="so-select-item" value="b" text="Второй"></div>
+	</div>`
+
+	const field = () => find('.so-test-select input')
+	const selectPanel = () => find('.so-select__panel')
+
+	/** Клик мышью целиком: нажатие, фокус от `mousedown`, клик — и отрисовка. */
+	async function click(target: HTMLElement): Promise<void> {
+		pointerDown(target)
+		target.focus()
+		target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+
+		await flush()
+		await flush()
+	}
+
+	it('список Select — слоем выше окна: нажатие в него окно не закрывает', async () => {
+		const dialog = await render({ content: withSelect })
+
+		await open(dialog)
+		await click(field())
+		await nextFrame()
+
+		expect(isOpen(selectPanel())).toBe(true)
+		expect(Number(selectPanel().dataset.layer)).toBeGreaterThan(Number(panel().dataset.layer))
+
+		const option = find('.so-select__panel [role="option"]')
+
+		pointerDown(option)
+		option.click()
+		await flush()
+
+		expect(dialog.visible).toBe(true)
+		expect(isOpen()).toBe(true)
+	})
+
+	it('Escape в открытом Select закрывает только Select, второй — окно', async () => {
+		const dialog = await render({ content: withSelect })
+
+		await open(dialog)
+		await click(field())
+
+		expect(isOpen(selectPanel())).toBe(true)
+
+		press('Escape')
+		await flush()
+		await flush()
+
+		expect(isOpen(selectPanel())).toBe(false)
+		expect(dialog.visible).toBe(true)
+
+		press('Escape')
+		await flush()
+
+		expect(dialog.visible).toBe(false)
+	})
+})
+
+/**
+ * Поповер в окне: его панель — тоже слой в `body`, соседка окна, — то же
+ * правило слоёв, что у Select.
  */
 describe('поповер внутри', () => {
 	const withPopover = `${INSIDE}<span is="so-popover" class="so-test-popover">

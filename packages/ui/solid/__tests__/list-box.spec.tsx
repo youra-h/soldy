@@ -394,6 +394,42 @@ describe('состав', () => {
 		expect(rowOf('Z').getAttribute('title')).toBe('Строка')
 	})
 
+	/**
+	 * Элемент разметки, удалённый движком, пока смонтирован, не рисуется
+	 * (`TItemContext.destroy`), но остаётся содержимым списка: слот задан
+	 * значением, а не узлами. Запасное из данных по ещё не обновлённым секциям
+	 * не включается и удалённый элемент в коллекцию не возвращает — список
+	 * пуст, на месте элементов слот `empty`.
+	 */
+	it.each([
+		[
+			'remove',
+			(engine: TListBoxCollection) =>
+				engine.extensions.batch.remove([...engine.extensions.batch.items]),
+		],
+		['clear', (engine: TListBoxCollection) => engine.extensions.batch.clear()],
+	])(
+		'элемент разметки, удалённый движком (%s), — коллекция пуста, empty на месте',
+		(_name, drop) => {
+			const engine = createEngineListBox()
+
+			mount(() => (
+				<ListBox engine={engine} empty={<span class="empty">Пусто</span>}>
+					<ListBox.Item value="a" text="A" />
+				</ListBox>
+			))
+
+			expect(valuesOf(engine)).toEqual(['a'])
+
+			drop(engine)
+
+			expect(engine.extensions.batch.items).toEqual([])
+			expect(engine.extensions.batch.shown).toEqual([])
+			expect(listItems()).toHaveLength(0)
+			expect([...list().children].map((child) => child.className)).toEqual(['empty'])
+		},
+	)
+
 	it('selected элемента разметки выбирает его при входе в коллекцию', () => {
 		mount(() => (
 			<ListBox>

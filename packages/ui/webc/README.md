@@ -56,8 +56,10 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > checkbox and radio items and items with a panel), Dialog (`<div is="so-dialog">`), Drawer
 > (`<div is="so-drawer">`), Toasts (`<so-toasts>`
 > around the application, a toast from code — `toastsOf(element).show(…)`),
-> Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion,
-> Pagination (`<nav is="so-pagination">`), Table, the `<so-virtual>` window for long lists and the
+> Scroller (`<div is="so-scroller">`), RadioGroup, ListBox, Tabs, Accordion, Tags
+> (`<div is="so-tags">`), Select (`<div is="so-select">`: a field with a list in a panel, tags in
+> the field for multiple selection), Pagination (`<nav is="so-pagination">`), Table, the
+> `<so-virtual>` window for long lists and the
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`so:move`; `so:move:before` can cancel with `event.preventDefault()`) are ported, the
 > rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
@@ -395,6 +397,37 @@ takes the panel out of `body`, and a menu moved elsewhere — even with a single
 together with its panel, so the items join the rebuilt menu and the keyboard and the pointer reach
 them as before.
 
+A tag set draws its tags — markup items `<div is="so-tags-item">` or data — in a row, and
+`overflow` (`wrap`, `scroll`) tells the theme what to do with the tags that do not fit. A tag's row
+is a button on a `<div>`, and its close button stands next to the row, not inside it. With a
+selection mode (`mode="single"` or `"multiple"`) the set is a single Tab stop and the arrows move
+through the tags; without one, the close buttons are the stops.
+
+A select is a field with a list in a panel, and the panel follows the select as a menu's does.
+Options are markup (`<div is="so-select-item">`, groups `<div is="so-select-group">`) or data.
+Focus stays on the field's `<input>`, and the arrows highlight options through
+`aria-activedescendant`; an option's row is a button on a `<span>` — `<span is="so-button-span">`.
+Attributes you write on the select (`aria-label`, `id`, `autocomplete`, `data-*`) go to that
+`<input>`, and so do the select's own accessible name and the links of a form field around it. With
+`mode="multiple"` the chosen options are tags in the field. The field's slots have no scope either:
+your own `field`, `tags` row and `clear` button take what they need from the element —
+`el.ctrl.field` (the input's instance: text, placeholder, `clear()`), `el.state.tags` and
+`el.state.tags_engine`.
+
+```html
+<div is="so-tags" closable mode="multiple">
+  <div is="so-tags-item" value="new" text="New" selected></div>
+  <div is="so-tags-item" value="sale" text="On sale"></div>
+</div>
+
+<div is="so-select" name="city" placeholder="Choose a city" clearable>
+  <div is="so-select-item" value="msk" text="Moscow"></div>
+  <div is="so-select-group" label="North-West">
+    <div is="so-select-item" value="spb" text="Saint Petersburg"></div>
+  </div>
+</div>
+```
+
 Pagination draws its pages itself — from `total` and `pageSize`, or from a list of `pages`
 (`el.pages = [{ text: 'Admin' }, …]`) — and has no content of its own. A page is an inner part,
 `<li is="so-pagination-item">` with a button in it; its `item` slot is a template too, and a copy
@@ -443,11 +476,11 @@ and a cell's column by the cell's place among the row's column cells (`.so-table
 the table's `state.shownColumns`; the value is the row's `data[column.field]`. Copies of a row's
 cells are built anew when its record or the columns change; selecting rows leaves them alone.
 
-For thousands of rows or options given as data (`items`, `engine`), put the table or list box into
-the `<so-virtual>` window: it draws only the visible ones, with spacers in place of the rest. The window is an element of its
-own tag, without `is` and without a box of its own — the list or table inside is laid out as if it
-were not there; `el.enabled = false` turns it off. A list taken out of the window draws all of its
-items again.
+For thousands of rows or options given as data (`items`, `engine`), put the table, list box or
+select into the `<so-virtual>` window: it draws only the visible ones, with spacers in place of the
+rest. The window is an element of its own tag, without `is` and without a box of its own — the
+list or table inside is laid out as if it were not there; `el.enabled = false` turns it off. A
+list taken out of the window draws all of its items again.
 
 ```html
 <so-virtual>

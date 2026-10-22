@@ -1033,7 +1033,10 @@ DatePicker совпадение слотов держалось руками: ш
 экземпляра (`mark` и `thumb` ползунка, `icon` оценки) — копию одного образца
 получает каждый элемент, метка, ручка или звезда. Набор, который scope несёт
 триггеру Popover, Tooltip и Menu (`triggerAria`), шаблон кладёт на первый элемент
-слота `trigger` сам (см. **WebC** ниже).
+слота `trigger` сам (см. **WebC** ниже). Слоты поля Select со scope — `field`,
+`tags`, `clear` — обычные: их содержимое одно, и данные оно берёт у элемента —
+`el.ctrl.field`, `el.state.tags` и `el.state.tags_engine`,
+`el.ctrl.field.clear()`.
 
 Единственное преобразование имени — `default` → `children` в React/Solid/Svelte
 (`resolveSlotName` из `packages/setup/protected/adapter/common`). Остальные имена одинаковы везде.
@@ -1130,7 +1133,12 @@ DatePicker совпадение слотов держалось руками: ш
   слотом детали: узлы встают перед меткой, а метка остаётся там, куда деталь,
   собравшись, положила слот, — так слот, который выводит привязка, встаёт на
   своё место в детали и до, и после её сборки (значок кнопки разворота окна по
-  `maximized`, слоты `maximize-icon` и `restore-icon`). Слоты `item-*` владельца коллекции — точки-образцы
+  `maximized`, слоты `maximize-icon` и `restore-icon`). Метку кладёт помощник
+  шаблона (`lendMark`), а узел перед ней — `lendBefore`; слот с меткой деталь
+  при построении считает заданным и пустым (`runtime/slot-mark.ts`): Select
+  отдаёт полю `leading` всегда, как Vue свой шаблон `#leading`, и обёртка
+  `.so-input__leading` стоит и в `single`, а слот `tags` или деталь Tags встают
+  перед меткой, `leading` Select — за ней. Слоты `item-*` владельца коллекции — точки-образцы
   (`sample`): содержимое база не выводит, а держит у себя, и копию одного
   образца (`<template slot="item-leading">` — копию его содержимого) владелец
   кладёт в каждый элемент из данных, в его слот по таблице пробросов
@@ -1150,8 +1158,10 @@ DatePicker совпадение слотов держалось руками: ш
   разметки нет. Сторожат `ui/webc/__tests__/button.spec.ts`,
   `progress-spinner.spec.ts`, `component-view.spec.ts`,
   `define-element.spec.ts` (кнопка в свете собирается один раз),
-  `checkable.spec.ts`, `input.spec.ts`, `tabs.spec.ts`, `accordion.spec.ts` и
-  `list-box.spec.ts` (свет детали, образцы), `dialog.spec.ts` (значок разворота
+  `checkable.spec.ts`, `input.spec.ts`, `tabs.spec.ts`, `accordion.spec.ts`,
+  `list-box.spec.ts` и `tags.spec.ts` (свет детали, образцы), `select.spec.ts`
+  (метка `leading` поля, слоты поля со scope — у элемента, образцы опций),
+  `dialog.spec.ts` (значок разворота
   по состоянию — в строке кнопки тем же узлом), `toasts.spec.ts` (образцы `item-*`
   у тостов), `slider.spec.ts`, `rating.spec.ts`
   и `pagination.spec.ts` (образцы вне коллекций и у страниц), `popover.spec.ts`
@@ -1184,9 +1194,22 @@ DatePicker совпадение слотов держалось руками: ш
   лифта. Слот со scope — тоже он, с аксессором `scope`: функция слота
   получает scope живым, как от `resolveSlot`, — так Tags отдаёт показанные
   теги слоту `default`, а Select свои экземпляры — слотам `field` и `tags`.
-  Сторожат `ui/solid/__tests__/slots.spec.tsx`, `list-box.spec.tsx`,
-  `tabs.spec.tsx`, `accordion.spec.tsx`, `tags.spec.tsx` и
-  `select.spec.tsx`, живой scope — ещё `slider.spec.tsx` и `table.spec.tsx`.
+  Задан ли слот, `ResolvedSlot` решает по значению — по тому, что вернул
+  геттер пропа или функция слота, — а не по узлам: компонент в слоте —
+  содержимое, что бы он ни нарисовал, как VNode у Vue и элемент у React.
+  Элемент разметки, удалённый движком, перестаёт рисоваться, но не уступает
+  место элементам из данных (collections.md, «Конца у контекста два»), а
+  `<Show when={false}>` запасное не включает — условие пишут значением,
+  `{cond() && <X />}`. Обёртку — по тому же правилу: подвал календаря
+  DatePicker задаёт значением, только пока `confirmable`. `resolveSlot` — на
+  узлах: его запасное — текст и значки — ничего не регистрирует, а составные
+  компоненты отдают внутренним ветку, пустую по своему состоянию (кнопку
+  очистки DatePicker — полю даты), и обёртку слота внутренний рисует, только
+  когда в ней что-то есть. Сторожат `ui/solid/__tests__/slots.spec.tsx`,
+  `list-box.spec.tsx`, `tabs.spec.tsx`, `accordion.spec.tsx`,
+  `tags.spec.tsx`, `select.spec.tsx`, `collection-item-lifetime.spec.tsx` и
+  `date-picker.spec.tsx`, живой scope — ещё `slider.spec.tsx` и
+  `table.spec.tsx`.
 - **Svelte**: сниппет непрозрачен — что он нарисовал, компонент не видит, и
   заданный слот рисуется вместо запасного содержимого, даже пустой. Проброс
   слота элемента коллекции владельцем (`item-<слот>`, см. «Слоты элементов:

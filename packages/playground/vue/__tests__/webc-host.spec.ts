@@ -300,6 +300,81 @@ describe('хост Web Components · коллекции', () => {
 		handle.unmount()
 	})
 
+	/**
+	 * Теги — данными, как у Vue, в границе ширины: ряд обязан быть ровно по
+	 * ячейке, иначе переполнение не срабатывает. Строка переполнения — проп
+	 * набора, и смена уезжает в тему через `data-overflow`.
+	 */
+	it('превью Tags: теги данными в границе ширины, переполнение — data-overflow набора', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'tags', props: {} })
+		const tags = find(node, '.so-tags')
+
+		expect(tags.parentElement?.style.width).toBe('100%')
+		expect(texts(tags.querySelectorAll('.so-tags-item > .so-button'))).toEqual(
+			COLLECTION_ITEMS.map((item) => item.text),
+		)
+
+		handle.update({ overflow: 'scroll' })
+		await flush()
+
+		expect(tags.dataset.overflow).toBe('scroll')
+
+		handle.unmount()
+	})
+
+	/**
+	 * Опции — разметкой, как у Vue: панель — деталь Frame, уехавшая в `body`,
+	 * поле — деталь Input. Выбор — событием Select в журнал. Пришли данными
+	 * (блок групп страницы) — опции из них, разметки нет.
+	 */
+	it('превью Select: опции разметкой в панели, выбор — событием в журнал; данные — без разметки', async () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'select',
+			props: { placeholder: 'Выберите' },
+			onEvent: (name) => events.push(name),
+		})
+		const select = find(node, '.so-select')
+		const options = () =>
+			[...document.querySelectorAll('.so-select__list .so-select-item > .so-button')].filter(
+				(row): row is HTMLElement => row instanceof HTMLElement,
+			)
+		const field = select.querySelector('.so-select__field input')
+
+		if (!(field instanceof HTMLInputElement)) throw new Error('поля нет')
+
+		expect(field.placeholder).toBe('Выберите')
+		expect(texts(options())).toEqual(COLLECTION_ITEMS.map((item) => item.text))
+		expect(options().every((row) => row instanceof HTMLSpanElement)).toBe(true)
+
+		await nextFrame()
+		events.length = 0
+		options()[1]?.click()
+		await flush()
+
+		expect(events).toContain('change:value')
+		expect(field.value).toBe(COLLECTION_ITEMS[1]?.text)
+
+		handle.unmount()
+
+		expect(document.querySelector('.so-select__panel')).toBeNull()
+
+		const grouped = stage()
+		const data = host.mount(grouped, {
+			component: 'select',
+			props: { items: [{ value: 'x', text: 'Икс' }] },
+		})
+
+		await flush()
+
+		expect(find(grouped, '.so-select').querySelector('.so-select-item')).toBeNull()
+		expect(texts(options())).toEqual(['Икс'])
+
+		data.unmount()
+	})
+
 	/** Движок, как и `ctrl`, элемент берёт сборкой: другой движок — другой элемент. */
 	it('смена engine пересоздаёт элемент', () => {
 		const node = stage()
@@ -350,10 +425,11 @@ describe('хост Web Components · коллекции', () => {
 	})
 
 	/**
-	 * Окно — автономный `<so-virtual>` своим тегом, без `is`: список и таблица
-	 * в нём рисуют по первым 50 элементам из тысячи.
+	 * Окно — автономный `<so-virtual>` своим тегом, без `is`: список, Select и
+	 * таблица в нём рисуют по первым 50 элементам из тысячи. Опции Select — в его
+	 * панели, увезённой в `body`.
 	 */
-	it('превью Virtual: <so-virtual> вокруг списка и таблицы — окно у обоих', async () => {
+	it('превью Virtual: <so-virtual> вокруг списка, Select и таблицы — окно у всех', async () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'virtual', props: {} })
 		const virtual = node.querySelector('so-virtual')
@@ -362,6 +438,8 @@ describe('хост Web Components · коллекции', () => {
 
 		expect(virtual?.hasAttribute('is')).toBe(false)
 		expect(virtual?.querySelectorAll('.so-list-box-item')).toHaveLength(50)
+		expect(virtual?.querySelector('.so-select')).not.toBeNull()
+		expect(document.querySelectorAll('.so-select__list .so-select-item')).toHaveLength(50)
 		expect(virtual?.querySelectorAll('.so-table-row')).toHaveLength(50)
 
 		handle.unmount()

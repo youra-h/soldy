@@ -394,17 +394,24 @@ function soldy(tag: string, is: string, props: TPreviewProps): HTMLElement {
 
 /**
  * Содержимое окна — как у Vue и React: список с пределом строк, который
- * прокручивается сам, и таблица в обёртке высотой 320 px, по тысяче элементов
- * — на пяти окна не видно. Элементы — данными: элементы разметкой окно не
- * прячет. Ряд — граница ширины. Select в Web Components нет, и его окна рядом
- * тоже. Переставленную колонку таблица ведёт целиком, с ячейками строк
- * (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи.
+ * прокручивается сам, Select — у него прокручивается список панели — и
+ * таблица в обёртке высотой 320 px, по тысяче элементов — на пяти окна не
+ * видно. Элементы — данными: элементы разметкой окно не прячет. Ряд — граница
+ * ширины, Select — в колонке своей ширины: поле во всю ширину места, и в ряду
+ * оно забрало бы место таблицы. Переставленную колонку таблица ведёт целиком,
+ * с ячейками строк (`reorderPreview: 'column'`): в окне это сотни ячеек, а не
+ * тысячи.
  */
 const windowed = (): Node => {
 	const row = document.createElement('div')
+	const column = document.createElement('div')
 	const frame = document.createElement('div')
 
 	row.style.cssText = 'display:flex; gap:24px; align-items:flex-start; width:100%'
+	column.style.cssText = 'flex:none; width:220px'
+	column.appendChild(
+		soldy('div', 'so-select', { items: COLLECTION_MANY_ITEMS, placeholder: 'Выберите' }),
+	)
 	frame.style.cssText = 'flex:1; min-width:0; height:320px; overflow:auto'
 	frame.appendChild(
 		soldy('div', 'so-table', {
@@ -420,6 +427,7 @@ const windowed = (): Node => {
 			maxRows: 8,
 			aria_label: 'Пункты',
 		}),
+		column,
 		frame,
 	)
 
@@ -667,6 +675,30 @@ export const PREVIEWS: Record<string, TPreview> = {
 				: ITEMS.map((item) => ({
 						tag: 'div',
 						is: 'so-list-box-item',
+						props: { ...item },
+					})),
+		}),
+	},
+
+	// Теги — данными, как у Vue: `items` из общего манифеста — то, что рисует
+	// само превью. Обёртка — граница ширины: ряд обязан быть ровно по ячейке,
+	// иначе `overflow` не срабатывает вовсе, — сцена ячейки флексбокс, и ряд
+	// держал бы там ширину своего содержимого
+	tags: { tag: 'div', is: 'so-tags', props: { items: ITEMS }, wrapper: FULL_WIDTH },
+
+	// Опции — разметкой, как у Vue. Строка опции — кнопка на `span`
+	// (`<span is="so-button-span">`): её строит шаблон опции. Пришли данными
+	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
+	// группы Select рисует из данных
+	select: {
+		tag: 'div',
+		is: 'so-select',
+		slots: (bind) => ({
+			default: bind.items
+				? []
+				: ITEMS.map((item) => ({
+						tag: 'div',
+						is: 'so-select-item',
 						props: { ...item },
 					})),
 		}),

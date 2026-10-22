@@ -17,10 +17,11 @@
  * раскладке стиля (`stylesOf`, `applyStyles`), как в React, Solid и Angular.
  *
  * У корня с полем (Input, CheckBox, Switch, радио), у элемента коллекции
- * (таб, секция, элемент списка, пункт меню любого вида) и у ListBox и Tabs
- * статические атрибуты разметки база переносит на `<input>`, строку или узел
- * списка с ролью, и там они так же главнее набора ядра, который на поле кладёт
- * шаблон.
+ * (таб, секция, элемент списка, тег, опция Select, пункт меню любого вида) и у
+ * ListBox и Tabs статические атрибуты разметки база переносит на `<input>`,
+ * строку или узел списка с ролью, и там они так же главнее набора ядра,
+ * который на поле кладёт шаблон. У Select поле — деталь Input: атрибуты
+ * разметки уходят ей, а с неё — на `<input>`.
  * Набор владельца на элементе шаблона и наборы самого элемента сходятся в
  * одном раскладчике элемента (`TElementAttributes`): набор владельца главнее
  * при любом порядке записи.
@@ -60,12 +61,17 @@ import {
 	TRadioGroupItemElement,
 	TRatingElement,
 	TScrollerElement,
+	TSelectElement,
+	TSelectGroupElement,
+	TSelectItemElement,
 	TSkeletonElement,
 	TSliderElement,
 	TSwitchElement,
 	TTabsContentElement,
 	TTabsElement,
 	TTabsItemElement,
+	TTagsElement,
+	TTagsItemElement,
 	TTextareaElement,
 	TTooltipElement,
 	registerButtonTag,
@@ -100,12 +106,17 @@ import {
 	type TRadioGroupItemElementProps,
 	type TRatingElementProps,
 	type TScrollerElementProps,
+	type TSelectElementProps,
+	type TSelectGroupElementProps,
+	type TSelectItemElementProps,
 	type TSkeletonElementProps,
 	type TSliderElementProps,
 	type TSwitchElementProps,
 	type TTabsContentElementProps,
 	type TTabsElementProps,
 	type TTabsItemElementProps,
+	type TTagsElementProps,
+	type TTagsItemElementProps,
 	type TTextareaElementProps,
 	type TTooltipElementProps,
 } from '@soldy-ui/webc'
@@ -288,6 +299,26 @@ function isMenuSeparator(node: Element | null): node is TMenuSeparatorElementPro
 	return node instanceof TMenuSeparatorElement
 }
 
+function isTags(node: Element | null): node is TTagsElementProps {
+	return node instanceof TTagsElement
+}
+
+function isTagsItem(node: Element | null): node is TTagsItemElementProps {
+	return node instanceof TTagsItemElement
+}
+
+function isSelect(node: Element | null): node is TSelectElementProps {
+	return node instanceof TSelectElement
+}
+
+function isSelectItem(node: Element | null): node is TSelectItemElementProps {
+	return node instanceof TSelectItemElement
+}
+
+function isSelectGroup(node: Element | null): node is TSelectGroupElementProps {
+	return node instanceof TSelectGroupElement
+}
+
 /**
  * Элемент разметки, подключённый к документу; узел не того вида — тест падает
  * здесь. Элемент берётся до вставки — живым он стал уже в `innerHTML`: слой
@@ -415,6 +446,21 @@ const COMPONENTS: ReadonlyArray<
 	['Menu.Group', 'div', 'so-menu-group', isMenuGroup, 'so-menu-group', null],
 	['Menu.RadioGroup', 'div', 'so-menu-radio-group', isMenuRadioGroup, 'so-menu-group', null],
 	['Menu.Separator', 'div', 'so-menu-separator', isMenuSeparator, 'so-menu-separator', null],
+	// Набор тегов — ряд с ролью: все наборы на корне, атрибуты разметки — тоже
+	['Tags', 'div', 'so-tags', isTags, 'so-tags', null],
+	['Tags.Item', 'div', 'so-tags-item', isTagsItem, 'so-tags-item', '[embedded="tags.row"]'],
+	// Поле Select — деталь Input: атрибуты разметки уходят ей, а с неё — на
+	// `<input>` комбобокса
+	['Select', 'div', 'so-select', isSelect, 'so-select', 'input'],
+	[
+		'Select.Item',
+		'div',
+		'so-select-item',
+		isSelectItem,
+		'so-select-item',
+		'[embedded="select.row"]',
+	],
+	['Select.Group', 'div', 'so-select-group', isSelectGroup, 'so-select-group', null],
 ]
 
 /** Корни без поля: атрибуты разметки стоят на них самих. */
@@ -520,6 +566,8 @@ const INVALID_FIELDS = [
 	['Input', '<div is="so-input" disabled></div>', '.so-input'],
 	['NumberInput', '<div is="so-number-input" disabled></div>', '.so-number-input'],
 	['Textarea', '<div is="so-textarea" disabled></div>', '.so-textarea'],
+	// Ошибку и `disabled` Select отдаёт и своему полю: `aria-invalid` — на его `<input>`
+	['Select', '<div is="so-select" disabled></div>', '.so-select'],
 ] as const
 
 /**

@@ -6,11 +6,12 @@
  * часть стоит, пока задан её текст, ошибка — при `invalid` и на месте
  * подсказки. С контролом поле связывает проводка: поле опускает связку лифтом
  * своему хосту, контрол находит её вверх по документу. Labelable-контрол
- * (Input, NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой)
- * подпись называет своим `for`, группу (RadioGroup, Slider с несколькими
- * ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
+ * (Input, NumberInput, CheckBox, Switch, Rating, Slider с одной ручкой,
+ * Select) подпись называет своим `for`, группу (RadioGroup, Slider с
+ * несколькими ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
  * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
- * корне.
+ * корне. У Select поле — деталь Input: ссылки и ошибку несёт набор Select, и
+ * у детали с полем он ложится на `<input>` комбобокса.
  *
  * Угол зрения здесь свой. Корень — элемент потребителя, слот части — элемент
  * с атрибутом `slot`, как у Label, а части поля шаблон строит сразу и снимает
@@ -244,6 +245,14 @@ const LABELABLES = [
 	['Switch', '<span is="so-switch"></span>', '.so-switch', '.so-switch input'],
 	['Rating', '<span is="so-rating"></span>', '.so-rating', '.so-rating input'],
 	['Slider', '<span is="so-slider"></span>', '.so-slider', '.so-slider input'],
+	// Поле Select — деталь Input: связку берёт Select, а его набор шаблон
+	// кладёт на деталь, и у детали с полем он уходит на `<input>` комбобокса
+	[
+		'Select',
+		'<div is="so-select"><div is="so-select-item" value="a" text="A"></div></div>',
+		'.so-select',
+		'.so-select input',
+	],
 ] as const
 
 describe.each(LABELABLES)('%s в поле', (_name, control, root, element) => {
