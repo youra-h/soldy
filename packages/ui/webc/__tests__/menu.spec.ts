@@ -1941,6 +1941,27 @@ describe('перестановка', () => {
 		expect(document.activeElement).toBe(rowOf('Ссылка', subPanel()))
 	})
 
+	/**
+	 * Пункты из данных строит первая отрисовка новой сборки — в панели, которая
+	 * уже вернулась к якорю: их подключения встают в очередь за панелью.
+	 */
+	it('пункты из данных — в коллекции новой сборки, ↓ с триггера — на первый', async () => {
+		const menu = await render({ props: { items: ITEMS } })
+
+		document.body.appendChild(document.createElement('section')).appendChild(menu)
+
+		expect(menu.state.items?.map((item) => item.value)).toEqual(['edit', 'remove'])
+		expect(rows()).toHaveLength(2)
+		expect(document.querySelectorAll('.so-menu__panel')).toHaveLength(1)
+
+		await nextFrame()
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowOf('Изменить'))
+	})
+
 	it('клик строки пункта — choose новой сборки меню', async () => {
 		const menu = await render({ content: MARKUP })
 
