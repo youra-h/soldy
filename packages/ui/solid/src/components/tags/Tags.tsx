@@ -1,5 +1,6 @@
-import { For, Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Elevate, ResolvedSlot, createRootProps, relaySlot, renderSlot } from '../../adapter'
+import { For, Show } from '../../adapter/runtime/flow'
 import { TagsItem } from './item'
 import { setupTags } from './setup.component'
 import type { TagsProps } from './base.component'

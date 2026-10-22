@@ -23,6 +23,7 @@ import { Show, Suspense, createResource, createSignal, type Accessor, type JSX }
 import type {
 	TAccordionCollection,
 	TAttributesMap,
+	TListBoxCollection,
 	TTabsCollection,
 	TTagsCollection,
 } from '@soldy-ui/core'
@@ -30,14 +31,18 @@ import {
 	Accordion,
 	Dialog,
 	Field,
+	KeyedFor,
 	ListBox,
 	Input,
 	RadioGroup,
 	Tabs,
 	Tags,
+	Toasts,
 	createPartProps,
 	createRootProps,
+	useToasts,
 } from '@soldy-ui/solid'
+import * as flow from '../../src/adapter/runtime/flow'
 
 /** Движок табов страницы — только у гидратации. */
 export type TTabsPageProps = { readonly engine?: TTabsCollection }
@@ -47,6 +52,9 @@ export type TTagsPageProps = { readonly engine?: TTagsCollection }
 
 /** Движок секций страницы — только у гидратации. */
 export type TAccordionPageProps = { readonly engine?: TAccordionCollection }
+
+/** Движок списка страницы — только у гидратации. */
+export type TListBoxPageProps = { readonly engine?: TListBoxCollection }
 
 /** Табы разметкой, активный вторым: у сервера остановок Tab две (`collections.md`, «Цена»). */
 export function TabsActiveSecond(props: TTabsPageProps): JSX.Element {
@@ -116,6 +124,36 @@ export function PartProbe(): JSX.Element {
 		<div>
 			<span {...part()} />
 			<ProbeEntry enter={() => setSet({ 'data-probe': 'entered' })} />
+		</div>
+	)
+}
+
+/** Запись зонда петли по ключу. */
+type TProbeRecord = { readonly key: string; readonly text: string }
+
+/**
+ * Структура, чей источник после неё меняет вход соседа, — зонд примитивов
+ * адаптера: ветки (`Show`), петель по записи и по месту (`For`, `Index`) и по
+ * ключу (`KeyedFor`). Сервер печатает их до входа соседа — пустыми, — и
+ * браузер собирает их в той же точке, а вход соседа меняет их источник уже во
+ * время гидратации. Примитивы — по пути модуля: в бочку адаптера они не входят.
+ */
+export function StructureProbe(): JSX.Element {
+	const [entered, setEntered] = createSignal(false)
+	const texts = (): readonly string[] => (entered() ? ['entered'] : [])
+	const records = (): readonly TProbeRecord[] => texts().map((text) => ({ key: text, text }))
+
+	return (
+		<div>
+			<flow.Show when={entered()}>
+				<b class="show">entered</b>
+			</flow.Show>
+			<flow.For each={texts()}>{(text) => <b class="for">{text}</b>}</flow.For>
+			<flow.Index each={texts()}>{(text) => <b class="index">{text()}</b>}</flow.Index>
+			<KeyedFor each={records()} by={(record) => record.key}>
+				{(record) => <b class="keyed">{record().text}</b>}
+			</KeyedFor>
+			<ProbeEntry enter={() => setEntered(true)} />
 		</div>
 	)
 }
@@ -296,6 +334,76 @@ export function AccordionLayerStreamed(
 				</WithData>
 			</Suspense>
 		</Accordion>
+	)
+}
+
+/**
+ * Панель вне границы `Suspense`, её таб — за ней. Сервер печатает оболочку
+ * без панели: таба `b` к ней ещё нет. В позднем окне таб входит, и панель
+ * становится активной.
+ */
+export function TabsContentStreamed(props: TTabsPageProps & TStreamedPageProps): JSX.Element {
+	return (
+		<Tabs engine={props.engine} content={<Tabs.Content value="b">Панель B</Tabs.Content>}>
+			<Tabs.Item value="a" text="A" />
+			<Suspense>
+				<WithData wait={props.wait}>
+					<Tabs.Item value="b" text="B" active />
+				</WithData>
+			</Suspense>
+		</Tabs>
+	)
+}
+
+/**
+ * Есть ли элемент в разметке — только у гидратации: так приложение снимает
+ * элемент после гидратации. Сервер рисует страницу без этого пропа — с
+ * элементом.
+ */
+export type TPresencePageProps = { readonly present?: Accessor<boolean> }
+
+/**
+ * Слот пустого списка вне границы `Suspense`, элемент — за ней. Сервер
+ * печатает слот в оболочке: элемента к нему ещё нет. В позднем окне элемент
+ * входит, и список перестаёт быть пустым.
+ */
+export function ListBoxEmptyStreamed(
+	props: TListBoxPageProps & TPresencePageProps & TStreamedPageProps,
+): JSX.Element {
+	return (
+		<ListBox engine={props.engine} empty={<span class="empty">Пусто</span>}>
+			<Suspense>
+				<WithData wait={props.wait}>
+					<Show when={props.present?.() ?? true}>
+						<ListBox.Item value="a" text="A" />
+					</Show>
+				</WithData>
+			</Suspense>
+		</ListBox>
+	)
+}
+
+/** Компонент приложения, который показывает тост прямо из тела. */
+function ToastOnBuild(): JSX.Element {
+	useToasts().show('Сохранено')
+
+	return <i />
+}
+
+/**
+ * Тост, показанный из тела компонента за границей `Suspense`. Регион
+ * менеджера сервер не печатает — портала у него нет, — и браузер рисует его
+ * сам, после основного окна, а тост входит в коллекцию в позднем окне.
+ */
+export function ToastsBodyStreamed(props: TStreamedPageProps): JSX.Element {
+	return (
+		<Toasts>
+			<Suspense>
+				<WithData wait={props.wait}>
+					<ToastOnBuild />
+				</WithData>
+			</Suspense>
+		</Toasts>
 	)
 }
 

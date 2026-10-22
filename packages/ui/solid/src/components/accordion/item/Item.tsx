@@ -1,4 +1,4 @@
-import { Show, type Accessor, type JSX } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	chainHandler,
@@ -11,6 +11,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
+import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
 import { setupAccordionItem } from './setup.component'

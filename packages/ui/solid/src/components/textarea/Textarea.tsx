@@ -1,4 +1,4 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
 	createPartProps,
@@ -8,6 +8,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { setupTextarea } from './setup.component'
 import type { TextareaAttributes, TextareaProps } from './base.component'
 

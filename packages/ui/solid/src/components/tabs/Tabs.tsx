@@ -1,4 +1,4 @@
-import { For, Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import {
 	Elevate,
 	ResolvedSlot,
@@ -9,6 +9,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
+import { For, Show } from '../../adapter/runtime/flow'
 import { TabsItem } from './item'
 import { setupTabs } from './setup.component'
 import type { TabsAttributes, TabsProps } from './base.component'

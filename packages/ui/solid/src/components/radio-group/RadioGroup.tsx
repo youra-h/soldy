@@ -1,6 +1,7 @@
-import { For, Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Elevate, ResolvedSlot, createRootProps, relaySlot, rootTag } from '../../adapter'
+import { For, Show } from '../../adapter/runtime/flow'
 import { RadioGroupItem } from './item'
 import { setupRadioGroup } from './setup.component'
 import type { RadioGroupProps } from './base.component'

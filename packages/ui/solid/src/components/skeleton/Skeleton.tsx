@@ -1,6 +1,7 @@
-import { Show, type JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { createRootProps, renderSlot, rootTag } from '../../adapter'
+import { Show } from '../../adapter/runtime/flow'
 import { setupSkeleton } from './setup.component'
 import type { SkeletonProps } from './base.component'
 
