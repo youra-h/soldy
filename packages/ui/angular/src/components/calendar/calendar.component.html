@@ -1,0 +1,276 @@
+<!--
+	Корень — сам хост (`<div so-calendar>`), поэтому шаблон — то, что внутри
+	корня Vue, в том же порядке: ряд месяцев и подвал. Слоты контракта — все
+	шаблонами: item (scope { item, text }) — содержимое дня, prev-icon и
+	next-icon — значки кнопок листания, footer — подвал. Основной проекции нет:
+	дни кладёт в коллекцию вид по месяцам сеток, и день из разметки попал бы в
+	неё мимо вида.
+
+	Обработчиков в разметке нет: нажатия по дням, кнопкам листания, шапке и
+	подложке панели выбора и наведение ловит плагин указателя, клавиши — плагин
+	клавиатуры, оба слушают корень и зовут команды коллекции.
+
+	Месяцы — в ряд, своей строкой (`so-calendar__months`), подвал — отдельной
+	строкой под ним: в одном ряду с месяцами он расширил бы его своей шириной, и
+	кнопки листания у конца корня повисли бы за последней колонкой.
+
+	Текст заголовка, подписей дней недели и дня — свойством узла
+	(`textContent`), а не интерполяцией: Prettier переносит содержимое элемента
+	на свою строку, и Angular оставил бы от отступа пробелы по краям текста.
+-->
+<div class="so-calendar__months">
+	<!--
+		Месяц — по одному на сетку (`grids`), ключ — место сетки, а не её месяц.
+		Заголовок и его панель выбора — у места: листание меняет месяц, а кнопка
+		заголовка, её поповер и живая область остаются тем же узлом. Иначе
+		выбранный в панели месяц пересобрал бы кнопку, фокус, который панель
+		возвращает на неё, упал бы на страницу, а новая живая область смену
+		месяца не объявила бы.
+	-->
+	@for (grid of state()['grids'] ?? []; track $index; let index = $index) {
+		<div class="so-calendar__month">
+			<!--
+				Заголовок месяца — кнопка, которая открывает панель выбора месяца и
+				года. Панель — Popover места (`pickers[index]`): поповер, список и его
+				движок создаёт и ведёт расширение коллекции `picker`, и живут они
+				вместе с движком. Popover и ListBox берут `ctrl` и `engine` один раз,
+				при сборке, а запись выхода новая на каждую смену, — поэтому блок
+				места стоит по наличию записи, а не по ней самой: ветка `@if` с
+				выводом новое значение отдаёт тому же виду, компоненты места
+				собираются один раз, а шапку, стрелки и имена разметка перечитывает
+				из новой записи.
+
+				Поповер — внутри календаря (`contained`, `edge="top"`): панель не
+				уходит в `body`, а выезжает сверху календаря, его ближайшего
+				позиционированного предка, и тема растягивает её подложкой. Корень
+				поповера — `div`: панель лежит в нём, а внутри строчного `span`
+				блочной разметке не место. Панель и список названы шапкой
+				(`aria_labelledBy`).
+
+				Триггер — шаблон слота поповера: связку с панелью (`aria-haspopup`,
+				`aria-expanded`, `aria-controls`) и вид «нажат» кнопка получает из
+				его scope. Вида у кнопки нет — тема красит её по контексту
+				(`.so-calendar__title`). Текст — во вложенном `span` с набором
+				`titleAria`: `id`, по которому сетку называет `aria-labelledby`, и
+				`aria-live` — живая область — текст, а не контрол.
+			-->
+			@if (state()['pickers']?.[index]; as picker) {
+				<div
+					so-popover
+					embedded="calendar.picker"
+					class="so-calendar__heading"
+					contained
+					edge="top"
+					[ctrl]="picker.popover"
+					[aria_labelledBy]="picker.labelledBy"
+				>
+					<ng-template
+						slot="trigger"
+						let-triggerAria="triggerAria"
+						let-triggerDataset="triggerDataset"
+					>
+						<button
+							so-button
+							embedded="calendar.title"
+							type="button"
+							class="so-calendar__title"
+							[size]="state()['size']"
+							[disabled]="state()['disabled']"
+							[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+						>
+							<span
+								class="so-calendar__title-text"
+								[so-attributes]="grid.titleAria"
+								[textContent]="grid.title"
+							></span>
+						</button>
+					</ng-template>
+					<!--
+						Содержимое панели — карточка: список места (12 месяцев года или
+						12 лет страницы; `contentFit` ему ставит расширение) и шапка —
+						кнопка года, затем стрелки. Список в DOM раньше шапки: фокус при
+						открытии встаёт на список, а наверх шапку ставит тема. Выбор в
+						списке ловит расширение `picker` событием списка, нажатия по
+						шапке — плагин указателя календаря. Имена стрелок и их
+						выключенность — по уровню, из записи места; значок — та же роль
+						`arrowRight`, что у кнопок листания, «назад» зеркалит тема.
+					-->
+					<div class="so-calendar__picker">
+						<div
+							so-list-box
+							embedded="calendar.picker-list"
+							class="so-calendar__picker-list"
+							indicator="none"
+							[ctrl]="picker.list"
+							[engine]="picker.engine"
+							[size]="state()['size']"
+							[aria_labelledBy]="picker.labelledBy"
+						></div>
+						<div class="so-calendar__picker-header">
+							<button
+								so-button
+								embedded="calendar.picker-heading"
+								type="button"
+								class="so-calendar__picker-heading"
+								[size]="state()['size']"
+								[text]="picker.heading"
+								[so-attributes]="picker.headingAria"
+							></button>
+							<button
+								so-button
+								embedded="calendar.picker-prev"
+								type="button"
+								class="so-calendar__picker-prev"
+								[size]="state()['size']"
+								[disabled]="picker.prevDisabled"
+								[so-attributes]="picker.prevAria"
+							>
+								<svg
+									so-icon
+									embedded="calendar.picker-prev-icon"
+									so-role-icon="arrowRight"
+									[size]="state()['size']"
+								></svg>
+							</button>
+							<button
+								so-button
+								embedded="calendar.picker-next"
+								type="button"
+								class="so-calendar__picker-next"
+								[size]="state()['size']"
+								[disabled]="picker.nextDisabled"
+								[so-attributes]="picker.nextAria"
+							>
+								<svg
+									so-icon
+									embedded="calendar.picker-next-icon"
+									so-role-icon="arrowRight"
+									[size]="state()['size']"
+								></svg>
+							</button>
+						</div>
+					</div>
+				</div>
+			}
+			<!--
+				Кнопки листания — одна пара на весь календарь, у первого месяца,
+				сразу за его заголовком: Tab идёт за глазом — заголовок, «назад»,
+				«вперёд», остановка сетки, заголовки следующих месяцев. На экране
+				пару ставит тема — у конца ряда заголовков, от корня календаря. Вида
+				у кнопок нет — красит тема по контексту; выключенность считает вид
+				коллекции, имена — в наборах `prevAria` и `nextAria`. Значок — шаблон
+				`prev-icon` или `next-icon`, иначе иконка роли `arrowRight` у обеих:
+				своей роли «влево» в контракте иконок нет, стрелку «назад» зеркалит
+				тема.
+			-->
+			@if (index === 0) {
+				<button
+					so-button
+					embedded="calendar.prev"
+					type="button"
+					class="so-calendar__prev"
+					[size]="state()['size']"
+					[disabled]="state()['prevDisabled']"
+					[so-attributes]="state()['prevAria']"
+				>
+					@if (slot('prev-icon'); as icon) {
+						<ng-container [ngTemplateOutlet]="icon" />
+					} @else {
+						<svg
+							so-icon
+							embedded="calendar.prev-icon"
+							so-role-icon="arrowRight"
+							[size]="state()['size']"
+						></svg>
+					}
+				</button>
+				<button
+					so-button
+					embedded="calendar.next"
+					type="button"
+					class="so-calendar__next"
+					[size]="state()['size']"
+					[disabled]="state()['nextDisabled']"
+					[so-attributes]="state()['nextAria']"
+				>
+					@if (slot('next-icon'); as icon) {
+						<ng-container [ngTemplateOutlet]="icon" />
+					} @else {
+						<svg
+							so-icon
+							embedded="calendar.next-icon"
+							so-role-icon="arrowRight"
+							[size]="state()['size']"
+						></svg>
+					}
+				</button>
+			}
+			<!--
+				Сетка — `table` с набором `gridAria` (`role="grid"`, имя от
+				заголовка, `aria-multiselectable`). Шапка дней недели скрыта от
+				скринридера (`aria-hidden` на `thead`): имя дня — полная дата, день
+				недели в нём уже есть. Подписи колонок — `weekdays`, по месту.
+
+				Недели — по ключу первой даты. Ячейка — по своему дню (элементу
+				коллекции), заполнитель — по дате: записи сеток новые на каждую
+				смену, а день, оставшийся на экране при выборе, — тот же узел, с
+				фокусом на нём. День берёт `ctrl` один раз, при сборке, а ветка
+				`@if` с выводом вид не пересоздаёт, — поэтому другой элемент на той
+				же дате ключ петли и меняет: это новый день.
+
+				День — `Calendar.Item` над элементом коллекции, сама ячейка `td`.
+				Содержимое дня — проброс слота `item` в шаблон `default` дня: scope —
+				scope дня (`text` — номер в цифрах локали) и сам день. Отдаётся
+				шаблон, только когда слот задан календарю: шаблон непрозрачен, и
+				пустой проброс номера дня не уступил бы. Заполнитель — день соседнего
+				месяца, у ячейки нет элемента: пустой `td` с набором ячейки
+				(`aria-hidden`), без числа — оно повторило бы дату соседней сетки.
+			-->
+			<table class="so-calendar__grid" [so-attributes]="grid.gridAria">
+				<thead aria-hidden="true">
+					<tr class="so-calendar__weekdays">
+						@for (weekday of state()['weekdays'] ?? []; track $index) {
+							<th class="so-calendar__weekday" [textContent]="weekday.label"></th>
+						}
+					</tr>
+				</thead>
+				<tbody>
+					@for (week of grid.weeks; track week[0].date) {
+						<tr class="so-calendar__week">
+							@for (cell of week; track cell.item ?? cell.date) {
+								@if (cell.item; as item) {
+									<td so-calendar-item [ctrl]="item">
+										@if (slot('item'); as content) {
+											<ng-template slot="default" let-text="text">
+												<ng-container
+													[ngTemplateOutlet]="content"
+													[ngTemplateOutletContext]="{ item, text }"
+												/>
+											</ng-template>
+										}
+									</td>
+								} @else {
+									<td
+										class="so-calendar__filler"
+										[so-attributes]="cell.aria"
+									></td>
+								}
+							}
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+</div>
+<!--
+	Подвал — строка под сетками во всю ширину календаря: ряд действий, которые
+	кладёт потребитель (DatePicker с `confirmable` — «Отмена» и «OK»). В DOM он
+	после сеток: его остановки Tab — последние. Обёртка рисуется, только когда
+	шаблон `footer` задан, — пустая строка держала бы место под сетками.
+-->
+@if (slot('footer'); as footer) {
+	<div class="so-calendar__footer">
+		<ng-container [ngTemplateOutlet]="footer" />
+	</div>
+}

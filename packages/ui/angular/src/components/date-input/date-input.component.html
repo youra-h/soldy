@@ -1,0 +1,116 @@
+<!--
+	Корень — сам хост (`<div so-date-input>`), коробка поля семьи Input, поэтому
+	шаблон — то, что внутри корня Vue, в том же порядке: слот `leading`, ряд
+	частей, обёртка у конца поля и значение для формы. Слоты контракта: leading
+	и trailing (scope { ctrl }), clear (scope { clear }).
+
+	Обработчик в разметке один — клик кнопки очистки: клавиши, буфер обмена,
+	выделение, контекстное меню и касание ловят плагины на корне.
+-->
+@if (slot('leading'); as leading) {
+	<div class="so-date-input__leading">
+		<ng-container
+			[ngTemplateOutlet]="leading"
+			[ngTemplateOutletContext]="{ ctrl: instance() }"
+		/>
+	</div>
+}
+<!--
+	Ряд частей — флекс, а не строка текста: каждая часть и каждый разделитель —
+	своя коробка, иначе Chrome переносит начало протяжки мышью от левого края
+	части в соседний текст. Направление и язык ряда — набор ядра
+	`segmentsAttrs`.
+
+	Части и разделители — выход ядра `segments` в порядке формата, петля по
+	ключу: ключ части — её тип, разделителя — место в формате. При наборе и при
+	смене локали часть меняет текст и место, а её узел остаётся тем же — с
+	фокусом на нём.
+
+	Часть — `span` с наборами `attrs` (на сенсорном устройстве —
+	`contenteditable` и `inputmode`), `aria` (`role="spinbutton"`, имя,
+	`aria-value*`, остановка Tab, `id`) и `dataset` (`data-type`,
+	`data-placeholder`) — одним объектом в порядке Vue: директива набора на
+	элементе одна. Разделитель — литерал формата как есть, с пробелами и
+	метками направления, под `aria-hidden` (его `aria`): дату объявляют части.
+
+	Текст обоих — свойством узла (`textContent`), а не интерполяцией: Prettier
+	переносит содержимое элемента на свою строку, и Angular оставил бы от
+	отступа пробелы по краям — а текст ряда плагин буфера обмена копирует
+	целиком. Свойство узел получает целиком, одним текстовым узлом, и на
+	касании, когда браузер оставил часть пустой или из своих узлов, её текст
+	снова — текст ядра. Между узлами ряда текста нет: пустые текстовые узлы
+	шаблона Angular вырезает.
+-->
+<span class="so-date-input__segments" [so-attributes]="state()['segmentsAttrs']">
+	@for (segment of state()['segments'] ?? []; track segment.key) {
+		@if (segment.type === 'literal') {
+			<span
+				class="so-date-input__literal"
+				[so-attributes]="segment.aria"
+				[textContent]="segment.text"
+			></span>
+		} @else {
+			<span
+				class="so-date-input__segment"
+				[so-attributes]="{ ...segment.attrs, ...segment.aria, ...segment.dataset }"
+				[textContent]="segment.text"
+			></span>
+		}
+	}
+</span>
+<!--
+	Обёртка у конца поля — по кнопке очистки, по своей кнопке в слоте `clear`
+	или по слоту `trailing`; тема ставит её у конца поля. Кнопка очистки стоит
+	в ней первой, перед содержимым `trailing`: туда DatePicker ставит кнопку
+	календаря.
+-->
+@if (state()['clearable'] || slot('clear') || slot('trailing')) {
+	<div class="so-date-input__trailing">
+		<!--
+			Своя кнопка — слот `clear`: заменяет встроенную целиком и рисуется,
+			когда задана. Команду очистки получает в scope.
+		-->
+		@if (slot('clear'); as clear) {
+			<ng-container
+				[ngTemplateOutlet]="clear"
+				[ngTemplateOutletContext]="{ clear: instance()?.clear }"
+			/>
+		} @else if (state()['clearable']) {
+			<button
+				so-button
+				embedded="date-input.clear"
+				type="button"
+				class="so-date-input__clear"
+				[size]="state()['size']"
+				[disabled]="state()['disabled']"
+				[so-attributes]="state()['clearAria']"
+				(click)="clearClick($event)"
+			>
+				<svg
+					so-icon
+					embedded="date-input.clear-icon"
+					so-role-icon="close"
+					[size]="state()['size']"
+				></svg>
+			</button>
+		}
+		@if (slot('trailing'); as trailing) {
+			<ng-container
+				[ngTemplateOutlet]="trailing"
+				[ngTemplateOutletContext]="{ ctrl: instance() }"
+			/>
+		}
+	</div>
+}
+<!--
+	Значение для формы — скрытое поле последним: `name`, `value` — дата строкой
+	(`YYYY-MM-DD`, у поля даты и времени — `YYYY-MM-DDTHH:mm`, с точностью до
+	секунды — `YYYY-MM-DDTHH:mm:ss`), пока значение не собрано целиком — пусто.
+	Выключенное поле в форму не уходит.
+-->
+<input
+	type="hidden"
+	[attr.name]="state()['name'] ?? null"
+	[value]="state()['value'] ?? ''"
+	[disabled]="state()['disabled'] === true"
+/>

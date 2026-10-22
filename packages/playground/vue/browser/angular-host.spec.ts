@@ -13,7 +13,9 @@
  * тот же размер. У превью с обёрткой и содержимым так же стоят и обёртка, и
  * части: подпись вокруг флажка, ползунка и оценки, ручки и звёзды, элементы
  * коллекций, теги, поле Select с обёртками и стрелкой, страницы пагинации,
- * панель активного таба, — а у таблицы её окно, корень, заголовки и строки:
+ * панель активного таба, части и разделители поля даты, заголовок, кнопки
+ * листания, подписи недели и дни календаря, поле DatePicker с кнопкой
+ * календаря, — а у таблицы её окно, корень, заголовки и строки:
  * ширину колонок плагин раскладки мерит по окну, и раскладка совпадает, только
  * если окно он нашёл; у окна Virtual — его ряд: список, Select и таблица.
  *
@@ -26,7 +28,9 @@
  * от них остаётся кнопка, а открытые, с подложкой и частями, сверяются с Vue от
  * угла окна. Регион тостов — тоже в `body`: в ячейке от менеджера без коробки
  * остаётся ряд кнопок, а регион с тостом, которого показала кнопка, сверяется с
- * Vue от угла окна.
+ * Vue от угла окна. Панель DatePicker с календарём — в `body`, у корня, и
+ * сверяется от его угла, как список Select, а панель выбора месяца и года
+ * остаётся в календаре (`contained`) и сверяется от угла заголовка месяца.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -163,6 +167,21 @@ describe('хост Angular', () => {
 		['progress-linear', '.so-progress-linear, .so-progress-linear__range'],
 		// Таблица — окно, корень, заголовки и строки: рамку превью задаёт хост
 		['table', '.so-table__viewport, .so-table, .so-table-column, .so-table-row'],
+		// Поле даты — части и разделители в ряду; календарь — заголовок, кнопки
+		// листания со значками, сетка, подписи недели, дни и заполнители
+		[
+			'date-input',
+			'.so-date-input, .so-date-input__segments, .so-date-input__segment, .so-date-input__literal',
+		],
+		[
+			'calendar',
+			'.so-calendar, .so-calendar__month, .so-calendar__heading, .so-calendar__title, .so-calendar__prev, .so-calendar__next, .so-calendar svg, .so-calendar__grid, .so-calendar__weekday, .so-calendar-item, .so-calendar__filler',
+		],
+		// Панель DatePicker увезена в `body`: в ячейке — поле с кнопкой календаря
+		[
+			'date-picker',
+			'.so-date-picker, .so-date-picker__field, .so-date-input__segment, .so-date-input__literal, .so-date-input__trailing, .so-date-picker__trigger, .so-date-picker__trigger svg',
+		],
 		// Корень и триггер в нём: панели в ячейке нет — она увезена в `body`
 		['popover', '.so-popover, .so-popover > .so-button'],
 		['tooltip', '.so-tooltip, .so-tooltip > .so-button'],
@@ -289,6 +308,91 @@ describe('хост Angular · список Select', () => {
 		expect(angular[1].height).toBeGreaterThan(0)
 		expect(angular).toEqual(vue)
 	})
+})
+
+/**
+ * Части открытой панели выбора месяца и года: панель поповера места, карточка,
+ * список с 12 месяцами и шапка с годом и стрелками.
+ */
+const PICKER_PARTS =
+	'.so-calendar .so-popover__panel, .so-calendar__picker, .so-calendar__picker-list, .so-calendar__picker .so-list-box-item, .so-calendar__picker-header, .so-calendar__picker-heading, .so-calendar__picker-prev, .so-calendar__picker-next'
+
+/**
+ * Части открытой панели DatePicker: панель, содержимое, календарь, месяц,
+ * заголовок с кнопкой, кнопки листания, сетка и подписи недели — без дней:
+ * их число зависит от месяца.
+ */
+const DATE_PICKER_PARTS =
+	'.so-date-picker__panel, .so-date-picker__content, .so-date-picker__calendar, .so-date-picker__panel .so-calendar__month, .so-date-picker__panel .so-calendar__heading, .so-date-picker__panel .so-calendar__title, .so-date-picker__panel .so-calendar__prev, .so-date-picker__panel .so-calendar__next, .so-date-picker__panel .so-calendar__grid, .so-date-picker__panel .so-calendar__weekday'
+
+/** Кадр: плагины получают корень кадром после отрисовки. */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/**
+ * Превью дат хоста в блоке — открытым: рамки якоря и панели с её частями от
+ * угла якоря. У DatePicker панель открыта пропом (`open`) и увезена в `body`,
+ * якорь — корень, как у Select; у календаря панель выбора открывает нажатие на
+ * заголовок месяца — кадром позже, когда плагины получили корень, — и она
+ * остаётся в календаре (`contained`), а сверяется от угла заголовка. Меряется
+ * и снимается — следующей отрисовке оно не мешает.
+ */
+async function datesOf(
+	framework: string,
+	component: string,
+	props: Readonly<Record<string, unknown>>,
+	anchor: string,
+	parts: string,
+): Promise<TBox[]> {
+	const host = await loadHost(framework)
+	const node = document.createElement('div')
+
+	node.style.cssText = BOX
+	document.body.appendChild(node)
+
+	const handle = host.mount(node, { component, props })
+	const target = () => node.querySelector(anchor)
+
+	try {
+		if (component === 'calendar') {
+			await nextFrame()
+			await nextFrame()
+
+			const title = target()
+
+			if (!(title instanceof HTMLElement)) throw new Error(`${framework}: заголовка нет`)
+
+			title.click()
+		}
+
+		return await measure(target, parts)
+	} finally {
+		handle.unmount()
+		node.remove()
+	}
+}
+
+describe('хост Angular · панели дат', () => {
+	beforeEach(() => {
+		document.documentElement.dataset.soTheme = 'oren'
+	})
+
+	// Число частей с якорем: у календаря — заголовок и 19 частей панели выбора,
+	// у DatePicker — корень и 16 частей панели. Число — чтобы неоткрывшаяся
+	// панель не сошлась сама с собой
+	it.each([
+		['calendar', {}, '.so-calendar__title', PICKER_PARTS, 20],
+		['date-picker', { open: true }, '.so-date-picker', DATE_PICKER_PARTS, 17],
+	])(
+		'%s: открытая панель с частями стоит у якоря так же, как у Vue',
+		async (component, props, anchor, parts, count) => {
+			const vue = await datesOf('vue', component, props, anchor, parts)
+			const angular = await datesOf('angular', component, props, anchor, parts)
+
+			expect(angular).toHaveLength(count)
+			expect(angular[1].width).toBeGreaterThan(0)
+			expect(angular).toEqual(vue)
+		},
+	)
 })
 
 /** Части панели меню — группы с подписью, разделители, пункты со строками и их колонки. */

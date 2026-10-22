@@ -35,6 +35,10 @@
  * гидратации панель уезжает в `body` с пунктами, и стрелки ходят по ним.
  * Select — так же: опции в коллекции и на сервере, поле — с текстом
  * выбранного, в `multiple` — с тегами, а панель есть только в браузере.
+ * Календарь — дни кладёт в коллекцию вид, и сервер рисует сетки целиком: с
+ * именами сеток, днями и одной остановкой Tab, а панель выбора месяца и года —
+ * слой поповера с `contained`, и на сервере от неё пустой скрытый элемент на
+ * месте.
  *
  * Разметка сервера проверяется разобранной документом: порядок атрибутов у
  * сервера свой (`server.ts`).
@@ -51,6 +55,7 @@ import {
 	TAccordionComponent,
 	TAccordionItemComponent,
 	TButtonComponent,
+	TCalendarComponent,
 	TDragAndDropComponent,
 	TListBoxComponent,
 	TListBoxItemComponent,
@@ -1088,6 +1093,163 @@ describe('Menu · гидратация', () => {
 			)
 			await app.whenStable()
 		}
+	})
+})
+
+/**
+ * Календарь на двух сетках, выбран день второй: фокус коллекции — на нём.
+ */
+@Component({
+	selector: 'app-root',
+	standalone: true,
+	imports: [TCalendarComponent],
+	template: `<section class="place">
+		<div so-calendar [months]="months" value="2026-10-14"></div>
+	</section>`,
+})
+class CalendarPage {
+	readonly months = ['2026-09-01', '2026-10-01']
+}
+
+/** Полная дата — имя дня, как его прочтёт скринридер. */
+const FULL_DATE = new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeZone: 'UTC' })
+
+/** Имена дней месяца `month` (1–12) 2026 года — полные даты. */
+const dayNamesOf = (month: number) =>
+	Array.from({ length: new Date(Date.UTC(2026, month, 0)).getUTCDate() }, (_, index) =>
+		FULL_DATE.format(Date.UTC(2026, month - 1, index + 1)),
+	)
+
+/** Панель выбора месяца и года, на которую ведёт заголовок (`aria-controls`). */
+function pickerPanel(page: Document, title: Element): HTMLElement {
+	const panel = page.getElementById(title.getAttribute('aria-controls') ?? '')
+
+	if (!(panel instanceof HTMLElement)) throw new Error('aria-controls не ведёт на панель')
+
+	return panel
+}
+
+/**
+ * Календарь на сервере: дни кладёт в коллекцию вид по месяцам сеток при
+ * сборке, а она идёт и на сервере, — сервер рисует сетки целиком, со всем, что
+ * пишут дням расширения коллекции: имя — полная дата, одна остановка Tab на
+ * все сетки. Имена сеток — `id` заголовков и ссылки таблиц на них — пишет
+ * плагин связок от id монтирования. Панель выбора месяца и года — поповер с
+ * `contained`, а слой есть только в браузере: на сервере от неё — пустой
+ * скрытый элемент Frame на месте, в корне поповера.
+ */
+describe('Calendar · серверный рендер', () => {
+	it('сетки названы заголовками: id заголовков и aria-labelledby таблиц на них', async () => {
+		const page = await serverPage(CalendarPage)
+		const titles = all(page, '.so-calendar__title-text')
+		const ids = attributeOf(titles, 'id')
+
+		expect(titles.map((title) => title.textContent)).toEqual(['September 2026', 'October 2026'])
+		expect(new Set(ids).size).toBe(2)
+		expect(ids).toEqual([expect.stringMatching(/\S/), expect.stringMatching(/\S/)])
+		expect(attributeOf(titles, 'aria-live')).toEqual(['polite', 'polite'])
+		expect(attributeOf(all(page, '[role="grid"]'), 'aria-labelledby')).toEqual(ids)
+	})
+
+	it('дни — с полными именами и одной остановкой Tab на все сетки, заполнители — под aria-hidden', async () => {
+		const page = await serverPage(CalendarPage)
+		const days = all(page, '.so-calendar-item')
+		const fillers = all(page, '.so-calendar__filler')
+
+		expect(days.every((day) => day.localName === 'td')).toBe(true)
+		expect(attributeOf(days, 'aria-label')).toEqual([...dayNamesOf(9), ...dayNamesOf(10)])
+		// Остановка — у дня с фокусом коллекции: он на выбранной дате
+		expect(attributeOf(all(page, '[tabindex="0"]'), 'aria-label')).toEqual([
+			FULL_DATE.format(Date.UTC(2026, 9, 14)),
+		])
+		expect(new Set(attributeOf(days, 'tabindex'))).toEqual(new Set(['0', '-1']))
+		// Неделя en-US — с воскресенья: у сентября 2026 заполнители — 2 дня
+		// августа и 3 октября, у октября — 4 дня сентября, ноябрьских нет
+		expect(attributeOf(fillers, 'aria-hidden')).toEqual(Array.from({ length: 9 }, () => 'true'))
+		expect(fillers.filter((cell) => cell.hasAttribute('aria-label'))).toEqual([])
+	})
+
+	it('панель выбора места — на месте, в корне поповера заголовка: скрыта и пустая', async () => {
+		const page = await serverPage(CalendarPage)
+		const titles = all(page, '.so-calendar__title')
+		const panels = titles.map((title) => pickerPanel(page, title))
+
+		expect(panels).toHaveLength(2)
+		expect(
+			panels.map((panel) => panel.parentElement?.classList.contains('so-calendar__heading')),
+		).toEqual([true, true])
+		expect(panels.map((panel) => panel.style.display)).toEqual(['none', 'none'])
+		expect(panels.map((panel) => panel.children.length)).toEqual([0, 0])
+		expect(attributeOf(titles, 'aria-expanded')).toEqual(['false', 'false'])
+		expect(all(page, '.so-calendar__picker')).toEqual([])
+		expect(all(page, '.so-list-box')).toEqual([])
+	})
+})
+
+/**
+ * После гидратации заголовки, дни и элементы Frame панелей выбора — узлы,
+ * которые напечатал сервер, а `id` связок — те же: номера сборки у сервера и
+ * браузера одни. Панель выбора остаётся на месте (`contained`) и открывается
+ * заголовком.
+ */
+describe('Calendar · гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	it('узлы сервера переиспользуются, id связок у браузера те же, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(CalendarPage))
+
+		const titles = all(document, '.so-calendar__title')
+		const texts = all(document, '.so-calendar__title-text')
+		const days = all(document, '.so-calendar-item')
+		const ids = attributeOf(texts, 'id')
+		const links = attributeOf(titles, 'aria-controls')
+		const panels = titles.map((title) => pickerPanel(document, title))
+		const app = await hydrate(CalendarPage)
+
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		expect(all(document, '.so-calendar__title')).toEqual(titles)
+		expect(all(document, '.so-calendar__title-text')).toEqual(texts)
+		expect(all(document, '.so-calendar-item')).toEqual(days)
+		expect(attributeOf(all(document, '.so-calendar__title-text'), 'id')).toEqual(ids)
+		expect(attributeOf(all(document, '.so-calendar__title'), 'aria-controls')).toEqual(links)
+		expect(titles.map((title) => pickerPanel(document, title))).toEqual(panels)
+		expect(
+			panels.map((panel) => panel.parentElement?.classList.contains('so-calendar__heading')),
+		).toEqual([true, true])
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+
+	it('после гидратации заголовок открывает панель выбора на месте, с месяцами', async () => {
+		loadPage(await renderOnServer(CalendarPage))
+
+		const app = await hydrate(CalendarPage)
+
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		const [title] = all(document, '.so-calendar__title')
+
+		if (!(title instanceof HTMLElement)) throw new Error('заголовка нет')
+
+		title.click()
+		await app.whenStable()
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+		const panel = pickerPanel(document, title)
+
+		expect(title.getAttribute('aria-expanded')).toBe('true')
+		expect(panel.style.display).toBe('')
+		expect(panel.getAttribute('data-contained')).toBe('true')
+		expect(all(panel, '.so-calendar__picker-list .so-list-box-item')).toHaveLength(12)
 	})
 })
 

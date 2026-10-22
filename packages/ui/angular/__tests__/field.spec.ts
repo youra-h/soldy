@@ -8,7 +8,7 @@
  * (`provideElevator()`), контрол её берёт. Labelable-контрол (Input,
  * NumberInput, Select, CheckBox, Switch, Rating, Slider с одной ручкой)
  * подпись называет своим `for`, группу (RadioGroup, Slider с несколькими
- * ручками) — ссылкой `aria-labelledby`. Справку контрол получает в
+ * ручками, DateInput, DatePicker) — ссылкой `aria-labelledby`. Справку контрол получает в
  * `aria-describedby`, ошибку — `aria-invalid` и `data-invalid` на своём
  * корне. У Select связку берёт он сам, а не его поле — деталь его разметки:
  * набор `aria` Select разметка кладёт на поле, а цепочка хостов доводит его до
@@ -28,6 +28,8 @@ import { TField, TInput, TSlider, type TFieldPosition, type TSliderMarks } from 
 import {
 	SlotDirective,
 	TCheckBoxComponent,
+	TDateInputComponent,
+	TDatePickerComponent,
 	TFieldComponent,
 	TInputComponent,
 	TLabelComponent,
@@ -109,7 +111,10 @@ class PositionHost {
 })
 class SectionHost {}
 
-/** Вид контрола в поле; `slider-range` — ползунок с двумя ручками. */
+/**
+ * Вид контрола в поле; `slider-range` — ползунок с двумя ручками,
+ * `date-picker-range` — DatePicker диапазона.
+ */
 type TControl =
 	| 'input'
 	| 'number-input'
@@ -120,6 +125,9 @@ type TControl =
 	| 'slider'
 	| 'slider-range'
 	| 'radio-group'
+	| 'date-input'
+	| 'date-picker'
+	| 'date-picker-range'
 
 /**
  * Поле над своим экземпляром и контрол в нём по виду. Вид и экземпляр
@@ -139,6 +147,8 @@ type TControl =
 		TRadioGroupItemComponent,
 		TSelectComponent,
 		TSelectItemComponent,
+		TDateInputComponent,
+		TDatePickerComponent,
 	],
 	template: `<div so-field [ctrl]="field">
 		@switch (control) {
@@ -174,6 +184,15 @@ type TControl =
 					<label so-radio-group-item value="a">А</label>
 					<label so-radio-group-item value="b">Б</label>
 				</div>
+			}
+			@case ('date-input') {
+				<div so-date-input></div>
+			}
+			@case ('date-picker') {
+				<div so-date-picker></div>
+			}
+			@case ('date-picker-range') {
+				<div so-date-picker mode="range"></div>
 			}
 		}
 	</div>`,
@@ -377,6 +396,47 @@ describe('RadioGroup в поле', () => {
 	})
 })
 
+/**
+ * Поле даты и DatePicker — группы: подпись называет их ссылкой, `for` нет.
+ * Селектор — элемент с именем группы: у DatePicker одной даты группа — его
+ * поле (`<div so-date-input>` в шаблоне), набор `aria` DatePicker'а разметка
+ * кладёт на него, а у диапазона группа — корень DatePicker'а.
+ */
+const DATE_GROUPS: ReadonlyArray<readonly [string, TControl, string]> = [
+	['DateInput', 'date-input', '[so-date-input]'],
+	['DatePicker', 'date-picker', '.so-date-picker__field'],
+	['DatePicker range', 'date-picker-range', '[so-date-picker]'],
+]
+
+describe.each(DATE_GROUPS)('%s в поле', (_name, control, selector) => {
+	const group = (fixture: ComponentFixture<unknown>) => node(fixture, selector)
+
+	it('for у подписи нет, группа ссылается на подпись', () => {
+		const fixture = mountControl(new TField({ label: 'Подпись' }), control)
+
+		expect(labelOf(fixture).hasAttribute('for')).toBe(false)
+		expect(labelOf(fixture).id).not.toBe('')
+		expect(refsOf(group(fixture), 'aria-labelledby')).toEqual([labelOf(fixture).id])
+	})
+
+	it('справка и ошибка — у группы', () => {
+		const ctrl = new TField({ label: 'Подпись', helper: 'Подсказка', error: 'Ошибка' })
+		const fixture = mountControl(ctrl, control)
+
+		expect(refsOf(group(fixture), 'aria-describedby')).toEqual([
+			node(fixture, '.so-field__helper').id,
+		])
+
+		ctrl.invalid = true
+		fixture.detectChanges()
+
+		expect(refsOf(group(fixture), 'aria-describedby')).toEqual([
+			node(fixture, '.so-field__error').id,
+		])
+		expect(group(fixture).getAttribute('aria-invalid')).toBe('true')
+	})
+})
+
 @Component({
 	standalone: true,
 	imports: [TFieldComponent, TSliderComponent],
@@ -530,6 +590,14 @@ describe('Field · id поля', () => {
 class OwnNameHost {}
 
 @Component({
+	selector: 'probe-date-input-own-name',
+	standalone: true,
+	imports: [TFieldComponent, TDateInputComponent],
+	template: `<div so-field label="Подпись"><div so-date-input aria_label="Своё"></div></div>`,
+})
+class OwnDateNameHost {}
+
+@Component({
 	standalone: true,
 	imports: [TFieldComponent, TLabelComponent, TCheckBoxComponent],
 	template: `<div so-field helper="Можно отказаться в любой момент">
@@ -558,6 +626,14 @@ describe('Field · имя контрола', () => {
 	it('своё имя контрола-группы главнее подписи поля', () => {
 		const fixture = mountHost(OwnNameHost)
 		const group = node(fixture, '[so-radio-group]')
+
+		expect(group.getAttribute('aria-label')).toBe('Своё')
+		expect(group.hasAttribute('aria-labelledby')).toBe(false)
+	})
+
+	it('своё имя поля даты главнее подписи поля', () => {
+		const fixture = mountHost(OwnDateNameHost)
+		const group = node(fixture, '[so-date-input]')
 
 		expect(group.getAttribute('aria-label')).toBe('Своё')
 		expect(group.hasAttribute('aria-labelledby')).toBe(false)

@@ -8,7 +8,8 @@
  * пишут компоненту тег и имена. Проверяется сам путь — источник в наборе с
  * первой сборки, смена на лету без перемонтирования, вложенный провайдер и
  * провайдер на `<ng-container>`, без провайдера — английский, — и первый
- * компонент Angular со строками: имя кнопки очистки Input.
+ * компонент Angular со строками: имя кнопки очистки Input. Язык данных —
+ * подписи колонок календаря — идёт за провайдером так же, на лету.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -25,7 +26,12 @@ import {
 	type TLocale,
 } from '@soldy-ui/plugins'
 import { usePlugins } from '@soldy-ui/setup'
-import { LocaleProviderDirective, TButtonComponent, TInputComponent } from '@soldy-ui/angular'
+import {
+	LocaleProviderDirective,
+	TButtonComponent,
+	TCalendarComponent,
+	TInputComponent,
+} from '@soldy-ui/angular'
 import { announced } from './element-plugin'
 import { find, mountHost } from './mount'
 
@@ -280,5 +286,55 @@ describe('Input · имя кнопки очистки', () => {
 		fixture.detectChanges()
 
 		expect(button.getAttribute('aria-label')).toBe('清除Город')
+	})
+})
+
+@Component({
+	selector: 'probe-calendar-locale',
+	standalone: true,
+	imports: [TCalendarComponent, LocaleProviderDirective],
+	template: `<ng-container so-locale-provider [locale]="locale()">
+		<div so-calendar [months]="months"></div>
+	</ng-container>`,
+})
+class CalendarLocaleHost {
+	readonly locale = signal<TLocale>(enUS)
+	readonly months = ['2026-09-01']
+}
+
+describe('Calendar · дни недели', () => {
+	/** Подписи колонок календаря по порядку. */
+	const weekdays = (host: HTMLElement) =>
+		[...host.querySelectorAll('.so-calendar__weekday')].map((cell) => cell.textContent)
+
+	/**
+	 * Короткие имена недели языка `locale`, с первого дня `first` (2026-09-20 —
+	 * воскресенье): у `en-US` и `ru-RU` подпись колонки — короткое имя.
+	 */
+	const week = (locale: string, first: number) => {
+		const short = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
+
+		return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+			short.format(Date.UTC(2026, 8, 20 + first + offset)),
+		)
+	}
+
+	/**
+	 * Провайдер пишет новую локаль в тот же источник, плагин языка — календарю,
+	 * и подписи колонок с первым днём недели перечитываются на той же сетке:
+	 * календарь не пересобран.
+	 */
+	it('смена локали меняет дни недели календаря на лету', () => {
+		const fixture = mountHost(CalendarLocaleHost)
+		const host: HTMLElement = fixture.nativeElement
+		const grid = find(host, '.so-calendar__grid', HTMLElement)
+
+		expect(weekdays(host)).toEqual(week('en-US', 0))
+
+		fixture.componentInstance.locale.set(ruRU)
+		fixture.detectChanges()
+
+		expect(find(host, '.so-calendar__grid', HTMLElement)).toBe(grid)
+		expect(weekdays(host)).toEqual(week('ru-RU', 1))
 	})
 })

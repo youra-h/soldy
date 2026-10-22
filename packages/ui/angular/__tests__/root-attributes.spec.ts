@@ -23,8 +23,12 @@ import type { ComponentFixture } from '@angular/core/testing'
 import { TButton, type TDirection } from '@soldy-ui/core'
 import {
 	TButtonComponent,
+	TCalendarComponent,
+	TCalendarItemComponent,
 	TCheckBoxComponent,
 	TComponentViewComponent,
+	TDateInputComponent,
+	TDatePickerComponent,
 	TDialogComponent,
 	TDrawerComponent,
 	TFieldComponent,
@@ -367,6 +371,79 @@ class MenuSeparatorProbe extends TProbeHost {}
 })
 class TagsProbe extends TProbeHost {}
 
+/**
+ * Поле даты, календарь и DatePicker — корень с наборами ядра, и всё, что
+ * потребитель написал, остаётся на корне, как у Vue: поля ввода, между которым
+ * делить написанное, у них нет. День календаря — ячейка таблицы
+ * (`<td so-calendar-item>`), и проба ставит его в `table`: вне неё браузер
+ * ячейку выкинул бы.
+ */
+@Component({
+	selector: 'probe-date-input',
+	standalone: true,
+	imports: [TDateInputComponent],
+	template: `<div
+		so-date-input
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class DateInputProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-calendar',
+	standalone: true,
+	imports: [TCalendarComponent],
+	template: `<div
+		so-calendar
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class CalendarProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-calendar-item',
+	standalone: true,
+	imports: [TCalendarItemComponent],
+	template: `<table>
+		<tbody>
+			<tr>
+				<td
+					so-calendar-item
+					direction="rtl"
+					dir="ltr"
+					title="probe"
+					class="mine"
+					(soElementReady)="ready.push($event)"
+				></td>
+			</tr>
+		</tbody>
+	</table>`,
+})
+class CalendarItemProbe extends TProbeHost {}
+
+@Component({
+	selector: 'probe-date-picker',
+	standalone: true,
+	imports: [TDatePickerComponent],
+	template: `<div
+		so-date-picker
+		direction="rtl"
+		dir="ltr"
+		title="probe"
+		class="mine"
+		(soElementReady)="ready.push($event)"
+	></div>`,
+})
+class DatePickerProbe extends TProbeHost {}
+
 /** Компонент, хост его пробы, селектор корня и класс ядра на нём. */
 const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string]> = [
 	['Button', ButtonProbe, '[so-button]', 'so-button'],
@@ -388,6 +465,10 @@ const COMPONENTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, stri
 	['Menu.RadioGroup', MenuRadioGroupProbe, '[so-menu-radio-group]', 'so-menu-group'],
 	['Menu.Separator', MenuSeparatorProbe, '[so-menu-separator]', 'so-menu-separator'],
 	['Tags', TagsProbe, '[so-tags]', 'so-tags'],
+	['DateInput', DateInputProbe, '[so-date-input]', 'so-date-input'],
+	['Calendar', CalendarProbe, '[so-calendar]', 'so-calendar'],
+	['Calendar.Item', CalendarItemProbe, '[so-calendar-item]', 'so-calendar-item'],
+	['DatePicker', DatePickerProbe, '[so-date-picker]', 'so-date-picker'],
 ]
 
 /**

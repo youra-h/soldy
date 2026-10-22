@@ -31,7 +31,9 @@ render on the server (`@angular/platform-server`) and hydrate in the browser
 > Rating (`<span so-rating>`), the form field `<div so-field>` (label, helper and error linked to
 > the control inside it), Scroller (`<div so-scroller>`), RadioGroup, ListBox, Tags
 > (`<div so-tags>`), Select (`<div so-select>`, a field with a list in a panel), Tabs, Accordion,
-> Pagination (`<nav so-pagination>`), Table, the `Virtual` window for long lists and the
+> Pagination (`<nav so-pagination>`), Table, the dates — DateInput (`<div so-date-input>`, a date
+> field of parts), Calendar (`<div so-calendar>`) and DatePicker (`<div so-date-picker>`, a date
+> field with a calendar in a panel) —, the `Virtual` window for long lists and the
 > `<ng-container so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and
 > Accordion by dragging (`(soMove)`, `(soMoveBefore)` can cancel) are ported, the rest of the set is on its
 > way. Frame moves the element you wrote into `target` (`body` by default) in the browser; with
@@ -257,6 +259,24 @@ template: `<div so-select placeholder="City" aria-label="City" (soChangeValue)="
   <div so-select-group label="Volga">
     <div so-select-item value="kzn" text="Kazan"></div>
   </div>
+</div>`
+```
+
+A date field, `<div so-date-input>`, is a group of parts in the format of the subtree's locale —
+day, month and year, with `kind="datetime"` also the time; the form gets the date as a string. A
+calendar, `<div so-calendar>`, draws its month grids itself — a day is a cell,
+`<td so-calendar-item>` — with one pair of paging buttons and a month and year picker under each
+month title. `<div so-date-picker>` is a date field, or two for a range, with a calendar in a panel
+anchored to the element and moved into `body` like a Frame. None of them has a native field to pass
+your markup to, so it all stays on the element you write them on, the `id` of a date field and a
+date picker too. The slots are templates: the calendar's `item` (`let-item`, `let-text`),
+`prev-icon`, `next-icon` and `footer`; the date field's `leading`, `clear` and `trailing`; the date
+picker's `clear`, `trigger-icon` and `item`.
+
+```ts
+template: `<div so-date-picker mode="range" aria_label="Trip" (soChangeValue)="trip.set($event.newValue)"></div>
+<div so-calendar [months]="months">
+  <ng-template slot="item" let-text="text"><b>{{ text }}</b></ng-template>
 </div>`
 ```
 
