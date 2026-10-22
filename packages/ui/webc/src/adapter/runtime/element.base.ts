@@ -295,7 +295,7 @@ import type { ITemplate, ITemplateContext, TSlotTarget, TSlotTargets } from '../
 import { assignSlot, takeAssignedSlot } from './assignment'
 import { isContent } from './content'
 import { TDeferral } from './deferral'
-import { isUpgradedOnRegistration } from './defineElement'
+import { isUnderUpgrade, isUpgradedOnRegistration } from './defineElement'
 import { isRelocating, relocate } from './relocation'
 import {
 	TElementAttributes,
@@ -888,7 +888,8 @@ export function SoldyElement<
 		 * `undefined`. Пока документ разбирается — очередь документа, это главнее
 		 * всего. Под ждущим — очередь ждущего, даже у ожившего при регистрации:
 		 * так он не обгонит того, кто ждёт над ним в другой очереди. Ожил при
-		 * регистрации — очередь регистрации.
+		 * регистрации или над ним элемент, которого ещё оживит полифил, —
+		 * очередь регистрации.
 		 */
 		private _deferralOf(): TDeferral | undefined {
 			const owner = this.ownerDocument
@@ -897,7 +898,9 @@ export function SoldyElement<
 
 			return (
 				TDeferral.above(this) ??
-				(isUpgradedOnRegistration(this) ? TDeferral.registration : undefined)
+				(isUpgradedOnRegistration(this) || isUnderUpgrade(this)
+					? TDeferral.registration
+					: undefined)
 			)
 		}
 

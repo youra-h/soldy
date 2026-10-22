@@ -444,6 +444,37 @@ describe('defineElement · сборка по месту', () => {
 	})
 
 	/**
+	 * Теневые корни снимок не видит, а полифил оживляет их разметку той же
+	 * микрозадачей, что и свет её имени. Радио зарегистрировано раньше группы:
+	 * радио в теневом корне обёртки оживает, когда группу полифил ещё не оживил
+	 * и в очереди её нет. Но снимок её ждёт — и радио встаёт в очередь
+	 * регистрации и входит в коллекцию группы, на месте обёртки.
+	 */
+	it('полифил: радио в теневом корне под группой, которую он ещё не оживил, ждёт её', async () => {
+		const names = freshGroup()
+
+		document.body.innerHTML = groupMarkup(names, ['a', 'b'])
+
+		const wrap = document.createElement('div')
+
+		document.querySelector(`[is="${names.group}"]`)?.insertBefore(wrap, null)
+		wrap.attachShadow({ mode: 'open' }).innerHTML =
+			`<label is="${names.radio}" value="s"></label>`
+
+		const restore = deferBuiltIns()
+
+		try {
+			registerPartsFirst(names)
+		} finally {
+			restore()
+		}
+
+		await task()
+
+		expect(valuesOf(group(names))).toEqual(['a', 'b', 's'])
+	})
+
+	/**
 	 * Сборка, упавшая с ошибкой, очередь не держит: остальные собираются, а
 	 * первая ошибка уходит дальше — тому, кто очередь собирал, здесь слушателю
 	 * `DOMContentLoaded`, и браузер сообщает о ней событием `error` окна.
