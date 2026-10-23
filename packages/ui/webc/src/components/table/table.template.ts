@@ -80,6 +80,7 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
 import { TCheckBoxElement, type TCheckBoxElementProps } from '../check-box'
 import { TTableColumnElement, type TTableColumnElementProps } from './column'
@@ -295,7 +296,7 @@ export const tableTemplate: ITemplate<ITable, TTableCollectionFacade> = {
 			} else if (select.checkBox) {
 				const label = selectAllLabel(state)
 
-				if (select.checkBox.aria_label !== label) select.checkBox.aria_label = label
+				patch(select.checkBox, { aria_label: label })
 			}
 
 			ownerAttributes(select.cell, state.cellAria)
@@ -327,7 +328,7 @@ export const tableTemplate: ITemplate<ITable, TTableCollectionFacade> = {
 
 			const span = state.columnCount ?? 1
 
-			if (own.emptyCell.colSpan !== span) own.emptyCell.colSpan = span
+			patch(own.emptyCell, { colSpan: span })
 
 			if ((state.shown ?? []).length > 0) {
 				own.empty.remove()

@@ -44,7 +44,7 @@
 
 import type { ITagsItem, TTagsItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
 import { TButtonElement, registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
@@ -118,12 +118,13 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 			const { row, close, icon } = own
 			const disabled = state.disabled === true
 
-			if (row.direction !== state.direction) row.direction = state.direction
-			if (row.disabled !== disabled) row.disabled = disabled
-			if (row.size !== state.size) row.size = state.size
-			if (row.variant !== state.variant) row.variant = state.variant
-			if (close.disabled !== disabled) close.disabled = disabled
-			if (close.size !== state.size) close.size = state.size
+			patch(row, {
+				direction: state.direction,
+				disabled,
+				size: state.size,
+				variant: state.variant,
+			})
+			patch(close, { disabled, size: state.size })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

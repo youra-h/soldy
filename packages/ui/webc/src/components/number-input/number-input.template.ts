@@ -58,7 +58,7 @@
 
 import type { INumberInput } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, ownerAttributes, type ITemplate } from '../../adapter'
+import { bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
 import {
 	iconButton,
 	syncIconButton,
@@ -224,7 +224,7 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 			hidden.name = state.name ?? ''
 			hidden.disabled = state.disabled === true
 
-			if (hidden.value !== value) hidden.value = value
+			patch(hidden, { value })
 		}),
 	],
 }

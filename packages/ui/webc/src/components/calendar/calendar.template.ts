@@ -89,6 +89,7 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
 import {
 	iconButton,
@@ -262,17 +263,14 @@ function syncHeading(
 	const disabled = ctx.state.disabled === true
 	const { popover, title, titleText, list } = heading
 
-	if (title.size !== size) title.size = size
-	if (title.disabled !== disabled) title.disabled = disabled
+	patch(title, { size, disabled })
 
 	ownerAttributes(titleText, grid.titleAria)
 
-	if (titleText.textContent !== grid.title) titleText.textContent = grid.title
-	if (popover.aria_labelledBy !== picker.labelledBy) popover.aria_labelledBy = picker.labelledBy
-	if (list.size !== size) list.size = size
-	if (list.aria_labelledBy !== picker.labelledBy) list.aria_labelledBy = picker.labelledBy
-	if (heading.heading.size !== size) heading.heading.size = size
-	if (heading.heading.text !== picker.heading) heading.heading.text = picker.heading
+	patch(titleText, { textContent: grid.title })
+	patch(popover, { aria_labelledBy: picker.labelledBy })
+	patch(list, { size, aria_labelledBy: picker.labelledBy })
+	patch(heading.heading, { size, text: picker.heading })
 
 	ownerAttributes(heading.heading, picker.headingAria)
 	syncIconButton(heading.prev, size, picker.prevDisabled)
@@ -297,7 +295,7 @@ function drawWeekdays(row: HTMLTableRowElement, weekdays: readonly TCalendarWeek
 			row.appendChild(cell)
 		}
 
-		if (cell.textContent !== weekday.label) cell.textContent = weekday.label
+		patch(cell, { textContent: weekday.label })
 	})
 }
 

@@ -83,6 +83,7 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
 import { lendRoleIcon } from '../common/icon-button'
 import { clearButton, removeClearButton } from '../common/clear'
@@ -236,11 +237,8 @@ function syncFooter(ctx: TDatePickerContext, { cancel, confirm }: TFooter): void
 	const { state } = ctx
 	const disabled = state.confirmDisabled === true
 
-	if (cancel.size !== state.size) cancel.size = state.size
-	if (cancel.text !== state.names_cancel) cancel.text = state.names_cancel
-	if (confirm.size !== state.size) confirm.size = state.size
-	if (confirm.disabled !== disabled) confirm.disabled = disabled
-	if (confirm.text !== state.names_confirm) confirm.text = state.names_confirm
+	patch(cancel, { size: state.size, text: state.names_cancel })
+	patch(confirm, { size: state.size, disabled, text: state.names_confirm })
 }
 
 /**
@@ -364,9 +362,9 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			if (!own || !ctrl) return
 
-			if (own.field.ctrl !== ctrl.field) own.field.ctrl = ctrl.field
-			if (own.start.ctrl !== ctrl.start) own.start.ctrl = ctrl.start
-			if (own.end.ctrl !== ctrl.end) own.end.ctrl = ctrl.end
+			patch(own.field, { ctrl: ctrl.field })
+			patch(own.start, { ctrl: ctrl.start })
+			patch(own.end, { ctrl: ctrl.end })
 
 			const calendar = calendars.get(root)?.node
 
@@ -427,8 +425,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			const disabled = state.openable !== true
 
-			if (trigger.size !== state.size) trigger.size = state.size
-			if (trigger.disabled !== disabled) trigger.disabled = disabled
+			patch(trigger, { size: state.size, disabled })
 
 			ownerAttributes(trigger, { ...state.triggerAria, ...state.triggerDataset })
 		}),
@@ -441,13 +438,11 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			ownerAttributes(field, state.aria)
 
-			if (field.aria_label !== state.aria_label) field.aria_label = state.aria_label
-			if (field.aria_labelledBy !== state.aria_labelledBy) {
-				field.aria_labelledBy = state.aria_labelledBy
-			}
-			if (field.aria_describedBy !== state.aria_describedBy) {
-				field.aria_describedBy = state.aria_describedBy
-			}
+			patch(field, {
+				aria_label: state.aria_label,
+				aria_labelledBy: state.aria_labelledBy,
+				aria_describedBy: state.aria_describedBy,
+			})
 		}),
 
 		// Имена концов диапазона — полям концов
@@ -456,8 +451,8 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			if (!own) return
 
-			if (own.start.aria_label !== state.names_start) own.start.aria_label = state.names_start
-			if (own.end.aria_label !== state.names_end) own.end.aria_label = state.names_end
+			patch(own.start, { aria_label: state.names_start })
+			patch(own.end, { aria_label: state.names_end })
 		}),
 
 		// Пропсы панели — только сменившиеся

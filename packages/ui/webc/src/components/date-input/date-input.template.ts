@@ -48,7 +48,7 @@
  */
 
 import type { IDateInput, TDateInputSegment } from '@soldy-ui/core'
-import { TKeyedLoop, bind, ownerAttributes, type ITemplate } from '../../adapter'
+import { TKeyedLoop, bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
 import { placeClearButton } from '../common/clear'
 
 /** Части поля, одни на всё время жизни элемента. */
@@ -74,7 +74,7 @@ function drawSegment(node: HTMLElement, segment: TDateInputSegment): void {
 		ownerAttributes(node, { ...segment.attrs, ...segment.aria, ...segment.dataset })
 	}
 
-	if (node.textContent !== segment.text) node.textContent = segment.text
+	patch(node, { textContent: segment.text })
 }
 
 /** Узел части или разделителя — по виду записи: ключ записи вида не меняет. */
@@ -174,7 +174,7 @@ export const dateInputTemplate: ITemplate<IDateInput> = {
 			hidden.name = state.name ?? ''
 			hidden.disabled = state.disabled === true
 
-			if (hidden.value !== value) hidden.value = value
+			patch(hidden, { value })
 		}),
 	],
 }

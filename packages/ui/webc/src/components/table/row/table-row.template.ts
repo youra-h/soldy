@@ -58,6 +58,7 @@ import {
 	ownerAttributes,
 	type ITemplate,
 	type ITemplateContext,
+	patch,
 } from '../../../adapter'
 import { TCheckBoxElement, type TCheckBoxElementProps } from '../../check-box'
 
@@ -103,7 +104,7 @@ function fill(ctx: TRowContext, node: HTMLTableCellElement, cell: TTableCell): v
 		return
 	}
 
-	if (node.textContent !== cell.text) node.textContent = cell.text
+	patch(node, { textContent: cell.text })
 }
 
 /** Набор ячейки: `data-align` колонки, поверх — набор ячеек строки и `id` заголовка строки. */

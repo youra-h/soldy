@@ -27,7 +27,7 @@
  */
 
 import type { ICheckBox } from '@soldy-ui/core'
-import { bind, drawRoleIcon, ownerAttributes, roleIcon, type ITemplate } from '../../adapter'
+import { bind, drawRoleIcon, ownerAttributes, roleIcon, type ITemplate, patch } from '../../adapter'
 
 /** Части флажка: поле и коробка, одни на всё время жизни элемента. */
 type TCheckBoxParts = {
@@ -126,8 +126,7 @@ export const checkBoxTemplate: ITemplate<ICheckBox> = {
 
 			// Свойства узла — только если он разошёлся с ядром: после клика
 			// браузер уже поставил их сам
-			if (field.checked !== checked) field.checked = checked
-			if (field.indeterminate !== indeterminate) field.indeterminate = indeterminate
+			patch(field, { checked, indeterminate })
 
 			// «Выбрано частично» рисуется поверх значения, как у Vue: его снимает
 			// клик (`toggle` ядра), а не смена `value`

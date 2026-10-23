@@ -64,7 +64,7 @@
 
 import type { IPopover } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../adapter'
 import { lendRoleIcon } from '../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TFrameElement, type TFrameElementProps } from '../frame'
@@ -147,11 +147,7 @@ export const popoverTemplate: ITemplate<IPopover, unknown, TPopoverOutputs> = {
 			const visible = state.open === true
 			const contained = state.contained === true
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.contained !== contained) panel.contained = contained
-			if (panel.anchor_placement !== state.placement) {
-				panel.anchor_placement = state.placement
-			}
+			patch(panel, { visible, contained, anchor_placement: state.placement })
 		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue

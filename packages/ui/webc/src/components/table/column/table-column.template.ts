@@ -52,6 +52,7 @@ import {
 	ownerAttributes,
 	type ITemplate,
 	type ITemplateContext,
+	patch,
 } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement } from '../../icon'
@@ -180,7 +181,7 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 			const disabled = state.disabled === true
 
 			// `disabled` кнопки нативный: запись прошла бы через его атрибут
-			if (button.disabled !== disabled) button.disabled = disabled
+			patch(button, { disabled })
 
 			ownerAttributes(button, state.sortAria)
 
@@ -204,7 +205,7 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 			field.min = String(resizer.min)
 			field.max = String(resizer.max)
 
-			if (field.value !== value) field.value = value
+			patch(field, { value })
 
 			ownerAttributes(field, state.resizerAria)
 

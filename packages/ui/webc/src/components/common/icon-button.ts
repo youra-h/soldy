@@ -5,7 +5,7 @@
  */
 
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { createDetail, lend } from '../../adapter'
+import { createDetail, lend, patch } from '../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 
@@ -53,7 +53,6 @@ export function syncIconButton(
 	size: TButtonElementProps['size'],
 	disabled: boolean,
 ): void {
-	if (button.size !== size) button.size = size
-	if (button.disabled !== disabled) button.disabled = disabled
+	patch(button, { size, disabled })
 	if (icon && icon.size !== size) icon.size = size
 }

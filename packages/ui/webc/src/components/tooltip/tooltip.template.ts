@@ -41,7 +41,7 @@
 
 import type { ITooltip } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../adapter'
 import { TFrameElement, type TFrameElementProps } from '../frame'
 import type { TTooltipOutputs } from './setup.component'
 
@@ -87,10 +87,7 @@ export const tooltipTemplate: ITemplate<ITooltip, unknown, TTooltipOutputs> = {
 
 			const visible = state.open === true
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.anchor_placement !== state.placement) {
-				panel.anchor_placement = state.placement
-			}
+			patch(panel, { visible, anchor_placement: state.placement })
 		}),
 
 		// Наборы панели — одним слоем владельца

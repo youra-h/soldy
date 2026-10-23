@@ -6,6 +6,7 @@ export {
 	createItem,
 	lendSamples,
 	lendTemplates,
+	patch,
 	sampleOf,
 	type TDetailOptions,
 	type TPartClass,

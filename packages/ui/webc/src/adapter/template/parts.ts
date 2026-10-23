@@ -105,3 +105,13 @@ export function lendTemplates(
 		lend(element, to, template)
 	}
 }
+
+/**
+ * Свойства элемента — только сменившиеся: каждая запись идёт через связку, а
+ * у нативного свойства (`disabled` кнопки) — ещё и через атрибут.
+ */
+export function patch<T extends object, K extends keyof T>(target: T, values: Pick<T, K>): void {
+	for (const key in values) {
+		if (target[key] !== values[key]) target[key] = values[key]
+	}
+}

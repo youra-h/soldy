@@ -95,6 +95,7 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
 import { TFrameElement, type TFrameElementProps } from '../frame'
 import { TIconElement, type TIconElementProps } from '../icon'
@@ -295,12 +296,12 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 			const flip = state.panelFlip === true
 			const matchWidth = state.autoFitWidth === true
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.anchor_placement !== state.panelPlacement) {
-				panel.anchor_placement = state.panelPlacement
-			}
-			if (panel.anchor_flip !== flip) panel.anchor_flip = flip
-			if (panel.anchor_matchWidth !== matchWidth) panel.anchor_matchWidth = matchWidth
+			patch(panel, {
+				visible,
+				anchor_placement: state.panelPlacement,
+				anchor_flip: flip,
+				anchor_matchWidth: matchWidth,
+			})
 		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue

@@ -28,7 +28,7 @@
  */
 
 import type { IMenuItem, TComponentSize } from '@soldy-ui/core'
-import { bind, createDetail, ownerAttributes, type ITemplateBinding } from '../../adapter'
+import { bind, createDetail, ownerAttributes, type ITemplateBinding, patch } from '../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 
@@ -94,8 +94,7 @@ export function rowBindings(textSlot: string): readonly ITemplateBinding<IMenuIt
 
 			const disabled = state.disabled === true
 
-			if (row.size !== state.size) row.size = state.size
-			if (row.disabled !== disabled) row.disabled = disabled
+			patch(row, { size: state.size, disabled })
 		}),
 
 		bind<IMenuItem>('aria', ({ root, state }) => {

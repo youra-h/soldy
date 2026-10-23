@@ -51,6 +51,7 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
 import {
 	iconButton,
@@ -127,7 +128,7 @@ function syncArrow(
 ): void {
 	syncIconButton(arrow, size, disabled)
 
-	if (arrow.button.variant !== variant) arrow.button.variant = variant
+	patch(arrow.button, { variant })
 }
 
 /** Место окна: страница — инстанс и копия образца до вставки, пропуск — многоточие. */

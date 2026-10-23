@@ -40,6 +40,7 @@ import {
 	ownerAttributes,
 	type ITemplate,
 	type TLendAt,
+	patch,
 } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
@@ -147,10 +148,7 @@ export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemColl
 			const { header, start, end } = own
 			const disabled = state.disabled === true
 
-			if (header.view !== state.view) header.view = state.view
-			if (header.disabled !== disabled) header.disabled = disabled
-			if (header.size !== state.size) header.size = state.size
-			if (header.variant !== state.variant) header.variant = state.variant
+			patch(header, { view: state.view, disabled, size: state.size, variant: state.variant })
 
 			for (const { icon } of [start, end]) {
 				if (icon && icon.size !== state.size) icon.size = state.size

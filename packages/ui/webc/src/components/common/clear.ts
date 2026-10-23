@@ -6,7 +6,7 @@
  */
 
 import type { TAttributesMap } from '@soldy-ui/core'
-import { createDetail, ownerAttributes } from '../../adapter'
+import { createDetail, ownerAttributes, patch } from '../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 
@@ -66,9 +66,8 @@ export function clearButton(ctx: TClearContext, block: string): TButtonElementPr
 	const { size } = ctx.state
 	const disabled = ctx.state.disabled === true
 
-	if (button.size !== size) button.size = size
-	if (button.disabled !== disabled) button.disabled = disabled
-	if (icon.size !== size) icon.size = size
+	patch(button, { size, disabled })
+	patch(icon, { size })
 
 	ownerAttributes(button, ctx.state.clearAria)
 

@@ -17,7 +17,7 @@
  */
 
 import type { ICalendarItem, TCalendarItemCollectionFacade } from '@soldy-ui/core'
-import { bind, type ITemplate } from '../../../adapter'
+import { bind, type ITemplate, patch } from '../../../adapter'
 
 export const calendarItemTemplate: ITemplate<ICalendarItem, TCalendarItemCollectionFacade> = {
 	create: (root) => {
@@ -40,7 +40,7 @@ export const calendarItemTemplate: ITemplate<ICalendarItem, TCalendarItemCollect
 
 			const text = state.text ?? ''
 
-			if (content.textContent !== text) content.textContent = text
+			patch(content, { textContent: text })
 		}),
 	],
 }

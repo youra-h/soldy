@@ -64,6 +64,7 @@ import {
 	ownerAttributes,
 	ownerClasses,
 	type ITemplate,
+	patch,
 } from '../../adapter'
 import { TFrameElement, type TFrameElementProps } from '../frame'
 import { drawItems, drawItemsIn } from './items'
@@ -125,11 +126,7 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 			const visible = state.open === true
 			const point = state.point ?? null
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.anchor_placement !== state.placement) {
-				panel.anchor_placement = state.placement
-			}
-			if (panel.anchor_point !== point) panel.anchor_point = point
+			patch(panel, { visible, anchor_placement: state.placement, anchor_point: point })
 		}),
 
 		bind('panelClasses', ({ root, state }) => {

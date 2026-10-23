@@ -39,7 +39,7 @@
 
 import type { ISelectItem, TListIndicator, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
@@ -128,9 +128,7 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 			const { row, icon } = own
 			const disabled = state.disabled === true
 
-			if (row.disabled !== disabled) row.disabled = disabled
-			if (row.size !== state.size) row.size = state.size
-			if (row.variant !== state.variant) row.variant = state.variant
+			patch(row, { disabled, size: state.size, variant: state.variant })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

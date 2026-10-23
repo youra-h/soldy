@@ -50,6 +50,7 @@ import {
 	ownerAttributes,
 	ownerStyles,
 	type ITemplate,
+	patch,
 } from '../../../adapter'
 import { lendRoleIcon } from '../../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../../button'
@@ -176,7 +177,7 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 
 			const role = state.type ? TYPE_ICONS[state.type] : NOTIFICATION_ICON
 
-			if (glyph.icon !== role) glyph.icon = role
+			patch(glyph, { icon: role })
 		}),
 
 		// В коробке значка — кольцо, пока тост ждёт; иначе слот или значок вида
