@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import Arborist from '@npmcli/arborist'
 import semver from 'semver'
 
 /**
@@ -12,7 +13,7 @@ import semver from 'semver'
  *
  * Версии нигде не выписываются руками: список выводится из манифеста адаптера
  * и дерева зависимостей, иначе минимум в CI и в манифесте разошёлся бы. Дерево
- * называет сам npm (`npm query`), своего обхода `node_modules` здесь нет.
+ * называет сам npm (Arborist, см. `readTree`), своего обхода `node_modules` здесь нет.
  */
 
 /** Манифест как есть: поля не принимаются на веру, а проверяются по одному. */
@@ -210,35 +211,28 @@ export function workspaceOf(name: string, tree: readonly TCopy[]): TManifest {
 
 /**
  * Дерево зависимостей в каталоге `root`, как его видит npm: каждая копия
- * каждого пакета, вложенные и воркспейсы тоже. `npm query` отдаёт манифест
- * копии вместе с её местом (`location`). Копия без имени или версии в счёт не
- * идёт: в списке подмены таких нет.
+ * каждого пакета, вложенные и воркспейсы тоже. Читает его Arborist — тот же
+ * код, на котором npm строит `npm query`, — с местом копии (`location`) и её
+ * манифестом. Копия без имени или версии в счёт не идёт: в списке подмены
+ * таких нет.
  *
- * npm — через оболочку: на Windows это `npm.cmd`, а пакетный файл Node без
- * оболочки не запускает (EINVAL).
+ * Не `npm query "*"`: перед выводом npm 11 прогоняет каждый манифест через
+ * маскировку секретов и разбирает JSON заново, а маскировка URL в скрипте
+ * `paperjs-offset` (`--registry=https://…"},"devDependencies":{…`) съедает
+ * кавычки — и npm выходит с кодом 1 молча.
  */
-export function readTree(root: string): TCopy[] {
-	const output = execSync('npm query "*"', {
-		cwd: root,
-		encoding: 'utf-8',
-		maxBuffer: 64 * 1024 * 1024,
-		stdio: ['ignore', 'pipe', 'pipe'],
-	})
-	const listed: unknown = JSON.parse(output)
+export async function readTree(root: string): Promise<TCopy[]> {
+	const actual = await new Arborist({ path: root }).loadActual()
+	// Воркспейс в дереве дважды — ссылкой из `node_modules` и самим
+	// каталогом; копия одна, её место — место цели, как у `npm query`.
+	const targets = new Set((await actual.querySelectorAll('*')).map(({ target }) => target))
 
-	if (!Array.isArray(listed)) {
-		throw new Error('npm query: ожидается массив пакетов')
-	}
+	return [...targets].flatMap((target): TCopy[] => {
+		const manifest: TManifest = target.package
+		const named = stringField(manifest, 'name') !== undefined
+		const versioned = stringField(manifest, 'version') !== undefined
 
-	return listed.flatMap((entry: unknown): TCopy[] => {
-		if (!isObject(entry) || typeof entry.location !== 'string') {
-			throw new Error('npm query: пакет без location')
-		}
-
-		const named = stringField(entry, 'name') !== undefined
-		const versioned = stringField(entry, 'version') !== undefined
-
-		return named && versioned ? [{ location: entry.location, manifest: entry }] : []
+		return named && versioned ? [{ location: target.location, manifest }] : []
 	})
 }
 

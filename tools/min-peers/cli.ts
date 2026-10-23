@@ -41,7 +41,7 @@ function describeStray({ name, expected, found }: TStray): string {
 		: `${name}: ${found.version} в ${found.location}, а нужна ${expected}`
 }
 
-function run(command: string | undefined, workspace: string | undefined): number {
+async function run(command: string | undefined, workspace: string | undefined): Promise<number> {
 	if (command === 'restore' && workspace === undefined) {
 		restoreRoot(ROOT)
 		// Дерево — `npm install`, а не `npm ci`: тот сначала сносит весь
@@ -59,7 +59,7 @@ function run(command: string | undefined, workspace: string | undefined): number
 		return 2
 	}
 
-	const tree = readTree(ROOT)
+	const tree = await readTree(ROOT)
 	const pins = pinsOf(workspaceOf(workspace, tree), tree)
 
 	if (pins.length === 0) {
@@ -92,4 +92,4 @@ function run(command: string | undefined, workspace: string | undefined): number
 	return 0
 }
 
-process.exitCode = run(process.argv[2], process.argv[3])
+process.exitCode = await run(process.argv[2], process.argv[3])

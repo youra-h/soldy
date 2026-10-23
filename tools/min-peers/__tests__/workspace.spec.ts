@@ -11,7 +11,7 @@ import { lowerBound, pinsOf, readTree, workspaceOf } from '../min-peers.ts'
 
 const ROOT = resolve(import.meta.dirname, '../../..')
 
-const tree = readTree(ROOT)
+const tree = await readTree(ROOT)
 
 function specs(field: unknown): [string, string][] {
 	return typeof field === 'object' && field !== null

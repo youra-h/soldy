@@ -41,6 +41,8 @@
     "@changesets/cli": "^3.0.3",
     "@changesets/read": "^1.0.1",
     "@eslint/compat": "^2.1.1",
+    "@npmcli/arborist": "^9.9.3",
+    "@types/npmcli__arborist": "^6.3.3",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/browser": "5.0.5",
     "@vitest/browser-playwright": "5.0.5",
