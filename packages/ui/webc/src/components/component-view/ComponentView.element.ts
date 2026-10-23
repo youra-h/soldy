@@ -10,7 +10,6 @@
  */
 
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
-import type { IComponentView } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'

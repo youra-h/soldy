@@ -29,7 +29,6 @@ import {
 	MenuSubmenuCollectionDescriptor,
 	MenuSubmenuDescriptor,
 } from '@soldy-ui/setup'
-import type { IMenuSubmenu, TMenuCollectionFacade, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuSubmenuTemplate } from './menu-submenu.template'

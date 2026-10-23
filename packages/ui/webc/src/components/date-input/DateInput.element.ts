@@ -17,7 +17,6 @@
  */
 
 import { DateInputDescriptor } from '@soldy-ui/setup'
-import type { IDateInput } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { dateInputTemplate } from './date-input.template'

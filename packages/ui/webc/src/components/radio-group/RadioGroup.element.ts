@@ -19,7 +19,6 @@
  */
 
 import { RadioGroupCollectionDescriptor, RadioGroupDescriptor } from '@soldy-ui/setup'
-import type { IRadioGroup, TRadioGroupCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { TRadioGroupItemElement } from './item'

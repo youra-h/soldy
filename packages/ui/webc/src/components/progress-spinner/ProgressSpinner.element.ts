@@ -17,7 +17,6 @@
  */
 
 import { ProgressSpinnerDescriptor } from '@soldy-ui/setup'
-import type { IProgressSpinner } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { progressSpinnerTemplate } from './progress-spinner.template'

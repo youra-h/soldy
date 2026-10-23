@@ -27,7 +27,6 @@
  */
 
 import { DrawerDescriptor } from '@soldy-ui/setup'
-import type { IDrawer } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { drawerTemplate } from './drawer.template'

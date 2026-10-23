@@ -112,7 +112,7 @@ import { TIconElement, type TIconElementProps } from '../icon'
 import { TInputElement, type TInputElementProps } from '../input'
 import { TTagsElement, type TTagsElementProps } from '../tags'
 import { TSelectGroupElement, type TSelectGroupElementProps } from './group'
-import { TSelectItemElement, type TSelectItemElementProps } from './item'
+import { TSelectItemElement } from './item'
 import type { TSelectOutputs } from './setup.component'
 
 /**

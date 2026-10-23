@@ -32,7 +32,6 @@
  */
 
 import { SelectCollectionDescriptor, SelectDescriptor } from '@soldy-ui/setup'
-import type { ISelect, TSelectCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { TSelectGroupElement } from './group'

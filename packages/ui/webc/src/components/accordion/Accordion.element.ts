@@ -19,7 +19,6 @@
  */
 
 import { AccordionCollectionDescriptor, AccordionDescriptor } from '@soldy-ui/setup'
-import type { IAccordion, TAccordionCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { accordionTemplate } from './accordion.template'

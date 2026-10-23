@@ -30,7 +30,6 @@
  */
 
 import { ToastsCollectionDescriptor, ToastsDescriptor } from '@soldy-ui/setup'
-import type { IToasts, TToastsCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'

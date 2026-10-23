@@ -17,7 +17,6 @@
  */
 
 import { MenuRadioGroupDescriptor } from '@soldy-ui/setup'
-import type { IMenuRadioGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuRadioGroupTemplate } from './menu-radio-group.template'

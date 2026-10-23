@@ -23,7 +23,6 @@
  */
 
 import { CalendarCollectionItemDescriptor, CalendarItemDescriptor } from '@soldy-ui/setup'
-import type { ICalendarItem, TCalendarItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { calendarItemTemplate } from './calendar-item.template'

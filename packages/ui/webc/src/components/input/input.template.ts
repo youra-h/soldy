@@ -39,15 +39,8 @@
  */
 
 import type { IInput } from '@soldy-ui/core'
-import {
-	bind,
-	createDetail,
-	ownerAttributes,
-	type ITemplate,
-	type ITemplateContext,
-} from '../../adapter'
-import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
+import { bind, ownerAttributes, type ITemplate } from '../../adapter'
+import { placeClearButton } from '../common/clear'
 
 /** Части поля: поле и обёртки слотов по его сторонам, одни на всё время жизни элемента. */
 type TInputParts = {
@@ -56,53 +49,7 @@ type TInputParts = {
 	readonly trailing: HTMLElement
 }
 
-/** Кнопка очистки и иконка в ней. */
-type TClearButton = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps
-}
-
 const parts = new WeakMap<HTMLElement, TInputParts>()
-
-/** Кнопка очистки каждого поля — строится с первым `clearable` и остаётся за ним. */
-const clears = new WeakMap<HTMLElement, TClearButton>()
-
-/**
- * Кнопка очистки поля — деталь его разметки. Нажатие — команда поля `clear`
- * того инстанса, что живёт сейчас: контекст шаблона отдаёт его в момент
- * обращения.
- */
-function clearOf(ctx: ITemplateContext<IInput>): TClearButton {
-	const known = clears.get(ctx.root)
-
-	if (known) return known
-
-	const { ownerDocument } = ctx.root
-	const button = createDetail(ownerDocument, TButtonElement, {
-		embedded: 'input.clear',
-		attributes: { type: 'button' },
-	})
-	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'input.clear-icon' })
-
-	button.className = 'so-input__clear'
-	icon.icon = 'close'
-	button.appendChild(icon)
-
-	button.addEventListener('so:action:click', (event) => {
-		// Клик — нативный: всплытие гасится у самого события, до предков он не дойдёт
-		if (event instanceof CustomEvent && event.detail instanceof Event) {
-			event.detail.stopPropagation()
-		}
-
-		ctx.ctrl?.clear()
-	})
-
-	const clear = { button, icon }
-
-	clears.set(ctx.root, clear)
-
-	return clear
-}
 
 export const inputTemplate: ITemplate<IInput> = {
 	create: (root, { hasSlot }) => {
@@ -171,36 +118,9 @@ export const inputTemplate: ITemplate<IInput> = {
 		}),
 
 		bind(['clearable', 'size', 'disabled', 'clearAria'], (ctx) => {
-			const { root, state, hasSlot } = ctx
-			const own = parts.get(root)
+			const own = parts.get(ctx.root)
 
-			// Своя кнопка — слот `clear`: заменяет встроенную целиком
-			if (!own || hasSlot('clear')) return
-
-			if (state.clearable !== true) {
-				clears.get(root)?.button.remove()
-
-				// Обёртку у конца поля держала только кнопка
-				if (!hasSlot('trailing')) own.trailing.remove()
-
-				return
-			}
-
-			const { button, icon } = clearOf(ctx)
-			const disabled = state.disabled === true
-
-			// Пропсы кнопки и иконки — только сменившиеся: `disabled` кнопки
-			// нативный, и каждая запись прошла бы через его атрибут
-			if (button.size !== state.size) button.size = state.size
-			if (button.disabled !== disabled) button.disabled = disabled
-			if (icon.size !== state.size) icon.size = state.size
-
-			ownerAttributes(button, state.clearAria)
-
-			// Сначала кнопка в обёртку, потом обёртка в корень: кнопка входит в
-			// документ одной вставкой и собирается один раз
-			if (own.trailing.firstChild !== button) own.trailing.prepend(button)
-			if (own.trailing.parentNode !== root) root.appendChild(own.trailing)
+			if (own) placeClearButton(ctx, 'input', own.trailing, null)
 		}),
 	],
 }

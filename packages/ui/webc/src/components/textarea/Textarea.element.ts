@@ -22,7 +22,6 @@
  */
 
 import { TextareaDescriptor } from '@soldy-ui/setup'
-import type { ITextarea } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { textareaTemplate } from './textarea.template'

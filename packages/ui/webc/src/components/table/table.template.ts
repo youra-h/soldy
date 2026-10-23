@@ -83,7 +83,7 @@ import {
 } from '../../adapter'
 import { TCheckBoxElement, type TCheckBoxElementProps } from '../check-box'
 import { TTableColumnElement, type TTableColumnElementProps } from './column'
-import { TTableRowElement, type TTableRowElementProps } from './row'
+import { TTableRowElement } from './row'
 
 /**
  * Копии образцов в заголовки колонок: слот таблицы → слот заголовка, как

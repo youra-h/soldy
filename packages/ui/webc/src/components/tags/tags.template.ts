@@ -36,7 +36,7 @@ import {
 	type ITemplateContext,
 	type TItemSlots,
 } from '../../adapter'
-import { TTagsItemElement, type TTagsItemElementProps } from './item'
+import { TTagsItemElement } from './item'
 
 /**
  * Копии образцов в теги из данных: слот набора → слот тега, как проброс у

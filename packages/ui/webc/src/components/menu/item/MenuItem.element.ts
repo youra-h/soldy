@@ -18,7 +18,6 @@
  */
 
 import { MenuCollectionItemDescriptor, MenuItemDescriptor } from '@soldy-ui/setup'
-import type { IMenuItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuItemTemplate } from './menu-item.template'

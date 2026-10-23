@@ -87,7 +87,7 @@ export type TElementProps<
 	TNative extends HTMLElement,
 > = Omit<DescriptorComponentProps<TDescriptorFn>, keyof TNative | THostProp | 'ctrl'>
 
-export type TDescriptorFactory = (...args: any[]) => IComponentDescriptor
+export type TDescriptorFactory = () => IComponentDescriptor
 
 /** Свои атрибуты элемента свойствами: значение — атрибут, без него `null`; `undefined` и `null` его снимают. */
 export type TOwnAttributes<TOwn extends string> = { [K in TOwn]: string | null | undefined }

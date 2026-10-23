@@ -25,7 +25,6 @@
  */
 
 import { FrameDescriptor } from '@soldy-ui/setup'
-import type { IFrame } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { frameTemplate } from './frame.template'

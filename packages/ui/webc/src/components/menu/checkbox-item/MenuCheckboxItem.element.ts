@@ -17,7 +17,6 @@
  */
 
 import { MenuCheckboxItemDescriptor, MenuCollectionCheckboxItemDescriptor } from '@soldy-ui/setup'
-import type { IMenuCheckboxItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuCheckboxItemTemplate } from './menu-checkbox-item.template'

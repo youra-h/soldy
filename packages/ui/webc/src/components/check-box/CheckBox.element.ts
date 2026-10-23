@@ -23,7 +23,6 @@
  */
 
 import { CheckBoxDescriptor } from '@soldy-ui/setup'
-import type { ICheckBox } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { checkBoxTemplate } from './check-box.template'

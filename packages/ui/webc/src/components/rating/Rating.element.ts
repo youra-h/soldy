@@ -21,7 +21,6 @@
  */
 
 import { RatingDescriptor } from '@soldy-ui/setup'
-import type { IRating } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { ratingTemplate } from './rating.template'

@@ -22,7 +22,6 @@
  */
 
 import { TagsCollectionDescriptor, TagsDescriptor } from '@soldy-ui/setup'
-import type { ITags, TTagsCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { TTagsItemElement } from './item'

@@ -46,10 +46,10 @@ import {
 	type ITemplateContext,
 	type TItemSlots,
 } from '../../adapter'
-import { TMenuItemElement, type TMenuItemElementProps } from './item'
+import { TMenuItemElement } from './item'
 import { TMenuGroupElement, type TMenuGroupElementProps } from './group'
-import { TMenuSeparatorElement, type TMenuSeparatorElementProps } from './separator'
-import { TMenuSubmenuElement, type TMenuSubmenuElementProps } from './submenu/MenuSubmenu.element'
+import { TMenuSeparatorElement } from './separator'
+import { TMenuSubmenuElement } from './submenu/MenuSubmenu.element'
 
 /**
  * Копии образцов в действие из данных: слот владельца → слот пункта, как

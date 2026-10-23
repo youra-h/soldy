@@ -29,7 +29,6 @@
  */
 
 import { TableCollectionDescriptor, TableDescriptor } from '@soldy-ui/setup'
-import type { ITable, TTableCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { TTableColumnElement } from './column'

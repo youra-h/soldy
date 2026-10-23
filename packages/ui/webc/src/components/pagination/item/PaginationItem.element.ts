@@ -21,7 +21,6 @@
  */
 
 import { PaginationCollectionItemDescriptor, PaginationItemDescriptor } from '@soldy-ui/setup'
-import type { IPaginationItem, TPaginationItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { paginationItemTemplate } from './pagination-item.template'

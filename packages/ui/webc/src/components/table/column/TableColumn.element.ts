@@ -17,7 +17,6 @@
  */
 
 import { TableColumnDescriptor } from '@soldy-ui/setup'
-import type { ITableColumn } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { setupTableColumn } from './setup.component'

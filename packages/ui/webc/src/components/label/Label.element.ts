@@ -17,7 +17,6 @@
  */
 
 import { LabelDescriptor } from '@soldy-ui/setup'
-import type { ILabel } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { labelTemplate } from './label.template'

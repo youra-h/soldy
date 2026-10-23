@@ -13,7 +13,6 @@
  */
 
 import { MenuSeparatorDescriptor } from '@soldy-ui/setup'
-import type { TMenuSeparator } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuSeparatorTemplate } from './menu-separator.template'

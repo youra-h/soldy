@@ -21,7 +21,6 @@
  */
 
 import { DatePickerDescriptor } from '@soldy-ui/setup'
-import type { IDatePicker } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { datePickerTemplate } from './date-picker.template'

@@ -14,7 +14,6 @@
  */
 
 import { SkeletonDescriptor } from '@soldy-ui/setup'
-import type { ISkeleton } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { skeletonTemplate } from './skeleton.template'

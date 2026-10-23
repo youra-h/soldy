@@ -67,7 +67,7 @@ import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TFrameElement, type TFrameElementProps } from '../frame'
-import { TIconElement, type TIconElementProps } from '../icon'
+import { TIconElement } from '../icon'
 import type { TPopoverOutputs } from './setup.component'
 
 /** Части поповера — одни на всё время жизни элемента. */

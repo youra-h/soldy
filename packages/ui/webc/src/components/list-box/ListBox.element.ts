@@ -32,7 +32,6 @@
  */
 
 import { ListBoxCollectionDescriptor, ListBoxDescriptor } from '@soldy-ui/setup'
-import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { TListBoxItemElement } from './item'

@@ -19,7 +19,6 @@
  */
 
 import { FieldDescriptor } from '@soldy-ui/setup'
-import type { IField } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { fieldTemplate } from './field.template'

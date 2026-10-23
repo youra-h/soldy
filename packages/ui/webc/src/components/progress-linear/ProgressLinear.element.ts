@@ -19,7 +19,6 @@
  */
 
 import { ProgressLinearDescriptor } from '@soldy-ui/setup'
-import type { IProgressLinear } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { progressLinearTemplate } from './progress-linear.template'

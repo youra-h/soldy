@@ -84,11 +84,12 @@ import {
 	type ITemplateContext,
 	type TItemSlots,
 } from '../../adapter'
+import { clearButton, removeClearButton } from '../common/clear'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TCalendarElement, type TCalendarElementProps } from '../calendar'
 import { TDateInputElement, type TDateInputElementProps } from '../date-input'
 import { TFrameElement, type TFrameElementProps } from '../frame'
-import { TIconElement, type TIconElementProps } from '../icon'
+import { TIconElement } from '../icon'
 import type { TDatePickerOutputs } from './setup.component'
 
 /**
@@ -126,12 +127,6 @@ type TDatePickerParts = {
 	readonly content: HTMLElement
 }
 
-/** Кнопка очистки и иконка в ней. */
-type TClearButton = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps
-}
-
 /** Подвал подтверждения: «Отмена» и «OK». */
 type TFooter = {
 	readonly cancel: TButtonElementProps
@@ -145,9 +140,6 @@ type TPanelCalendar = {
 }
 
 const parts = new WeakMap<HTMLElement, TDatePickerParts>()
-
-/** Кнопка очистки каждого DatePicker — строится с первым `clearable` и остаётся за ним. */
-const clears = new WeakMap<HTMLElement, TClearButton>()
 
 /** Кнопки подвала каждого DatePicker — строятся с первым `confirmable`. */
 const footers = new WeakMap<HTMLElement, TFooter>()
@@ -184,43 +176,6 @@ function lendAllBefore(mark: Comment, nodes: readonly Node[]): void {
 }
 
 /**
- * Кнопка очистки — деталь разметки DatePicker. Нажатие — команда DatePicker
- * `clear` того инстанса, что живёт сейчас: контекст шаблона отдаёт его в момент
- * обращения.
- */
-function clearOf(ctx: TDatePickerContext): TClearButton {
-	const known = clears.get(ctx.root)
-
-	if (known) return known
-
-	const { ownerDocument } = ctx.root
-	const button = createDetail(ownerDocument, TButtonElement, {
-		embedded: 'date-picker.clear',
-		attributes: { type: 'button' },
-	})
-	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'date-picker.clear-icon' })
-
-	button.className = 'so-date-picker__clear'
-	icon.icon = 'close'
-	button.appendChild(icon)
-
-	button.addEventListener('so:action:click', (event) => {
-		// Клик — нативный: всплытие гасится у самого события, до предков он не дойдёт
-		if (event instanceof CustomEvent && event.detail instanceof Event) {
-			event.detail.stopPropagation()
-		}
-
-		ctx.ctrl?.clear()
-	})
-
-	const clear = { button, icon }
-
-	clears.set(ctx.root, clear)
-
-	return clear
-}
-
-/**
  * Кнопка очистки на своём месте: своя — слот `clear`, встроенная — по
  * `clearable`, без него её нет.
  */
@@ -228,12 +183,12 @@ function clearNodes(ctx: TDatePickerContext): readonly Node[] {
 	if (ctx.hasSlot('clear')) return ctx.slotted('clear')
 
 	if (ctx.state.clearable !== true) {
-		clears.get(ctx.root)?.button.remove()
+		removeClearButton(ctx.root)
 
 		return []
 	}
 
-	return [clearOf(ctx).button]
+	return [clearButton(ctx, 'date-picker')]
 }
 
 /**
@@ -464,21 +419,9 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		}),
 
 		bind(['clearable', 'size', 'disabled', 'clearAria'], (ctx) => {
-			const { state, hasSlot } = ctx
-
 			// Своя кнопка — слот `clear`: заменяет встроенную целиком
-			if (hasSlot('clear') || state.clearable !== true) return
-
-			const { button, icon } = clearOf(ctx)
-			const disabled = state.disabled === true
-
-			// Пропсы кнопки и иконки — только сменившиеся: `disabled` кнопки
-			// нативный, и каждая запись прошла бы через его атрибут
-			if (button.size !== state.size) button.size = state.size
-			if (button.disabled !== disabled) button.disabled = disabled
-			if (icon.size !== state.size) icon.size = state.size
-
-			ownerAttributes(button, state.clearAria)
+			if (!ctx.hasSlot('clear') && ctx.state.clearable === true)
+				clearButton(ctx, 'date-picker')
 		}),
 
 		// Кнопка календаря: связка и вид «нажат» — одним слоем владельца

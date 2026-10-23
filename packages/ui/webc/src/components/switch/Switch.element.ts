@@ -18,7 +18,6 @@
  */
 
 import { SwitchDescriptor } from '@soldy-ui/setup'
-import type { ISwitch } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { switchTemplate } from './switch.template'

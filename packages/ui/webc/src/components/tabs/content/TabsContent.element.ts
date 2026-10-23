@@ -17,7 +17,6 @@
  */
 
 import { TabsCollectionContentDescriptor, TabsContentDescriptor } from '@soldy-ui/setup'
-import type { ITabsContent, TTabsContentCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { setupTabsContent } from './setup.component'

@@ -20,7 +20,6 @@
  */
 
 import { SliderDescriptor } from '@soldy-ui/setup'
-import type { ISlider } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { sliderTemplate } from './slider.template'

@@ -13,7 +13,6 @@
  */
 
 import { ScrollerDescriptor } from '@soldy-ui/setup'
-import type { IScroller } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { scrollerTemplate } from './scroller.template'

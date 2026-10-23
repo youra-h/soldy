@@ -26,7 +26,6 @@
  */
 
 import { DialogDescriptor } from '@soldy-ui/setup'
-import type { IDialog } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { dialogTemplate } from './dialog.template'

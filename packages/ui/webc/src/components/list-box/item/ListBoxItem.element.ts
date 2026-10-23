@@ -20,7 +20,6 @@
  */
 
 import { ListBoxCollectionItemDescriptor, ListBoxItemDescriptor } from '@soldy-ui/setup'
-import type { IListBoxItem, TListBoxItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { listBoxItemTemplate } from './list-box-item.template'

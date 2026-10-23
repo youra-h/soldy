@@ -17,7 +17,6 @@
  */
 
 import { MenuCollectionRadioItemDescriptor, MenuRadioItemDescriptor } from '@soldy-ui/setup'
-import type { IMenuRadioItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuRadioItemTemplate } from './menu-radio-item.template'

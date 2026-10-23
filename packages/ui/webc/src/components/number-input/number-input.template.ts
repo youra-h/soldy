@@ -58,14 +58,8 @@
 
 import type { INumberInput } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import {
-	bind,
-	createDetail,
-	lend,
-	ownerAttributes,
-	type ITemplate,
-	type ITemplateContext,
-} from '../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
+import { placeClearButton } from '../common/clear'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 
@@ -84,12 +78,6 @@ type TNumberInputParts = {
 	readonly decrement: TStepButton
 	readonly increment: TStepButton
 	readonly hidden: HTMLInputElement
-}
-
-/** Кнопка очистки и иконка в ней. */
-type TClearButton = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps
 }
 
 /** Как построить кнопку шага: имена мест, класс, роль значка и его слот. */
@@ -124,9 +112,6 @@ const INCREMENT: TStepSpec = {
 
 const parts = new WeakMap<HTMLElement, TNumberInputParts>()
 
-/** Кнопка очистки каждого поля — строится с первым `clearable` и остаётся за ним. */
-const clears = new WeakMap<HTMLElement, TClearButton>()
-
 /**
  * Кнопка шага — деталь разметки. Своя иконка — только без слота значка:
  * заданный слот заменяет её целиком, а кнопка с удержанием остаётся своей.
@@ -156,43 +141,6 @@ function syncStep(step: TStepButton, size: TButtonElementProps['size'], disabled
 	if (button.size !== size) button.size = size
 	if (button.disabled !== disabled) button.disabled = disabled
 	if (icon && icon.size !== size) icon.size = size
-}
-
-/**
- * Кнопка очистки поля — деталь его разметки. Нажатие — команда поля `clear`
- * того инстанса, что живёт сейчас: контекст шаблона отдаёт его в момент
- * обращения.
- */
-function clearOf(ctx: ITemplateContext<INumberInput>): TClearButton {
-	const known = clears.get(ctx.root)
-
-	if (known) return known
-
-	const { ownerDocument } = ctx.root
-	const button = createDetail(ownerDocument, TButtonElement, {
-		embedded: 'number-input.clear',
-		attributes: { type: 'button' },
-	})
-	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'number-input.clear-icon' })
-
-	button.className = 'so-number-input__clear'
-	icon.icon = 'close'
-	button.appendChild(icon)
-
-	button.addEventListener('so:action:click', (event) => {
-		// Клик — нативный: всплытие гасится у самого события, до предков он не дойдёт
-		if (event instanceof CustomEvent && event.detail instanceof Event) {
-			event.detail.stopPropagation()
-		}
-
-		ctx.ctrl?.clear()
-	})
-
-	const clear = { button, icon }
-
-	clears.set(ctx.root, clear)
-
-	return clear
 }
 
 export const numberInputTemplate: ITemplate<INumberInput> = {
@@ -277,34 +225,9 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 		}),
 
 		bind(['clearable', 'size', 'disabled', 'clearAria'], (ctx) => {
-			const { root, state, hasSlot } = ctx
-			const own = parts.get(root)
+			const own = parts.get(ctx.root)
 
-			// Своя кнопка — слот `clear`: заменяет встроенную целиком
-			if (!own || hasSlot('clear')) return
-
-			if (state.clearable !== true) {
-				clears.get(root)?.button.remove()
-
-				// Обёртку у конца числа держала только кнопка
-				if (!hasSlot('trailing')) own.trailing.remove()
-
-				return
-			}
-
-			const { button, icon } = clearOf(ctx)
-			const disabled = state.disabled === true
-
-			if (button.size !== state.size) button.size = state.size
-			if (button.disabled !== disabled) button.disabled = disabled
-			if (icon.size !== state.size) icon.size = state.size
-
-			ownerAttributes(button, state.clearAria)
-
-			// Сначала кнопка в обёртку, потом обёртка в корень — перед кнопками
-			// шага: кнопка входит в документ одной вставкой и собирается один раз
-			if (own.trailing.firstChild !== button) own.trailing.prepend(button)
-			if (own.trailing.parentNode !== root) root.insertBefore(own.trailing, own.stepper)
+			if (own) placeClearButton(ctx, 'number-input', own.trailing, own.stepper)
 		}),
 
 		bind(['size', 'decrementDisabled', 'incrementDisabled'], ({ root, state }) => {

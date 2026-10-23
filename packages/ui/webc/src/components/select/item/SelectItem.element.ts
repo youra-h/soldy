@@ -20,7 +20,6 @@
  */
 
 import { SelectCollectionItemDescriptor, SelectItemDescriptor } from '@soldy-ui/setup'
-import type { ISelectItem, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { selectItemTemplate } from './select-item.template'

@@ -20,7 +20,6 @@
  */
 
 import { ToastsCollectionItemDescriptor, ToastsItemDescriptor } from '@soldy-ui/setup'
-import type { IToastsItem, TToastsItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { setupToastsItem } from './setup.component'

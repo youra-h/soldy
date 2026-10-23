@@ -54,7 +54,7 @@ import {
 	type ITemplate,
 } from '../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
+import { TIconElement } from '../icon'
 import type { TDrawerOutputs } from './setup.component'
 
 /** Части панели — одни на всё время жизни элемента. */

@@ -66,7 +66,7 @@ import {
 	type ITemplateContext,
 	type TItemSlots,
 } from '../../adapter'
-import { TListBoxItemElement, type TListBoxItemElementProps } from './item'
+import { TListBoxItemElement } from './item'
 import { TListBoxGroupElement, type TListBoxGroupElementProps } from './group'
 
 /**

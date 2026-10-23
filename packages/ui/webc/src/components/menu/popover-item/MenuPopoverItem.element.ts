@@ -17,7 +17,6 @@
  */
 
 import { MenuCollectionItemDescriptor, MenuPopoverItemDescriptor } from '@soldy-ui/setup'
-import type { IMenuPopoverItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuPopoverItemTemplate } from './menu-popover-item.template'

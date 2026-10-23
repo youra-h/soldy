@@ -94,7 +94,7 @@ import { TButtonElement, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 import { TListBoxElement, type TListBoxElementProps } from '../list-box'
 import { registerPopoverTag, type TPopoverElementProps } from '../popover'
-import { TCalendarItemElement, type TCalendarItemElementProps } from './item'
+import { TCalendarItemElement } from './item'
 
 /**
  * Копия образца в день: слот календаря → слот дня, как проброс у остальных

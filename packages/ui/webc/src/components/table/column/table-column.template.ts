@@ -54,7 +54,7 @@ import {
 	type ITemplateContext,
 } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
-import { TIconElement, type TIconElementProps } from '../../icon'
+import { TIconElement } from '../../icon'
 
 /** Части заголовка — одни на всё время жизни элемента: ряд содержимого и подпись. */
 type TColumnParts = {

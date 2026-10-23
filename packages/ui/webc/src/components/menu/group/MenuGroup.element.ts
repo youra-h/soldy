@@ -15,7 +15,6 @@
  */
 
 import { MenuGroupDescriptor } from '@soldy-ui/setup'
-import type { IItemGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
 import type { TElementType } from '../../../adapter'
 import { menuGroupTemplate } from './menu-group.template'

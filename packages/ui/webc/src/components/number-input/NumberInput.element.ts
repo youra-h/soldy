@@ -22,7 +22,6 @@
  */
 
 import { NumberInputDescriptor } from '@soldy-ui/setup'
-import type { INumberInput } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { numberInputTemplate } from './number-input.template'

@@ -37,7 +37,6 @@
  */
 
 import { MenuCollectionDescriptor, MenuDescriptor } from '@soldy-ui/setup'
-import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
 import type { TElementType } from '../../adapter'
 import { TMenuCheckboxItemElement } from './checkbox-item'

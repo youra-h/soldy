@@ -56,7 +56,7 @@ import {
 } from '../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
-import { TPaginationItemElement, type TPaginationItemElementProps } from './item'
+import { TPaginationItemElement } from './item'
 
 /**
  * Копия образца в страницу: слот пагинации → слот страницы, как проброс у
