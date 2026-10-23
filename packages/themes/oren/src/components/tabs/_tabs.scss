@@ -406,7 +406,11 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 	// по ней: на строке крестик остался бы за краем.
 	@apply relative flex items-center;
 
-	> * {
+	// Неактивный таб тише. Строка и крестик выключенного таба — выключенные
+	// Button, и их гасит общий слой тем (`components/button.css` в
+	// `@soldy-ui/theme-base`): его правило в слое, и это правило вне слоёв
+	// перекрыло бы его, поэтому выключенных оно не касается.
+	> :not([data-disabled='true']) {
 		@apply opacity-75;
 	}
 
