@@ -1,0 +1,184 @@
+/* ─── Input ───────────────────────────────────────────────────
+ * Поле ввода в строку — коробка поля семьи Input: слот `leading` у начала
+ * поля, ввод, слот `trailing` у конца. Ввод растёт на всё место между
+ * слотами, слоты стоят у краёв, а стороны логические: в RTL `leading` стоит
+ * справа, и поле слота у него справа.
+ *
+ *   .so-input                 корень — коробка поля
+ *     .so-input__leading      слот у начала
+ *     input                   ввод, без класса
+ *     .so-input__trailing     слот у конца
+ *       .so-input__clear      кнопка очистки, первой в слоте — Button
+ *
+ * Геометрия поля — значениями, а не процентами: высота размера
+ * (`--so-input-height`, правила размера), рамка, просвет слота от рамки и
+ * строка слота — высота размера без рамки и двух просветов. В строку встают
+ * слоты и теги в них (`components/tags.css`) и кнопка очистки — квадрат в
+ * строку слота. Процентом от поля нельзя: поле Select с тегами растёт по
+ * строкам тегов, а процент от поля с авто-высотой не разрешается — тег и
+ * очистка взяли бы высоту размера целиком.
+ *
+ * Шкала поля — переменные корня документа по размеру (`sm`…`2xl`): высота,
+ * кегль и интерлиньяж текста, отступ текста от рамки. Шкала — не только
+ * Input: по ней стоят поля той же семьи — Textarea (`textarea.css`) и
+ * NumberInput (`number-input.css`), — и в одной форме они вровень по высоте и
+ * по началу текста. Кегля у `normal` нет: поле берёт кегль места.
+ * Интерлиньяж шкалы — строка многострочного поля: у поля в строку она во всю
+ * высоту поля. Умолчания — числа темы oren; тема задаёт свои на корне
+ * документа.
+ *
+ * Рамку рисует тема, и её толщину база не объявляет: без темы рамки нет.
+ * Толщину тема задаёт на блоке (`--so-input-border`, контракт), и строка
+ * слота считается без неё.
+ *
+ * Облик — рамка, поверхность, скругление, кольцо фокуса, подсказка пустого
+ * поля, вид кнопки очистки, цвет точки обязательного поля, варианты и
+ * ошибка — рисует тема. */
+
+:root {
+	--so-input-height-sm: 1.75rem;
+	--so-input-height-normal: 2rem;
+	--so-input-height-lg: 2.25rem;
+	--so-input-height-xl: 2.5rem;
+	--so-input-height-2xl: 2.75rem;
+
+	--so-input-font-size-sm: 0.875rem;
+	--so-input-line-height-sm: calc(1.25 / 0.875);
+	--so-input-line-height-normal: 1.5;
+	--so-input-font-size-lg: 1.125rem;
+	--so-input-line-height-lg: calc(1.75 / 1.125);
+	--so-input-font-size-xl: 1.25rem;
+	--so-input-line-height-xl: calc(1.75 / 1.25);
+	--so-input-font-size-2xl: 1.5rem;
+	--so-input-line-height-2xl: calc(2 / 1.5);
+
+	--so-input-indent-sm: 0.375rem;
+	--so-input-indent-normal: 0.5rem;
+	--so-input-indent-lg: 0.625rem;
+	--so-input-indent-xl: 0.75rem;
+	--so-input-indent-2xl: 0.875rem;
+
+	--so-input-slot-gap: 3px;
+	--so-input-slot-padding: 0.25rem;
+	--so-input-slot-spacing: 0.25rem;
+
+	--so-input-min-width: 10rem;
+	--so-input-text-min-width: 4rem;
+}
+
+/* Строка по центру. `inline-flex` сжимается по содержимому, и минимум
+ * ширины держит поле в узком контейнере: без него оно уходило в полосу.
+ * `relative` — опора точки обязательного поля (`required.css`). */
+.so-input {
+	--so-input-slot-row: calc(
+		var(--so-input-height) - 2 * var(--so-input-border, 0px) - 2 * var(--so-input-slot-gap)
+	);
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	height: var(--so-input-height);
+	min-width: var(--so-input-min-width);
+}
+
+/* Выключенное поле гаснет коробкой целиком — с вводом, иконками слотов и
+ * кнопками (`disabled.css`). Корень — `div`, и `:disabled` у него не
+ * срабатывает: выключено вложенное поле, и выключенность читается с него. Его
+ * тег фиксирован, поэтому псевдокласс на нём надёжен, а нативный `disabled`
+ * поля ставит и выключенный предок `<fieldset>`. Поле — прямой ребёнок корня:
+ * ввод в слоте (разметка потребителя) выключенность поля не решает. Нажатия
+ * коробка не гасит: в слотах — разметка потребителя. */
+.so-input:has(> input:disabled) {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-input:has(> input:disabled) > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Ввод — всё место между слотами, но не уже своего минимума: в узком поле
+ * уступают слоты. Строка ввода — во всю высоту поля, и текст стоит по центру
+ * коробки. */
+.so-input input {
+	width: 100%;
+	min-width: var(--so-input-text-min-width);
+	line-height: var(--so-input-height);
+}
+
+.so-input input:disabled {
+	cursor: default;
+}
+
+/* Высота слота — строка поля, а не процент от него: у поля Select с тегами
+ * высота авто. */
+.so-input__leading,
+.so-input__trailing {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--so-input-slot-spacing);
+	height: var(--so-input-slot-row);
+}
+
+.so-input__leading {
+	padding-inline-start: var(--so-input-slot-padding);
+}
+
+.so-input__trailing {
+	padding-inline-end: var(--so-input-slot-padding);
+}
+
+/* Кнопка очистки — первой в слоте у конца, квадрат со стороной в строку
+ * слота: на том же просвете от рамки, что и содержимое слотов, и на любом
+ * размере не выше строки. Поля шкалы Button у неё нет. Не сжимается: в узком
+ * поле уступает ввод, а не кнопка. Цель на мелком размере ей добирает зона
+ * нажатия (`target.css`). */
+.so-input__clear {
+	flex-shrink: 0;
+	padding-inline: 0;
+	inline-size: var(--so-input-slot-row);
+	block-size: var(--so-input-slot-row);
+}
+
+.so-input--size-sm {
+	--so-input-height: var(--so-input-height-sm);
+}
+
+.so-input--size-sm input {
+	font-size: var(--so-input-font-size-sm);
+	text-indent: var(--so-input-indent-sm);
+}
+
+.so-input--size-normal {
+	--so-input-height: var(--so-input-height-normal);
+}
+
+.so-input--size-normal input {
+	text-indent: var(--so-input-indent-normal);
+}
+
+.so-input--size-lg {
+	--so-input-height: var(--so-input-height-lg);
+}
+
+.so-input--size-lg input {
+	font-size: var(--so-input-font-size-lg);
+	text-indent: var(--so-input-indent-lg);
+}
+
+.so-input--size-xl {
+	--so-input-height: var(--so-input-height-xl);
+}
+
+.so-input--size-xl input {
+	font-size: var(--so-input-font-size-xl);
+	text-indent: var(--so-input-indent-xl);
+}
+
+.so-input--size-2xl {
+	--so-input-height: var(--so-input-height-2xl);
+}
+
+.so-input--size-2xl input {
+	font-size: var(--so-input-font-size-2xl);
+	text-indent: var(--so-input-indent-2xl);
+}

@@ -1,0 +1,96 @@
+/* ─── Accordion ───────────────────────────────────────────────
+ * Секции в столбец: у каждой — строка заголовка (Button) и панель под ней.
+ *
+ *   .so-accordion                     корень — столбец секций
+ *     .so-accordion-item              секция
+ *       .so-accordion-item__header    заголовок — Button
+ *         .so-accordion-item__arrow   обёртка стрелки в слоте у края
+ *       .so-accordion-item__body      место панели
+ *         .so-accordion-item__content панель — содержимое секции
+ *
+ * Раскрытая секция — `data-selected` её корня (пишет расширение выбора).
+ * Закрытая панель схлопнута строкой сетки места (`0fr`) — содержимое на
+ * месте, в дереве, а высоты у него нет; раскрытая встаёт во всю высоту
+ * содержимого (`1fr`). Схлопывается строка сетки, а не высота: высоту
+ * содержимого знать не нужно, и тема может вести раскрытие переходом строки.
+ *
+ * Зазоры — переменные корня документа: между секциями, поле заголовка и поле
+ * раскрытой панели по оси блока. Умолчания — числа темы oren; тема задаёт
+ * свои на корне документа.
+ *
+ * Облик — вид заголовка, поворот стрелки раскрытой секции и раскрытие
+ * переходом (движение) — рисует тема. */
+
+:root {
+	--so-accordion-gap: 0.25rem;
+	--so-accordion-header-padding: 0.5rem;
+	--so-accordion-content-padding: 0.5rem;
+}
+
+.so-accordion {
+	display: flex;
+	flex-direction: column;
+	gap: var(--so-accordion-gap);
+}
+
+.so-accordion-item {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+/* Заголовок — во всю строку секции, содержимое — по её началу, в RTL это
+ * правый край. Только своя область текста: правило по любой `.so-button` в
+ * секции доставало бы и кнопки в её содержимом. Отступы детей области —
+ * нулевой специфичности: дети — содержимое потребителя, и его собственный
+ * класс с отступом обязан их перекрыть (`button.css`). */
+.so-accordion-item__header {
+	justify-content: flex-start;
+	width: 100%;
+	padding-block: var(--so-accordion-header-padding);
+}
+
+.so-accordion-item__header > .so-button__text {
+	text-align: start;
+}
+
+:where(.so-accordion-item__header > .so-button__text > *) {
+	margin-inline: 0 auto;
+}
+
+/* Стрелка — обёртка слота, а не сама иконка: подменишь иконку через
+ * `leading-icon` или `trailing-icon` — тема повернёт и её. Обёртка — коробка,
+ * а не строка: к строчной коробке поворот не применяется. */
+.so-accordion-item__arrow {
+	display: inline-flex;
+	flex-shrink: 0;
+}
+
+/* Пустая обёртка — слот стрелки задан, но этой секции ничего не нарисовал, а
+ * стрелки по умолчанию на её стороне нет — места в ряду заголовка не
+ * занимает: иначе зазор ряда сдвинул бы текст. */
+.so-accordion-item__arrow:empty {
+	display: none;
+}
+
+.so-accordion-item__body {
+	display: grid;
+	grid-template-rows: 0fr;
+}
+
+/* Раскрытие — только своей панели: правило через потомка раскрывало бы и
+ * секции Accordion, вложенного в содержимое. */
+.so-accordion-item[data-selected='true'] > .so-accordion-item__body {
+	grid-template-rows: 1fr;
+}
+
+/* Строка `0fr` схлопывает содержимое панели, но не её поле: поле — только
+ * раскрытой, иначе у свёрнутой секции оставалась бы пустая полоса. */
+.so-accordion-item__content {
+	overflow: hidden;
+	padding-block: 0;
+}
+
+.so-accordion-item[data-selected='true'] > .so-accordion-item__body > .so-accordion-item__content {
+	padding-block: var(--so-accordion-content-padding);
+}

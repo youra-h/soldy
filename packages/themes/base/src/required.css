@@ -8,7 +8,8 @@
  * подписи (`components/field.css`), а точку контрола гасит переменная
  * `--so-required-dot: none` на обёртке контрола. Переменной, а не
  * селектором: селектор перечислял бы контролы поимённо, а точка у каждого
- * стоит на своём узле — на корне Switch, на коробке CheckBox.
+ * стоит на своём узле — на корне Switch и полей семьи Input, на коробке
+ * CheckBox.
  *
  * Список — контролы, чья структура в общем слое; место точки у своего
  * контрола уточняет файл его блока (у Switch оно ближе к углу). Остальным
@@ -21,7 +22,10 @@
 }
 
 .so-check-box--required .so-check-box__container::after,
-.so-switch--required::after {
+.so-switch--required::after,
+.so-input--required::after,
+.so-number-input--required::after,
+.so-textarea--required::after {
 	content: '';
 	display: var(--so-required-dot, block);
 	position: absolute;

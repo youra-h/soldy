@@ -1,0 +1,183 @@
+/* ─── NumberInput ─────────────────────────────────────────────
+ * Поле числа семьи Input: ввод и кнопки шага «меньше» и «больше».
+ *
+ *   .so-number-input                   корень — коробка поля
+ *     .so-number-input__leading        слот перед числом
+ *     .so-number-input__input          ввод — число строкой Intl
+ *     .so-number-input__trailing       слот после числа
+ *       .so-number-input__clear        кнопка очистки, первой в слоте — Button
+ *     .so-number-input__stepper        кнопки шага — у конца поля
+ *       .so-number-input__decrement    «меньше» — Button
+ *       .so-number-input__increment    «больше» — Button
+ *
+ * Коробка — та же, что у Input (`input.css`): высота размера, строка слота,
+ * слоты у краёв логическими сторонами. Шкала — шкала поля: высота, кегль и
+ * отступ числа от рамки те же, что у Input того же размера, и NumberInput
+ * стоит вровень с ним в одной форме. Ширина — минимум Input, а не по
+ * содержимому: длина числа заранее не известна, и поле без минимума
+ * схлопнулось бы до кнопок.
+ *
+ * Рамку рисует тема и задаёт её толщину на блоке
+ * (`--so-number-input-border`, контракт): строка слота считается без неё.
+ *
+ * Облик — рамка, поверхность, скругление, кольцо фокуса, подсказка пустого
+ * поля, цифры одной ширины, вид кнопок и их удержания, цвет точки
+ * обязательного поля, варианты и ошибка — рисует тема. */
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок
+ * и без него обязан выглядеть умолчанием. `relative` — опора точки
+ * обязательного поля (`required.css`). */
+.so-number-input {
+	--so-number-input-height: var(--so-input-height-normal);
+	--so-number-input-slot-row: calc(
+		var(--so-number-input-height) - 2 * var(--so-number-input-border, 0px) - 2 *
+			var(--so-input-slot-gap)
+	);
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	height: var(--so-number-input-height);
+	min-width: var(--so-input-min-width);
+}
+
+/* Выключенное поле гаснет коробкой целиком, с кнопками и содержимым слотов
+ * (`disabled.css`). Выключенность корень несёт сам (`data-disabled`): искать
+ * её у вложенного ввода незачем, а `:disabled` у корня-`div` не срабатывает. */
+.so-number-input[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-number-input[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Отступ числа — полями поровну с обеих сторон, а не `text-indent`, как у
+ * Input: отступ строки стоит у начала по направлению самого ввода, а число
+ * стоит у начала поля (ниже). Когда направления разные — число справа налево
+ * в поле слева направо, — отступ ушёл бы к другому краю, и число легло бы
+ * вплотную к рамке. У начала поля текст стоит там же, где у Input. Строка
+ * ввода — во всю высоту поля. Кегль — вводу, а не корню: слоты — разметка
+ * потребителя. */
+.so-number-input > .so-number-input__input {
+	padding-inline: var(--so-input-indent-normal);
+	line-height: var(--so-number-input-height);
+}
+
+/* Число — у начала поля, как текст Input: в форме поля стоят столбцом, и
+ * значение каждого начинается там же, где у соседей.
+ *
+ * Начало — поля, а не самого ввода (`match-parent`). У числа своё
+ * направление письма: строку Intl `ar-EG`, `he-IL` и `fa-IR` пишут справа
+ * налево, `ru-RU` — слева направо на любой странице, и порядок знака, валюты и
+ * единицы в ней верен, только когда направление ввода — направление числа.
+ * Со `start` такой ввод ставил бы число к концу поля, когда направления числа
+ * и поля разные. Без своего `dir` у ввода `match-parent` — то же `start`.
+ * Chromium понимает только `-webkit-match-parent`, Firefox — стандартное
+ * `match-parent`: браузер оставляет объявление, которое понял, а понявший
+ * оба — последнее, стандартное. */
+.so-number-input__input {
+	width: 100%;
+	min-width: var(--so-input-text-min-width);
+	text-align: -webkit-match-parent;
+	text-align: match-parent;
+}
+
+.so-number-input[data-disabled='true'] > .so-number-input__input {
+	cursor: default;
+}
+
+/* Слоты и кнопки шага — строкой поля, со сторонами по направлению поля, как
+ * у Input. Не сжимаются: в узком поле уступает ввод, а не кнопки. */
+.so-number-input__leading,
+.so-number-input__trailing,
+.so-number-input__stepper {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	gap: var(--so-input-slot-spacing);
+	height: var(--so-number-input-slot-row);
+}
+
+.so-number-input__leading {
+	padding-inline-start: var(--so-input-slot-padding);
+}
+
+.so-number-input__trailing {
+	padding-inline-end: var(--so-input-slot-padding);
+}
+
+/* Кнопки шага — одна пара, а не ещё две кнопки в ряду со слотом: от очистки
+ * и содержимого `trailing` их отделяет двойной зазор — поле слота у его конца
+ * и своё у начала. Ровным шагом «× − +» читались бы тремя равными
+ * действиями, а очистка относится к числу, а не к шагу. У конца поля поле
+ * то же, что у слота. В RTL ряд зеркален сам — флекс поля идёт по его
+ * направлению, — и «больше» стоит у левого края. */
+.so-number-input__stepper {
+	padding-inline: var(--so-input-slot-padding);
+}
+
+/* Кнопки — квадраты в строку слота, как очистка Input: рядом, а не столбцом
+ * по половине строки, как стрелки нативного поля, — половина строки не дала
+ * бы цели ни на одном размере. Цель на мелком размере добирает зона нажатия
+ * (`target.css`); зоны пары сходятся встык, а до очистки и ввода не достают:
+ * от них пару отделяет её поле. */
+.so-number-input__clear,
+.so-number-input__decrement,
+.so-number-input__increment {
+	flex-shrink: 0;
+	padding-inline: 0;
+	inline-size: var(--so-number-input-slot-row);
+	block-size: var(--so-number-input-slot-row);
+}
+
+/* Шаг повторяют касаниями подряд: двойное касание не увеличивает страницу, а
+ * шагает дважды. */
+.so-number-input__decrement,
+.so-number-input__increment {
+	touch-action: manipulation;
+}
+
+.so-number-input--size-sm {
+	--so-number-input-height: var(--so-input-height-sm);
+}
+
+.so-number-input--size-sm > .so-number-input__input {
+	font-size: var(--so-input-font-size-sm);
+	padding-inline: var(--so-input-indent-sm);
+}
+
+.so-number-input--size-normal {
+	--so-number-input-height: var(--so-input-height-normal);
+}
+
+.so-number-input--size-normal > .so-number-input__input {
+	padding-inline: var(--so-input-indent-normal);
+}
+
+.so-number-input--size-lg {
+	--so-number-input-height: var(--so-input-height-lg);
+}
+
+.so-number-input--size-lg > .so-number-input__input {
+	font-size: var(--so-input-font-size-lg);
+	padding-inline: var(--so-input-indent-lg);
+}
+
+.so-number-input--size-xl {
+	--so-number-input-height: var(--so-input-height-xl);
+}
+
+.so-number-input--size-xl > .so-number-input__input {
+	font-size: var(--so-input-font-size-xl);
+	padding-inline: var(--so-input-indent-xl);
+}
+
+.so-number-input--size-2xl {
+	--so-number-input-height: var(--so-input-height-2xl);
+}
+
+.so-number-input--size-2xl > .so-number-input__input {
+	font-size: var(--so-input-font-size-2xl);
+	padding-inline: var(--so-input-indent-2xl);
+}

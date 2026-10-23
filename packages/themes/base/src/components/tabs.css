@@ -1,0 +1,157 @@
+/* ─── Tabs ────────────────────────────────────────────────────
+ * Набор табов: список и панель активного таба — дети корня.
+ *
+ *   .so-tabs                        корень
+ *     .so-tabs__list                список табов
+ *       .so-tabs__list--leading     слот у начала списка
+ *       .so-tabs-item               таб — строка (Button) и крестик рядом
+ *       .so-tabs__list--trailing    слот у конца списка
+ *     .so-tabs__panel               панель активного таба
+ *
+ * От ядра приходят у корня модификаторы ориентации (`--horizontal`,
+ * `--vertical`), выравнивания (`--center`, `--end`, `--stretch`; у `start`
+ * модификатора нет) и стороны (`--position-end` — только у вертикальных).
+ * Горизонтальный список стоит над панелью, табы в нём — в строку;
+ * вертикальный — у начала строки от панели, а с `--position-end` — у её
+ * конца, табы в нём — столбцом. Сторона логическая: в RTL вертикальный
+ * список у начала стоит справа.
+ *
+ * Всё, что зависит от модификаторов корня, написано от своего корня
+ * дочерними комбинаторами: свой список (`> .so-tabs__list`) и своя панель
+ * (`> .so-tabs__panel`). Табы бывают вложены — Tabs в панели других, — и
+ * правило для потомков досталось бы вложенным: горизонтальные под
+ * вертикальными выстраивались бы столбиком. Опора — разметка адаптеров:
+ * список и панели — дети корня, табы — дети списка.
+ *
+ * Зазоры — переменные корня документа: между табами, между вертикальным
+ * списком и панелью, над горизонтальной панелью и под ней. Умолчания — числа
+ * темы oren; тема задаёт свои на корне документа.
+ *
+ * Облик — виды (полоса `line`, карточка `contained`, папочные вкладки
+ * `outline`) и их варианты, цвет текста, тише ли неактивный таб, кольцо
+ * фокуса таба и вид его частей — рисует тема. */
+
+:root {
+	--so-tabs-gap: 1rem;
+	--so-tabs-panel-gap: 1rem;
+	--so-tabs-panel-margin: 0.625rem;
+	--so-tabs-slot-padding: 0.375rem;
+	--so-tabs-row-padding: 0.25rem;
+	--so-tabs-close-padding: 0.25rem;
+}
+
+.so-tabs {
+	display: flex;
+	width: 100%;
+}
+
+.so-tabs--horizontal {
+	flex-direction: column;
+}
+
+.so-tabs--horizontal > .so-tabs__list {
+	flex-direction: row;
+}
+
+.so-tabs--vertical {
+	flex-direction: row;
+	gap: var(--so-tabs-panel-gap);
+}
+
+.so-tabs--vertical > .so-tabs__list {
+	flex-direction: column;
+}
+
+/* Вертикальная панель — остаток строки рядом со списком, без полей над и под
+ * собой: от списка её отделяет зазор корня. */
+.so-tabs--vertical > .so-tabs__panel {
+	flex: 1;
+	margin-block: 0;
+}
+
+.so-tabs--vertical.so-tabs--position-end {
+	flex-direction: row-reverse;
+}
+
+.so-tabs__list {
+	display: flex;
+	gap: var(--so-tabs-gap);
+}
+
+/* Слоты списка — по краям ряда табов, а не в его порядке: ядро ставит табам
+ * `order`, и слоты встают первым и последним. */
+.so-tabs__list--leading,
+.so-tabs__list--trailing {
+	display: flex;
+	align-items: center;
+	padding-inline: var(--so-tabs-slot-padding);
+}
+
+.so-tabs__list--leading {
+	order: -9999;
+}
+
+.so-tabs__list--trailing {
+	order: 9999;
+	margin-left: auto;
+}
+
+.so-tabs__panel {
+	margin-block: var(--so-tabs-panel-margin);
+}
+
+.so-tabs--center > .so-tabs__list {
+	justify-content: center;
+}
+
+.so-tabs--end > .so-tabs__list {
+	justify-content: flex-end;
+}
+
+.so-tabs--stretch > .so-tabs__list > * {
+	flex: 1;
+	justify-content: center;
+}
+
+/* Выключенный набор гаснет корнем целиком — табы вместе с панелями
+ * (`disabled.css`): набор читается выключенным весь, а выключить поля в
+ * панелях — дело приложения. Нажатия гаснут у всего набора, в панелях тоже.
+ * Состояние — `data-disabled` корня: ядро пишет его на любом теге, а
+ * модификатора `--disabled` у блока нет. Табы выключены вместе с набором — их
+ * `disabled` распространяется от владельца — и под погасшим корнем второй раз
+ * не гаснут. */
+.so-tabs[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	pointer-events: none;
+}
+
+.so-tabs[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Строка таба и кнопка закрытия — соседи в одну линию. Внутри строки кнопке
+ * не место: строка — `<button role="tab">`, интерактивный потомок у кнопки
+ * запрещён, а подпись крестика вошла бы в имя таба. Поэтому всё, что
+ * покрывает таб целиком, стоит на обёртке или меряется по ней, и `relative`
+ * — опора для этого. */
+.so-tabs-item {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+/* Строка — всё в обёртке, кроме кнопки закрытия: она стоит рядом со строкой. */
+.so-tabs-item > :not(.so-tabs-item__close) {
+	width: 100%;
+	padding-block: var(--so-tabs-row-padding);
+}
+
+/* Крестик стоит сразу за строкой, без зазора, со своим узким полем. Высота —
+ * высота строки без её поля по оси блока, а не размерная высота Button. */
+.so-tabs-item > .so-tabs-item__close {
+	flex-shrink: 0;
+	align-self: stretch;
+	height: auto;
+	margin-block: var(--so-tabs-row-padding);
+	padding-inline: var(--so-tabs-close-padding);
+}

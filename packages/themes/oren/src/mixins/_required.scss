@@ -34,10 +34,10 @@
 // на коробке CheckBox.
 //
 // Место точки контролов, чья структура уже в общем слое тем (CheckBox,
-// Switch), даёт он (`required.css` в `@soldy-ui/theme-base`), и они берут
-// здесь только облик (`required-dot`). Остальные — поля семьи Input, DateInput,
-// DatePicker, Textarea, NumberInput — берут точку целиком, пока их структура в
-// теме (`packages/themes/base/AGENTS.md`, «Перенос структуры»).
+// Switch, Input, Textarea, NumberInput), даёт он (`required.css` в
+// `@soldy-ui/theme-base`), и они берут здесь только облик (`required-dot`).
+// Остальные — DateInput и DatePicker — берут точку целиком, пока их структура
+// в теме (`packages/themes/base/AGENTS.md`, «Перенос структуры»).
 @mixin required-indicator(
 	$size: '1',
 	$color: 'so-negative',

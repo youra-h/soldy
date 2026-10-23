@@ -1,0 +1,179 @@
+/* ─── Textarea ────────────────────────────────────────────────
+ * Многострочное поле семьи Input: рамка поля без строки поля — высоты у
+ * размера нет, её ведут строки текста.
+ *
+ *   .so-textarea               корень — рамка поля
+ *     textarea                 нативное поле, без класса — как `<input>` у Input
+ *     .so-textarea__counter    счётчик символов — под полем, внутри рамки
+ *
+ * Высоту `<textarea>` база не задаёт — ни `height`, ни `min-height`, ни
+ * `max-height`: без автороста её дают `rows` и ручка, с авторостом — плагин,
+ * инлайновой `height` на самой `<textarea>`. Корень растёт за ней сам.
+ * Плагин автороста считает высоту по вычисленным стилям `<textarea>`:
+ * интерлиньяж, поля по оси блока и рамка (у поля её нет — рамку рисует
+ * корень), `box-sizing: border-box` (`reset.css`). Поэтому интерлиньяж задан
+ * на каждом размере, без `normal`: число `normal` из стиля не прочесть.
+ * Перехода у высоты нет и быть не должно: поле растёт вместе с набором.
+ *
+ * Шкала — шкала поля (`input.css`): кегль, интерлиньяж и отступ текста от
+ * рамки те же, что у Input того же размера, а от высоты Input берётся строка
+ * поля (`--so-textarea-row`): поля текста над первой строкой и под последней
+ * считаются так, чтобы первая строка стояла по центру этой строки — там же,
+ * где текст Input. Поэтому Textarea в одну строку (`rows="1"`) — ровно высоты
+ * Input того же размера. Счётчик — кеглем справки при контроле (`caption.css`):
+ * на ступень мельче текста поля, как подсказка и ошибка `Field`.
+ *
+ * Рамку рисует тема и задаёт её толщину на блоке (`--so-textarea-border`,
+ * контракт): поля текста считаются без неё, и у рамки потолще высота поля та
+ * же — уже поля.
+ *
+ * Облик — рамка, поверхность, скругление, кольцо фокуса, подсказка пустого
+ * поля, цвет счётчика и его цифры, цвет точки обязательного поля, варианты и
+ * ошибка — рисует тема. */
+
+/* Столбец: поле, под ним счётчик. Строчный, как Input: в строке текста и в
+ * обёртке контрола `Field` поле стоит по своей ширине — её задают `cols` поля
+ * и класс приложения на корне. Минимум — как у Input. Размер без
+ * модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и без него
+ * обязан выглядеть умолчанием. */
+.so-textarea {
+	--so-textarea-row: var(--so-input-height-normal);
+	--so-textarea-indent: var(--so-input-indent-normal);
+	position: relative;
+	display: inline-flex;
+	flex-direction: column;
+	min-width: var(--so-input-min-width);
+}
+
+.so-textarea > textarea {
+	line-height: var(--so-input-line-height-normal);
+}
+
+.so-textarea > .so-textarea__counter {
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
+}
+
+/* Выключенное поле гаснет рамкой целиком, с полем и счётчиком
+ * (`disabled.css`). Корень — `div`, и выключенность читается с вложенного
+ * поля, как у Input: нативный `disabled` поля ставит и выключенный предок
+ * `<fieldset>`. */
+.so-textarea:has(> textarea:disabled) {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-textarea:has(> textarea:disabled) > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Поле — во всю ширину рамки и во всю её высоту над счётчиком: задало
+ * приложение корню высоту или его растянула сетка, лишнее место забирает
+ * поле, и счётчик остаётся у нижней рамки.
+ *
+ * Поля текста — сбоку отступ шкалы поля: текст начинается там же, где у
+ * Input того же размера. Сверху и снизу — остаток строки поля от интерлиньяжа
+ * и рамки, пополам (`1lh` — интерлиньяж самой `<textarea>`). Поля — внутри
+ * прокрутки: текст уезжает под рамку, а не обрывается в отступе.
+ *
+ * Ручка — только по высоте: поле растёт вниз, а рамка и счётчик едут за ним;
+ * по ширине ручка выдвигала бы поле из колонки формы. Ручку без автороста
+ * база оставляет: ею поле расширяют и без него, как нативное. */
+.so-textarea > textarea {
+	flex-grow: 1;
+	width: 100%;
+	padding-inline: var(--so-textarea-indent);
+	padding-block: calc((var(--so-textarea-row) - 2 * var(--so-textarea-border, 0px) - 1lh) / 2);
+	resize: vertical;
+}
+
+/* Размер выключенного поля не меняют. */
+.so-textarea > textarea:disabled {
+	cursor: default;
+	resize: none;
+}
+
+/* Счётчик — строка под полем, в рамке, у конца строки: подсказка и ошибка
+ * `Field` встают под всем компонентом, и снаружи счётчик спорил бы с ними за
+ * строку. Сторона логическая: в RTL счётчик у левого края. Поля — те же, что
+ * у текста: сбоку отступ шкалы поля, снизу — его половина. */
+.so-textarea__counter {
+	align-self: flex-end;
+	padding-inline: var(--so-textarea-indent);
+	padding-block-end: calc(var(--so-textarea-indent) / 2);
+	white-space: nowrap;
+	cursor: default;
+}
+
+.so-textarea--size-sm {
+	--so-textarea-row: var(--so-input-height-sm);
+	--so-textarea-indent: var(--so-input-indent-sm);
+}
+
+.so-textarea--size-sm > textarea {
+	font-size: var(--so-input-font-size-sm);
+	line-height: var(--so-input-line-height-sm);
+}
+
+.so-textarea--size-sm > .so-textarea__counter {
+	font-size: var(--so-caption-note-font-size-sm);
+	line-height: var(--so-caption-note-line-height-sm);
+}
+
+.so-textarea--size-normal {
+	--so-textarea-row: var(--so-input-height-normal);
+	--so-textarea-indent: var(--so-input-indent-normal);
+}
+
+.so-textarea--size-normal > textarea {
+	line-height: var(--so-input-line-height-normal);
+}
+
+.so-textarea--size-normal > .so-textarea__counter {
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
+}
+
+.so-textarea--size-lg {
+	--so-textarea-row: var(--so-input-height-lg);
+	--so-textarea-indent: var(--so-input-indent-lg);
+}
+
+.so-textarea--size-lg > textarea {
+	font-size: var(--so-input-font-size-lg);
+	line-height: var(--so-input-line-height-lg);
+}
+
+.so-textarea--size-lg > .so-textarea__counter {
+	font-size: var(--so-caption-note-font-size-lg);
+	line-height: var(--so-caption-note-line-height-lg);
+}
+
+.so-textarea--size-xl {
+	--so-textarea-row: var(--so-input-height-xl);
+	--so-textarea-indent: var(--so-input-indent-xl);
+}
+
+.so-textarea--size-xl > textarea {
+	font-size: var(--so-input-font-size-xl);
+	line-height: var(--so-input-line-height-xl);
+}
+
+.so-textarea--size-xl > .so-textarea__counter {
+	font-size: var(--so-caption-note-font-size-xl);
+	line-height: var(--so-caption-note-line-height-xl);
+}
+
+.so-textarea--size-2xl {
+	--so-textarea-row: var(--so-input-height-2xl);
+	--so-textarea-indent: var(--so-input-indent-2xl);
+}
+
+.so-textarea--size-2xl > textarea {
+	font-size: var(--so-input-font-size-2xl);
+	line-height: var(--so-input-line-height-2xl);
+}
+
+.so-textarea--size-2xl > .so-textarea__counter {
+	font-size: var(--so-caption-note-font-size-2xl);
+	line-height: var(--so-caption-note-line-height-2xl);
+}
