@@ -105,14 +105,6 @@ const loops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxRow, string | number, 
 /** Петля записей каждой группы из данных — внутри группы. */
 const groupLoops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxEntry, number, HTMLElement>>()
 
-function isItem(node: Element): node is TListBoxItemElementProps {
-	return node instanceof TListBoxItemElement
-}
-
-function isGroup(node: Element): node is TListBoxGroupElementProps {
-	return node instanceof TListBoxGroupElement
-}
-
 /**
  * Строки списка по секциям: разделитель — перед всеми, кроме первой, пока
  * список их просит (`separated`).
@@ -146,7 +138,7 @@ function drawnOf(
 		return filler
 	}
 
-	const item = createItem(ownerDocument, 'div', 'so-list-box-item', isItem)
+	const item = createItem(ownerDocument, TListBoxItemElement)
 
 	item.ctrl = entry.item
 	lendSamples(ctx, item, LIST_BOX_ITEM_SLOTS)
@@ -197,7 +189,7 @@ function rowOf(
 	}
 
 	if (row.kind === 'group') {
-		const group = createItem(ctx.root.ownerDocument, 'div', 'so-list-box-group', isGroup)
+		const group = createItem(ctx.root.ownerDocument, TListBoxGroupElement)
 
 		fillGroup(ctx, group, row.section)
 
@@ -216,7 +208,7 @@ function updateRow(
 	if (row.kind === 'separator') return
 
 	if (row.kind === 'group') {
-		if (isGroup(node)) fillGroup(ctx, node, row.section)
+		if (TListBoxGroupElement.is(node)) fillGroup(ctx, node, row.section)
 
 		return
 	}

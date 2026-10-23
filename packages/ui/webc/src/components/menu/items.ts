@@ -111,22 +111,6 @@ const loops = new WeakMap<HTMLElement, TKeyedLoop<TMenuRow, string, HTMLElement>
 /** Петля пунктов каждой группы из данных — внутри группы. */
 const groupLoops = new WeakMap<HTMLElement, TKeyedLoop<TItemRow, string, HTMLElement>>()
 
-function isItem(node: Element): node is TMenuItemElementProps {
-	return node instanceof TMenuItemElement
-}
-
-function isSubmenu(node: Element): node is TMenuSubmenuElementProps {
-	return node instanceof TMenuSubmenuElement
-}
-
-function isGroup(node: Element): node is TMenuGroupElementProps {
-	return node instanceof TMenuGroupElement
-}
-
-function isSeparator(node: Element): node is TMenuSeparatorElementProps {
-	return node instanceof TMenuSeparatorElement
-}
-
 /**
  * Петля пунктов из данных — в списке владельца `root`. Заводит её шаблон
  * владельца, только когда пункты не заданы разметкой (слот `default`):
@@ -172,7 +156,7 @@ function itemOf(ctx: TItemsContext, row: TItemRow): HTMLElement {
 	const { ownerDocument } = ctx.root
 
 	if (row.kind === 'submenu') {
-		const submenu = createItem(ownerDocument, 'div', 'so-menu-submenu', isSubmenu)
+		const submenu = createItem(ownerDocument, TMenuSubmenuElement)
 
 		submenu.ctrl = row.entry.ctrl
 		submenu.engine = row.entry.engine
@@ -182,7 +166,7 @@ function itemOf(ctx: TItemsContext, row: TItemRow): HTMLElement {
 		return submenu
 	}
 
-	const item = createItem(ownerDocument, 'div', 'so-menu-item', isItem)
+	const item = createItem(ownerDocument, TMenuItemElement)
 
 	item.ctrl = row.item
 	lendSamples(ctx, item, MENU_ITEM_SLOTS)
@@ -226,11 +210,11 @@ function rowOf(
 	const { ownerDocument } = ctx.root
 
 	if (row.kind === 'separator') {
-		return createItem(ownerDocument, 'div', 'so-menu-separator', isSeparator)
+		return createItem(ownerDocument, TMenuSeparatorElement)
 	}
 
 	if (row.kind === 'group') {
-		const group = createItem(ownerDocument, 'div', 'so-menu-group', isGroup)
+		const group = createItem(ownerDocument, TMenuGroupElement)
 
 		fillGroup(ctx, group, row.section, submenus)
 
@@ -255,7 +239,8 @@ export function drawItems(
 		rowsOf(sections ?? [], submenus, separated),
 		(row) => rowOf(ctx, row, submenus),
 		(node, row) => {
-			if (row.kind === 'group' && isGroup(node)) fillGroup(ctx, node, row.section, submenus)
+			if (row.kind === 'group' && TMenuGroupElement.is(node))
+				fillGroup(ctx, node, row.section, submenus)
 		},
 	)
 }

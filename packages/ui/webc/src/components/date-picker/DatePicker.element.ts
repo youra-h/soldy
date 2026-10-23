@@ -23,12 +23,12 @@
 import { DatePickerDescriptor } from '@soldy-ui/setup'
 import type { IDatePicker } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { datePickerTemplate } from './date-picker.template'
 import { setupDatePicker } from './setup.component'
 
 export const TDatePickerElement = ElementBase(HTMLDivElement, {
-	descriptor: DatePickerDescriptor(),
+	descriptor: DatePickerDescriptor,
 	template: datePickerTemplate,
 	root: { strategy: 'host', aria: 'rootAria' },
 	setup: setupDatePicker,
@@ -43,6 +43,4 @@ defineElement('so-date-picker', TDatePickerElement, 'div')
  * корня), и без `HOST_PROPS` (`TElementProps`). Несколько дат — пару
  * диапазона — DatePicker берёт свойством: атрибут `value` — одна дата.
  */
-export type TDatePickerElementProps = HTMLDivElement &
-	IElementBase<IDatePicker> &
-	TElementProps<typeof DatePickerDescriptor, HTMLDivElement>
+export type TDatePickerElementProps = TElementType<typeof TDatePickerElement>

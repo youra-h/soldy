@@ -80,14 +80,6 @@ const parts = new WeakMap<HTMLElement, TDateInputParts>()
 /** Кнопка очистки каждого поля — строится с первым `clearable` и остаётся за ним. */
 const clears = new WeakMap<HTMLElement, TClearButton>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Наборы и текст части или разделителя — на её узел. Наборы части — одним
  * слоем владельца; текст — только разошедшийся с узлом (см. шапку).
@@ -124,18 +116,11 @@ function clearOf(ctx: ITemplateContext<IDateInput>): TClearButton {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-input.clear', attributes: { type: 'button' } },
-		isButton,
-	)
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'date-input.clear-icon' },
-		isIcon,
-	)
+	const button = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'date-input.clear',
+		attributes: { type: 'button' },
+	})
+	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'date-input.clear-icon' })
 
 	button.className = 'so-date-input__clear'
 	icon.icon = 'close'

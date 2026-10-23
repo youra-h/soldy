@@ -21,14 +21,14 @@
 import { RadioGroupCollectionDescriptor, RadioGroupDescriptor } from '@soldy-ui/setup'
 import type { IRadioGroup, TRadioGroupCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { TRadioGroupItemElement } from './item'
 import { radioGroupTemplate } from './radio-group.template'
 import { setupRadioGroup } from './setup.component'
 
 export const TRadioGroupElement = ElementBase(HTMLDivElement, {
-	descriptor: RadioGroupDescriptor(),
-	facade: RadioGroupCollectionDescriptor(),
+	descriptor: RadioGroupDescriptor,
+	facade: RadioGroupCollectionDescriptor,
 	template: radioGroupTemplate,
 	setup: setupRadioGroup,
 })
@@ -42,6 +42,4 @@ defineElement('so-radio-group-item', TRadioGroupItemElement, 'label')
  * дескриптора вместе с пропсами его плагинов и фасада (`items`, `engine`) —
  * без тех, что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TRadioGroupElementProps = HTMLDivElement &
-	IElementBase<IRadioGroup, TRadioGroupCollectionFacade> &
-	TElementProps<typeof RadioGroupDescriptor, HTMLDivElement>
+export type TRadioGroupElementProps = TElementType<typeof TRadioGroupElement>

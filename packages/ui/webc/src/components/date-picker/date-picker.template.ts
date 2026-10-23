@@ -155,26 +155,6 @@ const footers = new WeakMap<HTMLElement, TFooter>()
 /** Календарь панели каждого DatePicker. */
 const calendars = new WeakMap<HTMLElement, TPanelCalendar>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isDateInput(node: Element): node is TDateInputElementProps {
-	return node instanceof TDateInputElement
-}
-
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
-function isCalendar(node: Element): node is TCalendarElementProps {
-	return node instanceof TCalendarElement
-}
-
 /**
  * Узлы — перед `ref` в `parent`, по порядку. Узел, который уже стоит на своём
  * месте, не двигается: перенос элемента soldy — его отключение и подключение.
@@ -214,18 +194,11 @@ function clearOf(ctx: TDatePickerContext): TClearButton {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-picker.clear', attributes: { type: 'button' } },
-		isButton,
-	)
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'date-picker.clear-icon' },
-		isIcon,
-	)
+	const button = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'date-picker.clear',
+		attributes: { type: 'button' },
+	})
+	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'date-picker.clear-icon' })
 
 	button.className = 'so-date-picker__clear'
 	icon.icon = 'close'
@@ -275,18 +248,14 @@ function footerOf(ctx: TDatePickerContext): TFooter {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const cancel = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-picker.cancel', attributes: { type: 'button' } },
-		isButton,
-	)
-	const confirm = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-picker.confirm', attributes: { type: 'button' } },
-		isButton,
-	)
+	const cancel = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'date-picker.cancel',
+		attributes: { type: 'button' },
+	})
+	const confirm = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'date-picker.confirm',
+		attributes: { type: 'button' },
+	})
 
 	cancel.className = 'so-date-picker__cancel'
 	confirm.className = 'so-date-picker__confirm'
@@ -325,12 +294,9 @@ function syncFooter(ctx: TDatePickerContext, { cancel, confirm }: TFooter): void
  * календаря, подвал — при `confirmable`, в его слоте `footer`.
  */
 function calendarOf(ctx: TDatePickerContext, confirmable: boolean): TCalendarElementProps {
-	const calendar = createDetail(
-		ctx.root.ownerDocument,
-		'div',
-		{ is: 'so-calendar', embedded: 'date-picker.calendar' },
-		isCalendar,
-	)
+	const calendar = createDetail(ctx.root.ownerDocument, TCalendarElement, {
+		embedded: 'date-picker.calendar',
+	})
 
 	calendar.className = 'so-date-picker__calendar'
 
@@ -354,7 +320,7 @@ function calendarOf(ctx: TDatePickerContext, confirmable: boolean): TCalendarEle
 
 /** Поле DatePicker — деталь DateInput с именем места и классом. */
 function fieldOf(owner: Document, embedded: string, className: string): TDateInputElementProps {
-	const field = createDetail(owner, 'div', { is: 'so-date-input', embedded }, isDateInput)
+	const field = createDetail(owner, TDateInputElement, { embedded })
 
 	field.className = className
 
@@ -368,19 +334,15 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		const start = fieldOf(ownerDocument, 'date-picker.start', 'so-date-picker__start')
 		const end = fieldOf(ownerDocument, 'date-picker.end', 'so-date-picker__end')
 		const dash = ownerDocument.createElement('span')
-		const trigger = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'date-picker.trigger', attributes: { type: 'button' } },
-			isButton,
-		)
+		const trigger = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'date-picker.trigger',
+			attributes: { type: 'button' },
+		})
 		const place = ownerDocument.createComment('')
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'date-picker.frame', attributes: { tabindex: '-1' } },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, {
+			embedded: 'date-picker.frame',
+			attributes: { tabindex: '-1' },
+		})
 		const handle = ownerDocument.createElement('div')
 		const content = ownerDocument.createElement('div')
 
@@ -404,12 +366,9 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		// Своя иконка кнопки календаря — только без слота `trigger-icon`: заданный
 		// слот заменяет её целиком
 		if (!hasSlot('trigger-icon')) {
-			const icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'date-picker.trigger-icon' },
-				isIcon,
-			)
+			const icon = createDetail(ownerDocument, TIconElement, {
+				embedded: 'date-picker.trigger-icon',
+			})
 
 			icon.icon = 'calendar'
 			lend(trigger, DEFAULT_SLOT, icon)

@@ -24,12 +24,12 @@
 import { InputDescriptor } from '@soldy-ui/setup'
 import type { IInput } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { inputTemplate } from './input.template'
 import { setupInput } from './setup.component'
 
 export const TInputElement = ElementBase(HTMLDivElement, {
-	descriptor: InputDescriptor(),
+	descriptor: InputDescriptor,
 	template: inputTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupInput,
@@ -43,6 +43,4 @@ defineElement('so-input', TInputElement, 'div')
  * (`aria_label`) — без тех, что у `div` уже есть (`id` — собственный `id`
  * корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TInputElementProps = HTMLDivElement &
-	IElementBase<IInput> &
-	TElementProps<typeof InputDescriptor, HTMLDivElement>
+export type TInputElementProps = TElementType<typeof TInputElement>

@@ -19,12 +19,12 @@
 import { DateInputDescriptor } from '@soldy-ui/setup'
 import type { IDateInput } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { dateInputTemplate } from './date-input.template'
 import { setupDateInput } from './setup.component'
 
 export const TDateInputElement = ElementBase(HTMLDivElement, {
-	descriptor: DateInputDescriptor(),
+	descriptor: DateInputDescriptor,
 	template: dateInputTemplate,
 	setup: setupDateInput,
 })
@@ -37,6 +37,4 @@ defineElement('so-date-input', TDateInputElement, 'div')
  * плагинов (`aria_label`) — без тех, что у `div` уже есть (`id` — `id`
  * корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TDateInputElementProps = HTMLDivElement &
-	IElementBase<IDateInput> &
-	TElementProps<typeof DateInputDescriptor, HTMLDivElement>
+export type TDateInputElementProps = TElementType<typeof TDateInputElement>

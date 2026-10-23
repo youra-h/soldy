@@ -60,14 +60,6 @@ type TItemParts = {
 
 const parts = new WeakMap<HTMLElement, TItemParts>()
 
-function isRow(node: Element): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Обёртка отметки — на краю строки со стороны `side` или вне её. Край — свет
  * строки: до её сборки обёртка встаёт в слот (`leading`, `trailing`), после —
@@ -92,12 +84,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-button-div', embedded: 'list-box.row' },
-			isRow,
-		)
+		const row = createDetail(ownerDocument, TButtonDivElement, { embedded: 'list-box.row' })
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-list-box-item__indicator'
@@ -108,12 +95,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('indicator-icon')) {
-			icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'list-box.indicator' },
-				isIcon,
-			)
+			icon = createDetail(ownerDocument, TIconElement, { embedded: 'list-box.indicator' })
 			icon.icon = 'check'
 		}
 

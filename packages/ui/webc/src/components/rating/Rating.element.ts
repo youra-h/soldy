@@ -23,12 +23,12 @@
 import { RatingDescriptor } from '@soldy-ui/setup'
 import type { IRating } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { ratingTemplate } from './rating.template'
 import { setupRating } from './setup.component'
 
 export const TRatingElement = ElementBase(HTMLSpanElement, {
-	descriptor: RatingDescriptor(),
+	descriptor: RatingDescriptor,
 	template: ratingTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], fieldId: true },
 	setup: setupRating,
@@ -42,6 +42,4 @@ defineElement('so-rating', TRatingElement, 'span')
  * (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный `id`
  * корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TRatingElementProps = HTMLSpanElement &
-	IElementBase<IRating> &
-	TElementProps<typeof RatingDescriptor, HTMLSpanElement>
+export type TRatingElementProps = TElementType<typeof TRatingElement>

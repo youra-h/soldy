@@ -80,28 +80,18 @@ type TScrollerParts = {
 
 const parts = new WeakMap<HTMLElement, TScrollerParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /** Кнопка — деталь разметки. Своя иконка — только без слота значка. */
 function arrowOf(owner: Document, spec: TArrowSpec, slotted: boolean): TArrow {
-	const button = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: spec.embedded, attributes: { type: 'button' } },
-		isButton,
-	)
+	const button = createDetail(owner, TButtonElement, {
+		embedded: spec.embedded,
+		attributes: { type: 'button' },
+	})
 
 	button.className = spec.className
 
 	if (slotted) return { button, icon: null }
 
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded: spec.iconEmbedded }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded: spec.iconEmbedded })
 
 	// Одна роль на обе кнопки: роли «влево» в контракте иконок нет, и ту
 	// стрелку, что смотрит в начало строки, зеркалит тема

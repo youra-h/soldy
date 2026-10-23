@@ -174,30 +174,6 @@ const fieldTags = new WeakMap<HTMLElement, TFieldTags>()
 /** Петля записей каждой группы из данных — внутри группы. */
 const groupLoops = new WeakMap<HTMLElement, TKeyedLoop<TSelectEntry, number, HTMLElement>>()
 
-function isInput(node: Element): node is TInputElementProps {
-	return node instanceof TInputElement
-}
-
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isTags(node: Element): node is TTagsElementProps {
-	return node instanceof TTagsElement
-}
-
-function isItem(node: Element): node is TSelectItemElementProps {
-	return node instanceof TSelectItemElement
-}
-
-function isGroup(node: Element): node is TSelectGroupElementProps {
-	return node instanceof TSelectGroupElement
-}
-
 /**
  * Строки списка по секциям: разделитель — перед всеми, кроме первой, пока
  * Select их просит (`separated`).
@@ -228,7 +204,7 @@ function drawnOf(ctx: TSelectContext, entry: TSelectEntry): HTMLElement {
 		return filler
 	}
 
-	const item = createItem(ownerDocument, 'div', 'so-select-item', isItem)
+	const item = createItem(ownerDocument, TSelectItemElement)
 
 	item.ctrl = entry.item
 	lendSamples(ctx, item, SELECT_ITEM_SLOTS)
@@ -276,7 +252,7 @@ function rowOf(ctx: TSelectContext, row: TSelectRow): HTMLElement {
 	}
 
 	if (row.kind === 'group') {
-		const group = createItem(ctx.root.ownerDocument, 'div', 'so-select-group', isGroup)
+		const group = createItem(ctx.root.ownerDocument, TSelectGroupElement)
 
 		fillGroup(ctx, group, row.section)
 
@@ -291,7 +267,7 @@ function updateRow(ctx: TSelectContext, node: HTMLElement, row: TSelectRow): voi
 	if (row.kind === 'separator') return
 
 	if (row.kind === 'group') {
-		if (isGroup(node)) fillGroup(ctx, node, row.section)
+		if (TSelectGroupElement.is(node)) fillGroup(ctx, node, row.section)
 
 		return
 	}
@@ -317,12 +293,7 @@ function drawTags(ctx: TSelectContext, own: TSelectParts): void {
 
 	if (!tags) return
 
-	const node = createDetail(
-		ctx.root.ownerDocument,
-		'div',
-		{ is: 'so-tags', embedded: 'select.tags' },
-		isTags,
-	)
+	const node = createDetail(ctx.root.ownerDocument, TTagsElement, { embedded: 'select.tags' })
 
 	node.className = 'so-select__tags'
 	// Экземпляр и коллекция — до вставки: сборка тегов берёт их при подключении
@@ -335,19 +306,9 @@ function drawTags(ctx: TSelectContext, own: TSelectParts): void {
 export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelectOutputs> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
-		const field = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-input', embedded: 'select.field' },
-			isInput,
-		)
+		const field = createDetail(ownerDocument, TInputElement, { embedded: 'select.field' })
 		const box = ownerDocument.createElement('span')
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'select.frame' },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, { embedded: 'select.frame' })
 		const handle = ownerDocument.createElement('div')
 		const list = ownerDocument.createElement('div')
 		const end = ownerDocument.createComment('')
@@ -372,12 +333,7 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 		let arrow: TIconElementProps | null = null
 
 		if (!hasSlot('arrow-icon')) {
-			arrow = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'select.arrow' },
-				isIcon,
-			)
+			arrow = createDetail(ownerDocument, TIconElement, { embedded: 'select.arrow' })
 			arrow.icon = 'arrowDown'
 			box.appendChild(arrow)
 		}

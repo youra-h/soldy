@@ -24,13 +24,13 @@
 import { DragAndDropDescriptor } from '@soldy-ui/setup'
 import type { IDragAndDrop } from '@soldy-ui/core'
 import { ElementBase } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { setupDragAndDrop } from './setup.component'
 import { dragAndDropTemplate } from './drag-and-drop.template'
 
 export const TDragAndDropElement = ElementBase(HTMLElement, {
-	descriptor: DragAndDropDescriptor(),
+	descriptor: DragAndDropDescriptor,
 	template: dragAndDropTemplate,
 	setup: setupDragAndDrop,
 })
@@ -42,6 +42,4 @@ defineAutonomousElement('so-drag-and-drop', TDragAndDropElement)
  * `state`) и свойства пропов дескриптора — без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TDragAndDropElementProps = HTMLElement &
-	IElementBase<IDragAndDrop> &
-	TElementProps<typeof DragAndDropDescriptor, HTMLElement>
+export type TDragAndDropElementProps = TElementType<typeof TDragAndDropElement>

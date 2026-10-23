@@ -61,35 +61,16 @@ type TTagParts = {
 
 const parts = new WeakMap<HTMLElement, TTagParts>()
 
-function isRow(node: Element): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
-}
-
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> = {
 	create: (root, ctx) => {
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-button-div', embedded: 'tags.row' },
-			isRow,
-		)
-		const close = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'tags.close', attributes: { type: 'button' } },
-			isButton,
-		)
+		const row = createDetail(ownerDocument, TButtonDivElement, { embedded: 'tags.row' })
+		const close = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'tags.close',
+			attributes: { type: 'button' },
+		})
 
 		close.className = 'so-tags-item__close'
 
@@ -98,12 +79,7 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('close-icon')) {
-			icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'tags.close-icon' },
-				isIcon,
-			)
+			icon = createDetail(ownerDocument, TIconElement, { embedded: 'tags.close-icon' })
 			icon.icon = 'close'
 			lend(close, DEFAULT_SLOT, icon)
 		}

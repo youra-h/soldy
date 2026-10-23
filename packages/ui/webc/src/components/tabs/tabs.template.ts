@@ -57,16 +57,12 @@ const lists = new WeakMap<HTMLElement, HTMLElement>()
 /** Петля табов из данных — только у набора без табов разметки. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<ITabsItem, number>>()
 
-function isTab(node: Element): node is TTabsItemElementProps {
-	return node instanceof TTabsItemElement
-}
-
 /** Таб из данных: инстанс данных и копии образцов — до вставки. */
 function tabOf(
 	ctx: ITemplateContext<ITabs, TTabsCollectionFacade>,
 	item: ITabsItem,
 ): TTabsItemElementProps {
-	const tab = createItem(ctx.root.ownerDocument, 'div', 'so-tabs-item', isTab)
+	const tab = createItem(ctx.root.ownerDocument, TTabsItemElement)
 
 	tab.ctrl = item
 	lendSamples(ctx, tab, TABS_ITEM_SLOTS)

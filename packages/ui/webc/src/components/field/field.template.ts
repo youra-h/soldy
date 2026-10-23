@@ -49,22 +49,13 @@ const parts = new WeakMap<HTMLElement, TFieldParts>()
 /** Значок ошибки каждого поля — строится с первой показанной ошибкой. */
 const icons = new WeakMap<HTMLElement, TIconElementProps>()
 
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /** Значок ошибки — деталь разметки поля, перед текстом ошибки. */
 function iconOf(root: HTMLElement, error: HTMLElement): TIconElementProps {
 	const known = icons.get(root)
 
 	if (known) return known
 
-	const icon = createDetail(
-		root.ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'field.error-icon' },
-		isIcon,
-	)
+	const icon = createDetail(root.ownerDocument, TIconElement, { embedded: 'field.error-icon' })
 
 	icon.className = 'so-field__error-icon'
 	icon.icon = 'error'

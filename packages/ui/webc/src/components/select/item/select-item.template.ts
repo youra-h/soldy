@@ -57,14 +57,6 @@ type TOptionParts = {
 
 const parts = new WeakMap<HTMLElement, TOptionParts>()
 
-function isRow(node: Element): node is TButtonElementProps<HTMLSpanElement> {
-	return node instanceof TButtonSpanElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Обёртка отметки — на краю строки со стороны `side` или вне её. Край — свет
  * строки: до её сборки обёртка встаёт в слот (`leading`, `trailing`), после —
@@ -89,12 +81,10 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(
-			ownerDocument,
-			'span',
-			{ is: 'so-button-span', embedded: 'select.row', attributes: { tabindex: '-1' } },
-			isRow,
-		)
+		const row = createDetail(ownerDocument, TButtonSpanElement, {
+			embedded: 'select.row',
+			attributes: { tabindex: '-1' },
+		})
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-select-item__indicator'
@@ -105,12 +95,7 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('indicator-icon')) {
-			icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'select.indicator' },
-				isIcon,
-			)
+			icon = createDetail(ownerDocument, TIconElement, { embedded: 'select.indicator' })
 			icon.icon = 'check'
 		}
 

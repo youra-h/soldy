@@ -67,14 +67,6 @@ const parts = new WeakMap<HTMLElement, TInputParts>()
 /** Кнопка очистки каждого поля — строится с первым `clearable` и остаётся за ним. */
 const clears = new WeakMap<HTMLElement, TClearButton>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Кнопка очистки поля — деталь его разметки. Нажатие — команда поля `clear`
  * того инстанса, что живёт сейчас: контекст шаблона отдаёт его в момент
@@ -86,18 +78,11 @@ function clearOf(ctx: ITemplateContext<IInput>): TClearButton {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'input.clear', attributes: { type: 'button' } },
-		isButton,
-	)
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'input.clear-icon' },
-		isIcon,
-	)
+	const button = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'input.clear',
+		attributes: { type: 'button' },
+	})
+	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'input.clear-icon' })
 
 	button.className = 'so-input__clear'
 	icon.icon = 'close'

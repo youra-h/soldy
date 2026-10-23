@@ -16,12 +16,12 @@
 import { SkeletonDescriptor } from '@soldy-ui/setup'
 import type { ISkeleton } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { skeletonTemplate } from './skeleton.template'
 import { setupSkeleton } from './setup.component'
 
 export const TSkeletonElement = ElementBase(HTMLDivElement, {
-	descriptor: SkeletonDescriptor(),
+	descriptor: SkeletonDescriptor,
 	template: skeletonTemplate,
 	root: { strategy: 'host', hides: false },
 	setup: setupSkeleton,
@@ -34,6 +34,4 @@ defineElement('so-skeleton', TSkeletonElement, 'div')
  * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TSkeletonElementProps = HTMLDivElement &
-	IElementBase<ISkeleton> &
-	TElementProps<typeof SkeletonDescriptor, HTMLDivElement>
+export type TSkeletonElementProps = TElementType<typeof TSkeletonElement>

@@ -25,14 +25,14 @@
 import { PaginationCollectionDescriptor, PaginationDescriptor } from '@soldy-ui/setup'
 import type { IPagination, TPaginationCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { TPaginationItemElement } from './item'
 import { paginationTemplate } from './pagination.template'
 import { setupPagination } from './setup.component'
 
 export const TPaginationElement = ElementBase(HTMLElement, {
-	descriptor: PaginationDescriptor(),
-	facade: PaginationCollectionDescriptor(),
+	descriptor: PaginationDescriptor,
+	facade: PaginationCollectionDescriptor,
 	template: paginationTemplate,
 	setup: setupPagination,
 })
@@ -47,6 +47,4 @@ defineElement('so-pagination-item', TPaginationItemElement, 'li')
  * `engine`) — без тех, что у `nav` уже есть, и без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TPaginationElementProps = HTMLElement &
-	IElementBase<IPagination, TPaginationCollectionFacade> &
-	TElementProps<typeof PaginationDescriptor, HTMLElement>
+export type TPaginationElementProps = TElementType<typeof TPaginationElement>

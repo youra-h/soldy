@@ -19,13 +19,13 @@
 import { MenuCollectionRadioItemDescriptor, MenuRadioItemDescriptor } from '@soldy-ui/setup'
 import type { IMenuRadioItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { menuRadioItemTemplate } from './menu-radio-item.template'
 import { setupMenuRadioItem } from './setup.component'
 
 export const TMenuRadioItemElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuRadioItemDescriptor(),
-	facade: MenuCollectionRadioItemDescriptor(),
+	descriptor: MenuRadioItemDescriptor,
+	facade: MenuCollectionRadioItemDescriptor,
 	template: menuRadioItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuRadioItem,
@@ -37,6 +37,4 @@ export const TMenuRadioItemElement = ElementBase(HTMLDivElement, {
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
  * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuRadioItemElementProps = HTMLDivElement &
-	IElementBase<IMenuRadioItem, TMenuItemCollectionFacade> &
-	TElementProps<typeof MenuRadioItemDescriptor, HTMLDivElement>
+export type TMenuRadioItemElementProps = TElementType<typeof TMenuRadioItemElement>

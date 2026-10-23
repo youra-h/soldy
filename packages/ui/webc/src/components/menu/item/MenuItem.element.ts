@@ -20,13 +20,13 @@
 import { MenuCollectionItemDescriptor, MenuItemDescriptor } from '@soldy-ui/setup'
 import type { IMenuItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { menuItemTemplate } from './menu-item.template'
 import { setupMenuItem } from './setup.component'
 
 export const TMenuItemElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuItemDescriptor(),
-	facade: MenuCollectionItemDescriptor(),
+	descriptor: MenuItemDescriptor,
+	facade: MenuCollectionItemDescriptor,
 	template: menuItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuItem,
@@ -38,6 +38,4 @@ export const TMenuItemElement = ElementBase(HTMLDivElement, {
  * дескриптора вместе с пропсами его плагинов — без тех, что у `div` уже есть,
  * и без `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuItemElementProps = HTMLDivElement &
-	IElementBase<IMenuItem, TMenuItemCollectionFacade> &
-	TElementProps<typeof MenuItemDescriptor, HTMLDivElement>
+export type TMenuItemElementProps = TElementType<typeof TMenuItemElement>

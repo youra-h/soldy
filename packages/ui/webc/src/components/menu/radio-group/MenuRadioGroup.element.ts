@@ -19,12 +19,12 @@
 import { MenuRadioGroupDescriptor } from '@soldy-ui/setup'
 import type { IMenuRadioGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { menuRadioGroupTemplate } from './menu-radio-group.template'
 import { setupMenuRadioGroup } from './setup.component'
 
 export const TMenuRadioGroupElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuRadioGroupDescriptor(),
+	descriptor: MenuRadioGroupDescriptor,
 	template: menuRadioGroupTemplate,
 	setup: setupMenuRadioGroup,
 })
@@ -34,6 +34,4 @@ export const TMenuRadioGroupElement = ElementBase(HTMLDivElement, {
  * свойства пропов дескриптора (`label`, `value`) — без тех, что у `div` уже
  * есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuRadioGroupElementProps = HTMLDivElement &
-	IElementBase<IMenuRadioGroup> &
-	TElementProps<typeof MenuRadioGroupDescriptor, HTMLDivElement>
+export type TMenuRadioGroupElementProps = TElementType<typeof TMenuRadioGroupElement>

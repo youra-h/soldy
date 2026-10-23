@@ -33,17 +33,17 @@
 import { PopoverDescriptor } from '@soldy-ui/setup'
 import type { IPopover } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, IElementSpec, TElementClass, TElementProps } from '../../adapter'
+import type { IElementSpec, TElementOf } from '../../adapter'
 import { popoverTemplate } from './popover.template'
 import { setupPopover, type TPopoverOutputs } from './setup.component'
 
 /** Описание элемента Popover — одно на все его теги: дескриптор, шаблон, корень и setup. */
-const POPOVER: IElementSpec<IPopover, unknown, TPopoverOutputs> = {
-	descriptor: PopoverDescriptor(),
+const POPOVER = {
+	descriptor: PopoverDescriptor,
 	template: popoverTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupPopover,
-}
+} satisfies IElementSpec<IPopover, unknown, TPopoverOutputs, unknown, typeof PopoverDescriptor>
 
 export const TPopoverElement = ElementBase(HTMLSpanElement, POPOVER)
 
@@ -58,8 +58,11 @@ defineElement('so-popover', TPopoverElement, 'span')
 export type TPopoverTag = 'div'
 
 /** Класс Popover на теге `K`: нативный класс тега и своё элемента soldy. */
-export type TPopoverTagClass<K extends TPopoverTag> = (new () => HTMLElementTagNameMap[K]) &
-	TElementClass<IPopover>
+export type TPopoverTagClass<K extends TPopoverTag> = ReturnType<typeof variant<K>>
+
+function variant<K extends TPopoverTag>(Native: new () => HTMLElementTagNameMap[K]) {
+	return ElementBase(Native, POPOVER)
+}
 
 /**
  * Регистрация Popover на теге: класс на нативном классе тега создаётся и
@@ -74,7 +77,7 @@ function registration<K extends TPopoverTag>(
 
 	return () => {
 		if (!element) {
-			element = ElementBase(Native, POPOVER)
+			element = variant(Native)
 			defineElement(`so-popover-${tag}`, element, tag)
 		}
 
@@ -107,6 +110,8 @@ export function registerPopoverTag<K extends TPopoverTag>(tag: K): TPopoverTagCl
  * пропсами его плагинов (`aria_label`) — без тех, что у тега уже есть, и без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TPopoverElementProps<TNative extends HTMLElement = HTMLSpanElement> = TNative &
-	IElementBase<IPopover> &
-	TElementProps<typeof PopoverDescriptor, TNative>
+export type TPopoverElementProps<TNative extends HTMLElement = HTMLSpanElement> = TElementOf<
+	TNative,
+	typeof PopoverDescriptor,
+	IPopover
+>

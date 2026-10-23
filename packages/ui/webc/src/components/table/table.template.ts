@@ -132,18 +132,6 @@ const parts = new WeakMap<HTMLElement, TTableParts>()
 /** Ячейка колонки выбора каждой таблицы — пока режим выбора не `none`. */
 const selects = new WeakMap<HTMLElement, THeadSelect>()
 
-function isCheckBox(node: Element): node is TCheckBoxElementProps {
-	return node instanceof TCheckBoxElement
-}
-
-function isColumn(node: Element): node is TTableColumnElementProps {
-	return node instanceof TTableColumnElement
-}
-
-function isRow(node: Element): node is TTableRowElementProps {
-	return node instanceof TTableRowElement
-}
-
 /**
  * Имя чекбокса «выбрать все» — выход плагина имён. Выходов плагинов в типе
  * состояния элемента нет, и выход читается по имени, как база читает выход
@@ -164,12 +152,7 @@ function headSelectOf(ctx: TTableContext, tag: 'th' | 'td', ctrl: ICheckBox | nu
 
 	if (!ctrl) return { cell, checkBox: null, ctrl }
 
-	const checkBox = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-check-box', embedded: 'table.select-all' },
-		isCheckBox,
-	)
+	const checkBox = createDetail(ownerDocument, TCheckBoxElement, { embedded: 'table.select-all' })
 	const label = selectAllLabel(ctx.state)
 
 	// Экземпляр и имя — до вставки: сборка чекбокса берёт их при подключении
@@ -184,7 +167,7 @@ function headSelectOf(ctx: TTableContext, tag: 'th' | 'td', ctrl: ICheckBox | nu
 
 /** Заголовок колонки: экземпляр колонки и копия образца `header` — до вставки. */
 function columnOf(ctx: TTableContext, column: ITableColumn): TTableColumnElementProps {
-	const header = createItem(ctx.root.ownerDocument, 'th', 'so-table-column', isColumn)
+	const header = createItem(ctx.root.ownerDocument, TTableColumnElement)
 
 	header.ctrl = column
 	lendSamples(ctx, header, TABLE_COLUMN_SLOTS)
@@ -225,7 +208,7 @@ function drawnOf(ctx: TTableContext, entry: TTableEntry, span: number): HTMLTabl
 		return filler
 	}
 
-	const row = createItem(ownerDocument, 'tr', 'so-table-row', isRow)
+	const row = createItem(ownerDocument, TTableRowElement)
 
 	row.ctrl = entry.item
 	lendTemplates(ctx, row, TABLE_ROW_SLOTS)

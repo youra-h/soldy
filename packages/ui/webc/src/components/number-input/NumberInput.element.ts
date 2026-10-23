@@ -24,12 +24,12 @@
 import { NumberInputDescriptor } from '@soldy-ui/setup'
 import type { INumberInput } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { numberInputTemplate } from './number-input.template'
 import { setupNumberInput } from './setup.component'
 
 export const TNumberInputElement = ElementBase(HTMLDivElement, {
-	descriptor: NumberInputDescriptor(),
+	descriptor: NumberInputDescriptor,
 	template: numberInputTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupNumberInput,
@@ -43,6 +43,4 @@ defineElement('so-number-input', TNumberInputElement, 'div')
  * плагинов (`aria_label`) — без тех, что у `div` уже есть (`id` — собственный
  * `id` корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TNumberInputElementProps = HTMLDivElement &
-	IElementBase<INumberInput> &
-	TElementProps<typeof NumberInputDescriptor, HTMLDivElement>
+export type TNumberInputElementProps = TElementType<typeof TNumberInputElement>

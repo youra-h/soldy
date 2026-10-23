@@ -29,15 +29,15 @@
 import { TabsCollectionDescriptor, TabsDescriptor } from '@soldy-ui/setup'
 import type { ITabs, TTabsCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { TTabsContentElement } from './content'
 import { TTabsItemElement } from './item'
 import { setupTabs } from './setup.component'
 import { tabsTemplate } from './tabs.template'
 
 export const TTabsElement = ElementBase(HTMLDivElement, {
-	descriptor: TabsDescriptor(),
-	facade: TabsCollectionDescriptor(),
+	descriptor: TabsDescriptor,
+	facade: TabsCollectionDescriptor,
 	template: tabsTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupTabs,
@@ -53,6 +53,4 @@ defineElement('so-tabs-content', TTabsContentElement, 'div')
  * с пропсами его плагинов и фасада (`items`, `engine`) — без тех, что у `div`
  * уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TTabsElementProps = HTMLDivElement &
-	IElementBase<ITabs, TTabsCollectionFacade> &
-	TElementProps<typeof TabsDescriptor, HTMLDivElement>
+export type TTabsElementProps = TElementType<typeof TTabsElement>

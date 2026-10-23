@@ -60,14 +60,6 @@ type TSectionParts = {
 
 const parts = new WeakMap<HTMLElement, TSectionParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /** Обёртка стрелки; без слота её стороны — со стрелкой роли `arrowRight` внутри. */
 function arrowOf(owner: Document, slotted: boolean): TArrow {
 	const wrapper = owner.createElement('span')
@@ -76,7 +68,7 @@ function arrowOf(owner: Document, slotted: boolean): TArrow {
 
 	if (slotted) return { wrapper, icon: null }
 
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded: 'accordion.arrow' }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded: 'accordion.arrow' })
 
 	icon.icon = 'arrowRight'
 	wrapper.appendChild(icon)
@@ -110,12 +102,10 @@ export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemColl
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const header = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'accordion.header', attributes: { type: 'button' } },
-			isButton,
-		)
+		const header = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'accordion.header',
+			attributes: { type: 'button' },
+		})
 		const start = arrowOf(ownerDocument, hasSlot('leading-icon'))
 		const end = arrowOf(ownerDocument, hasSlot('trailing-icon'))
 		const body = ownerDocument.createElement('div')

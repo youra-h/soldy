@@ -32,18 +32,12 @@ import { TButtonElement, type TButtonElementProps } from '../../button'
 /** Строка каждой страницы — одна на всё время жизни элемента. */
 const rows = new WeakMap<HTMLElement, TButtonElementProps>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
 export const paginationItemTemplate: ITemplate<IPaginationItem, TPaginationItemCollectionFacade> = {
 	create: (root, ctx) => {
-		const row = createDetail(
-			root.ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'pagination.page', attributes: { type: 'button' } },
-			isButton,
-		)
+		const row = createDetail(root.ownerDocument, TButtonElement, {
+			embedded: 'pagination.page',
+			attributes: { type: 'button' },
+		})
 
 		row.addEventListener('click', () => {
 			const context = ctx.facade?.context

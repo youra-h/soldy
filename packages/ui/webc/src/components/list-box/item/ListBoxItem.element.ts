@@ -22,13 +22,13 @@
 import { ListBoxCollectionItemDescriptor, ListBoxItemDescriptor } from '@soldy-ui/setup'
 import type { IListBoxItem, TListBoxItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { listBoxItemTemplate } from './list-box-item.template'
 import { setupListBoxItem } from './setup.component'
 
 export const TListBoxItemElement = ElementBase(HTMLDivElement, {
-	descriptor: ListBoxItemDescriptor(),
-	facade: ListBoxCollectionItemDescriptor(),
+	descriptor: ListBoxItemDescriptor,
+	facade: ListBoxCollectionItemDescriptor,
 	template: listBoxItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupListBoxItem,
@@ -40,6 +40,4 @@ export const TListBoxItemElement = ElementBase(HTMLDivElement, {
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
  * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TListBoxItemElementProps = HTMLDivElement &
-	IElementBase<IListBoxItem, TListBoxItemCollectionFacade> &
-	TElementProps<typeof ListBoxItemDescriptor, HTMLDivElement>
+export type TListBoxItemElementProps = TElementType<typeof TListBoxItemElement>

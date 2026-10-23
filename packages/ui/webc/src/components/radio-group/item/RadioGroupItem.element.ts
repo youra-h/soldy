@@ -29,13 +29,13 @@
 import { RadioGroupCollectionItemDescriptor, RadioGroupItemDescriptor } from '@soldy-ui/setup'
 import type { IRadioGroupItem, TRadioGroupItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { radioGroupItemTemplate } from './radio-group-item.template'
 import { setupRadioGroupItem } from './setup.component'
 
 export const TRadioGroupItemElement = ElementBase(HTMLLabelElement, {
-	descriptor: RadioGroupItemDescriptor(),
-	facade: RadioGroupCollectionItemDescriptor(),
+	descriptor: RadioGroupItemDescriptor,
+	facade: RadioGroupCollectionItemDescriptor,
 	template: radioGroupItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupRadioGroupItem,
@@ -47,6 +47,4 @@ export const TRadioGroupItemElement = ElementBase(HTMLLabelElement, {
  * дескриптора вместе с пропсами его плагинов и фасада (`active`) — без тех,
  * что у `label` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TRadioGroupItemElementProps = HTMLLabelElement &
-	IElementBase<IRadioGroupItem, TRadioGroupItemCollectionFacade> &
-	TElementProps<typeof RadioGroupItemDescriptor, HTMLLabelElement>
+export type TRadioGroupItemElementProps = TElementType<typeof TRadioGroupItemElement>

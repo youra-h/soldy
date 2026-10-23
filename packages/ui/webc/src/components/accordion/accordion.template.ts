@@ -49,16 +49,12 @@ export const ACCORDION_ITEM_SLOTS: TItemSlots = {
 /** Петля секций из данных — только у аккордеона без секций разметки. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<IAccordionItem, number>>()
 
-function isSection(node: Element): node is TAccordionItemElementProps {
-	return node instanceof TAccordionItemElement
-}
-
 /** Секция из данных: инстанс данных и копии образцов — до вставки. */
 function sectionOf(
 	ctx: ITemplateContext<IAccordion, TAccordionCollectionFacade>,
 	item: IAccordionItem,
 ): TAccordionItemElementProps {
-	const section = createItem(ctx.root.ownerDocument, 'div', 'so-accordion-item', isSection)
+	const section = createItem(ctx.root.ownerDocument, TAccordionItemElement)
 
 	section.ctrl = item
 	lendSamples(ctx, section, ACCORDION_ITEM_SLOTS)

@@ -21,14 +21,14 @@
 import { AccordionCollectionDescriptor, AccordionDescriptor } from '@soldy-ui/setup'
 import type { IAccordion, TAccordionCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { accordionTemplate } from './accordion.template'
 import { TAccordionItemElement } from './item'
 import { setupAccordion } from './setup.component'
 
 export const TAccordionElement = ElementBase(HTMLDivElement, {
-	descriptor: AccordionDescriptor(),
-	facade: AccordionCollectionDescriptor(),
+	descriptor: AccordionDescriptor,
+	facade: AccordionCollectionDescriptor,
 	template: accordionTemplate,
 	root: { strategy: 'host', sets: ['attrs'] },
 	setup: setupAccordion,
@@ -44,6 +44,4 @@ defineElement('so-accordion-item', TAccordionItemElement, 'div')
  * `engine`) — без тех, что у `div` уже есть, и без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TAccordionElementProps = HTMLDivElement &
-	IElementBase<IAccordion, TAccordionCollectionFacade> &
-	TElementProps<typeof AccordionDescriptor, HTMLDivElement>
+export type TAccordionElementProps = TElementType<typeof TAccordionElement>

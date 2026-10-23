@@ -23,13 +23,13 @@
 import { PaginationCollectionItemDescriptor, PaginationItemDescriptor } from '@soldy-ui/setup'
 import type { IPaginationItem, TPaginationItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { paginationItemTemplate } from './pagination-item.template'
 import { setupPaginationItem } from './setup.component'
 
 export const TPaginationItemElement = ElementBase(HTMLLIElement, {
-	descriptor: PaginationItemDescriptor(),
-	facade: PaginationCollectionItemDescriptor(),
+	descriptor: PaginationItemDescriptor,
+	facade: PaginationCollectionItemDescriptor,
 	template: paginationItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupPaginationItem,
@@ -41,6 +41,4 @@ export const TPaginationItemElement = ElementBase(HTMLLIElement, {
  * дескриптора — без тех, что у `li` уже есть, и без `HOST_PROPS`
  * (`TElementProps`). Входов у страницы нет: всё ей пишет пагинация.
  */
-export type TPaginationItemElementProps = HTMLLIElement &
-	IElementBase<IPaginationItem, TPaginationItemCollectionFacade> &
-	TElementProps<typeof PaginationItemDescriptor, HTMLLIElement>
+export type TPaginationItemElementProps = TElementType<typeof TPaginationItemElement>

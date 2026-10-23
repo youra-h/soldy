@@ -29,12 +29,12 @@
 import { DrawerDescriptor } from '@soldy-ui/setup'
 import type { IDrawer } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { drawerTemplate } from './drawer.template'
 import { setupDrawer } from './setup.component'
 
 export const TDrawerElement = ElementBase(HTMLDivElement, {
-	descriptor: DrawerDescriptor(),
+	descriptor: DrawerDescriptor,
 	template: drawerTemplate,
 	root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },
 	setup: setupDrawer,
@@ -47,6 +47,4 @@ defineElement('so-drawer', TDrawerElement, 'div')
  * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов — без
  * тех, что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TDrawerElementProps = HTMLDivElement &
-	IElementBase<IDrawer> &
-	TElementProps<typeof DrawerDescriptor, HTMLDivElement>
+export type TDrawerElementProps = TElementType<typeof TDrawerElement>

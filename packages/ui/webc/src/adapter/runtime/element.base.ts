@@ -87,22 +87,42 @@ export type TElementProps<
 	TNative extends HTMLElement,
 > = Omit<DescriptorComponentProps<TDescriptorFn>, keyof TNative | THostProp | 'ctrl'>
 
+export type TDescriptorFactory = (...args: any[]) => IComponentDescriptor
+
+/** Свои атрибуты элемента свойствами: значение — атрибут, без него `null`; `undefined` и `null` его снимают. */
+export type TOwnAttributes<TOwn extends string> = { [K in TOwn]: string | null | undefined }
+
+/** Тип элемента: нативный элемент тега, своё базы, свойства пропов и своих атрибутов. */
+export type TElementOf<
+	TNative extends HTMLElement,
+	TDescriptor extends TDescriptorFactory,
+	TInstance,
+	TFacade = unknown,
+	TOwnerFacade = unknown,
+	TOwn extends string = never,
+> = TNative &
+	IElementBase<TInstance, TFacade, TOwnerFacade> &
+	TElementProps<TDescriptor, TNative> &
+	TOwnAttributes<TOwn>
+
 /** `TOutputs` — выходы плагинов дескриптора: шаблон читает их в состоянии с типом. */
 export interface IElementSpec<
 	TInstance,
 	TFacade = unknown,
 	TOutputs = unknown,
 	TOwnerFacade = unknown,
+	TDescriptor extends TDescriptorFactory = TDescriptorFactory,
+	TOwn extends string = never,
 > {
-	readonly descriptor: IComponentDescriptor
+	readonly descriptor: TDescriptor
 	/** Дескриптор фасада коллекции: его пропсы — тоже входы элемента. */
-	readonly facade?: IComponentDescriptor
+	readonly facade?: TDescriptorFactory
 	/** Дескриптор фасада своей коллекции у пункта с подменю. */
-	readonly ownerFacade?: IComponentDescriptor
+	readonly ownerFacade?: TDescriptorFactory
 	readonly template: ITemplate<TInstance, TFacade, TOutputs, TOwnerFacade>
 	readonly root?: TRootSpec
 	/** Свои атрибуты сверх пропов (`icon`): значение хранит атрибут, свойство его отражает. */
-	readonly attributes?: readonly string[]
+	readonly attributes?: readonly TOwn[]
 	setup(
 		host: HTMLElement,
 		ctrl: TInstance | undefined,
@@ -114,11 +134,22 @@ export interface IElementSpec<
 /** Rest `any[]` — форма конструктора миксина: без неё класс базы с нативным не сложить. */
 export type TNativeElementClass = new (...args: any[]) => HTMLElement
 
-export type TElementClass<TInstance, TFacade = unknown, TOwnerFacade = unknown> = (new (
-	...args: any[]
-) => IElementBase<TInstance, TFacade, TOwnerFacade>) & {
+/**
+ * `is` — проверка элемента с его полным типом: свойства пропов база вешает на
+ * прототип в рантайме, и тип экземпляра класса о них не знает.
+ */
+export type TElementClass<
+	TInstance,
+	TFacade = unknown,
+	TOwnerFacade = unknown,
+	TElement = IElementBase<TInstance, TFacade, TOwnerFacade>,
+> = (new (...args: any[]) => IElementBase<TInstance, TFacade, TOwnerFacade>) & {
 	readonly observedAttributes: string[]
+	is(node: unknown): node is TElement
 }
+
+/** Тип элемента класса: `TElementType<typeof TButtonElement>`. */
+export type TElementType<TClass> = TClass extends { is(node: unknown): node is infer T } ? T : never
 
 /**
  * Тип результата объявлен явно: класс, выведенный из выражения, TypeScript в
@@ -130,11 +161,19 @@ export function ElementBase<
 	TFacade = unknown,
 	TOutputs = unknown,
 	TOwnerFacade = unknown,
+	TDescriptor extends TDescriptorFactory = TDescriptorFactory,
+	TOwn extends string = never,
 >(
 	Native: TNative,
-	spec: IElementSpec<TInstance, TFacade, TOutputs, TOwnerFacade>,
-): TNative & TElementClass<TInstance, TFacade, TOwnerFacade> {
-	const descriptors = [spec.descriptor, spec.facade, spec.ownerFacade].filter(
+	spec: IElementSpec<TInstance, TFacade, TOutputs, TOwnerFacade, TDescriptor, TOwn>,
+): TNative &
+	TElementClass<
+		TInstance,
+		TFacade,
+		TOwnerFacade,
+		TElementOf<InstanceType<TNative>, TDescriptor, TInstance, TFacade, TOwnerFacade, TOwn>
+	> {
+	const descriptors = [spec.descriptor(), spec.facade?.(), spec.ownerFacade?.()].filter(
 		(descriptor): descriptor is IComponentDescriptor => descriptor !== undefined,
 	)
 	const plan = planOf(spec.root)
@@ -160,6 +199,19 @@ export function ElementBase<
 	class TElementBase extends Native implements IElementBase<TInstance, TFacade, TOwnerFacade> {
 		static get observedAttributes(): string[] {
 			return [...attributes.keys(), ...own.keys()]
+		}
+
+		static is(
+			node: unknown,
+		): node is TElementOf<
+			InstanceType<TNative>,
+			TDescriptor,
+			TInstance,
+			TFacade,
+			TOwnerFacade,
+			TOwn
+		> {
+			return node instanceof TElementBase
 		}
 
 		private _binding?: TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>

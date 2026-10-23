@@ -7,12 +7,17 @@
  */
 
 import { isContent } from '../runtime/content'
+import { registrationOf } from '../runtime/defineElement'
 import { markOwnerMarkup } from '../runtime/marks'
 import { lend } from './lend'
 import type { ITemplateContext } from './types'
 
+/** Класс элемента: по нему шаблон находит имя и тег, под которыми тот зарегистрирован. */
+export type TPartClass<T extends HTMLElement> = {
+	is(node: unknown): node is T
+}
+
 export type TDetailOptions = {
-	readonly is: string
 	/** Имя места в разметке владельца: `input.clear`. */
 	readonly embedded: string
 	/** Статика тега детали: `<button>` без `type="button"` отправил бы форму. */
@@ -23,16 +28,19 @@ export type TDetailOptions = {
 export type TItemSlots = Readonly<Record<string, string>>
 
 /** Элемент коллекции из данных. Незарегистрированная часть — ошибка, а не обычный узел. */
-export function createItem<T extends HTMLElement>(
-	owner: Document,
-	tag: string,
-	is: string,
-	guard: (node: Element) => node is T,
-): T {
-	const element = owner.createElement(tag, { is })
+export function createItem<T extends HTMLElement>(owner: Document, part: TPartClass<T>): T {
+	const registration = registrationOf(part)
 
-	if (!guard(element)) {
-		throw new Error(`[soldy] <${tag} is="${is}"> не элемент soldy: модуль элемента не загружен`)
+	if (!registration) {
+		throw new Error('[soldy] Класс элемента не зарегистрирован: модуль элемента не загружен')
+	}
+
+	const element = owner.createElement(registration.tag, { is: registration.name })
+
+	if (!part.is(element)) {
+		throw new Error(
+			`[soldy] <${registration.tag} is="${registration.name}"> не элемент своего класса`,
+		)
 	}
 
 	markOwnerMarkup(element)
@@ -42,11 +50,10 @@ export function createItem<T extends HTMLElement>(
 
 export function createDetail<T extends HTMLElement>(
 	owner: Document,
-	tag: string,
-	{ is, embedded, attributes = {} }: TDetailOptions,
-	guard: (node: Element) => node is T,
+	part: TPartClass<T>,
+	{ embedded, attributes = {} }: TDetailOptions,
 ): T {
-	const element = createItem(owner, tag, is, guard)
+	const element = createItem(owner, part)
 
 	element.setAttribute('embedded', embedded)
 

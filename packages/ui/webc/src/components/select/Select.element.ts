@@ -34,15 +34,15 @@
 import { SelectCollectionDescriptor, SelectDescriptor } from '@soldy-ui/setup'
 import type { ISelect, TSelectCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { TSelectGroupElement } from './group'
 import { TSelectItemElement } from './item'
 import { selectTemplate } from './select.template'
 import { setupSelect } from './setup.component'
 
 export const TSelectElement = ElementBase(HTMLDivElement, {
-	descriptor: SelectDescriptor(),
-	facade: SelectCollectionDescriptor(),
+	descriptor: SelectDescriptor,
+	facade: SelectCollectionDescriptor,
 	template: selectTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupSelect,
@@ -59,6 +59,4 @@ defineElement('so-select-item', TSelectItemElement, 'div')
  * `div` уже есть (`id` — собственный `id` корня), и без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TSelectElementProps = HTMLDivElement &
-	IElementBase<ISelect, TSelectCollectionFacade> &
-	TElementProps<typeof SelectDescriptor, HTMLDivElement>
+export type TSelectElementProps = TElementType<typeof TSelectElement>

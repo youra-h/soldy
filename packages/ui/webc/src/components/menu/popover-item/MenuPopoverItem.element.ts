@@ -19,13 +19,13 @@
 import { MenuCollectionItemDescriptor, MenuPopoverItemDescriptor } from '@soldy-ui/setup'
 import type { IMenuPopoverItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { menuPopoverItemTemplate } from './menu-popover-item.template'
 import { setupMenuPopoverItem } from './setup.component'
 
 export const TMenuPopoverItemElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuPopoverItemDescriptor(),
-	facade: MenuCollectionItemDescriptor(),
+	descriptor: MenuPopoverItemDescriptor,
+	facade: MenuCollectionItemDescriptor,
 	template: menuPopoverItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuPopoverItem,
@@ -37,6 +37,4 @@ export const TMenuPopoverItemElement = ElementBase(HTMLDivElement, {
  * дескриптора вместе с пропсами его плагинов — без тех, что у `div` уже есть,
  * и без `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuPopoverItemElementProps = HTMLDivElement &
-	IElementBase<IMenuPopoverItem, TMenuItemCollectionFacade> &
-	TElementProps<typeof MenuPopoverItemDescriptor, HTMLDivElement>
+export type TMenuPopoverItemElementProps = TElementType<typeof TMenuPopoverItemElement>

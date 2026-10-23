@@ -29,13 +29,13 @@
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import type { IButton } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, IElementSpec, TElementClass, TElementProps } from '../../adapter'
+import type { TElementOf } from '../../adapter'
 import { buttonTemplate } from './button.template'
 import { setupButton } from './setup.component'
 
 /** Описание элемента Button — одно на все его теги: дескриптор, шаблон и setup. */
-const BUTTON: IElementSpec<IButton> = {
-	descriptor: ButtonDescriptor(),
+const BUTTON = {
+	descriptor: ButtonDescriptor,
 	template: buttonTemplate,
 	setup: setupButton,
 }
@@ -54,8 +54,11 @@ defineElement('so-button', TButtonElement, 'button')
 export type TButtonTag = 'div' | 'span'
 
 /** Класс Button на теге `K`: нативный класс тега и своё элемента soldy. */
-export type TButtonTagClass<K extends TButtonTag> = (new () => HTMLElementTagNameMap[K]) &
-	TElementClass<IButton>
+export type TButtonTagClass<K extends TButtonTag> = ReturnType<typeof variant<K>>
+
+function variant<K extends TButtonTag>(Native: new () => HTMLElementTagNameMap[K]) {
+	return ElementBase(Native, BUTTON)
+}
 
 /**
  * Регистрация Button на теге: класс на нативном классе тега создаётся и
@@ -71,7 +74,7 @@ function registration<K extends TButtonTag>(
 
 	return () => {
 		if (!element) {
-			element = ElementBase(Native, BUTTON)
+			element = variant(Native)
 			defineElement(`so-button-${tag}`, element, tag)
 		}
 
@@ -107,6 +110,8 @@ export function registerButtonTag<K extends TButtonTag>(tag: K): TButtonTagClass
  * `HOST_PROPS` (`TElementProps`). У `div` и `span` своего `disabled`
  * нет, и `disabled` там — свойство пропа.
  */
-export type TButtonElementProps<TNative extends HTMLElement = HTMLButtonElement> = TNative &
-	IElementBase<IButton> &
-	TElementProps<typeof ButtonDescriptor, TNative>
+export type TButtonElementProps<TNative extends HTMLElement = HTMLButtonElement> = TElementOf<
+	TNative,
+	typeof ButtonDescriptor,
+	IButton
+>

@@ -127,31 +127,21 @@ const parts = new WeakMap<HTMLElement, TNumberInputParts>()
 /** Кнопка очистки каждого поля — строится с первым `clearable` и остаётся за ним. */
 const clears = new WeakMap<HTMLElement, TClearButton>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Кнопка шага — деталь разметки. Своя иконка — только без слота значка:
  * заданный слот заменяет её целиком, а кнопка с удержанием остаётся своей.
  */
 function stepButton(owner: Document, spec: TStepSpec, slotted: boolean): TStepButton {
-	const button = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: spec.embedded, attributes: { type: 'button' } },
-		isButton,
-	)
+	const button = createDetail(owner, TButtonElement, {
+		embedded: spec.embedded,
+		attributes: { type: 'button' },
+	})
 
 	button.className = spec.className
 
 	if (slotted) return { button, icon: null }
 
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded: spec.iconEmbedded }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded: spec.iconEmbedded })
 
 	icon.icon = spec.role
 	lend(button, DEFAULT_SLOT, icon)
@@ -179,18 +169,11 @@ function clearOf(ctx: ITemplateContext<INumberInput>): TClearButton {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'number-input.clear', attributes: { type: 'button' } },
-		isButton,
-	)
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'number-input.clear-icon' },
-		isIcon,
-	)
+	const button = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'number-input.clear',
+		attributes: { type: 'button' },
+	})
+	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'number-input.clear-icon' })
 
 	button.className = 'so-number-input__clear'
 	icon.icon = 'close'

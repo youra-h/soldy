@@ -48,10 +48,6 @@ import type { TTooltipOutputs } from './setup.component'
 /** Панель подсказки каждого элемента — одна на всё время его жизни. */
 const panels = new WeakMap<HTMLElement, TFrameElementProps>()
 
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
 /** Триггер — первый элемент слота: текст вокруг него ссылки не несёт. */
 function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
 	return nodes.find((node): node is Element => node instanceof Element)
@@ -60,12 +56,7 @@ function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
 export const tooltipTemplate: ITemplate<ITooltip, unknown, TTooltipOutputs> = {
 	create: (root) => {
 		const { ownerDocument } = root
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'tooltip.frame' },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, { embedded: 'tooltip.frame' })
 		const content = ownerDocument.createElement('div')
 
 		panel.className = 'so-tooltip__panel'

@@ -205,26 +205,6 @@ const cellLoops = new WeakMap<
 	TKeyedLoop<TCalendarCell, TCellKey, HTMLElement>
 >()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isListBox(node: Element): node is TListBoxElementProps {
-	return node instanceof TListBoxElement
-}
-
-function isPopover(node: Element): node is TPopoverElementProps<HTMLDivElement> {
-	return node instanceof TPopoverDivElement
-}
-
-function isDay(node: Element): node is TCalendarItemElementProps {
-	return node instanceof TCalendarItemElement
-}
-
 /**
  * Кнопка со стрелкой — деталь разметки. Своя иконка — только без слота
  * значка: заданный слот заменяет её целиком. Роль одна на все стрелки,
@@ -233,18 +213,16 @@ function isDay(node: Element): node is TCalendarItemElementProps {
  * указателя календаря на корне.
  */
 function arrowOf(owner: Document, spec: TArrowSpec, slotted: boolean): TArrow {
-	const button = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: spec.embedded, attributes: { type: 'button' } },
-		isButton,
-	)
+	const button = createDetail(owner, TButtonElement, {
+		embedded: spec.embedded,
+		attributes: { type: 'button' },
+	})
 
 	button.className = spec.className
 
 	if (slotted) return { button, icon: null }
 
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded: spec.iconEmbedded }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded: spec.iconEmbedded })
 
 	icon.icon = 'arrowRight'
 	lend(button, DEFAULT_SLOT, icon)
@@ -268,33 +246,19 @@ function syncArrow(arrow: TArrow, size: TButtonElementProps['size'], disabled: b
  * подключении.
  */
 function headingOf(owner: Document, picker: TCalendarPicker): THeading {
-	const popover = createDetail(
-		owner,
-		'div',
-		{ is: 'so-popover-div', embedded: 'calendar.picker' },
-		isPopover,
-	)
-	const title = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: 'calendar.title', attributes: { type: 'button' } },
-		isButton,
-	)
+	const popover = createDetail(owner, TPopoverDivElement, { embedded: 'calendar.picker' })
+	const title = createDetail(owner, TButtonElement, {
+		embedded: 'calendar.title',
+		attributes: { type: 'button' },
+	})
 	const titleText = owner.createElement('span')
 	const card = owner.createElement('div')
-	const list = createDetail(
-		owner,
-		'div',
-		{ is: 'so-list-box', embedded: 'calendar.picker-list' },
-		isListBox,
-	)
+	const list = createDetail(owner, TListBoxElement, { embedded: 'calendar.picker-list' })
 	const header = owner.createElement('div')
-	const heading = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: 'calendar.picker-heading', attributes: { type: 'button' } },
-		isButton,
-	)
+	const heading = createDetail(owner, TButtonElement, {
+		embedded: 'calendar.picker-heading',
+		attributes: { type: 'button' },
+	})
 	const prev = arrowOf(owner, PICKER_PREV, false)
 	const next = arrowOf(owner, PICKER_NEXT, false)
 
@@ -394,7 +358,7 @@ function cellOf(ctx: TCalendarContext, cell: TCalendarCell): HTMLElement {
 		return filler
 	}
 
-	const day = createItem(ownerDocument, 'td', 'so-calendar-item', isDay)
+	const day = createItem(ownerDocument, TCalendarItemElement)
 
 	day.ctrl = cell.item
 	lendSamples(ctx, day, CALENDAR_ITEM_SLOTS)

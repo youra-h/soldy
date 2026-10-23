@@ -16,12 +16,12 @@
 import { ListBoxGroupDescriptor } from '@soldy-ui/setup'
 import type { IItemGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { listBoxGroupTemplate } from './list-box-group.template'
 import { setupListBoxGroup } from './setup.component'
 
 export const TListBoxGroupElement = ElementBase(HTMLDivElement, {
-	descriptor: ListBoxGroupDescriptor(),
+	descriptor: ListBoxGroupDescriptor,
 	template: listBoxGroupTemplate,
 	setup: setupListBoxGroup,
 })
@@ -31,6 +31,4 @@ export const TListBoxGroupElement = ElementBase(HTMLDivElement, {
  * свойства пропов дескриптора (`label`) — без тех, что у `div` уже есть, и без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TListBoxGroupElementProps = HTMLDivElement &
-	IElementBase<IItemGroup> &
-	TElementProps<typeof ListBoxGroupDescriptor, HTMLDivElement>
+export type TListBoxGroupElementProps = TElementType<typeof TListBoxGroupElement>

@@ -115,18 +115,6 @@ type TPaginationParts = {
 
 const parts = new WeakMap<HTMLElement, TPaginationParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isPage(node: Element): node is TPaginationItemElementProps {
-	return node instanceof TPaginationItemElement
-}
-
 /**
  * Стрелка — деталь разметки. Своя иконка — только без слота значка: заданный
  * слот заменяет её целиком. Нажатие — команда инстанса той связки, что живёт
@@ -134,12 +122,10 @@ function isPage(node: Element): node is TPaginationItemElementProps {
  */
 function arrowOf(ctx: TPaginationContext, spec: TArrowSpec, slotted: boolean): TArrow {
 	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: spec.embedded, attributes: { type: 'button' } },
-		isButton,
-	)
+	const button = createDetail(ownerDocument, TButtonElement, {
+		embedded: spec.embedded,
+		attributes: { type: 'button' },
+	})
 
 	button.className = spec.className
 	button.addEventListener('click', () => {
@@ -148,12 +134,7 @@ function arrowOf(ctx: TPaginationContext, spec: TArrowSpec, slotted: boolean): T
 
 	if (slotted) return { button, icon: null }
 
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: spec.iconEmbedded },
-		isIcon,
-	)
+	const icon = createDetail(ownerDocument, TIconElement, { embedded: spec.iconEmbedded })
 
 	// Одна роль на обе стрелки: роли «влево» в контракте иконок нет, и ту
 	// стрелку, что смотрит в начало строки, зеркалит тема
@@ -191,7 +172,7 @@ function cellOf(ctx: TPaginationContext, cell: TPaginationCell): HTMLElement {
 		return ellipsis
 	}
 
-	const page = createItem(ownerDocument, 'li', 'so-pagination-item', isPage)
+	const page = createItem(ownerDocument, TPaginationItemElement)
 
 	page.ctrl = cell.item
 	lendSamples(ctx, page, PAGINATION_ITEM_SLOTS)

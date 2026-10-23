@@ -25,13 +25,13 @@
 import { VirtualDescriptor } from '@soldy-ui/setup'
 import type { IVirtual } from '@soldy-ui/core'
 import { ElementBase } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementType } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { setupVirtual } from './setup.component'
 import { virtualTemplate } from './virtual.template'
 
 export const TVirtualElement = ElementBase(HTMLElement, {
-	descriptor: VirtualDescriptor(),
+	descriptor: VirtualDescriptor,
 	template: virtualTemplate,
 	setup: setupVirtual,
 })
@@ -43,6 +43,4 @@ defineAutonomousElement('so-virtual', TVirtualElement)
  * свойства пропов дескриптора (`enabled`) — без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TVirtualElementProps = HTMLElement &
-	IElementBase<IVirtual> &
-	TElementProps<typeof VirtualDescriptor, HTMLElement>
+export type TVirtualElementProps = TElementType<typeof TVirtualElement>

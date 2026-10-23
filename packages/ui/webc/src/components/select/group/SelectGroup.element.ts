@@ -16,12 +16,12 @@
 import { SelectGroupDescriptor } from '@soldy-ui/setup'
 import type { IItemGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementType } from '../../../adapter'
 import { selectGroupTemplate } from './select-group.template'
 import { setupSelectGroup } from './setup.component'
 
 export const TSelectGroupElement = ElementBase(HTMLDivElement, {
-	descriptor: SelectGroupDescriptor(),
+	descriptor: SelectGroupDescriptor,
 	template: selectGroupTemplate,
 	setup: setupSelectGroup,
 })
@@ -31,6 +31,4 @@ export const TSelectGroupElement = ElementBase(HTMLDivElement, {
  * свойства пропов дескриптора (`label`) — без тех, что у `div` уже есть, и без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TSelectGroupElementProps = HTMLDivElement &
-	IElementBase<IItemGroup> &
-	TElementProps<typeof SelectGroupDescriptor, HTMLDivElement>
+export type TSelectGroupElementProps = TElementType<typeof TSelectGroupElement>

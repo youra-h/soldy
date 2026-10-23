@@ -69,14 +69,6 @@ type TDrawerParts = {
 
 const parts = new WeakMap<HTMLElement, TDrawerParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 export const drawerTemplate: ITemplate<IDrawer, unknown, TDrawerOutputs> = {
 	create: (root, ctx) => {
 		const { hasSlot } = ctx
@@ -87,12 +79,10 @@ export const drawerTemplate: ITemplate<IDrawer, unknown, TDrawerOutputs> = {
 		const title = ownerDocument.createElement('h2')
 		const body = ownerDocument.createElement('div')
 		const footer = ownerDocument.createElement('div')
-		const close = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'drawer.close', attributes: { type: 'button' } },
-			isButton,
-		)
+		const close = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'drawer.close',
+			attributes: { type: 'button' },
+		})
 
 		backdrop.className = 'so-drawer__backdrop'
 		handle.className = 'so-drawer__handle'
@@ -105,12 +95,9 @@ export const drawerTemplate: ITemplate<IDrawer, unknown, TDrawerOutputs> = {
 		// Своя иконка крестика — только без слота `close-icon`: заданный слот
 		// заменяет её целиком
 		if (!hasSlot('close-icon')) {
-			const icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'drawer.close-icon' },
-				isIcon,
-			)
+			const icon = createDetail(ownerDocument, TIconElement, {
+				embedded: 'drawer.close-icon',
+			})
 
 			icon.icon = 'close'
 			lend(close, DEFAULT_SLOT, icon)
