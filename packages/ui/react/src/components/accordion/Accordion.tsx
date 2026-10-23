@@ -4,25 +4,7 @@ import { AccordionItem } from './item'
 import { useSetupAccordion } from './setup.component'
 import type { AccordionProps } from './base.component'
 
-/**
- * Accordion — набор раскрывающихся секций. На корне — `attrs`, как у Vue.
- *
- * Секции — дети (`<Accordion.Item>`), а без детей — `shown` коллекции, по
- * `AccordionItem` на элемент. Слоты элементов статические и получают элемент
- * через scope: `item` — заголовок, `item-leading` и `item-trailing` — по его
- * краям, `item-leading-icon` и `item-trailing-icon` — стрелки, `item-content`
- * — содержимое панели. Отдельного `Accordion.Content` нет: панель лежит внутри
- * секции и отдельно от неё не существует.
- *
- * Проброс целиком: у каждого слота секции есть `item-<слот>`, и scope у него —
- * scope слота секции плюс сама секция. Заголовок со своим scope секция
- * получает функцией (`relaySlot`), а не готовым узлом, — иначе `text` и
- * `selected` до слота аккордеона не дошли бы.
- *
- * Всё содержимое — в слое лифта аккордеона (`Elevate`): секция, смонтированная
- * внутри, прочтёт движок и регистратор этого аккордеона и при коммите войдёт в
- * его коллекцию.
- */
+/** Accordion — набор раскрывающихся секций; слоты секций — AGENTS.md (React), «Слоты». */
 export function Accordion(props: AccordionProps): ReactElement | null {
 	const { ref, forwardProps, state, layer } = useSetupAccordion(props)
 

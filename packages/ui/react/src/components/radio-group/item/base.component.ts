@@ -13,12 +13,7 @@ export type RadioGroupItemAttributes = TDomAttributes<
 	RadioGroupItemEventProps
 >
 
-/**
- * Пропсы радио. Отметка (`active` фасада) входит в интерфейс пропсов ядра
- * (`IRadioGroupItemProps`), и тип её несёт дескриптор радио. `name`, `size`,
- * `variant` и `view` раздаёт группа, и в разметке их не задать — ни пропом,
- * ни атрибутом поля.
- */
+/** Пропсы радио: `name`, `size`, `variant` и `view` раздаёт группа, в разметке их не задать. */
 export type RadioGroupItemProps = UseDomProps<
 	typeof RadioGroupItemDescriptor,
 	IRadioGroupItem,

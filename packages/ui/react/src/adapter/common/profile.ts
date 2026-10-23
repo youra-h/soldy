@@ -1,9 +1,4 @@
-/**
- * Профиль React: имена поверхности и слот по умолчанию.
- *
- * Статического слоя у React нет — имена пропов выводятся из типов, — поэтому
- * профиль нужен только связке монтирования (`adapter.connect()`).
- */
+/** Профиль React для связки (`adapter.connect()`): имена и слот по умолчанию. */
 
 import type { IAdapterProfile } from '@soldy-ui/setup'
 import { ReactNaming } from './naming'

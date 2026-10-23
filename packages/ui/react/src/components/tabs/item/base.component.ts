@@ -3,7 +3,7 @@ import type { ITabsItem } from '@soldy-ui/core'
 import type { TabsCollectionItemDescriptor, TabsItemDescriptor } from '@soldy-ui/setup'
 import type { EventProps, TDomAttributes, UseDomProps } from '../../../types'
 
-/** События таба — свои (ядро и плагины) и фасада: активность, порядок, закрываемость. */
+/** События таба — свои и фасада. */
 export type TabsItemEventProps = EventProps<typeof TabsItemDescriptor> &
 	EventProps<typeof TabsCollectionItemDescriptor>
 
@@ -14,8 +14,4 @@ export type TabsItemAttributes = TDomAttributes<
 	TabsItemEventProps
 >
 
-/**
- * Пропсы таба. Членство в коллекции (`active`) входит в интерфейс пропсов ядра
- * (`ITabsItemProps`), и тип его несёт дескриптор таба.
- */
 export type TabsItemProps = UseDomProps<typeof TabsItemDescriptor, ITabsItem, TabsItemEventProps>

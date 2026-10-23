@@ -1,20 +1,3 @@
-/**
- * useSetupTabsItem — setup-слой таба (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у элементов Vue: собственный
- * (`TabsItemDescriptor` — текст, значение, закрываемость) и фасада
- * (`TabsCollectionItemDescriptor` — активность, порядок, итог закрываемости).
- * Расширение элемента берёт через лифт движок и регистратор набора и отдаёт
- * фасаду контекст таба.
- *
- * В коллекцию таб входит, когда `useAdapterContext` принимает контексты при
- * коммите, а не на рендере. Пересобранный набор — это новый движок: таб
- * пересобирается вслед за ним, потому что сменилось прочитанное через лифт.
- *
- * `context` отдаётся разметке явно: активация и закрытие — методы
- * item-адаптеров.
- */
-
 import {
 	TCollectionItemExtension,
 	TabsCollectionItemDescriptor,
@@ -38,13 +21,8 @@ export function useSetupTabsItem(props: TabsItemProps) {
 		return [adapter, item] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...facade.state, ...owner.state },
+		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
 	}
 }
