@@ -4,22 +4,8 @@ import { useSetupLabel } from './setup.component'
 import type { LabelProps } from './base.component'
 
 /**
- * Label — подпись контрола. Корень рисуется по `tag`, по умолчанию `label`;
- * модификаторы стороны, размера и варианта — на корне, тема читает всё отсюда.
- *
- * Связки через `for` и `id` нет: контрол — первый labelable-потомок `label`,
- * поэтому клик по тексту переключает его, а текст становится его доступным
- * именем. Внутри — только `span`: `div` и вложенный `label` HTML здесь
- * запрещает, а описание или ошибка вошли бы в имя.
- *
- * Порядок в DOM один на все стороны: контрол, потом текст. Сторону рисует тема.
- *
- * - контрол — `children` (слот `default`): CheckBox, Switch или
- *   RadioGroup.Item с `tag="span"` — корень радио сам `label`, а `label` в
- *   `label` запрещён, забытый тег ловит плагин подписи. Обёртка выравнивает
- *   контрол по первой строке текста;
- * - текст — слот `content`, без него — проп `text`. Вокруг них нет пробелов:
- *   пустую обёртку тема прячет по `:empty`.
+ * Label — подпись контрола: контрол вложен, внутри только `span`. docs/agents/a11y.md,
+ * «Видимое имя контрола — подпись `Label`, вложением».
  */
 export function Label(props: LabelProps): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupLabel(props)
@@ -30,7 +16,6 @@ export function Label(props: LabelProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 
-	// Наборы ядра, поверх — атрибуты снаружи, `ref` адаптера последним (`toRootProps`)
 	return (
 		<Tag {...toRootProps(ref, state, [attrs, aria, dataset], forwardProps)}>
 			<span className="so-label__control">{renderSlot(props.children)}</span>

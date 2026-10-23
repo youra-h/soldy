@@ -1,20 +1,3 @@
-/**
- * useSetupListBoxItem — setup-слой элемента ListBox (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у элементов Vue: собственный
- * (`ListBoxItemDescriptor` — текст и значение) и фасада
- * (`ListBoxCollectionItemDescriptor` — выбор, порядок, вид списка).
- * Расширение элемента берёт через лифт движок и регистратор списка и отдаёт
- * фасаду контекст элемента.
- *
- * В коллекцию элемент входит, когда `useAdapterContext` принимает контексты
- * при коммите, а не на рендере. Пересобранный список — это новый движок:
- * элемент пересобирается вслед за ним, потому что сменилось прочитанное через
- * лифт.
- *
- * `context` отдаётся разметке явно: выбор — метод item-адаптера.
- */
-
 import {
 	ListBoxCollectionItemDescriptor,
 	ListBoxItemDescriptor,
@@ -38,13 +21,8 @@ export function useSetupListBoxItem(props: ListBoxItemProps) {
 		return [adapter, item] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...facade.state, ...owner.state },
+		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
 	}
 }

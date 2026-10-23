@@ -16,33 +16,8 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CheckIcon = roleIcon('check')
 
 /**
- * SelectItem — опция списка панели: корень по `tag` (по умолчанию `div`) и
- * строка внутри — `Button` на `span`, как у Vue.
- *
- * Наборы ядра стоят на двух элементах. Корень несёт `dataset`, `attrs` и место
- * в коллекции (`order`): опции стоят флексом по месту в составе. Строка несёт
- * `aria` — вся ARIA опции на элементе, который и есть опция: `role="option"`
- * от ядра, `id` и `aria-selected` от коллекции, — и тот же `dataset`: фон при
- * подсветке и выборе тема рисует на самой кнопке и читает `data-highlighted`
- * и `data-selected` с неё. Набор опции ложится поверх того, что `Button`
- * пишет себе сам: `role="option"` перекрывает `role="button"`, а
- * `tabIndex={-1}` выводит строку из обхода — фокус остаётся на поле. Атрибуты
- * потребителя делятся, как у Vue: класс и стиль — корню, остальное — строке,
- * поверх её наборов.
- *
- * Тег строки фиксирован (`span`), а не берётся из `tag` опции: `tag` — тег
- * корня, под фиксированный тег строки написан `TSelectItem._ariaTag`. Вида у
- * строки нет: значения вида объявляет тема, строку опции она красит по
- * контексту (`.so-select-item`).
- *
- * Выбор — клик по строке, как у ListBox: выбирает через Select
- * (`adapters.select.choose()`), а выключенной опции отказывает он сам. Клик
- * потребителя приходит после выбора.
- *
- * Обёртка отметки рисуется, пока `indicator` не `none`, — и у невыбранных
- * тоже: она резервирует место, и строка не прыгает при выборе. Иконка внутри
- * — только у выбранной, слот `indicator-icon` подменяет её. `aria-hidden`:
- * состояние скринридеру объявляет `aria-selected`.
+ * SelectItem — опция списка панели: корень по `tag` и строка-опция — `Button` на `span`
+ * (под этот тег написан `TSelectItem._ariaTag`).
  */
 export function SelectItem(props: SelectItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupSelectItem(props)

@@ -1,19 +1,3 @@
-/**
- * useSetupAccordionItem — setup-слой секции Accordion (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у элементов Vue: собственный
- * (`AccordionItemDescriptor` — текст, значение, сторона стрелки) и фасада
- * (`AccordionCollectionItemDescriptor` — раскрытость, порядок, вид, сторона
- * панели в ARIA-связке). Расширение элемента берёт через лифт движок и
- * регистратор аккордеона и отдаёт фасаду контекст секции.
- *
- * В коллекцию секция входит, когда `useAdapterContext` принимает контексты при
- * коммите, а не на рендере. Пересобранный аккордеон — это новый движок: секция
- * пересобирается вслед за ним, потому что сменилось прочитанное через лифт.
- *
- * `context` отдаётся разметке явно: раскрытие — метод item-адаптера.
- */
-
 import {
 	AccordionCollectionItemDescriptor,
 	AccordionItemDescriptor,
@@ -37,13 +21,8 @@ export function useSetupAccordionItem(props: AccordionItemProps) {
 		return [adapter, item] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...facade.state, ...owner.state },
+		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
 	}
 }

@@ -1,21 +1,8 @@
-/**
- * Calendar — сетки месяцев на базе TCalendar и коллекции дней.
- *
- * День — часть `Calendar.Item`: дни кладёт в коллекцию вид календаря по
- * месяцам сеток, а содержимое дня приложение задаёт слотом `item`.
- */
-
 import { withParts } from '@soldy-ui/setup'
 import { Calendar as CalendarComponent } from './Calendar'
 import { CalendarItem } from './item'
 
-// 1. Base (типы и пропсы)
 export * from './base.component'
-
-// 2. Setup (логика и хуки)
-export { useSetupCalendar } from './setup.component'
-
-// 3. Части
 export * from './item'
 
 /** Основная форма — `<Calendar.Item>`; плоский `CalendarItem` работает так же. */

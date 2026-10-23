@@ -1,14 +1,3 @@
-/**
- * useSetupTabs — setup-слой Tabs (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой: свой (`TabsDescriptor`) и фасада коллекции
- * (`TabsCollectionDescriptor`) на общем наборе. Фасад собран на инстансе
- * владельца, поэтому пересобираются и уничтожаются они вместе.
- *
- * Расширения коллекции опускают движок и регистратор табов лифтом компонента;
- * детям его слой (`layer`) отдаёт `Elevate` в разметке — и табам, и панелям.
- */
-
 import {
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
@@ -29,9 +18,6 @@ export function useSetupTabs(props: TabsProps) {
 			TabsCollectionDescriptor(),
 			{
 				props,
-				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-				// не создаёт, лишь доложит недостающие расширения в неё же.
-				// Не дали — соберёт свою. Развилка в `completeEngine`
 				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle },
@@ -42,13 +28,8 @@ export function useSetupTabs(props: TabsProps) {
 		return [adapter, collectionAdapter] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: collectionBinding.forwardProps,
-		state: { ...owner.state, ...collectionBinding.state },
+		...useCollectionAdapter(useAdapter(adapter, props), collectionAdapter, props),
 		layer,
 	}
 }

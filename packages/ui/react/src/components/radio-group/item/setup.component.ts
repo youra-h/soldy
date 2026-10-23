@@ -1,20 +1,3 @@
-/**
- * useSetupRadioGroupItem — setup-слой радио (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у элементов Vue: собственный
- * (`RadioGroupItemDescriptor` — значение, имя, выключенность) и фасада
- * (`RadioGroupCollectionItemDescriptor` — отмечено ли радио в группе).
- * Расширение элемента берёт через лифт движок и регистратор группы и отдаёт
- * фасаду контекст радио.
- *
- * В коллекцию радио входит, когда `useAdapterContext` принимает контексты при
- * коммите, а не на рендере. Пересобранная группа — это новый движок: радио
- * пересобирается вслед за ней, потому что сменилось прочитанное через лифт.
- *
- * `context` отдаётся разметке явно: отметка пользователем — свойство
- * item-адаптера активации.
- */
-
 import {
 	RadioGroupCollectionItemDescriptor,
 	RadioGroupItemDescriptor,
@@ -39,16 +22,13 @@ export function useSetupRadioGroupItem(props: RadioGroupItemProps) {
 	})
 
 	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
+	const { forwardProps, state } = useCollectionAdapter(owner, item, props)
 
 	return {
 		...owner,
-		forwardProps: facade.forwardProps,
-		// Из фасада разметке нужна только отметка. Место в коллекции (`order`)
-		// корню не отдаётся: группа радио не раскладывает — они стоят где
-		// угодно, хоть в строках чужого списка, — и номер увёл бы радио по
-		// чужому флекс-ряду. Так и у Vue: у радио нет привязки `order`
-		state: { ...owner.state, active: facade.state.active },
+		forwardProps,
+		state: { ...owner.state, active: state.active },
+		// Разметке: отметка пользователем — свойство item-адаптера активации
 		context: item.instance.context,
 	}
 }
