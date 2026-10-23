@@ -1,0 +1,130 @@
+/* ─── RadioGroup.Item ─────────────────────────────────────────
+ * Структура — только у элемента. У контейнера группы её нет намеренно
+ * (решение владельца): радио одной группы стоят где угодно в разметке — в
+ * строках списка, в ячейках таблицы, — и раскладку задаёт потребитель.
+ *
+ * Элемент — `label`: нативное радио, кольцо с точкой и подпись. Радио
+ * визуально скрыто, но остаётся в дереве доступности и в порядке фокуса:
+ * группировку по `name`, стрелки и один Tab-стоп даёт браузер, а клик по
+ * корню-`label` доходит до него сам.
+ *
+ * Сторона кольца по размеру — сторона коробки CheckBox (`check-box.css`):
+ * радио и чекбокс одного размера стоят в форме рядом, и кольцо обязано
+ * совпасть с коробкой. Кегль текста радио и зазор до него — шкала подписи
+ * (`caption.css`), общая с `Label` и `Field`: радио со своим текстом и радио
+ * в подписи выглядят одинаково. Сторона кольца — в переменной
+ * `--so-radio-control-size`: от неё считаются точка и выравнивание по первой
+ * строке подписи.
+ *
+ * Облик — рамка и поверхность кольца, точка и её появление, толщина кольца у
+ * вида `ring`, цвет текста, кольцо фокуса, варианты — рисует тема. */
+
+/* Контрол и подпись в строку. `inline-flex`, как у нативной пары «радио +
+ * подпись»: ширина по содержимому, и клик мимо текста радио не выбирает. Ни
+ * одного `left`/`right` — только `gap` и логические отступы, поэтому в RTL
+ * контрол сам встаёт справа: `dir` приходит на корень. */
+.so-radio-group-item {
+	position: relative;
+	display: inline-flex;
+	align-items: flex-start;
+	cursor: pointer;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.so-radio-group-item--size-sm {
+	--so-radio-control-size: var(--so-check-box-size-sm);
+	gap: var(--so-caption-gap-sm);
+	font-size: var(--so-caption-font-size-sm);
+	line-height: var(--so-caption-line-height-sm);
+}
+
+.so-radio-group-item--size-normal {
+	--so-radio-control-size: var(--so-check-box-size-normal);
+	gap: var(--so-caption-gap-normal);
+}
+
+.so-radio-group-item--size-lg {
+	--so-radio-control-size: var(--so-check-box-size-lg);
+	gap: var(--so-caption-gap-lg);
+	font-size: var(--so-caption-font-size-lg);
+	line-height: var(--so-caption-line-height-lg);
+}
+
+.so-radio-group-item--size-xl {
+	--so-radio-control-size: var(--so-check-box-size-xl);
+	gap: var(--so-caption-gap-xl);
+	font-size: var(--so-caption-font-size-xl);
+	line-height: var(--so-caption-line-height-xl);
+}
+
+.so-radio-group-item--size-2xl {
+	--so-radio-control-size: var(--so-check-box-size-2xl);
+	gap: var(--so-caption-gap-2xl);
+	font-size: var(--so-caption-font-size-2xl);
+	line-height: var(--so-caption-line-height-2xl);
+}
+
+/* Нативное радио скрыто визуально, а не убрано: в дереве доступности и в
+ * порядке фокуса оно остаётся. */
+.so-radio-group-item__input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+.so-radio-group-item__control {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: var(--so-radio-control-size);
+	height: var(--so-radio-control-size);
+}
+
+/* Точка — половина кольца. Стоит всегда, а видна ли она, решает вид темы. */
+.so-radio-group-item__indicator {
+	width: calc(var(--so-radio-control-size) / 2);
+	height: calc(var(--so-radio-control-size) / 2);
+}
+
+/* Подпись. Её может не быть: радио без текста — законный случай, подпись
+ * тогда лежит в соседнем элементе. Пустая обёртка места не занимает, иначе
+ * зазор остался бы рядом с одиноким кольцом.
+ *
+ * `baseline` делает первую строку подписи базовой линией всего элемента: в
+ * строке формы рядом с чужим текстом подпись встаёт с ним на одну линию.
+ * Контрол выше строки (крупный размер при плотном интерлиньяже) — подпись
+ * опускается к его середине. */
+.so-radio-group-item__text {
+	align-self: baseline;
+	margin-block-start: max(0px, (var(--so-radio-control-size) - 1lh) / 2);
+}
+
+.so-radio-group-item__text:empty {
+	display: none;
+}
+
+/* Многострочная подпись: контрол стоит у первой строки, а не посередине
+ * всего текста — опускается к середине строки высотой `1lh`. Без подписи
+ * сдвига нет: одинокое радио ровно в размер коробки CheckBox. */
+.so-radio-group-item:has(> .so-radio-group-item__text:not(:empty)) > .so-radio-group-item__control {
+	margin-block-start: max(0px, (1lh - var(--so-radio-control-size)) / 2);
+}
+
+/* Выключенное — `data-disabled`: ядро пишет его на корне при любом теге.
+ * Гаснет элемент целиком — и контрол, и подпись (`disabled.css`). */
+.so-radio-group-item[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+}
+
+.so-radio-group-item[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}

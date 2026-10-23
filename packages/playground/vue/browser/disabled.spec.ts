@@ -6,7 +6,8 @@
  * прозрачностью, как выключенный Button и коробка CheckBox. Выключенные части
  * внутри него — кнопки поля, теги, дни, строки, табы — выключены вместе с ним и
  * второй раз не гаснут: прозрачность выключенного ложится на поддерево один раз
- * (`opacity-so-component-disabled` в `themes/oren/src/utilities.css`). Раньше
+ * (общий слой тем, `themes/base/src/disabled.css`; у частей, чья структура
+ * ещё в теме, — утилита `opacity-so-component-disabled` oren). Раньше
  * поля гасли только вводом, рядом даты, числом и тире, а рамка, иконки слотов и
  * стрелка Select оставались прежними; Calendar, Table и Pagination гасли по
  * частям, а выключенные Tabs и Tags не гасли вовсе.
@@ -36,6 +37,7 @@ import {
 	Pagination,
 	Select,
 	SelectItem,
+	Switch,
 	Table,
 	Tabs,
 	TabsContent,
@@ -412,5 +414,42 @@ describe.each(SCHEMES)('схема %s', (scheme) => {
 				},
 			)
 		}
+	})
+})
+
+/**
+ * Свой вид у части в другом состоянии не отменяет гашения выключенной.
+ * Выключенное гасит общий слой тем, а его правила лежат в слое, и правило
+ * темы вне слоёв перекрывает их при любой специфичности. Вид, который тема
+ * рисует части прозрачностью — дорожка Switch только для чтения тише,
+ * неактивный таб тише, — у выключенной части гашения не перекрывает: тема
+ * пишет его только включённым. Таб проверяет случай Tabs выше (строка
+ * активного таба), здесь — Switch, выключенный и только для чтения сразу.
+ */
+describe('вид части не перекрывает гашения выключенной', () => {
+	it.each(SCHEMES)('%s: Switch только для чтения гаснет как выключенный', async (scheme) => {
+		document.documentElement.dataset.soTheme = scheme
+
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'padding: 16px' }, [
+						h(Button, { class: 'so-test-reference', text: 'Эталон', disabled: true }),
+						h(Switch, { class: 'so-test-off', disabled: true, readonly: true }),
+						h(Switch, { class: 'so-test-readonly', readonly: true }),
+					]),
+			}),
+		)
+
+		await nextTick()
+		await nextFrame()
+
+		const reference = own(find(REFERENCE))
+
+		expect(own(find('.so-test-off .so-switch__track')), 'выключенный').toBe(reference)
+		expect(own(find('.so-test-readonly .so-switch__track')), 'только для чтения').toBeLessThan(
+			1,
+		)
+		expect(own(find('.so-test-readonly .so-switch__track'))).not.toBe(reference)
 	})
 })

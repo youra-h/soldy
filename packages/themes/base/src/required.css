@@ -1,0 +1,33 @@
+/* ─── Маркер обязательного поля ──────────────────────────────
+ * Точка у угла контрола — у начала строки, а не слева: сторона логическая
+ * (`inset-inline-start`), и в RTL маркер стоит справа, у начала поля. Левым
+ * он был у каждого контрола, и в RTL съезжал к концу. Здесь — место и размер
+ * точки; цвет и форму рисует тема.
+ *
+ * Маркер у поля один. В поле формы `Field` с подписью он переезжает к
+ * подписи (`components/field.css`), а точку контрола гасит переменная
+ * `--so-required-dot: none` на обёртке контрола. Переменной, а не
+ * селектором: селектор перечислял бы контролы поимённо, а точка у каждого
+ * стоит на своём узле — на корне Switch, на коробке CheckBox.
+ *
+ * Список — контролы, чья структура в общем слое; место точки у своего
+ * контрола уточняет файл его блока (у Switch оно ближе к углу). Остальным
+ * маркер пока ставит тема (`packages/themes/base/AGENTS.md`, «Перенос
+ * структуры»). */
+
+:root {
+	--so-required-size: 0.25rem;
+	--so-required-offset: -0.25rem;
+}
+
+.so-check-box--required .so-check-box__container::after,
+.so-switch--required::after {
+	content: '';
+	display: var(--so-required-dot, block);
+	position: absolute;
+	top: var(--so-required-offset);
+	inset-inline-start: var(--so-required-offset);
+	width: var(--so-required-size);
+	height: var(--so-required-size);
+	pointer-events: none;
+}

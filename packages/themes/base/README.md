@@ -1,7 +1,8 @@
 # @soldy-ui/theme-base
 
 **The shared layer of Soldy UI themes: what the components need in any theme — a reset of the
-library's own nodes and the writing-direction sign. Plain CSS, no preprocessor, no Tailwind.**
+library's own nodes, the writing-direction sign and the structure of the components, with its
+numbers in variables. Plain CSS, no preprocessor, no Tailwind.**
 
 Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
@@ -24,9 +25,18 @@ this package — the theme already carries it.
   from the nearest `dir` attribute. A theme mirrors arrows, gradients and offsets by multiplying by
   it — `:dir()` does not survive minification, and a `[dir]` selector on an ancestor does not see
   the nearest `dir`.
+- **The structure of the components** — layout and mechanics: where a part stands, what catches a
+  click, cursors, how a disabled component fades. So far for Label, Field, Icon, Switch, CheckBox,
+  RadioGroup and Button; the rest of the components follow. Without a theme they are bare but
+  working: a switch toggles by a click on its track, a label toggles its control, the slots of a
+  button stay at its edges.
+- **The size scales** — heights, paddings, gaps and font sizes per size — as variables on the
+  document root with defaults, such as `--so-button-height-sm` or `--so-caption-gap-lg`. A theme
+  sets its own numbers there, an application on an ancestor of its area.
 
-It has no look: no colors, no names of a theme's variants or views. The variables it reads and a
-theme sets are listed in `theme-variables.json`; there are none yet.
+It has no look: no colors, borders, radii, shadows, no names of a theme's variants or views — those
+are the theme's. Every variable a theme may set is listed with its meaning in
+`theme-variables.json`.
 
 ## Usage in a theme
 

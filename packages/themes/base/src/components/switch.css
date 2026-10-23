@@ -1,0 +1,142 @@
+/* ─── Switch ──────────────────────────────────────────────────
+ * Дорожка с ручкой и невидимое поле поверх них: клик по дорожке — клик по
+ * полю, и переключает его браузер. Поле — нативный `<input type="checkbox">`:
+ * состояние, фокус, участие в форме и доступное имя у него свои, а дорожка —
+ * декор (`aria-hidden`).
+ *
+ * Ручка стоит в дорожке на отступе `--so-switch-inset` от краёв: выключенная
+ * — от начала строки, включённая — от конца. Сторона ручки поэтому — высота
+ * дорожки без двух отступов, а включённая отходит от начала на ширину
+ * дорожки без ручки и отступа. Ходит ручка от начала строки
+ * (`inset-inline-start`), как ручка Slider, и в RTL переключатель
+ * разворачивается сам: выключенная ручка стоит справа, включённая уходит
+ * влево. Не `translate`: у сдвига нет логических направлений, и в RTL он
+ * увёл бы ручку вправо. Селектора по `dir` здесь нет: он развернул бы и
+ * переключатель с `direction="ltr"` внутри RTL-предка.
+ *
+ * Ширина и высота дорожки по размеру — переменные корня документа
+ * (`sm`…`2xl`); блок берёт ступень своего размера в `--so-switch-width` и
+ * `--so-switch-height`, и части считают от них. Умолчания — числа темы oren;
+ * тема задаёт свои на корне документа.
+ *
+ * Облик — цвет дорожки и ручки, скругления, тень, кольцо фокуса, ход ручки
+ * переходом (движение) и вид только для чтения — рисует тема. */
+
+:root {
+	--so-switch-width-sm: 1.5rem;
+	--so-switch-width-normal: 2rem;
+	--so-switch-width-lg: 2.5rem;
+	--so-switch-width-xl: 3rem;
+	--so-switch-width-2xl: 3.5rem;
+
+	--so-switch-height-sm: 1rem;
+	--so-switch-height-normal: 1.25rem;
+	--so-switch-height-lg: 1.5rem;
+	--so-switch-height-xl: 1.75rem;
+	--so-switch-height-2xl: 2rem;
+
+	--so-switch-inset: 0.125rem;
+	--so-switch-required-offset: -0.125rem;
+}
+
+.so-switch {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.so-switch--size-sm {
+	--so-switch-width: var(--so-switch-width-sm);
+	--so-switch-height: var(--so-switch-height-sm);
+}
+
+.so-switch--size-normal {
+	--so-switch-width: var(--so-switch-width-normal);
+	--so-switch-height: var(--so-switch-height-normal);
+}
+
+.so-switch--size-lg {
+	--so-switch-width: var(--so-switch-width-lg);
+	--so-switch-height: var(--so-switch-height-lg);
+}
+
+.so-switch--size-xl {
+	--so-switch-width: var(--so-switch-width-xl);
+	--so-switch-height: var(--so-switch-height-xl);
+}
+
+.so-switch--size-2xl {
+	--so-switch-width: var(--so-switch-width-2xl);
+	--so-switch-height: var(--so-switch-height-2xl);
+}
+
+/* Поле — поверх дорожки, во весь корень, и невидимо: нажатие ловит оно. */
+.so-switch input {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 10;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.so-switch input:disabled {
+	cursor: default;
+	pointer-events: none;
+}
+
+/* Выключенная дорожка гаснет целиком, с ручкой (`disabled.css`). */
+.so-switch input:disabled + .so-switch__track {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-switch input:disabled + .so-switch__track > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Только для чтения: клик переключатель не меняет — его отменяет
+ * `TInputBoolPlugin`, — и поле нажатий не ловит. */
+.so-switch--readonly input {
+	pointer-events: none;
+}
+
+/* Блочная при любом теге: у строчного `span` без `display` размер дорожки
+ * схлопнулся бы. */
+.so-switch__track {
+	position: relative;
+	display: block;
+	width: var(--so-switch-width);
+	height: var(--so-switch-height);
+}
+
+.so-switch__track--thumb {
+	position: absolute;
+	top: var(--so-switch-inset);
+	inset-inline-start: var(--so-switch-inset);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: calc(var(--so-switch-height) - 2 * var(--so-switch-inset));
+	height: calc(var(--so-switch-height) - 2 * var(--so-switch-inset));
+}
+
+.so-switch input:checked + .so-switch__track .so-switch__track--thumb {
+	inset-inline-start: calc(
+		var(--so-switch-width) - var(--so-switch-height) + var(--so-switch-inset)
+	);
+}
+
+/* Маркер обязательного поля (`required.css`) — на своём отступе от угла
+ * дорожки (у oren точка ближе к углу, чем у коробки CheckBox: её дорожка
+ * скруглена) и над полем, которое лежит поверх дорожки. */
+.so-switch--required::after {
+	top: var(--so-switch-required-offset);
+	inset-inline-start: var(--so-switch-required-offset);
+	z-index: 20;
+}

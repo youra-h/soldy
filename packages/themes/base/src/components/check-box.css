@@ -1,0 +1,121 @@
+/* ─── CheckBox ────────────────────────────────────────────────
+ * Коробка с отметкой и невидимое поле поверх неё: клик по коробке — клик по
+ * полю, и переключает его браузер. Поле — нативный `<input type="checkbox">`:
+ * состояние, фокус, участие в форме и доступное имя у него свои, а коробка —
+ * декор (`aria-hidden`).
+ *
+ * Сторона коробки по размеру — переменные корня документа (`sm`…`2xl`): её же
+ * берёт кольцо радио (`radio-group.css`) — радио и чекбокс одного размера
+ * стоят в форме рядом, и кольцо обязано совпасть с коробкой. Отметка — `svg`
+ * иконки по роли, без компонента Icon (его собирала бы каждая смена отметки),
+ * поэтому размер ей даёт флажок по своему `size` — ступенями шкалы иконки
+ * (`icon.css`). Умолчания — числа темы oren; тема задаёт свои на корне
+ * документа.
+ *
+ * Облик — рамка, поверхность, скругление, отметка, кольцо фокуса, виды и
+ * варианты — рисует тема. */
+
+:root {
+	--so-check-box-size-sm: 1rem;
+	--so-check-box-size-normal: 1.25rem;
+	--so-check-box-size-lg: 1.5rem;
+	--so-check-box-size-xl: 1.75rem;
+	--so-check-box-size-2xl: 2rem;
+}
+
+/* Блочный при любом теге: корень рисуется по `tag`, по умолчанию `span`, и у
+ * строчного корня размер коробки без `display` схлопнулся бы. */
+.so-check-box {
+	position: relative;
+	display: block;
+	width: var(--so-check-box-size-normal);
+	height: var(--so-check-box-size-normal);
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* Поле — поверх коробки, во весь корень, и невидимо: нажатие ловит оно. */
+.so-check-box input {
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.so-check-box input:disabled {
+	cursor: default;
+	pointer-events: none;
+}
+
+/* Выключенная коробка гаснет целиком (`disabled.css`). */
+.so-check-box input:disabled + .so-check-box__container {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-check-box input:disabled + .so-check-box__container > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Только для чтения: клик по коробке её не переключает — его отменяет
+ * `TInputBoolPlugin`, — поэтому курсор обычный, как у выключенной. */
+.so-check-box--readonly input {
+	cursor: default;
+}
+
+.so-check-box__container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+}
+
+.so-check-box__mark {
+	width: var(--so-icon-size-normal);
+	height: var(--so-icon-size-normal);
+}
+
+.so-check-box--size-sm {
+	width: var(--so-check-box-size-sm);
+	height: var(--so-check-box-size-sm);
+}
+
+.so-check-box--size-sm .so-check-box__mark {
+	width: var(--so-icon-size-sm);
+	height: var(--so-icon-size-sm);
+}
+
+.so-check-box--size-lg {
+	width: var(--so-check-box-size-lg);
+	height: var(--so-check-box-size-lg);
+}
+
+.so-check-box--size-lg .so-check-box__mark {
+	width: var(--so-icon-size-lg);
+	height: var(--so-icon-size-lg);
+}
+
+.so-check-box--size-xl {
+	width: var(--so-check-box-size-xl);
+	height: var(--so-check-box-size-xl);
+}
+
+.so-check-box--size-xl .so-check-box__mark {
+	width: var(--so-icon-size-xl);
+	height: var(--so-icon-size-xl);
+}
+
+.so-check-box--size-2xl {
+	width: var(--so-check-box-size-2xl);
+	height: var(--so-check-box-size-2xl);
+}
+
+.so-check-box--size-2xl .so-check-box__mark {
+	width: var(--so-icon-size-2xl);
+	height: var(--so-icon-size-2xl);
+}

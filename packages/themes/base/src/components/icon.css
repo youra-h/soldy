@@ -1,0 +1,61 @@
+/* ─── Icon ────────────────────────────────────────────────────
+ * Размер иконки — в `em` от кегля места, где она стоит: у строки на крупных
+ * размерах кегль растёт и сам. Шкала — переменные корня документа по размеру
+ * (`sm`…`2xl`); по ней же отметке CheckBox даёт размер его флажок
+ * (`check-box.css`). После `lg` шаг мелкий: на `2xl` крестик Tabs и очистка
+ * Select уже почти во всю высоту строки без её поля. Умолчания — числа темы
+ * oren; тема задаёт свои на корне документа.
+ *
+ * Правило нужно на каждой ступени шкалы: своего размера у `svg` нет. Без него
+ * иконка в кнопке, сжатой по содержимому, схлопывалась в 0×0 (крестики Tabs и
+ * Tags, очистка и стрелка Select на `xl` и `2xl`), а во флекс-строке
+ * растягивалась на её ширину (стрелка Accordion). Сторожит
+ * `playground/vue/browser/icon-size.spec.ts`.
+ *
+ * Цвет иконки — дело темы (`--so-icon-color`, `docs/agents/theming.md`,
+ * «Пакеты иконок»). */
+
+:root {
+	--so-icon-size-sm: 0.875em;
+	--so-icon-size-normal: 1em;
+	--so-icon-size-lg: 1.35em;
+	--so-icon-size-xl: 1.4em;
+	--so-icon-size-2xl: 1.45em;
+}
+
+/* Корень иконки любого тега — блок, как `svg` библиотеки под сбросом
+ * (`reset.css`). У строчного корня размер ступени не действует вовсе: `span` —
+ * корень `<Icon>` без тега и элемента Web Components `<span is="so-icon">`,
+ * рисунок которого — `<svg>` внутри, растянутый на корень, — оставался пустым
+ * при любом `size`. Не `inline-block`: строчная иконка встала бы на базовую
+ * линию текста, ниже центра строки, а блок в области текста кнопки центруют
+ * авто-отступы (`button.css`). Корень нулевой специфичности: свой `display` у
+ * иконки потребителя его перекрывает. */
+:where(.so-icon) {
+	display: block;
+}
+
+.so-icon--size-sm {
+	width: var(--so-icon-size-sm);
+	height: var(--so-icon-size-sm);
+}
+
+.so-icon--size-normal {
+	width: var(--so-icon-size-normal);
+	height: var(--so-icon-size-normal);
+}
+
+.so-icon--size-lg {
+	width: var(--so-icon-size-lg);
+	height: var(--so-icon-size-lg);
+}
+
+.so-icon--size-xl {
+	width: var(--so-icon-size-xl);
+	height: var(--so-icon-size-xl);
+}
+
+.so-icon--size-2xl {
+	width: var(--so-icon-size-2xl);
+	height: var(--so-icon-size-2xl);
+}

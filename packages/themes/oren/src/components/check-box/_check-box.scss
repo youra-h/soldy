@@ -1,91 +1,32 @@
 @use './mixins' as mixines;
 @use '../../mixins/required' as required;
+
+// Структура флажка — коробка по шкале `size`, невидимое поле поверх неё,
+// размер отметки, курсоры, гашение выключенного и место точки обязательного
+// поля — в общем слое тем (`components/check-box.css` в
+// `@soldy-ui/theme-base`). Здесь — облик: рамка, поверхность, скругление,
+// кольцо фокуса, виды и варианты.
 .so-check-box {
 	$this: &;
 
-	// Блочный при любом теге: корень рисуется по `tag`, и у строчного `span`
-	// размер коробки без `display` схлопнулся бы.
-	@apply block w-5 h-5;
-	@apply relative select-none;
-
 	input {
-		@apply absolute inset-0 opacity-0;
-		@apply w-full h-full m-0 p-0;
-		@apply cursor-pointer;
-		@apply z-10;
-
-		&:disabled {
-			@apply cursor-default pointer-events-none;
-
-			+ #{$this}__container {
-				@apply opacity-so-component-disabled;
-			}
-		}
-
 		&:focus-visible + #{$this}__container {
 			@apply outline-2 outline-offset-2 outline-so-component;
 		}
 	}
 
 	&__container {
-		@apply flex items-center justify-center;
-		@apply w-full h-full rounded-md border;
+		@apply rounded-md border;
 		@apply bg-so-component-surface;
 		@apply transition-colors duration-150;
 	}
 
-	// Отметка — `svg` иконки по роли, без компонента Icon: его собирала бы
-	// каждая смена отметки. Размер ей поэтому даёт флажок по своему `size` —
-	// теми же ступенями в `em`, что у Icon (`icon/_icon.scss`); цвет — виды
-	// и варианты по `svg` коробки (`_mixins.scss`). Иконка слота класса не
-	// получает и размер берёт свой.
-	&__mark {
-		@apply w-[1em] h-[1em];
-	}
+	// Отметка — `svg` иконки по роли, без компонента Icon; размер ей даёт
+	// общий слой тем, цвет — виды и варианты по `svg` коробки (`_mixins.scss`).
 
 	&--required {
 		#{$this}__container::after {
-			@include required.required-indicator();
-		}
-	}
-
-	// Только для чтения: клик по коробке её не переключает — его отменяет
-	// `TInputBoolPlugin`, — поэтому курсор обычный, как у выключенной.
-	// Подсветку наведения гасят hover-правила (`_mixins.scss`). Прозрачность
-	// не трогаем: readonly — не выключенный, и его вид решает дизайн.
-	&--readonly input {
-		@apply cursor-default;
-	}
-
-	&--size-sm {
-		@apply w-4 h-4;
-
-		#{$this}__mark {
-			@apply w-[.875em] h-[.875em];
-		}
-	}
-
-	&--size-lg {
-		@apply w-6 h-6;
-
-		#{$this}__mark {
-			@apply w-[1.35em] h-[1.35em];
-		}
-	}
-
-	&--size-xl {
-		@apply w-7 h-7;
-
-		#{$this}__mark {
-			@apply w-[1.4em] h-[1.4em];
-		}
-	}
-
-	&--size-2xl {
-		@apply w-8 h-8;
-
-		#{$this}__mark {
-			@apply w-[1.45em] h-[1.45em];
+			@include required.required-dot;
 		}
 	}
 
