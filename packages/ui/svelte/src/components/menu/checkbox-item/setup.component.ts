@@ -1,14 +1,3 @@
-/**
- * setupMenuCheckboxItem — setup-слой флажка меню.
- *
- * Два контекста, как у пункта: собственный (`MenuCheckboxItemDescriptor` —
- * текст и значение флажка) и фасада (`MenuCollectionCheckboxItemDescriptor` —
- * вход в коллекцию меню и отметка: она — выбор коллекции). Движок и
- * регистратор меню расширение элемента берёт лифтом.
- *
- * `context` отдаётся разметке явно: нажатие — метод item-адаптера `menu`.
- */
-
 import {
 	MenuCheckboxItemDescriptor,
 	MenuCollectionCheckboxItemDescriptor,
@@ -16,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -44,17 +33,7 @@ export function setupMenuCheckboxItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

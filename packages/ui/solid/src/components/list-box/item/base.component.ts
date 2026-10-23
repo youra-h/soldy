@@ -2,7 +2,7 @@ import type { IListBoxItem } from '@soldy-ui/core'
 import type { ListBoxCollectionItemDescriptor, ListBoxItemDescriptor } from '@soldy-ui/setup'
 import type { EventProps, TDomAttributes, UseDomProps } from '../../../types'
 
-/** События элемента — свои (ядро и плагины) и фасада: выбор, порядок, вид и сторона отметки. */
+/** События элемента — свои и фасада. */
 export type ListBoxItemEventProps = EventProps<typeof ListBoxItemDescriptor> &
 	EventProps<typeof ListBoxCollectionItemDescriptor>
 
@@ -12,10 +12,7 @@ export type ListBoxItemAttributes = TDomAttributes<
 	ListBoxItemEventProps
 >
 
-/**
- * Пропсы элемента. Членство в коллекции (`selected`) входит в интерфейс
- * пропсов ядра (`IListBoxItemProps`), и тип его несёт дескриптор элемента.
- */
+/** Пропсы элемента: членство в коллекции (`selected`) несёт интерфейс пропсов ядра. */
 export type ListBoxItemProps = UseDomProps<
 	typeof ListBoxItemDescriptor,
 	IListBoxItem,

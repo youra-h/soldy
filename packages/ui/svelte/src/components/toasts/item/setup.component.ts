@@ -1,16 +1,3 @@
-/**
- * setupToastsItem — setup-слой тоста.
- *
- * Два контекста, как у элементов Vue: собственный (`ToastsItemDescriptor` —
- * текст, описание, вид, ожидание, крестик, своё содержимое) и фасада
- * (`ToastsCollectionItemDescriptor` — место в коллекции). Расширение элемента
- * берёт лифтом движок и регистратор менеджера и отдаёт фасаду контекст тоста.
- *
- * Логики здесь нет: имя крестика — `TToastsItemNamesPlugin`, жест —
- * `TSwipePlugin`, роль, `tabindex`, `data-*` и модификатор вида — ядро тоста,
- * а что ожидающий тост сам не закрывается — его длительность у коллекции.
- */
-
 import {
 	TCollectionItemExtension,
 	ToastsCollectionItemDescriptor,
@@ -18,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -46,16 +33,7 @@ export function setupToastsItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return joinBindings(owner, itemBinding)
 }

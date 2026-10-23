@@ -1,25 +1,8 @@
-/**
- * setupTags — setup-слой Tags.
- *
- * Два контекста, как у Vue и Svelte: свой (`TagsDescriptor`) и фасада
- * коллекции (`TagsCollectionDescriptor`) на общем наборе. Оба собираются один
- * раз, при выполнении тела компонента; фасад делит набор тегов, и id
- * монтирования у него набора. У фасада одно расширение — сама коллекция
- * (`TCollectionExtension`): окна и перестановки у набора тегов нет, как у Vue.
- *
- * Расширение коллекции опускает движок и регистратор тегов в слой лифта набора
- * (`useElevator`), детям его отдаёт `Elevate` в разметке: тег, смонтированный
- * внутри, прочтёт их при своей сборке и войдёт в коллекцию набора.
- *
- * Состояние у контекстов своё, а разметка читает его одним видом
- * (`joinState`); атрибуты корня — то, что не съели ни набор, ни фасад.
- */
-
 import { TCollectionExtension, TagsCollectionDescriptor, TagsDescriptor } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	joinState,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -34,9 +17,6 @@ export function setupTags(props: TagsProps) {
 		TagsCollectionDescriptor(),
 		{
 			props,
-			// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-			// не создаёт, лишь доложит недостающие расширения в неё же.
-			// Не дали — соберёт свою. Развилка в `completeEngine`
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
@@ -44,12 +24,5 @@ export function setupTags(props: TagsProps) {
 
 	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		ref: owner.ref,
-		state: joinState(owner.state, collectionBinding.state),
-		forwardProps: collectionBinding.forwardProps,
-		layer,
-	}
+	return { ...joinBindings(owner, collectionBinding), layer }
 }

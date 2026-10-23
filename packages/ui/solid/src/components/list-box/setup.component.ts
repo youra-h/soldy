@@ -1,22 +1,3 @@
-/**
- * setupListBox — setup-слой ListBox.
- *
- * Два контекста, как у Vue и Svelte: свой (`ListBoxDescriptor`) и фасада
- * коллекции (`ListBoxCollectionDescriptor`) на общем наборе. Оба собираются
- * один раз, при выполнении тела компонента; фасад делит набор списка, и id
- * монтирования у него списка.
- *
- * Расширения коллекции опускают движок и регистратор элементов в слой лифта
- * списка (`useElevator`), детям его отдаёт `Elevate` в разметке: элемент,
- * смонтированный внутри, прочтёт их при своей сборке и войдёт в коллекцию
- * списка. Окно обёртки `Virtual` над списком фасад подхватывает тем же лифтом
- * (`TVirtualCollectionExtension`), а своему поддереву опускает пустое
- * подключение: списки в слотах элементов окна не наследуют.
- *
- * Состояние у контекстов своё, а разметка читает его одним видом
- * (`joinState`); атрибуты корня — то, что не съели ни список, ни фасад.
- */
-
 import {
 	ListBoxCollectionDescriptor,
 	ListBoxDescriptor,
@@ -26,8 +7,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	joinState,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -42,27 +23,15 @@ export function setupListBox(props: ListBoxProps) {
 		ListBoxCollectionDescriptor(),
 		{
 			props,
-			// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-			// не создаёт, лишь доложит недостающие расширения в неё же.
-			// Не дали — соберёт свою. Развилка в `completeEngine`
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
 	)
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
-		// Окно обёртки `Virtual` над списком: подхват при сборке, подписка на
-		// обёртку — при приёме, снятие — с уничтожением
 		.use(TVirtualCollectionExtension, { elevator })
 
 	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		ref: owner.ref,
-		state: joinState(owner.state, collectionBinding.state),
-		forwardProps: collectionBinding.forwardProps,
-		layer,
-	}
+	return { ...joinBindings(owner, collectionBinding), layer }
 }

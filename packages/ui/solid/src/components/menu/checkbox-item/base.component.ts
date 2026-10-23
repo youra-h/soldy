@@ -15,11 +15,7 @@ export type MenuCheckboxItemAttributes = TDomAttributes<
 	MenuCheckboxItemEventProps
 >
 
-/**
- * Пропсы флажка. Отметка (`selected`) — выбор коллекции меню: она входит в
- * интерфейс пропсов ядра (`IMenuCheckboxItemProps`), и тип её несёт
- * дескриптор флажка.
- */
+/** Пропсы флажка; отметка (`selected`) — выбор коллекции меню. */
 export type MenuCheckboxItemProps = UseDomProps<
 	typeof MenuCheckboxItemDescriptor,
 	IMenuCheckboxItem,

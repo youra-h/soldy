@@ -2,12 +2,8 @@ import type { ITooltip } from '@soldy-ui/core'
 import type { TooltipDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
-/** События слоя Tooltip (core + плагины), выведены из дескриптора автоматически. */
+/** События Tooltip (ядро и плагины). */
 export type TooltipEventProps = EventProps<typeof TooltipDescriptor>
 
-/**
- * Пропсы Tooltip. Атрибуты потребителя — корня, обёртки триггера, как у Vue:
- * ARIA подсказки — у панели, а ссылку на неё триггер берёт из scope слота
- * `trigger`.
- */
+/** Пропсы Tooltip. Атрибуты — корня, обёртки триггера: ARIA подсказки — у панели. */
 export type TooltipProps = UseDomProps<typeof TooltipDescriptor, ITooltip, TooltipEventProps>

@@ -5,8 +5,5 @@ import type { EventProps, UseDomProps } from '../../types'
 /** События слоя Rating (core + плагины), выведены из дескриптора автоматически. */
 export type RatingEventProps = EventProps<typeof RatingDescriptor>
 
-/**
- * Пропсы Rating. Атрибуты потребителя — корня, как у Slider: указатель поле не
- * ловит, и обработчик нажатия потребителя на поле не сработал бы никогда.
- */
+/** Атрибуты потребителя — корню: указатель поле не ловит, и обработчик на поле не сработал бы. */
 export type RatingProps = UseDomProps<typeof RatingDescriptor, IRating, RatingEventProps>

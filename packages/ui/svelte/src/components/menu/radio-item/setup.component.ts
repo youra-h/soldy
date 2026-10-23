@@ -1,16 +1,3 @@
-/**
- * setupMenuRadioItem — setup-слой переключателя меню.
- *
- * Два контекста, как у флажка: собственный (`MenuRadioItemDescriptor` —
- * текст, значение и группа переключателя) и фасада
- * (`MenuCollectionRadioItemDescriptor` — вход в коллекцию меню и отметка: она
- * — выбор коллекции). Группу — ближайшую `Menu.RadioGroup` — переключатель
- * берёт проводкой при сборке (`TMenuRadioItemExtension`), до входа в
- * коллекцию: меню отмечает его по значению группы уже на входе.
- *
- * `context` отдаётся разметке явно: нажатие — метод item-адаптера `menu`.
- */
-
 import {
 	MenuCollectionRadioItemDescriptor,
 	MenuRadioItemDescriptor,
@@ -19,7 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -47,17 +34,7 @@ export function setupMenuRadioItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

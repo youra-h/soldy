@@ -2,11 +2,8 @@ import type { IVirtual } from '@soldy-ui/core'
 import type { VirtualDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseProps } from '../../types'
 
-/** События Virtual (ядро), выведены из дескриптора автоматически: выключатель окна и набор. */
+/** События Virtual, выведены из дескриптора автоматически. */
 export type VirtualEventProps = EventProps<typeof VirtualDescriptor>
 
-/**
- * Пропсы Virtual — `UseProps`, без атрибутов DOM: своего узла у обёртки нет,
- * и класс, стиль или `id` положить некуда.
- */
+/** Без атрибутов DOM: своего узла у обёртки нет. */
 export type VirtualProps = UseProps<typeof VirtualDescriptor, IVirtual, VirtualEventProps>

@@ -8,54 +8,26 @@
 	import { isTagComponent } from './tag'
 
 	type TDynamicProps = {
-		/** Корень: имя элемента, компонент Svelte или метка иконки по роли (`roleIcon`). */
+		/** Имя элемента, компонент Svelte или метка иконки по роли (`roleIcon`). */
 		tag: string | object | undefined
 		/** Атрибуты корня — `toRootProps` компонента. */
 		attributes: TRootAttributes
-		/**
-		 * Привязка корня к `TElementPlugin` компонента и его `ref` —
-		 * `binding.attachElement`. У корня внутри обёртки (окно таблицы) половины
-		 * разведены: обёртке — только `ref` (`binding.consumerRef`), корню —
-		 * только привязка (`binding.bindRef`).
-		 */
+		/** `binding.attachElement`; у обёртки корня — `consumerRef`, у корня в ней — `bindRef`. */
 		attach: Attachment<Element>
 		children?: Snippet
 	}
 
 	const { tag, attributes, attach, children }: TDynamicProps = $props()
 
-	// Стиль корня: в браузере его ставит attachment по свойствам, на сервере он
-	// уходит в атрибуты узла строкой (`toNodeAttributes`). Attachment заводится
-	// один раз — новый на том же узле принял бы за свои свойства, которые
-	// плагины поставили сами
+	// Один на компонент: новый на том же узле принял бы чужие свойства за свои
 	const style = { [createAttachmentKey()]: rootStyle(() => attributes.style) }
 	const node = $derived(toNodeAttributes(attributes, style))
 </script>
 
 <!--
-	Dynamic — корень компонента по `tag`, как `<component :is="tag">` у Vue.
-
-	Ядро разрешает `tag` строкой или объектом, а `<svelte:element>` берёт только
-	строку. Поэтому ветки три:
-
-	- строка — элемент с этим именем;
-	- метка роли (`roleIcon`) — `<svg>` иконки этой роли (`RoleIcon`);
-	- компонент Svelte — сам компонент: атрибуты и привязку (attachment) он
-	  получает пропсами и обязан положить их на свой корень, как компонент в
-	  `tag` у React. Без привязки не придёт `element:ready`, без класса и стиля
-	  — вид, без ARIA — доступность.
-
-	Другого объекта Svelte нарисовать не может, и корня у такого компонента
-	нет. Атрибуты и привязка — на узел, содержимое — `children`. Смена тега
-	пересоздаёт узел, а привязка отвязывает прежний и привязывает новый.
-
-	Стиль корня в браузере — тоже attachment, и едет он в атрибутах узла, как
-	attachment-ы потребителя: так он доходит до `<svg>` иконки и до корня
-	компонента из `tag` без своего пропа.
-
-	Так же рисуется и обёртка корня — внешний узел компонента, чей корень стоит
-	внутри неё (окно таблицы вокруг `table`, `toWrappedRootProps`): стиль
-	потребителя и скрытие ложатся на неё по свойствам, как на корень.
+	Корень по `tag`, как `<component :is>` у Vue: `<svelte:element>` берёт только
+	строку, поэтому ветки три. Компонент из `tag` обязан положить атрибуты и
+	attachment-ы на свой корень (`TTagComponent`).
 -->
 {#if typeof tag === 'string'}
 	<svelte:element this={tag} {...node} {@attach attach}>

@@ -1,21 +1,3 @@
-/**
- * setupRadioGroup — setup-слой RadioGroup.
- *
- * Два контекста, как у Vue: свой (`RadioGroupDescriptor`) и фасада коллекции
- * (`RadioGroupCollectionDescriptor`) на общем наборе, с тем же id
- * монтирования — от него общий `name` радио, когда своего имени у группы нет.
- *
- * Расширение коллекции опускает движок и регистратор радио лифтом
- * (`setContext`): радио, смонтированное внутри, войдёт в коллекцию группы при
- * своей инициализации. Drag-and-drop нет, как у Vue: радио одной группы стоят
- * где угодно в разметке, и порядка на экране у них нет.
- *
- * Поле формы `Field` связывается с группой, а не с радио: подпись поля
- * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
- * своём контексте). Своему содержимому группа опускает пустую связку: радио и
- * контролы в их подписях связку поля не берут.
- */
-
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
@@ -24,7 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -51,9 +33,6 @@ export function setupRadioGroup(
 		{
 			props,
 			mountId,
-			// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-			// не создаёт, лишь доложит недостающие расширения в неё же.
-			// Не дали — соберёт свою. Развилка в `completeEngine`
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
@@ -65,14 +44,5 @@ export function setupRadioGroup(
 		() => owner.forwardProps,
 	)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(owner.state, collectionBinding.state),
-
-		get forwardProps() {
-			return collectionBinding.forwardProps
-		},
-	}
+	return joinBindings(owner, collectionBinding)
 }

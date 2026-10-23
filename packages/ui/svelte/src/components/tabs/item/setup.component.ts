@@ -1,18 +1,3 @@
-/**
- * setupTabsItem — setup-слой таба.
- *
- * Два контекста, как у элементов Vue: собственный (`TabsItemDescriptor` —
- * текст, значение, закрываемость) и фасада (`TabsCollectionItemDescriptor` —
- * активность, порядок, итог закрываемости). Расширение элемента берёт лифтом
- * движок и регистратор набора и отдаёт фасаду контекст таба.
- *
- * В коллекцию таб входит, когда контекст фасада принят, — при инициализации
- * компонента, и на сервере тоже.
- *
- * `context` отдаётся разметке явно: активация и закрытие — методы
- * item-адаптеров.
- */
-
 import {
 	TCollectionItemExtension,
 	TabsCollectionItemDescriptor,
@@ -20,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -48,17 +33,7 @@ export function setupTabsItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

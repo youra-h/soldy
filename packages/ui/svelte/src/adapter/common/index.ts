@@ -22,5 +22,6 @@ export {
 	type TStyleProperties,
 	type TWrappedRootAttributes,
 } from './root'
+export { chainHandler } from './handlers'
 export { roleIcon, TRoleIcon } from './icon'
 export { default as RoleIcon } from './RoleIcon.svelte'

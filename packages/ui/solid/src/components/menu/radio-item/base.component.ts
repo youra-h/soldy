@@ -12,11 +12,7 @@ export type MenuRadioItemAttributes = TDomAttributes<
 	MenuRadioItemEventProps
 >
 
-/**
- * Пропсы переключателя. Отметка (`selected`) — выбор коллекции меню, как у
- * флажка; группы среди пропсов нет: её пишет проводка — ближайшая
- * `Menu.RadioGroup` над пунктом.
- */
+/** Пропсы переключателя; группу пишет проводка — ближайшая `Menu.RadioGroup`. */
 export type MenuRadioItemProps = UseDomProps<
 	typeof MenuRadioItemDescriptor,
 	IMenuRadioItem,

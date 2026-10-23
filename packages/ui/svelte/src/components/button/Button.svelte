@@ -10,21 +10,6 @@
 	const state = binding.state
 </script>
 
-<!--
-	Button — рендерит кнопку с текстом из Core.
-
-	- `tag` по умолчанию `button` (из TButton.defaultValues)
-	- disabled → нативный `disabled` (`attrs`) или `aria-disabled` (`aria`) по
-	  тегу, `data-disabled` для темы (`dataset`) — на любом теге
-
-	Наборы ядра, поверх — атрибуты снаружи (`toRootProps`): `tabindex="-1"`
-	строки списка перекрывает `tabindex="0"`, который кнопка на `div` ставит
-	себе сама.
-
-	Слоты объявлены в контракте (ButtonDescriptor) и одинаковы во всех
-	адаптерах: `leading`, `default` (здесь — `children`, со scope `{ text }`),
-	`trailing`.
--->
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}

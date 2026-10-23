@@ -17,46 +17,22 @@ import { Icon } from '../../icon'
 import { setupAccordionItem } from './setup.component'
 import type { AccordionItemAttributes, AccordionItemProps } from './base.component'
 
-/** Стрелка без слота — иконка из пакета по роли, компонент на роль один на модуль. */
+/** Стрелка без слота — иконка по роли. */
 const ARROW = roleIcon('arrowRight')
 
 /**
- * AccordionItem — секция: корень по `tag` (по умолчанию `div`), внутри
- * заголовок — `Button` — и панель, как у Vue.
- *
- * Наборы ядра стоят там же, где у Vue. Корень несёт `dataset`, `attrs` и место
- * в коллекции (`order`): тема раскрывает панель по `data-selected` на нём.
- * Заголовок несёт `aria` — `aria-expanded` пишет коллекция, сторону связки с
- * панелью (`id`, `aria-controls`) — плагин секции. Панель несёт набор секции
- * `contentAria` (`role="region"`, `id`, `aria-labelledby`): своего экземпляра
- * у неё нет. Атрибуты потребителя делятся, как у ListBox.Item: класс и стиль —
- * корню, остальное — заголовку, поверх его `aria`.
- *
- * Клик заголовка раскрывает или сворачивает секцию, потом зовёт клик
- * потребителя — как у Vue, где слушатели складываются (`chainHandler`).
- *
- * Стрелка — по краю заголовка со стороны `arrowPlacement`. Слоты
- * `leading-icon` и `trailing-icon` подменяют её, по умолчанию она — иконка
- * пакета по роли `arrowRight`. Стрелка — в обёртке, и класс стрелки на
- * обёртке, а не на иконке: тема поворачивает стрелку раскрытой секции по
- * `.so-accordion-item__arrow`, и подменённая иконка поворачивается так же.
- * Обёртка стоит, пока на её стороне стрелка по умолчанию или задан слот.
- *
- * По слотам заголовка и стрелок разметка выбирает, что рисовать, поэтому их
- * разворачивает адаптер, один раз (`resolveSlot`): пустое, что вернул проброс
- * аккордеона, уступает место своему — тексту и стрелке.
+ * Секция: заголовок — Button с `aria`, панель — узел с набором `contentAria`. Класс
+ * стрелки — на обёртке, а не на иконке: тема поворачивает и подменённую слотом.
  */
 export function AccordionItem(props: AccordionItemProps): JSX.Element {
 	const binding = setupAccordionItem(props)
 	const state = binding.state
 	const context = binding.context
-	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	// Набор панели: своего корня у неё нет
 	const contentAria = createPartProps(() => state.contentAria)
 	const title = resolveSlot(
 		() => props.header,

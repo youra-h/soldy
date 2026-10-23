@@ -1,19 +1,3 @@
-/**
- * setupAccordionItem — setup-слой секции Accordion.
- *
- * Два контекста, как у элементов Vue и Svelte: собственный
- * (`AccordionItemDescriptor` — текст, значение, сторона стрелки) и фасада
- * (`AccordionCollectionItemDescriptor` — раскрытость, порядок, вид, сторона
- * панели в ARIA-связке). Расширение элемента берёт лифтом движок и
- * регистратор аккордеона — из слоя, который секция увидела при сборке
- * (`useElevator`), — и отдаёт фасаду контекст секции.
- *
- * В коллекцию секция входит, когда контекст фасада принят, — при выполнении
- * тела компонента, и на сервере тоже.
- *
- * `context` отдаётся разметке явно: раскрытие — метод item-адаптера.
- */
-
 import {
 	AccordionCollectionItemDescriptor,
 	AccordionItemDescriptor,
@@ -21,8 +5,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	joinState,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../../adapter'
@@ -42,14 +26,7 @@ export function setupAccordionItem(props: AccordionItemProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		ref: owner.ref,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-		forwardProps: facade.forwardProps,
-	}
+	return { ...joinBindings(owner, itemBinding), context: item.instance.context }
 }
