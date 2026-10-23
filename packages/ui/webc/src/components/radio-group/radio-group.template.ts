@@ -2,7 +2,7 @@
  * Шаблон RadioGroup.
  *
  * Корень — сам `<div is="so-radio-group">`: классы и наборы ядра раскладывает
- * на него база (`SoldyElement`), набор `aria` группы — здесь: `role="radiogroup"`
+ * на него база (`ElementBase`), набор `aria` группы — здесь: `role="radiogroup"`
  * пишет ядро, имя из `aria_label` / `aria_labelledBy` — `TAriaPlugin`. Своей
  * разметки у группы нет: радио одной группы стоят где угодно внутри корня, и
  * раскладку задаёт потребитель.

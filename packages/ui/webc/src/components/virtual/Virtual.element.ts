@@ -19,18 +19,18 @@
  * Разметку, ожившую при регистрации, база собирает по месту (`deferral.ts`):
  * окно — раньше списков в нём, и они его находят.
  *
- * Разметка вынесена в virtual.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в virtual.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { VirtualDescriptor } from '@soldy-ui/setup'
 import type { IVirtual } from '@soldy-ui/core'
-import { SoldyElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { setupVirtual } from './setup.component'
 import { virtualTemplate } from './virtual.template'
 
-export const TVirtualElement = SoldyElement(HTMLElement, {
+export const TVirtualElement = ElementBase(HTMLElement, {
 	descriptor: VirtualDescriptor(),
 	template: virtualTemplate,
 	setup: setupVirtual,
@@ -41,8 +41,8 @@ defineAutonomousElement('so-virtual', TVirtualElement)
 /**
  * `<so-virtual>` из JS: элемент HTML, своё элемента soldy (`ctrl`, `state`) и
  * свойства пропов дескриптора (`enabled`) — без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TVirtualElementProps = HTMLElement &
-	ISoldyElement<IVirtual> &
-	TSoldyElementProps<typeof VirtualDescriptor, HTMLElement>
+	IElementBase<IVirtual> &
+	TElementProps<typeof VirtualDescriptor, HTMLElement>

@@ -3,7 +3,7 @@
  * `role="tab"` — и кнопка закрытия рядом с ней.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень несёт классы,
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень несёт классы,
  * `attrs`, `dataset` и место в коллекции (`order`): ряд табов — флексбокс, и
  * таб стоит по номеру в коллекции. Строка — узел поля корня (`control`):
  * статические атрибуты разметки таба, кроме `class`, `style`, `is`, `slot` и
@@ -15,17 +15,17 @@
  * фасада элемент называет рядом со своим. Регистрирует элемент модуль набора
  * (`Tabs.element.ts`).
  *
- * Разметка вынесена в tabs-item.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в tabs-item.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { TabsCollectionItemDescriptor, TabsItemDescriptor } from '@soldy-ui/setup'
 import type { ITabsItem, TTabsItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { setupTabsItem } from './setup.component'
 import { tabsItemTemplate } from './tabs-item.template'
 
-export const TTabsItemElement = SoldyElement(HTMLDivElement, {
+export const TTabsItemElement = ElementBase(HTMLDivElement, {
 	descriptor: TabsItemDescriptor(),
 	facade: TabsCollectionItemDescriptor(),
 	template: tabsItemTemplate,
@@ -37,8 +37,8 @@ export const TTabsItemElement = SoldyElement(HTMLDivElement, {
  * `<div is="so-tabs-item">` из JS: нативный `div`, своё элемента soldy
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`active`) — без тех,
- * что у `div` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TTabsItemElementProps = HTMLDivElement &
-	ISoldyElement<ITabsItem, TTabsItemCollectionFacade> &
-	TSoldyElementProps<typeof TabsItemDescriptor, HTMLDivElement>
+	IElementBase<ITabsItem, TTabsItemCollectionFacade> &
+	TElementProps<typeof TabsItemDescriptor, HTMLDivElement>

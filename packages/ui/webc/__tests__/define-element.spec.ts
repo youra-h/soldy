@@ -88,7 +88,7 @@ function registerView(name: string): void {
 	defineElement(name, class extends TComponentViewElement {}, 'div')
 }
 
-function isSoldyButton(node: Element | null): node is TButtonElementProps {
+function isButton(node: Element | null): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
@@ -96,7 +96,7 @@ function isSoldyButton(node: Element | null): node is TButtonElementProps {
 function button(selector: string): TButtonElementProps {
 	const node = document.querySelector(selector)
 
-	if (!isSoldyButton(node)) throw new Error(`${selector}: кнопки soldy нет`)
+	if (!isButton(node)) throw new Error(`${selector}: кнопки soldy нет`)
 
 	return node
 }
@@ -197,7 +197,7 @@ describe('defineElement · первая сборка элемента разме
 
 		const created = document.createElement('button', { is: name })
 
-		if (!isSoldyButton(created)) throw new Error(`${name}: кнопки soldy нет`)
+		if (!isButton(created)) throw new Error(`${name}: кнопки soldy нет`)
 
 		document.body.appendChild(created)
 		document.body.insertAdjacentHTML(
@@ -324,7 +324,7 @@ describe('defineElement · сборка по месту', () => {
 		const late = document.createElement('label', { is: names.radio })
 		const el = group(names)
 
-		if (!isSoldyButton(created) || !isRadio(late)) throw new Error('элементы soldy не созданы')
+		if (!isButton(created) || !isRadio(late)) throw new Error('элементы soldy не созданы')
 
 		document.body.appendChild(created)
 		late.setAttribute('value', 'c')
@@ -435,7 +435,7 @@ describe('defineElement · сборка по месту', () => {
 		await task()
 
 		expect(valuesOf(group(names))).toEqual(['a', 'b'])
-		expect(isSoldyButton(removed)).toBe(false)
+		expect(isButton(removed)).toBe(false)
 
 		document.body.appendChild(removed)
 

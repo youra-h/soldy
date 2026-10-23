@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-tabs-item">`: классы, `attrs`, `dataset` (тема
  * красит активный таб по `data-selected`) и место в коллекции (`order`)
- * раскладывает на него база (`SoldyElement`). Здесь — строка и кнопка закрытия
+ * раскладывает на него база (`ElementBase`). Здесь — строка и кнопка закрытия
  * рядом с ней, как у Vue.
  *
  * - Строка — деталь `<button is="so-button" embedded="tabs.row" type="button">`,

@@ -4,7 +4,7 @@
  * Корень — сам `<li is="so-pagination-item">`, место страницы в списке:
  * классы, `attrs`, `dataset` (`data-selected` — текущая, его пишет активация
  * коллекции, как у таба, — и `data-disabled`) и скрытие раскладывает на него
- * база (`SoldyElement`). Здесь — строка, как у Vue.
+ * база (`ElementBase`). Здесь — строка, как у Vue.
  *
  * - Строка — деталь `<button is="so-button" embedded="pagination.page"
  *   type="button">` с номером или текстом страницы. На ней `size` и `variant`

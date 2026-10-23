@@ -4,7 +4,7 @@
  *
  * Корень — сам `<div is="so-select">`, рамка: классы, `attrs` и `dataset`
  * (`data-open` — стрелку тема разворачивает по нему) и скрытие раскладывает на
- * него база (`SoldyElement`). ARIA на корне нет: набор комбобокса — у поля, а
+ * него база (`ElementBase`). ARIA на корне нет: набор комбобокса — у поля, а
  * свой набор Select шаблон кладёт на поле.
  *
  * - Поле — деталь Input `<div is="so-input" embedded="select.field">` с
@@ -48,7 +48,7 @@
  *   вычищать), сторона и flip — `panelPlacement` и `panelFlip`, ширина по полю
  *   — `autoFitWidth`. `rendered` панели шаблон не пишет: до увезённой панели
  *   скрытие корня не доходит, и прячет её база Frame по признаку поддерева
- *   Select (`SoldyElement`, «Поддерево»), как у Menu. Наборы панели —
+ *   Select (`ElementBase`, «Поддерево»), как у Menu. Наборы панели —
  *   `panelDataset` (`data-swiping`) и `dismiss_ownerAttribute` — одним слоем
  *   владельца.
  * - В панели — свет детали (`lend`): полоса жеста `div.so-select__handle` под

@@ -26,19 +26,19 @@
  * пакета не выходит.
  *
  * Разметка вынесена в toasts.template.ts, жизненный цикл и перенос — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { ToastsCollectionDescriptor, ToastsDescriptor } from '@soldy-ui/setup'
 import type { IToasts, TToastsCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { TToastsItemElement } from './item'
 import { setupToasts } from './setup.component'
 import { toastsTemplate } from './toasts.template'
 
-export const TToastsElement = SoldyElement(HTMLElement, {
+export const TToastsElement = ElementBase(HTMLElement, {
 	descriptor: ToastsDescriptor(),
 	facade: ToastsCollectionDescriptor(),
 	template: toastsTemplate,
@@ -53,8 +53,8 @@ defineElement('so-toasts-item', TToastsItemElement, 'li')
  * `<so-toasts>` из JS: элемент HTML, своё элемента soldy (`ctrl`, `state` —
  * вместе со свойствами фасада) и свойства пропов дескриптора вместе с пропсами
  * его плагинов и фасада (`placement`, `layout`, `max`, `engine`) — без
- * `HOST_PROPS` (`TSoldyElementProps`).
+ * `HOST_PROPS` (`TElementProps`).
  */
 export type TToastsElementProps = HTMLElement &
-	ISoldyElement<IToasts, TToastsCollectionFacade> &
-	TSoldyElementProps<typeof ToastsDescriptor, HTMLElement>
+	IElementBase<IToasts, TToastsCollectionFacade> &
+	TElementProps<typeof ToastsDescriptor, HTMLElement>

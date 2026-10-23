@@ -5,7 +5,7 @@
  * `so-drawer--placement-*`), наборы `aria` (`role="dialog"`, `aria-modal`,
  * `aria-labelledby`), `attrs` и `dataset` (номер слоя `data-layer`,
  * `data-open`, `data-swiping`, `data-contained`), раскладку (`z-index` слоя,
- * размер переменными) и скрытие раскладывает на него база (`SoldyElement`). В
+ * размер переменными) и скрытие раскладывает на него база (`ElementBase`). В
  * цель её уводит она же, а с `contained` оставляет на месте — в ближайшем
  * позиционированном предке (описание корня `teleport`). Сдвиг во время жеста
  * (`--so-swipe-offset`) плагин жеста пишет в корень сам, мимо разметки. Здесь

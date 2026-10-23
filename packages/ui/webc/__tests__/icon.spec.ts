@@ -17,7 +17,7 @@ import { describe, it, expect, afterEach, beforeAll } from 'vitest'
 import { TIcon } from '@soldy-ui/core'
 import { IconDescriptor, useIcons, type TIconSource } from '@soldy-ui/setup'
 import {
-	SoldyElement,
+	ElementBase,
 	TIconElement,
 	bind,
 	defineElement,
@@ -425,7 +425,7 @@ describe('база · свой атрибут элемента', () => {
 		],
 	}
 
-	const TCountingElement = SoldyElement(HTMLSpanElement, {
+	const TCountingElement = ElementBase(HTMLSpanElement, {
 		descriptor: IconDescriptor(),
 		template: counting,
 		attributes: ['icon'],
@@ -466,7 +466,7 @@ describe('база · свой атрибут элемента', () => {
 		'имя «%s» занято — ошибка описания',
 		(name) => {
 			expect(() =>
-				SoldyElement(HTMLSpanElement, {
+				ElementBase(HTMLSpanElement, {
 					descriptor: IconDescriptor(),
 					template: counting,
 					attributes: [name],

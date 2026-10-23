@@ -4,7 +4,7 @@
  * Корень — сам `<div is="so-date-picker">`, якорь панели: классы (`--single`,
  * `--range`, `--clearable`), `attrs`, набор корня `rootAria` и `dataset`
  * (`data-open`, `data-disabled`) и скрытие раскладывает на него база
- * (`SoldyElement`), `id` корня — привязка, как `:id="id"` у Vue. В корне стоит
+ * (`ElementBase`), `id` корня — привязка, как `:id="id"` у Vue. В корне стоит
  * разметка одного режима — по `mode`, — перед местом режима (пустой
  * комментарий), а за ним — панель.
  *
@@ -44,7 +44,7 @@
  *   построении. Открытость — `visible` панели, а не `rendered`: закрытая
  *   панель прячется, а не размонтируется. `rendered` панели шаблон не пишет:
  *   до увезённой панели скрытие корня не доходит, и прячет её база Frame по
- *   признаку поддерева DatePicker (`SoldyElement`, «Поддерево»), как у Select.
+ *   признаку поддерева DatePicker (`ElementBase`, «Поддерево»), как у Select.
  *   Наборы панели — `panelAria` (`role="dialog"`, `aria-modal`, имя, `id`),
  *   `panelDataset` (`data-swiping`) и пометка владельцем
  *   `dismiss_ownerAttribute` — одним слоем владельца.

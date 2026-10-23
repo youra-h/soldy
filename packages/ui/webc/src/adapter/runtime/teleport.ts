@@ -5,7 +5,7 @@
  * Frame уводит панель в `body`.
  *
  * Корень — обычно элемент, который написал потребитель (`<div is="so-frame">`,
- * см. `SoldyElement`), и в цель уезжает он сам, как у Angular: класс, атрибуты
+ * см. `ElementBase`), и в цель уезжает он сам, как у Angular: класс, атрибуты
  * и слушатели потребителя остаются на панели без проброса. У обёртки корень —
  * узел шаблона внутри элемента (`TRootSpec.wrapped`): регион тостов в
  * `<so-toasts>`, — и в цель уезжает он, а элемент со светом — приложением —
@@ -99,7 +99,7 @@
 
 import { TPlaceContext } from '../context'
 import { isRelocating, owe, rebuild, relocate } from './relocation'
-import { isSoldyElement } from './soldy-mark'
+import { isPlaceOwner } from './place-owner'
 import { connecting } from './waiting'
 
 /** Текст якоря, который стоит на месте корня, пока корень в цели. */
@@ -145,7 +145,7 @@ function soldyWithin(scope: ParentNode): Element[] {
 	const found: Element[] = []
 
 	for (const element of scope.querySelectorAll('*')) {
-		if (isSoldyElement(element)) found.push(element)
+		if (isPlaceOwner(element)) found.push(element)
 		if (element.shadowRoot) found.push(...soldyWithin(element.shadowRoot))
 	}
 
@@ -311,7 +311,7 @@ export class TTeleport {
 			node !== null;
 			node = TPlaceContext.above(node)
 		) {
-			if (isSoldyElement(node)) return node
+			if (isPlaceOwner(node)) return node
 		}
 
 		return null
@@ -331,7 +331,7 @@ export class TTeleport {
 
 		for (
 			let node: Node | null = anchor;
-			node !== null && !isSoldyElement(node);
+			node !== null && !isPlaceOwner(node);
 			node = TPlaceContext.above(node)
 		) {
 			if (removed.has(node) && !isRelocating(node)) return true

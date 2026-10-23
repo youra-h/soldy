@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-menu-item">`: классы (размер меню и свой вариант),
  * `attrs` и `dataset` — состояние для темы (`data-highlighted`,
- * `data-disabled`) — раскладывает на него база (`SoldyElement`), и строка
+ * `data-disabled`) — раскладывает на него база (`ElementBase`), и строка
  * красится от него: носитель `dataset` один. Здесь — строка, как у Vue.
  *
  * - Строка — Button на `div` (`menu.row`, см. `row.ts`). Нажатие — действие:

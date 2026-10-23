@@ -3,7 +3,7 @@
  * по `value` таб.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Стоит в слоте
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Стоит в слоте
  * `content` набора (`slot="content"`): слот `default` набора — список табов,
  * `[role=tablist]`, и панель, попав туда, оказалась бы в нём. Классы, `attrs`
  * и `aria` панели раскладывает на корень база; неактивная панель скрыта —
@@ -13,17 +13,17 @@
  * Регистрирует элемент модуль набора (`Tabs.element.ts`).
  *
  * Разметка вынесена в tabs-content.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { TabsCollectionContentDescriptor, TabsContentDescriptor } from '@soldy-ui/setup'
 import type { ITabsContent, TTabsContentCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { setupTabsContent } from './setup.component'
 import { tabsContentTemplate } from './tabs-content.template'
 
-export const TTabsContentElement = SoldyElement(HTMLDivElement, {
+export const TTabsContentElement = ElementBase(HTMLDivElement, {
 	descriptor: TabsContentDescriptor(),
 	facade: TabsCollectionContentDescriptor(),
 	template: tabsContentTemplate,
@@ -35,8 +35,8 @@ export const TTabsContentElement = SoldyElement(HTMLDivElement, {
  * `<div is="so-tabs-content">` из JS: нативный `div`, своё элемента soldy
  * (`ctrl`, `state` — вместе с активностью фасада) и свойства пропов
  * дескриптора — без тех, что у `div` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TTabsContentElementProps = HTMLDivElement &
-	ISoldyElement<ITabsContent, TTabsContentCollectionFacade> &
-	TSoldyElementProps<typeof TabsContentDescriptor, HTMLDivElement>
+	IElementBase<ITabsContent, TTabsContentCollectionFacade> &
+	TElementProps<typeof TabsContentDescriptor, HTMLDivElement>

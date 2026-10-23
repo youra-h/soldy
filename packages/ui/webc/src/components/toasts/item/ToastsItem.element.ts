@@ -11,22 +11,22 @@
  * сообщает `so:item:close`.
  *
  * Элемент — настоящий `<li>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. На корне — все три
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. На корне — все три
  * набора ядра, как у Vue: роль живой области, `tabindex`, `data-open`,
  * `data-swiping`. Классы, наборы и скрытие корня раскладывает база.
  *
  * Разметка вынесена в toasts-item.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { ToastsCollectionItemDescriptor, ToastsItemDescriptor } from '@soldy-ui/setup'
 import type { IToastsItem, TToastsItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { setupToastsItem } from './setup.component'
 import { toastsItemTemplate } from './toasts-item.template'
 
-export const TToastsItemElement = SoldyElement(HTMLLIElement, {
+export const TToastsItemElement = ElementBase(HTMLLIElement, {
 	descriptor: ToastsItemDescriptor(),
 	facade: ToastsCollectionItemDescriptor(),
 	template: toastsItemTemplate,
@@ -37,8 +37,8 @@ export const TToastsItemElement = SoldyElement(HTMLLIElement, {
  * `<li is="so-toasts-item">` из JS: нативный `li`, своё элемента soldy
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора — без тех, что у `li` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`). Входов у тоста нет: тост ему отдаёт регион.
+ * (`TElementProps`). Входов у тоста нет: тост ему отдаёт регион.
  */
 export type TToastsItemElementProps = HTMLLIElement &
-	ISoldyElement<IToastsItem, TToastsItemCollectionFacade> &
-	TSoldyElementProps<typeof ToastsItemDescriptor, HTMLLIElement>
+	IElementBase<IToastsItem, TToastsItemCollectionFacade> &
+	TElementProps<typeof ToastsItemDescriptor, HTMLLIElement>

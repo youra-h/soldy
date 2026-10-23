@@ -3,7 +3,7 @@
  *
  * Корень — сама `<button is="so-button">`: классы, наборы `aria`, `attrs` и
  * `dataset` (`data-disabled` для темы) и скрытие на неё раскладывает база
- * (`SoldyElement`), здесь остаётся своё.
+ * (`ElementBase`), здесь остаётся своё.
  *
  * Слоты контракта: `leading`, `default`, `trailing`. В корне создаётся только
  * span для текста — `leading` кладётся перед ним, `trailing` дописывается в

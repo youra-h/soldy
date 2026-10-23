@@ -58,12 +58,12 @@ let dispose: (() => void) | undefined
 
 /** Элемент soldy с props дескриптора; узел другой — тест падает здесь. */
 function asView(node: Element | null): TComponentViewElementProps {
-	if (!isSoldyView(node)) throw new Error('<div is="so-component-view"> нет')
+	if (!isView(node)) throw new Error('<div is="so-component-view"> нет')
 
 	return node
 }
 
-function isSoldyView(node: Element | null): node is TComponentViewElementProps {
+function isView(node: Element | null): node is TComponentViewElementProps {
 	return node instanceof TComponentViewElement
 }
 

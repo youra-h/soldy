@@ -1,5 +1,5 @@
 /**
- * SoldyElement — элемент soldy поверх нативного элемента своего тега.
+ * ElementBase — элемент soldy поверх нативного элемента своего тега.
  *
  * Аналог TComponentBase из Angular: держит весь общий жизненный цикл, чтобы
  * компонент состоял только из дескриптора, setup-слоя и шаблона.
@@ -25,7 +25,7 @@
  * ждёт колбэков: иначе ядро собралось бы без них, и атрибуты разметки дошли бы
  * до потребителя событиями `change:*`.
  *
- * Класс собирает фабрика `SoldyElement(HTMLButtonElement, { … })`: база одна,
+ * Класс собирает фабрика `ElementBase(HTMLButtonElement, { … })`: база одна,
  * а нативный класс у каждого тега свой.
  *
  * - connectedCallback: при первом подключении строит структуру шаблона в
@@ -383,7 +383,7 @@ import {
 	type THiddenDisplay,
 } from './root-attributes'
 import { isSlotMark } from './slot-mark'
-import { markSoldyElement } from './soldy-mark'
+import { markPlaceOwner } from './place-owner'
 import { TSubtree, nearestSubtree, provideSubtree } from './subtree'
 import { TTeleport, type TTeleportPlace } from './teleport'
 import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
@@ -527,7 +527,7 @@ function attributesOf(
 }
 
 /** Что у элемента своего, помимо нативного: инстанс ядра и его состояние. */
-export interface ISoldyElement<TInstance, TFacade = unknown, TOwnerFacade = unknown> {
+export interface IElementBase<TInstance, TFacade = unknown, TOwnerFacade = unknown> {
 	/**
 	 * Свойства инстанса со снимком через `valueOf()` — см. `TInstanceState`; у
 	 * коллекционного компонента — вместе со свойствами фасада, а у пункта с
@@ -556,9 +556,9 @@ export interface ISoldyElement<TInstance, TFacade = unknown, TOwnerFacade = unkn
  * несёт интерфейс пропсов ядра компонента (`ITabsProps`). Защищённых пропсов в
  * контракте нет, как нет для них и свойств на прототипе. Вычтено то, чего база
  * на прототип не вешает: свойства, которые у элемента уже есть по тегу
- * (`TNative`), `HOST_PROPS` и `ctrl` — его пара своя, в `ISoldyElement`.
+ * (`TNative`), `HOST_PROPS` и `ctrl` — его пара своя, в `IElementBase`.
  */
-export type TSoldyElementProps<
+export type TElementProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TNative extends HTMLElement,
 > = Omit<DescriptorComponentProps<TDescriptorFn>, keyof TNative | THostProp | 'ctrl'>
@@ -665,7 +665,7 @@ export type TRootTeleport = {
  * части, которая сразу и элемент коллекции над ней, и владелец своей (пункт с
  * подменю).
  */
-export interface ISoldyElementSpec<
+export interface IElementSpec<
 	TInstance,
 	TFacade = unknown,
 	TOutputs = unknown,
@@ -713,9 +713,9 @@ export interface ISoldyElementSpec<
 export type TNativeElementClass = new (...args: any[]) => HTMLElement
 
 /** Класс элемента soldy — то, что база добавляет к нативному классу тега. */
-export type TSoldyElementClass<TInstance, TFacade = unknown, TOwnerFacade = unknown> = (new (
+export type TElementClass<TInstance, TFacade = unknown, TOwnerFacade = unknown> = (new (
 	...args: any[]
-) => ISoldyElement<TInstance, TFacade, TOwnerFacade>) & {
+) => IElementBase<TInstance, TFacade, TOwnerFacade>) & {
 	readonly observedAttributes: string[]
 }
 
@@ -726,12 +726,12 @@ export type TSoldyElementClass<TInstance, TFacade = unknown, TOwnerFacade = unkn
  * у визуального есть сверх событий — классы, наборы, видимость, — база читает
  * из состояния по имени (см. шапку).
  *
- * Тип результата объявлен явно — нативный класс плюс своё (`ISoldyElement`):
+ * Тип результата объявлен явно — нативный класс плюс своё (`IElementBase`):
  * класс, выведенный из выражения, TypeScript в декларации не выпустит, у него
  * приватные члены. Выходы плагинов (`TOutputs`) — дело шаблона: в состоянии
  * элемента для потребителя (`el.state`) их тип не обещан.
  */
-export function SoldyElement<
+export function ElementBase<
 	TNative extends TNativeElementClass,
 	TInstance extends IComponent<IComponentProps, any>,
 	TFacade = unknown,
@@ -739,8 +739,8 @@ export function SoldyElement<
 	TOwnerFacade = unknown,
 >(
 	Native: TNative,
-	spec: ISoldyElementSpec<TInstance, TFacade, TOutputs, TOwnerFacade>,
-): TNative & TSoldyElementClass<TInstance, TFacade, TOwnerFacade> {
+	spec: IElementSpec<TInstance, TFacade, TOutputs, TOwnerFacade>,
+): TNative & TElementClass<TInstance, TFacade, TOwnerFacade> {
 	/**
 	 * Описания элемента: своё и, у коллекционного компонента, фасада, а у пункта
 	 * с подменю — ещё и фасада своей коллекции.
@@ -783,7 +783,7 @@ export function SoldyElement<
 	const rootSets: readonly (readonly [TRootSet, string])[] = (spec.root?.sets ?? ROOT_SETS).map(
 		(set) => [set, set === 'aria' ? ariaOutput : set],
 	)
-	/** Свои атрибуты элемента: имя атрибута → имя свойства (`ISoldyElementSpec.attributes`). */
+	/** Свои атрибуты элемента: имя атрибута → имя свойства (`IElementSpec.attributes`). */
 	const own: ReadonlyMap<string, string> = new Map(
 		(spec.attributes ?? []).map((name) => [toAttributeName(name), name]),
 	)
@@ -805,7 +805,7 @@ export function SoldyElement<
 	 */
 	const unrenders = hides && !(wrapped && layer !== undefined)
 
-	class TSoldyElement extends Native implements ISoldyElement<TInstance, TFacade, TOwnerFacade> {
+	class TElementBase extends Native implements IElementBase<TInstance, TFacade, TOwnerFacade> {
 		static get observedAttributes(): string[] {
 			return [...attributes.keys(), ...own.keys()]
 		}
@@ -896,7 +896,7 @@ export function SoldyElement<
 		 */
 		constructor(...args: ConstructorParameters<TNativeElementClass>) {
 			super(...args)
-			markSoldyElement(this)
+			markPlaceOwner(this)
 			provideSubtree(this, this._subtree)
 
 			// Набор владельца на элементе с полем ждёт поля (см. шапку): деталь
@@ -1635,11 +1635,11 @@ export function SoldyElement<
 					configurable: true,
 					enumerable: true,
 
-					get(this: TSoldyElement) {
+					get(this: TElementBase) {
 						return this._read(prop)
 					},
 
-					set(this: TSoldyElement, value: unknown) {
+					set(this: TElementBase, value: unknown) {
 						this._write(prop, value)
 					},
 				})
@@ -1660,11 +1660,11 @@ export function SoldyElement<
 					configurable: true,
 					enumerable: true,
 
-					get(this: TSoldyElement): string | null {
+					get(this: TElementBase): string | null {
 						return this.getAttribute(attribute)
 					},
 
-					set(this: TSoldyElement, value: unknown) {
+					set(this: TElementBase, value: unknown) {
 						if (value === null || value === undefined) {
 							this.removeAttribute(attribute)
 						} else {
@@ -1676,5 +1676,5 @@ export function SoldyElement<
 		}
 	}
 
-	return TSoldyElement
+	return TElementBase
 }

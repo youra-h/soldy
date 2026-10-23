@@ -3,7 +3,7 @@
  * и по фокусу с клавиатуры.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Строчный корень —
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Строчный корень —
  * обёртка триггера, якорь панели и цель наведения: подсказка встаёт и в
  * строку текста, и в ряд кнопок. Панель — деталь Frame: в цель её уводит база
  * самого Frame, на месте в корне остаётся якорь-комментарий, поэтому в корне
@@ -19,17 +19,17 @@
  * На корне из наборов ядра — `attrs` и `dataset`: ARIA у панели и у триггера.
  * Классы, наборы и скрытие корня раскладывает база.
  *
- * Разметка вынесена в tooltip.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в tooltip.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { TooltipDescriptor } from '@soldy-ui/setup'
 import type { ITooltip } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { tooltipTemplate } from './tooltip.template'
 import { setupTooltip } from './setup.component'
 
-export const TTooltipElement = SoldyElement(HTMLSpanElement, {
+export const TTooltipElement = ElementBase(HTMLSpanElement, {
 	descriptor: TooltipDescriptor(),
 	template: tooltipTemplate,
 	root: { sets: ['attrs', 'dataset'] },
@@ -41,8 +41,8 @@ defineElement('so-tooltip', TTooltipElement, 'span')
 /**
  * `<span is="so-tooltip">` из JS: нативный `span`, своё элемента soldy
  * (`ctrl`, `state`) и свойства пропов дескриптора — без тех, что у `span` уже
- * есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TTooltipElementProps = HTMLSpanElement &
-	ISoldyElement<ITooltip> &
-	TSoldyElementProps<typeof TooltipDescriptor, HTMLSpanElement>
+	IElementBase<ITooltip> &
+	TElementProps<typeof TooltipDescriptor, HTMLSpanElement>

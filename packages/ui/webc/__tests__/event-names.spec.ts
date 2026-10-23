@@ -78,7 +78,7 @@ function domEvents(): ReadonlySet<string> {
 	return names
 }
 
-function isSoldyButton(node: Element): node is TButtonElementProps {
+function isButton(node: Element): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
@@ -86,7 +86,7 @@ function isSoldyButton(node: Element): node is TButtonElementProps {
 function createButton(ctrl?: TButton): TButtonElementProps {
 	const node = document.createElement('button', { is: 'so-button' })
 
-	if (!isSoldyButton(node)) throw new Error('<button is="so-button"> нет')
+	if (!isButton(node)) throw new Error('<button is="so-button"> нет')
 
 	if (ctrl) node.ctrl = ctrl
 

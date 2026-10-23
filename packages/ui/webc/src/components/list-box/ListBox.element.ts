@@ -2,7 +2,7 @@
  * `<div is="so-list-box">` — список с выбором.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. На корне — `attrs` и
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. На корне — `attrs` и
  * `dataset`, как у Vue и Angular, а набор `aria` — сам список — шаблон кладёт
  * на узел списка внутри корня (`div.so-list-box__list`): рядом с ним в корне
  * стоят шапка и подвал. Узел списка — и остановка Tab (`tabindex="0"` ставит
@@ -28,19 +28,19 @@
  * регистрирует фабрика кнопки там, где она впервые нужна, — модуль шаблона
  * элемента.
  *
- * Разметка вынесена в list-box.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в list-box.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { ListBoxCollectionDescriptor, ListBoxDescriptor } from '@soldy-ui/setup'
 import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { TListBoxItemElement } from './item'
 import { TListBoxGroupElement } from './group'
 import { listBoxTemplate } from './list-box.template'
 import { setupListBox } from './setup.component'
 
-export const TListBoxElement = SoldyElement(HTMLDivElement, {
+export const TListBoxElement = ElementBase(HTMLDivElement, {
 	descriptor: ListBoxDescriptor(),
 	facade: ListBoxCollectionDescriptor(),
 	template: listBoxTemplate,
@@ -57,8 +57,8 @@ defineElement('so-list-box-item', TListBoxItemElement, 'div')
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`items`, `mode`,
  * `engine`) — без тех, что у `div` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TListBoxElementProps = HTMLDivElement &
-	ISoldyElement<IListBox, TListBoxCollectionFacade> &
-	TSoldyElementProps<typeof ListBoxDescriptor, HTMLDivElement>
+	IElementBase<IListBox, TListBoxCollectionFacade> &
+	TElementProps<typeof ListBoxDescriptor, HTMLDivElement>

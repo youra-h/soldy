@@ -2,7 +2,7 @@
  * `<tr is="so-table-row">` — строка таблицы (`Table.Row`).
  *
  * Элемент — настоящий `<tr>`, расширенный классом soldy (customized built-in,
- * см. `SoldyElement`): тег ядра по умолчанию. Рисует его таблица — по строке
+ * см. `ElementBase`): тег ядра по умолчанию. Рисует его таблица — по строке
  * на запись того, что рисует коллекция строк (`drawn`), над элементом
  * коллекции (`ctrl`), — а не потребитель: строки задаются только данными
  * (`items`, `engine`). Входов у строки нет, кроме `selected` фасада: запись,
@@ -15,17 +15,17 @@
  *
  * Регистрирует элемент модуль таблицы (`Table.element.ts`), после неё.
  *
- * Разметка вынесена в table-row.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в table-row.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { TableCollectionRowDescriptor, TableRowDescriptor } from '@soldy-ui/setup'
 import type { ITableRow, TTableRowCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { setupTableRow } from './setup.component'
 import { tableRowTemplate } from './table-row.template'
 
-export const TTableRowElement = SoldyElement(HTMLTableRowElement, {
+export const TTableRowElement = ElementBase(HTMLTableRowElement, {
 	descriptor: TableRowDescriptor(),
 	facade: TableCollectionRowDescriptor(),
 	template: tableRowTemplate,
@@ -36,8 +36,8 @@ export const TTableRowElement = SoldyElement(HTMLTableRowElement, {
  * `<tr is="so-table-row">` из JS: нативный `tr`, своё элемента soldy (`ctrl` —
  * строка, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами фасада (`selected`) — без тех, что у `tr` уже
- * есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TTableRowElementProps = HTMLTableRowElement &
-	ISoldyElement<ITableRow, TTableRowCollectionFacade> &
-	TSoldyElementProps<typeof TableRowDescriptor, HTMLTableRowElement>
+	IElementBase<ITableRow, TTableRowCollectionFacade> &
+	TElementProps<typeof TableRowDescriptor, HTMLTableRowElement>

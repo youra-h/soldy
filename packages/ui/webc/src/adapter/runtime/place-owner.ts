@@ -1,5 +1,5 @@
 /**
- * Метка элемента soldy — элемента, которого собирает база (`SoldyElement`):
+ * Метка элемента soldy — элемента, которого собирает база (`ElementBase`):
  * ставит её база каждому своему элементу при создании.
  *
  * Читает её телепорт (`teleport.ts`): хозяин места панели — ближайший элемент
@@ -21,11 +21,11 @@
 const marked = new WeakSet<Node>()
 
 /** Элемент собирает база — его конструктор, при создании (см. шапку). */
-export function markSoldyElement(element: Element): void {
+export function markPlaceOwner(element: Element): void {
 	marked.add(element)
 }
 
 /** Собирает ли узел база: элемент soldy — хозяин места для панелей, чей якорь в нём. */
-export function isSoldyElement(node: Node): boolean {
+export function isPlaceOwner(node: Node): boolean {
 	return marked.has(node)
 }

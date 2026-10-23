@@ -3,7 +3,7 @@
  * `<input type="checkbox">` внутри, рядом — коробка с отметкой.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию, строчный — флажок
+ * built-in, см. `ElementBase`): тег ядра по умолчанию, строчный — флажок
  * кладут в подпись `Label`, а внутри `label` HTML разрешает только строчную
  * разметку. Поле — узел шаблона в обычном DOM страницы, поэтому форма видит
  * его сама: `FormData`, `<label>`, `<fieldset disabled>` и валидация
@@ -19,17 +19,17 @@
  * берёт пропом первой сборки, из кода — `ctrl.id`, а `el.id` — собственный
  * `id` корня.
  *
- * Разметка вынесена в check-box.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в check-box.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { CheckBoxDescriptor } from '@soldy-ui/setup'
 import type { ICheckBox } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { checkBoxTemplate } from './check-box.template'
 import { setupCheckBox } from './setup.component'
 
-export const TCheckBoxElement = SoldyElement(HTMLSpanElement, {
+export const TCheckBoxElement = ElementBase(HTMLSpanElement, {
 	descriptor: CheckBoxDescriptor(),
 	template: checkBoxTemplate,
 	root: { sets: ['attrs', 'dataset'], control: true },
@@ -42,8 +42,8 @@ defineElement('so-check-box', TCheckBoxElement, 'span')
  * `<span is="so-check-box">` из JS: нативный `span`, своё элемента soldy
  * (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
  * плагинов (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный
- * `id` корня), и без `HOST_PROPS` (`TSoldyElementProps`).
+ * `id` корня), и без `HOST_PROPS` (`TElementProps`).
  */
 export type TCheckBoxElementProps = HTMLSpanElement &
-	ISoldyElement<ICheckBox> &
-	TSoldyElementProps<typeof CheckBoxDescriptor, HTMLSpanElement>
+	IElementBase<ICheckBox> &
+	TElementProps<typeof CheckBoxDescriptor, HTMLSpanElement>
