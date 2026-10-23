@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { fileURLToPath } from 'node:url'
-import { compile } from 'sass'
+import postcss from 'postcss'
+
+import { OREN, inspectThemes, reportOf } from './themes'
 
 /**
  * Контрол в подписи `Label` подсвечивается и от наведения на её текст.
@@ -9,7 +10,9 @@ import { compile } from 'sass'
  * выглядеть как курсор на самом контроле. Браузеру это доверить нельзя:
  * наведение на подпись подписанному полю отдают не все — в Chrome, где нашли
  * ошибку, оно до поля не доходило. Поэтому правило подсветки срабатывает ещё и
- * по контексту наведённой подписи — `src/mixins/_hover.scss`.
+ * по контексту наведённой подписи. Это форма селектора, а не облик одной
+ * темы, и сторож проходит по каждой теме репозитория: у oren её пишет
+ * `src/mixins/_hover.scss`.
  *
  * Сторож нужен именно здесь, хотя поведение браузерное: браузерный прогон
  * (`playground/vue/browser/label.spec.ts`) держит поведение, но видит его
@@ -17,11 +20,9 @@ import { compile } from 'sass'
  * и без правила темы остаётся зелёным. Молча ломается ровно это: контекст
  * исчезает из правила, и подсветка пропадает там, куда прогон не достаёт.
  *
- * Селекторы берутся из собранного Sass, а не из текста файлов: их складывают
- * циклы и миксины, и целиком в исходнике их нет.
+ * Селекторы берутся из собранного CSS темы (`themes.ts`): их складывают
+ * циклы, миксины и `@apply`, и целиком в исходниках их нет.
  */
-
-const INDEX_SCSS = fileURLToPath(new URL('../src/index.scss', import.meta.url))
 
 /** Контролы, которые подписывает `Label`. */
 const CONTROLS = ['so-check-box', 'so-switch', 'so-radio-group-item']
@@ -37,34 +38,48 @@ const CONTEXT = ':where(.so-label:hover>.so-label__control *)'
  */
 const ALTERNATIVE = `:is(:hover,${CONTEXT}`
 
-/** Пробелы вокруг комбинаторов и запятых Sass расставляет по-своему. */
+/** Пробелы вокруг комбинаторов и запятых сборки бывают разными. */
 const squash = (selector: string) => selector.replace(/\s+/g, ' ').replace(/\s*([>,])\s*/g, '$1')
 
-/** Селекторы собранной темы: всё, что стоит перед телом правила, кроме at-правил. */
-function selectors(): string[] {
-	const css = compile(INDEX_SCSS).css.replace(/\/\*[\s\S]*?\*\//g, '')
+/** Правила наведения каждого контрола: селектор упоминает и блок, и `:hover`. */
+function inspect(source: string): Map<string, string[]> {
+	const selectors: string[] = []
 
-	return [...css.matchAll(/([^{}]+)\{/g)]
-		.map(([, selector]) => squash(selector.trim()))
-		.filter((selector) => !selector.startsWith('@'))
+	postcss.parse(source).walkRules((rule) => {
+		selectors.push(...rule.selectors.map(squash))
+	})
+
+	return new Map(
+		CONTROLS.map((block) => [
+			block,
+			selectors.filter(
+				(selector) => selector.includes(`.${block}`) && selector.includes(':hover'),
+			),
+		]),
+	)
 }
 
-/** Правила наведения блока: селектор упоминает и блок, и `:hover`. */
-const hoverRules = (block: string): string[] =>
-	selectors().filter((selector) => selector.includes(`.${block}`) && selector.includes(':hover'))
+const reports = await inspectThemes(inspect)
 
-describe('подсветка контрола в подписи', () => {
+describe.each(reports)('подсветка контрола в подписи · $name', ({ report }) => {
 	it.each(CONTROLS)(
 		'%s: наведение на подпись красит его так же, как наведение на него',
 		(block) => {
-			const rules = hoverRules(block)
+			const rules = report.get(block) ?? []
 
-			expect(rules.length, `правил наведения у .${block} не нашлось`).toBeGreaterThan(0)
 			expect(rules.filter((selector) => !selector.includes(CONTEXT))).toEqual([])
 		},
 	)
 
 	it.each(CONTROLS)('%s: контекст не меняет специфичность правила', (block) => {
-		expect(hoverRules(block).filter((selector) => !selector.includes(ALTERNATIVE))).toEqual([])
+		const rules = report.get(block) ?? []
+
+		expect(rules.filter((selector) => !selector.includes(ALTERNATIVE))).toEqual([])
+	})
+})
+
+describe('сторож не пуст', () => {
+	it.each(CONTROLS)('у oren есть правила наведения %s', (block) => {
+		expect(reportOf(reports, OREN).get(block) ?? []).not.toEqual([])
 	})
 })

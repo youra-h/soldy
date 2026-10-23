@@ -1,0 +1,42 @@
+{
+  "name": "@soldy-ui/theme-base",
+  "version": "0.3.0-alpha.2",
+  "description": "Общий слой тем Soldy UI: сброс частей библиотеки и знак направления письма — чистый CSS, без препроцессора",
+  "keywords": [
+    "soldy",
+    "ui",
+    "theme",
+    "css"
+  ],
+  "license": "MIT",
+  "author": "Yuri Soldatov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youra-h/soldy.git",
+    "directory": "packages/themes/base"
+  },
+  "homepage": "https://github.com/youra-h/soldy",
+  "bugs": {
+    "url": "https://github.com/youra-h/soldy/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "style": "./src/index.css",
+  "exports": {
+    ".": "./src/index.css",
+    "./theme-variables.json": "./theme-variables.json"
+  },
+  "files": [
+    "src",
+    "theme-variables.json"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "postcss": "^8.5.9",
+    "postcss-selector-parser": "^7.1.6"
+  }
+}

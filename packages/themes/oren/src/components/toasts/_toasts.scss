@@ -272,7 +272,7 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 	}
 }
 
-// Сдвиг уехавшего — знаком строки (`--so-dir-sign`, `direction.css`): у
+// Сдвиг уехавшего — знаком строки (`--so-dir-sign`, общий слой тем): у
 // `translate` логических направлений нет, а конец строки в RTL слева.
 :is(.so-toasts--placement-top-end, .so-toasts--placement-bottom-end)
 	> .so-toasts__list

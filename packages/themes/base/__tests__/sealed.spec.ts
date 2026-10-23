@@ -4,16 +4,17 @@ import type { Rule } from 'postcss'
 import parser from 'postcss-selector-parser'
 import type { Attribute, Node as SelectorNode, Selector } from 'postcss-selector-parser'
 
-import { buildCss } from './build-css'
+import { OREN, inspectThemes, reportOf } from './themes'
 
 /**
  * Тема не стилизует страницу (корневой `AGENTS.md`, «Темы: у пакета темы свои
- * инструкции»): её правила — только для узлов библиотеки.
+ * инструкции»): её правила — только для узлов библиотеки. Правило общее для
+ * любой темы, и сторож проходит по каждой теме репозитория (`themes.ts`).
  *
  * Каждый селектор каждого правила вне `@keyframes` обязан адресовать узел
  * `so-*`: класс `so-*` стоит в субъекте или в его предке по цепочке — не в
  * соседе и не внутри `:not()` и `:has()`. Класс — и в форме атрибута, которой
- * сброс называет любой узел библиотеки (`[class^='so-']`,
+ * сброс базы называет любой узел библиотеки (`[class^='so-']`,
  * `[class*=' so-']`), — и внутри `:is()` и `:where()`, если он есть в каждом
  * их варианте. Селектор, который узла `so-*` не адресует (`:root`, блок схемы
  * `[data-so-theme=…]`, знак направления `[dir=…]`, начальные значения
@@ -22,10 +23,11 @@ import { buildCss } from './build-css'
  * `@supports`, `@container`, `@starting-style`), `@layer`, `@keyframes` и
  * `@property`: `@font-face`, `@import` и прочие задевают документ целиком.
  *
- * Читается собранный CSS: Sass, `@apply` и то, что выпускает Tailwind, в нём
- * развёрнуты. Так стережётся и preflight Tailwind: он сбрасывал все элементы
- * документа, и тема подключает Tailwind частями, без него (`src/base.css`), а
- * то, на что опирались части, даёт сброс узлов библиотеки (`src/reset.css`).
+ * Читается собранный CSS темы: Sass, `@apply` и то, что выпускает Tailwind, в
+ * нём развёрнуты, а база в нём уже вшита. Так стережётся и preflight
+ * Tailwind: он сбрасывал все элементы документа, и тема oren подключает
+ * Tailwind частями, без него, а то, на что опирались части, даёт сброс узлов
+ * библиотеки из базы (`src/reset.css`).
  */
 
 /** At-правила, которые только оборачивают правила, — условие, слой, место. */
@@ -113,8 +115,9 @@ const isSchemeBlock = (selector: string) =>
 /** Разбор селектора — без правки. */
 const selectorsOf = (selector: string): Selector[] => parser().astSync(selector).nodes
 
-describe('тема не стилизует страницу', async () => {
-	const css = postcss.parse(await buildCss())
+/** Что сторож нашёл в CSS темы. */
+function inspect(source: string) {
+	const css = postcss.parse(source)
 	/** Правила внутри `@keyframes`: селекторы там — доли анимации. */
 	const keyframes = new Set<Rule>()
 	/** Правила вне `@keyframes` — сторож пуст, если их нет. */
@@ -124,7 +127,11 @@ describe('тема не стилизует страницу', async () => {
 
 	css.walkAtRules((atRule) => {
 		if (!isAllowedAtRule(atRule.name)) atRules.push(`@${atRule.name} ${atRule.params}`)
-		if (isKeyframes(atRule.name)) atRule.walkRules((rule) => keyframes.add(rule))
+		if (isKeyframes(atRule.name)) {
+			atRule.walkRules((rule) => {
+				keyframes.add(rule)
+			})
+		}
 	})
 
 	css.walkRules((rule) => {
@@ -148,16 +155,24 @@ describe('тема не стилизует страницу', async () => {
 		}
 	})
 
-	it('сборка дошла до правил', () => {
-		expect(rules).toBeGreaterThan(1000)
-	})
+	return { rules, unsealed, atRules }
+}
 
+const reports = await inspectThemes(inspect)
+
+describe.each(reports)('тема не стилизует страницу · $name', ({ report }) => {
 	it('вне узлов so-* — только переменные, у корня и блока схемы — и color-scheme', () => {
-		expect(unsealed).toEqual([])
+		expect(report.unsealed).toEqual([])
 	})
 
 	it('at-правила — только обёртки, @layer, @keyframes и @property', () => {
-		expect(atRules).toEqual([])
+		expect(report.atRules).toEqual([])
+	})
+})
+
+describe('сторож не пуст', () => {
+	it('у oren сборка дошла до правил', () => {
+		expect(reportOf(reports, OREN).rules).toBeGreaterThan(1000)
 	})
 })
 

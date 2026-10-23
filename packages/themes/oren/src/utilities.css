@@ -20,8 +20,8 @@
  * Детям, а не самому узлу: переменную, объявленную на себе, узел прочёл бы
  * сам. Наследуется она всему поддереву. Поэтому выключенное гаснет только
  * этой утилитой: своя прозрачность в правиле выключенного шла бы мимо
- * переменной. Сторожа — `__tests__/disabled.spec.ts` и
- * `playground/vue/browser/disabled.spec.ts`. */
+ * переменной. Сторожа — `disabled.spec.ts` общего слоя тем
+ * (`packages/themes/base/__tests__/`) и `playground/vue/browser/disabled.spec.ts`. */
 @utility opacity-so-component-disabled {
 	opacity: var(--so-disabled-opacity, 0.35);
 

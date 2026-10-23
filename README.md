@@ -252,6 +252,7 @@ packages/
     svelte/         Svelte adapter
     solid/          Solid adapter
     webc/           Web Components adapter: Custom Elements
+  themes/base/      shared layer of themes: reset of the library's nodes, direction sign, checks
   themes/oren/      oren theme: CSS for the BEM classes and data-*, light and dark schemes
   icons/material/   Material icons implementing the ICON_ROLES contract
   icons/lucide/     Lucide icons implementing the ICON_ROLES contract
@@ -297,6 +298,8 @@ On the way there:
 - [docs/architecture.md](docs/architecture.md) — architecture overview: layers, descriptors,
   plugins, collections, adapters (English and Russian).
 - [AGENTS.md](AGENTS.md) — project rules and conventions, mostly in Russian.
+- [packages/themes/base/AGENTS.md](packages/themes/base/AGENTS.md) — the shared layer of themes:
+  layers, the reset, the direction sign, the checks every theme passes (in Russian).
 - [packages/themes/oren/AGENTS.md](packages/themes/oren/AGENTS.md) — the oren theme: scales, color
   schemes, tokens (in Russian).
 - [packages/playground/README.md](packages/playground/README.md) — the playground: hosts of the

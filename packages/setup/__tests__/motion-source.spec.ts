@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
 
 /**
@@ -20,8 +20,8 @@ import { join, resolve, relative } from 'node:path'
  *
  * Сканируется код без комментариев — в объяснениях эти слова законны, — во
  * всём, что уезжает в пакеты: ядро, плагины, оба слоя setup, исходники
- * адаптеров и поведение тем. Как тема исполняет режим в CSS, стережёт
- * `packages/themes/oren/__tests__/motion.spec.ts`.
+ * адаптеров и поведение тем. Как тема исполняет режим в CSS, стережёт у
+ * каждой темы `packages/themes/base/__tests__/motion.spec.ts`.
  */
 
 const ROOT = resolve(__dirname, '../../..')
@@ -36,7 +36,10 @@ const EXCLUDED_DIR_NAMES = new Set(['node_modules', 'dist', '__tests__', '.svelt
 
 const SOURCE_FILE = /\.(ts|tsx|js|vue|svelte)$/
 
-/** Корни сканирования: всё, что уезжает в пакеты кодом. */
+/**
+ * Корни сканирования: всё, что уезжает в пакеты кодом. Поведение — у темы,
+ * которая его отдаёт (`setup/`); у общего слоя тем кода нет, только CSS.
+ */
 function roots(): string[] {
 	const inside = (dir: string) =>
 		readdirSync(dir).filter((name) => statSync(join(dir, name)).isDirectory())
@@ -47,7 +50,9 @@ function roots(): string[] {
 		join(PACKAGES, 'setup/protected'),
 		join(PACKAGES, 'setup/content'),
 		...inside(join(PACKAGES, 'ui')).map((name) => join(PACKAGES, 'ui', name, 'src')),
-		...inside(join(PACKAGES, 'themes')).map((name) => join(PACKAGES, 'themes', name, 'setup')),
+		...inside(join(PACKAGES, 'themes'))
+			.map((name) => join(PACKAGES, 'themes', name, 'setup'))
+			.filter((dir) => existsSync(dir)),
 	]
 }
 
@@ -98,6 +103,10 @@ describe('режим движения — в одном модуле', () => {
 		// Пустой список прошёл бы проверку ниже на любом коде
 		expect(sources.length).toBeGreaterThan(100)
 		expect(sources.some(({ path }) => path.startsWith(MOTION_MODULE))).toBe(true)
+		// Тема без `setup/` пропускается — поведение oren сканер видеть обязан
+		expect(sources.some(({ path }) => path.startsWith('packages/themes/oren/setup/'))).toBe(
+			true,
+		)
 	})
 
 	it('модуль движения и правда задаёт и читает режим', () => {
