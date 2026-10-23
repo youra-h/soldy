@@ -4,7 +4,7 @@
  * секунды секунда и, у 12-часового цикла, период суток.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень — коробка поля
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень — коробка поля
  * семьи Input и группа частей (`role="group"`): на нём все три набора ядра —
  * `attrs` (`dir`), `aria` (роль группы, имя — `aria_label` или
  * `aria_labelledBy`) и `dataset` (`data-disabled`, `data-invalid`), — как у
@@ -13,17 +13,17 @@
  * падают на корень. Значение для формы — скрытое поле шаблона в обычном DOM
  * страницы: `FormData` получает дату строкой.
  *
- * Разметка вынесена в date-input.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в date-input.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { DateInputDescriptor } from '@soldy-ui/setup'
 import type { IDateInput } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { dateInputTemplate } from './date-input.template'
 import { setupDateInput } from './setup.component'
 
-export const TDateInputElement = SoldyElement(HTMLDivElement, {
+export const TDateInputElement = ElementBase(HTMLDivElement, {
 	descriptor: DateInputDescriptor(),
 	template: dateInputTemplate,
 	setup: setupDateInput,
@@ -35,8 +35,8 @@ defineElement('so-date-input', TDateInputElement, 'div')
  * `<div is="so-date-input">` из JS: нативный `div`, своё элемента soldy
  * (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
  * плагинов (`aria_label`) — без тех, что у `div` уже есть (`id` — `id`
- * корня), и без `HOST_PROPS` (`TSoldyElementProps`).
+ * корня), и без `HOST_PROPS` (`TElementProps`).
  */
 export type TDateInputElementProps = HTMLDivElement &
-	ISoldyElement<IDateInput> &
-	TSoldyElementProps<typeof DateInputDescriptor, HTMLDivElement>
+	IElementBase<IDateInput> &
+	TElementProps<typeof DateInputDescriptor, HTMLDivElement>

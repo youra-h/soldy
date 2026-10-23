@@ -3,7 +3,7 @@
  * разворотом на весь экран.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Элемент — сама панель
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Элемент — сама панель
  * окна, как корень у Vue: классы, наборы, раскладка (`z-index` слоя, размер и
  * отступ переменными) и атрибуты, класс и слушатели потребителя — на нём. В
  * цель `target` (по умолчанию `body`) его уводит база по описанию корня
@@ -22,20 +22,20 @@
  * пользователем — запрос с `close:before`.
  *
  * Разметка вынесена в dialog.template.ts, жизненный цикл и перенос — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { DialogDescriptor } from '@soldy-ui/setup'
 import type { IDialog } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { dialogTemplate } from './dialog.template'
 import { setupDialog } from './setup.component'
 
-export const TDialogElement = SoldyElement(HTMLDivElement, {
+export const TDialogElement = ElementBase(HTMLDivElement, {
 	descriptor: DialogDescriptor(),
 	template: dialogTemplate,
-	root: { teleport: { target: 'target' } },
+	root: { strategy: 'host', teleport: { target: 'target' } },
 	setup: setupDialog,
 })
 
@@ -44,8 +44,8 @@ defineElement('so-dialog', TDialogElement, 'div')
 /**
  * `<div is="so-dialog">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
  * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов — без
- * тех, что у `div` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * тех, что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TDialogElementProps = HTMLDivElement &
-	ISoldyElement<IDialog> &
-	TSoldyElementProps<typeof DialogDescriptor, HTMLDivElement>
+	IElementBase<IDialog> &
+	TElementProps<typeof DialogDescriptor, HTMLDivElement>

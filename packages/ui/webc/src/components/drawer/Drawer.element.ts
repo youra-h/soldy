@@ -3,7 +3,7 @@
  * смахивается жестом.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Элемент — сама
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Элемент — сама
  * панель, как корень у Vue: классы, наборы, раскладка (`z-index` слоя, размер
  * переменными) и атрибуты, класс и слушатели потребителя — на нём. В цель
  * `target` (по умолчанию `body`) его уводит база по описанию корня
@@ -23,20 +23,20 @@
  * нажатием мимо, Escape или жестом — запрос с `close:before`.
  *
  * Разметка вынесена в drawer.template.ts, жизненный цикл и перенос — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { DrawerDescriptor } from '@soldy-ui/setup'
 import type { IDrawer } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { drawerTemplate } from './drawer.template'
 import { setupDrawer } from './setup.component'
 
-export const TDrawerElement = SoldyElement(HTMLDivElement, {
+export const TDrawerElement = ElementBase(HTMLDivElement, {
 	descriptor: DrawerDescriptor(),
 	template: drawerTemplate,
-	root: { teleport: { target: 'target', contained: 'contained' } },
+	root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },
 	setup: setupDrawer,
 })
 
@@ -45,8 +45,8 @@ defineElement('so-drawer', TDrawerElement, 'div')
 /**
  * `<div is="so-drawer">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
  * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов — без
- * тех, что у `div` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * тех, что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TDrawerElementProps = HTMLDivElement &
-	ISoldyElement<IDrawer> &
-	TSoldyElementProps<typeof DrawerDescriptor, HTMLDivElement>
+	IElementBase<IDrawer> &
+	TElementProps<typeof DrawerDescriptor, HTMLDivElement>

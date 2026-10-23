@@ -2,7 +2,7 @@
  * `<span is="so-icon">` — иконка.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию, строчный — его HTML
+ * built-in, см. `ElementBase`): тег ядра по умолчанию, строчный — его HTML
  * разрешает и в кнопке, и в подписи. Корень — сам элемент, как `<span
  * so-icon>` у Angular: классы размера, наборы (`aria-hidden`, а с именем —
  * `role="img"`), размер `width` и `height` — стилем от плагина раскладки — и
@@ -16,17 +16,17 @@
  * — то же, что корень `svg`: рисунок растянут на него, а блоком корень делает
  * правило темы.
  *
- * Разметка вынесена в icon.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в icon.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { IconDescriptor } from '@soldy-ui/setup'
 import type { IIcon } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { iconTemplate } from './icon.template'
 import { setupIcon } from './setup.component'
 
-export const TIconElement = SoldyElement(HTMLSpanElement, {
+export const TIconElement = ElementBase(HTMLSpanElement, {
 	descriptor: IconDescriptor(),
 	template: iconTemplate,
 	attributes: ['icon'],
@@ -39,11 +39,11 @@ defineElement('so-icon', TIconElement, 'span')
  * `<span is="so-icon">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
  * `state`), свойства пропов дескриптора вместе с пропсами его плагинов
  * (`aria_label`) — без тех, что у `span` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`), — и роль.
+ * (`TElementProps`), — и роль.
  */
 export type TIconElementProps = HTMLSpanElement &
-	ISoldyElement<IIcon> &
-	TSoldyElementProps<typeof IconDescriptor, HTMLSpanElement> & {
+	IElementBase<IIcon> &
+	TElementProps<typeof IconDescriptor, HTMLSpanElement> & {
 		/**
 		 * Роль иконки — ключ реестра (`check`, `close`, …, своя роль приложения),
 		 * отражение атрибута `icon`: без него — `null`. `null` и `undefined`

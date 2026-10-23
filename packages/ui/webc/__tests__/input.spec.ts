@@ -164,7 +164,7 @@ describe('Input · разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('div')
-		const targets = inputTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = inputTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			InputDescriptor()

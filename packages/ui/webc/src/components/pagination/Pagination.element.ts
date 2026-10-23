@@ -3,7 +3,7 @@
  * между ними — список страниц и пропусков.
  *
  * Элемент — настоящий `<nav>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию, ориентир для
+ * built-in, см. `ElementBase`): тег ядра по умолчанию, ориентир для
  * скринридера. На корне — все три набора ядра, как у Vue: имя ему даёт
  * приложение (`aria_label`, `aria_labelledBy`), а не локаль — что листают,
  * знает только оно.
@@ -19,18 +19,18 @@
  * элемента из пакета не выходит.
  *
  * Разметка вынесена в pagination.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { PaginationCollectionDescriptor, PaginationDescriptor } from '@soldy-ui/setup'
 import type { IPagination, TPaginationCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { TPaginationItemElement } from './item'
 import { paginationTemplate } from './pagination.template'
 import { setupPagination } from './setup.component'
 
-export const TPaginationElement = SoldyElement(HTMLElement, {
+export const TPaginationElement = ElementBase(HTMLElement, {
 	descriptor: PaginationDescriptor(),
 	facade: PaginationCollectionDescriptor(),
 	template: paginationTemplate,
@@ -45,8 +45,8 @@ defineElement('so-pagination-item', TPaginationItemElement, 'li')
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`aria_label`,
  * `engine`) — без тех, что у `nav` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TPaginationElementProps = HTMLElement &
-	ISoldyElement<IPagination, TPaginationCollectionFacade> &
-	TSoldyElementProps<typeof PaginationDescriptor, HTMLElement>
+	IElementBase<IPagination, TPaginationCollectionFacade> &
+	TElementProps<typeof PaginationDescriptor, HTMLElement>

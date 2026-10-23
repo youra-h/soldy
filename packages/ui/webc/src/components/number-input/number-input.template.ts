@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-number-input">`: классы, `attrs` (`dir`),
  * `dataset` (`data-disabled`, `data-invalid`) и скрытие раскладывает на него
- * база (`SoldyElement`). Здесь — то же, что в разметке Vue, в том же порядке:
+ * база (`ElementBase`). Здесь — то же, что в разметке Vue, в том же порядке:
  * обёртка слота `leading`, ввод, обёртка у конца числа, кнопки шага и
  * значение для формы.
  *
@@ -213,7 +213,7 @@ function clearOf(ctx: ITemplateContext<INumberInput>): TClearButton {
 }
 
 export const numberInputTemplate: ITemplate<INumberInput> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')
 		const field = ownerDocument.createElement('input')

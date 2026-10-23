@@ -1,3 +1,1 @@
-export { toastsOf } from './toastsOf'
-export { isToastRender } from './render'
-export type { TToastRender } from './types'
+export { toastsOf, isToastRender, type TToastRender } from './toastsOf'

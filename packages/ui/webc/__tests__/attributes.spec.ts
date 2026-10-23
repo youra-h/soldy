@@ -10,7 +10,7 @@ import {
 	defineComponent,
 	type IComponentDescriptor,
 } from '@soldy-ui/setup'
-import { buildAttributeMap, coerceAttribute, useAttributes } from '@soldy-ui/webc'
+import { buildAttributeMap, coerceAttribute } from '@soldy-ui/webc'
 
 /**
  * Значение пропа из строки атрибута — тем же путём, что у элемента: карта
@@ -130,7 +130,7 @@ describe('атрибут · tag', () => {
 		['ComponentView', ComponentViewDescriptor],
 	])('у %s атрибута tag нет', (_name, descriptor) => {
 		expect(buildAttributeMap(descriptor()).has('tag')).toBe(false)
-		expect(useAttributes(descriptor())).not.toContain('tag')
+		expect([...buildAttributeMap(descriptor()).keys()]).not.toContain('tag')
 		// Соседние пропы на месте: из карты выпал только tag
 		expect(buildAttributeMap(descriptor()).has('direction')).toBe(true)
 	})

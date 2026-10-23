@@ -139,7 +139,7 @@ describe('первая отрисовка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
 		const root = document.createElement('span')
-		const targets = progressLinearTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = progressLinearTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(
 			ProgressLinearDescriptor().slots.map((slot) => slot.name),

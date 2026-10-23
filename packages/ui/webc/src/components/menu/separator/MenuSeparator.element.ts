@@ -3,23 +3,23 @@
  * пунктов, как `Menu.Separator` у Vue.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Классы и наборы ядра
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Классы и наборы ядра
  * — `role="separator"` — база раскладывает на него. Ручной разделитель
  * разметки свойство меню `groupSeparators` не трогает: его поставил
  * потребитель.
  *
  * Разметка вынесена в menu-separator.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { MenuSeparatorDescriptor } from '@soldy-ui/setup'
 import type { TMenuSeparator } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { menuSeparatorTemplate } from './menu-separator.template'
 import { setupMenuSeparator } from './setup.component'
 
-export const TMenuSeparatorElement = SoldyElement(HTMLDivElement, {
+export const TMenuSeparatorElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuSeparatorDescriptor(),
 	template: menuSeparatorTemplate,
 	setup: setupMenuSeparator,
@@ -28,8 +28,8 @@ export const TMenuSeparatorElement = SoldyElement(HTMLDivElement, {
 /**
  * `<div is="so-menu-separator">` из JS: нативный `div`, своё элемента soldy и
  * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
- * `HOST_PROPS` (`TSoldyElementProps`).
+ * `HOST_PROPS` (`TElementProps`).
  */
 export type TMenuSeparatorElementProps = HTMLDivElement &
-	ISoldyElement<TMenuSeparator> &
-	TSoldyElementProps<typeof MenuSeparatorDescriptor, HTMLDivElement>
+	IElementBase<TMenuSeparator> &
+	TElementProps<typeof MenuSeparatorDescriptor, HTMLDivElement>

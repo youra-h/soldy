@@ -1,34 +1,15 @@
 /**
- * Разметка шаблона — в слот детали или элемента из данных: тем же
- * назначением, каким база кладёт туда свет по точке со слотом детали
- * (`TSlotTarget.slot`).
- *
- * Деталь шаблона владельца — элемент soldy: строка таба, заголовок секции,
- * кнопка закрытия. Своё содержимое она раскладывает сама, по слотам, когда
- * собирается, — а собирается она после владельца (ожидание, `waiting.ts`).
- * Поэтому шаблон владельца не лезет в её структуру, а отдаёт ей узлы светом:
- * узел встаёт в деталь и назначается её слоту (`assignment.ts`), и раскладка
- * света детали берёт назначенный слот раньше атрибута `slot`. Так встают
- * обёртка стрелки секции в край заголовка и иконка крестика таба в его кнопку
- * — и копии образцов `item-*` владельца в элемент из данных, вместе с текстом,
- * у которого атрибута `slot` нет вовсе.
- *
- * Деталь, которая уже собралась, свой свет разложила, и назначение ей не
- * нужно: узел встаёт туда, куда его ставит помощник, — последним или первым
- * ребёнком. Поэтому край заголовка обёртка стрелки получает одним и тем же
- * вызовом и до сборки детали, и после: первым ребёнком кнопки встаёт и
- * первый узел её `leading`, а последним — последний узел `trailing`.
+ * Разметка шаблона владельца — в слот детали или элемента из данных. Деталь
+ * собирается после владельца и раскладывает свет сама, поэтому владелец не
+ * лезет в её структуру, а отдаёт узлы светом с назначенным слотом. AGENTS.md
+ * (Web Components), «Свет детали».
  */
 
-import { assignSlot } from '../runtime/assignment'
+import { assignSlot, markSlot, slotOfMark } from '../runtime/marks'
 
-/** Где узел встаёт в деталь: последним ребёнком или первым. */
 export type TLendAt = 'end' | 'start'
 
-/**
- * Узел — в слот `slot` детали `detail`: последним ребёнком (`end`) или первым
- * (`start`). Фрагмент — всеми своими детьми по порядку, каждый со слотом.
- */
+/** Узел или все дети фрагмента — в слот `slot` детали, последними или первыми. */
 export function lend(detail: Element, slot: string, content: Node, at: TLendAt = 'end'): void {
 	const nodes = content instanceof DocumentFragment ? [...content.childNodes] : [content]
 
@@ -36,4 +17,23 @@ export function lend(detail: Element, slot: string, content: Node, at: TLendAt =
 
 	if (at === 'start') detail.prepend(...nodes)
 	else detail.append(...nodes)
+}
+
+/** Метка — слот детали задан и пустым, узлы владельца встают перед ней (`lendBefore`). */
+export function lendMark(detail: Element, slot: string): Comment {
+	const mark = detail.ownerDocument.createComment('')
+
+	markSlot(mark, slot)
+	lend(detail, slot, mark)
+
+	return mark
+}
+
+/** Перед меткой, в её слот — одним вызовом и до сборки детали, и после. */
+export function lendBefore(mark: Comment, node: Node): void {
+	const slot = slotOfMark(mark)
+
+	if (slot !== undefined) assignSlot(node, slot)
+
+	mark.parentNode?.insertBefore(node, mark)
 }

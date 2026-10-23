@@ -2,7 +2,7 @@
  * Шаблон Tabs.
  *
  * Корень — сам `<div is="so-tabs">`: классы, `attrs` и скрытие раскладывает на
- * него база (`SoldyElement`). Набор `aria` владельца — это список табов
+ * него база (`ElementBase`). Набор `aria` владельца — это список табов
  * (`role="tablist"`, `aria-orientation`, имя из `aria_label`), и на
  * `div.so-tabs__list` его кладёт шаблон: на корне рядом со списком лежат
  * панели. Тема рисует вид набора от корня дочерними комбинаторами, поэтому
@@ -75,7 +75,7 @@ function tabOf(
 }
 
 export const tabsTemplate: ITemplate<ITabs, TTabsCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const list = ownerDocument.createElement('div')
 		const leading = ownerDocument.createElement('div')

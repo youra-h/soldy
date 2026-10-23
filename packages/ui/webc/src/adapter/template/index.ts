@@ -1,18 +1,20 @@
 export { bind } from './types'
-export { ownerAttributes } from './attributes'
-export { ownerStyles } from './styles'
-export { ownerClasses } from './classes'
-export { createDetail, type TDetailOptions } from './detail'
-export { lend, type TLendAt } from './lend'
-export { lendMark, lendBefore } from './mark'
-export { sampleOf } from './sample'
+export { ownerAttributes, ownerClasses, ownerStyles } from './owner'
+export { lend, lendMark, lendBefore, type TLendAt } from './lend'
+export {
+	createDetail,
+	createItem,
+	lendSamples,
+	lendTemplates,
+	sampleOf,
+	type TDetailOptions,
+	type TItemSlots,
+} from './parts'
 export { TKeyedLoop } from './loop'
-export { createItem, lendSamples, lendTemplates, type TItemSlots } from './item'
 export type {
 	ITemplate,
 	ITemplateBinding,
 	ITemplateContext,
-	TSlotGiven,
 	TSlotTarget,
 	TSlotTargets,
 	TTemplateParts,

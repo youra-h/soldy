@@ -2,7 +2,7 @@
  * `<div is="so-accordion">` — набор раскрывающихся секций.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. На корне из наборов
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. На корне из наборов
  * ядра только `attrs`, как у Vue и Angular.
  *
  * Контекстов два — свой и фасада коллекции (`setupAccordion`), и пропсы
@@ -15,22 +15,22 @@
  * собирает по месту (`deferral.ts`): аккордеон — раньше своих секций, и
  * движок они находят уже опущенным.
  *
- * Разметка вынесена в accordion.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в accordion.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { AccordionCollectionDescriptor, AccordionDescriptor } from '@soldy-ui/setup'
 import type { IAccordion, TAccordionCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { accordionTemplate } from './accordion.template'
 import { TAccordionItemElement } from './item'
 import { setupAccordion } from './setup.component'
 
-export const TAccordionElement = SoldyElement(HTMLDivElement, {
+export const TAccordionElement = ElementBase(HTMLDivElement, {
 	descriptor: AccordionDescriptor(),
 	facade: AccordionCollectionDescriptor(),
 	template: accordionTemplate,
-	root: { sets: ['attrs'] },
+	root: { strategy: 'host', sets: ['attrs'] },
 	setup: setupAccordion,
 })
 
@@ -42,8 +42,8 @@ defineElement('so-accordion-item', TAccordionItemElement, 'div')
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`items`, `mode`,
  * `engine`) — без тех, что у `div` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TAccordionElementProps = HTMLDivElement &
-	ISoldyElement<IAccordion, TAccordionCollectionFacade> &
-	TSoldyElementProps<typeof AccordionDescriptor, HTMLDivElement>
+	IElementBase<IAccordion, TAccordionCollectionFacade> &
+	TElementProps<typeof AccordionDescriptor, HTMLDivElement>

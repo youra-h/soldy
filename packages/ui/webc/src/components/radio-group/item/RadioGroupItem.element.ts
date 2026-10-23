@@ -3,7 +3,7 @@
  * нативный `<input type="radio">`, кольцо с точкой и текст подписи.
  *
  * Элемент — настоящий `<label>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень обязан быть
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень обязан быть
  * подписью — клик по тексту выбирает радио, а подпись становится его
  * доступным именем, — поэтому радио пишется только на `label`: одно имя
  * элемента расширяет один тег, и радио в подписи `Label` (`tag="span"` у
@@ -23,21 +23,21 @@
  * (`RadioGroup.element.ts`).
  *
  * Разметка вынесена в radio-group-item.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { RadioGroupCollectionItemDescriptor, RadioGroupItemDescriptor } from '@soldy-ui/setup'
 import type { IRadioGroupItem, TRadioGroupItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { radioGroupItemTemplate } from './radio-group-item.template'
 import { setupRadioGroupItem } from './setup.component'
 
-export const TRadioGroupItemElement = SoldyElement(HTMLLabelElement, {
+export const TRadioGroupItemElement = ElementBase(HTMLLabelElement, {
 	descriptor: RadioGroupItemDescriptor(),
 	facade: RadioGroupCollectionItemDescriptor(),
 	template: radioGroupItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupRadioGroupItem,
 })
 
@@ -45,8 +45,8 @@ export const TRadioGroupItemElement = SoldyElement(HTMLLabelElement, {
  * `<label is="so-radio-group-item">` из JS: нативный `label`, своё элемента
  * soldy (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`active`) — без тех,
- * что у `label` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * что у `label` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TRadioGroupItemElementProps = HTMLLabelElement &
-	ISoldyElement<IRadioGroupItem, TRadioGroupItemCollectionFacade> &
-	TSoldyElementProps<typeof RadioGroupItemDescriptor, HTMLLabelElement>
+	IElementBase<IRadioGroupItem, TRadioGroupItemCollectionFacade> &
+	TElementProps<typeof RadioGroupItemDescriptor, HTMLLabelElement>

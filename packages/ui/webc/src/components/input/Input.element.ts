@@ -3,7 +3,7 @@
  * сторонам — слоты `leading` и `trailing`.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Поле — узел шаблона в
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Поле — узел шаблона в
  * обычном DOM страницы, поэтому форма видит его сама: `FormData`, `<label>`,
  * `<fieldset disabled>` и валидация достаются нативному полю, а связанного с
  * формой элемента (`formAssociated`) не нужно.
@@ -18,20 +18,20 @@
  * база берёт пропом первой сборки, из кода — `ctrl.id`, а `el.id` —
  * собственный `id` корня.
  *
- * Разметка вынесена в input.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в input.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { InputDescriptor } from '@soldy-ui/setup'
 import type { IInput } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { inputTemplate } from './input.template'
 import { setupInput } from './setup.component'
 
-export const TInputElement = SoldyElement(HTMLDivElement, {
+export const TInputElement = ElementBase(HTMLDivElement, {
 	descriptor: InputDescriptor(),
 	template: inputTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupInput,
 })
 
@@ -41,8 +41,8 @@ defineElement('so-input', TInputElement, 'div')
  * `<div is="so-input">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
  * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов
  * (`aria_label`) — без тех, что у `div` уже есть (`id` — собственный `id`
- * корня), и без `HOST_PROPS` (`TSoldyElementProps`).
+ * корня), и без `HOST_PROPS` (`TElementProps`).
  */
 export type TInputElementProps = HTMLDivElement &
-	ISoldyElement<IInput> &
-	TSoldyElementProps<typeof InputDescriptor, HTMLDivElement>
+	IElementBase<IInput> &
+	TElementProps<typeof InputDescriptor, HTMLDivElement>

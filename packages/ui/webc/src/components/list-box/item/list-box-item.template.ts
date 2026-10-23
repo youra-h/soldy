@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-list-box-item">`: классы, `attrs`, `dataset` (тема
  * читает с него `data-content-fit`) и место в коллекции (`order`) раскладывает
- * на него база (`SoldyElement`). Здесь — строка, как у Vue и Angular.
+ * на него база (`ElementBase`). Здесь — строка, как у Vue и Angular.
  *
  * - Строка — Button на `div`, деталь
  *   `<div is="so-button-div" embedded="list-box.row">`, узел поля корня: на неё
@@ -88,7 +88,9 @@ function placeIndicator(
 }
 
 export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

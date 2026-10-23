@@ -3,7 +3,7 @@
  * связанные с контролом сами.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Обёртки нет: корень —
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Обёртки нет: корень —
  * сам элемент потребителя. Модификаторы стороны и размера, наборы ядра и
  * скрытие раскладывает на него база, а части поля строит шаблон. Своих
  * состояний у Field нет: выключенность, только чтение и обязательность тема
@@ -15,17 +15,17 @@
  * месту (`deferral.ts`): поле — раньше контрола в нём, и связку контрол
  * находит уже опущенной.
  *
- * Разметка вынесена в field.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в field.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { FieldDescriptor } from '@soldy-ui/setup'
 import type { IField } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { fieldTemplate } from './field.template'
 import { setupField } from './setup.component'
 
-export const TFieldElement = SoldyElement(HTMLDivElement, {
+export const TFieldElement = ElementBase(HTMLDivElement, {
 	descriptor: FieldDescriptor(),
 	template: fieldTemplate,
 	setup: setupField,
@@ -36,8 +36,8 @@ defineElement('so-field', TFieldElement, 'div')
 /**
  * `<div is="so-field">` из JS: нативный `div`, своё элемента soldy (`ctrl`,
  * `state`) и свойства пропов дескриптора — без тех, что у `div` уже есть, и
- * без `HOST_PROPS` (`TSoldyElementProps`).
+ * без `HOST_PROPS` (`TElementProps`).
  */
 export type TFieldElementProps = HTMLDivElement &
-	ISoldyElement<IField> &
-	TSoldyElementProps<typeof FieldDescriptor, HTMLDivElement>
+	IElementBase<IField> &
+	TElementProps<typeof FieldDescriptor, HTMLDivElement>

@@ -3,7 +3,7 @@
  * Button на `div`.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень несёт классы,
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень несёт классы,
  * `attrs`, `dataset` (тема читает с него `data-content-fit`) и место в
  * коллекции (`order`): ряд элементов — флексбокс, и элемент стоит по номеру в
  * коллекции. Строка — узел поля корня (`control`): статические атрибуты
@@ -16,21 +16,21 @@
  * модуль списка (`ListBox.element.ts`).
  *
  * Разметка вынесена в list-box-item.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { ListBoxCollectionItemDescriptor, ListBoxItemDescriptor } from '@soldy-ui/setup'
 import type { IListBoxItem, TListBoxItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { listBoxItemTemplate } from './list-box-item.template'
 import { setupListBoxItem } from './setup.component'
 
-export const TListBoxItemElement = SoldyElement(HTMLDivElement, {
+export const TListBoxItemElement = ElementBase(HTMLDivElement, {
 	descriptor: ListBoxItemDescriptor(),
 	facade: ListBoxCollectionItemDescriptor(),
 	template: listBoxItemTemplate,
-	root: { sets: ['attrs', 'dataset'], order: true, control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupListBoxItem,
 })
 
@@ -38,8 +38,8 @@ export const TListBoxItemElement = SoldyElement(HTMLDivElement, {
  * `<div is="so-list-box-item">` из JS: нативный `div`, своё элемента soldy
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
- * что у `div` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TListBoxItemElementProps = HTMLDivElement &
-	ISoldyElement<IListBoxItem, TListBoxItemCollectionFacade> &
-	TSoldyElementProps<typeof ListBoxItemDescriptor, HTMLDivElement>
+	IElementBase<IListBoxItem, TListBoxItemCollectionFacade> &
+	TElementProps<typeof ListBoxItemDescriptor, HTMLDivElement>

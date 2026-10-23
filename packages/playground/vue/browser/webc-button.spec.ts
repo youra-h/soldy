@@ -48,7 +48,7 @@ afterEach(() => {
 	stage = null
 })
 
-function isSoldyButton(node: Element | undefined): node is TButtonElementProps {
+function isButton(node: Element | undefined): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
@@ -57,8 +57,7 @@ function button(root: ParentNode, id?: string): TButtonElementProps {
 	const buttons = Array.from(root.querySelectorAll('button[is="so-button"]'))
 	const element = id === undefined ? buttons[0] : buttons.find((item) => item.id === id)
 
-	if (!isSoldyButton(element))
-		throw new Error(`<button is="so-button"${id ? ` id="${id}"` : ''}> нет`)
+	if (!isButton(element)) throw new Error(`<button is="so-button"${id ? ` id="${id}"` : ''}> нет`)
 
 	return element
 }

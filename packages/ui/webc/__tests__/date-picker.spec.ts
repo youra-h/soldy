@@ -937,7 +937,7 @@ describe('DatePicker · слоты', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('div')
-		const targets = datePickerTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = datePickerTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(DatePickerDescriptor().slots.map((slot) => slot.name))
 	})

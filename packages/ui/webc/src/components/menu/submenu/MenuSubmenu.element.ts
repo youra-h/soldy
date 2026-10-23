@@ -3,7 +3,7 @@
  * и своя панель с пунктами, как `Menu.Submenu` у Vue.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень и строка — как
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень и строка — как
  * у пункта (`MenuItem.element.ts`): на корне классы, `attrs` и `dataset`, на
  * строке — `aria` пункта, и статические атрибуты разметки база переносит на
  * строку (`control`). Панель — деталь Frame: в `body` её уводит база самого
@@ -21,7 +21,7 @@
  * раньше своих пунктов.
  *
  * Разметка вынесена в menu-submenu.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import {
@@ -30,17 +30,17 @@ import {
 	MenuSubmenuDescriptor,
 } from '@soldy-ui/setup'
 import type { IMenuSubmenu, TMenuCollectionFacade, TMenuItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { menuSubmenuTemplate } from './menu-submenu.template'
 import { setupMenuSubmenu } from './setup.component'
 
-export const TMenuSubmenuElement = SoldyElement(HTMLDivElement, {
+export const TMenuSubmenuElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuSubmenuDescriptor(),
 	facade: MenuCollectionItemDescriptor(),
 	ownerFacade: MenuSubmenuCollectionDescriptor(),
 	template: menuSubmenuTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuSubmenu,
 })
 
@@ -49,8 +49,8 @@ export const TMenuSubmenuElement = SoldyElement(HTMLDivElement, {
  * (`ctrl`, `state` — вместе со свойствами обоих фасадов) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и своей коллекции (`items`,
  * `engine`) — без тех, что у `div` уже есть, и без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TMenuSubmenuElementProps = HTMLDivElement &
-	ISoldyElement<IMenuSubmenu, TMenuItemCollectionFacade, TMenuCollectionFacade> &
-	TSoldyElementProps<typeof MenuSubmenuDescriptor, HTMLDivElement>
+	IElementBase<IMenuSubmenu, TMenuItemCollectionFacade, TMenuCollectionFacade> &
+	TElementProps<typeof MenuSubmenuDescriptor, HTMLDivElement>

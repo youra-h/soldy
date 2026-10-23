@@ -1279,7 +1279,7 @@ ARIA. Обёртка теперь отдаёт то же состояние ка
 `toAriaProps(aria)` (React — он ждёт `tabIndex`, а не `tabindex`). У Angular и
 Web Components спреда атрибутов нет, а корень — элемент потребителя, и набор
 на него раскладывает база компонента: эффект `TComponentBase` (Angular,
-`<button so-button>`) и раскладка `SoldyElement` на элемент (Web Components,
+`<button so-button>`) и раскладка `ElementBase` на элемент (Web Components,
 `<button is="so-button">`).
 
 ### `direction` / `dir` — тот же приём для направления письма
@@ -2859,16 +2859,20 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `useCollectionAdapter` (связка фасада коллекции — без `ctrl` и узла) и
   `joinBindings` (две связки коллекционного компонента — одной, как у
   Angular, а у пункта с подменю — три: свой, фасад элемента и фасад
-  владельца, `TOwnerFacade`), `SoldyElement` (фабрика класса элемента поверх нативного класса
-  тега: жизненный цикл, корень по описанию `TRootSpec` и свои атрибуты
-  элемента, см. «Решения по DOM»), `defineElement` (регистрация с
-  `extends`); в бочку не входят `root-attributes.ts`: `applyClasses`,
-  `applyStyles` со `stylesOf` и `orderOf` и `applyHidden` раскладывают на
-  элемент классы, стиль и скрытие, а атрибуты — раскладчик элемента
-  `TElementAttributes` по правилу `applyAttributes`: один на узел, со слоями —
-  наборы ядра самого элемента снизу, набор владельца сверху, а у элемента с
-  полем набор владельца уходит на поле, слоем `detail` над набором самой
-  детали (`awaitField`, `bindField`), —
+  владельца, `TOwnerFacade`), `ElementBase` (`element.base.ts`, фабрика
+  класса элемента поверх нативного класса тега: жизненный цикл, флаш и
+  свойства на прототипе, см. «Решения по DOM»), `defineElement` (регистрация
+  с `extends`). В бочку не входят: `root.ts` (описание корня `TRootSpec`
+  стратегиями `'host'` и `'wrapped'`, `planOf` — что из него берёт база,
+  `presenceOf` — скрытие, узел плагинам и признак поддерева), `props.ts`
+  (`TPropStore` — пропсы между сборками), `light.ts` (`TLight` — свет по
+  слотам и его раскладка по точкам шаблона), `paint.ts` (`applyClasses`,
+  `applyStyles` со `stylesOf` и `orderOf` и `applyHidden`; память классов,
+  стиля и скрытия узла по слоям `own` и `owner` — `TPaint`; атрибуты —
+  раскладчик элемента `TElementAttributes` по правилу `applyAttributes`: один
+  на узел, со слоями — наборы ядра самого элемента снизу, набор владельца
+  сверху, а у элемента с полем набор владельца уходит на поле, слоем `detail`
+  над набором самой детали, `awaitField`, `bindField`),
   `defineAutonomousElement` (регистрация без `extends` элементов, у которых в
   остальных адаптерах узла нет: провайдера локали, окна `<so-virtual>` и
   перестановки `<so-drag-and-drop>`),
@@ -2883,15 +2887,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   `recall`), `relocation.ts` (`relocate` и `isRelocating` — перенос силами
   базы, `rebuild` — его перенос с пересборкой, `owe` и `keepsBinding` — долг:
   отключение, которое элемент должен операции потребителя), `waiting.ts`
-  (ожидание: подключение внутри чужого подключения — следом за ним),
-  `assignment.ts` (назначенный слот — свет детали), `slot-mark.ts`
-  (`markSlot`, `isSlotMark` и `slotOfMark` — метка слота детали: слот с ней
-  задан и пустым), `owner-markup.ts`
-  (`markOwnerMarkup` и `isOwnerMarkup` — разметка владельца: элемент, который
-  построил шаблон, а не написал потребитель; его события не всплывают) и
-  `soldy-mark.ts` (`markSoldyElement` и `isSoldyElement` — метка элемента
-  soldy: хозяин места панели, долг элементов в корне слоя), см. «Решения по
-  DOM».
+  (ожидание: подключение внутри чужого подключения — следом за ним; `runAll`),
+  `subtree.ts` (признак поддерева в контексте места) и `marks.ts` (метки
+  узлов: хозяин места панели — `markPlaceOwner`, разметка владельца —
+  `markOwnerMarkup`, её события не всплывают, метка слота детали — `markSlot`,
+  назначенный слот — `assignSlot`). Механика базы — `packages/ui/webc/AGENTS.md`,
+  «Web Components-специфика».
 - `adapter/context/` — `TPlaceContext`, контекст места: значение, привязанное
   к элементу, и поиск ближайшего вверх от узла — по `parentNode`, из теневого
   корня к его хосту, а от корня, увезённого телепортом, — к родителю его
@@ -2913,34 +2914,31 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   менеджера нет — ошибка; `TToastRender` — своё содержимое тоста, функция
   `(toast) => Node`, и `isToastRender` — проверка, по которой его рисует
   разметка тоста.
-- `adapter/template/` — `ITemplate`, `bind` (привязка пропа), `ownerAttributes`
-  (набор ядра на элементе шаблона — верхним слоем его раскладчика),
-  `ownerStyles` (стиль значением на узле шаблона — позиции ручек и меток
-  Slider, доля заливки звезды Rating, распорки окна, `z-index` подложки
-  модального слоя, глубина тоста в стопке — тем же правилом, что
-  стиль корня: своё пишет и снимает, чужое не трогает), `ownerClasses`
-  (классы значением на узле шаблона — `panelClasses` панелей меню и подменю,
-  тем же правилом, что классы корня), `createDetail`
-  (вложенный элемент soldy шаблона — деталь с обязательным именем места
-  `embedded`), `lend` (разметка шаблона — в слот детали, назначением),
-  `lendMark` и `lendBefore` (метка в слоте детали и узел перед ней — в её
-  слот и до сборки детали, и после: поле Select, кнопка разворота окна),
-  `TKeyedLoop` (петля по ключу — элементы коллекции из данных, распорки окна,
-  а с ключом-номером — ручки и метки Slider; живому узлу — его новая запись,
-  `update`), `createItem`, `lendSamples` и `lendTemplates` (элемент из данных,
-  копии образцов `item-*` в его слоты и образцами — в его образцы: строке
-  таблицы — `cell`, подменю из данных — `item-*` меню под теми же именами),
-  `sampleOf` (копия образца с содержимым: пустой образец — как
-  не заданный). Оба помощника, `createDetail` и `createItem`, помечают
-  построенный элемент разметкой владельца (`runtime/owner-markup.ts`) — до
-  вставки.
+- `adapter/template/` — `ITemplate` (`create(root, ctx)` и привязки), `bind`
+  (привязка пропа); `owner.ts`: `ownerAttributes` (набор ядра на элементе
+  шаблона — верхним слоем его раскладчика), `ownerStyles` (стиль значением на
+  узле шаблона — позиции ручек и меток Slider, доля заливки звезды Rating,
+  распорки окна, `z-index` подложки модального слоя, глубина тоста в стопке),
+  `ownerClasses` (классы `panelClasses` панелей меню и подменю) — тем же
+  правилом, что база на корне; `lend.ts`: `lend` (разметка шаблона — в слот
+  детали, назначением), `lendMark` и `lendBefore` (метка в слоте детали и
+  узел перед ней — в её слот и до сборки детали, и после: поле Select, кнопка
+  разворота окна); `parts.ts`: `createDetail` (вложенный элемент soldy
+  шаблона — деталь с обязательным именем места `embedded`), `createItem`,
+  `lendSamples` и `lendTemplates` (элемент из данных, копии образцов `item-*`
+  в его слоты и образцами — в его образцы: строке таблицы — `cell`, подменю
+  из данных — `item-*` меню под теми же именами), `sampleOf` (копия образца с
+  содержимым: пустой образец — как не заданный); оба помощника помечают
+  построенный элемент разметкой владельца до вставки; `TKeyedLoop` (петля по
+  ключу — элементы коллекции из данных, распорки окна, а с ключом-номером —
+  ручки и метки Slider; живому узлу — его новая запись, `update`).
 - Вход пакета (`index.ts`) первым импортирует полифил `@ungap/custom-elements`
   (см. «Решения по DOM»).
 
 Компонент — это вызов фабрики и регистрация:
 
 ```ts
-export const TButtonElement = SoldyElement(HTMLButtonElement, {
+export const TButtonElement = ElementBase(HTMLButtonElement, {
   descriptor: ButtonDescriptor(),
   template: buttonTemplate,
   setup: setupButton,
@@ -2968,7 +2966,7 @@ defineElement('so-button', TButtonElement, 'button')
 фасада (`facade`), а модуль владельца регистрирует и свои части:
 
 ```ts
-export const TTabsElement = SoldyElement(HTMLDivElement, {
+export const TTabsElement = ElementBase(HTMLDivElement, {
   descriptor: TabsDescriptor(),
   facade: TabsCollectionDescriptor(),
   template: tabsTemplate,
@@ -2987,32 +2985,31 @@ ProgressSpinner, — прячет ли видимость корень — `{ hi
 Skeleton, — стоит ли корень по месту в коллекции — `{ order: true }` у
 табов и секций: `order` фасада уходит в стиль корня, — без какого выхода
 корень скрыт — `{ shownBy: 'active' }` у панели таба, — уезжает ли корень в
-слой — `{ teleport: { target: 'target', contained: 'contained' } }` у Frame
-и Drawer, `{ teleport: { target: 'target' } }` у Dialog: имена выходов с
+слой — `{ strategy: 'host', teleport: { target: 'target', contained: 'contained' } }` у Frame
+и Drawer, `{ strategy: 'host', teleport: { target: 'target' } }` у Dialog: имена выходов с
 селектором цели и с признаком «на месте» (у окна его нет), как
 `TRootTeleport` у Angular (см. «Слой» в «Решениях по DOM»), — какие наборы
 ядра лежат на корне (`sets`, по умолчанию все три), из какого выхода берётся
-слой `aria` корня — `{ aria: 'rootAria' }` у Slider: у нескольких ручек корень
+слой `aria` корня — `{ strategy: 'host', aria: 'rootAria' }` у Slider: у нескольких ручек корень
 — группа, а `aria` ползунка уходит полям ручек, — есть ли в корне поле
-(`control`): `{ sets: ['attrs', 'dataset'], control: true }` у Input,
+(`control`): `{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }` у Input,
 CheckBox, Switch и радио, у таба и секции
 полем служит строка, а у ListBox и Tabs — узел списка с ролью, как у Angular
 (см. «Поле» и «Коллекция» в «Решениях по DOM»), — объявляет ли поле `id`, хотя
 атрибуты разметки остаются корню (`fieldId` у Rating: `id` — проп поля, его
 атрибут база берёт пропом первой сборки и снимает с корня), — и не обёртка ли элемент
-вокруг корня (`wrapped`): `{ wrapped: true, control: true }`
+вокруг корня — стратегия `'wrapped'`: `{ strategy: 'wrapped' }`
 у Table — элемент `<div is="so-table">` и есть окно таблицы, а корень `table`
 строит шаблон (`TTemplateParts.root`); на него база кладёт классы, наборы и
 стиль ядра, с ним связывает `TElementPlugin` и его тег отдаёт ядру, а элементу
-оставляет скрытие и класс и стиль потребителя. Тот же `table` — и поле окна
-(`TTemplateParts.control`): остальные статические атрибуты разметки окна база
+оставляет скрытие и класс и стиль потребителя. Тот же `table` — и поле окна: остальные статические атрибуты разметки окна база
 переносит на него, как на поле. Обёрнутый корень бывает и в слое —
-`{ wrapped: true, teleport: { target: 'target' } }` у Toasts: элемент
+`{ strategy: 'wrapped', teleport: { target: 'target' } }` у Toasts: элемент
 `<so-toasts>` без коробки — только место приложения, а в цель уезжает корень,
 регион, и он же внешний узел компонента — база переносит на него все атрибуты
 разметки элемента, класс и стиль тоже, и прячет его, а не элемент. Компонент бывает и невизуальным —
 окно `<so-virtual>` и перестановка `<so-drag-and-drop>`
-(`SoldyElement(HTMLElement, …)`, регистрация `defineAutonomousElement`):
+(`ElementBase(HTMLElement, …)`, регистрация `defineAutonomousElement`):
 классы, наборы и видимость база читает из состояния по имени, и у них их нет.
 
 Свои атрибуты элемента сверх пропов дескриптора — то, что элемент читает
@@ -3149,7 +3146,7 @@ WebKit:
   отдаёт ядру `div`, и ядро пишет ей `role="button"`, `tabindex` и
   `aria-disabled`, как `<Button tag="div">` во Vue; `disabled` у неё —
   свойство пропа, своего у `div` нет.
-- **Классы и наборы** раскладывает база (`root-attributes.ts`), и атрибуты
+- **Классы и наборы** раскладывает база (`paint.ts`), и атрибуты
   потребителя главнее наборов ядра, как во Vue и React: по каждому имени база
   помнит, что поставила сама, своё пишет и снимает, а чужое значение не трогает
   и своим больше не считает — `aria-label` потребителя переживает перерисовку.
@@ -3174,7 +3171,7 @@ WebKit:
   прячет, как `visible=false`, и содержимое остаётся на месте. Но корня, как
   у Vue с `v-if`, у плагинов нет: `TElementPlugin` получает `null` — и у
   элементов в его поддереве, — а снова показанный корень получает тот же
-  элемент (`SoldyElement`, шапка, «Поддерево»); `visible` — это `v-show`,
+  элемент (`ElementBase`, шапка, «Поддерево»); `visible` — это `v-show`,
   узел у плагинов остаётся. У Skeleton (`hides: false`) видимость корень не
   прячет: она убирает только заглушку, а содержимое в корне остаётся на виду,
   и узел у плагинов тоже. До слоёв поддерева, увезённых в цель, — своей
@@ -3202,7 +3199,7 @@ WebKit:
   поле сама: `FormData`, `<label>`, `<fieldset disabled>` и валидация
   достаются нативному полю, поэтому ни `formAssociated` и `ElementInternals`,
   ни аналога `NativeInput` и `TDrafts` нет. Описание корня —
-  `{ sets: ['attrs', 'dataset'], control: true }`: на корне из наборов ядра
+  `{ strategy: 'host', sets: ['attrs', 'dataset'], control: true }`: на корне из наборов ядра
   `attrs` (`dir`) и `dataset` (`data-disabled`, `data-invalid` — их читает
   тема), `aria` на поле кладёт шаблон верхним слоем раскладчика поля
   (`ownerAttributes`), как у остальных адаптеров. Статические атрибуты разметки корня, кроме `class`, `style`, `is`,
@@ -3250,7 +3247,7 @@ WebKit:
   наборы, и набор владельца главнее при любом порядке записи. События детали
   не всплывают: событие элемента soldy всплывает, только если элемент написал
   потребитель, а деталь построил шаблон — это разметка владельца
-  (`owner-markup.ts`: метку ставит `createDetail`, по ней решает
+  (`marks.ts`: метку ставит `createDetail`, по ней решает
   `useAdapter`). Владелец слушает её события на самом элементе, и
   `so:action:press` кнопки не доходит до слушателей поля и до делегирования на
   форме. `embedded` на всплытие не влияет: это признак для реестра плагинов.
@@ -3404,7 +3401,7 @@ WebKit:
   и всё, что в панели, по-настоящему отключаются и, если место в документе,
   подключаются на нём, а первая раскладка новой связки увозит корень заново.
   Путей к нему два, и оба зовут его сразу, без таймера. Хозяин места —
-  ближайший элемент soldy вверх от якоря (метка базы, `soldy-mark.ts`): меню,
+  ближайший элемент soldy вверх от якоря (метка базы, `marks.ts`): меню,
   поповер, подсказка, подменю, элемент вокруг Frame потребителя, `<so-toasts>`
   для своего региона; ищется он в момент вопроса — раскладка света переносит
   якорь и в деталь. Его колбэки синхронны, и база зовёт возврат из них
@@ -3680,22 +3677,22 @@ WebKit:
   `browser/webc-dates.spec.ts` стенда (поле каждого размера, сетка, открытая
   панель выбора месяца и года и панель DatePicker стоят, как у Vue).
 
-**Типы.** Класс элемента собирает фабрика `SoldyElement(Native, spec)`: база
+**Типы.** Класс элемента собирает фабрика `ElementBase(Native, spec)`: база
 одна, а нативный класс у каждого тега свой. Тип результата объявлен явно —
-нативный класс плюс `ISoldyElement` (`ctrl`, `state`, колбэки): класс,
+нативный класс плюс `IElementBase` (`ctrl`, `state`, колбэки): класс,
 выведенный из выражения, TypeScript в декларации не выпустит, у него
 приватные члены. Свойства пропов потребитель видит через тип элемента
 компонента (`TButtonElementProps`): карты тегов у `is=` нет, и
 `querySelector('button[is="so-button"]')` — просто `HTMLButtonElement`.
 Состав свойств в типе — контракт дескриптора, как у пропсов React, Solid и
-Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои пропсы,
+Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропсы,
 пропсы плагинов дескриптора (`aria_label`, `anchor_anchor` у Frame) и
 `pluginProps` — без свойств, которые у элемента есть по тегу, `HOST_PROPS` и
 `ctrl`, ровно то, что база вешает на прототип. Раньше тип брал интерфейс
 пропсов ядра (`IButtonProps`), и `el.aria_label = 'Сохранить'`, рабочее в
 браузере, не компилировалось. Пропсы фасада коллекции (`items`, `active`) в
 этом контракте уже есть: их типы несёт интерфейс пропсов ядра компонента
-(`ITabsProps`), а состояние элемента коллекции (`ISoldyElement` со вторым
+(`ITabsProps`), а состояние элемента коллекции (`IElementBase` со вторым
 параметром) — вместе со свойствами фасада, у пункта с подменю — и фасада
 владельца (третий параметр). Кнопка на другом теге — тот же тип
 со своим тегом: `TButtonElementProps<HTMLDivElement>` у
@@ -3727,7 +3724,7 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 Свет детали. Точка может вести в слот детали шаблона (`TSlotTarget.slot`):
 узлы встают в деталь — строку таба или элемента списка, заголовок секции,
 кнопку закрытия, — пока та ждёт своей сборки (ожидание), и назначаются её
-слоту (`assignment.ts`). Раскладка света детали берёт назначенный слот раньше
+слоту (`marks.ts`). Раскладка света детали берёт назначенный слот раньше
 атрибута `slot`: `header` секции становится `default` заголовка, `leading` и
 `trailing` таба и элемента списка — краями его строки, `close-icon` —
 содержимым кнопки закрытия. Тем же назначением шаблон отдаёт детали свою
@@ -3735,7 +3732,7 @@ Svelte (`TSoldyElementProps` над `DescriptorComponentProps`): свои про
 `trailing` заголовка, обёртку отметки элемента списка — так же, по стороне
 `indicator`, иконку крестика — кнопке. Элемент soldy в свете элемента едет в
 деталь переносом силами базы и собирается один раз. Метка слота
-(`runtime/slot-mark.ts`) — пустой комментарий, который шаблон владельца кладёт
+(`runtime/marks.ts`) — пустой комментарий, который шаблон владельца кладёт
 в слот детали (`lendMark`): слот с ней при построении детали задан, даже
 пустой, и обёртку слота деталь строит, а узлы владельца встают перед меткой
 (`lendBefore`) — до сборки детали в её свет, с назначением слота метки, после
@@ -4022,7 +4019,7 @@ Framework-agnostic dependency injection:
 | @soldy-ui/angular        | `TButtonComponent`, `TComponentViewComponent`, `TComponentComponent`, `TIconComponent`, `TProgressSpinnerComponent`, `TProgressLinearComponent`, `TSkeletonComponent`, `TFrameComponent`, `TLabelComponent`, `TInputComponent`, `TCheckBoxComponent`, `TSwitchComponent`, `TSliderComponent`, `TRatingComponent`, `TScrollerComponent`, `TPaginationComponent` (its page is an internal part), `TRadioGroupComponent` / `TRadioGroupItemComponent`, `TListBoxComponent` / `TListBoxItemComponent`, `TTabsComponent` / `TTabsItemComponent` / `TTabsContentComponent`, `TAccordionComponent` / `TAccordionItemComponent`, `setupXxx`, generated names and surfaces (`ButtonInputNames` / `ButtonOutputNames` / `TButtonSurface`, …), `createAngularAdapterContext`, `useAdapter` / `useCollectionAdapter` / `joinBindings`, `TInputValue` / `TOutputEmitter`, `TComponentBase`, `TRootSpec`, `SlotDirective`, `RoleIconDirective`, `LocaleProviderDirective`, `AngularProfile`, `AngularNaming`, `useInputs` / `useOutputs`, `TAngularElevator`, `AngularElevatorFactory`, `provideElevator`                                                                                                                                                                                                                                                                                                                |
 | @soldy-ui/svelte         | `Button`, `ComponentView`, `setupXxx`, `useAdapter`, `SvelteProfile`, `SvelteNaming`, `TSvelteElevator`, `useElevator`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`, `TSnippetSlots`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | @soldy-ui/solid          | `Button`, `ComponentView`, `Icon`, `Frame`, `ProgressSpinner`, `ProgressLinear`, `Skeleton`, `Slider`, `Rating`, `Scroller`, `DateInput`, `DatePicker`, `Pagination` (its page is an internal part), `Virtual`, collections with parts (`ListBox` with `ListBox.Item`, `Tabs` with `Tabs.Item` / `Tabs.Content`, `Accordion` with `Accordion.Item`, `RadioGroup` with `RadioGroup.Item`, `Tags` with `Tags.Item`, `Select` with `Select.Item` / `Select.Group`, `Calendar` with `Calendar.Item`, `Table` with `Table.Column` / `Table.Row`, and flat `ListBoxItem`, `TabsItem`, `TabsContent`, `AccordionItem`, `RadioGroupItem`, `TagsItem`, `SelectItem`, `SelectGroup`, `CalendarItem`, `TableColumn`, `TableRow`), `setupXxx`, `createSolidAdapterContext`, `useAdapter`, `useCollectionAdapter`, `joinBindings`, `joinState`, `LocaleProvider`, `Teleport`, `KeyedFor`, `roleIcon`, `createRootProps`, `createWrappedRootProps`, `toRootProps`, `rootTag`, `SolidProfile`, `SolidNaming`, `TSolidElevator`, `useElevator`, `Elevate`, `renderSlot`, `resolveSlot`, `liveScope`, `relaySlot`, `ResolvedSlot`, `chainHandler`, prop types (`UseProps`, `UseDomProps`, `EventProps`, `SlotProps`)                                                                                                                                                                                                        |
-| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `useAttributes`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| @soldy-ui/webc           | `<button is="so-button">` (`TButtonElement`), `<div is="so-component-view">` (`TComponentViewElement`), `<span is="so-icon">` (`TIconElement`), `<span is="so-progress-spinner">` (`TProgressSpinnerElement`), `<div is="so-skeleton">` (`TSkeletonElement`), `<so-locale-provider>` (`TLocaleProviderElement`), `setupXxx`, templates (`buttonTemplate`, `componentViewTemplate`, `iconTemplate`, `progressSpinnerTemplate`, `skeletonTemplate`), `SoldyElement`, `TRootSpec`, `defineElement`, `createWebcAdapterContext`, `useAdapter`, `HOST_PROPS`, `bind`, `roleIcon`, `drawRoleIcon`, `WebcProfile`, `WebcNaming`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/theme-oren     | CSS: `dist/index.css` (built by `npm run build --workspace=@soldy-ui/theme-oren`); types: `index.d.ts` — theme values of the appearance registries; `@soldy-ui/theme-oren/setup` — the theme object for `useTheme` and `TTabsViewPlugin`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | @soldy-ui/icons-material | Icons as data (`TIconSource`), a named export per icon — every role of `ICON_ROLES` and more; the app registers them via `useIcons`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 

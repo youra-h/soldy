@@ -4,7 +4,7 @@
  * Корень — сам `<nav is="so-pagination">`, ориентир для скринридера: классы
  * (`--size-*`, `--variant-*`), все три набора ядра (`attrs`, `aria` с именем
  * от приложения — `aria_label`, `aria_labelledBy`, — и `dataset` с
- * `data-disabled`) и скрытие раскладывает на него база (`SoldyElement`).
+ * `data-disabled`) и скрытие раскладывает на него база (`ElementBase`).
  * Здесь — ряд в одну строку, как у Vue: стрелка «назад», список страниц,
  * стрелка «вперёд». Стрелки стоят вне списка: в списке только страницы и
  * пропуски.
@@ -200,7 +200,9 @@ function cellOf(ctx: TPaginationContext, cell: TPaginationCell): HTMLElement {
 }
 
 export const paginationTemplate: ITemplate<IPagination, TPaginationCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const list = root.ownerDocument.createElement('ol')
 		const prev = arrowOf(ctx, PREV, hasSlot(PREV.slot))
 		const next = arrowOf(ctx, NEXT, hasSlot(NEXT.slot))

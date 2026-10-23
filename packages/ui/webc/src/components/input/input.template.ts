@@ -2,7 +2,7 @@
  * Шаблон Input.
  *
  * Корень — сам `<div is="so-input">`: классы, `attrs` (`dir`) и скрытие
- * раскладывает на него база (`SoldyElement`). Здесь — поле и обёртки слотов
+ * раскладывает на него база (`ElementBase`). Здесь — поле и обёртки слотов
  * по его сторонам: `<input>` детей не имеет.
  *
  * - Поле — `<input type="text">`, узел поля корня: на него база переносит
@@ -120,7 +120,7 @@ function clearOf(ctx: ITemplateContext<IInput>): TClearButton {
 }
 
 export const inputTemplate: ITemplate<IInput> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')
 		const field = ownerDocument.createElement('input')

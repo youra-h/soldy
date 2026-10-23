@@ -1682,7 +1682,7 @@ describe('шаблоны объявляют ровно те слоты, что �
 	/** Точки слотов шаблона — в пустом корне, где ни один слот не задан. */
 	function slotsOf<TInstance, TFacade>(template: ITemplate<TInstance, TFacade>): string[] {
 		const root = document.createElement('div')
-		const targets = template.create(root, () => false, bareContext<TInstance, TFacade>(root))
+		const targets = template.create(root, bareContext<TInstance, TFacade>(root))
 
 		return Object.keys(targets.slots).sort()
 	}

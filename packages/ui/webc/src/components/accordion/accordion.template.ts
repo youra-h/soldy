@@ -2,7 +2,7 @@
  * Шаблон Accordion.
  *
  * Корень — сам `<div is="so-accordion">`: классы, `attrs` и скрытие
- * раскладывает на него база (`SoldyElement`). Своей разметки у аккордеона
+ * раскладывает на него база (`ElementBase`). Своей разметки у аккордеона
  * нет — только секции.
  *
  * - Секции — слот `default`: элементы разметки `<div is="so-accordion-item">`.
@@ -67,7 +67,7 @@ function sectionOf(
 }
 
 export const accordionTemplate: ITemplate<IAccordion, TAccordionCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		// Секции разметки — сами секции аккордеона: петли из данных при них нет
 		if (!hasSlot('default')) {
 			loops.set(root, new TKeyedLoop(root, null, (item: IAccordionItem) => item.uid))

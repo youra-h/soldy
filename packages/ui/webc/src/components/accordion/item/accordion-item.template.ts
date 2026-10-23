@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-accordion-item">`: классы, `attrs`, `dataset`
  * (тема раскрывает панель по `data-selected`) и место в коллекции (`order`)
- * раскладывает на него база (`SoldyElement`). Здесь — заголовок и панель под
+ * раскладывает на него база (`ElementBase`). Здесь — заголовок и панель под
  * ним, как у Vue.
  *
  * - Заголовок — деталь
@@ -106,7 +106,9 @@ function edge(
 }
 
 export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const header = createDetail(
 			ownerDocument,

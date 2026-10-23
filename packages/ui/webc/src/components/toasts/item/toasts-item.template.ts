@@ -5,7 +5,7 @@
  * сдвиг жеста, уход и прозрачность (тема). Классы (вид сообщения
  * `so-toasts-item--type-*`), наборы `aria` (роль `status` или `alert`,
  * `tabindex` — фокус по F8 и Escape), `attrs` и `dataset` (`data-open`,
- * `data-swiping`) и скрытие раскладывает на него база (`SoldyElement`). Сдвиг
+ * `data-swiping`) и скрытие раскладывает на него база (`ElementBase`). Сдвиг
  * во время жеста (`--so-swipe-offset`) плагин жеста пишет в корень сам. Здесь
  * — то же, что в разметке Vue, в том же порядке.
  *
@@ -112,7 +112,9 @@ function toggleIn(box: HTMLElement, node: HTMLElement | null, shown: boolean): v
 }
 
 export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const card = ownerDocument.createElement('div')
 		const box = ownerDocument.createElement('span')

@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-tabs-item">`: классы, `attrs`, `dataset` (тема
  * красит активный таб по `data-selected`) и место в коллекции (`order`)
- * раскладывает на него база (`SoldyElement`). Здесь — строка и кнопка закрытия
+ * раскладывает на него база (`ElementBase`). Здесь — строка и кнопка закрытия
  * рядом с ней, как у Vue.
  *
  * - Строка — деталь `<button is="so-button" embedded="tabs.row" type="button">`,
@@ -59,7 +59,9 @@ function isIcon(node: Element): node is TIconElementProps {
 }
 
 export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

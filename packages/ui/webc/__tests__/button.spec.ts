@@ -26,12 +26,12 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 
 /** Кнопка soldy — с props дескриптора; узел другой — тест падает здесь. */
 function asButton(node: Element | null): TButtonElementProps {
-	if (!isSoldyButton(node)) throw new Error('<button is="so-button"> нет')
+	if (!isButton(node)) throw new Error('<button is="so-button"> нет')
 
 	return node
 }
 
-function isSoldyButton(node: Element | null): node is TButtonElementProps {
+function isButton(node: Element | null): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
@@ -463,7 +463,7 @@ describe('<button is="so-button"> · свойства из JS', () => {
 	/**
 	 * Тип элемента — контракт дескриптора, как у пропсов React, Solid и Svelte:
 	 * свойство пропа плагина (`aria_label`) в нём есть, как и на прототипе, а
-	 * `tag` (`HOST_PROPS`) — нет. `ctrl` — пара элемента (`ISoldyElement`), а не
+	 * `tag` (`HOST_PROPS`) — нет. `ctrl` — пара элемента (`IElementBase`), а не
 	 * проп связки. Типы проверяет шаг CI «Типы — Web Components»: в рантайме
 	 * `expectTypeOf` ничего не делает.
 	 */
@@ -787,7 +787,7 @@ describe('<button is="so-button"> · перестановка в DOM', () => {
 describe('<button is="so-button"> · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('button')
-		const targets = buttonTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = buttonTemplate.create(root, bareContext(root)).slots
 
 		// Contract conformance: имена в шаблоне и в дескрипторе обязаны совпадать
 		expect(Object.keys(targets).sort()).toEqual(

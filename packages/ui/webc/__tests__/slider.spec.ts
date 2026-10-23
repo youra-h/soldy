@@ -301,7 +301,7 @@ describe('разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — образцами', () => {
 		const root = document.createElement('span')
-		const targets = sliderTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = sliderTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			SliderDescriptor()

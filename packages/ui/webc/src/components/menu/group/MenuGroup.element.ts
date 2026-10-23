@@ -3,7 +3,7 @@
  * `Menu.Group` у Vue.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Классы и три набора
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Классы и три набора
  * ядра — `role="group"` и `aria-labelledby` на подпись — база раскладывает на
  * него, рядом с атрибутами потребителя. Подпись и её набор рисует шаблон.
  *
@@ -11,17 +11,17 @@
  * разметку, ожившую при регистрации, база собирает по месту: группу — раньше
  * пунктов её света.
  *
- * Разметка вынесена в menu-group.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в menu-group.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { MenuGroupDescriptor } from '@soldy-ui/setup'
 import type { IItemGroup } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { menuGroupTemplate } from './menu-group.template'
 import { setupMenuGroup } from './setup.component'
 
-export const TMenuGroupElement = SoldyElement(HTMLDivElement, {
+export const TMenuGroupElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuGroupDescriptor(),
 	template: menuGroupTemplate,
 	setup: setupMenuGroup,
@@ -30,8 +30,8 @@ export const TMenuGroupElement = SoldyElement(HTMLDivElement, {
 /**
  * `<div is="so-menu-group">` из JS: нативный `div`, своё элемента soldy и
  * свойства пропов дескриптора (`label`) — без тех, что у `div` уже есть, и без
- * `HOST_PROPS` (`TSoldyElementProps`).
+ * `HOST_PROPS` (`TElementProps`).
  */
 export type TMenuGroupElementProps = HTMLDivElement &
-	ISoldyElement<IItemGroup> &
-	TSoldyElementProps<typeof MenuGroupDescriptor, HTMLDivElement>
+	IElementBase<IItemGroup> &
+	TElementProps<typeof MenuGroupDescriptor, HTMLDivElement>

@@ -5,7 +5,6 @@ export { drawRoleIcon, roleIcon } from './icon'
 export {
 	HOST_PROPS,
 	isHostProp,
-	useAttributes,
 	toAttributeName,
 	coerceAttribute,
 	buildAttributeMap,

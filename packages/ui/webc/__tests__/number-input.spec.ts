@@ -332,7 +332,7 @@ describe('NumberInput · разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, в порядке разметки Vue', () => {
 		const root = document.createElement('div')
-		const targets = numberInputTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = numberInputTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(NumberInputDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual([

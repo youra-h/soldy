@@ -3,7 +3,7 @@
  * `span`.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень несёт классы,
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень несёт классы,
  * `attrs`, `dataset` (тема читает с него `data-content-fit`) и место в
  * коллекции (`order`): список — флексбокс, и опция стоит по номеру в
  * коллекции. Строка — узел поля корня (`control`): статические атрибуты
@@ -16,21 +16,21 @@
  * модуль Select (`Select.element.ts`).
  *
  * Разметка вынесена в select-item.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { SelectCollectionItemDescriptor, SelectItemDescriptor } from '@soldy-ui/setup'
 import type { ISelectItem, TSelectItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { selectItemTemplate } from './select-item.template'
 import { setupSelectItem } from './setup.component'
 
-export const TSelectItemElement = SoldyElement(HTMLDivElement, {
+export const TSelectItemElement = ElementBase(HTMLDivElement, {
 	descriptor: SelectItemDescriptor(),
 	facade: SelectCollectionItemDescriptor(),
 	template: selectItemTemplate,
-	root: { sets: ['attrs', 'dataset'], order: true, control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupSelectItem,
 })
 
@@ -38,8 +38,8 @@ export const TSelectItemElement = SoldyElement(HTMLDivElement, {
  * `<div is="so-select-item">` из JS: нативный `div`, своё элемента soldy
  * (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
- * что у `div` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TSelectItemElementProps = HTMLDivElement &
-	ISoldyElement<ISelectItem, TSelectItemCollectionFacade> &
-	TSoldyElementProps<typeof SelectItemDescriptor, HTMLDivElement>
+	IElementBase<ISelectItem, TSelectItemCollectionFacade> &
+	TElementProps<typeof SelectItemDescriptor, HTMLDivElement>

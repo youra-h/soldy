@@ -3,7 +3,7 @@
  * контекстное меню области.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Строчный корень —
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Строчный корень —
  * обёртка триггера и якорь панели, как у Popover: меню встаёт и в строку
  * текста, и в ряд кнопок. Панель — деталь Frame: в `body` её уводит база самого
  * Frame, на месте в корне остаётся якорь-комментарий, поэтому в корне лежит
@@ -33,13 +33,13 @@
  * (`<div is="so-button-div">`) — регистрирует фабрика кнопки там, где она
  * впервые нужна, — модуль строки пункта (`row.ts`).
  *
- * Разметка вынесена в menu.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в menu.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { MenuCollectionDescriptor, MenuDescriptor } from '@soldy-ui/setup'
 import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { TMenuCheckboxItemElement } from './checkbox-item'
 import { TMenuGroupElement } from './group'
 import { TMenuItemElement } from './item'
@@ -51,11 +51,11 @@ import { TMenuSubmenuElement } from './submenu'
 import { menuTemplate } from './menu.template'
 import { setupMenu } from './setup.component'
 
-export const TMenuElement = SoldyElement(HTMLSpanElement, {
+export const TMenuElement = ElementBase(HTMLSpanElement, {
 	descriptor: MenuDescriptor(),
 	facade: MenuCollectionDescriptor(),
 	template: menuTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupMenu,
 })
 
@@ -73,8 +73,8 @@ defineElement('so-menu-separator', TMenuSeparatorElement, 'div')
  * `<span is="so-menu">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
  * `state` — вместе со свойствами фасада) и свойства пропов дескриптора вместе
  * с пропсами его плагинов и фасада (`items`, `engine`) — без тех, что у `span`
- * уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TMenuElementProps = HTMLSpanElement &
-	ISoldyElement<IMenu, TMenuCollectionFacade> &
-	TSoldyElementProps<typeof MenuDescriptor, HTMLSpanElement>
+	IElementBase<IMenu, TMenuCollectionFacade> &
+	TElementProps<typeof MenuDescriptor, HTMLSpanElement>

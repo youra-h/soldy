@@ -232,8 +232,8 @@ describe('разметка', () => {
 	it('шаблоны объявляют ровно те слоты, что и дескрипторы', () => {
 		const owner = document.createElement('nav')
 		const item = document.createElement('li')
-		const ownerSlots = paginationTemplate.create(owner, () => false, bareContext(owner)).slots
-		const itemSlots = paginationItemTemplate.create(item, () => false, bareContext(item)).slots
+		const ownerSlots = paginationTemplate.create(owner, bareContext(owner)).slots
+		const itemSlots = paginationItemTemplate.create(item, bareContext(item)).slots
 
 		expect(Object.keys(ownerSlots).sort()).toEqual(
 			PaginationDescriptor()

@@ -5,7 +5,7 @@
  * модификатором, по нему тема рисует пилюлю каждого тега), три набора ядра —
  * роль `list` или `listbox` с `aria-orientation` и `aria-multiselectable` по
  * режиму выбора, `data-overflow` для темы — и скрытие раскладывает на него
- * база (`SoldyElement`), как у Vue. Своей разметки у набора нет — только теги:
+ * база (`ElementBase`), как у Vue. Своей разметки у набора нет — только теги:
  * раскладка ряда (перенос, прокрутка) — дело темы по `data-overflow`, а тег под
  * фокусом в окно ряда, который прокручивается, доводит плагин
  * (`TTagsScrollPlugin`).
@@ -67,7 +67,7 @@ function tagOf(ctx: ITemplateContext<ITags, TTagsCollectionFacade>, item: ITagsI
 }
 
 export const tagsTemplate: ITemplate<ITags, TTagsCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		// Теги разметки — сами теги набора: петли из данных при них нет
 		if (!hasSlot(DEFAULT_SLOT)) {
 			loops.set(root, new TKeyedLoop(root, null, (item: ITagsItem) => item.uid))

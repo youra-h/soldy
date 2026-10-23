@@ -419,7 +419,7 @@ describe('регион — корень в слое', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('so-toasts-probe')
-		const targets = toastsTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = toastsTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			ToastsDescriptor()

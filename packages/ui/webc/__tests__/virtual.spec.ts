@@ -481,7 +481,7 @@ describe('Select в окне', () => {
 describe('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 	it('Virtual', () => {
 		const root = document.createElement('so-virtual')
-		const targets = virtualTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = virtualTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			VirtualDescriptor()

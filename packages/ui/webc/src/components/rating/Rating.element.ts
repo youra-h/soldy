@@ -3,7 +3,7 @@
  * Rating Slider), у которого шкала — ряд звёзд.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию, строчный — оценку
+ * built-in, см. `ElementBase`): тег ядра по умолчанию, строчный — оценку
  * кладут в подпись `Label`, а внутри `label` HTML разрешает только строчную
  * разметку. Поле — нативный `input[type="range"]` в обычном DOM страницы:
  * роль, значение, границы, `disabled` и отправку формы даёт браузер.
@@ -17,20 +17,20 @@
  * Без признака `id` встал бы и на корень, и на поле, и `<label for>` нашёл бы
  * корень.
  *
- * Разметка вынесена в rating.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в rating.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { RatingDescriptor } from '@soldy-ui/setup'
 import type { IRating } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { ratingTemplate } from './rating.template'
 import { setupRating } from './setup.component'
 
-export const TRatingElement = SoldyElement(HTMLSpanElement, {
+export const TRatingElement = ElementBase(HTMLSpanElement, {
 	descriptor: RatingDescriptor(),
 	template: ratingTemplate,
-	root: { sets: ['attrs', 'dataset'], fieldId: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], fieldId: true },
 	setup: setupRating,
 })
 
@@ -40,8 +40,8 @@ defineElement('so-rating', TRatingElement, 'span')
  * `<span is="so-rating">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
  * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов
  * (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный `id`
- * корня), и без `HOST_PROPS` (`TSoldyElementProps`).
+ * корня), и без `HOST_PROPS` (`TElementProps`).
  */
 export type TRatingElementProps = HTMLSpanElement &
-	ISoldyElement<IRating> &
-	TSoldyElementProps<typeof RatingDescriptor, HTMLSpanElement>
+	IElementBase<IRating> &
+	TElementProps<typeof RatingDescriptor, HTMLSpanElement>

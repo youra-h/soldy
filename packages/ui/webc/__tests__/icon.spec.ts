@@ -17,7 +17,7 @@ import { describe, it, expect, afterEach, beforeAll } from 'vitest'
 import { TIcon } from '@soldy-ui/core'
 import { IconDescriptor, useIcons, type TIconSource } from '@soldy-ui/setup'
 import {
-	SoldyElement,
+	ElementBase,
 	TIconElement,
 	bind,
 	defineElement,
@@ -323,7 +323,7 @@ describe('Icon · рисунок роли', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
 		const root = document.createElement('span')
-		const targets = iconTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = iconTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(IconDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual([])
@@ -425,7 +425,7 @@ describe('база · свой атрибут элемента', () => {
 		],
 	}
 
-	const TCountingElement = SoldyElement(HTMLSpanElement, {
+	const TCountingElement = ElementBase(HTMLSpanElement, {
 		descriptor: IconDescriptor(),
 		template: counting,
 		attributes: ['icon'],
@@ -466,7 +466,7 @@ describe('база · свой атрибут элемента', () => {
 		'имя «%s» занято — ошибка описания',
 		(name) => {
 			expect(() =>
-				SoldyElement(HTMLSpanElement, {
+				ElementBase(HTMLSpanElement, {
 					descriptor: IconDescriptor(),
 					template: counting,
 					attributes: [name],

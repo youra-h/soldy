@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-select-item">`: классы, `attrs`, `dataset` (тема
  * читает с него `data-content-fit`) и место в коллекции (`order`) раскладывает
- * на него база (`SoldyElement`). Здесь — строка, как у Vue.
+ * на него база (`ElementBase`). Здесь — строка, как у Vue.
  *
  * - Строка — Button на `span`, деталь
  *   `<span is="so-button-span" embedded="select.row" tabindex="-1">`, узел поля
@@ -85,7 +85,9 @@ function placeIndicator(
 }
 
 export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

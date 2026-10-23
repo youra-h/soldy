@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-date-input">`: классы, наборы `attrs` (`dir`
  * поля), `aria` (`role="group"`, имя) и `dataset` (`data-disabled`,
- * `data-invalid`) и скрытие раскладывает на него база (`SoldyElement`), `id`
+ * `data-invalid`) и скрытие раскладывает на него база (`ElementBase`), `id`
  * корня — привязка, как `:id="id"` у Vue. Здесь — то же, что в разметке Vue,
  * в том же порядке: обёртка слота `leading`, ряд частей, обёртка у конца поля
  * и значение для формы.
@@ -158,7 +158,7 @@ function clearOf(ctx: ITemplateContext<IDateInput>): TClearButton {
 }
 
 export const dateInputTemplate: ITemplate<IDateInput> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')
 		const segments = ownerDocument.createElement('span')

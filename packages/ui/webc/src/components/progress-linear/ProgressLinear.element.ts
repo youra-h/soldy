@@ -2,7 +2,7 @@
  * `<span is="so-progress-linear">` — индикатор выполнения линией.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`). Корень по умолчанию — `span`, как тег ядра:
+ * built-in, см. `ElementBase`). Корень по умолчанию — `span`, как тег ядра:
  * полосу кладут в Button и Label, а внутри них HTML разрешает только строчную
  * разметку.
  *
@@ -15,20 +15,20 @@
  * скрытие — главнее обоих.
  *
  * Разметка вынесена в progress-linear.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { ProgressLinearDescriptor } from '@soldy-ui/setup'
 import type { IProgressLinear } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { progressLinearTemplate } from './progress-linear.template'
 import { setupProgressLinear } from './setup.component'
 
-export const TProgressLinearElement = SoldyElement(HTMLSpanElement, {
+export const TProgressLinearElement = ElementBase(HTMLSpanElement, {
 	descriptor: ProgressLinearDescriptor(),
 	template: progressLinearTemplate,
-	root: { style: 'percentStyle' },
+	root: { strategy: 'host', style: 'percentStyle' },
 	setup: setupProgressLinear,
 })
 
@@ -38,8 +38,8 @@ defineElement('so-progress-linear', TProgressLinearElement, 'span')
  * `<span is="so-progress-linear">` из JS: нативный `span`, своё элемента
  * soldy (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
  * плагинов (`aria_label`) — без тех, что у `span` уже есть, и без
- * `HOST_PROPS` (`TSoldyElementProps`).
+ * `HOST_PROPS` (`TElementProps`).
  */
 export type TProgressLinearElementProps = HTMLSpanElement &
-	ISoldyElement<IProgressLinear> &
-	TSoldyElementProps<typeof ProgressLinearDescriptor, HTMLSpanElement>
+	IElementBase<IProgressLinear> &
+	TElementProps<typeof ProgressLinearDescriptor, HTMLSpanElement>

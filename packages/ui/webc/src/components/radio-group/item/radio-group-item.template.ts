@@ -4,7 +4,7 @@
  * Корень — сам `<label is="so-radio-group-item">`: клик по подписи выбирает
  * радио, а подпись становится его доступным именем. Классы, `attrs` (`dir`) и
  * `dataset` (`data-selected`, `data-disabled`) раскладывает на него база
- * (`SoldyElement`). Здесь — поле, кольцо с точкой и текст подписи, как у Vue.
+ * (`ElementBase`). Здесь — поле, кольцо с точкой и текст подписи, как у Vue.
  *
  * - Поле — нативный `<input type="radio">`, узел поля корня: на него база
  *   переносит статические атрибуты разметки корня (`id` для `<label for>`
@@ -41,7 +41,7 @@ function attribute(field: HTMLInputElement, name: string, value: unknown): void 
 }
 
 export const radioGroupItemTemplate: ITemplate<IRadioGroupItem, TRadioGroupItemCollectionFacade> = {
-	create: (root, _hasSlot, ctx) => {
+	create: (root, ctx) => {
 		const { ownerDocument } = root
 		const field = ownerDocument.createElement('input')
 		const control = ownerDocument.createElement('span')

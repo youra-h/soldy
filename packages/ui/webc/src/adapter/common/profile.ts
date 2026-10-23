@@ -1,12 +1,5 @@
-/**
- * Профиль Web Components: имена поверхности.
- *
- * Поверхность нужна элементу дважды: при объявлении класса (атрибуты в
- * `observedAttributes`, свойства на прототипе) и на монтировании (связка
- * `adapter.connect()`). Один профиль — одна поверхность на оба случая.
- */
-
 import type { IAdapterProfile } from '@soldy-ui/setup'
 import { WebcNaming } from './naming'
 
+/** Одна поверхность на класс элемента (атрибуты, свойства) и на связку. */
 export const WebcProfile: IAdapterProfile = { naming: WebcNaming }

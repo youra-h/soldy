@@ -8,14 +8,12 @@ export {
 	type TUpdateListener,
 } from './useAdapter'
 export {
-	SoldyElement,
-	type ISoldyElement,
-	type ISoldyElementSpec,
+	ElementBase,
+	type IElementBase,
+	type IElementSpec,
+	type TElementClass,
+	type TElementProps,
 	type TNativeElementClass,
-	type TRootSet,
-	type TRootSpec,
-	type TRootTeleport,
-	type TSoldyElementClass,
-	type TSoldyElementProps,
 } from './element.base'
+export type { TRootSet, TRootSpec, TRootTeleport } from './root'
 export { defineElement } from './defineElement'

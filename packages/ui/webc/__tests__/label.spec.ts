@@ -158,7 +158,7 @@ describe('Label · текст: проп и слот', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('label')
-		const targets = labelTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = labelTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			LabelDescriptor()

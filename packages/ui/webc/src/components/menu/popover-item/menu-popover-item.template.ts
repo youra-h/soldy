@@ -29,7 +29,7 @@
  *   Модификаторов размера и варианта у неё нет: содержимое красится само.
  *   Открытость — `visible` панели. `rendered` панели шаблон не пишет: корень
  *   Web Components только прячется, и увезённую панель прячет база Frame по
- *   признаку поддерева пункта (`SoldyElement`, «Поддерево») — и у скрытого
+ *   признаку поддерева пункта (`ElementBase`, «Поддерево») — и у скрытого
  *   меню над ним тоже.
  * - В панели — обёртка `div.so-menu-item__content` со слотом `default`: то,
  *   что прокручивается. `lazyMount` действует только на слот
@@ -67,7 +67,9 @@ export const menuPopoverItemTemplate: ITemplate<
 	TMenuItemCollectionFacade,
 	TMenuPopoverItemOutputs
 > = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createRow(root, () => ctx.facade?.context?.adapters.menu.open())
 		const icon = partOf(ownerDocument, 'so-menu-item__icon')

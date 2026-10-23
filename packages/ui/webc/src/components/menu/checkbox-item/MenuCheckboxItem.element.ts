@@ -3,7 +3,7 @@
  * отмечается, а меню не закрывает.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень и строка — как
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень и строка — как
  * у пункта (`MenuItem.element.ts`): на корне классы, `attrs` и `dataset`, на
  * строке — `aria` флажка (`menuitemcheckbox`, `aria-checked`), и статические
  * атрибуты разметки база переносит на строку (`control`).
@@ -13,21 +13,21 @@
  * `so:change:selected`. Регистрирует элемент модуль меню.
  *
  * Разметка вынесена в menu-checkbox-item.template.ts, жизненный цикл — в
- * SoldyElement.
+ * ElementBase.
  */
 
 import { MenuCheckboxItemDescriptor, MenuCollectionCheckboxItemDescriptor } from '@soldy-ui/setup'
 import type { IMenuCheckboxItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement } from '../../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../../adapter'
+import { ElementBase } from '../../../adapter'
+import type { IElementBase, TElementProps } from '../../../adapter'
 import { menuCheckboxItemTemplate } from './menu-checkbox-item.template'
 import { setupMenuCheckboxItem } from './setup.component'
 
-export const TMenuCheckboxItemElement = SoldyElement(HTMLDivElement, {
+export const TMenuCheckboxItemElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuCheckboxItemDescriptor(),
 	facade: MenuCollectionCheckboxItemDescriptor(),
 	template: menuCheckboxItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuCheckboxItem,
 })
 
@@ -35,8 +35,8 @@ export const TMenuCheckboxItemElement = SoldyElement(HTMLDivElement, {
  * `<div is="so-menu-checkbox-item">` из JS: нативный `div`, своё элемента
  * soldy (`ctrl`, `state` — вместе со свойствами фасада) и свойства пропов
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
- * что у `div` уже есть, и без `HOST_PROPS` (`TSoldyElementProps`).
+ * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
 export type TMenuCheckboxItemElementProps = HTMLDivElement &
-	ISoldyElement<IMenuCheckboxItem, TMenuItemCollectionFacade> &
-	TSoldyElementProps<typeof MenuCheckboxItemDescriptor, HTMLDivElement>
+	IElementBase<IMenuCheckboxItem, TMenuItemCollectionFacade> &
+	TElementProps<typeof MenuCheckboxItemDescriptor, HTMLDivElement>

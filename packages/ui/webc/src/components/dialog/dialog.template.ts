@@ -5,7 +5,7 @@
  * `so-dialog--placement-*`), наборы `aria` (`role="dialog"`, `aria-modal`,
  * `aria-labelledby`), `attrs` и `dataset` (номер слоя `data-layer`,
  * `data-open`, `data-maximized`), раскладку (`z-index` слоя, размер и отступ
- * переменными) и скрытие раскладывает на него база (`SoldyElement`), и в цель
+ * переменными) и скрытие раскладывает на него база (`ElementBase`), и в цель
  * его уводит она же — по описанию корня элемента (`teleport`). Здесь — то же,
  * что в разметке Vue, в том же порядке.
  *
@@ -147,7 +147,9 @@ function toggleButton(button: HTMLElement, shown: boolean, put: () => void): voi
 }
 
 export const dialogTemplate: ITemplate<IDialog, unknown, TDialogOutputs> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const backdrop = ownerDocument.createElement('div')
 		const title = ownerDocument.createElement('h2')

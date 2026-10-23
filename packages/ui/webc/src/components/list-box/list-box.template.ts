@@ -2,7 +2,7 @@
  * Шаблон ListBox.
  *
  * Корень — сам `<div is="so-list-box">`: классы, `attrs`, `dataset` и скрытие
- * раскладывает на него база (`SoldyElement`). Корень — рамка: шапка, узел
+ * раскладывает на него база (`ElementBase`). Корень — рамка: шапка, узел
  * списка (`div.so-list-box__list`) и подвал. Набор `aria` владельца — это сам
  * список (`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и на
  * узел списка его кладёт шаблон (`ownerAttributes`): в `listbox` ARIA пускает
@@ -225,7 +225,7 @@ function updateRow(
 }
 
 export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const list = ownerDocument.createElement('div')
 		const end = ownerDocument.createComment('')

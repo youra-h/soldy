@@ -63,7 +63,7 @@ afterEach(() => {
 	document.body.innerHTML = ''
 })
 
-function isSoldyButton(node: Element): node is TButtonElementProps {
+function isButton(node: Element): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
@@ -75,7 +75,7 @@ function isSoldyButton(node: Element): node is TButtonElementProps {
 function createButton(): { el: TButtonElementProps; bundle: () => TPluginBundle | undefined } {
 	const el = document.createElement('button', { is: 'so-button' })
 
-	if (!isSoldyButton(el)) throw new Error('<button is="so-button"> нет')
+	if (!isButton(el)) throw new Error('<button is="so-button"> нет')
 
 	let bundle: TPluginBundle | undefined
 

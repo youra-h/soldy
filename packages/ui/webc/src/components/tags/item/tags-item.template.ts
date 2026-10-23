@@ -3,7 +3,7 @@
  *
  * Корень — сам `<div is="so-tags-item">`, пилюля тега: классы, `attrs`,
  * `dataset` (выбранный тег тема красит по `data-selected` корня) и место в
- * коллекции (`order`) раскладывает на него база (`SoldyElement`). Вид набора
+ * коллекции (`order`) раскладывает на него база (`ElementBase`). Вид набора
  * рисует корень, а не строка: фон, рамка, наведение и выбор обязаны покрывать
  * и крестик, а он стоит рядом со строкой, — поэтому строке и крестику вида
  * разметка не передаёт, части тега тема красит по контексту (`.so-tags-item`).
@@ -74,7 +74,9 @@ function isIcon(node: Element): node is TIconElementProps {
 }
 
 export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

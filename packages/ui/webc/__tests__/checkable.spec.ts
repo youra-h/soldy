@@ -612,7 +612,7 @@ describe('CheckBox · отметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('span')
-		const targets = checkBoxTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = checkBoxTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			CheckBoxDescriptor()
@@ -666,7 +666,7 @@ describe('Switch · роль и ручка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('span')
-		const targets = switchTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = switchTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			SwitchDescriptor()

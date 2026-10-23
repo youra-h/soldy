@@ -3,7 +3,7 @@
  * паттерн Combobox.
  *
  * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Корень — рамка поля и
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Корень — рамка поля и
  * якорь панели: на нём из наборов ядра `attrs` и `dataset` (`data-open`), а
  * набор `aria` Select шаблон кладёт на поле. Поле — деталь Input в корне, поле
  * корня (`control`): статические атрибуты разметки, кроме `class`, `style`,
@@ -28,23 +28,23 @@
  * опции — Button на `span` (`<span is="so-button-span">`) — регистрирует
  * фабрика кнопки там, где она впервые нужна, — модуль шаблона опции.
  *
- * Разметка вынесена в select.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в select.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { SelectCollectionDescriptor, SelectDescriptor } from '@soldy-ui/setup'
 import type { ISelect, TSelectCollectionFacade } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type { ISoldyElement, TSoldyElementProps } from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, TElementProps } from '../../adapter'
 import { TSelectGroupElement } from './group'
 import { TSelectItemElement } from './item'
 import { selectTemplate } from './select.template'
 import { setupSelect } from './setup.component'
 
-export const TSelectElement = SoldyElement(HTMLDivElement, {
+export const TSelectElement = ElementBase(HTMLDivElement, {
 	descriptor: SelectDescriptor(),
 	facade: SelectCollectionDescriptor(),
 	template: selectTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupSelect,
 })
 
@@ -57,8 +57,8 @@ defineElement('so-select-item', TSelectItemElement, 'div')
  * `state` — вместе со свойствами фасада) и свойства пропов дескриптора вместе
  * с пропсами его плагинов и фасада (`items`, `mode`, `engine`) — без тех, что у
  * `div` уже есть (`id` — собственный `id` корня), и без `HOST_PROPS`
- * (`TSoldyElementProps`).
+ * (`TElementProps`).
  */
 export type TSelectElementProps = HTMLDivElement &
-	ISoldyElement<ISelect, TSelectCollectionFacade> &
-	TSoldyElementProps<typeof SelectDescriptor, HTMLDivElement>
+	IElementBase<ISelect, TSelectCollectionFacade> &
+	TElementProps<typeof SelectDescriptor, HTMLDivElement>

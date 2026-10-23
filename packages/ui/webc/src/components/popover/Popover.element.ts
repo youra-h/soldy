@@ -3,7 +3,7 @@
  * немодальный диалог.
  *
  * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `SoldyElement`): тег ядра по умолчанию. Строчный корень —
+ * built-in, см. `ElementBase`): тег ядра по умолчанию. Строчный корень —
  * обёртка триггера и якорь панели: поповер встаёт и в строку текста, и в ряд
  * тегов. Панель — деталь Frame: в цель её уводит база самого Frame, на месте в
  * корне остаётся якорь-комментарий, поэтому в корне лежит только триггер, и
@@ -27,30 +27,25 @@
  * как у Button на другом теге. Описание элемента у всех тегов одно
  * (`POPOVER`), отличается только нативный класс.
  *
- * Разметка вынесена в popover.template.ts, жизненный цикл — в SoldyElement.
+ * Разметка вынесена в popover.template.ts, жизненный цикл — в ElementBase.
  */
 
 import { PopoverDescriptor } from '@soldy-ui/setup'
 import type { IPopover } from '@soldy-ui/core'
-import { SoldyElement, defineElement } from '../../adapter'
-import type {
-	ISoldyElement,
-	ISoldyElementSpec,
-	TSoldyElementClass,
-	TSoldyElementProps,
-} from '../../adapter'
+import { ElementBase, defineElement } from '../../adapter'
+import type { IElementBase, IElementSpec, TElementClass, TElementProps } from '../../adapter'
 import { popoverTemplate } from './popover.template'
 import { setupPopover, type TPopoverOutputs } from './setup.component'
 
 /** Описание элемента Popover — одно на все его теги: дескриптор, шаблон, корень и setup. */
-const POPOVER: ISoldyElementSpec<IPopover, unknown, TPopoverOutputs> = {
+const POPOVER: IElementSpec<IPopover, unknown, TPopoverOutputs> = {
 	descriptor: PopoverDescriptor(),
 	template: popoverTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupPopover,
 }
 
-export const TPopoverElement = SoldyElement(HTMLSpanElement, POPOVER)
+export const TPopoverElement = ElementBase(HTMLSpanElement, POPOVER)
 
 defineElement('so-popover', TPopoverElement, 'span')
 
@@ -64,7 +59,7 @@ export type TPopoverTag = 'div'
 
 /** Класс Popover на теге `K`: нативный класс тега и своё элемента soldy. */
 export type TPopoverTagClass<K extends TPopoverTag> = (new () => HTMLElementTagNameMap[K]) &
-	TSoldyElementClass<IPopover>
+	TElementClass<IPopover>
 
 /**
  * Регистрация Popover на теге: класс на нативном классе тега создаётся и
@@ -79,7 +74,7 @@ function registration<K extends TPopoverTag>(
 
 	return () => {
 		if (!element) {
-			element = SoldyElement(Native, POPOVER)
+			element = ElementBase(Native, POPOVER)
 			defineElement(`so-popover-${tag}`, element, tag)
 		}
 
@@ -110,8 +105,8 @@ export function registerPopoverTag<K extends TPopoverTag>(tag: K): TPopoverTagCl
  * `TPopoverElementProps<HTMLDivElement>` — `<div is="so-popover-div">`), своё
  * элемента soldy (`ctrl`, `state`) и свойства пропов дескриптора вместе с
  * пропсами его плагинов (`aria_label`) — без тех, что у тега уже есть, и без
- * `HOST_PROPS` (`TSoldyElementProps`).
+ * `HOST_PROPS` (`TElementProps`).
  */
 export type TPopoverElementProps<TNative extends HTMLElement = HTMLSpanElement> = TNative &
-	ISoldyElement<IPopover> &
-	TSoldyElementProps<typeof PopoverDescriptor, TNative>
+	IElementBase<IPopover> &
+	TElementProps<typeof PopoverDescriptor, TNative>

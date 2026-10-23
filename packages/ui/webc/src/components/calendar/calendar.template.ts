@@ -4,7 +4,7 @@
  *
  * Корень — сам `<div is="so-calendar">`: классы, наборы `attrs`, `aria` и
  * `dataset` (`data-disabled`) и скрытие раскладывает на него база
- * (`SoldyElement`). Роли у корня нет: сетку по APG (Date Picker Dialog) несёт
+ * (`ElementBase`). Роли у корня нет: сетку по APG (Date Picker Dialog) несёт
  * каждая таблица. Обработчиков у шаблона нет: нажатия по дням, кнопкам
  * листания, шапке и подложке панели выбора и наведение ловит плагин указателя,
  * клавиши — плагин клавиатуры, оба слушают корень и зовут команды коллекции.
@@ -500,7 +500,7 @@ function placePaging(month: TMonth, prev: HTMLElement, next: HTMLElement): void 
 }
 
 export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const months = ownerDocument.createElement('div')
 		const footer = ownerDocument.createElement('div')

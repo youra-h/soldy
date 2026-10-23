@@ -3,7 +3,7 @@
  *
  * Корень — сам `<span is="so-menu">`: классы, `attrs` и `dataset` (`data-open`
  * — для потребителя, который красит свой триггер по контексту) раскладывает на
- * него база (`SoldyElement`). ARIA на корне нет: она у панели и у триггера
+ * него база (`ElementBase`). ARIA на корне нет: она у панели и у триггера
  * (`sets` в описании корня). Здесь — то же, что в разметке Vue, в том же
  * порядке.
  *
@@ -29,7 +29,7 @@
  *   входят в коллекцию при монтировании, и закрытие не должно её вычищать.
  *   `rendered` панели шаблон не пишет: корень Web Components только прячется,
  *   до увезённой панели это скрытие не доходит, и прячет её база Frame по
- *   признаку поддерева меню (`SoldyElement`, «Поддерево»), а с ней — и панели
+ *   признаку поддерева меню (`ElementBase`, «Поддерево»), а с ней — и панели
  *   подменю и пунктов с панелью. На панель — `aria` меню (`role="menu"`, `id`,
  *   на который ссылается `aria-controls` триггера, и `aria-labelledby` на
  *   триггер — имя меню) и пометка владельцем `dismiss_ownerAttribute` — одним
@@ -82,7 +82,7 @@ function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
 }
 
 export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const panel = createDetail(
 			ownerDocument,
