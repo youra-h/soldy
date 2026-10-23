@@ -92,22 +92,9 @@ type TDialogParts = {
 
 const parts = new WeakMap<HTMLElement, TDialogParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /** Кнопка шапки — деталь разметки с именем места и классом. */
 function buttonOf(owner: Document, embedded: string, className: string): TButtonElementProps {
-	const button = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded, attributes: { type: 'button' } },
-		isButton,
-	)
+	const button = createDetail(owner, TButtonElement, { embedded, attributes: { type: 'button' } })
 
 	button.className = className
 
@@ -116,7 +103,7 @@ function buttonOf(owner: Document, embedded: string, className: string): TButton
 
 /** Иконка роли — деталь разметки с именем места. */
 function iconOf(owner: Document, embedded: string, role: string): TIconElementProps {
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded })
 
 	icon.icon = role
 

@@ -22,12 +22,16 @@
 import { SliderDescriptor } from '@soldy-ui/setup'
 import type { ISlider } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { sliderTemplate } from './slider.template'
 import { setupSlider } from './setup.component'
 
-export const TSliderElement = ElementBase(HTMLSpanElement, {
-	descriptor: SliderDescriptor(),
+export const TSliderElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof SliderDescriptor,
+	ISlider
+> = ElementBase(HTMLSpanElement, {
+	descriptor: SliderDescriptor,
 	template: sliderTemplate,
 	root: { strategy: 'host', aria: 'rootAria' },
 	setup: setupSlider,
@@ -41,6 +45,4 @@ defineElement('so-slider', TSliderElement, 'span')
  * (`aria_label`) — без тех, что у `span` уже есть, и без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TSliderElementProps = HTMLSpanElement &
-	IElementBase<ISlider> &
-	TElementProps<typeof SliderDescriptor, HTMLSpanElement>
+export type TSliderElementProps = TElementType<typeof TSliderElement>

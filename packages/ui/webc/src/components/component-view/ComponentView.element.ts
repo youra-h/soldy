@@ -12,12 +12,16 @@
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
 import type { IComponentView } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'
 import { setupComponentView } from './setup.component'
 
-export const TComponentViewElement = ElementBase(HTMLDivElement, {
-	descriptor: ComponentViewDescriptor(),
+export const TComponentViewElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof ComponentViewDescriptor,
+	IComponentView
+> = ElementBase(HTMLDivElement, {
+	descriptor: ComponentViewDescriptor,
 	template: componentViewTemplate,
 	setup: setupComponentView,
 })
@@ -29,6 +33,4 @@ defineElement('so-component-view', TComponentViewElement, 'div')
  * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TComponentViewElementProps = HTMLDivElement &
-	IElementBase<IComponentView> &
-	TElementProps<typeof ComponentViewDescriptor, HTMLDivElement>
+export type TComponentViewElementProps = TElementType<typeof TComponentViewElement>

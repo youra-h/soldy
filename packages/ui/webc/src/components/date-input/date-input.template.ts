@@ -48,16 +48,8 @@
  */
 
 import type { IDateInput, TDateInputSegment } from '@soldy-ui/core'
-import {
-	TKeyedLoop,
-	bind,
-	createDetail,
-	ownerAttributes,
-	type ITemplate,
-	type ITemplateContext,
-} from '../../adapter'
-import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
+import { TKeyedLoop, bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
+import { placeClearButton } from '../common/clear'
 
 /** Части поля, одни на всё время жизни элемента. */
 type TDateInputParts = {
@@ -69,24 +61,7 @@ type TDateInputParts = {
 	readonly loop: TKeyedLoop<TDateInputSegment, string, HTMLElement>
 }
 
-/** Кнопка очистки и иконка в ней. */
-type TClearButton = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps
-}
-
 const parts = new WeakMap<HTMLElement, TDateInputParts>()
-
-/** Кнопка очистки каждого поля — строится с первым `clearable` и остаётся за ним. */
-const clears = new WeakMap<HTMLElement, TClearButton>()
-
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
 
 /**
  * Наборы и текст части или разделителя — на её узел. Наборы части — одним
@@ -99,7 +74,7 @@ function drawSegment(node: HTMLElement, segment: TDateInputSegment): void {
 		ownerAttributes(node, { ...segment.attrs, ...segment.aria, ...segment.dataset })
 	}
 
-	if (node.textContent !== segment.text) node.textContent = segment.text
+	patch(node, { textContent: segment.text })
 }
 
 /** Узел части или разделителя — по виду записи: ключ записи вида не меняет. */
@@ -111,50 +86,6 @@ function segmentOf(owner: Document, segment: TDateInputSegment): HTMLElement {
 	drawSegment(node, segment)
 
 	return node
-}
-
-/**
- * Кнопка очистки поля — деталь его разметки. Нажатие — команда поля `clear`
- * того инстанса, что живёт сейчас: контекст шаблона отдаёт его в момент
- * обращения.
- */
-function clearOf(ctx: ITemplateContext<IDateInput>): TClearButton {
-	const known = clears.get(ctx.root)
-
-	if (known) return known
-
-	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-input.clear', attributes: { type: 'button' } },
-		isButton,
-	)
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'date-input.clear-icon' },
-		isIcon,
-	)
-
-	button.className = 'so-date-input__clear'
-	icon.icon = 'close'
-	button.appendChild(icon)
-
-	button.addEventListener('so:action:click', (event) => {
-		// Клик — нативный: всплытие гасится у самого события, до предков он не дойдёт
-		if (event instanceof CustomEvent && event.detail instanceof Event) {
-			event.detail.stopPropagation()
-		}
-
-		ctx.ctrl?.clear()
-	})
-
-	const clear = { button, icon }
-
-	clears.set(ctx.root, clear)
-
-	return clear
 }
 
 export const dateInputTemplate: ITemplate<IDateInput> = {
@@ -227,36 +158,9 @@ export const dateInputTemplate: ITemplate<IDateInput> = {
 		}),
 
 		bind(['clearable', 'size', 'disabled', 'clearAria'], (ctx) => {
-			const { root, state, hasSlot } = ctx
-			const own = parts.get(root)
+			const own = parts.get(ctx.root)
 
-			// Своя кнопка — слот `clear`: заменяет встроенную целиком
-			if (!own || hasSlot('clear')) return
-
-			if (state.clearable !== true) {
-				clears.get(root)?.button.remove()
-
-				// Обёртку у конца поля держала только кнопка
-				if (!hasSlot('trailing')) own.trailing.remove()
-
-				return
-			}
-
-			const { button, icon } = clearOf(ctx)
-			const disabled = state.disabled === true
-
-			// Пропсы кнопки и иконки — только сменившиеся: `disabled` кнопки
-			// нативный, и каждая запись прошла бы через его атрибут
-			if (button.size !== state.size) button.size = state.size
-			if (button.disabled !== disabled) button.disabled = disabled
-			if (icon.size !== state.size) icon.size = state.size
-
-			ownerAttributes(button, state.clearAria)
-
-			// Сначала кнопка в обёртку, потом обёртка в корень — перед скрытым
-			// полем: кнопка входит в документ одной вставкой и собирается один раз
-			if (own.trailing.firstChild !== button) own.trailing.prepend(button)
-			if (own.trailing.parentNode !== root) root.insertBefore(own.trailing, own.hidden)
+			if (own) placeClearButton(ctx, 'date-input', own.trailing, own.hidden)
 		}),
 
 		// Значение для формы — дата строкой, пока она не собрана — пусто
@@ -270,7 +174,7 @@ export const dateInputTemplate: ITemplate<IDateInput> = {
 			hidden.name = state.name ?? ''
 			hidden.disabled = state.disabled === true
 
-			if (hidden.value !== value) hidden.value = value
+			patch(hidden, { value })
 		}),
 	],
 }

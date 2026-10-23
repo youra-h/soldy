@@ -15,12 +15,16 @@
 import { ScrollerDescriptor } from '@soldy-ui/setup'
 import type { IScroller } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { scrollerTemplate } from './scroller.template'
 import { setupScroller } from './setup.component'
 
-export const TScrollerElement = ElementBase(HTMLDivElement, {
-	descriptor: ScrollerDescriptor(),
+export const TScrollerElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof ScrollerDescriptor,
+	IScroller
+> = ElementBase(HTMLDivElement, {
+	descriptor: ScrollerDescriptor,
 	template: scrollerTemplate,
 	setup: setupScroller,
 })
@@ -33,6 +37,4 @@ defineElement('so-scroller', TScrollerElement, 'div')
  * плагинов (`aria_label`) — без тех, что у `div` уже есть, и без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TScrollerElementProps = HTMLDivElement &
-	IElementBase<IScroller> &
-	TElementProps<typeof ScrollerDescriptor, HTMLDivElement>
+export type TScrollerElementProps = TElementType<typeof TScrollerElement>

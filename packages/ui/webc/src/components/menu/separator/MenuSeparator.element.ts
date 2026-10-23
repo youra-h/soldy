@@ -15,12 +15,16 @@
 import { MenuSeparatorDescriptor } from '@soldy-ui/setup'
 import type { TMenuSeparator } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuSeparatorTemplate } from './menu-separator.template'
 import { setupMenuSeparator } from './setup.component'
 
-export const TMenuSeparatorElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuSeparatorDescriptor(),
+export const TMenuSeparatorElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuSeparatorDescriptor,
+	TMenuSeparator
+> = ElementBase(HTMLDivElement, {
+	descriptor: MenuSeparatorDescriptor,
 	template: menuSeparatorTemplate,
 	setup: setupMenuSeparator,
 })
@@ -30,6 +34,4 @@ export const TMenuSeparatorElement = ElementBase(HTMLDivElement, {
  * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuSeparatorElementProps = HTMLDivElement &
-	IElementBase<TMenuSeparator> &
-	TElementProps<typeof MenuSeparatorDescriptor, HTMLDivElement>
+export type TMenuSeparatorElementProps = TElementType<typeof TMenuSeparatorElement>

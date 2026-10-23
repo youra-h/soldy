@@ -72,10 +72,6 @@ type TSubmenuParts = {
 
 const parts = new WeakMap<HTMLElement, TSubmenuParts>()
 
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
 export const menuSubmenuTemplate: ITemplate<
 	IMenuSubmenu,
 	TMenuItemCollectionFacade,
@@ -94,12 +90,10 @@ export const menuSubmenuTemplate: ITemplate<
 		const arrow = hasSlot('arrow-icon')
 			? null
 			: roleIconOf(ownerDocument, 'menu.arrow', 'arrowRight')
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'menu.submenu-frame', attributes: { tabindex: '-1' } },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, {
+			embedded: 'menu.submenu-frame',
+			attributes: { tabindex: '-1' },
+		})
 		const list = ownerDocument.createElement('div')
 
 		if (arrow) arrowPart.appendChild(arrow)

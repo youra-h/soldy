@@ -22,13 +22,18 @@
 import { SelectCollectionItemDescriptor, SelectItemDescriptor } from '@soldy-ui/setup'
 import type { ISelectItem, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { selectItemTemplate } from './select-item.template'
 import { setupSelectItem } from './setup.component'
 
-export const TSelectItemElement = ElementBase(HTMLDivElement, {
-	descriptor: SelectItemDescriptor(),
-	facade: SelectCollectionItemDescriptor(),
+export const TSelectItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof SelectItemDescriptor,
+	ISelectItem,
+	TSelectItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
+	descriptor: SelectItemDescriptor,
+	facade: SelectCollectionItemDescriptor,
 	template: selectItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupSelectItem,
@@ -40,6 +45,4 @@ export const TSelectItemElement = ElementBase(HTMLDivElement, {
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
  * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TSelectItemElementProps = HTMLDivElement &
-	IElementBase<ISelectItem, TSelectItemCollectionFacade> &
-	TElementProps<typeof SelectItemDescriptor, HTMLDivElement>
+export type TSelectItemElementProps = TElementType<typeof TSelectItemElement>

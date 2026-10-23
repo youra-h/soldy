@@ -31,15 +31,20 @@
 import { TableCollectionDescriptor, TableDescriptor } from '@soldy-ui/setup'
 import type { ITable, TTableCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { TTableColumnElement } from './column'
 import { TTableRowElement } from './row'
 import { setupTable } from './setup.component'
 import { tableTemplate } from './table.template'
 
-export const TTableElement = ElementBase(HTMLDivElement, {
-	descriptor: TableDescriptor(),
-	facade: TableCollectionDescriptor(),
+export const TTableElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TableDescriptor,
+	ITable,
+	TTableCollectionFacade
+> = ElementBase(HTMLDivElement, {
+	descriptor: TableDescriptor,
+	facade: TableCollectionDescriptor,
 	template: tableTemplate,
 	root: { strategy: 'wrapped' },
 	setup: setupTable,
@@ -55,6 +60,4 @@ defineElement('so-table-row', TTableRowElement, 'tr')
  * с пропсами его плагинов и фасада (`items`, `columns`, `mode`, `engine`) —
  * без тех, что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TTableElementProps = HTMLDivElement &
-	IElementBase<ITable, TTableCollectionFacade> &
-	TElementProps<typeof TableDescriptor, HTMLDivElement>
+export type TTableElementProps = TElementType<typeof TTableElement>

@@ -19,12 +19,16 @@
 import { LabelDescriptor } from '@soldy-ui/setup'
 import type { ILabel } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { labelTemplate } from './label.template'
 import { setupLabel } from './setup.component'
 
-export const TLabelElement = ElementBase(HTMLLabelElement, {
-	descriptor: LabelDescriptor(),
+export const TLabelElement: TElementClassOf<
+	typeof HTMLLabelElement,
+	typeof LabelDescriptor,
+	ILabel
+> = ElementBase(HTMLLabelElement, {
+	descriptor: LabelDescriptor,
 	template: labelTemplate,
 	setup: setupLabel,
 })
@@ -36,6 +40,4 @@ defineElement('so-label', TLabelElement, 'label')
  * (`ctrl`, `state`) и свойства пропов дескриптора — без тех, что у `label` уже
  * есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TLabelElementProps = HTMLLabelElement &
-	IElementBase<ILabel> &
-	TElementProps<typeof LabelDescriptor, HTMLLabelElement>
+export type TLabelElementProps = TElementType<typeof TLabelElement>

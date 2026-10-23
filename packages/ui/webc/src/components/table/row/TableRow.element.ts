@@ -21,13 +21,18 @@
 import { TableCollectionRowDescriptor, TableRowDescriptor } from '@soldy-ui/setup'
 import type { ITableRow, TTableRowCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTableRow } from './setup.component'
 import { tableRowTemplate } from './table-row.template'
 
-export const TTableRowElement = ElementBase(HTMLTableRowElement, {
-	descriptor: TableRowDescriptor(),
-	facade: TableCollectionRowDescriptor(),
+export const TTableRowElement: TElementClassOf<
+	typeof HTMLTableRowElement,
+	typeof TableRowDescriptor,
+	ITableRow,
+	TTableRowCollectionFacade
+> = ElementBase(HTMLTableRowElement, {
+	descriptor: TableRowDescriptor,
+	facade: TableCollectionRowDescriptor,
 	template: tableRowTemplate,
 	setup: setupTableRow,
 })
@@ -38,6 +43,4 @@ export const TTableRowElement = ElementBase(HTMLTableRowElement, {
  * дескриптора вместе с пропсами фасада (`selected`) — без тех, что у `tr` уже
  * есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TTableRowElementProps = HTMLTableRowElement &
-	IElementBase<ITableRow, TTableRowCollectionFacade> &
-	TElementProps<typeof TableRowDescriptor, HTMLTableRowElement>
+export type TTableRowElementProps = TElementType<typeof TTableRowElement>

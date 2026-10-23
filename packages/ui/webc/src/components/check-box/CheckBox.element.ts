@@ -25,12 +25,16 @@
 import { CheckBoxDescriptor } from '@soldy-ui/setup'
 import type { ICheckBox } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { checkBoxTemplate } from './check-box.template'
 import { setupCheckBox } from './setup.component'
 
-export const TCheckBoxElement = ElementBase(HTMLSpanElement, {
-	descriptor: CheckBoxDescriptor(),
+export const TCheckBoxElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof CheckBoxDescriptor,
+	ICheckBox
+> = ElementBase(HTMLSpanElement, {
+	descriptor: CheckBoxDescriptor,
 	template: checkBoxTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupCheckBox,
@@ -44,6 +48,4 @@ defineElement('so-check-box', TCheckBoxElement, 'span')
  * плагинов (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный
  * `id` корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TCheckBoxElementProps = HTMLSpanElement &
-	IElementBase<ICheckBox> &
-	TElementProps<typeof CheckBoxDescriptor, HTMLSpanElement>
+export type TCheckBoxElementProps = TElementType<typeof TCheckBoxElement>

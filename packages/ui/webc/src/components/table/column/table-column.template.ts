@@ -52,9 +52,10 @@ import {
 	ownerAttributes,
 	type ITemplate,
 	type ITemplateContext,
+	patch,
 } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
-import { TIconElement, type TIconElementProps } from '../../icon'
+import { TIconElement } from '../../icon'
 
 /** Части заголовка — одни на всё время жизни элемента: ряд содержимого и подпись. */
 type TColumnParts = {
@@ -76,14 +77,6 @@ const sorts = new WeakMap<HTMLElement, TButtonElementProps>()
 /** Ручка ширины каждого заголовка — строится, когда ручка впервые нужна, и остаётся за ним. */
 const resizers = new WeakMap<HTMLElement, TResizer>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Кнопка сортировки — деталь разметки заголовка, со стрелкой в обёртке.
  * Нажатие — просьба колонки той связки, что живёт сейчас: контекст шаблона
@@ -95,19 +88,12 @@ function sortOf(ctx: ITemplateContext<ITableColumn>): TButtonElementProps {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'table.sort', attributes: { type: 'button' } },
-		isButton,
-	)
+	const button = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'table.sort',
+		attributes: { type: 'button' },
+	})
 	const arrow = ownerDocument.createElement('span')
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'table.sort-icon' },
-		isIcon,
-	)
+	const icon = createDetail(ownerDocument, TIconElement, { embedded: 'table.sort-icon' })
 
 	button.className = 'so-table-column__sort'
 	arrow.className = 'so-table-column__sort-icon'
@@ -195,7 +181,7 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 			const disabled = state.disabled === true
 
 			// `disabled` кнопки нативный: запись прошла бы через его атрибут
-			if (button.disabled !== disabled) button.disabled = disabled
+			patch(button, { disabled })
 
 			ownerAttributes(button, state.sortAria)
 
@@ -219,7 +205,7 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 			field.min = String(resizer.min)
 			field.max = String(resizer.max)
 
-			if (field.value !== value) field.value = value
+			patch(field, { value })
 
 			ownerAttributes(field, state.resizerAria)
 

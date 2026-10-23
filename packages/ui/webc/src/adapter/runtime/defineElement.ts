@@ -26,6 +26,18 @@ const expected = new Set<Node>()
 /** Сколько снимков ждут конца своей фазы. */
 let ending = 0
 
+export type TRegistration = {
+	readonly name: string
+	readonly tag: string
+}
+
+/** Класс → имя и тег, под которыми он зарегистрирован: по ним шаблон строит его узел. */
+const registrations = new WeakMap<object, TRegistration>()
+
+export function registrationOf(ctor: object): TRegistration | undefined {
+	return registrations.get(ctor)
+}
+
 export function isUpgradedOnRegistration(element: Element): boolean {
 	return defining || expected.has(element)
 }
@@ -124,6 +136,7 @@ function register(
 
 /** Элемент, расширяющий встроенный элемент тега: `<button is="so-button">`. */
 export function defineElement(name: string, ctor: CustomElementConstructor, tag: string): void {
+	registrations.set(ctor, { name, tag })
 	register(name, ctor, { extends: tag })
 }
 

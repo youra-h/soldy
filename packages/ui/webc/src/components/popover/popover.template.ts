@@ -64,10 +64,10 @@
 
 import type { IPopover } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../adapter'
+import { lendRoleIcon } from '../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TFrameElement, type TFrameElementProps } from '../frame'
-import { TIconElement, type TIconElementProps } from '../icon'
 import type { TPopoverOutputs } from './setup.component'
 
 /** Части поповера — одни на всё время жизни элемента. */
@@ -79,18 +79,6 @@ type TPopoverParts = {
 
 const parts = new WeakMap<HTMLElement, TPopoverParts>()
 
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /** Триггер — первый элемент слота: текст вокруг него набора не несёт. */
 function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
 	return nodes.find((node): node is Element => node instanceof Element)
@@ -101,20 +89,16 @@ export const popoverTemplate: ITemplate<IPopover, unknown, TPopoverOutputs> = {
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'popover.frame', attributes: { tabindex: '-1' } },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, {
+			embedded: 'popover.frame',
+			attributes: { tabindex: '-1' },
+		})
 		const handle = ownerDocument.createElement('div')
 		const content = ownerDocument.createElement('div')
-		const close = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'popover.close', attributes: { type: 'button' } },
-			isButton,
-		)
+		const close = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'popover.close',
+			attributes: { type: 'button' },
+		})
 
 		panel.className = 'so-popover__panel'
 		panel.position = 'fixed'
@@ -128,15 +112,7 @@ export const popoverTemplate: ITemplate<IPopover, unknown, TPopoverOutputs> = {
 		// Своя иконка крестика — только без слота `close-icon`: заданный слот
 		// заменяет её целиком
 		if (!hasSlot('close-icon')) {
-			const icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'popover.close-icon' },
-				isIcon,
-			)
-
-			icon.icon = 'close'
-			lend(close, DEFAULT_SLOT, icon)
+			lendRoleIcon(close, 'close', 'popover.close-icon')
 		}
 
 		close.addEventListener('click', () => {
@@ -171,11 +147,7 @@ export const popoverTemplate: ITemplate<IPopover, unknown, TPopoverOutputs> = {
 			const visible = state.open === true
 			const contained = state.contained === true
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.contained !== contained) panel.contained = contained
-			if (panel.anchor_placement !== state.placement) {
-				panel.anchor_placement = state.placement
-			}
+			patch(panel, { visible, contained, anchor_placement: state.placement })
 		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue

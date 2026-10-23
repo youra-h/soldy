@@ -6,8 +6,10 @@ export {
 	createItem,
 	lendSamples,
 	lendTemplates,
+	patch,
 	sampleOf,
 	type TDetailOptions,
+	type TPartClass,
 	type TItemSlots,
 } from './parts'
 export { TKeyedLoop } from './loop'

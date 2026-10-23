@@ -36,7 +36,7 @@ import {
 	type ITemplateContext,
 	type TItemSlots,
 } from '../../adapter'
-import { TTagsItemElement, type TTagsItemElementProps } from './item'
+import { TTagsItemElement } from './item'
 
 /**
  * Копии образцов в теги из данных: слот набора → слот тега, как проброс у
@@ -52,13 +52,9 @@ export const TAGS_ITEM_SLOTS: TItemSlots = {
 /** Петля тегов из данных — только у набора без тегов разметки. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<ITagsItem, number>>()
 
-function isTag(node: Element): node is TTagsItemElementProps {
-	return node instanceof TTagsItemElement
-}
-
 /** Тег из данных: инстанс данных и копии образцов — до вставки. */
 function tagOf(ctx: ITemplateContext<ITags, TTagsCollectionFacade>, item: ITagsItem): Element {
-	const tag = createItem(ctx.root.ownerDocument, 'div', 'so-tags-item', isTag)
+	const tag = createItem(ctx.root.ownerDocument, TTagsItemElement)
 
 	tag.ctrl = item
 	lendSamples(ctx, tag, TAGS_ITEM_SLOTS)

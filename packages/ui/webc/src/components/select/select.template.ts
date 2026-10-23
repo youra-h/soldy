@@ -83,36 +83,27 @@
  * `el.ctrl.field.clear()`.
  */
 
-import type {
-	ISelect,
-	ISelectItem,
-	ITags,
-	TDrawnEntry,
-	TDrawnSection,
-	TSelectCollectionFacade,
-} from '@soldy-ui/core'
+import type { ISelect, ISelectItem, ITags, TSelectCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import {
-	TKeyedLoop,
 	bind,
 	createDetail,
-	createItem,
 	lend,
 	lendBefore,
 	lendMark,
-	lendSamples,
 	ownerAttributes,
-	ownerStyles,
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
 import { TFrameElement, type TFrameElementProps } from '../frame'
 import { TIconElement, type TIconElementProps } from '../icon'
 import { TInputElement, type TInputElementProps } from '../input'
 import { TTagsElement, type TTagsElementProps } from '../tags'
-import { TSelectGroupElement, type TSelectGroupElementProps } from './group'
-import { TSelectItemElement, type TSelectItemElementProps } from './item'
+import { TSelectGroupElement } from './group'
+import { TSelectItemElement } from './item'
+import { TDrawnRows, type TDrawnRowsSpec } from '../common/drawn-rows'
 import type { TSelectOutputs } from './setup.component'
 
 /**
@@ -129,21 +120,12 @@ export const SELECT_ITEM_SLOTS: TItemSlots = {
 /** Контекст шаблона Select. */
 type TSelectContext = ITemplateContext<ISelect, TSelectCollectionFacade, TSelectOutputs>
 
-/** Запись того, что рисует список: опция на своём месте или распорка. */
-type TSelectEntry = TDrawnEntry<ISelectItem>
-
-/** Секция того, что рисует список: записи одной группы. */
-type TSelectSection = TDrawnSection<ISelectItem>
-
-/**
- * Строка списка: разделитель перед секцией, группа с её записями или запись
- * без группы. Ключи у видов не пересекаются: у записи — её ключ (число), у
- * группы — ключ секции, у разделителя — свой от ключа секции.
- */
-type TSelectRow =
-	| { readonly kind: 'separator'; readonly key: string }
-	| { readonly kind: 'group'; readonly key: string; readonly section: TSelectSection }
-	| TSelectEntry
+const ROWS: TDrawnRowsSpec<ISelectItem> = {
+	block: 'select',
+	item: TSelectItemElement,
+	group: TSelectGroupElement,
+	slots: SELECT_ITEM_SLOTS,
+}
 
 /** Части Select — одни на всё время жизни элемента. */
 type TSelectParts = {
@@ -157,7 +139,7 @@ type TSelectParts = {
 	readonly handle: HTMLElement
 	readonly list: HTMLElement
 	/** Петля строк списка — только у Select без опций разметки. */
-	readonly rows: TKeyedLoop<TSelectRow, string | number, HTMLElement> | null
+	readonly rows: TDrawnRows<ISelectItem> | null
 }
 
 /** Ряд тегов поля: деталь Tags и экземпляр тегов, над которым она построена. */
@@ -170,134 +152,6 @@ const parts = new WeakMap<HTMLElement, TSelectParts>()
 
 /** Ряд тегов поля каждого Select — пока выбор множественный и слота `tags` нет. */
 const fieldTags = new WeakMap<HTMLElement, TFieldTags>()
-
-/** Петля записей каждой группы из данных — внутри группы. */
-const groupLoops = new WeakMap<HTMLElement, TKeyedLoop<TSelectEntry, number, HTMLElement>>()
-
-function isInput(node: Element): node is TInputElementProps {
-	return node instanceof TInputElement
-}
-
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isTags(node: Element): node is TTagsElementProps {
-	return node instanceof TTagsElement
-}
-
-function isItem(node: Element): node is TSelectItemElementProps {
-	return node instanceof TSelectItemElement
-}
-
-function isGroup(node: Element): node is TSelectGroupElementProps {
-	return node instanceof TSelectGroupElement
-}
-
-/**
- * Строки списка по секциям: разделитель — перед всеми, кроме первой, пока
- * Select их просит (`separated`).
- */
-function rowsOf(sections: ReadonlyArray<TSelectSection>, separated: boolean): TSelectRow[] {
-	return sections.flatMap((section, index): TSelectRow[] => [
-		...(separated && index > 0
-			? [{ kind: 'separator' as const, key: `separator:${section.key}` }]
-			: []),
-		...(section.group
-			? [{ kind: 'group' as const, key: section.key, section }]
-			: section.entries),
-	])
-}
-
-/** Узел записи: опция из данных — инстанс данных и копии образцов до вставки — или распорка. */
-function drawnOf(ctx: TSelectContext, entry: TSelectEntry): HTMLElement {
-	const { ownerDocument } = ctx.root
-
-	if (entry.kind === 'filler') {
-		const filler = ownerDocument.createElement('div')
-
-		filler.className = 'so-select__filler'
-		filler.setAttribute('aria-hidden', 'true')
-		// Высота пропущенных и место в составе — из записи
-		ownerStyles(filler, entry.style)
-
-		return filler
-	}
-
-	const item = createItem(ownerDocument, 'div', 'so-select-item', isItem)
-
-	item.ctrl = entry.item
-	lendSamples(ctx, item, SELECT_ITEM_SLOTS)
-
-	return item
-}
-
-/** Живой записи — её стиль: опция из данных всё берёт у своего инстанса. */
-function updateDrawn(node: HTMLElement, entry: TSelectEntry): void {
-	if (entry.kind === 'filler') ownerStyles(node, entry.style)
-}
-
-/**
- * Подпись и записи группы — по её секции. Записи — своей петлёй внутри
- * группы: в конце её корня, за подписью. Новая группа ещё не в документе, и
- * записи становятся её светом — база группы раскладывает их в слот по
- * умолчанию, когда группа собирается.
- */
-function fillGroup(
-	ctx: TSelectContext,
-	group: TSelectGroupElementProps,
-	section: TSelectSection,
-): void {
-	group.label = section.group?.label
-
-	let loop = groupLoops.get(group)
-
-	if (!loop) {
-		loop = new TKeyedLoop(group, null, (entry: TSelectEntry) => entry.key)
-		groupLoops.set(group, loop)
-	}
-
-	loop.draw(section.entries, (entry) => drawnOf(ctx, entry), updateDrawn)
-}
-
-/** Узел строки: разделитель, группа с записями или запись без группы. */
-function rowOf(ctx: TSelectContext, row: TSelectRow): HTMLElement {
-	if (row.kind === 'separator') {
-		const separator = ctx.root.ownerDocument.createElement('div')
-
-		separator.className = 'so-select__separator'
-		separator.setAttribute('aria-hidden', 'true')
-
-		return separator
-	}
-
-	if (row.kind === 'group') {
-		const group = createItem(ctx.root.ownerDocument, 'div', 'so-select-group', isGroup)
-
-		fillGroup(ctx, group, row.section)
-
-		return group
-	}
-
-	return drawnOf(ctx, row)
-}
-
-/** Живой строке — её запись: группе — подпись и записи, распорке — стиль. */
-function updateRow(ctx: TSelectContext, node: HTMLElement, row: TSelectRow): void {
-	if (row.kind === 'separator') return
-
-	if (row.kind === 'group') {
-		if (isGroup(node)) fillGroup(ctx, node, row.section)
-
-		return
-	}
-
-	updateDrawn(node, row)
-}
 
 /**
  * Ряд тегов поля — деталь Tags над экземпляром тегов: перед меткой `leading`
@@ -317,12 +171,7 @@ function drawTags(ctx: TSelectContext, own: TSelectParts): void {
 
 	if (!tags) return
 
-	const node = createDetail(
-		ctx.root.ownerDocument,
-		'div',
-		{ is: 'so-tags', embedded: 'select.tags' },
-		isTags,
-	)
+	const node = createDetail(ctx.root.ownerDocument, TTagsElement, { embedded: 'select.tags' })
 
 	node.className = 'so-select__tags'
 	// Экземпляр и коллекция — до вставки: сборка тегов берёт их при подключении
@@ -335,19 +184,9 @@ function drawTags(ctx: TSelectContext, own: TSelectParts): void {
 export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelectOutputs> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
-		const field = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-input', embedded: 'select.field' },
-			isInput,
-		)
+		const field = createDetail(ownerDocument, TInputElement, { embedded: 'select.field' })
 		const box = ownerDocument.createElement('span')
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'select.frame' },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, { embedded: 'select.frame' })
 		const handle = ownerDocument.createElement('div')
 		const list = ownerDocument.createElement('div')
 		const end = ownerDocument.createComment('')
@@ -372,12 +211,7 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 		let arrow: TIconElementProps | null = null
 
 		if (!hasSlot('arrow-icon')) {
-			arrow = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'select.arrow' },
-				isIcon,
-			)
+			arrow = createDetail(ownerDocument, TIconElement, { embedded: 'select.arrow' })
 			arrow.icon = 'arrowDown'
 			box.appendChild(arrow)
 		}
@@ -393,9 +227,7 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 		root.appendChild(panel)
 
 		// Опции разметки — сами опции Select: петли из данных при них нет
-		const rows = hasSlot(DEFAULT_SLOT)
-			? null
-			: new TKeyedLoop<TSelectRow, string | number, HTMLElement>(list, end, (row) => row.key)
+		const rows = hasSlot(DEFAULT_SLOT) ? null : new TDrawnRows(list, end, ROWS)
 
 		parts.set(root, { field, mark, arrow, panel, handle, list, rows })
 
@@ -464,12 +296,12 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 			const flip = state.panelFlip === true
 			const matchWidth = state.autoFitWidth === true
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.anchor_placement !== state.panelPlacement) {
-				panel.anchor_placement = state.panelPlacement
-			}
-			if (panel.anchor_flip !== flip) panel.anchor_flip = flip
-			if (panel.anchor_matchWidth !== matchWidth) panel.anchor_matchWidth = matchWidth
+			patch(panel, {
+				visible,
+				anchor_placement: state.panelPlacement,
+				anchor_flip: flip,
+				anchor_matchWidth: matchWidth,
+			})
 		}),
 
 		// Наборы панели — одним слоем владельца, в порядке Vue
@@ -503,11 +335,9 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 		}),
 
 		bind(['drawnSections', 'groupSeparators'], (ctx) => {
-			parts.get(ctx.root)?.rows?.draw(
-				rowsOf(ctx.state.drawnSections ?? [], ctx.state.groupSeparators === true),
-				(row) => rowOf(ctx, row),
-				(node, row) => updateRow(ctx, node, row),
-			)
+			parts
+				.get(ctx.root)
+				?.rows?.draw(ctx, ctx.state.drawnSections, ctx.state.groupSeparators === true)
 		}),
 
 		bind('shown', ({ state, showSlot }) => {

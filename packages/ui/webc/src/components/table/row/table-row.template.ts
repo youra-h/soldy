@@ -58,6 +58,7 @@ import {
 	ownerAttributes,
 	type ITemplate,
 	type ITemplateContext,
+	patch,
 } from '../../../adapter'
 import { TCheckBoxElement, type TCheckBoxElementProps } from '../../check-box'
 
@@ -76,10 +77,6 @@ const loops = new WeakMap<HTMLElement, TKeyedLoop<TTableCell, string, HTMLTableC
 
 /** Ячейка выбора каждой строки — пока выбор строк включён. */
 const selects = new WeakMap<HTMLElement, TSelectCell>()
-
-function isCheckBox(node: Element): node is TCheckBoxElementProps {
-	return node instanceof TCheckBoxElement
-}
 
 /** Ключ ячейки — колонка и тег: колонка, ставшая заголовком строки, — новый узел. */
 function keyOf(cell: TTableCell): string {
@@ -107,7 +104,7 @@ function fill(ctx: TRowContext, node: HTMLTableCellElement, cell: TTableCell): v
 		return
 	}
 
-	if (node.textContent !== cell.text) node.textContent = cell.text
+	patch(node, { textContent: cell.text })
 }
 
 /** Набор ячейки: `data-align` колонки, поверх — набор ячеек строки и `id` заголовка строки. */
@@ -119,12 +116,7 @@ function cellAttributes(node: HTMLTableCellElement, cell: TTableCell, aria?: TAr
 function selectOf(ctx: TRowContext, ctrl: ICheckBox): TSelectCell {
 	const { ownerDocument } = ctx.root
 	const cell = ownerDocument.createElement('td')
-	const checkBox = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-check-box', embedded: 'table.select' },
-		isCheckBox,
-	)
+	const checkBox = createDetail(ownerDocument, TCheckBoxElement, { embedded: 'table.select' })
 
 	cell.className = 'so-table-row__select'
 	// Экземпляр и имя — до вставки: сборка чекбокса берёт их при подключении

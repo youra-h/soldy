@@ -31,14 +31,20 @@ import {
 } from '@soldy-ui/setup'
 import type { IMenuSubmenu, TMenuCollectionFacade, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuSubmenuTemplate } from './menu-submenu.template'
 import { setupMenuSubmenu } from './setup.component'
 
-export const TMenuSubmenuElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuSubmenuDescriptor(),
-	facade: MenuCollectionItemDescriptor(),
-	ownerFacade: MenuSubmenuCollectionDescriptor(),
+export const TMenuSubmenuElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuSubmenuDescriptor,
+	IMenuSubmenu,
+	TMenuItemCollectionFacade,
+	TMenuCollectionFacade
+> = ElementBase(HTMLDivElement, {
+	descriptor: MenuSubmenuDescriptor,
+	facade: MenuCollectionItemDescriptor,
+	ownerFacade: MenuSubmenuCollectionDescriptor,
 	template: menuSubmenuTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuSubmenu,
@@ -51,6 +57,4 @@ export const TMenuSubmenuElement = ElementBase(HTMLDivElement, {
  * `engine`) — без тех, что у `div` уже есть, и без `HOST_PROPS`
  * (`TElementProps`).
  */
-export type TMenuSubmenuElementProps = HTMLDivElement &
-	IElementBase<IMenuSubmenu, TMenuItemCollectionFacade, TMenuCollectionFacade> &
-	TElementProps<typeof MenuSubmenuDescriptor, HTMLDivElement>
+export type TMenuSubmenuElementProps = TElementType<typeof TMenuSubmenuElement>

@@ -23,7 +23,7 @@
 
 import type { ITextarea } from '@soldy-ui/core'
 import type { TStateSnapshot } from '@soldy-ui/setup'
-import { bind, ownerAttributes, type ITemplate } from '../../adapter'
+import { bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
 
 /** Части поля: поле и счётчик, одни на всё время жизни элемента. */
 type TTextareaParts = {
@@ -114,7 +114,7 @@ export const textareaTemplate: ITemplate<ITextarea> = {
 
 			ownerAttributes(own.counter, state.counterAria)
 
-			if (own.counter.textContent !== text) own.counter.textContent = text
+			patch(own.counter, { textContent: text })
 			if (own.counter.parentNode !== root) root.appendChild(own.counter)
 		}),
 	],

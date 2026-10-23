@@ -83,12 +83,14 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
+import { lendRoleIcon } from '../common/icon-button'
+import { clearButton, removeClearButton } from '../common/clear'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TCalendarElement, type TCalendarElementProps } from '../calendar'
 import { TDateInputElement, type TDateInputElementProps } from '../date-input'
 import { TFrameElement, type TFrameElementProps } from '../frame'
-import { TIconElement, type TIconElementProps } from '../icon'
 import type { TDatePickerOutputs } from './setup.component'
 
 /**
@@ -126,12 +128,6 @@ type TDatePickerParts = {
 	readonly content: HTMLElement
 }
 
-/** Кнопка очистки и иконка в ней. */
-type TClearButton = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps
-}
-
 /** Подвал подтверждения: «Отмена» и «OK». */
 type TFooter = {
 	readonly cancel: TButtonElementProps
@@ -146,34 +142,11 @@ type TPanelCalendar = {
 
 const parts = new WeakMap<HTMLElement, TDatePickerParts>()
 
-/** Кнопка очистки каждого DatePicker — строится с первым `clearable` и остаётся за ним. */
-const clears = new WeakMap<HTMLElement, TClearButton>()
-
 /** Кнопки подвала каждого DatePicker — строятся с первым `confirmable`. */
 const footers = new WeakMap<HTMLElement, TFooter>()
 
 /** Календарь панели каждого DatePicker. */
 const calendars = new WeakMap<HTMLElement, TPanelCalendar>()
-
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isDateInput(node: Element): node is TDateInputElementProps {
-	return node instanceof TDateInputElement
-}
-
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
-function isCalendar(node: Element): node is TCalendarElementProps {
-	return node instanceof TCalendarElement
-}
 
 /**
  * Узлы — перед `ref` в `parent`, по порядку. Узел, который уже стоит на своём
@@ -204,50 +177,6 @@ function lendAllBefore(mark: Comment, nodes: readonly Node[]): void {
 }
 
 /**
- * Кнопка очистки — деталь разметки DatePicker. Нажатие — команда DatePicker
- * `clear` того инстанса, что живёт сейчас: контекст шаблона отдаёт его в момент
- * обращения.
- */
-function clearOf(ctx: TDatePickerContext): TClearButton {
-	const known = clears.get(ctx.root)
-
-	if (known) return known
-
-	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-picker.clear', attributes: { type: 'button' } },
-		isButton,
-	)
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: 'date-picker.clear-icon' },
-		isIcon,
-	)
-
-	button.className = 'so-date-picker__clear'
-	icon.icon = 'close'
-	button.appendChild(icon)
-
-	button.addEventListener('so:action:click', (event) => {
-		// Клик — нативный: всплытие гасится у самого события, до предков он не дойдёт
-		if (event instanceof CustomEvent && event.detail instanceof Event) {
-			event.detail.stopPropagation()
-		}
-
-		ctx.ctrl?.clear()
-	})
-
-	const clear = { button, icon }
-
-	clears.set(ctx.root, clear)
-
-	return clear
-}
-
-/**
  * Кнопка очистки на своём месте: своя — слот `clear`, встроенная — по
  * `clearable`, без него её нет.
  */
@@ -255,12 +184,12 @@ function clearNodes(ctx: TDatePickerContext): readonly Node[] {
 	if (ctx.hasSlot('clear')) return ctx.slotted('clear')
 
 	if (ctx.state.clearable !== true) {
-		clears.get(ctx.root)?.button.remove()
+		removeClearButton(ctx.root)
 
 		return []
 	}
 
-	return [clearOf(ctx).button]
+	return [clearButton(ctx, 'date-picker')]
 }
 
 /**
@@ -275,18 +204,14 @@ function footerOf(ctx: TDatePickerContext): TFooter {
 	if (known) return known
 
 	const { ownerDocument } = ctx.root
-	const cancel = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-picker.cancel', attributes: { type: 'button' } },
-		isButton,
-	)
-	const confirm = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: 'date-picker.confirm', attributes: { type: 'button' } },
-		isButton,
-	)
+	const cancel = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'date-picker.cancel',
+		attributes: { type: 'button' },
+	})
+	const confirm = createDetail(ownerDocument, TButtonElement, {
+		embedded: 'date-picker.confirm',
+		attributes: { type: 'button' },
+	})
 
 	cancel.className = 'so-date-picker__cancel'
 	confirm.className = 'so-date-picker__confirm'
@@ -312,11 +237,8 @@ function syncFooter(ctx: TDatePickerContext, { cancel, confirm }: TFooter): void
 	const { state } = ctx
 	const disabled = state.confirmDisabled === true
 
-	if (cancel.size !== state.size) cancel.size = state.size
-	if (cancel.text !== state.names_cancel) cancel.text = state.names_cancel
-	if (confirm.size !== state.size) confirm.size = state.size
-	if (confirm.disabled !== disabled) confirm.disabled = disabled
-	if (confirm.text !== state.names_confirm) confirm.text = state.names_confirm
+	patch(cancel, { size: state.size, text: state.names_cancel })
+	patch(confirm, { size: state.size, disabled, text: state.names_confirm })
 }
 
 /**
@@ -325,12 +247,9 @@ function syncFooter(ctx: TDatePickerContext, { cancel, confirm }: TFooter): void
  * календаря, подвал — при `confirmable`, в его слоте `footer`.
  */
 function calendarOf(ctx: TDatePickerContext, confirmable: boolean): TCalendarElementProps {
-	const calendar = createDetail(
-		ctx.root.ownerDocument,
-		'div',
-		{ is: 'so-calendar', embedded: 'date-picker.calendar' },
-		isCalendar,
-	)
+	const calendar = createDetail(ctx.root.ownerDocument, TCalendarElement, {
+		embedded: 'date-picker.calendar',
+	})
 
 	calendar.className = 'so-date-picker__calendar'
 
@@ -354,7 +273,7 @@ function calendarOf(ctx: TDatePickerContext, confirmable: boolean): TCalendarEle
 
 /** Поле DatePicker — деталь DateInput с именем места и классом. */
 function fieldOf(owner: Document, embedded: string, className: string): TDateInputElementProps {
-	const field = createDetail(owner, 'div', { is: 'so-date-input', embedded }, isDateInput)
+	const field = createDetail(owner, TDateInputElement, { embedded })
 
 	field.className = className
 
@@ -368,19 +287,15 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		const start = fieldOf(ownerDocument, 'date-picker.start', 'so-date-picker__start')
 		const end = fieldOf(ownerDocument, 'date-picker.end', 'so-date-picker__end')
 		const dash = ownerDocument.createElement('span')
-		const trigger = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'date-picker.trigger', attributes: { type: 'button' } },
-			isButton,
-		)
+		const trigger = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'date-picker.trigger',
+			attributes: { type: 'button' },
+		})
 		const place = ownerDocument.createComment('')
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'date-picker.frame', attributes: { tabindex: '-1' } },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, {
+			embedded: 'date-picker.frame',
+			attributes: { tabindex: '-1' },
+		})
 		const handle = ownerDocument.createElement('div')
 		const content = ownerDocument.createElement('div')
 
@@ -404,15 +319,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		// Своя иконка кнопки календаря — только без слота `trigger-icon`: заданный
 		// слот заменяет её целиком
 		if (!hasSlot('trigger-icon')) {
-			const icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'date-picker.trigger-icon' },
-				isIcon,
-			)
-
-			icon.icon = 'calendar'
-			lend(trigger, DEFAULT_SLOT, icon)
+			lendRoleIcon(trigger, 'calendar', 'date-picker.trigger-icon')
 		}
 
 		// Сначала содержимое в панель, потом панель в корень: она входит в
@@ -455,9 +362,9 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			if (!own || !ctrl) return
 
-			if (own.field.ctrl !== ctrl.field) own.field.ctrl = ctrl.field
-			if (own.start.ctrl !== ctrl.start) own.start.ctrl = ctrl.start
-			if (own.end.ctrl !== ctrl.end) own.end.ctrl = ctrl.end
+			patch(own.field, { ctrl: ctrl.field })
+			patch(own.start, { ctrl: ctrl.start })
+			patch(own.end, { ctrl: ctrl.end })
 
 			const calendar = calendars.get(root)?.node
 
@@ -505,21 +412,9 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		}),
 
 		bind(['clearable', 'size', 'disabled', 'clearAria'], (ctx) => {
-			const { state, hasSlot } = ctx
-
 			// Своя кнопка — слот `clear`: заменяет встроенную целиком
-			if (hasSlot('clear') || state.clearable !== true) return
-
-			const { button, icon } = clearOf(ctx)
-			const disabled = state.disabled === true
-
-			// Пропсы кнопки и иконки — только сменившиеся: `disabled` кнопки
-			// нативный, и каждая запись прошла бы через его атрибут
-			if (button.size !== state.size) button.size = state.size
-			if (button.disabled !== disabled) button.disabled = disabled
-			if (icon.size !== state.size) icon.size = state.size
-
-			ownerAttributes(button, state.clearAria)
+			if (!ctx.hasSlot('clear') && ctx.state.clearable === true)
+				clearButton(ctx, 'date-picker')
 		}),
 
 		// Кнопка календаря: связка и вид «нажат» — одним слоем владельца
@@ -530,8 +425,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			const disabled = state.openable !== true
 
-			if (trigger.size !== state.size) trigger.size = state.size
-			if (trigger.disabled !== disabled) trigger.disabled = disabled
+			patch(trigger, { size: state.size, disabled })
 
 			ownerAttributes(trigger, { ...state.triggerAria, ...state.triggerDataset })
 		}),
@@ -544,13 +438,11 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			ownerAttributes(field, state.aria)
 
-			if (field.aria_label !== state.aria_label) field.aria_label = state.aria_label
-			if (field.aria_labelledBy !== state.aria_labelledBy) {
-				field.aria_labelledBy = state.aria_labelledBy
-			}
-			if (field.aria_describedBy !== state.aria_describedBy) {
-				field.aria_describedBy = state.aria_describedBy
-			}
+			patch(field, {
+				aria_label: state.aria_label,
+				aria_labelledBy: state.aria_labelledBy,
+				aria_describedBy: state.aria_describedBy,
+			})
 		}),
 
 		// Имена концов диапазона — полям концов
@@ -559,8 +451,8 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 
 			if (!own) return
 
-			if (own.start.aria_label !== state.names_start) own.start.aria_label = state.names_start
-			if (own.end.aria_label !== state.names_end) own.end.aria_label = state.names_end
+			patch(own.start, { aria_label: state.names_start })
+			patch(own.end, { aria_label: state.names_end })
 		}),
 
 		// Пропсы панели — только сменившиеся

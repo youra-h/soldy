@@ -39,16 +39,12 @@ export const RADIO_GROUP_ITEM_SLOTS: TItemSlots = { item: 'default' }
 /** Петля радио из данных — только у группы без радио разметки. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<IRadioGroupItem, number>>()
 
-function isRadio(node: Element): node is TRadioGroupItemElementProps {
-	return node instanceof TRadioGroupItemElement
-}
-
 /** Радио из данных: инстанс данных и копия подписи — до вставки. */
 function radioOf(
 	ctx: ITemplateContext<IRadioGroup, TRadioGroupCollectionFacade>,
 	item: IRadioGroupItem,
 ): TRadioGroupItemElementProps {
-	const radio = createItem(ctx.root.ownerDocument, 'label', 'so-radio-group-item', isRadio)
+	const radio = createItem(ctx.root.ownerDocument, TRadioGroupItemElement)
 
 	radio.ctrl = item
 	lendSamples(ctx, radio, RADIO_GROUP_ITEM_SLOTS)

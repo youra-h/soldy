@@ -45,18 +45,22 @@ import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import {
 	TKeyedLoop,
 	bind,
-	createDetail,
 	createItem,
-	lend,
 	lendSamples,
 	ownerAttributes,
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
-import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
-import { TPaginationItemElement, type TPaginationItemElementProps } from './item'
+import {
+	iconButton,
+	syncIconButton,
+	type TIconButton,
+	type TIconButtonSpec,
+} from '../common/icon-button'
+import { type TButtonElementProps } from '../button'
+import { TPaginationItemElement } from './item'
 
 /**
  * Копия образца в страницу: слот пагинации → слот страницы, как проброс у
@@ -66,20 +70,8 @@ export const PAGINATION_ITEM_SLOTS: TItemSlots = {
 	item: 'default',
 }
 
-/** Стрелка и её иконка; иконки нет, когда задан слот значка. */
-type TArrow = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps | null
-}
-
 /** Как построить стрелку: имена мест, класс, слот значка и команда нажатия. */
-type TArrowSpec = {
-	/** Имя места кнопки (`embedded`). */
-	readonly embedded: string
-	/** Имя места иконки значка. */
-	readonly iconEmbedded: string
-	/** Класс кнопки: по нему стрелку находит плагин фокуса. */
-	readonly className: string
+type TArrowSpec = TIconButtonSpec & {
 	/** Слот значка: заданный заменяет иконку целиком. */
 	readonly slot: string
 	/** Команда пагинации на нажатие. */
@@ -90,6 +82,7 @@ const PREV: TArrowSpec = {
 	embedded: 'pagination.prev',
 	iconEmbedded: 'pagination.prev-icon',
 	className: 'so-pagination__prev',
+	role: 'arrowRight',
 	slot: 'prev-icon',
 	go: (ctrl) => ctrl.prev(),
 }
@@ -98,6 +91,7 @@ const NEXT: TArrowSpec = {
 	embedded: 'pagination.next',
 	iconEmbedded: 'pagination.next-icon',
 	className: 'so-pagination__next',
+	role: 'arrowRight',
 	slot: 'next-icon',
 	go: (ctrl) => ctrl.next(),
 }
@@ -107,75 +101,34 @@ type TPaginationContext = ITemplateContext<IPagination, TPaginationCollectionFac
 
 /** Части пагинации — одни на всё время жизни элемента. */
 type TPaginationParts = {
-	readonly prev: TArrow
-	readonly next: TArrow
+	readonly prev: TIconButton
+	readonly next: TIconButton
 	/** Петля окна в списке — по ключу места. */
 	readonly loop: TKeyedLoop<TPaginationCell, number, HTMLElement>
 }
 
 const parts = new WeakMap<HTMLElement, TPaginationParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
+/** Стрелка с командой пагинации: роли «влево» нет, стрелку в начало строки зеркалит тема. */
+function arrowOf(ctx: TPaginationContext, spec: TArrowSpec, slotted: boolean): TIconButton {
+	const arrow = iconButton(ctx.root.ownerDocument, spec, slotted)
 
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isPage(node: Element): node is TPaginationItemElementProps {
-	return node instanceof TPaginationItemElement
-}
-
-/**
- * Стрелка — деталь разметки. Своя иконка — только без слота значка: заданный
- * слот заменяет её целиком. Нажатие — команда инстанса той связки, что живёт
- * сейчас: контекст шаблона отдаёт его в момент обращения.
- */
-function arrowOf(ctx: TPaginationContext, spec: TArrowSpec, slotted: boolean): TArrow {
-	const { ownerDocument } = ctx.root
-	const button = createDetail(
-		ownerDocument,
-		'button',
-		{ is: 'so-button', embedded: spec.embedded, attributes: { type: 'button' } },
-		isButton,
-	)
-
-	button.className = spec.className
-	button.addEventListener('click', () => {
+	arrow.button.addEventListener('click', () => {
 		if (ctx.ctrl) spec.go(ctx.ctrl)
 	})
 
-	if (slotted) return { button, icon: null }
-
-	const icon = createDetail(
-		ownerDocument,
-		'span',
-		{ is: 'so-icon', embedded: spec.iconEmbedded },
-		isIcon,
-	)
-
-	// Одна роль на обе стрелки: роли «влево» в контракте иконок нет, и ту
-	// стрелку, что смотрит в начало строки, зеркалит тема
-	icon.icon = 'arrowRight'
-	lend(button, DEFAULT_SLOT, icon)
-
-	return { button, icon }
+	return arrow
 }
 
-/** Пропсы стрелки и её иконки — только сменившиеся: `disabled` кнопки нативный. */
 function syncArrow(
-	arrow: TArrow,
+	arrow: TIconButton,
 	size: TButtonElementProps['size'],
 	variant: TButtonElementProps['variant'],
 	disabled: boolean,
 ): void {
-	const { button, icon } = arrow
+	syncIconButton(arrow, size, disabled)
 
-	if (button.size !== size) button.size = size
-	if (button.variant !== variant) button.variant = variant
-	if (button.disabled !== disabled) button.disabled = disabled
-	if (icon && icon.size !== size) icon.size = size
+	patch(arrow.button, { variant })
 }
 
 /** Место окна: страница — инстанс и копия образца до вставки, пропуск — многоточие. */
@@ -191,7 +144,7 @@ function cellOf(ctx: TPaginationContext, cell: TPaginationCell): HTMLElement {
 		return ellipsis
 	}
 
-	const page = createItem(ownerDocument, 'li', 'so-pagination-item', isPage)
+	const page = createItem(ownerDocument, TPaginationItemElement)
 
 	page.ctrl = cell.item
 	lendSamples(ctx, page, PAGINATION_ITEM_SLOTS)

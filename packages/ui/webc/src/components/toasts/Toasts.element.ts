@@ -32,15 +32,20 @@
 import { ToastsCollectionDescriptor, ToastsDescriptor } from '@soldy-ui/setup'
 import type { IToasts, TToastsCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { TToastsItemElement } from './item'
 import { setupToasts } from './setup.component'
 import { toastsTemplate } from './toasts.template'
 
-export const TToastsElement = ElementBase(HTMLElement, {
-	descriptor: ToastsDescriptor(),
-	facade: ToastsCollectionDescriptor(),
+export const TToastsElement: TElementClassOf<
+	typeof HTMLElement,
+	typeof ToastsDescriptor,
+	IToasts,
+	TToastsCollectionFacade
+> = ElementBase(HTMLElement, {
+	descriptor: ToastsDescriptor,
+	facade: ToastsCollectionDescriptor,
 	template: toastsTemplate,
 	root: { strategy: 'wrapped', teleport: { target: 'target' } },
 	setup: setupToasts,
@@ -55,6 +60,4 @@ defineElement('so-toasts-item', TToastsItemElement, 'li')
  * его плагинов и фасада (`placement`, `layout`, `max`, `engine`) — без
  * `HOST_PROPS` (`TElementProps`).
  */
-export type TToastsElementProps = HTMLElement &
-	IElementBase<IToasts, TToastsCollectionFacade> &
-	TElementProps<typeof ToastsDescriptor, HTMLElement>
+export type TToastsElementProps = TElementType<typeof TToastsElement>

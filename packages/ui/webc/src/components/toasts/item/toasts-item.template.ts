@@ -47,11 +47,12 @@ import {
 	bind,
 	createDetail,
 	isToastRender,
-	lend,
 	ownerAttributes,
 	ownerStyles,
 	type ITemplate,
+	patch,
 } from '../../../adapter'
+import { lendRoleIcon } from '../../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 import { TProgressSpinnerElement, type TProgressSpinnerElementProps } from '../../progress-spinner'
@@ -88,18 +89,6 @@ type TToastParts = {
 
 const parts = new WeakMap<HTMLElement, TToastParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isSpinner(node: Element): node is TProgressSpinnerElementProps {
-	return node instanceof TProgressSpinnerElement
-}
-
 /** Узел — в коробке значка, пока он виден, и вне документа, пока нет. */
 function toggleIn(box: HTMLElement, node: HTMLElement | null, shown: boolean): void {
 	if (!node) return
@@ -122,18 +111,13 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 		const text = ownerDocument.createElement('div')
 		const description = ownerDocument.createElement('div')
 		const content = ownerDocument.createElement('div')
-		const spinner = createDetail(
-			ownerDocument,
-			'span',
-			{ is: 'so-progress-spinner', embedded: 'toasts.spinner' },
-			isSpinner,
-		)
-		const close = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'toasts.close', attributes: { type: 'button' } },
-			isButton,
-		)
+		const spinner = createDetail(ownerDocument, TProgressSpinnerElement, {
+			embedded: 'toasts.spinner',
+		})
+		const close = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'toasts.close',
+			attributes: { type: 'button' },
+		})
 
 		card.className = 'so-toasts-item__card'
 		box.className = 'so-toasts-item__icon'
@@ -151,24 +135,11 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 		// Значок вида — только без слота `icon`: заданный слот заменяет его
 		const glyph = hasSlot('icon')
 			? null
-			: createDetail(
-					ownerDocument,
-					'span',
-					{ is: 'so-icon', embedded: 'toasts.icon' },
-					isIcon,
-				)
+			: createDetail(ownerDocument, TIconElement, { embedded: 'toasts.icon' })
 
 		// Своя иконка крестика — только без слота `close-icon`
 		if (!hasSlot('close-icon')) {
-			const icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'toasts.close-icon' },
-				isIcon,
-			)
-
-			icon.icon = 'close'
-			lend(close, DEFAULT_SLOT, icon)
+			lendRoleIcon(close, 'close', 'toasts.close-icon')
 		}
 
 		close.addEventListener('click', () => ctx.ctrl?.close())
@@ -206,7 +177,7 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 
 			const role = state.type ? TYPE_ICONS[state.type] : NOTIFICATION_ICON
 
-			if (glyph.icon !== role) glyph.icon = role
+			patch(glyph, { icon: role })
 		}),
 
 		// В коробке значка — кольцо, пока тост ждёт; иначе слот или значок вида

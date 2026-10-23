@@ -22,12 +22,19 @@
 import { IconDescriptor } from '@soldy-ui/setup'
 import type { IIcon } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { iconTemplate } from './icon.template'
 import { setupIcon } from './setup.component'
 
-export const TIconElement = ElementBase(HTMLSpanElement, {
-	descriptor: IconDescriptor(),
+export const TIconElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof IconDescriptor,
+	IIcon,
+	unknown,
+	unknown,
+	'icon'
+> = ElementBase(HTMLSpanElement, {
+	descriptor: IconDescriptor,
 	template: iconTemplate,
 	attributes: ['icon'],
 	setup: setupIcon,
@@ -41,14 +48,4 @@ defineElement('so-icon', TIconElement, 'span')
  * (`aria_label`) — без тех, что у `span` уже есть, и без `HOST_PROPS`
  * (`TElementProps`), — и роль.
  */
-export type TIconElementProps = HTMLSpanElement &
-	IElementBase<IIcon> &
-	TElementProps<typeof IconDescriptor, HTMLSpanElement> & {
-		/**
-		 * Роль иконки — ключ реестра (`check`, `close`, …, своя роль приложения),
-		 * отражение атрибута `icon`: без него — `null`. `null` и `undefined`
-		 * атрибут снимают, и рисунка нет.
-		 */
-		get icon(): string | null
-		set icon(value: string | null | undefined)
-	}
+export type TIconElementProps = TElementType<typeof TIconElement>

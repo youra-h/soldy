@@ -26,24 +26,18 @@
 
 import type { IPaginationItem, TPaginationItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, ownerAttributes, type ITemplate } from '../../../adapter'
+import { bind, createDetail, ownerAttributes, type ITemplate, patch } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 
 /** Строка каждой страницы — одна на всё время жизни элемента. */
 const rows = new WeakMap<HTMLElement, TButtonElementProps>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
 export const paginationItemTemplate: ITemplate<IPaginationItem, TPaginationItemCollectionFacade> = {
 	create: (root, ctx) => {
-		const row = createDetail(
-			root.ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'pagination.page', attributes: { type: 'button' } },
-			isButton,
-		)
+		const row = createDetail(root.ownerDocument, TButtonElement, {
+			embedded: 'pagination.page',
+			attributes: { type: 'button' },
+		})
 
 		row.addEventListener('click', () => {
 			const context = ctx.facade?.context
@@ -71,9 +65,7 @@ export const paginationItemTemplate: ITemplate<IPaginationItem, TPaginationItemC
 
 			const disabled = state.disabled === true
 
-			if (row.disabled !== disabled) row.disabled = disabled
-			if (row.size !== state.size) row.size = state.size
-			if (row.variant !== state.variant) row.variant = state.variant
+			patch(row, { disabled, size: state.size, variant: state.variant })
 		}),
 
 		bind('aria', ({ root, state }) => {

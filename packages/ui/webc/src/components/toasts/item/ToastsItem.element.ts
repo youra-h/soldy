@@ -22,13 +22,18 @@
 import { ToastsCollectionItemDescriptor, ToastsItemDescriptor } from '@soldy-ui/setup'
 import type { IToastsItem, TToastsItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupToastsItem } from './setup.component'
 import { toastsItemTemplate } from './toasts-item.template'
 
-export const TToastsItemElement = ElementBase(HTMLLIElement, {
-	descriptor: ToastsItemDescriptor(),
-	facade: ToastsCollectionItemDescriptor(),
+export const TToastsItemElement: TElementClassOf<
+	typeof HTMLLIElement,
+	typeof ToastsItemDescriptor,
+	IToastsItem,
+	TToastsItemCollectionFacade
+> = ElementBase(HTMLLIElement, {
+	descriptor: ToastsItemDescriptor,
+	facade: ToastsCollectionItemDescriptor,
 	template: toastsItemTemplate,
 	setup: setupToastsItem,
 })
@@ -39,6 +44,4 @@ export const TToastsItemElement = ElementBase(HTMLLIElement, {
  * дескриптора — без тех, что у `li` уже есть, и без `HOST_PROPS`
  * (`TElementProps`). Входов у тоста нет: тост ему отдаёт регион.
  */
-export type TToastsItemElementProps = HTMLLIElement &
-	IElementBase<IToastsItem, TToastsItemCollectionFacade> &
-	TElementProps<typeof ToastsItemDescriptor, HTMLLIElement>
+export type TToastsItemElementProps = TElementType<typeof TToastsItemElement>

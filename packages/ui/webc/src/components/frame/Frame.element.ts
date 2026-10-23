@@ -27,16 +27,17 @@
 import { FrameDescriptor } from '@soldy-ui/setup'
 import type { IFrame } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { frameTemplate } from './frame.template'
 import { setupFrame } from './setup.component'
 
-export const TFrameElement = ElementBase(HTMLDivElement, {
-	descriptor: FrameDescriptor(),
-	template: frameTemplate,
-	root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },
-	setup: setupFrame,
-})
+export const TFrameElement: TElementClassOf<typeof HTMLDivElement, typeof FrameDescriptor, IFrame> =
+	ElementBase(HTMLDivElement, {
+		descriptor: FrameDescriptor,
+		template: frameTemplate,
+		root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },
+		setup: setupFrame,
+	})
 
 defineElement('so-frame', TFrameElement, 'div')
 
@@ -46,6 +47,4 @@ defineElement('so-frame', TFrameElement, 'div')
  * якоря (`anchor_anchor`) и имени (`aria_label`), — без тех, что у `div` уже
  * есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TFrameElementProps = HTMLDivElement &
-	IElementBase<IFrame> &
-	TElementProps<typeof FrameDescriptor, HTMLDivElement>
+export type TFrameElementProps = TElementType<typeof TFrameElement>

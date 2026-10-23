@@ -39,7 +39,7 @@
 import { MenuCollectionDescriptor, MenuDescriptor } from '@soldy-ui/setup'
 import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { TMenuCheckboxItemElement } from './checkbox-item'
 import { TMenuGroupElement } from './group'
 import { TMenuItemElement } from './item'
@@ -51,9 +51,14 @@ import { TMenuSubmenuElement } from './submenu'
 import { menuTemplate } from './menu.template'
 import { setupMenu } from './setup.component'
 
-export const TMenuElement = ElementBase(HTMLSpanElement, {
-	descriptor: MenuDescriptor(),
-	facade: MenuCollectionDescriptor(),
+export const TMenuElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof MenuDescriptor,
+	IMenu,
+	TMenuCollectionFacade
+> = ElementBase(HTMLSpanElement, {
+	descriptor: MenuDescriptor,
+	facade: MenuCollectionDescriptor,
 	template: menuTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupMenu,
@@ -75,6 +80,4 @@ defineElement('so-menu-separator', TMenuSeparatorElement, 'div')
  * с пропсами его плагинов и фасада (`items`, `engine`) — без тех, что у `span`
  * уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuElementProps = HTMLSpanElement &
-	IElementBase<IMenu, TMenuCollectionFacade> &
-	TElementProps<typeof MenuDescriptor, HTMLSpanElement>
+export type TMenuElementProps = TElementType<typeof TMenuElement>

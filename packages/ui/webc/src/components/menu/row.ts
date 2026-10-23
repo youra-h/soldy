@@ -28,7 +28,7 @@
  */
 
 import type { IMenuItem, TComponentSize } from '@soldy-ui/core'
-import { bind, createDetail, ownerAttributes, type ITemplateBinding } from '../../adapter'
+import { bind, createDetail, ownerAttributes, type ITemplateBinding, patch } from '../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 
@@ -41,25 +41,12 @@ export type TMenuRow = TButtonElementProps<HTMLDivElement>
 /** Строка каждого пункта — одна на всё время жизни элемента. */
 const rows = new WeakMap<HTMLElement, TMenuRow>()
 
-function isRow(node: Element): node is TMenuRow {
-	return node instanceof TButtonDivElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /**
  * Строка пункта — первой в корне. Нажатие — `press`: команда меню через
  * контекст шаблона, который обработчик читает в момент клика.
  */
 export function createRow(root: HTMLElement, press: () => void): TMenuRow {
-	const row = createDetail(
-		root.ownerDocument,
-		'div',
-		{ is: 'so-button-div', embedded: 'menu.row' },
-		isRow,
-	)
+	const row = createDetail(root.ownerDocument, TButtonDivElement, { embedded: 'menu.row' })
 
 	row.addEventListener('click', press)
 	root.appendChild(row)
@@ -84,7 +71,7 @@ export function partOf(owner: Document, className: string, hidden = false): HTML
 
 /** Иконка роли в части строки — отметка флажка, стрелка пункта со своей панелью. */
 export function roleIconOf(owner: Document, embedded: string, role: string): TIconElementProps {
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded })
 
 	icon.icon = role
 
@@ -107,8 +94,7 @@ export function rowBindings(textSlot: string): readonly ITemplateBinding<IMenuIt
 
 			const disabled = state.disabled === true
 
-			if (row.size !== state.size) row.size = state.size
-			if (row.disabled !== disabled) row.disabled = disabled
+			patch(row, { size: state.size, disabled })
 		}),
 
 		bind<IMenuItem>('aria', ({ root, state }) => {

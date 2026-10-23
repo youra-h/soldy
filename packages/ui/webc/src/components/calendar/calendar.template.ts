@@ -89,12 +89,18 @@ import {
 	type ITemplate,
 	type ITemplateContext,
 	type TItemSlots,
+	patch,
 } from '../../adapter'
+import {
+	iconButton,
+	syncIconButton,
+	type TIconButton,
+	type TIconButtonSpec,
+} from '../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
 import { TListBoxElement, type TListBoxElementProps } from '../list-box'
 import { registerPopoverTag, type TPopoverElementProps } from '../popover'
-import { TCalendarItemElement, type TCalendarItemElementProps } from './item'
+import { TCalendarItemElement } from './item'
 
 /**
  * Копия образца в день: слот календаря → слот дня, как проброс у остальных
@@ -110,44 +116,32 @@ const TPopoverDivElement = registerPopoverTag('div')
 /** Контекст шаблона календаря. */
 type TCalendarContext = ITemplateContext<ICalendar, TCalendarCollectionFacade>
 
-/** Кнопка со стрелкой и её иконка; иконки нет, когда задан слот значка. */
-type TArrow = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps | null
-}
-
-/** Как построить стрелку: имена мест и класс кнопки. */
-type TArrowSpec = {
-	/** Имя места кнопки (`embedded`). */
-	readonly embedded: string
-	/** Имя места иконки значка. */
-	readonly iconEmbedded: string
-	/** Класс кнопки: по нему кнопку находят плагины календаря. */
-	readonly className: string
-}
-
-const PREV: TArrowSpec = {
+const PREV: TIconButtonSpec = {
 	embedded: 'calendar.prev',
 	iconEmbedded: 'calendar.prev-icon',
 	className: 'so-calendar__prev',
+	role: 'arrowRight',
 }
 
-const NEXT: TArrowSpec = {
+const NEXT: TIconButtonSpec = {
 	embedded: 'calendar.next',
 	iconEmbedded: 'calendar.next-icon',
 	className: 'so-calendar__next',
+	role: 'arrowRight',
 }
 
-const PICKER_PREV: TArrowSpec = {
+const PICKER_PREV: TIconButtonSpec = {
 	embedded: 'calendar.picker-prev',
 	iconEmbedded: 'calendar.picker-prev-icon',
 	className: 'so-calendar__picker-prev',
+	role: 'arrowRight',
 }
 
-const PICKER_NEXT: TArrowSpec = {
+const PICKER_NEXT: TIconButtonSpec = {
 	embedded: 'calendar.picker-next',
 	iconEmbedded: 'calendar.picker-next-icon',
 	className: 'so-calendar__picker-next',
+	role: 'arrowRight',
 }
 
 /**
@@ -162,8 +156,8 @@ type THeading = {
 	readonly titleText: HTMLElement
 	readonly list: TListBoxElementProps
 	readonly heading: TButtonElementProps
-	readonly prev: TArrow
-	readonly next: TArrow
+	readonly prev: TIconButton
+	readonly next: TIconButton
 }
 
 /** Месяц на месте сетки: заголовок, сетка и её недели. */
@@ -188,8 +182,8 @@ type TCellKey = ICalendarItem | string
 
 /** Части календаря — одни на всё время жизни элемента. */
 type TCalendarParts = {
-	readonly prev: TArrow
-	readonly next: TArrow
+	readonly prev: TIconButton
+	readonly next: TIconButton
 	/** Петля месяцев в ряду — по месту сетки. */
 	readonly months: TKeyedLoop<TPlace, number, HTMLElement>
 }
@@ -205,62 +199,6 @@ const cellLoops = new WeakMap<
 	TKeyedLoop<TCalendarCell, TCellKey, HTMLElement>
 >()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
-function isListBox(node: Element): node is TListBoxElementProps {
-	return node instanceof TListBoxElement
-}
-
-function isPopover(node: Element): node is TPopoverElementProps<HTMLDivElement> {
-	return node instanceof TPopoverDivElement
-}
-
-function isDay(node: Element): node is TCalendarItemElementProps {
-	return node instanceof TCalendarItemElement
-}
-
-/**
- * Кнопка со стрелкой — деталь разметки. Своя иконка — только без слота
- * значка: заданный слот заменяет её целиком. Роль одна на все стрелки,
- * `arrowRight`: роли «влево» в контракте иконок нет, и ту стрелку, что смотрит
- * в начало строки, зеркалит тема. Нажатий шаблон не слушает: их ловит плагин
- * указателя календаря на корне.
- */
-function arrowOf(owner: Document, spec: TArrowSpec, slotted: boolean): TArrow {
-	const button = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: spec.embedded, attributes: { type: 'button' } },
-		isButton,
-	)
-
-	button.className = spec.className
-
-	if (slotted) return { button, icon: null }
-
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded: spec.iconEmbedded }, isIcon)
-
-	icon.icon = 'arrowRight'
-	lend(button, DEFAULT_SLOT, icon)
-
-	return { button, icon }
-}
-
-/** Пропсы стрелки и её иконки — только сменившиеся: `disabled` кнопки нативный. */
-function syncArrow(arrow: TArrow, size: TButtonElementProps['size'], disabled: boolean): void {
-	const { button, icon } = arrow
-
-	if (button.size !== size) button.size = size
-	if (button.disabled !== disabled) button.disabled = disabled
-	if (icon && icon.size !== size) icon.size = size
-}
-
 /**
  * Заголовок месяца над поповером места — деталь разметки со своими частями:
  * кнопка заголовка — в слоте `trigger` поповера, карточка панели — в его слоте
@@ -268,35 +206,21 @@ function syncArrow(arrow: TArrow, size: TButtonElementProps['size'], disabled: b
  * подключении.
  */
 function headingOf(owner: Document, picker: TCalendarPicker): THeading {
-	const popover = createDetail(
-		owner,
-		'div',
-		{ is: 'so-popover-div', embedded: 'calendar.picker' },
-		isPopover,
-	)
-	const title = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: 'calendar.title', attributes: { type: 'button' } },
-		isButton,
-	)
+	const popover = createDetail(owner, TPopoverDivElement, { embedded: 'calendar.picker' })
+	const title = createDetail(owner, TButtonElement, {
+		embedded: 'calendar.title',
+		attributes: { type: 'button' },
+	})
 	const titleText = owner.createElement('span')
 	const card = owner.createElement('div')
-	const list = createDetail(
-		owner,
-		'div',
-		{ is: 'so-list-box', embedded: 'calendar.picker-list' },
-		isListBox,
-	)
+	const list = createDetail(owner, TListBoxElement, { embedded: 'calendar.picker-list' })
 	const header = owner.createElement('div')
-	const heading = createDetail(
-		owner,
-		'button',
-		{ is: 'so-button', embedded: 'calendar.picker-heading', attributes: { type: 'button' } },
-		isButton,
-	)
-	const prev = arrowOf(owner, PICKER_PREV, false)
-	const next = arrowOf(owner, PICKER_NEXT, false)
+	const heading = createDetail(owner, TButtonElement, {
+		embedded: 'calendar.picker-heading',
+		attributes: { type: 'button' },
+	})
+	const prev = iconButton(owner, PICKER_PREV, false)
+	const next = iconButton(owner, PICKER_NEXT, false)
 
 	popover.className = 'so-calendar__heading'
 	popover.ctrl = picker.popover
@@ -339,21 +263,18 @@ function syncHeading(
 	const disabled = ctx.state.disabled === true
 	const { popover, title, titleText, list } = heading
 
-	if (title.size !== size) title.size = size
-	if (title.disabled !== disabled) title.disabled = disabled
+	patch(title, { size, disabled })
 
 	ownerAttributes(titleText, grid.titleAria)
 
-	if (titleText.textContent !== grid.title) titleText.textContent = grid.title
-	if (popover.aria_labelledBy !== picker.labelledBy) popover.aria_labelledBy = picker.labelledBy
-	if (list.size !== size) list.size = size
-	if (list.aria_labelledBy !== picker.labelledBy) list.aria_labelledBy = picker.labelledBy
-	if (heading.heading.size !== size) heading.heading.size = size
-	if (heading.heading.text !== picker.heading) heading.heading.text = picker.heading
+	patch(titleText, { textContent: grid.title })
+	patch(popover, { aria_labelledBy: picker.labelledBy })
+	patch(list, { size, aria_labelledBy: picker.labelledBy })
+	patch(heading.heading, { size, text: picker.heading })
 
 	ownerAttributes(heading.heading, picker.headingAria)
-	syncArrow(heading.prev, size, picker.prevDisabled)
-	syncArrow(heading.next, size, picker.nextDisabled)
+	syncIconButton(heading.prev, size, picker.prevDisabled)
+	syncIconButton(heading.next, size, picker.nextDisabled)
 	ownerAttributes(heading.prev.button, picker.prevAria)
 	ownerAttributes(heading.next.button, picker.nextAria)
 }
@@ -374,7 +295,7 @@ function drawWeekdays(row: HTMLTableRowElement, weekdays: readonly TCalendarWeek
 			row.appendChild(cell)
 		}
 
-		if (cell.textContent !== weekday.label) cell.textContent = weekday.label
+		patch(cell, { textContent: weekday.label })
 	})
 }
 
@@ -394,7 +315,7 @@ function cellOf(ctx: TCalendarContext, cell: TCalendarCell): HTMLElement {
 		return filler
 	}
 
-	const day = createItem(ownerDocument, 'td', 'so-calendar-item', isDay)
+	const day = createItem(ownerDocument, TCalendarItemElement)
 
 	day.ctrl = cell.item
 	lendSamples(ctx, day, CALENDAR_ITEM_SLOTS)
@@ -504,8 +425,8 @@ export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> =
 		const { ownerDocument } = root
 		const months = ownerDocument.createElement('div')
 		const footer = ownerDocument.createElement('div')
-		const prev = arrowOf(ownerDocument, PREV, hasSlot('prev-icon'))
-		const next = arrowOf(ownerDocument, NEXT, hasSlot('next-icon'))
+		const prev = iconButton(ownerDocument, PREV, hasSlot('prev-icon'))
+		const next = iconButton(ownerDocument, NEXT, hasSlot('next-icon'))
 
 		months.className = 'so-calendar__months'
 		footer.className = 'so-calendar__footer'
@@ -562,8 +483,8 @@ export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> =
 
 			if (!own) return
 
-			syncArrow(own.prev, state.size, state.prevDisabled === true)
-			syncArrow(own.next, state.size, state.nextDisabled === true)
+			syncIconButton(own.prev, state.size, state.prevDisabled === true)
+			syncIconButton(own.next, state.size, state.nextDisabled === true)
 		}),
 
 		bind('prevAria', ({ root, state }) => {

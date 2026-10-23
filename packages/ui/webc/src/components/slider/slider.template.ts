@@ -61,6 +61,7 @@ import {
 	sampleOf,
 	type ITemplate,
 	type ITemplateContext,
+	patch,
 } from '../../adapter'
 
 /** Запись петли по месту: запись выхода и её номер — ключ записи. */
@@ -186,7 +187,7 @@ function applyField(ctx: TSliderContext, field: HTMLInputElement, entry: TSlider
 	field.max = String(entry.max)
 	field.step = String(entry.step)
 
-	if (field.value !== value) field.value = value
+	patch(field, { value })
 
 	if (state.name === undefined) field.removeAttribute('name')
 	else field.name = state.name

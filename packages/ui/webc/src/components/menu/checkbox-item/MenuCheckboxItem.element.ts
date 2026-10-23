@@ -19,13 +19,18 @@
 import { MenuCheckboxItemDescriptor, MenuCollectionCheckboxItemDescriptor } from '@soldy-ui/setup'
 import type { IMenuCheckboxItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuCheckboxItemTemplate } from './menu-checkbox-item.template'
 import { setupMenuCheckboxItem } from './setup.component'
 
-export const TMenuCheckboxItemElement = ElementBase(HTMLDivElement, {
-	descriptor: MenuCheckboxItemDescriptor(),
-	facade: MenuCollectionCheckboxItemDescriptor(),
+export const TMenuCheckboxItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuCheckboxItemDescriptor,
+	IMenuCheckboxItem,
+	TMenuItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
+	descriptor: MenuCheckboxItemDescriptor,
+	facade: MenuCollectionCheckboxItemDescriptor,
 	template: menuCheckboxItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuCheckboxItem,
@@ -37,6 +42,4 @@ export const TMenuCheckboxItemElement = ElementBase(HTMLDivElement, {
  * дескриптора вместе с пропсами его плагинов и фасада (`selected`) — без тех,
  * что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TMenuCheckboxItemElementProps = HTMLDivElement &
-	IElementBase<IMenuCheckboxItem, TMenuItemCollectionFacade> &
-	TElementProps<typeof MenuCheckboxItemDescriptor, HTMLDivElement>
+export type TMenuCheckboxItemElementProps = TElementType<typeof TMenuCheckboxItemElement>

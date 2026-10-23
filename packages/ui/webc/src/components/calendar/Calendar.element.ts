@@ -24,14 +24,19 @@
 import { CalendarCollectionDescriptor, CalendarDescriptor } from '@soldy-ui/setup'
 import type { ICalendar, TCalendarCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { calendarTemplate } from './calendar.template'
 import { TCalendarItemElement } from './item'
 import { setupCalendar } from './setup.component'
 
-export const TCalendarElement = ElementBase(HTMLDivElement, {
-	descriptor: CalendarDescriptor(),
-	facade: CalendarCollectionDescriptor(),
+export const TCalendarElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof CalendarDescriptor,
+	ICalendar,
+	TCalendarCollectionFacade
+> = ElementBase(HTMLDivElement, {
+	descriptor: CalendarDescriptor,
+	facade: CalendarCollectionDescriptor,
 	template: calendarTemplate,
 	setup: setupCalendar,
 })
@@ -45,6 +50,4 @@ defineElement('so-calendar-item', TCalendarItemElement, 'td')
  * с пропсами его плагинов и фасада (`months`, `mode`, `engine`) — без тех, что
  * у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TCalendarElementProps = HTMLDivElement &
-	IElementBase<ICalendar, TCalendarCollectionFacade> &
-	TElementProps<typeof CalendarDescriptor, HTMLDivElement>
+export type TCalendarElementProps = TElementType<typeof TCalendarElement>

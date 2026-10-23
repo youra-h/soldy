@@ -36,7 +36,7 @@
 
 import type { ITabsItem, TTabsItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
@@ -50,31 +50,19 @@ type TTabParts = {
 
 const parts = new WeakMap<HTMLElement, TTabParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> = {
 	create: (root, ctx) => {
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'tabs.row', attributes: { type: 'button' } },
-			isButton,
-		)
-		const close = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'tabs.close', attributes: { type: 'button' } },
-			isButton,
-		)
+		const row = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'tabs.row',
+			attributes: { type: 'button' },
+		})
+		const close = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'tabs.close',
+			attributes: { type: 'button' },
+		})
 
 		close.className = 'so-tabs-item__close'
 
@@ -83,12 +71,7 @@ export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> =
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('close-icon')) {
-			icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'tabs.close-icon' },
-				isIcon,
-			)
+			icon = createDetail(ownerDocument, TIconElement, { embedded: 'tabs.close-icon' })
 			icon.icon = 'close'
 			lend(close, DEFAULT_SLOT, icon)
 		}
@@ -129,11 +112,8 @@ export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> =
 			const { row, close, icon } = own
 			const disabled = state.disabled === true
 
-			if (row.disabled !== disabled) row.disabled = disabled
-			if (row.size !== state.size) row.size = state.size
-			if (row.variant !== state.variant) row.variant = state.variant
-			if (close.disabled !== disabled) close.disabled = disabled
-			if (close.size !== state.size) close.size = state.size
+			patch(row, { disabled, size: state.size, variant: state.variant })
+			patch(close, { disabled, size: state.size })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

@@ -21,13 +21,18 @@
 import { TagsCollectionItemDescriptor, TagsItemDescriptor } from '@soldy-ui/setup'
 import type { ITagsItem, TTagsItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { IElementBase, TElementProps } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTagsItem } from './setup.component'
 import { tagsItemTemplate } from './tags-item.template'
 
-export const TTagsItemElement = ElementBase(HTMLDivElement, {
-	descriptor: TagsItemDescriptor(),
-	facade: TagsCollectionItemDescriptor(),
+export const TTagsItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TagsItemDescriptor,
+	ITagsItem,
+	TTagsItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
+	descriptor: TagsItemDescriptor,
+	facade: TagsCollectionItemDescriptor,
 	template: tagsItemTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupTagsItem,
@@ -39,6 +44,4 @@ export const TTagsItemElement = ElementBase(HTMLDivElement, {
  * с пропсами его плагинов и фасада (`selected`) — без тех, что у `div` уже
  * есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TTagsItemElementProps = HTMLDivElement &
-	IElementBase<ITagsItem, TTagsItemCollectionFacade> &
-	TElementProps<typeof TagsItemDescriptor, HTMLDivElement>
+export type TTagsItemElementProps = TElementType<typeof TTagsItemElement>

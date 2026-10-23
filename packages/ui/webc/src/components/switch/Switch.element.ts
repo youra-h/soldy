@@ -20,12 +20,16 @@
 import { SwitchDescriptor } from '@soldy-ui/setup'
 import type { ISwitch } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { switchTemplate } from './switch.template'
 import { setupSwitch } from './setup.component'
 
-export const TSwitchElement = ElementBase(HTMLSpanElement, {
-	descriptor: SwitchDescriptor(),
+export const TSwitchElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof SwitchDescriptor,
+	ISwitch
+> = ElementBase(HTMLSpanElement, {
+	descriptor: SwitchDescriptor,
 	template: switchTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupSwitch,
@@ -39,6 +43,4 @@ defineElement('so-switch', TSwitchElement, 'span')
  * (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный `id`
  * корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TSwitchElementProps = HTMLSpanElement &
-	IElementBase<ISwitch> &
-	TElementProps<typeof SwitchDescriptor, HTMLSpanElement>
+export type TSwitchElementProps = TElementType<typeof TSwitchElement>

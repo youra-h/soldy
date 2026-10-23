@@ -58,10 +58,6 @@ type TPopoverItemParts = {
 
 const parts = new WeakMap<HTMLElement, TPopoverItemParts>()
 
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
-
 export const menuPopoverItemTemplate: ITemplate<
 	IMenuPopoverItem,
 	TMenuItemCollectionFacade,
@@ -79,12 +75,10 @@ export const menuPopoverItemTemplate: ITemplate<
 		const arrow = hasSlot('arrow-icon')
 			? null
 			: roleIconOf(ownerDocument, 'menu.arrow', 'arrowRight')
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'menu.popover-item-frame', attributes: { tabindex: '-1' } },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, {
+			embedded: 'menu.popover-item-frame',
+			attributes: { tabindex: '-1' },
+		})
 		const content = ownerDocument.createElement('div')
 
 		if (arrow) arrowPart.appendChild(arrow)

@@ -59,13 +59,9 @@ type TToastsContext = ITemplateContext<IToasts, TToastsCollectionFacade>
 /** Тосты региона каждого менеджера — петлёй по ключу тоста. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<IToastsItem, number, TToastsItemElementProps>>()
 
-function isToast(node: Element): node is TToastsItemElementProps {
-	return node instanceof TToastsItemElement
-}
-
 /** Тост из данных — инстанс и копии образцов до вставки. */
 function toastOf(ctx: TToastsContext, item: IToastsItem): TToastsItemElementProps {
-	const toast = createItem(ctx.root.ownerDocument, 'li', 'so-toasts-item', isToast)
+	const toast = createItem(ctx.root.ownerDocument, TToastsItemElement)
 
 	toast.ctrl = item
 	lendSamples(ctx, toast, TOASTS_ITEM_SLOTS)

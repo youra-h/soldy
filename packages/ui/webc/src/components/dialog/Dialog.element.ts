@@ -28,12 +28,16 @@
 import { DialogDescriptor } from '@soldy-ui/setup'
 import type { IDialog } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { dialogTemplate } from './dialog.template'
 import { setupDialog } from './setup.component'
 
-export const TDialogElement = ElementBase(HTMLDivElement, {
-	descriptor: DialogDescriptor(),
+export const TDialogElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof DialogDescriptor,
+	IDialog
+> = ElementBase(HTMLDivElement, {
+	descriptor: DialogDescriptor,
 	template: dialogTemplate,
 	root: { strategy: 'host', teleport: { target: 'target' } },
 	setup: setupDialog,
@@ -46,6 +50,4 @@ defineElement('so-dialog', TDialogElement, 'div')
  * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов — без
  * тех, что у `div` уже есть, и без `HOST_PROPS` (`TElementProps`).
  */
-export type TDialogElementProps = HTMLDivElement &
-	IElementBase<IDialog> &
-	TElementProps<typeof DialogDescriptor, HTMLDivElement>
+export type TDialogElementProps = TElementType<typeof TDialogElement>

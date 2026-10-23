@@ -64,6 +64,7 @@ import {
 	ownerAttributes,
 	ownerClasses,
 	type ITemplate,
+	patch,
 } from '../../adapter'
 import { TFrameElement, type TFrameElementProps } from '../frame'
 import { drawItems, drawItemsIn } from './items'
@@ -71,10 +72,6 @@ import type { TMenuOutputs } from './setup.component'
 
 /** Панель каждого меню — одна на всё время жизни элемента. */
 const panels = new WeakMap<HTMLElement, TFrameElementProps>()
-
-function isFrame(node: Element): node is TFrameElementProps {
-	return node instanceof TFrameElement
-}
 
 /** Триггер — первый элемент слота: текст вокруг него набора не несёт. */
 function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
@@ -84,12 +81,10 @@ function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
 export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
-		const panel = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-frame', embedded: 'menu.frame', attributes: { tabindex: '-1' } },
-			isFrame,
-		)
+		const panel = createDetail(ownerDocument, TFrameElement, {
+			embedded: 'menu.frame',
+			attributes: { tabindex: '-1' },
+		})
 		const list = ownerDocument.createElement('div')
 
 		panel.position = 'fixed'
@@ -131,11 +126,7 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 			const visible = state.open === true
 			const point = state.point ?? null
 
-			if (panel.visible !== visible) panel.visible = visible
-			if (panel.anchor_placement !== state.placement) {
-				panel.anchor_placement = state.placement
-			}
-			if (panel.anchor_point !== point) panel.anchor_point = point
+			patch(panel, { visible, anchor_placement: state.placement, anchor_point: point })
 		}),
 
 		bind('panelClasses', ({ root, state }) => {

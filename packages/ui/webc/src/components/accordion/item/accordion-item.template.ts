@@ -40,6 +40,7 @@ import {
 	ownerAttributes,
 	type ITemplate,
 	type TLendAt,
+	patch,
 } from '../../../adapter'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
@@ -60,14 +61,6 @@ type TSectionParts = {
 
 const parts = new WeakMap<HTMLElement, TSectionParts>()
 
-function isButton(node: Element): node is TButtonElementProps {
-	return node instanceof TButtonElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
-
 /** Обёртка стрелки; без слота её стороны — со стрелкой роли `arrowRight` внутри. */
 function arrowOf(owner: Document, slotted: boolean): TArrow {
 	const wrapper = owner.createElement('span')
@@ -76,7 +69,7 @@ function arrowOf(owner: Document, slotted: boolean): TArrow {
 
 	if (slotted) return { wrapper, icon: null }
 
-	const icon = createDetail(owner, 'span', { is: 'so-icon', embedded: 'accordion.arrow' }, isIcon)
+	const icon = createDetail(owner, TIconElement, { embedded: 'accordion.arrow' })
 
 	icon.icon = 'arrowRight'
 	wrapper.appendChild(icon)
@@ -110,12 +103,10 @@ export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemColl
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const header = createDetail(
-			ownerDocument,
-			'button',
-			{ is: 'so-button', embedded: 'accordion.header', attributes: { type: 'button' } },
-			isButton,
-		)
+		const header = createDetail(ownerDocument, TButtonElement, {
+			embedded: 'accordion.header',
+			attributes: { type: 'button' },
+		})
 		const start = arrowOf(ownerDocument, hasSlot('leading-icon'))
 		const end = arrowOf(ownerDocument, hasSlot('trailing-icon'))
 		const body = ownerDocument.createElement('div')
@@ -157,10 +148,7 @@ export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemColl
 			const { header, start, end } = own
 			const disabled = state.disabled === true
 
-			if (header.view !== state.view) header.view = state.view
-			if (header.disabled !== disabled) header.disabled = disabled
-			if (header.size !== state.size) header.size = state.size
-			if (header.variant !== state.variant) header.variant = state.variant
+			patch(header, { view: state.view, disabled, size: state.size, variant: state.variant })
 
 			for (const { icon } of [start, end]) {
 				if (icon && icon.size !== state.size) icon.size = state.size

@@ -426,7 +426,7 @@ describe('база · свой атрибут элемента', () => {
 	}
 
 	const TCountingElement = ElementBase(HTMLSpanElement, {
-		descriptor: IconDescriptor(),
+		descriptor: IconDescriptor,
 		template: counting,
 		attributes: ['icon'],
 		setup: setupIcon,
@@ -467,7 +467,7 @@ describe('база · свой атрибут элемента', () => {
 		(name) => {
 			expect(() =>
 				ElementBase(HTMLSpanElement, {
-					descriptor: IconDescriptor(),
+					descriptor: IconDescriptor,
 					template: counting,
 					attributes: [name],
 					setup: setupIcon,

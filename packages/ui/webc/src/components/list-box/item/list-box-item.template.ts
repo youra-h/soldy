@@ -42,7 +42,7 @@
 
 import type { IListBoxItem, TListBoxItemCollectionFacade, TListIndicator } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
@@ -59,14 +59,6 @@ type TItemParts = {
 }
 
 const parts = new WeakMap<HTMLElement, TItemParts>()
-
-function isRow(node: Element): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
 
 /**
  * Обёртка отметки — на краю строки со стороны `side` или вне её. Край — свет
@@ -92,12 +84,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(
-			ownerDocument,
-			'div',
-			{ is: 'so-button-div', embedded: 'list-box.row' },
-			isRow,
-		)
+		const row = createDetail(ownerDocument, TButtonDivElement, { embedded: 'list-box.row' })
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-list-box-item__indicator'
@@ -108,12 +95,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('indicator-icon')) {
-			icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'list-box.indicator' },
-				isIcon,
-			)
+			icon = createDetail(ownerDocument, TIconElement, { embedded: 'list-box.indicator' })
 			icon.icon = 'check'
 		}
 
@@ -146,10 +128,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 			const { row, icon } = own
 			const disabled = state.disabled === true
 
-			if (row.view !== state.view) row.view = state.view
-			if (row.disabled !== disabled) row.disabled = disabled
-			if (row.size !== state.size) row.size = state.size
-			if (row.variant !== state.variant) row.variant = state.variant
+			patch(row, { view: state.view, disabled, size: state.size, variant: state.variant })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

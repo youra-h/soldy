@@ -39,7 +39,7 @@
 
 import type { ISelectItem, TListIndicator, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
@@ -56,14 +56,6 @@ type TOptionParts = {
 }
 
 const parts = new WeakMap<HTMLElement, TOptionParts>()
-
-function isRow(node: Element): node is TButtonElementProps<HTMLSpanElement> {
-	return node instanceof TButtonSpanElement
-}
-
-function isIcon(node: Element): node is TIconElementProps {
-	return node instanceof TIconElement
-}
 
 /**
  * Обёртка отметки — на краю строки со стороны `side` или вне её. Край — свет
@@ -89,12 +81,10 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(
-			ownerDocument,
-			'span',
-			{ is: 'so-button-span', embedded: 'select.row', attributes: { tabindex: '-1' } },
-			isRow,
-		)
+		const row = createDetail(ownerDocument, TButtonSpanElement, {
+			embedded: 'select.row',
+			attributes: { tabindex: '-1' },
+		})
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-select-item__indicator'
@@ -105,12 +95,7 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('indicator-icon')) {
-			icon = createDetail(
-				ownerDocument,
-				'span',
-				{ is: 'so-icon', embedded: 'select.indicator' },
-				isIcon,
-			)
+			icon = createDetail(ownerDocument, TIconElement, { embedded: 'select.indicator' })
 			icon.icon = 'check'
 		}
 
@@ -143,9 +128,7 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 			const { row, icon } = own
 			const disabled = state.disabled === true
 
-			if (row.disabled !== disabled) row.disabled = disabled
-			if (row.size !== state.size) row.size = state.size
-			if (row.variant !== state.variant) row.variant = state.variant
+			patch(row, { disabled, size: state.size, variant: state.variant })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

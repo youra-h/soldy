@@ -24,12 +24,16 @@
 import { TextareaDescriptor } from '@soldy-ui/setup'
 import type { ITextarea } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementBase, TElementProps } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { textareaTemplate } from './textarea.template'
 import { setupTextarea } from './setup.component'
 
-export const TTextareaElement = ElementBase(HTMLDivElement, {
-	descriptor: TextareaDescriptor(),
+export const TTextareaElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TextareaDescriptor,
+	ITextarea
+> = ElementBase(HTMLDivElement, {
+	descriptor: TextareaDescriptor,
 	template: textareaTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupTextarea,
@@ -43,6 +47,4 @@ defineElement('so-textarea', TTextareaElement, 'div')
  * (`aria_label`) — без тех, что у `div` уже есть (`id` — собственный `id`
  * корня), и без `HOST_PROPS` (`TElementProps`).
  */
-export type TTextareaElementProps = HTMLDivElement &
-	IElementBase<ITextarea> &
-	TElementProps<typeof TextareaDescriptor, HTMLDivElement>
+export type TTextareaElementProps = TElementType<typeof TTextareaElement>
