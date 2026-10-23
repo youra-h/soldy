@@ -1195,8 +1195,8 @@ CSS и `index.d.ts` — не всё, что нужно теме. Полосу п
 предка: имя без префикса взяло бы одноимённую переменную приложения (см.
 `variable-prefix.spec.ts` общего слоя тем, `packages/themes/base/AGENTS.md`,
 «Сторожа»). Раньше плагин лежал в `@soldy-ui/plugins` и стоял в дескрипторе
-Tabs, то есть библиотека работала на CSS одной темы. Теперь он в теме, а `setup/index.ts` отдаёт объект
-`defineTheme`:
+Tabs, то есть библиотека работала на CSS одной темы. Теперь он в теме, а
+`setup/index.ts` отдаёт объект `defineTheme`:
 
 ```ts
 import '@soldy-ui/theme-oren'
