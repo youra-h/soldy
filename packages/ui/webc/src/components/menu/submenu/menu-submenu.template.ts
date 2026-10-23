@@ -82,7 +82,9 @@ export const menuSubmenuTemplate: ITemplate<
 	TMenuSubmenuOutputs,
 	TMenuCollectionFacade
 > = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createRow(root, () => ctx.facade?.context?.adapters.menu.open())
 		const icon = partOf(ownerDocument, 'so-menu-item__icon')

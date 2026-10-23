@@ -67,7 +67,7 @@ function sectionOf(
 }
 
 export const accordionTemplate: ITemplate<IAccordion, TAccordionCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		// Секции разметки — сами секции аккордеона: петли из данных при них нет
 		if (!hasSlot('default')) {
 			loops.set(root, new TKeyedLoop(root, null, (item: IAccordionItem) => item.uid))

@@ -33,12 +33,7 @@
 import { PopoverDescriptor } from '@soldy-ui/setup'
 import type { IPopover } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type {
-	IElementBase,
-	IElementSpec,
-	TElementClass,
-	TElementProps,
-} from '../../adapter'
+import type { IElementBase, IElementSpec, TElementClass, TElementProps } from '../../adapter'
 import { popoverTemplate } from './popover.template'
 import { setupPopover, type TPopoverOutputs } from './setup.component'
 
@@ -46,7 +41,7 @@ import { setupPopover, type TPopoverOutputs } from './setup.component'
 const POPOVER: IElementSpec<IPopover, unknown, TPopoverOutputs> = {
 	descriptor: PopoverDescriptor(),
 	template: popoverTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupPopover,
 }
 

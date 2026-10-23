@@ -32,7 +32,7 @@ import { setupTooltip } from './setup.component'
 export const TTooltipElement = ElementBase(HTMLSpanElement, {
 	descriptor: TooltipDescriptor(),
 	template: tooltipTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupTooltip,
 })
 

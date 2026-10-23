@@ -554,7 +554,7 @@ describe('шаблоны объявляют ровно те слоты, что �
 		['RadioGroup.Item', radioGroupItemTemplate, RadioGroupItemDescriptor, 'label'],
 	] as const)('%s', (_name, template, descriptor, tag) => {
 		const root = document.createElement(tag)
-		const targets = template.create(root, () => false, bareContext(root)).slots
+		const targets = template.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			descriptor()

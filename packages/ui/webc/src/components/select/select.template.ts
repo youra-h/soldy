@@ -333,7 +333,7 @@ function drawTags(ctx: TSelectContext, own: TSelectParts): void {
 }
 
 export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelectOutputs> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const field = createDetail(
 			ownerDocument,

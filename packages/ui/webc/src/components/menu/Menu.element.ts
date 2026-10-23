@@ -55,7 +55,7 @@ export const TMenuElement = ElementBase(HTMLSpanElement, {
 	descriptor: MenuDescriptor(),
 	facade: MenuCollectionDescriptor(),
 	template: menuTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupMenu,
 })
 

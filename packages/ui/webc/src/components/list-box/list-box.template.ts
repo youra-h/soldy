@@ -225,7 +225,7 @@ function updateRow(
 }
 
 export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const list = ownerDocument.createElement('div')
 		const end = ownerDocument.createComment('')

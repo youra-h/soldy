@@ -1,6 +1,6 @@
 /**
  * Корень — элемент потребителя, и то, что пишет на него ядро, раскладывает
- * база (`ElementBase`, `root-attributes.ts`) — одним правилом у всех
+ * база (`ElementBase`, `paint.ts`) — одним правилом у всех
  * компонентов.
  *
  * Атрибуты, классы и стиль потребителя стоят на элементе рядом с наборами,
@@ -127,7 +127,7 @@ import {
 	type TTextareaElementProps,
 	type TTooltipElementProps,
 } from '@soldy-ui/webc'
-import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/root-attributes'
+import { TElementAttributes, applyStyles, stylesOf } from '../src/adapter/runtime/paint'
 import { ownerStyles } from '../src/adapter/template'
 
 /** Рендер коалесцируется в микротаске — ждём её перед проверкой. */

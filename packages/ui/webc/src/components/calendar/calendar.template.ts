@@ -500,7 +500,7 @@ function placePaging(month: TMonth, prev: HTMLElement, next: HTMLElement): void 
 }
 
 export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const months = ownerDocument.createElement('div')
 		const footer = ownerDocument.createElement('div')

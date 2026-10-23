@@ -305,7 +305,7 @@ describe('DateInput · разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, в порядке разметки Vue', () => {
 		const root = document.createElement('div')
-		const targets = dateInputTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = dateInputTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(DateInputDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual(['leading', 'clear', 'trailing'])

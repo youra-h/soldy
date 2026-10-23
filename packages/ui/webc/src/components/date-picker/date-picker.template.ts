@@ -362,7 +362,7 @@ function fieldOf(owner: Document, embedded: string, className: string): TDateInp
 }
 
 export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutputs> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const field = fieldOf(ownerDocument, 'date-picker.field', 'so-date-picker__field')
 		const start = fieldOf(ownerDocument, 'date-picker.start', 'so-date-picker__start')

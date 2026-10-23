@@ -175,7 +175,7 @@ describe('разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const node = document.createElement('span')
-		const targets = tooltipTemplate.create(node, () => false, bareContext(node)).slots
+		const targets = tooltipTemplate.create(node, bareContext(node)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			TooltipDescriptor()

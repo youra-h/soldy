@@ -213,7 +213,7 @@ function clearOf(ctx: ITemplateContext<INumberInput>): TClearButton {
 }
 
 export const numberInputTemplate: ITemplate<INumberInput> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')
 		const field = ownerDocument.createElement('input')

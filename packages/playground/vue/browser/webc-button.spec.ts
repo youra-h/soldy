@@ -57,8 +57,7 @@ function button(root: ParentNode, id?: string): TButtonElementProps {
 	const buttons = Array.from(root.querySelectorAll('button[is="so-button"]'))
 	const element = id === undefined ? buttons[0] : buttons.find((item) => item.id === id)
 
-	if (!isButton(element))
-		throw new Error(`<button is="so-button"${id ? ` id="${id}"` : ''}> нет`)
+	if (!isButton(element)) throw new Error(`<button is="so-button"${id ? ` id="${id}"` : ''}> нет`)
 
 	return element
 }

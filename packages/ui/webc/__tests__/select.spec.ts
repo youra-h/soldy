@@ -1714,7 +1714,7 @@ describe('шаблоны объявляют ровно те слоты, что �
 	): string[] {
 		const root = document.createElement('div')
 		const ctx = { ...bareContext<TInstance, TFacade>(root), state: {} }
-		const targets = template.create(root, () => false, ctx)
+		const targets = template.create(root, ctx)
 
 		return Object.keys(targets.slots).sort()
 	}

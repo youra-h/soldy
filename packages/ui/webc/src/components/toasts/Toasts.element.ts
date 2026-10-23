@@ -42,7 +42,7 @@ export const TToastsElement = ElementBase(HTMLElement, {
 	descriptor: ToastsDescriptor(),
 	facade: ToastsCollectionDescriptor(),
 	template: toastsTemplate,
-	root: { wrapped: true, teleport: { target: 'target' } },
+	root: { strategy: 'wrapped', teleport: { target: 'target' } },
 	setup: setupToasts,
 })
 

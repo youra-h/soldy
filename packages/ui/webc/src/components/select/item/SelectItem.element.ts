@@ -30,7 +30,7 @@ export const TSelectItemElement = ElementBase(HTMLDivElement, {
 	descriptor: SelectItemDescriptor(),
 	facade: SelectCollectionItemDescriptor(),
 	template: selectItemTemplate,
-	root: { sets: ['attrs', 'dataset'], order: true, control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupSelectItem,
 })
 

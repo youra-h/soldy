@@ -28,7 +28,7 @@ import { setupProgressLinear } from './setup.component'
 export const TProgressLinearElement = ElementBase(HTMLSpanElement, {
 	descriptor: ProgressLinearDescriptor(),
 	template: progressLinearTemplate,
-	root: { style: 'percentStyle' },
+	root: { strategy: 'host', style: 'percentStyle' },
 	setup: setupProgressLinear,
 })
 

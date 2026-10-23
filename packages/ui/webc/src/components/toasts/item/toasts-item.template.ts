@@ -112,7 +112,9 @@ function toggleIn(box: HTMLElement, node: HTMLElement | null, shown: boolean): v
 }
 
 export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const card = ownerDocument.createElement('div')
 		const box = ownerDocument.createElement('span')

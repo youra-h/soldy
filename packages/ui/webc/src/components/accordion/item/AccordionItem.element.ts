@@ -29,7 +29,7 @@ export const TAccordionItemElement = ElementBase(HTMLDivElement, {
 	descriptor: AccordionItemDescriptor(),
 	facade: AccordionCollectionItemDescriptor(),
 	template: accordionItemTemplate,
-	root: { sets: ['attrs', 'dataset'], order: true, control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupAccordionItem,
 })
 

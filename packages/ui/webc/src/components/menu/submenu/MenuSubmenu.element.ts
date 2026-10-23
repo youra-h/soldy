@@ -40,7 +40,7 @@ export const TMenuSubmenuElement = ElementBase(HTMLDivElement, {
 	facade: MenuCollectionItemDescriptor(),
 	ownerFacade: MenuSubmenuCollectionDescriptor(),
 	template: menuSubmenuTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuSubmenu,
 })
 

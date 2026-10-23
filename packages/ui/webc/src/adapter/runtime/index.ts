@@ -11,11 +11,9 @@ export {
 	ElementBase,
 	type IElementBase,
 	type IElementSpec,
-	type TNativeElementClass,
-	type TRootSet,
-	type TRootSpec,
-	type TRootTeleport,
 	type TElementClass,
 	type TElementProps,
+	type TNativeElementClass,
 } from './element.base'
+export type { TRootSet, TRootSpec, TRootTeleport } from './root'
 export { defineElement } from './defineElement'

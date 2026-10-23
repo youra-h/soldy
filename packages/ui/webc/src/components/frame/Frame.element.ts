@@ -34,7 +34,7 @@ import { setupFrame } from './setup.component'
 export const TFrameElement = ElementBase(HTMLDivElement, {
 	descriptor: FrameDescriptor(),
 	template: frameTemplate,
-	root: { teleport: { target: 'target', contained: 'contained' } },
+	root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },
 	setup: setupFrame,
 })
 

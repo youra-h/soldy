@@ -37,7 +37,7 @@ export const TRadioGroupItemElement = ElementBase(HTMLLabelElement, {
 	descriptor: RadioGroupItemDescriptor(),
 	facade: RadioGroupCollectionItemDescriptor(),
 	template: radioGroupItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupRadioGroupItem,
 })
 

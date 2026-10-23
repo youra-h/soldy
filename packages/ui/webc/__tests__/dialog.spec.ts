@@ -369,7 +369,7 @@ describe('разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('div')
-		const targets = dialogTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = dialogTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			DialogDescriptor()

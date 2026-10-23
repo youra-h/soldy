@@ -35,7 +35,9 @@ type TMark = {
 const marks = new WeakMap<HTMLElement, TMark>()
 
 export const menuRadioItemTemplate: ITemplate<IMenuRadioItem, TMenuItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createRow(root, () => ctx.facade?.context?.adapters.menu.check())
 		const indicator = partOf(ownerDocument, 'so-menu-item__indicator', true)

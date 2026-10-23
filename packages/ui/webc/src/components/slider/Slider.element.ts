@@ -29,7 +29,7 @@ import { setupSlider } from './setup.component'
 export const TSliderElement = ElementBase(HTMLSpanElement, {
 	descriptor: SliderDescriptor(),
 	template: sliderTemplate,
-	root: { aria: 'rootAria' },
+	root: { strategy: 'host', aria: 'rootAria' },
 	setup: setupSlider,
 })
 

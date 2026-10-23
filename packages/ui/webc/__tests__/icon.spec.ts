@@ -323,7 +323,7 @@ describe('Icon · рисунок роли', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
 		const root = document.createElement('span')
-		const targets = iconTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = iconTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(IconDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual([])

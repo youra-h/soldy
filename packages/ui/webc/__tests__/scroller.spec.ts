@@ -152,7 +152,7 @@ describe('состав', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('div')
-		const targets = scrollerTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = scrollerTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			ScrollerDescriptor()

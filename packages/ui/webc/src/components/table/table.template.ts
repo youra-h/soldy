@@ -275,7 +275,6 @@ export const tableTemplate: ITemplate<ITable, TTableCollectionFacade> = {
 				empty: { mode: 'append', node: emptyCell },
 			},
 			root: table,
-			control: table,
 		}
 	},
 

@@ -59,7 +59,9 @@ function isIcon(node: Element): node is TIconElementProps {
 }
 
 export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

@@ -36,7 +36,7 @@ import { setupDrawer } from './setup.component'
 export const TDrawerElement = ElementBase(HTMLDivElement, {
 	descriptor: DrawerDescriptor(),
 	template: drawerTemplate,
-	root: { teleport: { target: 'target', contained: 'contained' } },
+	root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },
 	setup: setupDrawer,
 })
 

@@ -35,7 +35,7 @@ import { setupDialog } from './setup.component'
 export const TDialogElement = ElementBase(HTMLDivElement, {
 	descriptor: DialogDescriptor(),
 	template: dialogTemplate,
-	root: { teleport: { target: 'target' } },
+	root: { strategy: 'host', teleport: { target: 'target' } },
 	setup: setupDialog,
 })
 

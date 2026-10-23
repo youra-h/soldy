@@ -31,7 +31,7 @@ import { setupTextarea } from './setup.component'
 export const TTextareaElement = ElementBase(HTMLDivElement, {
 	descriptor: TextareaDescriptor(),
 	template: textareaTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupTextarea,
 })
 

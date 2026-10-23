@@ -27,7 +27,7 @@ export const TTabsContentElement = ElementBase(HTMLDivElement, {
 	descriptor: TabsContentDescriptor(),
 	facade: TabsCollectionContentDescriptor(),
 	template: tabsContentTemplate,
-	root: { sets: ['attrs', 'aria'], shownBy: 'active' },
+	root: { strategy: 'host', sets: ['attrs', 'aria'], shownBy: 'active' },
 	setup: setupTabsContent,
 })
 

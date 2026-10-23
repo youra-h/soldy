@@ -57,7 +57,7 @@ function radioOf(
 }
 
 export const radioGroupTemplate: ITemplate<IRadioGroup, TRadioGroupCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		// Радио разметки — сами радио группы: петли из данных при них нет
 		if (!hasSlot('default')) {
 			loops.set(root, new TKeyedLoop(root, null, (item: IRadioGroupItem) => item.uid))

@@ -37,7 +37,7 @@ function isButton(node: Element): node is TButtonElementProps {
 }
 
 export const paginationItemTemplate: ITemplate<IPaginationItem, TPaginationItemCollectionFacade> = {
-	create: (root, _hasSlot, ctx) => {
+	create: (root, ctx) => {
 		const row = createDetail(
 			root.ownerDocument,
 			'button',

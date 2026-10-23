@@ -27,7 +27,7 @@ export const TMenuRadioItemElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuRadioItemDescriptor(),
 	facade: MenuCollectionRadioItemDescriptor(),
 	template: menuRadioItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuRadioItem,
 })
 

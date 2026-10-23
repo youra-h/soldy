@@ -30,7 +30,7 @@ import { setupRating } from './setup.component'
 export const TRatingElement = ElementBase(HTMLSpanElement, {
 	descriptor: RatingDescriptor(),
 	template: ratingTemplate,
-	root: { sets: ['attrs', 'dataset'], fieldId: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], fieldId: true },
 	setup: setupRating,
 })
 

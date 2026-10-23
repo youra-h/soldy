@@ -27,7 +27,7 @@ export const TMenuCheckboxItemElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuCheckboxItemDescriptor(),
 	facade: MenuCollectionCheckboxItemDescriptor(),
 	template: menuCheckboxItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuCheckboxItem,
 })
 

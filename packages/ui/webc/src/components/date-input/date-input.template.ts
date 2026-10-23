@@ -158,7 +158,7 @@ function clearOf(ctx: ITemplateContext<IDateInput>): TClearButton {
 }
 
 export const dateInputTemplate: ITemplate<IDateInput> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')
 		const segments = ownerDocument.createElement('span')

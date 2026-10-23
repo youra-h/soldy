@@ -121,7 +121,7 @@ function syncArrow(arrow: TArrow, size: TButtonElementProps['size'], disabled: b
 }
 
 export const scrollerTemplate: ITemplate<IScroller> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const prev = arrowOf(ownerDocument, PREV, hasSlot(PREV.slot))
 		const viewport = ownerDocument.createElement('div')

@@ -120,7 +120,7 @@ function clearOf(ctx: ITemplateContext<IInput>): TClearButton {
 }
 
 export const inputTemplate: ITemplate<IInput> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')
 		const field = ownerDocument.createElement('input')

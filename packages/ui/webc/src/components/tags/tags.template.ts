@@ -67,7 +67,7 @@ function tagOf(ctx: ITemplateContext<ITags, TTagsCollectionFacade>, item: ITagsI
 }
 
 export const tagsTemplate: ITemplate<ITags, TTagsCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		// Теги разметки — сами теги набора: петли из данных при них нет
 		if (!hasSlot(DEFAULT_SLOT)) {
 			loops.set(root, new TKeyedLoop(root, null, (item: ITagsItem) => item.uid))

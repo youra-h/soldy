@@ -292,7 +292,7 @@ describe('разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — образцом', () => {
 		const root = document.createElement('span')
-		const targets = ratingTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = ratingTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(RatingDescriptor().slots.map((slot) => slot.name))
 		expect(Object.values(targets).map((target) => target.mode)).toEqual(['sample'])

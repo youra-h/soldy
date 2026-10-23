@@ -31,7 +31,7 @@ export const TPaginationItemElement = ElementBase(HTMLLIElement, {
 	descriptor: PaginationItemDescriptor(),
 	facade: PaginationCollectionItemDescriptor(),
 	template: paginationItemTemplate,
-	root: { sets: ['attrs', 'dataset'] },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'] },
 	setup: setupPaginationItem,
 })
 

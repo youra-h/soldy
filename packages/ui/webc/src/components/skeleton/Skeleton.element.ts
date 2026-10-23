@@ -23,7 +23,7 @@ import { setupSkeleton } from './setup.component'
 export const TSkeletonElement = ElementBase(HTMLDivElement, {
 	descriptor: SkeletonDescriptor(),
 	template: skeletonTemplate,
-	root: { hides: false },
+	root: { strategy: 'host', hides: false },
 	setup: setupSkeleton,
 })
 

@@ -146,7 +146,7 @@ describe('Textarea · разметка', () => {
 
 	it('шаблон объявляет ровно те слоты, что и дескриптор, — ни одного', () => {
 		const root = document.createElement('div')
-		const targets = textareaTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = textareaTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets)).toEqual(TextareaDescriptor().slots.map((slot) => slot.name))
 		expect(Object.keys(targets)).toEqual([])

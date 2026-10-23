@@ -27,7 +27,7 @@ export const TMenuPopoverItemElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuPopoverItemDescriptor(),
 	facade: MenuCollectionItemDescriptor(),
 	template: menuPopoverItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuPopoverItem,
 })
 

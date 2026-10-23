@@ -85,7 +85,9 @@ function placeIndicator(
 }
 
 export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

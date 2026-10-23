@@ -318,7 +318,7 @@ describe('DragAndDrop: элемент Web Components', () => {
 describe('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 	it('DragAndDrop', () => {
 		const root = document.createElement('so-drag-and-drop')
-		const targets = dragAndDropTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = dragAndDropTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			DragAndDropDescriptor()

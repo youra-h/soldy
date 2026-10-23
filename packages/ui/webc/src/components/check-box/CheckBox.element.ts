@@ -32,7 +32,7 @@ import { setupCheckBox } from './setup.component'
 export const TCheckBoxElement = ElementBase(HTMLSpanElement, {
 	descriptor: CheckBoxDescriptor(),
 	template: checkBoxTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupCheckBox,
 })
 

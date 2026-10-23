@@ -26,7 +26,7 @@ import { tableColumnTemplate } from './table-column.template'
 export const TTableColumnElement = ElementBase(HTMLTableCellElement, {
 	descriptor: TableColumnDescriptor(),
 	template: tableColumnTemplate,
-	root: { style: 'widthStyle' },
+	root: { strategy: 'host', style: 'widthStyle' },
 	setup: setupTableColumn,
 })
 

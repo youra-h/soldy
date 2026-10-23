@@ -82,7 +82,7 @@ function triggerOf(nodes: readonly ChildNode[]): Element | undefined {
 }
 
 export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const panel = createDetail(
 			ownerDocument,

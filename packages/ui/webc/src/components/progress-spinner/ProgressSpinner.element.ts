@@ -26,7 +26,7 @@ import { setupProgressSpinner } from './setup.component'
 export const TProgressSpinnerElement = ElementBase(HTMLSpanElement, {
 	descriptor: ProgressSpinnerDescriptor(),
 	template: progressSpinnerTemplate,
-	root: { style: 'fractionStyle' },
+	root: { strategy: 'host', style: 'fractionStyle' },
 	setup: setupProgressSpinner,
 })
 

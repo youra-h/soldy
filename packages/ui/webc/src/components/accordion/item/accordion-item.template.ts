@@ -106,7 +106,9 @@ function edge(
 }
 
 export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const header = createDetail(
 			ownerDocument,

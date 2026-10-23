@@ -31,7 +31,7 @@ import { setupNumberInput } from './setup.component'
 export const TNumberInputElement = ElementBase(HTMLDivElement, {
 	descriptor: NumberInputDescriptor(),
 	template: numberInputTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupNumberInput,
 })
 

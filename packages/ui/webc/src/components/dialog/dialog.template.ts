@@ -147,7 +147,9 @@ function toggleButton(button: HTMLElement, shown: boolean, put: () => void): voi
 }
 
 export const dialogTemplate: ITemplate<IDialog, unknown, TDialogOutputs> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const backdrop = ownerDocument.createElement('div')
 		const title = ownerDocument.createElement('h2')

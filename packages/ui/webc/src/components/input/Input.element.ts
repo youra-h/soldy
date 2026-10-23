@@ -31,7 +31,7 @@ import { setupInput } from './setup.component'
 export const TInputElement = ElementBase(HTMLDivElement, {
 	descriptor: InputDescriptor(),
 	template: inputTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupInput,
 })
 

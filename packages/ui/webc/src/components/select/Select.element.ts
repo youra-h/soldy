@@ -44,7 +44,7 @@ export const TSelectElement = ElementBase(HTMLDivElement, {
 	descriptor: SelectDescriptor(),
 	facade: SelectCollectionDescriptor(),
 	template: selectTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupSelect,
 })
 

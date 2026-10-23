@@ -200,7 +200,9 @@ function cellOf(ctx: TPaginationContext, cell: TPaginationCell): HTMLElement {
 }
 
 export const paginationTemplate: ITemplate<IPagination, TPaginationCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const list = root.ownerDocument.createElement('ol')
 		const prev = arrowOf(ctx, PREV, hasSlot(PREV.slot))
 		const next = arrowOf(ctx, NEXT, hasSlot(NEXT.slot))

@@ -41,7 +41,7 @@ export const TTableElement = ElementBase(HTMLDivElement, {
 	descriptor: TableDescriptor(),
 	facade: TableCollectionDescriptor(),
 	template: tableTemplate,
-	root: { wrapped: true, control: true },
+	root: { strategy: 'wrapped' },
 	setup: setupTable,
 })
 

@@ -1254,7 +1254,7 @@ describe('Frame · место переставлено одной операци
 describe('Frame · слоты', () => {
 	it('шаблон объявляет ровно те слоты, что и дескриптор', () => {
 		const root = document.createElement('div')
-		const targets = frameTemplate.create(root, () => false, bareContext(root)).slots
+		const targets = frameTemplate.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			FrameDescriptor()

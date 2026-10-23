@@ -27,7 +27,7 @@ import { setupSwitch } from './setup.component'
 export const TSwitchElement = ElementBase(HTMLSpanElement, {
 	descriptor: SwitchDescriptor(),
 	template: switchTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupSwitch,
 })
 

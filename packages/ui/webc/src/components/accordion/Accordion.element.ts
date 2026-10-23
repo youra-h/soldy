@@ -30,7 +30,7 @@ export const TAccordionElement = ElementBase(HTMLDivElement, {
 	descriptor: AccordionDescriptor(),
 	facade: AccordionCollectionDescriptor(),
 	template: accordionTemplate,
-	root: { sets: ['attrs'] },
+	root: { strategy: 'host', sets: ['attrs'] },
 	setup: setupAccordion,
 })
 

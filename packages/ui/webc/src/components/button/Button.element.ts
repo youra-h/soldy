@@ -29,12 +29,7 @@
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import type { IButton } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type {
-	IElementBase,
-	IElementSpec,
-	TElementClass,
-	TElementProps,
-} from '../../adapter'
+import type { IElementBase, IElementSpec, TElementClass, TElementProps } from '../../adapter'
 import { buttonTemplate } from './button.template'
 import { setupButton } from './setup.component'
 

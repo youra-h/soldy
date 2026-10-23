@@ -75,7 +75,7 @@ function tabOf(
 }
 
 export const tabsTemplate: ITemplate<ITabs, TTabsCollectionFacade> = {
-	create: (root, hasSlot) => {
+	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const list = ownerDocument.createElement('div')
 		const leading = ownerDocument.createElement('div')

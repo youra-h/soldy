@@ -88,7 +88,9 @@ function placeIndicator(
 }
 
 export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollectionFacade> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const row = createDetail(
 			ownerDocument,

@@ -484,7 +484,7 @@ describe('шаблоны объявляют ровно те слоты, что �
 		['Accordion.Item', accordionItemTemplate, AccordionItemDescriptor],
 	] as const)('%s', async (_name, template, descriptor) => {
 		const root = document.createElement('div')
-		const targets = template.create(root, () => false, bareContext(root)).slots
+		const targets = template.create(root, bareContext(root)).slots
 
 		expect(Object.keys(targets).sort()).toEqual(
 			descriptor()

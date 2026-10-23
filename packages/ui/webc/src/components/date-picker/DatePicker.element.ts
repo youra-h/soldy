@@ -30,7 +30,7 @@ import { setupDatePicker } from './setup.component'
 export const TDatePickerElement = ElementBase(HTMLDivElement, {
 	descriptor: DatePickerDescriptor(),
 	template: datePickerTemplate,
-	root: { aria: 'rootAria' },
+	root: { strategy: 'host', aria: 'rootAria' },
 	setup: setupDatePicker,
 })
 

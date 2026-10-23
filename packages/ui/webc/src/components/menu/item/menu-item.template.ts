@@ -26,7 +26,7 @@ import { lend, type ITemplate } from '../../../adapter'
 import { createRow, partOf, rowBindings } from '../row'
 
 export const menuItemTemplate: ITemplate<IMenuItem, TMenuItemCollectionFacade> = {
-	create: (root, _hasSlot, ctx) => {
+	create: (root, ctx) => {
 		const { ownerDocument } = root
 		const row = createRow(root, () => ctx.facade?.context?.adapters.menu.choose())
 		const icon = partOf(ownerDocument, 'so-menu-item__icon')

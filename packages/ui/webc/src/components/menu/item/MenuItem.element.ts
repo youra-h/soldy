@@ -28,7 +28,7 @@ export const TMenuItemElement = ElementBase(HTMLDivElement, {
 	descriptor: MenuItemDescriptor(),
 	facade: MenuCollectionItemDescriptor(),
 	template: menuItemTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupMenuItem,
 })
 

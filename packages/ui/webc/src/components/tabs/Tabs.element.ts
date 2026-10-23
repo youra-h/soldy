@@ -39,7 +39,7 @@ export const TTabsElement = ElementBase(HTMLDivElement, {
 	descriptor: TabsDescriptor(),
 	facade: TabsCollectionDescriptor(),
 	template: tabsTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupTabs,
 })
 

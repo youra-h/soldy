@@ -29,7 +29,7 @@ export const TTagsItemElement = ElementBase(HTMLDivElement, {
 	descriptor: TagsItemDescriptor(),
 	facade: TagsCollectionItemDescriptor(),
 	template: tagsItemTemplate,
-	root: { sets: ['attrs', 'dataset'], order: true, control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], order: true, control: true },
 	setup: setupTagsItem,
 })
 

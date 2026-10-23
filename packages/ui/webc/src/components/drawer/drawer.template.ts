@@ -78,7 +78,9 @@ function isIcon(node: Element): node is TIconElementProps {
 }
 
 export const drawerTemplate: ITemplate<IDrawer, unknown, TDrawerOutputs> = {
-	create: (root, hasSlot, ctx) => {
+	create: (root, ctx) => {
+		const { hasSlot } = ctx
+
 		const { ownerDocument } = root
 		const backdrop = ownerDocument.createElement('div')
 		const handle = ownerDocument.createElement('div')

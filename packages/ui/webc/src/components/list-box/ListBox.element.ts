@@ -44,7 +44,7 @@ export const TListBoxElement = ElementBase(HTMLDivElement, {
 	descriptor: ListBoxDescriptor(),
 	facade: ListBoxCollectionDescriptor(),
 	template: listBoxTemplate,
-	root: { sets: ['attrs', 'dataset'], control: true },
+	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },
 	setup: setupListBox,
 })
 

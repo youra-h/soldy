@@ -41,7 +41,7 @@ function attribute(field: HTMLInputElement, name: string, value: unknown): void 
 }
 
 export const radioGroupItemTemplate: ITemplate<IRadioGroupItem, TRadioGroupItemCollectionFacade> = {
-	create: (root, _hasSlot, ctx) => {
+	create: (root, ctx) => {
 		const { ownerDocument } = root
 		const field = ownerDocument.createElement('input')
 		const control = ownerDocument.createElement('span')
