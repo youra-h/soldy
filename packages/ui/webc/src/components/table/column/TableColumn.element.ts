@@ -17,12 +17,17 @@
  */
 
 import { TableColumnDescriptor } from '@soldy-ui/setup'
+import type { ITableColumn } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTableColumn } from './setup.component'
 import { tableColumnTemplate } from './table-column.template'
 
-export const TTableColumnElement = ElementBase(HTMLTableCellElement, {
+export const TTableColumnElement: TElementClassOf<
+	typeof HTMLTableCellElement,
+	typeof TableColumnDescriptor,
+	ITableColumn
+> = ElementBase(HTMLTableCellElement, {
 	descriptor: TableColumnDescriptor,
 	template: tableColumnTemplate,
 	root: { strategy: 'host', style: 'widthStyle' },

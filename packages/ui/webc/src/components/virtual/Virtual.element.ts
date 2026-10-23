@@ -23,13 +23,18 @@
  */
 
 import { VirtualDescriptor } from '@soldy-ui/setup'
+import type { IVirtual } from '@soldy-ui/core'
 import { ElementBase } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { setupVirtual } from './setup.component'
 import { virtualTemplate } from './virtual.template'
 
-export const TVirtualElement = ElementBase(HTMLElement, {
+export const TVirtualElement: TElementClassOf<
+	typeof HTMLElement,
+	typeof VirtualDescriptor,
+	IVirtual
+> = ElementBase(HTMLElement, {
 	descriptor: VirtualDescriptor,
 	template: virtualTemplate,
 	setup: setupVirtual,

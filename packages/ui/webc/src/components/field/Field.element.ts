@@ -19,16 +19,18 @@
  */
 
 import { FieldDescriptor } from '@soldy-ui/setup'
+import type { IField } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { fieldTemplate } from './field.template'
 import { setupField } from './setup.component'
 
-export const TFieldElement = ElementBase(HTMLDivElement, {
-	descriptor: FieldDescriptor,
-	template: fieldTemplate,
-	setup: setupField,
-})
+export const TFieldElement: TElementClassOf<typeof HTMLDivElement, typeof FieldDescriptor, IField> =
+	ElementBase(HTMLDivElement, {
+		descriptor: FieldDescriptor,
+		template: fieldTemplate,
+		setup: setupField,
+	})
 
 defineElement('so-field', TFieldElement, 'div')
 

@@ -13,12 +13,17 @@
  */
 
 import { MenuSeparatorDescriptor } from '@soldy-ui/setup'
+import type { TMenuSeparator } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuSeparatorTemplate } from './menu-separator.template'
 import { setupMenuSeparator } from './setup.component'
 
-export const TMenuSeparatorElement = ElementBase(HTMLDivElement, {
+export const TMenuSeparatorElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuSeparatorDescriptor,
+	TMenuSeparator
+> = ElementBase(HTMLDivElement, {
 	descriptor: MenuSeparatorDescriptor,
 	template: menuSeparatorTemplate,
 	setup: setupMenuSeparator,

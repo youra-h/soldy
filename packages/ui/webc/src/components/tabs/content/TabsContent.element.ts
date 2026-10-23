@@ -17,12 +17,18 @@
  */
 
 import { TabsCollectionContentDescriptor, TabsContentDescriptor } from '@soldy-ui/setup'
+import type { ITabsContent, TTabsContentCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTabsContent } from './setup.component'
 import { tabsContentTemplate } from './tabs-content.template'
 
-export const TTabsContentElement = ElementBase(HTMLDivElement, {
+export const TTabsContentElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TabsContentDescriptor,
+	ITabsContent,
+	TTabsContentCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: TabsContentDescriptor,
 	facade: TabsCollectionContentDescriptor,
 	template: tabsContentTemplate,

@@ -26,12 +26,17 @@
  */
 
 import { DialogDescriptor } from '@soldy-ui/setup'
+import type { IDialog } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { dialogTemplate } from './dialog.template'
 import { setupDialog } from './setup.component'
 
-export const TDialogElement = ElementBase(HTMLDivElement, {
+export const TDialogElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof DialogDescriptor,
+	IDialog
+> = ElementBase(HTMLDivElement, {
 	descriptor: DialogDescriptor,
 	template: dialogTemplate,
 	root: { strategy: 'host', teleport: { target: 'target' } },

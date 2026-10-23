@@ -23,12 +23,18 @@
  */
 
 import { CalendarCollectionItemDescriptor, CalendarItemDescriptor } from '@soldy-ui/setup'
+import type { ICalendarItem, TCalendarItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { calendarItemTemplate } from './calendar-item.template'
 import { setupCalendarItem } from './setup.component'
 
-export const TCalendarItemElement = ElementBase(HTMLTableCellElement, {
+export const TCalendarItemElement: TElementClassOf<
+	typeof HTMLTableCellElement,
+	typeof CalendarItemDescriptor,
+	ICalendarItem,
+	TCalendarItemCollectionFacade
+> = ElementBase(HTMLTableCellElement, {
 	descriptor: CalendarItemDescriptor,
 	facade: CalendarCollectionItemDescriptor,
 	template: calendarItemTemplate,

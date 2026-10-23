@@ -29,12 +29,19 @@ import {
 	MenuSubmenuCollectionDescriptor,
 	MenuSubmenuDescriptor,
 } from '@soldy-ui/setup'
+import type { IMenuSubmenu, TMenuCollectionFacade, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuSubmenuTemplate } from './menu-submenu.template'
 import { setupMenuSubmenu } from './setup.component'
 
-export const TMenuSubmenuElement = ElementBase(HTMLDivElement, {
+export const TMenuSubmenuElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuSubmenuDescriptor,
+	IMenuSubmenu,
+	TMenuItemCollectionFacade,
+	TMenuCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: MenuSubmenuDescriptor,
 	facade: MenuCollectionItemDescriptor,
 	ownerFacade: MenuSubmenuCollectionDescriptor,

@@ -22,12 +22,17 @@
  */
 
 import { TextareaDescriptor } from '@soldy-ui/setup'
+import type { ITextarea } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { textareaTemplate } from './textarea.template'
 import { setupTextarea } from './setup.component'
 
-export const TTextareaElement = ElementBase(HTMLDivElement, {
+export const TTextareaElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TextareaDescriptor,
+	ITextarea
+> = ElementBase(HTMLDivElement, {
 	descriptor: TextareaDescriptor,
 	template: textareaTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },

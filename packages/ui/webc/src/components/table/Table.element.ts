@@ -29,14 +29,20 @@
  */
 
 import { TableCollectionDescriptor, TableDescriptor } from '@soldy-ui/setup'
+import type { ITable, TTableCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { TTableColumnElement } from './column'
 import { TTableRowElement } from './row'
 import { setupTable } from './setup.component'
 import { tableTemplate } from './table.template'
 
-export const TTableElement = ElementBase(HTMLDivElement, {
+export const TTableElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TableDescriptor,
+	ITable,
+	TTableCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: TableDescriptor,
 	facade: TableCollectionDescriptor,
 	template: tableTemplate,

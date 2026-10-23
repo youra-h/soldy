@@ -14,12 +14,17 @@
  */
 
 import { SkeletonDescriptor } from '@soldy-ui/setup'
+import type { ISkeleton } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { skeletonTemplate } from './skeleton.template'
 import { setupSkeleton } from './setup.component'
 
-export const TSkeletonElement = ElementBase(HTMLDivElement, {
+export const TSkeletonElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof SkeletonDescriptor,
+	ISkeleton
+> = ElementBase(HTMLDivElement, {
 	descriptor: SkeletonDescriptor,
 	template: skeletonTemplate,
 	root: { strategy: 'host', hides: false },

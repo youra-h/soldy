@@ -29,7 +29,7 @@
 import { ButtonDescriptor } from '@soldy-ui/setup'
 import type { IButton } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementOf } from '../../adapter'
+import type { TElementClassOf, TElementOf } from '../../adapter'
 import { buttonTemplate } from './button.template'
 import { setupButton } from './setup.component'
 
@@ -40,7 +40,11 @@ const BUTTON = {
 	setup: setupButton,
 }
 
-export const TButtonElement = ElementBase(HTMLButtonElement, BUTTON)
+export const TButtonElement: TElementClassOf<
+	typeof HTMLButtonElement,
+	typeof ButtonDescriptor,
+	IButton
+> = ElementBase(HTMLButtonElement, BUTTON)
 
 defineElement('so-button', TButtonElement, 'button')
 
@@ -54,9 +58,15 @@ defineElement('so-button', TButtonElement, 'button')
 export type TButtonTag = 'div' | 'span'
 
 /** Класс Button на теге `K`: нативный класс тега и своё элемента soldy. */
-export type TButtonTagClass<K extends TButtonTag> = ReturnType<typeof variant<K>>
+export type TButtonTagClass<K extends TButtonTag> = TElementClassOf<
+	new () => HTMLElementTagNameMap[K],
+	typeof ButtonDescriptor,
+	IButton
+>
 
-function variant<K extends TButtonTag>(Native: new () => HTMLElementTagNameMap[K]) {
+function variant<K extends TButtonTag>(
+	Native: new () => HTMLElementTagNameMap[K],
+): TButtonTagClass<K> {
 	return ElementBase(Native, BUTTON)
 }
 

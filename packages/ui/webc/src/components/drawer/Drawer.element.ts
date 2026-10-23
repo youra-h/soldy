@@ -27,12 +27,17 @@
  */
 
 import { DrawerDescriptor } from '@soldy-ui/setup'
+import type { IDrawer } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { drawerTemplate } from './drawer.template'
 import { setupDrawer } from './setup.component'
 
-export const TDrawerElement = ElementBase(HTMLDivElement, {
+export const TDrawerElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof DrawerDescriptor,
+	IDrawer
+> = ElementBase(HTMLDivElement, {
 	descriptor: DrawerDescriptor,
 	template: drawerTemplate,
 	root: { strategy: 'host', teleport: { target: 'target', contained: 'contained' } },

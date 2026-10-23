@@ -14,12 +14,17 @@
  */
 
 import { ListBoxGroupDescriptor } from '@soldy-ui/setup'
+import type { IItemGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { listBoxGroupTemplate } from './list-box-group.template'
 import { setupListBoxGroup } from './setup.component'
 
-export const TListBoxGroupElement = ElementBase(HTMLDivElement, {
+export const TListBoxGroupElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof ListBoxGroupDescriptor,
+	IItemGroup
+> = ElementBase(HTMLDivElement, {
 	descriptor: ListBoxGroupDescriptor,
 	template: listBoxGroupTemplate,
 	setup: setupListBoxGroup,

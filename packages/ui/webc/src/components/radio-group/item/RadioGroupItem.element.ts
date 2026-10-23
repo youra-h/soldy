@@ -27,12 +27,18 @@
  */
 
 import { RadioGroupCollectionItemDescriptor, RadioGroupItemDescriptor } from '@soldy-ui/setup'
+import type { IRadioGroupItem, TRadioGroupItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { radioGroupItemTemplate } from './radio-group-item.template'
 import { setupRadioGroupItem } from './setup.component'
 
-export const TRadioGroupItemElement = ElementBase(HTMLLabelElement, {
+export const TRadioGroupItemElement: TElementClassOf<
+	typeof HTMLLabelElement,
+	typeof RadioGroupItemDescriptor,
+	IRadioGroupItem,
+	TRadioGroupItemCollectionFacade
+> = ElementBase(HTMLLabelElement, {
 	descriptor: RadioGroupItemDescriptor,
 	facade: RadioGroupCollectionItemDescriptor,
 	template: radioGroupItemTemplate,

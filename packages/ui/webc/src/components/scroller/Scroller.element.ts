@@ -13,12 +13,17 @@
  */
 
 import { ScrollerDescriptor } from '@soldy-ui/setup'
+import type { IScroller } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { scrollerTemplate } from './scroller.template'
 import { setupScroller } from './setup.component'
 
-export const TScrollerElement = ElementBase(HTMLDivElement, {
+export const TScrollerElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof ScrollerDescriptor,
+	IScroller
+> = ElementBase(HTMLDivElement, {
 	descriptor: ScrollerDescriptor,
 	template: scrollerTemplate,
 	setup: setupScroller,

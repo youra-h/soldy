@@ -23,12 +23,17 @@
  */
 
 import { TooltipDescriptor } from '@soldy-ui/setup'
+import type { ITooltip } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { tooltipTemplate } from './tooltip.template'
 import { setupTooltip } from './setup.component'
 
-export const TTooltipElement = ElementBase(HTMLSpanElement, {
+export const TTooltipElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof TooltipDescriptor,
+	ITooltip
+> = ElementBase(HTMLSpanElement, {
 	descriptor: TooltipDescriptor,
 	template: tooltipTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'] },

@@ -19,12 +19,18 @@
  */
 
 import { TagsCollectionItemDescriptor, TagsItemDescriptor } from '@soldy-ui/setup'
+import type { ITagsItem, TTagsItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTagsItem } from './setup.component'
 import { tagsItemTemplate } from './tags-item.template'
 
-export const TTagsItemElement = ElementBase(HTMLDivElement, {
+export const TTagsItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TagsItemDescriptor,
+	ITagsItem,
+	TTagsItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: TagsItemDescriptor,
 	facade: TagsCollectionItemDescriptor,
 	template: tagsItemTemplate,

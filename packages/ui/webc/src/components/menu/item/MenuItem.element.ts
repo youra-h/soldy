@@ -18,12 +18,18 @@
  */
 
 import { MenuCollectionItemDescriptor, MenuItemDescriptor } from '@soldy-ui/setup'
+import type { IMenuItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuItemTemplate } from './menu-item.template'
 import { setupMenuItem } from './setup.component'
 
-export const TMenuItemElement = ElementBase(HTMLDivElement, {
+export const TMenuItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuItemDescriptor,
+	IMenuItem,
+	TMenuItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: MenuItemDescriptor,
 	facade: MenuCollectionItemDescriptor,
 	template: menuItemTemplate,

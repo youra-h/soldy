@@ -10,12 +10,17 @@
  */
 
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
+import type { IComponentView } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { componentViewTemplate } from './component-view.template'
 import { setupComponentView } from './setup.component'
 
-export const TComponentViewElement = ElementBase(HTMLDivElement, {
+export const TComponentViewElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof ComponentViewDescriptor,
+	IComponentView
+> = ElementBase(HTMLDivElement, {
 	descriptor: ComponentViewDescriptor,
 	template: componentViewTemplate,
 	setup: setupComponentView,

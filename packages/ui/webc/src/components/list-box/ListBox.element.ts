@@ -32,14 +32,20 @@
  */
 
 import { ListBoxCollectionDescriptor, ListBoxDescriptor } from '@soldy-ui/setup'
+import type { IListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { TListBoxItemElement } from './item'
 import { TListBoxGroupElement } from './group'
 import { listBoxTemplate } from './list-box.template'
 import { setupListBox } from './setup.component'
 
-export const TListBoxElement = ElementBase(HTMLDivElement, {
+export const TListBoxElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof ListBoxDescriptor,
+	IListBox,
+	TListBoxCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: ListBoxDescriptor,
 	facade: ListBoxCollectionDescriptor,
 	template: listBoxTemplate,

@@ -30,14 +30,20 @@
  */
 
 import { ToastsCollectionDescriptor, ToastsDescriptor } from '@soldy-ui/setup'
+import type { IToasts, TToastsCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { defineAutonomousElement } from '../../adapter/runtime/defineElement'
 import { TToastsItemElement } from './item'
 import { setupToasts } from './setup.component'
 import { toastsTemplate } from './toasts.template'
 
-export const TToastsElement = ElementBase(HTMLElement, {
+export const TToastsElement: TElementClassOf<
+	typeof HTMLElement,
+	typeof ToastsDescriptor,
+	IToasts,
+	TToastsCollectionFacade
+> = ElementBase(HTMLElement, {
 	descriptor: ToastsDescriptor,
 	facade: ToastsCollectionDescriptor,
 	template: toastsTemplate,

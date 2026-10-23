@@ -148,6 +148,26 @@ export type TElementClass<
 	is(node: unknown): node is TElement
 }
 
+/**
+ * Класс элемента по нативному классу тега и дескриптору. Аннотация экспорта
+ * элемента: дескриптор по имени (`typeof ButtonDescriptor`) декларация
+ * пишет коротко, а выведенный тип развернула бы целиком.
+ */
+export type TElementClassOf<
+	TNative extends TNativeElementClass,
+	TDescriptor extends TDescriptorFactory,
+	TInstance,
+	TFacade = unknown,
+	TOwnerFacade = unknown,
+	TOwn extends string = never,
+> = TNative &
+	TElementClass<
+		TInstance,
+		TFacade,
+		TOwnerFacade,
+		TElementOf<InstanceType<TNative>, TDescriptor, TInstance, TFacade, TOwnerFacade, TOwn>
+	>
+
 /** Тип элемента класса: `TElementType<typeof TButtonElement>`. */
 export type TElementType<TClass> = TClass extends { is(node: unknown): node is infer T } ? T : never
 
@@ -166,13 +186,7 @@ export function ElementBase<
 >(
 	Native: TNative,
 	spec: IElementSpec<TInstance, TFacade, TOutputs, TOwnerFacade, TDescriptor, TOwn>,
-): TNative &
-	TElementClass<
-		TInstance,
-		TFacade,
-		TOwnerFacade,
-		TElementOf<InstanceType<TNative>, TDescriptor, TInstance, TFacade, TOwnerFacade, TOwn>
-	> {
+): TElementClassOf<TNative, TDescriptor, TInstance, TFacade, TOwnerFacade, TOwn> {
 	const descriptors = [spec.descriptor(), spec.facade?.(), spec.ownerFacade?.()].filter(
 		(descriptor): descriptor is IComponentDescriptor => descriptor !== undefined,
 	)

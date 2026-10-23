@@ -19,12 +19,17 @@
  */
 
 import { ProgressLinearDescriptor } from '@soldy-ui/setup'
+import type { IProgressLinear } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { progressLinearTemplate } from './progress-linear.template'
 import { setupProgressLinear } from './setup.component'
 
-export const TProgressLinearElement = ElementBase(HTMLSpanElement, {
+export const TProgressLinearElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof ProgressLinearDescriptor,
+	IProgressLinear
+> = ElementBase(HTMLSpanElement, {
 	descriptor: ProgressLinearDescriptor,
 	template: progressLinearTemplate,
 	root: { strategy: 'host', style: 'percentStyle' },

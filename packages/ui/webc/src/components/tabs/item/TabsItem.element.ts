@@ -19,12 +19,18 @@
  */
 
 import { TabsCollectionItemDescriptor, TabsItemDescriptor } from '@soldy-ui/setup'
+import type { ITabsItem, TTabsItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTabsItem } from './setup.component'
 import { tabsItemTemplate } from './tabs-item.template'
 
-export const TTabsItemElement = ElementBase(HTMLDivElement, {
+export const TTabsItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof TabsItemDescriptor,
+	ITabsItem,
+	TTabsItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: TabsItemDescriptor,
 	facade: TabsCollectionItemDescriptor,
 	template: tabsItemTemplate,

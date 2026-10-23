@@ -21,12 +21,17 @@
  */
 
 import { RatingDescriptor } from '@soldy-ui/setup'
+import type { IRating } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { ratingTemplate } from './rating.template'
 import { setupRating } from './setup.component'
 
-export const TRatingElement = ElementBase(HTMLSpanElement, {
+export const TRatingElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof RatingDescriptor,
+	IRating
+> = ElementBase(HTMLSpanElement, {
 	descriptor: RatingDescriptor,
 	template: ratingTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], fieldId: true },

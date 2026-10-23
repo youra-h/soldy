@@ -32,14 +32,20 @@
  */
 
 import { SelectCollectionDescriptor, SelectDescriptor } from '@soldy-ui/setup'
+import type { ISelect, TSelectCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { TSelectGroupElement } from './group'
 import { TSelectItemElement } from './item'
 import { selectTemplate } from './select.template'
 import { setupSelect } from './setup.component'
 
-export const TSelectElement = ElementBase(HTMLDivElement, {
+export const TSelectElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof SelectDescriptor,
+	ISelect,
+	TSelectCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: SelectDescriptor,
 	facade: SelectCollectionDescriptor,
 	template: selectTemplate,

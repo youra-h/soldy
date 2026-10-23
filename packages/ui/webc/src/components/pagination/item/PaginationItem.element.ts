@@ -21,12 +21,18 @@
  */
 
 import { PaginationCollectionItemDescriptor, PaginationItemDescriptor } from '@soldy-ui/setup'
+import type { IPaginationItem, TPaginationItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { paginationItemTemplate } from './pagination-item.template'
 import { setupPaginationItem } from './setup.component'
 
-export const TPaginationItemElement = ElementBase(HTMLLIElement, {
+export const TPaginationItemElement: TElementClassOf<
+	typeof HTMLLIElement,
+	typeof PaginationItemDescriptor,
+	IPaginationItem,
+	TPaginationItemCollectionFacade
+> = ElementBase(HTMLLIElement, {
 	descriptor: PaginationItemDescriptor,
 	facade: PaginationCollectionItemDescriptor,
 	template: paginationItemTemplate,

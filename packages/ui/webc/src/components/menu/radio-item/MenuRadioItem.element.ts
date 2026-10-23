@@ -17,12 +17,18 @@
  */
 
 import { MenuCollectionRadioItemDescriptor, MenuRadioItemDescriptor } from '@soldy-ui/setup'
+import type { IMenuRadioItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuRadioItemTemplate } from './menu-radio-item.template'
 import { setupMenuRadioItem } from './setup.component'
 
-export const TMenuRadioItemElement = ElementBase(HTMLDivElement, {
+export const TMenuRadioItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuRadioItemDescriptor,
+	IMenuRadioItem,
+	TMenuItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: MenuRadioItemDescriptor,
 	facade: MenuCollectionRadioItemDescriptor,
 	template: menuRadioItemTemplate,

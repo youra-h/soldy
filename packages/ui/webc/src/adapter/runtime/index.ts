@@ -13,6 +13,7 @@ export {
 	type IElementSpec,
 	type TDescriptorFactory,
 	type TElementClass,
+	type TElementClassOf,
 	type TElementOf,
 	type TElementProps,
 	type TElementType,

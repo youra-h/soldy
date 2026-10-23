@@ -20,12 +20,20 @@
  */
 
 import { IconDescriptor } from '@soldy-ui/setup'
+import type { IIcon } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { iconTemplate } from './icon.template'
 import { setupIcon } from './setup.component'
 
-export const TIconElement = ElementBase(HTMLSpanElement, {
+export const TIconElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof IconDescriptor,
+	IIcon,
+	unknown,
+	unknown,
+	'icon'
+> = ElementBase(HTMLSpanElement, {
 	descriptor: IconDescriptor,
 	template: iconTemplate,
 	attributes: ['icon'],

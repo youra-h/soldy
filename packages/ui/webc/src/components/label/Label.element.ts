@@ -17,12 +17,17 @@
  */
 
 import { LabelDescriptor } from '@soldy-ui/setup'
+import type { ILabel } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { labelTemplate } from './label.template'
 import { setupLabel } from './setup.component'
 
-export const TLabelElement = ElementBase(HTMLLabelElement, {
+export const TLabelElement: TElementClassOf<
+	typeof HTMLLabelElement,
+	typeof LabelDescriptor,
+	ILabel
+> = ElementBase(HTMLLabelElement, {
 	descriptor: LabelDescriptor,
 	template: labelTemplate,
 	setup: setupLabel,

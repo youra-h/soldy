@@ -19,12 +19,18 @@
  */
 
 import { TableCollectionRowDescriptor, TableRowDescriptor } from '@soldy-ui/setup'
+import type { ITableRow, TTableRowCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { setupTableRow } from './setup.component'
 import { tableRowTemplate } from './table-row.template'
 
-export const TTableRowElement = ElementBase(HTMLTableRowElement, {
+export const TTableRowElement: TElementClassOf<
+	typeof HTMLTableRowElement,
+	typeof TableRowDescriptor,
+	ITableRow,
+	TTableRowCollectionFacade
+> = ElementBase(HTMLTableRowElement, {
 	descriptor: TableRowDescriptor,
 	facade: TableCollectionRowDescriptor,
 	template: tableRowTemplate,

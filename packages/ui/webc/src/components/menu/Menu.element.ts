@@ -37,8 +37,9 @@
  */
 
 import { MenuCollectionDescriptor, MenuDescriptor } from '@soldy-ui/setup'
+import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { TMenuCheckboxItemElement } from './checkbox-item'
 import { TMenuGroupElement } from './group'
 import { TMenuItemElement } from './item'
@@ -50,7 +51,12 @@ import { TMenuSubmenuElement } from './submenu'
 import { menuTemplate } from './menu.template'
 import { setupMenu } from './setup.component'
 
-export const TMenuElement = ElementBase(HTMLSpanElement, {
+export const TMenuElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof MenuDescriptor,
+	IMenu,
+	TMenuCollectionFacade
+> = ElementBase(HTMLSpanElement, {
 	descriptor: MenuDescriptor,
 	facade: MenuCollectionDescriptor,
 	template: menuTemplate,

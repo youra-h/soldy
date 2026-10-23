@@ -17,12 +17,18 @@
  */
 
 import { MenuCollectionItemDescriptor, MenuPopoverItemDescriptor } from '@soldy-ui/setup'
+import type { IMenuPopoverItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { menuPopoverItemTemplate } from './menu-popover-item.template'
 import { setupMenuPopoverItem } from './setup.component'
 
-export const TMenuPopoverItemElement = ElementBase(HTMLDivElement, {
+export const TMenuPopoverItemElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof MenuPopoverItemDescriptor,
+	IMenuPopoverItem,
+	TMenuItemCollectionFacade
+> = ElementBase(HTMLDivElement, {
 	descriptor: MenuPopoverItemDescriptor,
 	facade: MenuCollectionItemDescriptor,
 	template: menuPopoverItemTemplate,

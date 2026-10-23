@@ -33,7 +33,7 @@
 import { PopoverDescriptor } from '@soldy-ui/setup'
 import type { IPopover } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { IElementSpec, TElementOf } from '../../adapter'
+import type { IElementSpec, TElementClassOf, TElementOf } from '../../adapter'
 import { popoverTemplate } from './popover.template'
 import { setupPopover, type TPopoverOutputs } from './setup.component'
 
@@ -45,7 +45,11 @@ const POPOVER = {
 	setup: setupPopover,
 } satisfies IElementSpec<IPopover, unknown, TPopoverOutputs, unknown, typeof PopoverDescriptor>
 
-export const TPopoverElement = ElementBase(HTMLSpanElement, POPOVER)
+export const TPopoverElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof PopoverDescriptor,
+	IPopover
+> = ElementBase(HTMLSpanElement, POPOVER)
 
 defineElement('so-popover', TPopoverElement, 'span')
 
@@ -58,9 +62,15 @@ defineElement('so-popover', TPopoverElement, 'span')
 export type TPopoverTag = 'div'
 
 /** Класс Popover на теге `K`: нативный класс тега и своё элемента soldy. */
-export type TPopoverTagClass<K extends TPopoverTag> = ReturnType<typeof variant<K>>
+export type TPopoverTagClass<K extends TPopoverTag> = TElementClassOf<
+	new () => HTMLElementTagNameMap[K],
+	typeof PopoverDescriptor,
+	IPopover
+>
 
-function variant<K extends TPopoverTag>(Native: new () => HTMLElementTagNameMap[K]) {
+function variant<K extends TPopoverTag>(
+	Native: new () => HTMLElementTagNameMap[K],
+): TPopoverTagClass<K> {
 	return ElementBase(Native, POPOVER)
 }
 

@@ -18,12 +18,17 @@
  */
 
 import { SwitchDescriptor } from '@soldy-ui/setup'
+import type { ISwitch } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { switchTemplate } from './switch.template'
 import { setupSwitch } from './setup.component'
 
-export const TSwitchElement = ElementBase(HTMLSpanElement, {
+export const TSwitchElement: TElementClassOf<
+	typeof HTMLSpanElement,
+	typeof SwitchDescriptor,
+	ISwitch
+> = ElementBase(HTMLSpanElement, {
 	descriptor: SwitchDescriptor,
 	template: switchTemplate,
 	root: { strategy: 'host', sets: ['attrs', 'dataset'], control: true },

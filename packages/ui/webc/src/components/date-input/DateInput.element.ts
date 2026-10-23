@@ -17,12 +17,17 @@
  */
 
 import { DateInputDescriptor } from '@soldy-ui/setup'
+import type { IDateInput } from '@soldy-ui/core'
 import { ElementBase, defineElement } from '../../adapter'
-import type { TElementType } from '../../adapter'
+import type { TElementClassOf, TElementType } from '../../adapter'
 import { dateInputTemplate } from './date-input.template'
 import { setupDateInput } from './setup.component'
 
-export const TDateInputElement = ElementBase(HTMLDivElement, {
+export const TDateInputElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof DateInputDescriptor,
+	IDateInput
+> = ElementBase(HTMLDivElement, {
 	descriptor: DateInputDescriptor,
 	template: dateInputTemplate,
 	setup: setupDateInput,

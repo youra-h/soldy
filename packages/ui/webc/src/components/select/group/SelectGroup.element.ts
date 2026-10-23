@@ -14,12 +14,17 @@
  */
 
 import { SelectGroupDescriptor } from '@soldy-ui/setup'
+import type { IItemGroup } from '@soldy-ui/core'
 import { ElementBase } from '../../../adapter'
-import type { TElementType } from '../../../adapter'
+import type { TElementClassOf, TElementType } from '../../../adapter'
 import { selectGroupTemplate } from './select-group.template'
 import { setupSelectGroup } from './setup.component'
 
-export const TSelectGroupElement = ElementBase(HTMLDivElement, {
+export const TSelectGroupElement: TElementClassOf<
+	typeof HTMLDivElement,
+	typeof SelectGroupDescriptor,
+	IItemGroup
+> = ElementBase(HTMLDivElement, {
 	descriptor: SelectGroupDescriptor,
 	template: selectGroupTemplate,
 	setup: setupSelectGroup,
