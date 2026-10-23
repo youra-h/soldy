@@ -1,0 +1,165 @@
+/* ─── ListBox ─────────────────────────────────────────────────
+ * Список выбора: шапка, узел списка и подвал столбцом.
+ *
+ *   .so-list-box                    корень — рамка вокруг шапки, списка и
+ *                                   подвала
+ *     .so-list-box__list            узел списка — элементы столбцом
+ *       .so-list-box-item           элемент — строка (Button)
+ *         .so-list-box-item__indicator  отметка выбранного
+ *       .so-list-box-group          группа — подпись и её элементы
+ *         .so-list-box-group__label подпись группы (`group.css`)
+ *       .so-list-box__separator     разделитель секций групп (`group.css`)
+ *       .so-list-box__filler        распорка окна `Virtual`
+ *
+ * Состояние (`data-disabled`, `data-content-fit`) ядро отдаёт на корень, а
+ * роль, имя и остановку Tab — узлу списка: в `listbox` ARIA пускает только
+ * опции и группы, и шапка с подвалом стоят рядом с ним.
+ *
+ * Части корня стоят с тем же зазором, что элементы в списке, а поле корня
+ * держит их от его края. Ширина — между минимумом и потолком: короткий список
+ * не складывается в узкий столбец, а длинный текст строки режется
+ * многоточием. `contentFit` — одно свойство на два уровня: со списка читается
+ * только `expand` (ширина контейнера — решение общее для всех строк), а
+ * перенос строки — с самого элемента. Парного правила переноса на корне нет
+ * намеренно: оно перекрывало бы элемент, отказавшийся от переноса.
+ *
+ * Прокручивается узел списка, а не корень: предел строк (`maxRows`)
+ * `TListHeightPlugin` ставит узлу списка — и элементам групп — инлайновыми
+ * `max-height` и прокруткой, и шапка с подвалом остаются на месте. Своих полей
+ * и рамки у узла нет, поэтому предел — ровно строки с зазорами. Высоту корня
+ * может ограничить и приложение: тогда сжимается и прокручивается тот же узел.
+ *
+ * Распорка окна (обёртка `Virtual`) — пустая полоса на месте пропущенных
+ * элементов, высотой в них (`--so-filler-height`, её пишет библиотека): без
+ * полей и рамок, под `aria-hidden`. Не сжимается: пустой флекс-элемент в
+ * списке под `max-height` сжался бы до нуля, и окно съехало бы к началу. Шаг
+ * окна — элемент и зазор списка, а высота распорки — пропущенные шаги
+ * целиком. Зазор за распоркой список добавит ещё раз, поэтому нижнее поле у
+ * неё — минус тот же зазор: иначе каждая распорка сдвигала бы элементы за
+ * собой.
+ *
+ * Группа — столбец с тем же зазором, что у узла списка, и не сжимается: в
+ * списке под пределом строк она прокручивается вместе с ним. Флекс у группы
+ * свой, и место элемента в составе (`order`) действует внутри неё. Подпись —
+ * с полями сверху и снизу поровну: вместе с зазором списка над группой и
+ * зазором группы под подписью над её текстом и под ним свободно одинаково.
+ *
+ * Строка элемента — прямой ребёнок, и её правила пишутся ребёнком, а не
+ * потомком: кнопка, которую потребитель положил в слот строки, тоже
+ * `.so-button`. Элемент списка — не кнопка действия: курсор обычный.
+ * Содержимое строки — у начала строки, как у заголовка Accordion. Отметка
+ * выбранного — обёртка, которая стоит и у невыбранных и держит ширину:
+ * размер — ей, а не иконке, и подменённая слотом иконка строку не сдвигает.
+ *
+ * Зазор, поле, минимум и потолок ширины — переменные корня документа: по ним
+ * же стоят список Select и панель Menu. Умолчания — числа темы oren; тема
+ * задаёт свои на корне документа.
+ *
+ * Облик — рамка корня и её наведение, кольцо фокуса узла списка, вид строк и
+ * отметки — рисует тема. */
+
+:root {
+	--so-list-box-gap: 0.25rem;
+	--so-list-box-padding: 0.25rem;
+	--so-list-box-min-width: 10rem;
+	--so-list-box-max-width: 20rem;
+	--so-list-box-group-label-padding: 0.25rem;
+}
+
+.so-list-box {
+	display: flex;
+	flex-direction: column;
+	gap: var(--so-list-box-gap);
+	min-width: var(--so-list-box-min-width);
+	max-width: var(--so-list-box-max-width);
+	padding: var(--so-list-box-padding);
+}
+
+/* Выключенный список гаснет корнем целиком — рамкой, шапкой, строками и
+ * подвалом (`disabled.css`). Строки выключены вместе с ним и под погасшим
+ * корнем второй раз не гаснут. */
+.so-list-box[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-list-box[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+.so-list-box[data-content-fit='expand'] {
+	width: max-content;
+	min-width: 0;
+	max-width: none;
+}
+
+.so-list-box__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--so-list-box-gap);
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.so-list-box__filler {
+	flex-shrink: 0;
+	margin-block-end: calc(-1 * var(--so-list-box-gap));
+	block-size: var(--so-filler-height, 0);
+}
+
+.so-list-box-group {
+	display: flex;
+	flex-shrink: 0;
+	flex-direction: column;
+	gap: var(--so-list-box-gap);
+}
+
+.so-list-box-group__label {
+	padding-block: var(--so-list-box-group-label-padding);
+}
+
+/* Секции без разделителя — `groupSeparators` выключен, у ListBox это
+ * умолчание: группа за группой или за элементом без группы и элемент без
+ * группы за группой. Сверх линии разделитель занимал зазор списка, и секция
+ * отступает на него и на линию — встаёт там же, где стояла бы за
+ * разделителем (`group.css`). */
+:is(.so-list-box-group, .so-list-box-item) + .so-list-box-group,
+.so-list-box-group + .so-list-box-item {
+	margin-block-start: calc(var(--so-list-box-gap) + var(--so-group-separator-width, 0px));
+}
+
+.so-list-box-item {
+	min-height: fit-content;
+}
+
+.so-list-box-item > .so-button {
+	cursor: default;
+}
+
+/* Область целиком, а не её текст: отступы детей — нулевой специфичности, и
+ * собственный класс содержимого с отступом их перекрывает (`button.css`). */
+.so-list-box-item > .so-button > .so-button__text {
+	min-width: 0;
+	text-align: start;
+}
+
+:where(.so-list-box-item > .so-button > .so-button__text > *) {
+	margin-inline: 0 auto;
+}
+
+.so-list-box-item__indicator {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 1em;
+	height: 1em;
+}
+
+.so-list-box-item[data-content-fit='wrap'] > .so-button {
+	min-height: fit-content;
+}
+
+.so-list-box-item[data-content-fit='wrap'] > .so-button > .so-button__text {
+	white-space: normal;
+	overflow: visible;
+}

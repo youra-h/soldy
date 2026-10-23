@@ -1,0 +1,64 @@
+/* ─── Панель у якоря ─────────────────────────────────────────
+ * Немодальный слой у своего поля или триггера: панели Popover и Select, панель
+ * Menu и панель его пункта (`Menu.PopoverItem`). Панель — Frame,
+ * телепортированный в `body`; её открытость пишет её слой — `data-open`
+ * (`true`/`false`), — а закрытую разметка прячет (`display: none`).
+ *
+ * Закрытая панель нажатий не ловит. Тема вправе гасить её переходом: тогда
+ * `display` идёт переходом с `allow-discrete`, и до конца перехода закрытая
+ * панель ещё в раскладке, — но она уже не открыта, и нажатие сквозь неё —
+ * нажатие по тому, что под ней. Конца переходов ждёт код (`afterTransitions`:
+ * сброс отбора Select, конец слежения за якорем); без перехода он наступает
+ * тем же кадром.
+ *
+ * Полоса жеста (`swipe`) у панели у якоря стоит там, откуда панель тянут, — у
+ * края со стороны якоря: под ним — у верхнего края панели, над ним — у
+ * нижнего. Сторону после flip пишет в саму панель плагин якоря
+ * (`data-placement`). Зона захвата — поле панели с этой стороны, поэтому
+ * содержимое полоса не накрывает, а его раскладка та же, что без неё. Сама
+ * полоса — `swipe.css`, у панели Popover в контейнере её место по краю
+ * (`components/popover.css`). Пока панель тянут (`data-swiping`), курсор
+ * «держу» — по всей панели, куда бы он ни ушёл.
+ *
+ * Список — панели, чья структура в общем слое; панель DatePicker пока ставит
+ * тема (`packages/themes/base/AGENTS.md`, «Перенос структуры»).
+ *
+ * Облик — поверхность, кромка, тень, скругление, проявление и исчезание,
+ * сдвиг за указателем, возврат и уход смахнутой панели — рисует тема. */
+
+.so-popover__panel[data-open='false'],
+.so-select__panel[data-open='false'],
+.so-menu__panel[data-open='false'],
+.so-menu-item__panel[data-open='false'] {
+	pointer-events: none;
+}
+
+.so-popover__panel:has(> .so-popover__handle),
+.so-select__panel:has(> .so-select__handle) {
+	padding-block-start: var(--so-target-size);
+}
+
+.so-popover__panel:has(> .so-popover__handle)[data-placement^='top'],
+.so-select__panel:has(> .so-select__handle)[data-placement^='top'] {
+	padding-block-start: 0;
+	padding-block-end: var(--so-target-size);
+}
+
+.so-popover__panel:has(> .so-popover__handle)[data-swiping='true'],
+.so-select__panel:has(> .so-select__handle)[data-swiping='true'] {
+	cursor: grabbing;
+}
+
+.so-popover__panel > .so-popover__handle,
+.so-select__panel > .so-select__handle {
+	position: absolute;
+	inset-inline: 0;
+	top: 0;
+	block-size: var(--so-target-size);
+}
+
+.so-popover__panel[data-placement^='top'] > .so-popover__handle,
+.so-select__panel[data-placement^='top'] > .so-select__handle {
+	top: auto;
+	bottom: 0;
+}

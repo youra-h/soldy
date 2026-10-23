@@ -19,13 +19,18 @@
   DatePicker и Tooltip. Панели Select и DatePicker проявляются и гаснут, как
   поповер у триггера: на месте, одной прозрачностью и его временем, а с
   жестом (`swipe`) закрытая уходит от поля, как его панель с жестом от
-  триггера (тема — `themes/oren/src/mixins/_anchored.scss`, одна на троих;
-  сторожат «появление и исчезание» в `playground/vue/browser/select.spec.ts`
-  и `date-picker.spec.ts`, уход — `anchored-swipe.spec.ts`). Общая база
+  триггера (облик — `themes/oren/src/mixins/_anchored.scss`, один на троих,
+  а то, что закрытая панель нажатий не ловит, — общий слой тем,
+  `themes/base/src/anchored.css`; сторожат «появление и исчезание» в
+  `playground/vue/browser/select.spec.ts` и `date-picker.spec.ts`, уход —
+  `anchored-swipe.spec.ts`, нажатие сквозь закрытую без темы —
+  `theme-base-layers.spec.ts`). Общая база
   **`TFrame`** — слой с координатами
   (`x`/`y`/`width`/`height`), их раскладывает `TFrameLayoutPlugin` инлайном, —
   и **`TModalLayer`** — модального слоя, у которого корень сам и есть слой, а
-  место и размер раскладывает тема. **Стек один на все слои** — статика
+  место и размер раскладывает CSS темы — её общий слой (`modal.css`,
+  `components/dialog.css` и `components/drawer.css` в `@soldy-ui/theme-base`).
+  **Стек один на все слои** — статика
   `TLayer` (`baseZIndex`, `nextZIndex()`): со своим счётчиком у окна список
   Select, открытый из него, получил бы тот же номер и встал бы под окно.
   **Номер места — у слоя с узлом.** Место в стеке слой берёт при создании
@@ -69,7 +74,8 @@
   Components корень оставляет на месте база компонента),
   `TFrameLayoutPlugin` ставит панель
   `absolute` без `left`/`top`, а `TAnchorPlugin` её не двигает и
-  `data-placement` снимает: место в контейнере решает тема. Popover отдаёт
+  `data-placement` снимает: место в контейнере решает CSS темы (у Popover —
+  общий слой тем, `components/popover.css` в `@soldy-ui/theme-base`). Popover отдаёт
   значение своему Frame, а его панель прижата к краю контейнера — `edge`
   (`top`, `bottom` по умолчанию, `start`, `end`; набор `panelDataset` пишет
   `data-edge`): вдоль края — во всю длину, поперёк — по содержимому. Край —
@@ -643,9 +649,11 @@
   страница за панелью остаётся рабочей, и скринридер обязан её видеть.
 - **Раскладка модального слоя** (namespace `layout`) — без координат:
   `layout_styles` — `z-index` слоя и размер переменными (незаданный — без
-  переменной, умолчание у темы), `layout_backdropStyles` — тот же `z-index`
-  подложки. Переменными, а не инлайном: развёрнутое окно и потолок размера по
-  экрану держит тема, и инлайн их перебил бы. Расчёт один — абстрактный
+  переменной, умолчание — та же переменная у корня документа, в общем слое
+  тем), `layout_backdropStyles` — тот же `z-index` подложки. Переменными, а не
+  инлайном: развёрнутое окно и потолок размера по экрану держит CSS темы (её
+  общий слой, `components/dialog.css` и `components/drawer.css` в
+  `@soldy-ui/theme-base`), и инлайн их перебил бы. Расчёт один — абстрактный
   `TModalLayoutPlugin`, — а имена переменных читает CSS блока, поэтому у
   наследников они свои: `TDialogLayoutPlugin` — `--so-dialog-width` /
   `--so-dialog-height`, `TDrawerLayoutPlugin` — `--so-drawer-width` /

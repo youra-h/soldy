@@ -4,10 +4,13 @@
  * гашение выключенного (`disabled.css`) и структура частей — раскладка и
  * механика (`components/`), числа которых — переменные с умолчанием: общие
  * шкалы (`caption.css`, маркер обязательного поля — `required.css`, зона
- * нажатия мелкой кнопки — `target.css`) и шкалы блоков в их файлах. Облик —
- * цвет, рамки, скругления, тени, виды и движение
- * — рисует тема. Чистый CSS — без препроцессора и без Tailwind: тема берёт
- * файл как есть, своим сборщиком, и в её CSS база входит целиком.
+ * нажатия мелкой кнопки — `target.css`, подпись и разделитель групп —
+ * `group.css`), общее нескольких слоёв (панель у якоря — `anchored.css`,
+ * полоса жеста — `swipe.css`, поверхность места панелей — `place.css`,
+ * модальный слой — `modal.css`) и шкалы блоков в их файлах. Облик — цвет,
+ * рамки, скругления, тени, виды и движение — рисует тема. Чистый CSS — без
+ * препроцессора и без Tailwind: тема берёт файл как есть, своим сборщиком, и в
+ * её CSS база входит целиком.
  *
  * Правила базы — в слое `so`: имя слоя у документа общее, как имя класса, и
  * потому с префиксом. Сброс — подслой `so.reset`, нижний: правила слоя вне его
@@ -22,7 +25,9 @@
  * приложения, которое подключает базу само, — README пакета.
  *
  * Части внутри слоя — в том порядке, в каком их стили подключает тема oren:
- * правила разных блоков с одной специфичностью спорят порядком. */
+ * правила разных блоков с одной специфичностью спорят порядком. Модальный
+ * слой стоит перед окном, а не с общими шкалами: его кнопки шапки снимают поле
+ * размера Button той же специфичностью, и он обязан быть ниже `button.css`. */
 
 @layer so.reset;
 
@@ -32,16 +37,28 @@
 @import './caption.css' layer(so);
 @import './required.css' layer(so);
 @import './target.css' layer(so);
+@import './group.css' layer(so);
+@import './anchored.css' layer(so);
+@import './swipe.css' layer(so);
+@import './place.css' layer(so);
 @import './components/button.css' layer(so);
 @import './components/check-box.css' layer(so);
 @import './components/accordion.css' layer(so);
+@import './modal.css' layer(so);
+@import './components/dialog.css' layer(so);
+@import './components/drawer.css' layer(so);
 @import './components/icon.css' layer(so);
 @import './components/input.css' layer(so);
 @import './components/label.css' layer(so);
 @import './components/field.css' layer(so);
+@import './components/list-box.css' layer(so);
+@import './components/menu.css' layer(so);
 @import './components/number-input.css' layer(so);
+@import './components/popover.css' layer(so);
 @import './components/radio-group.css' layer(so);
+@import './components/select.css' layer(so);
 @import './components/switch.css' layer(so);
 @import './components/tabs.css' layer(so);
 @import './components/tags.css' layer(so);
 @import './components/textarea.css' layer(so);
+@import './components/tooltip.css' layer(so);

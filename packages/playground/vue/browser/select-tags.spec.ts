@@ -10,10 +10,10 @@
  * компоненты встречаются с собранной темой. Правила, которые эти тесты
  * стерегут, — раскладка поля с тегами, его минимальная ширина, ширина ряда
  * `scroll` (по тегам, но не шире половины поля) и обрезка слота с тегами —
- * лежат в `themes/oren/src/components/select/_select.scss`, а сжатие тега,
- * которому не хватает места в поле, его натуральная ширина в ряду `scroll` и
- * ряд `scroll` без полосы прокрутки и с запасом под кольцо фокуса — в общем
- * слое тем (`themes/base/src/components/tags.css`), подсказка у края — в
+ * лежат в общем слое тем (`themes/base/src/components/select.css`), там же
+ * сжатие тега, которому не хватает места в поле, его натуральная ширина в ряду
+ * `scroll` и ряд `scroll` без полосы прокрутки и с запасом под кольцо фокуса
+ * (`themes/base/src/components/tags.css`), подсказка у края — в
  * `themes/oren/src/components/tags/_tags.scss`. Геометрия строки поля —
  * высота размера и строка слота, в которую встают теги, очистка и стрелка, —
  * в общем слое тем (`themes/base/src/components/input.css`).
@@ -449,7 +449,7 @@ const crowded = (root: ParentNode) => scrolls(find('.so-select__field .so-tags',
  * (`themes/base/src/components/tags.css`), и поле обязано остаться высоты
  * размера. Иначе выходит,
  * что его растит сам факт тегов, а не перенос. Это сторож условия
- * `data-overflow='wrap'` в правиле роста (`select/_select.scss`).
+ * `data-overflow='wrap'` в правиле роста (`themes/base/src/components/select.css`).
  */
 describe('tags_overflow: scroll', () => {
 	const overflow = 'scroll'

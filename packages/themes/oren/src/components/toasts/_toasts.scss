@@ -61,7 +61,8 @@ $pad-inline: calc(var(--spacing) * 4);
 
 // Строка текста (`text-sm`, 20px) и высота крестика — размер Button по
 // умолчанию из его шкалы, а не числом: разойдись они, крестик съехал бы с
-// первой строки молча. Так же считает модальный слой (`mixins/_modal.scss`).
+// первой строки молча. Так же считает модальный слой (`modal.css` в
+// `@soldy-ui/theme-base`).
 $line: 5;
 $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 
@@ -540,7 +541,8 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 	margin-block: calc(var(--spacing) * (#{$line} - #{$button-height}) / 2);
 	margin-inline-end: calc(var(--spacing) * #{$button-height} / -4);
 
-	// Значок — по центру квадрата (см. `modal.parts`)
+	// Значок — по центру квадрата, как у кнопок шапки окна (`modal.css` в
+	// `@soldy-ui/theme-base`)
 	> .so-button__text {
 		@apply flex justify-center;
 	}

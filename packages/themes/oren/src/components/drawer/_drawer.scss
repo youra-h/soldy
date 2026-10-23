@@ -6,23 +6,14 @@
 //
 // Анатомия — как у модального окна: корень — сама панель и несёт слой,
 // подложка — её сосед, раньше в DOM, `z-index` у них одно число инлайном, и
-// по `data-layer` ничего не красится. Подложка, поверхность, заголовок, тело,
-// подвал и кнопка закрытия — общие с окном (`mixins/_modal.scss`).
+// по `data-layer` ничего не красится.
 //
-// Своё у панели — край, размер по оси края, полоса жеста, въезд и выезд и
-// место в контейнере. Всё это раскладка темы, без замеров: код отдаёт
-// значения модификатором (`--placement-*`), переменными (`--so-drawer-width`,
-// `--so-drawer-height`, сдвиг жеста `--so-swipe-offset`) и `data-*`
-// (`data-open`, `data-swiping`, `data-contained`). Полоса и сдвиг жеста —
-// общие с поповером (`mixins/_swipe.scss`).
-
-// Ширина панели у бокового края, пока `width` не задан: колонка фильтров или
-// меню, а не вторая страница.
-$width: 20rem;
-
-// Полоса подложки, которая видна при любом размере панели: по ней панель
-// закрывают нажатием мимо, и из-под панели видно, откуда её открыли.
-$gap: 3rem;
+// Структура панели — край, размер по оси края, место в контейнере, полоса
+// жеста и её дорожка в сетке, заголовок, тело, подвал и кнопка закрытия — в
+// общем слое тем (`components/drawer.css`, `modal.css` и `swipe.css` в
+// `@soldy-ui/theme-base`). Здесь — облик: вуаль подложки, поверхность и кромка
+// (`modal`, общий с окном), скругление углов со стороны страницы, въезд и
+// выезд, сдвиг за указателем и штрих полосы (`swipe`, общий с поповером).
 
 // Въезд и выезд. Числа подобраны глазом, машина сторожит только то, что
 // въезд не вспышка и подложка идёт вместе с панелью (AGENTS.md темы, «Что
@@ -49,15 +40,10 @@ $exit-easing: cubic-bezier(0.4, 0, 0.6, 1);
 // кривой панели страница темнела бы почти целиком в первые кадры.
 $backdrop-easing: linear;
 
-// Подложка — на весь экран, а внутри контейнера — на контейнер (см.
-// `modal.backdrop`). Закрытая гаснет: `data-open` у неё тот же, что у панели.
+// Подложка — вуаль модального слоя (`modal.backdrop`). Закрытая гаснет:
+// `data-open` у неё тот же, что у панели.
 .so-drawer__backdrop {
-	@apply fixed inset-0;
 	@include modal.backdrop;
-
-	&[data-contained='true'] {
-		@apply absolute;
-	}
 
 	&[data-open='false'] {
 		@apply opacity-0;
@@ -67,68 +53,26 @@ $backdrop-easing: linear;
 // Панель — поверхность модального слоя (`modal.surface`), прижатая к своему
 // краю. Скруглены только углы со стороны страницы: у края экрана углов нет.
 .so-drawer {
-	@apply fixed;
 	@include modal.surface;
 
-	grid-template-columns: minmax(0, 1fr) auto;
-	grid-template-rows: auto minmax(0, 1fr) auto;
-	grid-template-areas:
-		'title close'
-		'body body'
-		'footer footer';
-
-	// Внутри контейнера — в ближайшем позиционированном предке, а не на экране.
-	&[data-contained='true'] {
-		@apply absolute;
-	}
-
-	// Край. Боковая панель — во всю высоту, ширина — переменной; верхняя и
-	// нижняя — во всю ширину, высота — переменной, а не задана — по
-	// содержимому. Потолок — экран (контейнер) без полосы подложки: длинное
-	// содержимое прокручивается в теле, а шапка, подвал и кнопка остаются на
-	// месте. `start` и `end` — логические стороны: в RTL панель сама встаёт у
-	// другого края.
-	&--placement-start,
-	&--placement-end {
-		@apply inset-y-0;
-		width: var(--so-drawer-width, #{$width});
-		max-width: calc(100% - #{$gap});
-	}
-
-	&--placement-top,
-	&--placement-bottom {
-		@apply inset-x-0;
-		height: var(--so-drawer-height, auto);
-		max-height: calc(100% - #{$gap});
-	}
-
 	&--placement-start {
-		inset-inline-start: 0;
 		border-start-end-radius: var(--radius-lg);
 		border-end-end-radius: var(--radius-lg);
 	}
 
 	&--placement-end {
-		inset-inline-end: 0;
 		border-start-start-radius: var(--radius-lg);
 		border-end-start-radius: var(--radius-lg);
 	}
 
 	&--placement-top {
-		inset-block-start: 0;
 		border-end-start-radius: var(--radius-lg);
 		border-end-end-radius: var(--radius-lg);
 	}
 
 	&--placement-bottom {
-		inset-block-end: 0;
 		border-start-start-radius: var(--radius-lg);
 		border-start-end-radius: var(--radius-lg);
-	}
-
-	// Тянут — курсор «держу», и по всей панели, куда бы он ни ушёл.
-	&[data-swiping='true'] {
-		@apply cursor-grabbing;
 	}
 }
 
@@ -244,85 +188,10 @@ $backdrop-easing: linear;
 	}
 }
 
-// Полоса жеста — посередине края, за который тянут, то есть края со стороны
-// страницы. Своя дорожка сетки, а не наложение: зона захвата не накрывает
-// заголовок и кнопку закрытия. Вид полосы — общий с поповером
-// (`swipe.handle`).
+// Штрих полосы жеста — общий с поповером (`swipe.handle-look`).
 .so-drawer__handle {
-	grid-area: handle;
-	@include swipe.handle;
+	@include swipe.handle-look;
 }
 
-.so-drawer--placement-top > .so-drawer__handle,
-.so-drawer--placement-bottom > .so-drawer__handle {
-	block-size: swipe.$handle;
-	@include swipe.grip(inline);
-}
-
-.so-drawer--placement-start > .so-drawer__handle,
-.so-drawer--placement-end > .so-drawer__handle {
-	inline-size: swipe.$handle;
-	@include swipe.grip(block);
-}
-
-// Дорожка полосы — у края со стороны страницы. Отступ содержимого с её
-// стороны держит сама зона: он шире обычного, и второй отступ сверх неё
-// отодвинул бы содержимое дальше, чем у панели без полосы.
-.so-drawer--placement-bottom:has(> .so-drawer__handle) {
-	grid-template-rows: auto auto minmax(0, 1fr) auto;
-	grid-template-areas:
-		'handle handle'
-		'title close'
-		'body body'
-		'footer footer';
-
-	> .so-drawer__title {
-		padding-block-start: 0;
-	}
-
-	> .so-drawer__close {
-		margin-block-start: calc(
-			var(--spacing) * (#{modal.$title-line} - #{modal.$button-height}) / 2
-		);
-	}
-}
-
-.so-drawer--placement-top:has(> .so-drawer__handle) {
-	grid-template-rows: auto minmax(0, 1fr) auto auto;
-	grid-template-areas:
-		'title close'
-		'body body'
-		'footer footer'
-		'handle handle';
-
-	> .so-drawer__footer {
-		padding-block-end: 0;
-	}
-}
-
-.so-drawer--placement-end:has(> .so-drawer__handle) {
-	grid-template-columns: auto minmax(0, 1fr) auto;
-	grid-template-areas:
-		'handle title close'
-		'handle body body'
-		'handle footer footer';
-
-	> :is(.so-drawer__title, .so-drawer__body, .so-drawer__footer) {
-		padding-inline-start: 0;
-	}
-}
-
-.so-drawer--placement-start:has(> .so-drawer__handle) {
-	grid-template-columns: minmax(0, 1fr) auto auto;
-	grid-template-areas:
-		'title close handle'
-		'body body handle'
-		'footer footer handle';
-
-	> :is(.so-drawer__title, .so-drawer__body, .so-drawer__footer) {
-		padding-inline-end: 0;
-	}
-}
-
-// Заголовок, тело, подвал и кнопка закрытия — как у окна.
+// Заголовок и кнопка закрытия — как у окна.
 @include modal.parts('so-drawer', ('close'));

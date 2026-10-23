@@ -1,0 +1,224 @@
+/* ─── Menu ────────────────────────────────────────────────────
+ * Меню действий у кнопки (APG Menu Button): триггер потребителя и панель с
+ * пунктами. Пункт выполняет действие, флажок и переключатель ещё и
+ * отмечаются, пункт с подменю (`Menu.Submenu`) открывает сбоку такую же
+ * панель меню, а пункт с панелью (`Menu.PopoverItem`) — свою панель с любым
+ * содержимым.
+ *
+ *   .so-menu                      корень — обёртка триггера и якорь панели
+ *   .so-menu__panel               панель меню и подменю — Frame в `body`
+ *     .so-menu__list              список пунктов — прокручивается он
+ *       .so-menu-item             пункт — строка (Button)
+ *         .so-menu-item__indicator  отметка флажка и переключателя
+ *           .so-menu-item__dot    точка отмеченного переключателя
+ *         .so-menu-item__icon     значок
+ *         .so-menu-item__shortcut подсказка сочетания клавиш
+ *         .so-menu-item__arrow    стрелка пункта с подменю и с панелью
+ *       .so-menu-group            группа — подпись и её пункты
+ *         .so-menu-group__label   подпись группы (`group.css`)
+ *       .so-menu-separator        разделитель (`group.css`)
+ *   .so-menu-item__panel          панель пункта — Frame в `body`
+ *     .so-menu-item__content      её содержимое — прокручивается оно
+ *
+ * Корень — строчный флекс, как у Popover: в строке текста он встаёт строчным
+ * элементом, во флекс-ряду — обычным элементом ряда, а прямоугольник корня —
+ * прямоугольник триггера, и якорю есть что мерить.
+ *
+ * Ширина панели меню — по самому широкому пункту: список просит ширину
+ * содержимого целиком, и от места панели у края окна она не зависит. Минимум и
+ * потолок — те же, что у ListBox (`components/list-box.css`): короткое меню
+ * не складывается в узкий столбец, а длинный текст пункта режется
+ * многоточием. Потолок не шире окна — сдвиг `TAnchorPlugin` держит панель в
+ * окне, только пока она в него помещается. Высота — как у Popover: панель
+ * встаёт на ту сторону от якоря, где места больше, и длинное меню
+ * прокручивается внутри панели, а не уходит за край окна.
+ *
+ * Список растёт на всю панель, когда минимум панели шире пунктов, и
+ * сжимается, когда упирается в её потолок, — тогда текст пунктов режется
+ * многоточием. Поле — внутри прокрутки: подсвеченная строка не прижата к
+ * кромке. Зазоров между пунктами у списка нет — место между секциями дают поля
+ * разделителя.
+ *
+ * Пункт не сжимается: длинное меню прокручивается, а не сплющивает пункты.
+ * Строка — прямой ребёнок пункта, и её правила пишутся ребёнком: кнопка,
+ * которую положили в слот строки, тоже `.so-button`. Пункт — не кнопка в
+ * форме: курсор обычный, а текст не выделяется протяжкой — меню нажимают,
+ * ведут указатель к пункту и отпускают на нём. Содержимое строки — у начала
+ * строки.
+ *
+ * Колонки в начале строки — отметка и значок, каждая в квадрат кегля строки:
+ * ширину держит обёртка, а не иконка, и подменённая слотом иконка строку не
+ * сдвигает. Колонки держит всё меню, когда они есть хоть у одного пункта, —
+ * как меню macOS: тексты пунктов встают одной колонкой. Обёртку отметки
+ * рисуют только флажок и переключатель, и пункту без неё место держит пустой
+ * первый кусок строки (`::before`) — в ряд частей строки, с её зазором, и в
+ * RTL тоже у начала. Обёртка значка есть у каждого пункта, и пустая места не
+ * занимает, пока значка нет ни у одного пункта меню. Подсказка сочетания и
+ * стрелка — у конца строки, в одну строку, и не сжимаются: длинный текст
+ * пункта режется раньше них. Отступ от текста шире зазора частей строки:
+ * подсказки и стрелки встают колонкой у края, а не продолжением текста.
+ *
+ * Разделитель — линия во всю ширину списка поверх его поля, с полями сверху и
+ * снизу. Секция без разделителя отступает на его поля и место линии
+ * (`group.css`).
+ *
+ * Панель пункта — немодальный диалог сбоку от строки, а не меню: в ней лежит
+ * что угодно. Ширина — по содержимому, без потолка панели меню: календарь в
+ * несколько месяцев не должен сжиматься. Потолок — окно без `1rem`, и по
+ * высоте тоже: сбоку панель стоит вровень со строкой, и половины окна, как у
+ * панелей над и под якорем, ей никто не обещал. Содержимое просит ширину
+ * целиком, как у Popover, и прокручивается, а поля — внутри прокрутки, как у
+ * содержимого Popover.
+ *
+ * Поле списка, поля разделителя и подписи, точка переключателя и отступ
+ * подсказки — переменные корня документа; умолчания — числа темы oren, тема
+ * задаёт свои на корне документа.
+ *
+ * Облик — поверхность, кромка, тень и скругление панелей, их проявление и
+ * исчезание, цвет строк и подсветка пункта, вид строки, цвет подсказки и
+ * стрелки, зеркало стрелки в RTL, форма точки — рисует тема. */
+
+:root {
+	--so-menu-padding: 0.25rem;
+	--so-menu-separator-margin: 0.25rem;
+	--so-menu-group-label-padding: 0.5rem;
+	--so-menu-dot-size: 0.4em;
+	--so-menu-shortcut-gap: 1em;
+}
+
+.so-menu {
+	display: inline-flex;
+}
+
+.so-menu__panel,
+.so-menu-item__panel {
+	overflow: hidden;
+}
+
+.so-menu__panel {
+	display: flex;
+	min-width: var(--so-list-box-min-width);
+	max-width: min(var(--so-list-box-max-width), calc(100vw - 1rem));
+	max-height: min(var(--so-popover-max-height), calc(50dvh - 1.5rem));
+}
+
+.so-menu__list {
+	display: flex;
+	flex-grow: 1;
+	flex-direction: column;
+	align-self: stretch;
+	width: max-content;
+	min-width: 0;
+	padding: var(--so-menu-padding);
+	overflow-y: auto;
+}
+
+.so-menu-item {
+	flex-shrink: 0;
+}
+
+.so-menu-item > .so-button {
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.so-menu-item > .so-button > .so-button__text {
+	min-width: 0;
+	text-align: start;
+}
+
+:where(.so-menu-item > .so-button > .so-button__text > *) {
+	margin-inline: 0 auto;
+}
+
+.so-menu-item__indicator,
+.so-menu-item__icon {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 1em;
+	height: 1em;
+}
+
+.so-menu-item__icon:empty {
+	display: none;
+}
+
+.so-menu-item__dot {
+	width: var(--so-menu-dot-size);
+	height: var(--so-menu-dot-size);
+}
+
+.so-menu-item__shortcut {
+	flex-shrink: 0;
+	margin-inline-start: var(--so-menu-shortcut-gap);
+	white-space: nowrap;
+}
+
+.so-menu-item__shortcut:empty {
+	display: none;
+}
+
+.so-menu-item__arrow {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 1em;
+	height: 1em;
+	margin-inline-start: var(--so-menu-shortcut-gap);
+}
+
+.so-menu__list:has(.so-menu-item__indicator)
+	.so-menu-item:not(:has(> .so-button > .so-menu-item__indicator))
+	> .so-button::before {
+	content: '';
+	flex-shrink: 0;
+	width: 1em;
+}
+
+.so-menu__list:has(.so-menu-item__icon:not(:empty)) .so-menu-item__icon:empty {
+	display: inline-flex;
+}
+
+.so-menu-group {
+	display: flex;
+	flex-shrink: 0;
+	flex-direction: column;
+}
+
+.so-menu-group__label {
+	padding-block: var(--so-menu-group-label-padding);
+}
+
+.so-menu-separator {
+	margin-block: var(--so-menu-separator-margin);
+	margin-inline: calc(-1 * var(--so-menu-padding));
+}
+
+/* Секции без разделителя — `groupSeparators` меню или подменю выключен:
+ * группа за группой или за пунктом без группы и пункт без группы за группой.
+ * Зазоров у списка нет, и без места пункты без группы встали бы вплотную к
+ * пунктам последней группы. */
+:is(.so-menu-group, .so-menu-item) + .so-menu-group,
+.so-menu-group + .so-menu-item {
+	margin-block-start: calc(
+		2 * var(--so-menu-separator-margin) + var(--so-group-separator-width, 0px)
+	);
+}
+
+.so-menu-item__panel {
+	display: flex;
+	max-width: calc(100vw - 1rem);
+	max-height: calc(100dvh - 1rem);
+}
+
+.so-menu-item__content {
+	width: max-content;
+	min-width: 0;
+	padding: var(--so-popover-padding);
+	overflow-y: auto;
+	overflow-wrap: break-word;
+}

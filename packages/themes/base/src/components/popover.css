@@ -1,0 +1,159 @@
+/* ─── Popover ─────────────────────────────────────────────────
+ * Триггер и панель поверх страницы с произвольным содержимым.
+ *
+ *   .so-popover                 корень — обёртка триггера и якорь панели
+ *   .so-popover__panel          панель — Frame, телепортированный в `body`
+ *     .so-popover__handle       полоса жеста, пока он включён
+ *     .so-popover__content      содержимое — прокручивается оно
+ *     .so-popover__close        кнопка закрытия — Button
+ *
+ * Корень — строчный флекс: в строке текста он встаёт строчным элементом и не
+ * рвёт её, во флекс-ряду — обычным элементом ряда. Не `inline-block`: вокруг
+ * строчного триггера он завёл бы строку со своей высотой, и якорь оказался бы
+ * выше триггера. Не `contents`: у такого узла нет прямоугольника, и якорю было
+ * бы нечего мерить. Панель телепортирована, поэтому прямоугольник корня — это
+ * прямоугольник триггера.
+ *
+ * Панель — ряд из двух колонок: содержимое и кнопка закрытия. У кнопки своя
+ * колонка, поэтому содержимое под неё не заходит, и признак «закрываемая»
+ * не нужен: без кнопки колонки нет. Ширина — по содержимому, но не шире
+ * потолка и окна: минус `1rem` — чтобы панель всегда помещалась в окно, сдвиг
+ * `TAnchorPlugin` держит её в окне, только пока она в него помещается. Высота:
+ * панель встаёт на ту сторону от якоря, где места больше, а там его не меньше
+ * половины окна без половины якоря, — поэтому потолок — половина окна с
+ * запасом на якорь и отступ, и длинное содержимое прокручивается, а не уезжает
+ * за край окна вместе с кнопкой закрытия.
+ *
+ * Содержимое просит ширину целиком (`max-content`): панель позиционирована с
+ * `left`, и с шириной по содержимому место под текст было бы от `left` до края
+ * окна — у якоря справа длинный текст сложился бы в узкий столбец. Панель
+ * упирается в свой потолок, и содержимое переносится уже внутри, длинное
+ * слово тоже. Прокручивается содержимое, а не панель: кнопка закрытия в
+ * соседней колонке остаётся на месте. Отступ — внутри прокрутки: у края
+ * прокручиваемой области кольцо фокуса вложенного контрола обрезалось бы.
+ * Таблица прямо в содержимом встаёт закреплённой шапкой к краю, как в теле
+ * окна (`modal.css`).
+ *
+ * Кнопка закрытия — квадрат высоты своего размера в углу со стороны конца
+ * строки.
+ *
+ * Панель внутри контейнера (`contained`): не в `body` у триггера, а у края
+ * ближайшего позиционированного предка (`data-edge`), как выезжающая панель в
+ * контейнере. Раскладка ставит её `absolute` без координат: вдоль края — во
+ * всю его длину, поперёк — по содержимому, но не больше контейнера. Потолков
+ * окна у неё нет: её мера — контейнер. Полоса жеста у неё — у края,
+ * противоположного её краю (панель сверху — полоса снизу, у начала строки —
+ * у конца): зона захвата — поле панели с этой стороны, и содержимое с кнопкой
+ * закрытия она не накрывает. У бокового края полоса — во всю высоту панели,
+ * штрих поперёк строки. Полоса у якоря и закрытая панель — `anchored.css`.
+ *
+ * Потолки, отступ содержимого и кнопки — переменные корня документа;
+ * умолчания — числа темы oren, тема задаёт свои на корне документа.
+ *
+ * Облик — поверхность, кромка, тень, скругление, вид кнопки закрытия,
+ * проявление, въезд от края и жест — рисует тема. */
+
+:root {
+	--so-popover-max-width: 20rem;
+	--so-popover-max-height: 24rem;
+	--so-popover-padding: 0.5rem;
+	--so-popover-close-offset: 0.5rem;
+}
+
+.so-popover {
+	display: inline-flex;
+}
+
+.so-popover__panel {
+	display: flex;
+	align-items: flex-start;
+	overflow: hidden;
+	max-width: min(var(--so-popover-max-width), calc(100vw - 1rem));
+	max-height: min(var(--so-popover-max-height), calc(50dvh - 1.5rem));
+}
+
+.so-popover__panel[data-contained='true'] {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+.so-popover__panel[data-contained='true'][data-edge='top'] {
+	inset: 0 0 auto;
+}
+
+.so-popover__panel[data-contained='true'][data-edge='bottom'] {
+	inset: auto 0 0;
+}
+
+.so-popover__panel[data-contained='true'][data-edge='start'] {
+	inset-block: 0;
+	inset-inline: 0 auto;
+}
+
+.so-popover__panel[data-contained='true'][data-edge='end'] {
+	inset-block: 0;
+	inset-inline: auto 0;
+}
+
+.so-popover__content {
+	align-self: stretch;
+	width: max-content;
+	min-width: 0;
+	padding: var(--so-popover-padding);
+	overflow-y: auto;
+	overflow-wrap: break-word;
+}
+
+:where(.so-popover__content > .so-table__viewport) {
+	--so-table-head-offset: calc(-1 * var(--so-popover-padding));
+}
+
+.so-popover__close {
+	flex-shrink: 0;
+	aspect-ratio: 1;
+	padding-inline: 0;
+	margin-block-start: var(--so-popover-close-offset);
+	margin-inline-end: var(--so-popover-close-offset);
+}
+
+.so-popover__panel:has(> .so-popover__handle)[data-edge='top'] {
+	padding-block-start: 0;
+	padding-block-end: var(--so-target-size);
+}
+
+.so-popover__panel:has(> .so-popover__handle):is([data-edge='start'], [data-edge='end']) {
+	padding-block-start: 0;
+}
+
+.so-popover__panel:has(> .so-popover__handle)[data-edge='start'] {
+	padding-inline-end: var(--so-target-size);
+}
+
+.so-popover__panel:has(> .so-popover__handle)[data-edge='end'] {
+	padding-inline-start: var(--so-target-size);
+}
+
+.so-popover__panel[data-edge='top'] > .so-popover__handle {
+	top: auto;
+	bottom: 0;
+}
+
+.so-popover__panel:is([data-edge='start'], [data-edge='end']) > .so-popover__handle {
+	inset-block: 0;
+	inset-inline: auto;
+	inline-size: var(--so-target-size);
+	block-size: auto;
+}
+
+.so-popover__panel:is([data-edge='start'], [data-edge='end']) > .so-popover__handle::before {
+	inline-size: var(--so-swipe-grip-thickness);
+	block-size: var(--so-swipe-grip-length);
+}
+
+.so-popover__panel[data-edge='start'] > .so-popover__handle {
+	inset-inline-end: 0;
+}
+
+.so-popover__panel[data-edge='end'] > .so-popover__handle {
+	inset-inline-start: 0;
+}

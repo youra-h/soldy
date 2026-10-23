@@ -1,0 +1,233 @@
+/* ─── Select ──────────────────────────────────────────────────
+ * Поле выбора из списка. Поле — обычный Input (`components/input.css`): его
+ * коробка, слоты и кнопка очистки приходят оттуда, здесь — то, что добавляет
+ * Select.
+ *
+ *   .so-select                    корень — якорь панели
+ *     .so-select__field           поле — Input
+ *       .so-select__tags          теги выбранного в слоте `leading` (Tags)
+ *       .so-select__arrow         обёртка стрелки в слоте `trailing`
+ *   .so-select__panel             панель — Frame, телепортированный в `body`
+ *     .so-select__handle          полоса жеста, пока он включён
+ *     .so-select__list            список опций — прокручивается он
+ *       .so-select-item           опция — строка (Button)
+ *         .so-select-item__indicator  отметка выбранного
+ *       .so-select-group          группа — подпись и её опции
+ *       .so-select__separator     разделитель секций групп (`group.css`)
+ *       .so-select__filler        распорка окна `Virtual`
+ *
+ * Корень — флекс во всю ширину места, а не блок: поле внутри — `inline-flex`,
+ * и у блочного родителя строчный ребёнок попадает в строку текста — высота
+ * корня считалась бы по её метрикам, а не по высоте поля. Флекс строк не
+ * заводит, и корень ровно по полю. Минимум ширины — минимум поля
+ * (`--so-input-min-width`): процент считается от контейнера, а если тот сам
+ * сжимается по содержимому, круг замыкается, и поле схлопывается в полосу.
+ * Теги в минимум не входят: правило, которое зависит от того, сколько их и
+ * какие они, неверно по построению, — ряд берёт остаток строки, а лишнее
+ * обрезается.
+ *
+ * Курсор у поля зависит от режима: в select-only (`editable: false`) поле
+ * только для чтения — редактировать нечего, и курсора редактирования нет.
+ *
+ * Теги — второй компонент в слоте `leading`. В `wrap` поле растёт по строкам
+ * тегов: высота авто, сверху и снизу — просвет слота полем, а ввод, очистка и
+ * стрелка — на первой строке; одна строка тегов даёт ровно высоту размера.
+ * Признак — тег в ряду, а не сам ряд: в `multiple` контейнер тегов в разметке
+ * всегда. Строка ввода — строка слота, а слот растёт вместе со строками. В
+ * `scroll` ряд стоит одной строкой (`components/tags.css`), и поле — высоты
+ * размера. Само поле остаётся `nowrap`: перенос нужен только тегам в слоте. У
+ * слота с тегами снят автоматический минимум ширины — ввод рядом получает то,
+ * что тегам сейчас не нужно, — а что в слот не влезло, он обрезает по строке
+ * (`clip`: прокрутки в слоте быть не должно, а по вертикали там кольцо фокуса
+ * тега). Ряд `scroll` — по своим тегам, но не шире половины поля: ввод не
+ * садится на свой минимум, когда тегам тесно, а в этой половине ряд
+ * прокручивается. Ввод берёт остаток строки после слотов, а не всю ширину
+ * поля.
+ *
+ * Стрелка — обёртка слота, а не сама иконка: подменишь иконку слотом — тема
+ * повернёт и её. Обёртка — область нажатия: в `editable` по тексту поля панель
+ * не открывается, и стрелка — единственное место, которое её открывает, —
+ * поэтому она квадрат в строку слота, как очистка рядом, со значком по
+ * центру. Зона нажатия на мелком размере — `target.css`, и обёртка — её
+ * опора. Кегль обёртки — кегль поля по размеру (шкала поля): значок разметка
+ * рисует размером Select, в `em` от кегля места.
+ *
+ * Список — то же устройство, что у узла списка ListBox
+ * (`components/list-box.css`), с теми же полем и зазором, чтобы отступы до
+ * опций совпадали. Потолок высоты — по умолчанию, пока `maxRows` не задан:
+ * задали — `TListHeightPlugin` пишет списку инлайновый `max-height` по числу
+ * строк. Распорка окна и группы — как у ListBox. Опция — строка во всю ширину
+ * списка, содержимое у начала строки, курсор обычный; выключенная гасит
+ * строкой (её `data-disabled`), а обёртка — только указатель. Перенос (`wrap`)
+ * опция читает с себя: `data-content-fit` ей ставит `TSelectExtension`.
+ *
+ * Полоса жеста и закрытая панель — `anchored.css`.
+ *
+ * Потолок списка и поле строки опции — переменные корня документа;
+ * умолчания — числа темы oren, тема задаёт свои на корне документа.
+ *
+ * Облик — поверхность, кромка, тень и скругление панели, её проявление и
+ * жест, поворот стрелки открытой панели, рамка ошибки, вид опций — рисует
+ * тема. */
+
+:root {
+	--so-select-max-height: 16rem;
+	--so-select-item-padding: 0.5rem;
+}
+
+.so-select {
+	position: relative;
+	display: flex;
+	width: 100%;
+	min-width: var(--so-input-min-width);
+}
+
+.so-select__field {
+	width: 100%;
+}
+
+.so-select__field input:read-only {
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.so-select__field:has(.so-tags[data-overflow='wrap'] .so-tags-item) {
+	align-items: flex-start;
+	height: auto;
+	padding-block: var(--so-input-slot-gap);
+}
+
+.so-select__field:has(.so-tags[data-overflow='wrap'] .so-tags-item) input {
+	line-height: var(--so-input-slot-row);
+}
+
+.so-select__field:has(.so-tags[data-overflow='wrap'] .so-tags-item) .so-input__leading {
+	height: auto;
+}
+
+.so-select__field .so-input__leading:has(.so-tags-item) {
+	flex-wrap: wrap;
+	align-items: center;
+	min-width: 0;
+	overflow-x: clip;
+}
+
+.so-select__field .so-input__leading:has(> .so-tags[data-overflow='scroll'] > .so-tags-item) {
+	max-width: 50%;
+}
+
+.so-select__field input {
+	flex: 1;
+}
+
+.so-select__arrow {
+	position: relative;
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--so-input-slot-row);
+	block-size: var(--so-input-slot-row);
+}
+
+/* Кегля у `normal` в шкале поля нет, и правила тоже: значок берёт кегль
+ * места. */
+.so-select--size-sm .so-select__arrow {
+	font-size: var(--so-input-font-size-sm);
+	line-height: var(--so-input-line-height-sm);
+}
+
+.so-select--size-lg .so-select__arrow {
+	font-size: var(--so-input-font-size-lg);
+	line-height: var(--so-input-line-height-lg);
+}
+
+.so-select--size-xl .so-select__arrow {
+	font-size: var(--so-input-font-size-xl);
+	line-height: var(--so-input-line-height-xl);
+}
+
+.so-select--size-2xl .so-select__arrow {
+	font-size: var(--so-input-font-size-2xl);
+	line-height: var(--so-input-line-height-2xl);
+}
+
+.so-select__panel {
+	overflow: hidden;
+}
+
+.so-select__list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--so-list-box-gap);
+	max-height: var(--so-select-max-height);
+	padding: var(--so-list-box-padding);
+	overflow-y: auto;
+}
+
+.so-select__filler {
+	flex-shrink: 0;
+	margin-block-end: calc(-1 * var(--so-list-box-gap));
+	block-size: var(--so-filler-height, 0);
+}
+
+.so-select-group {
+	display: flex;
+	flex-shrink: 0;
+	flex-direction: column;
+	gap: var(--so-list-box-gap);
+}
+
+.so-select-group__label {
+	padding-block: var(--so-list-box-group-label-padding);
+}
+
+/* Секции без разделителя — то же устройство, что у ListBox: секция
+ * отступает на зазор списка и место линии и встаёт там же, где стояла бы за
+ * разделителем (`group.css`). */
+:is(.so-select-group, .so-select-item) + .so-select-group,
+.so-select-group + .so-select-item {
+	margin-block-start: calc(var(--so-list-box-gap) + var(--so-group-separator-width, 0px));
+}
+
+.so-select-item > * {
+	justify-content: flex-start;
+	width: 100%;
+	padding-block: var(--so-select-item-padding);
+}
+
+.so-select-item > .so-button {
+	cursor: default;
+}
+
+.so-select-item > .so-button > .so-button__text {
+	min-width: 0;
+	text-align: start;
+}
+
+:where(.so-select-item > .so-button > .so-button__text > *) {
+	margin-inline: 0 auto;
+}
+
+.so-select-item__indicator {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 1em;
+	height: 1em;
+}
+
+.so-select-item[data-content-fit='wrap'] > .so-button {
+	min-height: fit-content;
+}
+
+.so-select-item[data-content-fit='wrap'] > .so-button > .so-button__text {
+	white-space: normal;
+	overflow: visible;
+}
+
+.so-select-item[data-disabled='true'] {
+	pointer-events: none;
+}
