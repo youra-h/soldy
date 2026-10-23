@@ -1,5 +1,19 @@
 # @soldy-ui/angular
 
+## 0.3.0-alpha.2
+
+### Minor Changes
+
+- 7e8e605: Angular: компонент отдаёт базе setup-функцию в конструкторе — super(setupButton, { strategy: 'host' }); абстрактного createBinding больше нет, имена входов подставляет сгенерированная T<Имя>Surface. Сломалось: свой компонент на TComponentBase или T<Имя>Surface вместо createBinding передаёт setup-функцию конструктору (владелец коллекции — стрелкой с this.engine); generated/*.metadata.ts отдаёт XInputNames и XOutputNames напрямую, файлов base.component.ts нет. Методы-пересылки шаблонов (choose, toggle, check, openPanel, confirm, toggleSort, toggleMaximized, close у Dialog, Drawer и тоста) заменены вызовом в шаблоне. standalone: true убран как умолчание.
+- c08493e: Адаптер Angular: корень компонента разобран на стратегии (runtime/root/), раскладка и перенос атрибутов — общими помощниками, комментарии сокращены. Сломалось: у TBinding нет поля plugins — Angular его не читал; если код потребителя брал binding.plugins, берите набор у контекста (adapter.bundle). Тип TToastRender по-прежнему экспортируется, модуль toasts/types удалён.
+
+### Patch Changes
+
+- 935b215: Angular: комментарии компонентов и шаблонов сокращены до шапок со ссылкой на AGENTS.md (Angular); код не менялся.
+- @soldy-ui/core@0.3.0-alpha.2
+  - @soldy-ui/plugins@0.3.0-alpha.2
+  - @soldy-ui/setup@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes

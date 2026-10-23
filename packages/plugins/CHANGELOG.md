@@ -1,5 +1,11 @@
 # @soldy-ui/plugins
 
+## 0.3.0-alpha.2
+
+### Patch Changes
+
+- @soldy-ui/core@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes

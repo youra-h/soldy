@@ -1,5 +1,18 @@
 # @soldy-ui/svelte
 
+## 0.3.0-alpha.2
+
+### Minor Changes
+
+- 73522ab: Адаптер Svelte убран: связку компонента с фасадами сводит `joinBindings`, `chainHandler` склеивает своё и обработчик потребителя, комментарии сокращены. Сломалось: `TCollectionBinding` параметризован типом состояния, а не контрактом (`TCollectionBinding<TState, TProps>`); убраны экспорт `joinState`/`TJoinedState` и поле `plugins` связки; setup-функции DatePicker и Select не отдают `field`/`start`/`end`/`calendar`/`engine` — части берутся у `ctrl`. Обновиться: `joinBindings(owner, useCollectionAdapter(facade, getProps, () => owner.forwardProps))` вместо ручной сборки объекта связки с `joinState`; `binding.ctrl.field` вместо `binding.field`.
+- 84f4ad3: Select.Item: выбор опции — клик по строке, как у ListBox, Menu и Tabs: клик потребителя по опции приходит после выбора (раньше — до него), и stopPropagation в нём выбор больше не отменяет. Кто читал в обработчике прежнее значение — берите его из события смены значения (oldValue); отменить выбор — подпиской на item:select:before.
+
+### Patch Changes
+
+- @soldy-ui/core@0.3.0-alpha.2
+  - @soldy-ui/plugins@0.3.0-alpha.2
+  - @soldy-ui/setup@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @soldy-ui/icons-material
 
+## 0.3.0-alpha.2
+
+### Patch Changes
+
+- @soldy-ui/setup@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes
