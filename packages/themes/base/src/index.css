@@ -1,8 +1,12 @@
 /* ─── Общий слой тем ─────────────────────────────────────────
  * То, что нужно частям soldy в любой теме, а не облику одной: сброс узлов
- * библиотеки (`reset.css`) и знак направления письма (`direction.css`).
- * Чистый CSS — без препроцессора и без Tailwind: тема берёт файл как есть,
- * своим сборщиком, и в её CSS база входит целиком.
+ * библиотеки (`reset.css`), знак направления письма (`direction.css`),
+ * гашение выключенного (`disabled.css`) и структура частей — раскладка и
+ * механика (`components/`), числа которых — переменные с умолчанием: общие
+ * шкалы (`caption.css`, маркер обязательного поля — `required.css`) и шкалы
+ * блоков в их файлах. Облик — цвет, рамки, скругления, тени, виды и движение
+ * — рисует тема. Чистый CSS — без препроцессора и без Tailwind: тема берёт
+ * файл как есть, своим сборщиком, и в её CSS база входит целиком.
  *
  * Правила базы — в слое `so`: имя слоя у документа общее, как имя класса, и
  * потому с префиксом. Сброс — подслой `so.reset`, нижний: правила слоя вне его
@@ -14,9 +18,22 @@
  * Тема на Tailwind кладёт базу в его слой `base`, на место preflight
  * (`@import '@soldy-ui/theme-base' layer(base);`, так делает oren): порядок
  * против утилит Tailwind приложения тот же, что у preflight. Порядок слоёв у
- * приложения, которое подключает базу само, — README пакета. */
+ * приложения, которое подключает базу само, — README пакета.
+ *
+ * Части внутри слоя — в том порядке, в каком их стили подключает тема oren:
+ * правила разных блоков с одной специфичностью спорят порядком. */
 
 @layer so.reset;
 
 @import './reset.css' layer(so.reset);
 @import './direction.css' layer(so);
+@import './disabled.css' layer(so);
+@import './caption.css' layer(so);
+@import './required.css' layer(so);
+@import './components/button.css' layer(so);
+@import './components/check-box.css' layer(so);
+@import './components/icon.css' layer(so);
+@import './components/label.css' layer(so);
+@import './components/field.css' layer(so);
+@import './components/radio-group.css' layer(so);
+@import './components/switch.css' layer(so);

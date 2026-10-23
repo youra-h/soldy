@@ -1,0 +1,435 @@
+/* ─── Field ───────────────────────────────────────────────────
+ * Поле формы: подпись, контрол, подсказка и ошибка.
+ *
+ *   .so-field                          корень
+ *     label.so-field__label            подпись — имя поля
+ *     .so-field__control               обёртка контрола
+ *     .so-field__helper                подсказка
+ *     .so-field__error                 ошибка — на месте подсказки, пока поле невалидно
+ *       .so-icon.so-field__error-icon  значок ошибки, роль `error`
+ *       .so-field__error-text          текст ошибки
+ *
+ * От кода приходят у корня модификаторы `--position-*` (`top`, `start`,
+ * `end`) и `--size-*`. Своих состояний у Field нет: выключенность, только
+ * чтение и обязательность — состояния контрола, и читаются они с его корня,
+ * прямого ребёнка `__control`, — `data-disabled`, модификаторы `--readonly` и
+ * `--required`. Не с потомков: у кнопки очистки поля и у тега Select свой
+ * `data-disabled`.
+ *
+ * Порядок частей в DOM один на все стороны — подпись, контрол, подсказка,
+ * ошибка, — сторону ставит модификатор: `top` — столбец, `start` и `end` —
+ * сетка. Ни одного `left`/`right`: `start` и `end` логические, и в RTL
+ * подпись сама встаёт с другой стороны. Подсказка и ошибка стоят под
+ * колонкой контрола, а не под подписью: справка поясняет контрол, и её начало
+ * — начало контрола. Ошибка встаёт на место подсказки, а не под неё (рисует
+ * одну из двух код): форма не прыгает, когда ошибка появляется и уходит.
+ *
+ * Размер — кегль подписи и справки и зазоры, по шкале подписи
+ * (`caption.css`), той же, что у `Label`: флажок в подписи и поле в Field
+ * стоят от своих подписей на одном расстоянии. Кегль — частям, а не корню:
+ * контрол держит свой кегль сам, и его иконки меряются в `em`. Зазоры —
+ * переменными блока: сбоку `--so-field-gap`, в столбце `--so-field-stack`.
+ * Без модификатора размера — `normal`.
+ *
+ * Облик — начертание и цвет подписи, цвет справки и ошибки, цвет и форма
+ * точки обязательного поля — рисует тема. */
+
+/* Колонки поля с подписью в начале строки — `--so-field-columns`, её ставит
+ * приложение (см. `--position-start` ниже). Остальное — геометрия частей:
+ * зазор значка ошибки до текста и точка обязательного поля — размер, отступ
+ * от текста подписи и подъём к высоте прописных, всё в `em` кегля подписи. */
+:root {
+	--so-field-columns: fit-content(40%) minmax(0, 1fr);
+	--so-field-error-gap: 0.375em;
+	--so-field-required-size: 0.3em;
+	--so-field-required-gap: 0.25em;
+	--so-field-required-lift: 0.5em;
+}
+
+.so-field {
+	--so-field-gap: var(--so-caption-gap-normal);
+	--so-field-stack: var(--so-caption-stack-normal);
+}
+
+.so-field--size-sm {
+	--so-field-gap: var(--so-caption-gap-sm);
+	--so-field-stack: var(--so-caption-stack-sm);
+}
+
+.so-field--size-sm > .so-field__label,
+.so-field--size-sm > .so-field__control::before {
+	font-size: var(--so-caption-font-size-sm);
+	line-height: var(--so-caption-line-height-sm);
+}
+
+.so-field--size-sm > .so-field__helper,
+.so-field--size-sm > .so-field__error {
+	font-size: var(--so-caption-note-font-size-sm);
+	line-height: var(--so-caption-note-line-height-sm);
+}
+
+/* Распорка ползунка — кеглем подписи (см. «ползунок» ниже). Кегль без
+ * интерлиньяжа: высота её строки — полоса ручек. */
+.so-field--size-sm > .so-field__control > .so-slider--horizontal::before {
+	font-size: var(--so-caption-font-size-sm);
+}
+
+.so-field--size-normal {
+	--so-field-gap: var(--so-caption-gap-normal);
+	--so-field-stack: var(--so-caption-stack-normal);
+}
+
+.so-field--size-normal > .so-field__helper,
+.so-field--size-normal > .so-field__error {
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
+}
+
+.so-field--size-lg {
+	--so-field-gap: var(--so-caption-gap-lg);
+	--so-field-stack: var(--so-caption-stack-lg);
+}
+
+.so-field--size-lg > .so-field__label,
+.so-field--size-lg > .so-field__control::before {
+	font-size: var(--so-caption-font-size-lg);
+	line-height: var(--so-caption-line-height-lg);
+}
+
+.so-field--size-lg > .so-field__helper,
+.so-field--size-lg > .so-field__error {
+	font-size: var(--so-caption-note-font-size-lg);
+	line-height: var(--so-caption-note-line-height-lg);
+}
+
+.so-field--size-lg > .so-field__control > .so-slider--horizontal::before {
+	font-size: var(--so-caption-font-size-lg);
+}
+
+.so-field--size-xl {
+	--so-field-gap: var(--so-caption-gap-xl);
+	--so-field-stack: var(--so-caption-stack-xl);
+}
+
+.so-field--size-xl > .so-field__label,
+.so-field--size-xl > .so-field__control::before {
+	font-size: var(--so-caption-font-size-xl);
+	line-height: var(--so-caption-line-height-xl);
+}
+
+.so-field--size-xl > .so-field__helper,
+.so-field--size-xl > .so-field__error {
+	font-size: var(--so-caption-note-font-size-xl);
+	line-height: var(--so-caption-note-line-height-xl);
+}
+
+.so-field--size-xl > .so-field__control > .so-slider--horizontal::before {
+	font-size: var(--so-caption-font-size-xl);
+}
+
+.so-field--size-2xl {
+	--so-field-gap: var(--so-caption-gap-2xl);
+	--so-field-stack: var(--so-caption-stack-2xl);
+}
+
+.so-field--size-2xl > .so-field__label,
+.so-field--size-2xl > .so-field__control::before {
+	font-size: var(--so-caption-font-size-2xl);
+	line-height: var(--so-caption-line-height-2xl);
+}
+
+.so-field--size-2xl > .so-field__helper,
+.so-field--size-2xl > .so-field__error {
+	font-size: var(--so-caption-note-font-size-2xl);
+	line-height: var(--so-caption-note-line-height-2xl);
+}
+
+.so-field--size-2xl > .so-field__control > .so-slider--horizontal::before {
+	font-size: var(--so-caption-font-size-2xl);
+}
+
+/* Подпись над контролом — столбец. Это сторона по умолчанию, `top`: правила
+ * у `--position-top` нет, и блок без модификатора выглядит так же. */
+.so-field {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Подпись — по ширине текста: клик мимо текста в поле не уводит. */
+.so-field__label {
+	align-self: flex-start;
+	min-inline-size: 0;
+}
+
+/* Обёртка контрола — флекс, а не блок: строчный корень контрола (Input,
+ * DatePicker — `inline-flex`) в блоке встал бы на строку текста и взял бы
+ * под собой место под выносные элементы. Контрол — по своей ширине: её
+ * решает он сам (Select и горизонтальный Slider — во всю обёртку, поле —
+ * своим минимумом). */
+.so-field__control {
+	display: flex;
+	align-items: flex-start;
+	min-inline-size: 0;
+}
+
+/* Зазор подписи до контрола — `stack`: на глаз он равен боковому. */
+.so-field > .so-field__label + .so-field__control {
+	margin-block-start: var(--so-field-stack);
+}
+
+/* Справка — подсказка и ошибка: кегль справки при контроле, отступ от
+ * контрола тот же, что у подписи над ним. Длинное слово переносится, а не
+ * выталкивает колонку. */
+.so-field__helper,
+.so-field__error {
+	margin-block-start: var(--so-field-stack);
+	min-inline-size: 0;
+	overflow-wrap: break-word;
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
+}
+
+/* Ошибка — значок и текст в строку. Значок — не украшение: в режиме
+ * принудительных цветов цвет текста системный, и ошибку от подсказки
+ * отличает только он. */
+.so-field__error {
+	display: flex;
+	align-items: flex-start;
+	column-gap: var(--so-field-error-gap);
+}
+
+/* Значок — в кегль ошибки и по центру её первой строки: коробка иконки
+ * высотой в строку, рисунок встаёт в её середину сам (`viewBox` квадратный, а
+ * коробка — нет). Значок — часть текста ошибки, и размер ему даёт поле, а не
+ * шкала иконок. */
+.so-field__error > .so-field__error-icon {
+	flex-shrink: 0;
+	inline-size: 1em;
+	block-size: 1lh;
+}
+
+.so-field__error-text {
+	min-inline-size: 0;
+}
+
+/* Подпись сбоку — сетка: колонка подписи и колонка контрола, подсказка и
+ * ошибка под колонкой контрола. Зазор между колонками — `gap` шкалы подписи,
+ * тот же, что у `Label` сбоку; между строками — `stack`, как у подписи над
+ * контролом.
+ *
+ * Подпись стоит на первой строке контрола. Правило одно, как у `Label`: в
+ * обёртке контрола — распорка, строка нулевой ширины кеглем подписи; она
+ * стоит по центру контрола, а сетка ровняет её базовую линию с первой строкой
+ * подписи. Первая строка подписи встаёт по центру контрола: у поля ввода,
+ * выбора и даты — на строку его текста, у флажка, переключателя и оценки — на
+ * их середину. Контрол ниже строки — он встаёт по центру первой строки
+ * подписи. Высоту контрола знать не нужно. Исключения — контролы, которые
+ * бывают выше своей первой строки (ниже). */
+.so-field--position-start,
+.so-field--position-end {
+	display: grid;
+	align-items: baseline;
+	column-gap: var(--so-field-gap);
+	row-gap: var(--so-field-stack);
+}
+
+.so-field--position-start > .so-field__label,
+.so-field--position-end > .so-field__label {
+	align-self: baseline;
+	justify-self: start;
+}
+
+.so-field--position-start > .so-field__label + .so-field__control,
+.so-field--position-start > .so-field__helper,
+.so-field--position-start > .so-field__error,
+.so-field--position-end > .so-field__label + .so-field__control,
+.so-field--position-end > .so-field__helper,
+.so-field--position-end > .so-field__error {
+	margin-block-start: 0;
+}
+
+.so-field--position-start > .so-field__control,
+.so-field--position-end > .so-field__control {
+	align-items: center;
+}
+
+/* `hidden` убирает распорку из доступного имени. */
+.so-field--position-start > .so-field__control::before,
+.so-field--position-end > .so-field__control::before {
+	content: '\200b';
+	visibility: hidden;
+}
+
+/* Контролы выше своей первой строки ровняются по ней, а не по центру: на
+ * центре всей коробки подпись опустилась бы к середине списка.
+ *
+ * - RadioGroup, `Label` вокруг контрола и Select, чьи теги переносятся по
+ *   строкам (`wrap`), — по базовой линии своей первой строки: первого радио,
+ *   текста подписи, первого ряда тегов. Распорки нет, и базовая линия обёртки
+ *   — их собственная.
+ * - Ползунок — по полосе ручек: подписи меток под ней и подсказка над ней
+ *   (`tooltip-always`) коробку растят. Распорка — внутри ползунка: строка
+ *   нулевой ширины в начале его флекс-ряда, высотой в полосу ручек
+ *   (`--so-slider-thumb-size` — сторону ручки задаёт тема, пока структура
+ *   Slider не в общем слое), прижатая к верху его поля, — ровно туда, где
+ *   лежит полоса, какой бы ни была подсказка над ней. Её базовая линия —
+ *   базовая линия ползунка и обёртки. Вертикальный — по верху: первая строка
+ *   подписи у его начала.
+ * - Многострочное поле Textarea — по своей первой строке текста: она стоит по
+ *   центру строки поля его размера — высоты Input того же размера.
+ *   Распорка — у верха обёртки, высотой в эту строку: подпись встаёт на
+ *   первую строку, как у Input, сколько бы строк ни было ниже. Высоту строки
+ *   по размеру поля пока задаёт тема: шкала Input — не в общем слое. */
+.so-field--position-start > .so-field__control:has(> :is(.so-radio-group, .so-label))::before,
+.so-field--position-start
+	> .so-field__control:has(> .so-select .so-tags[data-overflow='wrap'] .so-tags-item)::before,
+.so-field--position-end > .so-field__control:has(> :is(.so-radio-group, .so-label))::before,
+.so-field--position-end
+	> .so-field__control:has(> .so-select .so-tags[data-overflow='wrap'] .so-tags-item)::before,
+.so-field--position-start > .so-field__control:has(> .so-slider--horizontal)::before,
+.so-field--position-end > .so-field__control:has(> .so-slider--horizontal)::before {
+	content: none;
+}
+
+.so-field--position-start > .so-field__control > .so-slider--horizontal::before,
+.so-field--position-end > .so-field__control > .so-slider--horizontal::before {
+	content: '\200b';
+	visibility: hidden;
+	align-self: flex-start;
+	line-height: var(--so-slider-thumb-size);
+}
+
+.so-field--position-start > .so-field__control:has(> .so-slider--vertical),
+.so-field--position-end > .so-field__control:has(> .so-slider--vertical),
+.so-field--position-start > .so-field__control:has(> .so-textarea),
+.so-field--position-end > .so-field__control:has(> .so-textarea) {
+	align-items: flex-start;
+}
+
+/* Подпись в начале строки. Колонка подписи — по тексту, но не шире 40 %
+ * поля: длинная подпись переносится, а не забирает место контрола.
+ *
+ * Колонки задаёт переменная `--so-field-columns`, и её ставит приложение
+ * (умолчание — у корня документа, выше):
+ *
+ * - форма — сетка из двух колонок, поля в ней — во всю строку, а в переменной
+ *   `subgrid`: колонка подписей у всех полей формы одна, по самой длинной
+ *   подписи (или своей ширины — её задаёт сетка формы);
+ * - узкое место — одна колонка (`minmax(0, 1fr)`): подпись встаёт над
+ *   контролом, как у `top`, без смены `position`. Так же поля формы, когда
+ *   сетка формы сама переходит на одну колонку.
+ *
+ * Поэтому места частей — линии с краёв, а не номера колонок, и строки не
+ * заданы: подпись — первая колонка, контрол и справка — последняя, и при одной
+ * колонке части встают друг под другом в порядке разметки. Без подписи место
+ * её колонки остаётся: в форме контрол стоит в колонке контролов. */
+.so-field--position-start {
+	grid-template-columns: var(--so-field-columns);
+}
+
+.so-field--position-start > .so-field__label {
+	grid-column: 1 / 2;
+}
+
+/* Подпись в несколько строк выше контрола — она занимает и строку справки:
+ * иначе справка встала бы под подписью, в отрыве от своего контрола. */
+.so-field--position-start:has(> .so-field__helper, > .so-field__error) > .so-field__label {
+	grid-row: span 2;
+}
+
+.so-field--position-start > .so-field__control,
+.so-field--position-start > .so-field__helper,
+.so-field--position-start > .so-field__error {
+	grid-column: -2 / -1;
+}
+
+/* Подпись в конце строки — как у флажка с текстом: контрол по своей ширине,
+ * подпись — остаток строки. Подсказка и ошибка начинаются под контролом и
+ * идут во всю строку: в колонке флажка они не поместились бы. Колонок формы
+ * эта сторона не берёт — её колонка подписей стоит перед контролом, — и в
+ * одну колонку не складывается: контрол с подписью в конце узок и так. */
+.so-field--position-end {
+	grid-template-columns: auto minmax(0, 1fr);
+}
+
+.so-field--position-end > .so-field__label,
+.so-field--position-end > .so-field__control {
+	grid-row: 1;
+}
+
+.so-field--position-end > .so-field__control {
+	grid-column: 1;
+}
+
+.so-field--position-end > .so-field__label {
+	grid-column: 2;
+}
+
+.so-field--position-end > .so-field__helper,
+.so-field--position-end > .so-field__error {
+	grid-column: 1 / -1;
+}
+
+/* Подпись переключателя — часть его цели: её `for` ведёт на поле CheckBox или
+ * Switch, клик по ней переключает, и курсор на ней — рука, как у `Label`.
+ * Остальным контролам клик по подписи только ставит фокус, а у DateInput,
+ * DatePicker и RadioGroup она только называет группу: курсор обычный. */
+.so-field:has(> .so-field__control > :is(.so-check-box, .so-switch)) > .so-field__label {
+	cursor: pointer;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* Выключенный контрол — гаснет текст поля: подпись, подсказка и ошибка, как
+ * текст `Label` (`disabled.css`). Контрол гасит себя сам. Своего `disabled` у
+ * Field нет — второй путь к состоянию контрола разошёлся бы с первым. */
+.so-field:has(> .so-field__control > [data-disabled='true']) > .so-field__label,
+.so-field:has(> .so-field__control > [data-disabled='true']) > .so-field__helper,
+.so-field:has(> .so-field__control > [data-disabled='true']) > .so-field__error {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+}
+
+.so-field:has(> .so-field__control > [data-disabled='true']) > .so-field__label > *,
+.so-field:has(> .so-field__control > [data-disabled='true']) > .so-field__helper > *,
+.so-field:has(> .so-field__control > [data-disabled='true']) > .so-field__error > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Контрол только для чтения — гаснет один курсор, как у `Label`: клик по
+ * подписи его не меняет. Имени блока контрола подпись не знает — отсюда
+ * совпадение по части класса. */
+.so-field:has(> .so-field__control > [class*='--readonly']) > .so-field__label {
+	cursor: default;
+}
+
+/* Обязательное поле — точка у подписи, после её текста, на высоте прописных:
+ * так же стоит звёздочка, но точка — не текст и в имя поля не входит. Здесь —
+ * её место и размер, от кегля подписи; цвет и форма — у темы, те же, что у
+ * точки обязательного контрола. Точка у поля одна: с подписью точку контрола
+ * гасит переменная `--so-required-dot` (`required.css`), без подписи она
+ * остаётся у контрола. */
+.so-field:has(> .so-field__control > [class*='--required']) > .so-field__label::after {
+	content: '';
+	display: inline-block;
+	inline-size: var(--so-field-required-size);
+	block-size: var(--so-field-required-size);
+	margin-inline-start: var(--so-field-required-gap);
+	vertical-align: var(--so-field-required-lift);
+}
+
+/* Переменная наследуется, поэтому каждая обёртка ставит свою: поле без
+ * подписи внутри поля с подписью точку контрола не теряет. */
+.so-field__control {
+	--so-required-dot: initial;
+}
+
+.so-field:has(> .so-field__label) > .so-field__control {
+	--so-required-dot: none;
+}
+
+/* Ползунок в поле — во всю обёртку: своей ширины по содержимому у него нет,
+ * и по ней он встал бы в свою нижнюю границу. */
+.so-field__control > .so-slider--horizontal {
+	flex: 1 1 auto;
+}

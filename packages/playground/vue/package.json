@@ -40,6 +40,7 @@
     "@angular/compiler": "^22.2.0",
     "@angular/compiler-cli": "^22.2.0",
     "@babel/core": "^8.0.1",
+    "@soldy-ui/theme-base": "0.3.0-alpha.2",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",

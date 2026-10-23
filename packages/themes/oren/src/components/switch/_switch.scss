@@ -2,84 +2,42 @@
 @use '../../mixins/fade';
 @use '../../mixins/motion';
 @use '../../mixins/required' as required;
+
+// Структура переключателя — дорожка и ручка по шкале `size`, невидимое поле
+// поверх дорожки, место ручки по `inset-inline-start`, курсоры, гашение
+// выключенного и место точки обязательного поля — в общем слое тем
+// (`components/switch.css` в `@soldy-ui/theme-base`). Здесь — облик: цвет
+// дорожки и ручки, скругления, тень, кольцо фокуса, ход ручки и вид только
+// для чтения.
 .so-switch {
 	$this: &;
 
 	@include fade.fade-transition();
 
-	@apply relative select-none;
-	@apply inline-flex items-center;
-
 	input {
-		@apply absolute top-0 left-0 opacity-0;
-		@apply w-full h-full m-0 p-0;
-		@apply cursor-pointer;
-		@apply z-10;
-
-		&:disabled {
-			@apply cursor-default pointer-events-none;
-		}
-
-		&:disabled + #{$this}__track {
-			@apply opacity-so-component-disabled;
-		}
-
 		&:focus-visible {
 			+ #{$this}__track {
 				@apply outline-2 outline-offset-2 outline-so-component;
 			}
 		}
-
-		&:checked + #{$this}__track {
-			#{$this}__track--thumb {
-				@apply start-4.5;
-			}
-		}
 	}
 
-	// Блочная при любом теге: размер дорожки задаёт `switch-size`, и у
-	// строчного `span` без `display` он схлопнулся бы.
 	&__track {
-		@apply block relative;
 		@apply rounded-full;
 		@apply transition-colors duration-200;
 
-		// Ручка ходит от начала строки (`inset-inline-start`), как ручка
-		// Slider, и в RTL переключатель разворачивается сам: выключенная ручка
-		// стоит справа, включённая уходит влево. Не `translate`: у сдвига нет
-		// логических направлений, и в RTL он увёл бы ручку вправо. Селектора
-		// по `[dir='rtl']` здесь нет: он зеркалил бы и переключатель с
-		// `direction="ltr"` внутри RTL-предка.
-		//
 		// Ход ручки — движение: переходом, только когда режим движения его
 		// разрешает (`motion.allowed`), а без движения ручка встаёт сразу.
+		// Ходит она по `inset-inline-start` (общий слой тем), поэтому и переход
+		// — по нему, а не по сдвигу.
 		&--thumb {
-			@apply relative;
-			@apply flex items-center justify-center;
 			@apply bg-so-component-knob;
 			@apply rounded-full shadow-md;
-			@apply absolute top-0.5 start-0.5;
 
 			@include motion.allowed {
 				@apply transition-[inset-inline-start] duration-200;
 			}
 		}
-	}
-
-	&--size-sm {
-		@include mixines.switch-size($this, 6);
-	}
-	&--size-normal {
-		@include mixines.switch-size($this, 8);
-	}
-	&--size-lg {
-		@include mixines.switch-size($this, 10);
-	}
-	&--size-xl {
-		@include mixines.switch-size($this, 12);
-	}
-	&--size-2xl {
-		@include mixines.switch-size($this, 14);
 	}
 
 	&--variant-accent {
@@ -108,16 +66,13 @@
 
 	&--required {
 		&::after {
-			@include required.required-indicator($top: '-top-0.5', $start: '-start-0.5');
-			@apply z-20;
+			@include required.required-dot;
 		}
 	}
 
+	// Только для чтения — дорожка тише. Поле нажатий не ловит (общий слой тем),
+	// а вид readonly решает тема.
 	&--readonly {
-		input {
-			@apply pointer-events-none;
-		}
-
 		#{$this}__track {
 			@apply opacity-60;
 		}

@@ -23,9 +23,18 @@ import { build as viteBuild } from 'vite'
  * - **переменные — по контракту**: каждую переменную, которую база читает, она
  *   объявляет сама, с умолчанием, или называет в списке переменных темы
  *   (`theme-variables.json` — контракт базы, одно место, которое читает
- *   сторож). Лишнего в списке нет: каждую названную переменную база читает;
+ *   сторож). Умолчание для темы — переменная правила корня документа
+ *   (`:root`): шкалы и геометрия частей, — и каждое такое тоже названо в
+ *   контракте, чтобы тема знала, что ей можно задать. Лишнего в списке нет:
+ *   каждую названную переменную база читает;
  * - **в слое `so`**: каждое правило базы — в нём или в его подслое, иначе
  *   правило базы встало бы над правилами темы и утилитами приложения;
+ * - **выключенное гаснет парой правил**: у каждого правила с прозрачностью из
+ *   `--so-disabled-opacity` есть правило его детей с единицей в ней — иначе
+ *   выключенное внутри погасшего погасло бы второй раз;
+ * - **селекторы — по классам и `data-*`**: ни `aria-*`, ни атрибута
+ *   `disabled` (корневой `AGENTS.md`, «CSS не стилизуется по `aria-*`»), а
+ *   по `dir` — только правила знака направления;
  * - **знак направления письма** задан странице без `dir` и обоим
  *   направлениям.
  *
@@ -158,6 +167,67 @@ function unreadContract(root: Root, contract: readonly string[]): string[] {
 
 	return contract.filter((name) => !read.has(name))
 }
+
+/**
+ * Умолчания для темы, которых нет в контракте: переменные правила корня
+ * документа — правила, чей единственный селектор `:root`. Правило знака
+ * направления (`:root, [dir='ltr']`) — не умолчание для темы: знак пишет база
+ * по `dir`, а тема только читает.
+ */
+function unlistedDefaults(root: Root, contract: readonly string[]): string[] {
+	const found = new Set<string>()
+
+	root.walkRules((rule) => {
+		if (rule.selectors.length !== 1 || rule.selectors[0].trim() !== ':root') return
+
+		rule.walkDecls((decl) => {
+			if (decl.prop.startsWith('--') && !contract.includes(decl.prop)) found.add(decl.prop)
+		})
+	})
+
+	return [...found]
+}
+
+/** Прозрачность выключенного — из переменной гашения. */
+const DISABLED_OPACITY = /^var\(\s*--so-disabled-opacity\s*(?:,[^()]*)?\)$/
+
+/** Пробелы вокруг комбинаторов и запятых бывают разными. */
+const squash = (selector: string) =>
+	selector
+		.replace(/\s+/g, ' ')
+		.replace(/\s*([>+~,])\s*/g, '$1')
+		.trim()
+
+/**
+ * Гасящие правила без пары: селекторы правил с прозрачностью из
+ * `--so-disabled-opacity`, у детей которых нет правила с единицей в ней.
+ */
+function unpairedDisabled(root: Root): string[] {
+	const dimmed: string[] = []
+	const reset = new Set<string>()
+
+	root.walkDecls((decl) => {
+		const rule = decl.parent
+
+		if (rule?.type !== 'rule') return
+
+		if (decl.prop === 'opacity' && DISABLED_OPACITY.test(decl.value)) {
+			dimmed.push(...rule.selectors.map(squash))
+		}
+
+		if (decl.prop === '--so-disabled-opacity' && decl.value.trim() === '1') {
+			for (const selector of rule.selectors) reset.add(squash(selector))
+		}
+	})
+
+	return dimmed.filter((selector) => !reset.has(`${selector}>*`))
+}
+
+/** Селектор по ARIA-атрибуту или по нативному атрибуту `disabled`. */
+const ARIA_OR_DISABLED = /\[\s*(?:aria-|disabled\b)/
+
+/** Селектор по направлению письма: атрибут `dir` или `:dir()`. */
+const DIRECTION = /\[\s*dir\b|:dir\(/
 
 const isAtRule = (node: Container): node is AtRule => node.type === 'atrule'
 const isRule = (node: Container): node is Rule => node.type === 'rule'
@@ -351,11 +421,63 @@ describe('переменные базы — объявлены или в кон�
 	it('каждую переменную контракта база читает', () => {
 		expect(unreadContract(css, contractNames)).toEqual([])
 	})
+
+	it('каждое умолчание для темы — переменная корня документа — названо в контракте', () => {
+		expect(unlistedDefaults(css, contractNames)).toEqual([])
+	})
 })
 
 describe('слой базы', () => {
 	it('каждое правило базы — в слое so или его подслое', () => {
 		expect(outsideLayer(css)).toEqual([])
+	})
+})
+
+describe('выключенное в базе', () => {
+	it('у каждого гасящего правила — правило детей с единицей', () => {
+		expect(unpairedDisabled(css)).toEqual([])
+	})
+
+	it('сборка дошла до гасящих правил', () => {
+		// Без них проверка выше прошла бы на любом CSS
+		const dimmed: string[] = []
+
+		css.walkDecls('opacity', (decl) => {
+			if (DISABLED_OPACITY.test(decl.value)) dimmed.push(decl.value)
+		})
+
+		expect(dimmed.length).toBeGreaterThan(0)
+	})
+})
+
+describe('селекторы базы — по классам и data-*', () => {
+	/** Селекторы исходников — с именем файла. */
+	const selectors = sources.flatMap(({ name, root }) => {
+		const found: { name: string; selector: string }[] = []
+
+		root.walkRules((rule) => {
+			found.push({ name, selector: rule.selector })
+		})
+
+		return found
+	})
+
+	it('ни aria-*, ни атрибута disabled', () => {
+		expect(
+			selectors
+				.filter(({ selector }) => ARIA_OR_DISABLED.test(selector))
+				.map(({ name, selector }) => `${name}: ${selector}`),
+		).toEqual([])
+	})
+
+	it('по направлению письма — только правила знака', () => {
+		expect(
+			selectors
+				.filter(
+					({ name, selector }) => name !== 'direction.css' && DIRECTION.test(selector),
+				)
+				.map(({ name, selector }) => `${name}: ${selector}`),
+		).toEqual([])
 	})
 })
 
@@ -438,5 +560,43 @@ describe('что видят сторожа базы', () => {
 			'(вне слоя): .so-x',
 			'sox: .so-y',
 		])
+	})
+
+	it('умолчание корня без контракта — нарушение; правило знака — не умолчание', () => {
+		const defaults = (text: string, listed: readonly string[] = []) =>
+			unlistedDefaults(postcss.parse(text), listed)
+
+		expect(defaults(':root { --so-x-size: 1rem }')).toEqual(['--so-x-size'])
+		expect(defaults(':root { --so-x-size: 1rem }', ['--so-x-size'])).toEqual([])
+		expect(defaults(":root, [dir='ltr'] { --so-dir-sign: 1 }")).toEqual([])
+		expect(defaults('.so-x { --so-x-gap: 1rem }')).toEqual([])
+	})
+
+	it('гасящее правило без правила детей — нарушение', () => {
+		const unpaired = (text: string) => unpairedDisabled(postcss.parse(text))
+		const dim = ".so-x[data-disabled='true'] { opacity: var(--so-disabled-opacity) }"
+
+		expect(unpaired(dim)).toEqual([".so-x[data-disabled='true']"])
+		expect(
+			unpaired(`${dim} .so-x[data-disabled='true']>* { --so-disabled-opacity: 1 }`),
+		).toEqual([])
+		expect(
+			unpaired(
+				'.so-a:disabled + .so-b, .so-c { opacity: var(--so-disabled-opacity, 0.35) }' +
+					' .so-a:disabled+.so-b > * { --so-disabled-opacity: 1 }',
+			),
+		).toEqual(['.so-c'])
+		expect(unpaired('.so-x { opacity: 0.5 }')).toEqual([])
+	})
+
+	it('по aria-*, атрибуту disabled и dir — нарушение; data-* и псевдокласс — нет', () => {
+		expect(ARIA_OR_DISABLED.test(".so-x[aria-selected='true']")).toBe(true)
+		expect(ARIA_OR_DISABLED.test('.so-x[ disabled]')).toBe(true)
+		expect(DIRECTION.test("[dir='rtl'] .so-x")).toBe(true)
+		expect(DIRECTION.test('.so-x:dir(rtl)')).toBe(true)
+
+		expect(ARIA_OR_DISABLED.test(".so-x[data-disabled='true']")).toBe(false)
+		expect(ARIA_OR_DISABLED.test('.so-x input:disabled')).toBe(false)
+		expect(DIRECTION.test(".so-x[data-direction='rtl']")).toBe(false)
 	})
 })

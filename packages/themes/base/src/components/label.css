@@ -1,0 +1,160 @@
+/* ─── Label ───────────────────────────────────────────────────
+ * Подпись контрола: текст рядом с CheckBox, Switch или радио. Корень —
+ * `label`, связь с контролом — вложением: клик по тексту доходит до поля
+ * контрола, и контрол переключается.
+ *
+ * Корень — `inline-flex`, как у радио со своим текстом: ширина по
+ * содержимому, и клик мимо текста контрол не переключает. Порядок в DOM один
+ * на все стороны — контрол, потом текст, — сторону ставит модификатор
+ * `--position-*`. Сторона по умолчанию, `end`, — это сам блок, правила у
+ * `--position-end` нет. Ни одного `left`/`right`: `start` и `end`
+ * логические, и в RTL текст сам встаёт с другой стороны — `dir` приходит на
+ * корень.
+ *
+ * Размер — кегль текста и зазор до контрола, по шкале подписи
+ * (`caption.css`). Кегль — у текста и распорки, а не у корня: иконки
+ * контрола меряются в `em` (`icon.css`), и кегль подписи раздул бы галку
+ * CheckBox и иконки в ручке Switch. Зазоры — переменными блока: сбоку
+ * `--so-label-gap`, в столбце `--so-label-stack`. Без модификатора размера —
+ * `normal`.
+ *
+ * Облик — цвет текста и вариант — рисует тема. */
+
+/* `baseline` ровняет распорку контрола (`__control::before`) с первой
+ * строкой текста. Заодно первая строка становится базовой линией всей
+ * подписи: в строке формы рядом с чужим текстом подпись встаёт с ним на одну
+ * линию. */
+.so-label {
+	--so-label-gap: var(--so-caption-gap-normal);
+	--so-label-stack: var(--so-caption-stack-normal);
+	display: inline-flex;
+	align-items: baseline;
+	gap: var(--so-label-gap);
+	cursor: pointer;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.so-label--size-sm {
+	--so-label-gap: var(--so-caption-gap-sm);
+	--so-label-stack: var(--so-caption-stack-sm);
+}
+
+.so-label--size-sm > .so-label__text,
+.so-label--size-sm > .so-label__control::before {
+	font-size: var(--so-caption-font-size-sm);
+	line-height: var(--so-caption-line-height-sm);
+}
+
+.so-label--size-normal {
+	--so-label-gap: var(--so-caption-gap-normal);
+	--so-label-stack: var(--so-caption-stack-normal);
+}
+
+.so-label--size-lg {
+	--so-label-gap: var(--so-caption-gap-lg);
+	--so-label-stack: var(--so-caption-stack-lg);
+}
+
+.so-label--size-lg > .so-label__text,
+.so-label--size-lg > .so-label__control::before {
+	font-size: var(--so-caption-font-size-lg);
+	line-height: var(--so-caption-line-height-lg);
+}
+
+.so-label--size-xl {
+	--so-label-gap: var(--so-caption-gap-xl);
+	--so-label-stack: var(--so-caption-stack-xl);
+}
+
+.so-label--size-xl > .so-label__text,
+.so-label--size-xl > .so-label__control::before {
+	font-size: var(--so-caption-font-size-xl);
+	line-height: var(--so-caption-line-height-xl);
+}
+
+.so-label--size-2xl {
+	--so-label-gap: var(--so-caption-gap-2xl);
+	--so-label-stack: var(--so-caption-stack-2xl);
+}
+
+.so-label--size-2xl > .so-label__text,
+.so-label--size-2xl > .so-label__control::before {
+	font-size: var(--so-caption-font-size-2xl);
+	line-height: var(--so-caption-line-height-2xl);
+}
+
+/* Обёртка контрола. Контрол не сжимается, какой бы длинной ни была
+ * подпись. */
+.so-label__control {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+}
+
+/* Распорка — строка нулевой ширины кеглем текста. Обёртка с ней не ниже
+ * строки, контрол стоит по её центру, а базовая линия обёртки — базовая
+ * линия распорки. Корень ровняет эту линию с первой строкой текста, и
+ * контрол встаёт по центру первой строки. Контрол выше строки — опускается
+ * уже текст, к середине контрола. Высоту контрола знать не нужно, поэтому
+ * размеры подписи и контрола вправе не совпасть, а в обёртке может стоять
+ * любой контрол. `hidden` убирает распорку из доступного имени. */
+.so-label__control::before {
+	content: '\200b';
+	visibility: hidden;
+}
+
+/* Пустая обёртка текста места не занимает, иначе зазор остался бы рядом с
+ * одиноким контролом. */
+.so-label__text:empty {
+	display: none;
+}
+
+.so-label--position-start > .so-label__text {
+	order: -1;
+}
+
+/* Текст над контролом и под ним — столбец, прижатый к началу строки. Зазор —
+ * `stack` шкалы подписи. Распорки нет: ровнять по строке нечего, а обёртка
+ * высотой в строку добавила бы зазора вокруг контрола, который ниже строки. */
+.so-label--position-top,
+.so-label--position-bottom {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--so-label-stack);
+}
+
+.so-label--position-top > .so-label__control::before,
+.so-label--position-bottom > .so-label__control::before {
+	content: none;
+}
+
+.so-label--position-top > .so-label__text {
+	order: -1;
+}
+
+/* Выключенный контрол. Своего `disabled` у подписи нет — состояние у
+ * контрола, и подпись читает его по вложенному полю: тег поля у CheckBox,
+ * Switch и радио фиксирован. Гаснет только текст (`disabled.css`), контрол
+ * гасит себя сам. */
+.so-label:has(> .so-label__control input:disabled) {
+	cursor: default;
+}
+
+.so-label:has(> .so-label__control input:disabled) > .so-label__text {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-label:has(> .so-label__control input:disabled) > .so-label__text > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Контрол только для чтения. Клик по подписи его не меняет, значит и рука на
+ * тексте обещала бы отклик, которого не будет. Гаснет один курсор: гасить ли
+ * текст, решает тема, а readonly — не выключенный. Состояние читается с
+ * корня контрола — `TInputControl` ставит ему модификатор `--readonly`, — а
+ * какого блока этот корень, подпись не знает: в ней стоит и CheckBox, и
+ * Switch, и чужой контрол. Отсюда совпадение по части класса. */
+.so-label:has(> .so-label__control > [class*='--readonly']) {
+	cursor: default;
+}

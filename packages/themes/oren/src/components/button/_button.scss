@@ -1,23 +1,15 @@
 @use './mixins' as mixines;
 @use '../../mixins/indicator';
 
+// Структура кнопки — строка из трёх мест (слоты у краёв, область текста между
+// ними), выравнивание области текста, шкала размеров, курсор и гашение
+// выключенной — в общем слое тем (`components/button.css` в
+// `@soldy-ui/theme-base`). Здесь — облик: скругление, проявление цвета,
+// кольцо фокуса, цвет и виды.
 .so-button {
 	$this: &;
 
-	@apply flex items-center justify-center;
-	@apply cursor-pointer;
-	@apply max-h-full;
-
-	@include mixines.button-surface;
-
-	// Область текста — всё место между слотами, содержимое по центру (см.
-	// `button-text-align`).
-	&__text {
-		@apply grow truncate;
-		@include mixines.button-text-align('center');
-	}
-
-	@include mixines.button-disabled;
+	@include mixines.button-surface-look;
 
 	// Кольца нет у вида `none`. Строки таба и тега выглядят как `none` без
 	// модификатора — кольцо с них снимают `tabs/_tabs.scss` и `tags/_tags.scss`.
@@ -29,12 +21,6 @@
 	// (`icon/_icon.scss`). Прежний `svg { fill: currentColor }` здесь заливал и
 	// рисунок линией — свой `<svg fill="none" stroke="currentColor">` в слоте
 	// вставал сплошным пятном.
-
-	@each $size, $_ in mixines.$sizes {
-		&--size-#{$size} {
-			@include mixines.button-size($size);
-		}
-	}
 }
 
 // Цвет кнопки — переменные на её корне: нейтраль у блока, вариант у

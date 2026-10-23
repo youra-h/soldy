@@ -3,7 +3,9 @@
  * строки у Input, NumberInput, DateInput, CheckBox и Switch.
  *
  * Маркер — псевдоэлемент `::after` с абсолютной позицией, и угол ему задаёт
- * одно определение темы (`themes/oren/src/mixins/_required.scss`). Сторона у
+ * общее правило, а не каждый контрол сам: у CheckBox и Switch — правило общего
+ * слоя тем (`themes/base/src/required.css`), у полей — миксин темы, пока их
+ * структура в ней (`themes/oren/src/mixins/_required.scss`). Сторона у
  * угла логическая: в RTL начало строки — справа. Раньше маркер стоял слева в
  * любом направлении и в RTL оказывался у конца поля — у Input, CheckBox и
  * Switch; DateInput задавал сторону сам. Раскладки jsdom не считает — поэтому

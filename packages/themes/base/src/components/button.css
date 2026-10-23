@@ -1,0 +1,134 @@
+/* ─── Button ──────────────────────────────────────────────────
+ * Строка из трёх мест: слот `leading` у начала кнопки, область текста,
+ * слот `trailing` у конца. Область текста растёт на всё место между слотами
+ * — середина целиком её, — и слоты стоят у краёв, как бы ни была широка
+ * кнопка.
+ *
+ * Шкала размеров — переменные корня документа по размеру (`sm`…`2xl`):
+ * высота, поле по строке, зазор между частями строки и кегль. Кегля у
+ * `normal` нет: кнопка берёт кегль места. Шкала — не только Button: по ней с
+ * кнопкой в одну строку встают части других компонентов (клетка Pagination,
+ * плитка дня Calendar, строка Table, кнопки шапки окна), и числа они берут
+ * отсюда, а не копируют. Умолчания — числа темы oren; тема задаёт свои на
+ * корне документа.
+ *
+ * Облик — фон, текст, рамка, скругление, кольцо фокуса и виды — рисует тема. */
+
+:root {
+	--so-button-height-sm: 1.75rem;
+	--so-button-height-normal: 2rem;
+	--so-button-height-lg: 2.25rem;
+	--so-button-height-xl: 2.5rem;
+	--so-button-height-2xl: 2.75rem;
+
+	--so-button-padding-sm: 0.375rem;
+	--so-button-padding-normal: 0.625rem;
+	--so-button-padding-lg: 0.75rem;
+	--so-button-padding-xl: 0.875rem;
+	--so-button-padding-2xl: 1rem;
+
+	--so-button-gap-sm: 0.25rem;
+	--so-button-gap-normal: 0.375rem;
+	--so-button-gap-lg: 0.5rem;
+	--so-button-gap-xl: 0.625rem;
+	--so-button-gap-2xl: 0.75rem;
+
+	--so-button-font-size-sm: 0.875rem;
+	--so-button-line-height-sm: calc(1.25 / 0.875);
+	--so-button-font-size-lg: 1.125rem;
+	--so-button-line-height-lg: calc(1.75 / 1.125);
+	--so-button-font-size-xl: 1.25rem;
+	--so-button-line-height-xl: calc(1.75 / 1.25);
+	--so-button-font-size-2xl: 1.5rem;
+	--so-button-line-height-2xl: calc(2 / 1.5);
+}
+
+/* Строка по центру по обеим осям, не выше места, где стоит. `relative` —
+ * опора для того, что встаёт поверх кнопки: зона нажатия кнопки сортировки
+ * Table — псевдоэлемент кнопки в 24 px. */
+.so-button {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-height: 100%;
+	cursor: pointer;
+}
+
+/* Область текста — блок, растущий на всё место между слотами. Строчное
+ * содержимое области (текст) двигает `text-align`, блочное — нет, а иконка
+ * в слоте по умолчанию — блок (корень `.so-icon`, `icon.css`; `svg`
+ * библиотеки — сброс, `reset.css`). Поэтому блочного ребёнка двигают
+ * авто-отступы; строчного они не трогают — у строчного элемента `auto`
+ * считается нулём, — и одно правило держит и текст, и иконку. Без этого в
+ * кнопке шире своей иконки крестик стоял у начала: так было у квадратной
+ * кнопки закрытия Popover.
+ *
+ * Флекса вместо блока нет намеренно: у флекс-контейнера текст — анонимный
+ * флекс-элемент, и многоточие пропало бы. Отступы детей — нулевой
+ * специфичности: дети — содержимое потребителя, и его собственный класс с
+ * отступом обязан их перекрыть. Строки списков ставят содержимое к началу
+ * строки своим правилом (тема, по контексту). */
+.so-button__text {
+	flex-grow: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+}
+
+:where(.so-button__text > *) {
+	margin-inline: auto;
+}
+
+/* Выключенная — `data-disabled`: ядро пишет его на любом теге. Нативный
+ * атрибут есть только у части тегов (у Button на `span` его нет никогда), и
+ * он переезжает вместе с тегом: селектор по нему молча перестал бы
+ * срабатывать. Гаснет кнопка целиком (`disabled.css`) и нажатий не ловит. */
+.so-button[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+	pointer-events: none;
+}
+
+.so-button[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+.so-button--size-sm {
+	height: var(--so-button-height-sm);
+	padding-inline: var(--so-button-padding-sm);
+	gap: var(--so-button-gap-sm);
+	font-size: var(--so-button-font-size-sm);
+	line-height: var(--so-button-line-height-sm);
+}
+
+.so-button--size-normal {
+	height: var(--so-button-height-normal);
+	padding-inline: var(--so-button-padding-normal);
+	gap: var(--so-button-gap-normal);
+}
+
+.so-button--size-lg {
+	height: var(--so-button-height-lg);
+	padding-inline: var(--so-button-padding-lg);
+	gap: var(--so-button-gap-lg);
+	font-size: var(--so-button-font-size-lg);
+	line-height: var(--so-button-line-height-lg);
+}
+
+.so-button--size-xl {
+	height: var(--so-button-height-xl);
+	padding-inline: var(--so-button-padding-xl);
+	gap: var(--so-button-gap-xl);
+	font-size: var(--so-button-font-size-xl);
+	line-height: var(--so-button-line-height-xl);
+}
+
+.so-button--size-2xl {
+	height: var(--so-button-height-2xl);
+	padding-inline: var(--so-button-padding-2xl);
+	gap: var(--so-button-gap-2xl);
+	font-size: var(--so-button-font-size-2xl);
+	line-height: var(--so-button-line-height-2xl);
+}
