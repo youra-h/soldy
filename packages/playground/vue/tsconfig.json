@@ -10,6 +10,7 @@
     "paths": {
       "@soldy-ui/theme-oren/setup": ["../../themes/oren/setup/index.ts"],
       "@soldy-ui/core": ["../../core/src"],
+      "@soldy-ui/icons-lucide": ["../../icons/lucide/src"],
       "@soldy-ui/icons-material": ["../../icons/material/src"],
       "@soldy-ui/plugins": ["../../plugins/src"],
       "@soldy-ui/setup": ["../../setup/index.ts"],

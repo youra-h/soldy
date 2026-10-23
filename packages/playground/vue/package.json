@@ -16,6 +16,7 @@
     "@angular/platform-browser": "^22.2.0",
     "@soldy-ui/angular": "0.3.0-alpha.1",
     "@soldy-ui/core": "0.3.0-alpha.1",
+    "@soldy-ui/icons-lucide": "0.3.0-alpha.1",
     "@soldy-ui/icons-material": "0.3.0-alpha.1",
     "@soldy-ui/playground-shared": "*",
     "@soldy-ui/plugins": "0.3.0-alpha.1",

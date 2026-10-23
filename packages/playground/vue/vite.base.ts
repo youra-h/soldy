@@ -107,6 +107,7 @@ export function aliases({ themeCss }: { themeCss: boolean }): Record<string, str
 			? { '@soldy-ui/theme-oren': resolve('../../themes/oren/dist/index.css') }
 			: {}),
 		'@soldy-ui/core': resolve('../../core/src'),
+		'@soldy-ui/icons-lucide': resolve('../../icons/lucide/src'),
 		'@soldy-ui/icons-material': resolve('../../icons/material/src'),
 		'@soldy-ui/plugins': resolve('../../plugins/src'),
 		'@soldy-ui/setup': resolve('../../setup/index.ts'),

@@ -9,6 +9,7 @@
   "fixed": [
     [
       "@soldy-ui/core",
+      "@soldy-ui/icons-lucide",
       "@soldy-ui/icons-material",
       "@soldy-ui/plugins",
       "@soldy-ui/setup",

@@ -71,10 +71,10 @@ Install the adapter for your framework, a theme and an icon pack. The adapter br
 
 The theme and the icon pack are the same for every adapter:
 
-| Package | Install                                |
-| ------- | -------------------------------------- |
-| Theme   | `npm install @soldy-ui/theme-oren`     |
-| Icons   | `npm install @soldy-ui/icons-material` |
+| Package | Install                                                                        |
+| ------- | ------------------------------------------------------------------------------ |
+| Theme   | `npm install @soldy-ui/theme-oren`                                             |
+| Icons   | `npm install @soldy-ui/icons-material` or `npm install @soldy-ui/icons-lucide` |
 
 All `@soldy-ui/*` packages share one version; keep them on the same one. Then plug in the theme and
 the icons at the application entry point, as shown below.
@@ -254,6 +254,7 @@ packages/
     webc/           Web Components adapter: Custom Elements
   themes/oren/      oren theme: CSS for the BEM classes and data-*, light and dark schemes
   icons/material/   Material icons implementing the ICON_ROLES contract
+  icons/lucide/     Lucide icons implementing the ICON_ROLES contract
   playground/
     shared/         framework-free playground data: component registry, prop descriptions, enums
     vue/            Vue playground app

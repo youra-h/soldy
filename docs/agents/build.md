@@ -267,7 +267,8 @@ npm run build --workspace=@soldy-ui/angular      # ng-packagr: частична�
   же конфигом ходит `vue-tsc`: `.vue` обычный `tsc` не читает, а декларация
   компонента (`Button.vue.d.ts`) лежит рядом с его модулем.
 - **Порядок в корневом `build` — это зависимости, а не алфавит**: `core` →
-  `plugins` → `setup` → `icons-material` → `theme-oren` → адаптеры (`vue`,
+  `plugins` → `setup` → пакеты иконок (`icons-material`, `icons-lucide`) →
+  `theme-oren` → адаптеры (`vue`,
   `react`, `solid`, `webc`, `svelte`, `angular`). Сторожит
   `packages/setup/__tests__/workspace-manifests.spec.ts`: пакет, чьи точки
   входа ведут в выход сборки, обязан быть в корневом `build` и стоять раньше

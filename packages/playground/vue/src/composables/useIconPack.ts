@@ -2,11 +2,13 @@ import { ref } from 'vue'
 import { useIcons } from '@soldy-ui/setup'
 import type { TIconSource } from '@soldy-ui/setup'
 import { ICON_PACKS } from '@soldy-ui/playground-shared'
+import * as lucide from '@soldy-ui/icons-lucide'
 import * as material from '@soldy-ui/icons-material'
 
 /** Пакеты по идентификатору из общего реестра. */
 const PACKS: Record<string, Record<string, TIconSource>> = {
 	material,
+	lucide,
 }
 
 const pack = ref(ICON_PACKS[0].id)
