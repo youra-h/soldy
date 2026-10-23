@@ -168,10 +168,11 @@ $button-height: map.get(map.get(button.$sizes, 'normal'), 'h');
 			margin-inline-end: calc(#{$pad} - var(--spacing) * #{$button-height} / 4);
 		}
 
-		// Значок — по центру квадрата. `svg` в теме блочный (preflight
-		// Tailwind), и `text-center` строки Button его не двигает: значок стоял
-		// бы у начала кнопки. Флекс центрует и значок из слота потребителя, что
-		// бы в нём ни лежало.
+		// Значок — по центру квадрата. Иконка в теме блочная (корень `.so-icon`
+		// — правило Icon, `svg` библиотеки — сброс темы, `reset.css`), и
+		// `text-center` строки Button её не двигает: значок стоял бы у начала
+		// кнопки. Флекс центрует и значок из слота потребителя, что бы в нём ни
+		// лежало.
 		> .so-button__text {
 			@apply flex justify-center;
 		}

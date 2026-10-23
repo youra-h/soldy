@@ -42,6 +42,26 @@ The dark scheme is switched on with an attribute on the root element:
 <html data-so-theme="oren-dark"></html>
 ```
 
+## The page is yours
+
+The theme styles only the nodes of Soldy UI — elements with a `so-*` class. It ships no page reset:
+Tailwind's preflight is not part of it, and outside the components it sets nothing but CSS
+variables and the `color-scheme` of each scheme. Your headings, lists, links, buttons and the
+`body` margin stay as your own styles leave them. The components inherit the font and the line
+height of the page, so set them on the page, and bring your own reset if your markup relied on the
+one the theme used to apply:
+
+```css
+html {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+}
+```
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is

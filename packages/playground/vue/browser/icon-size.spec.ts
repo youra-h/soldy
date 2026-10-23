@@ -13,7 +13,7 @@
  *
  * Корень другого тега берёт тот же размер: `span` — корень `<Icon>` без тега и
  * элемента Web Components `<span is="so-icon">`, — потому что тема делает
- * корень иконки любого тега блоком, как `svg` под Preflight.
+ * корень иконки любого тега блоком, как `svg` библиотеки под своим сбросом.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'

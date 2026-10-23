@@ -7,8 +7,21 @@
  * интерфейс, а не только на кнопки.
  *
  * Tailwind здесь не поднимается намеренно: он настроен внутри пакета темы и
- * разметку приложений не сканирует, а второй конвейер дал бы два preflight.
+ * разметку приложений не сканирует.
+ *
+ * Стенд — приложение, как любое другое: тема стилизует только узлы `so-*`, а
+ * сброса страницы не даёт (корневой `AGENTS.md`, «Темы: у пакета темы свои
+ * инструкции»). Шрифт и высоту строки страницы, поля заголовков и абзацев,
+ * маркеры списков своей разметки стенд задаёт сам — её классами, без правил
+ * на теги частей soldy (`button`, `input`, `svg`).
  */
+
+/* Типографика страницы — своя: тема её больше не задаёт */
+html {
+	-webkit-text-size-adjust: 100%;
+	tab-size: 4;
+	-webkit-tap-highlight-color: transparent;
+}
 
 *,
 *::before,
@@ -574,6 +587,10 @@ a {
 	font-size: 13px;
 }
 
+.pg-demo__lead code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 @media (max-width: 768px) {
 	.pg-demo__head {
 		grid-template-columns: minmax(0, 1fr);
@@ -764,7 +781,7 @@ a {
 	color: var(--so-neutral-500);
 }
 
-/* Номера шагов — явно: preflight темы снимает маркеры списков */
+/* Номера шагов — явно, своим отступом: оформление списка — дело стенда */
 .pg-scenario__steps {
 	margin: 0 0 8px;
 	padding-left: 20px;
@@ -859,6 +876,7 @@ a {
 }
 
 .pg-empty {
+	margin: 0;
 	padding: 40px;
 	text-align: center;
 	color: var(--so-neutral-500);
