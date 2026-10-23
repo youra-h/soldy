@@ -1,20 +1,3 @@
-/**
- * setupMenuItem — setup-слой пункта меню.
- *
- * Два контекста, как у пункта Vue и элемента ListBox: собственный
- * (`MenuItemDescriptor` — текст и значение пункта) и фасада
- * (`MenuCollectionItemDescriptor` — вход в коллекцию меню). Расширение
- * элемента берёт лифтом движок и регистратор меню и отдаёт фасаду контекст
- * пункта.
- *
- * В коллекцию пункт входит, когда контекст фасада принят, — при
- * инициализации компонента. Пункт стоит в панели меню, а панель — в
- * телепорте Frame: `Teleport` монтирует её эффектом, и на сервере, где
- * эффектов нет, пунктов нет.
- *
- * `context` отдаётся разметке явно: нажатие — метод item-адаптера `menu`.
- */
-
 import {
 	MenuCollectionItemDescriptor,
 	MenuItemDescriptor,
@@ -22,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -50,17 +33,7 @@ export function setupMenuItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

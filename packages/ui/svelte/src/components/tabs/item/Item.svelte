@@ -1,6 +1,5 @@
 <script lang="ts">
-	import type { MouseEventHandler } from 'svelte/elements'
-	import { Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
 	import { setupTabsItem } from './setup.component'
@@ -13,31 +12,11 @@
 	const state = binding.state
 	const context = binding.context
 
-	// Глиф крестика без слота — метка роли: `tag` у Icon — корень, а не роль
 	const CLOSE = roleIcon('close')
 
-	/**
-	 * Атрибуты строки — всё от потребителя, кроме класса и стиля. Клик
-	 * активирует таб, потом зовёт клик потребителя: слушатели складываются, как
-	 * у Vue.
-	 */
-	function rowAttributes() {
-		const { onclick, ...row } = toControlAttrs<TabsItemAttributes>(binding.forwardProps)
-		const activate: MouseEventHandler<HTMLElement> = (event) => {
-			if (context) context.adapters.activation.active = true
-			onclick?.(event)
-		}
 
-		return { ...row, onclick: activate }
-	}
-
-	/**
-	 * Клик крестика — нативный клик его `TActionPlugin` (`onActionClick`), и
-	 * всплытие гасится у самого события. Клик разметки Svelte делегирует корню
-	 * приложения, и к нему событие уже прошло бы корни таба и набора — их
-	 * `TActionPlugin` отдал бы `action:press` на клик по крестику. Vue гасит то
-	 * же `@click.stop`.
-	 */
+	// Нативный клик `TActionPlugin`, а не `onclick`: тот Svelte делегирует корню приложения, и
+	// событие прошло бы корни таба и набора — их `TActionPlugin` отдал бы `action:press`
 	function close(event: MouseEvent): void {
 		event.stopPropagation()
 		context?.adapters.tabs.close()
@@ -45,22 +24,8 @@
 </script>
 
 <!--
-	TabsItem — таб: корень по `tag` (по умолчанию `div`), внутри строка —
-	`Button` с `role="tab"` — и кнопка закрытия рядом с ней, как у Vue.
-
-	Наборы ядра стоят там же, где у Vue. Корень несёт `dataset`, `attrs` и место
-	в коллекции (`order`): тема красит активный таб по `data-selected` на нём.
-	Строка несёт `aria` — вся ARIA таба на элементе, который и есть таб: роль от
-	ядра, `aria-selected` и остановку Tab (`tabindex`) от коллекции, связку с
-	панелью (`id`, `aria-controls`). Атрибуты потребителя делятся, как у
-	ListBox.Item: класс и стиль — корню, остальное — строке, поверх её `aria`.
-
-	Кнопка закрытия — сосед строки, а не её часть: интерактивный потомок у
-	`<button role="tab">` HTML запрещает, а подпись крестика вошла бы в имя
-	таба. Имя кнопке ядро собирает вместе с текстом таба (`closeAria`),
-	рисуется она по итогу закрываемости фасада (`tab_closable`), размер и
-	`disabled` — явно: от строки она их не наследует. Строка и кнопка стоят
-	вплотную: пробел между ними Svelte оставил бы текстом.
+	Крестик — сосед строки: интерактивный потомок у `<button role="tab">` HTML запрещает, а его
+	подпись вошла бы в имя таба. Строка и крестик вплотную: пробел Svelte оставил бы текстом.
 -->
 {#if state.rendered}
 	<Dynamic
@@ -81,7 +46,10 @@
 			leading={props.leading}
 			trailing={props.trailing}
 			{...state.aria}
-			{...rowAttributes()}
+			{...toControlAttrs<TabsItemAttributes>(binding.forwardProps)}
+			onclick={chainHandler(() => {
+				if (context) context.adapters.activation.active = true
+			}, binding.forwardProps.onclick)}
 		>
 			{#if props.children}
 				{@render props.children({ text: state.text ?? '', active: state.active ?? false })}

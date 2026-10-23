@@ -1,18 +1,3 @@
-/**
- * setupSelectItem — setup-слой опции Select.
- *
- * Два контекста, как у элементов Vue: собственный (`SelectItemDescriptor` —
- * текст и значение опции) и фасада (`SelectCollectionItemDescriptor` — выбор,
- * порядок, сторона отметки). Расширение элемента берёт лифтом движок и
- * регистратор Select и отдаёт фасаду контекст опции.
- *
- * В коллекцию опция входит, когда контекст фасада принят, — при
- * инициализации компонента. Опции стоят в панели, а её `Teleport` монтирует
- * эффектом: на сервере их нет, в браузере они входят после гидратации.
- *
- * `context` отдаётся разметке явно: выбор — метод item-адаптера.
- */
-
 import {
 	SelectCollectionItemDescriptor,
 	SelectItemDescriptor,
@@ -20,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -48,17 +33,7 @@ export function setupSelectItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

@@ -2,7 +2,6 @@ import type { IRadioGroupItem } from '@soldy-ui/core'
 import type { RadioGroupCollectionItemDescriptor, RadioGroupItemDescriptor } from '@soldy-ui/setup'
 import type { EventProps, TDomAttributes, TFieldAttributes, UseDomProps } from '../../../types'
 
-/** События радио — свои (ядро и плагины) и фасада: отметка и порядок. */
 export type RadioGroupItemEventProps = EventProps<typeof RadioGroupItemDescriptor> &
 	EventProps<typeof RadioGroupCollectionItemDescriptor>
 
@@ -13,12 +12,7 @@ export type RadioGroupItemAttributes = TDomAttributes<
 	TFieldAttributes
 >
 
-/**
- * Пропсы радио. Отметка (`active` фасада) входит в интерфейс пропсов ядра
- * (`IRadioGroupItemProps`), и тип её несёт дескриптор радио. `name`, `size`,
- * `variant` и `view` раздаёт группа, и в разметке их не задать — ни пропом,
- * ни атрибутом поля.
- */
+/** `name`, `size`, `variant` и `view` раздаёт группа. */
 export type RadioGroupItemProps = UseDomProps<
 	typeof RadioGroupItemDescriptor,
 	IRadioGroupItem,

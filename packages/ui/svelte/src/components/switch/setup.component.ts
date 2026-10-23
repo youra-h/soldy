@@ -1,22 +1,3 @@
-/**
- * setupSwitch — setup-слой Switch.
- *
- * Создаёт adapter-context (`createSvelteAdapterContext`) и связывает его со
- * Svelte через useAdapter. Вызывается один раз при инициализации компонента,
- * поэтому контекст достаточно положить в обычную константу.
- *
- * Принимает геттер, а не сам объект props: в Svelte 5 захват $props() в
- * переменную теряет реактивность, читать его нужно лениво. Id монтирования
- * (`$props.id()`) отдаёт компонент: компилятор пускает его только туда. Так
- * же — приёмник корня (`receive`): запись в связываемый проп `ref`
- * компонента, `$bindable` компилятор тоже пускает только в компонент.
- *
- * Поле формы `Field` над переключателем: ошибку, `id` и ссылки на части контрол
- * берёт от него своим расширением (`TFieldControlExtension`) лифтом
- * (`getContext`), а своему содержимому опускает пустую связку
- * (`setContext`): контролы в его слотах — его содержимое.
- */
-
 import { SwitchDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
@@ -34,7 +15,5 @@ export function setupSwitch(getProps: () => SwitchProps, mountId: string, receiv
 		mountId,
 	}).use(TFieldControlExtension, { elevator })
 
-	// Переключает значение плагин по `change` поля; отметку разметка пишет
-	// свойством `<input>`
 	return useAdapter(adapter, getProps, receive)
 }

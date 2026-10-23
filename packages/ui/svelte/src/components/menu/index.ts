@@ -1,7 +1,3 @@
-/**
- * Menu — меню действий у кнопки и контекстное меню на базе TMenu и коллекции меню.
- */
-
 import { withParts } from '@soldy-ui/setup'
 import MenuComponent from './Menu.svelte'
 import { MenuItem } from './item'
@@ -24,11 +20,6 @@ export * from './group'
 export * from './radio-group'
 export * from './separator'
 
-/**
- * Основная форма — `<Menu.Item>`, `<Menu.CheckboxItem>`, `<Menu.RadioGroup>` с
- * `<Menu.RadioItem>`, `<Menu.Submenu>`, `<Menu.PopoverItem>`, `<Menu.Group>` и
- * `<Menu.Separator>`; плоские `MenuItem` и соседи работают так же.
- */
 export const Menu = withParts(MenuComponent, {
 	Item: MenuItem,
 	CheckboxItem: MenuCheckboxItem,

@@ -1,14 +1,3 @@
-/**
- * setupTabs — setup-слой Tabs.
- *
- * Два контекста, как у Vue: свой (`TabsDescriptor`) и фасада коллекции
- * (`TabsCollectionDescriptor`) на общем наборе, с тем же id монтирования.
- *
- * Расширения коллекции опускают движок и регистратор табов лифтом
- * (`setContext`): его читают и табы, и панели — таб входит в коллекцию набора,
- * панель находит в её движке свой таб.
- */
-
 import {
 	TCollectionExtension,
 	TDragAndDropCollectionExtension,
@@ -17,7 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -40,9 +29,6 @@ export function setupTabs(getProps: () => TabsProps, mountId: string, receive: T
 		{
 			props,
 			mountId,
-			// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-			// не создаёт, лишь доложит недостающие расширения в неё же.
-			// Не дали — соберёт свою. Развилка в `completeEngine`
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
@@ -56,14 +42,5 @@ export function setupTabs(getProps: () => TabsProps, mountId: string, receive: T
 		() => owner.forwardProps,
 	)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(owner.state, collectionBinding.state),
-
-		get forwardProps() {
-			return collectionBinding.forwardProps
-		},
-	}
+	return joinBindings(owner, collectionBinding)
 }
