@@ -6,6 +6,7 @@ import {
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -28,5 +29,7 @@ export function setupPagination(props: PaginationProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	return { ...useCollectionAdapter(collectionAdapter, props, owner), layer }
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+
+	return { ...joinBindings(owner, collectionBinding), layer }
 }

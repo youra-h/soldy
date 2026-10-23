@@ -8,6 +8,7 @@ import {
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../../adapter'
@@ -28,7 +29,7 @@ export function setupMenuSubmenu(props: MenuSubmenuProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const asItem = useCollectionAdapter(item, props, owner)
+	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
 
 	const collectionAdapter = createSolidAdapterContext(
 		MenuSubmenuCollectionDescriptor(),
@@ -36,8 +37,10 @@ export function setupMenuSubmenu(props: MenuSubmenuProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
+	const menuBinding = useCollectionAdapter(collectionAdapter, props, itemBinding.forwardProps)
+
 	return {
-		...useCollectionAdapter(collectionAdapter, props, asItem),
+		...joinBindings(owner, itemBinding, menuBinding),
 		context: item.instance.context,
 		layer,
 	}
