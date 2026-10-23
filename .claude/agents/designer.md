@@ -111,7 +111,10 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    - Иконка: SVG в `src/` каждого пакета иконок — `packages/icons/material` и
      `packages/icons/lucide`, — затем `npm run generate` в каждом
      (`--workspace=@soldy-ui/icons-material`, `--workspace=@soldy-ui/icons-lucide`).
-     Цвет только через `currentColor`. Новая роль — в спецификацию.
+     Цвет SVG — как в источнике (`#1f1f1f` у Material, `currentColor` у
+     Lucide): генератор делает его ссылкой на цвет иконки темы. В теме иконку
+     красит переменная `--so-icon-color`, а не `fill` и не `stroke`
+     (`docs/agents/theming.md`, «Пакеты иконок»). Новая роль — в спецификацию.
 7. Прогон:
    - `npm run build:css --workspace=@soldy-ui/theme-oren` и `npm run test:theme`;
    - правил иконки — `npm run test:setup`;

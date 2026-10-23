@@ -33,6 +33,28 @@ export const find = (selector: string, root: ParentNode = document): HTMLElement
 	return element
 }
 
+/** Фигуры рисунка SVG: то, что браузер красит заливкой или обводкой. */
+const SHAPES = 'path, circle, ellipse, line, polyline, polygon, rect'
+
+/**
+ * Цвет рисунка иконки — то, чем пакет рисует её фигуру: заливка, а у фигуры
+ * без заливки — обводка (линии Lucide). Тема задаёт цвет иконки переменной
+ * `--so-icon-color`, а не `fill` у корня (`docs/agents/theming.md`, «Пакеты
+ * иконок»), поэтому у корня `svg` цвета рисунка не видно — только у фигур.
+ * Иконка — корень `svg` или корень `span` с `<svg>` рисунка внутри (Web
+ * Components); фигуры нет — тест падает здесь.
+ */
+export function iconPaint(icon: Element): string {
+	const svg = icon instanceof SVGSVGElement ? icon : icon.querySelector(':scope > svg')
+	const shape = svg?.querySelector(SHAPES)
+
+	if (!(shape instanceof SVGGeometryElement)) throw new Error('фигуры в рисунке иконки нет')
+
+	const { fill, stroke } = style(shape)
+
+	return fill === 'none' ? stroke : fill
+}
+
 /**
  * Переход цвета доигрывает, прежде чем цвет читают: у контролов темы он длится
  * 200 мс, и кадр сразу после наведения застаёт цвет в начале пути.

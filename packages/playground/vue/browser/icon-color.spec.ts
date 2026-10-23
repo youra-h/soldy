@@ -1,35 +1,43 @@
 /**
- * Цвет иконок вне кнопки — в обеих схемах, по вычисленным стилям.
+ * Цвет иконки — лестница приоритетов, одна на оба пакета и оба способа
+ * рисования (`docs/agents/theming.md`, «Пакеты иконок»). От слабого к
+ * сильному:
  *
- * Пакет иконок снимает с рисунка свой `fill` и оставляет цвет теме
- * (`icons/material/scripts/generate.mjs`), а рисунок без `fill` берёт
- * умолчание SVG — чёрный. Цвет текста иконкам давала только кнопка
- * (`.so-button svg` в `themes/oren/src/components/button/_button.scss`), и
- * иконка вне кнопки оставалась чёрной в обеих схемах: стрелка Select в тёмной
- * едва виднелась на тёмном поле рядом со светлой кнопкой очистки, одиночная
- * иконка потребителя — так же. Теперь цвет текста места иконке даёт её база
- * (`:where(.so-icon)` в `icon/_icon.scss`).
+ * 1. цвет, с которым иконка загружена, — тот, что стоит в SVG пакета: у
+ *    Material заливка `#1f1f1f`, у Lucide линия цвета текста. Правила темы до
+ *    иконки не дошли — она такого цвета;
+ * 2. цвет по умолчанию от темы: у oren — цвет текста места, где иконка стоит
+ *    (`:where(.so-icon)` в `themes/oren/src/components/icon/_icon.scss`).
+ *    Пока цвет текста давала только кнопка, стрелка Select в тёмной схеме едва
+ *    виднелась на тёмном поле рядом со светлой кнопкой очистки. Своё
+ *    умолчание тема вправе задать любым цветом — он перекрасит иконку любого
+ *    пакета;
+ * 3. правило темы для места сильнее умолчания: отметка CheckBox — цветом
+ *    варианта, и иконка слота с классом Icon тоже.
  *
- * Цвет текста решает тема, и тест его не знает: мера — `color` самого
- * рисунка, который он наследует от места. Из иконок, которые рисует разметка
- * библиотеки, вне кнопки стоит только стрелка Select. Стрелка Accordion — в
- * кнопке заголовка, цвет текста брала и раньше, и сверяется как вторая
- * стрелка: обе обязаны идти за текстом, где бы ни стояли. Одиночная иконка — в
- * месте со своим цветом текста, как у полей и панелей темы: системный текст
- * страницы в светлой схеме чёрный, как умолчание SVG, и без своего цвета
- * случай прошёл бы и без правила. Корень `span` — `<span is="so-icon">` Web
- * Components, рисунок внутри: он наследует `fill` корня.
+ * Тема задаёт цвет переменной `--so-icon-color`, а не `fill` и не `stroke`:
+ * Material рисует заливкой, Lucide — линией, и тема этого не знает. Мера —
+ * то, чем пакет рисует фигуру (`iconPaint`), а цвет текста решает тема, и тест
+ * его не знает: мера — `color` самого места. Одиночная иконка — в месте со
+ * своим цветом текста, как у полей и панелей темы: системный текст страницы в
+ * светлой схеме чёрный, почти как цвет Material, и без своего цвета случай
+ * прошёл бы и без правила. Корень `span` — `<span is="so-icon">` Web
+ * Components, рисунок внутри: он наследует переменную корня.
  *
- * В jsdom каскада нет.
+ * Пакет на время тестов — тот, что проверяется, после — снова Material, как в
+ * общей настройке прогона (`__tests__/setup.ts`). В jsdom каскада нет.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { defineComponent, h, nextTick } from 'vue'
-import { Accordion, AccordionItem, Icon, Select, roleIcon } from '@soldy-ui/vue'
+import { useIcons } from '@soldy-ui/setup'
+import * as lucide from '@soldy-ui/icons-lucide'
+import * as material from '@soldy-ui/icons-material'
+import { Accordion, AccordionItem, CheckBox, Icon, Select, roleIcon } from '@soldy-ui/vue'
 import { TIconElement } from '@soldy-ui/webc'
 
-import { pixel, settled, style } from './colors'
+import { iconPaint, pixel, settled, style } from './colors'
 
 import '@soldy-ui/theme-oren'
 
@@ -38,13 +46,23 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 /** Обе схемы: чёрная иконка пропадала в тёмной, а правило у них общее. */
 const SCHEMES = ['oren', 'oren-dark'] as const
 
-/** Глиф строится один раз, как у компонентов. */
+/**
+ * Пакеты и цвет, с которым загружены их иконки: заливка Material и линия
+ * Lucide цвета текста (`currentColor`).
+ */
+const PACKS = [
+	{ name: 'material', pack: material, loaded: '#1f1f1f' },
+	{ name: 'lucide', pack: lucide, loaded: 'currentColor' },
+]
+
+/** Глифы строятся один раз, как у компонентов. */
 const CLOSE = roleIcon('close')
+const CHECK = roleIcon('check')
 
 /** Место со своим цветом текста — текстом темы. */
 const PLACE = 'color: var(--so-component-text)'
 
-/** Иконки сцены Vue — по корню иконки. */
+/** Иконки сцены Vue, которым цвет даёт умолчание темы, — по корню иконки. */
 const ICONS = {
 	'стрелка Select': '.so-select__arrow > .so-icon',
 	'стрелка Accordion': '.so-accordion-item__arrow > .so-icon',
@@ -59,6 +77,18 @@ const scene = defineComponent({
 				h(AccordionItem, { value: 'a', text: 'Секция' }, { default: () => 'Содержимое' }),
 			]),
 			h('div', { class: 'so-test-place', style: PLACE }, [h(Icon, { tag: CLOSE })]),
+			// Голый рисунок роли — без класса Icon: правил темы у него нет
+			h('div', { class: 'so-test-bare', style: PLACE }, [h(CLOSE)]),
+			// Отметка флажка — место со своим цветом иконки: своя отметка — голый
+			// рисунок роли, отметка слота — `<Icon>`
+			h('div', { style: PLACE }, [
+				h(CheckBox, { class: 'so-test-mark', value: true }),
+				h(
+					CheckBox,
+					{ class: 'so-test-slot', value: true },
+					{ icon: () => h(Icon, { tag: CHECK }) },
+				),
+			]),
 		]),
 })
 
@@ -72,8 +102,8 @@ async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
 	await settled(document.body)
 }
 
-/** Разметка Web Components — снимается после каждого теста. */
-let stage: HTMLElement | null = null
+/** Разметка Web Components и свои правила темы — снимаются после каждого теста. */
+const staged: Element[] = []
 
 /** `<span is="so-icon">` в месте со своим цветом текста, в схеме темы. */
 function showElement(scheme: (typeof SCHEMES)[number]): Element {
@@ -84,7 +114,7 @@ function showElement(scheme: (typeof SCHEMES)[number]): Element {
 	node.setAttribute('style', PLACE)
 	node.innerHTML = '<span is="so-icon" icon="close"></span>'
 	document.body.append(node)
-	stage = node
+	staged.push(node)
 
 	const icon = node.firstElementChild
 
@@ -93,52 +123,114 @@ function showElement(scheme: (typeof SCHEMES)[number]): Element {
 	return icon
 }
 
-/** Корень иконки по селектору; нет его — тест падает здесь, а не на чтении стиля. */
-function iconAt(selector: string): Element {
-	const icon = document.querySelector(selector)
+/** Своё правило темы на время теста — так, как его пишет тема. */
+function themeRule(css: string): void {
+	const sheet = document.createElement('style')
 
-	if (!icon) throw new Error(`${selector}: иконки нет`)
-
-	return icon
+	sheet.textContent = css
+	document.head.append(sheet)
+	staged.push(sheet)
 }
 
-/**
- * Рисунок иконки — то, что видит глаз: первый узел её `<svg>`. У корня `svg`
- * это его ребёнок, у корня `span` — ребёнок `<svg>` внутри.
- */
-function drawing(icon: Element): Element {
-	const svg = icon instanceof SVGSVGElement ? icon : icon.querySelector(':scope > svg')
-	const shape = svg?.firstElementChild
+/** Узел по селектору; нет его — тест падает здесь, а не на чтении стиля. */
+function at(selector: string): Element {
+	const node = document.querySelector(selector)
 
-	if (!shape) throw new Error('рисунка в иконке нет')
+	if (!node) throw new Error(`${selector}: узла нет`)
 
-	return shape
+	return node
 }
 
-/**
- * Рисунок — цветом своего текста. Цвета сверяются байтами sRGB (`pixel`):
- * `getComputedStyle` отдаёт цвет в той записи, в которой он объявлен.
- */
-function expectTextColored(icon: Element): void {
-	const { fill, color } = style(drawing(icon))
+/** Рисунок отметки флажка — `svg` в его коробке. */
+const markOf = (checkBox: string) => at(`${checkBox} .so-check-box__container > svg`)
 
-	expect([...pixel([fill])], `рисунок ${fill}, текст ${color}`).toEqual([...pixel([color])])
+/** Цвет в байтах sRGB: `getComputedStyle` отдаёт его в той записи, в которой он объявлен. */
+const bytes = (color: string) => [...pixel([color])]
+
+/** Цвет токена темы, как его разрешает браузер, — пробой в месте. */
+function token(name: string): string {
+	const probe = document.createElement('span')
+
+	probe.style.color = `var(${name})`
+	document.body.append(probe)
+
+	const color = style(probe).color
+
+	probe.remove()
+
+	return color
 }
 
 afterEach(() => {
 	cleanup()
-	stage?.remove()
-	stage = null
+	staged.splice(0).forEach((node) => node.remove())
 })
 
-describe.each(SCHEMES)('%s', (scheme) => {
-	it.each(Object.entries(ICONS))('%s: рисунок — цветом текста', async (_, selector) => {
-		await show(scheme)
-
-		expectTextColored(iconAt(selector))
+describe.each(PACKS)('$name', ({ pack, loaded }) => {
+	beforeEach(() => {
+		useIcons(pack)
 	})
 
-	it('<span is="so-icon"> вне кнопки: рисунок внутри корня — цветом текста', () => {
-		expectTextColored(showElement(scheme))
+	afterEach(() => {
+		useIcons(material)
+	})
+
+	describe.each(SCHEMES)('%s', (scheme) => {
+		it('без правил темы — цвет, с которым иконка загружена', async () => {
+			await show(scheme)
+
+			const bare = at('.so-test-bare > svg')
+			const expected = loaded === 'currentColor' ? style(bare).color : loaded
+
+			expect(bytes(iconPaint(bare)), `рисунок, текст ${style(bare).color}`).toEqual(
+				bytes(expected),
+			)
+		})
+
+		it.each(Object.entries(ICONS))(
+			'умолчание темы: %s — цветом текста',
+			async (_, selector) => {
+				await show(scheme)
+
+				const icon = at(selector)
+
+				expect(bytes(iconPaint(icon)), `текст ${style(icon).color}`).toEqual(
+					bytes(style(icon).color),
+				)
+			},
+		)
+
+		it('умолчание темы: <span is="so-icon"> — рисунок внутри корня цветом текста', () => {
+			const icon = showElement(scheme)
+
+			expect(bytes(iconPaint(icon))).toEqual(bytes(style(icon).color))
+		})
+
+		it('место сильнее умолчания: отметка флажка — цветом места, и отметка слота тоже', async () => {
+			await show(scheme)
+
+			const own = iconPaint(markOf('.so-test-mark'))
+
+			expect(bytes(own), 'отметка не цветом текста').not.toEqual(
+				bytes(style(markOf('.so-test-mark')).color),
+			)
+			expect(bytes(iconPaint(markOf('.so-test-slot')))).toEqual(bytes(own))
+		})
+
+		it('своё умолчание темы перекрашивает иконку пакета, а место — сильнее его', async () => {
+			// Умолчание другой темы — не цвет текста: так видно, что оно доходит и
+			// до заливки Material, и до линии Lucide
+			themeRule('.so-icon { --so-icon-color: var(--so-accent-500); }')
+			await show(scheme)
+
+			const accent = bytes(token('--so-accent-500'))
+
+			expect(bytes(iconPaint(at('.so-test-place > .so-icon')))).toEqual(accent)
+			expect(bytes(iconPaint(at(ICONS['стрелка Select'])))).toEqual(accent)
+			expect(bytes(iconPaint(markOf('.so-test-slot')))).toEqual(
+				bytes(iconPaint(markOf('.so-test-mark'))),
+			)
+			expect(bytes(iconPaint(markOf('.so-test-slot')))).not.toEqual(accent)
+		})
 	})
 })

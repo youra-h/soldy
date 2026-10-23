@@ -4,42 +4,44 @@
  * SVG остаются исходником — их удобно править и смотреть глазами, — а
  * потребителю уходит обычный TS-модуль с данными, как у пакета Material.
  *
- * Lucide рисует обводкой (`stroke`), а тема красит глиф заливкой (`fill`):
- * отметку CheckBox — цветом варианта в `fill`, звезду Rating — `fill` двух
- * слоёв. Обводка от такой покраски уходила бы мимо — галка цвета текста, а не
- * варианта. Поэтому обводка здесь переводится в контур: иконка становится
- * одним залитым `path`, как у Material, и тема красит её тем же правилом.
- * Толщина обводки при этом запекается в контур — она едина для пакета
- * (`STROKE_WIDTH`), и файл с другой генератор не примет.
+ * Lucide рисует обводкой, и пакет остаётся линиями. Цвет иконки — лестница
+ * (`docs/agents/theming.md`, «Пакеты иконок»): правило темы для места сильнее
+ * цвета темы по умолчанию, а тот — цвета, с которым иконка загружена.
+ * Загруженный цвет — покраска корня исходника (`stroke="currentColor"`, у
+ * звезды ещё и `fill`), а корень снимается: его строит адаптер. Поэтому
+ * покраска и обводка корня переезжают на группу вокруг рисунка, и каждый цвет
+ * в ней — ссылка на цвет иконки темы с цветом исходника запасным значением:
+ * `stroke="var(--so-icon-color, currentColor)"`. Тема задаёт цвет переменной
+ * и не знает, что пакет рисует линией, а не заливкой, как Material.
+ *
+ * Ссылка — атрибутом представления, а не `style`: атрибут слабее любого
+ * правила CSS, и тема, которой нужно сменить способ рисования (контур звезды
+ * Rating в режиме принудительных цветов), пишет правило фигурам; `style` в
+ * разметке ещё и блокирует политика безопасности без `'unsafe-inline'` для
+ * стилей.
+ *
+ * Толщина обводки едина для пакета (`STROKE_WIDTH`): она стоит в каждом SVG, и
+ * файл с другой генератор не примет.
  *
  * Результат закоммичен, дрейф ловится проверкой в CI (`npm run generate` не
- * должен менять файл). Поэтому `paper` и `paperjs-offset` в корневом манифесте
- * стоят точной версией: другая версия может посчитать контур иначе.
+ * должен менять файл).
  */
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Генератору от `paper` нужна только геометрия. Окружение paper берёт из
-// глобального `self`, а без него в Node ищет jsdom — в репозитории он есть — и
-// тогда требует пакет `canvas` для рисования, которого здесь нет. Поэтому
-// окружение без DOM задаётся до загрузки, и импорт — динамический
-globalThis.self = { navigator: { userAgent: `Node.js (${process.platform})` } }
-
-const { default: paper } = await import('paper')
-const { PaperOffset } = await import('paperjs-offset')
-
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const source = join(root, 'src')
+
+/** Переменная цвета иконки: её пишет тема, а читает рисунок. */
+const ICON_COLOR = '--so-icon-color'
 
 /** Толщина обводки пакета, в единицах `viewBox` 24×24. */
 const STROKE_WIDTH = '1.5'
 
-/** Знаков после запятой в координатах контура. */
-const PRECISION = 3
-
-paper.setup(new paper.Size(24, 24))
+/** Атрибуты корня, которые рисуют: покраска и обводка. Порядок — порядок в группе. */
+const DRAWING = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin']
 
 /** `check_indeterminate.svg` → `checkIndeterminate`. */
 const toName = (file) =>
@@ -50,85 +52,62 @@ const attributes = (text) =>
 		[...text.matchAll(/([\w-]+)="([^"]*)"/g)].map(([, name, value]) => [name, value]),
 	)
 
-/** Фигура элемента SVG — путём `paper`. Других элементов в Lucide нет. */
-function toShape(tag, attrs, file) {
-	const n = (name) => Number(attrs[name] ?? 0)
+/** Покраска: цвет — ссылкой на цвет иконки темы, `none` — как есть. */
+const paint = (value) => (value === 'none' ? value : `var(${ICON_COLOR}, ${value})`)
 
-	switch (tag) {
-		case 'path':
-			return new paper.CompoundPath({ pathData: attrs.d, insert: false })
-		case 'circle':
-			return new paper.Path.Circle({
-				center: [n('cx'), n('cy')],
-				radius: n('r'),
-				insert: false,
-			})
-		case 'rect':
-			return new paper.Path.Rectangle({
-				rectangle: [n('x'), n('y'), n('width'), n('height')],
-				radius: n('rx'),
-				insert: false,
-			})
-		case 'line':
-			return new paper.Path.Line({
-				from: [n('x1'), n('y1')],
-				to: [n('x2'), n('y2')],
-				insert: false,
-			})
-		default:
-			throw new Error(`${file}: элемент <${tag}> генератор не умеет`)
-	}
-}
+/** Значение атрибута группы: покраска — ссылкой, остальное — как есть. */
+const drawn = (name, value) => (name === 'fill' || name === 'stroke' ? paint(value) : value)
 
 /**
- * Вытаскивает `viewBox` и переводит рисунок в один залитый контур.
+ * Вытаскивает `viewBox`, а покраску и обводку корня переносит на группу вокруг
+ * его содержимого — цвета ссылкой на цвет иконки темы.
  *
- * Корень с `fill="none"` — обычная иконка Lucide, контур — только обводка.
- * Корень с заливкой — глиф, залитый целиком (звезда Rating): к обводке
- * добавляется внутренность фигуры, и силуэт остаётся тем же, что у контурной.
+ * Корень с `fill="none"` — обычная иконка Lucide, рисунок — одна обводка.
+ * Корень с заливкой — глиф, залитый целиком (звезда Rating): заливка под той же
+ * обводкой, и силуэт тот же, что у контурной.
  */
 function parse(svg, file) {
 	const rootTag = svg.match(/<svg\b([^>]*)>/)?.[1]
 
 	if (rootTag === undefined) throw new Error(`${file}: не найден корневой <svg>`)
 
-	const root = attributes(rootTag)
+	const rootAttributes = attributes(rootTag)
 
-	if (!root.viewBox) throw new Error(`${file}: нет атрибута viewBox`)
-	if (root['stroke-width'] !== STROKE_WIDTH) {
+	if (!rootAttributes.viewBox) throw new Error(`${file}: нет атрибута viewBox`)
+	if (rootAttributes['stroke-width'] !== STROKE_WIDTH) {
 		throw new Error(
-			`${file}: толщина обводки пакета — ${STROKE_WIDTH}, а не ${root['stroke-width']}`,
+			`${file}: толщина обводки пакета — ${STROKE_WIDTH}, а не ${rootAttributes['stroke-width']}`,
 		)
 	}
-	if (root['stroke-linecap'] !== 'round' || root['stroke-linejoin'] !== 'round') {
+	if (
+		rootAttributes['stroke-linecap'] !== 'round' ||
+		rootAttributes['stroke-linejoin'] !== 'round'
+	) {
 		throw new Error(`${file}: концы и стыки обводки Lucide — round`)
 	}
-
-	const filled = root.fill !== 'none'
-	const body = svg.match(/<svg\b[^>]*>([\s\S]*)<\/svg>/)[1]
-	let outline = null
-	const add = (shape) => (outline = outline ? outline.unite(shape, { insert: false }) : shape)
-
-	for (const [, tag, rest] of body.matchAll(/<(\w+)\b([^>]*)>/g)) {
-		const shape = toShape(tag, attributes(rest), file)
-		const parts = shape instanceof paper.CompoundPath ? shape.children.slice() : [shape]
-
-		for (const part of parts) {
-			add(
-				PaperOffset.offsetStroke(part, Number(STROKE_WIDTH) / 2, {
-					cap: 'round',
-					join: 'round',
-					insert: false,
-				}),
-			)
-		}
-
-		if (filled) add(shape)
+	if (!rootAttributes.stroke || rootAttributes.stroke === 'none') {
+		throw new Error(`${file}: у корня нет цвета обводки`)
 	}
 
-	if (!outline) throw new Error(`${file}: пустой рисунок`)
+	const inner = svg.match(/<svg\b[^>]*>([\s\S]*)<\/svg>/)?.[1]
 
-	return { viewBox: root.viewBox, body: `<path d="${outline.getPathData(null, PRECISION)}"/>` }
+	if (inner === undefined) throw new Error(`${file}: не найден корневой <svg>`)
+
+	// Разметка Lucide — элемент на строку: между тегами только отступы. Своя
+	// покраска внутри — тоже ссылкой, иначе она прошла бы мимо темы
+	const body = inner
+		.trim()
+		.replace(/>\s+</g, '><')
+		.replace(/\s*\/>/g, '/>')
+		.replace(/\s(fill|stroke)="([^"]*)"/g, (_, name, value) => ` ${name}="${paint(value)}"`)
+
+	if (!body) throw new Error(`${file}: пустой рисунок`)
+
+	const group = DRAWING.filter((name) => rootAttributes[name] !== undefined)
+		.map((name) => ` ${name}="${drawn(name, rootAttributes[name])}"`)
+		.join('')
+
+	return { viewBox: rootAttributes.viewBox, body: `<g${group}>${body}</g>` }
 }
 
 const files = readdirSync(source)
@@ -138,7 +117,7 @@ const files = readdirSync(source)
 const entries = files.map((file) => {
 	const { viewBox, body } = parse(readFileSync(join(source, file), 'utf8'), file)
 
-	return `export const ${toName(file)}: TIconSource = {\n\tviewBox: '${viewBox}',\n\tbody: '${body}',\n}`
+	return `export const ${toName(file)}: TIconSource = {\n\tviewBox: '${viewBox}',\n\tbody: '${body.replace(/'/g, "\\'")}',\n}`
 })
 
 /**
@@ -156,9 +135,10 @@ const origin = `/**
  * this package as LICENSE-ISC.
  *
  * Changes to the source SVG files: the stroke width is ${STROKE_WIDTH} instead of 2, and
- * the stroke is converted to a filled outline — an icon is kept as its
- * \`viewBox\` and a single path that takes the color of the text
- * (\`currentColor\`); the star is filled.
+ * the star is filled. The root \`<svg>\` element is dropped together with its
+ * size and class; its paint and stroke move to a group around the inner
+ * markup, each color as a reference to the icon color of the theme with the
+ * source color as the fallback (\`var(${ICON_COLOR}, currentColor)\`).
  */`
 
 const output = `${origin}

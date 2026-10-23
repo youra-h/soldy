@@ -229,9 +229,11 @@ describe('разметка', () => {
 		expect(node.getAttribute('dir')).toBe('rtl')
 		// Набор ARIA — полю, не корню
 		expect(node.hasAttribute('aria-readonly')).toBe(false)
+		// Внутри — span, поле и значки; что внутри значка, решает пакет иконок
 		expect(
 			all(fixture, '.so-rating *').filter(
-				(child) => !['span', 'input', 'svg', 'path'].includes(child.localName),
+				(child) =>
+					!['span', 'input', 'svg'].includes(child.localName) && !child.closest('svg'),
 			),
 		).toEqual([])
 	})

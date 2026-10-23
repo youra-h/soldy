@@ -34,6 +34,17 @@ useIcons({ close: myCloseIcon }) // a single role, on top of the pack
 Without a registered pack the components render an empty placeholder and report the missing role
 once — a missing icon must not bring the whole application down.
 
+## Color
+
+An icon is painted with a reference to the icon color of the theme, with the color of the source
+SVG as the fallback: `fill="var(--so-icon-color, #1f1f1f)"`. Without a theme rule an icon is
+`#1f1f1f`, the color it was drawn with; a theme recolors every icon of any pack by setting
+`--so-icon-color` (the oren theme gives an icon the color of the text where it stands), and a rule
+for a place — the mark of a checkbox, say — is stronger than that default. The reference is an SVG
+presentation attribute rather than a `style`: any CSS rule of a theme still overrides it, and a
+Content Security Policy without `'unsafe-inline'` styles does not strip it. An icon of your own
+(`useIcons({ close: myCloseIcon })`) takes the color of the theme when it is painted the same way.
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
@@ -48,5 +59,6 @@ The code of the package is [MIT](https://github.com/youra-h/soldy/blob/main/LICE
 The icons are [Material Symbols](https://fonts.google.com/icons) by Google, © Google, licensed
 under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0); its text
 ships with the package as `LICENSE-Apache-2.0`. The icons are changed from the source SVG files:
-the root `<svg>` element is dropped together with its size and `fill`, so that an icon takes the
-color of the text, and a glyph may be rotated — `arrowDown` is `chevron_right` turned down.
+the root `<svg>` element is dropped together with its size, its `fill` becomes a reference to the
+icon color of the theme with the source color as the fallback, and a glyph may be rotated —
+`arrowDown` is `chevron_right` turned down.
