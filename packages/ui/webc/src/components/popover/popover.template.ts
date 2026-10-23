@@ -65,9 +65,9 @@
 import type { IPopover } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
+import { lendRoleIcon } from '../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TFrameElement, type TFrameElementProps } from '../frame'
-import { TIconElement } from '../icon'
 import type { TPopoverOutputs } from './setup.component'
 
 /** Части поповера — одни на всё время жизни элемента. */
@@ -112,12 +112,7 @@ export const popoverTemplate: ITemplate<IPopover, unknown, TPopoverOutputs> = {
 		// Своя иконка крестика — только без слота `close-icon`: заданный слот
 		// заменяет её целиком
 		if (!hasSlot('close-icon')) {
-			const icon = createDetail(ownerDocument, TIconElement, {
-				embedded: 'popover.close-icon',
-			})
-
-			icon.icon = 'close'
-			lend(close, DEFAULT_SLOT, icon)
+			lendRoleIcon(close, 'close', 'popover.close-icon')
 		}
 
 		close.addEventListener('click', () => {

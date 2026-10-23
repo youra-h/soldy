@@ -35,24 +35,16 @@
 
 import type { IScroller } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
-import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
-
-/** Кнопка и её иконка; иконки нет, когда задан слот значка. */
-type TArrow = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps | null
-}
+import { bind, ownerAttributes, type ITemplate } from '../../adapter'
+import {
+	iconButton,
+	syncIconButton,
+	type TIconButton,
+	type TIconButtonSpec,
+} from '../common/icon-button'
 
 /** Как построить кнопку: имена мест, класс и слот значка. */
-type TArrowSpec = {
-	/** Имя места кнопки (`embedded`). */
-	readonly embedded: string
-	/** Имя места иконки значка. */
-	readonly iconEmbedded: string
-	/** Класс кнопки: по нему кнопку находит плагин вьюпорта. */
-	readonly className: string
+type TArrowSpec = TIconButtonSpec & {
 	/** Слот значка: заданный заменяет иконку целиком. */
 	readonly slot: string
 }
@@ -61,6 +53,7 @@ const PREV: TArrowSpec = {
 	embedded: 'scroller.prev',
 	iconEmbedded: 'scroller.prev-icon',
 	className: 'so-scroller__prev',
+	role: 'arrowRight',
 	slot: 'prev-icon',
 }
 
@@ -68,54 +61,25 @@ const NEXT: TArrowSpec = {
 	embedded: 'scroller.next',
 	iconEmbedded: 'scroller.next-icon',
 	className: 'so-scroller__next',
+	role: 'arrowRight',
 	slot: 'next-icon',
 }
 
 /** Части ленты — одни на всё время жизни элемента. */
 type TScrollerParts = {
-	readonly prev: TArrow
-	readonly next: TArrow
+	readonly prev: TIconButton
+	readonly next: TIconButton
 	readonly viewport: HTMLElement
 }
 
 const parts = new WeakMap<HTMLElement, TScrollerParts>()
 
-/** Кнопка — деталь разметки. Своя иконка — только без слота значка. */
-function arrowOf(owner: Document, spec: TArrowSpec, slotted: boolean): TArrow {
-	const button = createDetail(owner, TButtonElement, {
-		embedded: spec.embedded,
-		attributes: { type: 'button' },
-	})
-
-	button.className = spec.className
-
-	if (slotted) return { button, icon: null }
-
-	const icon = createDetail(owner, TIconElement, { embedded: spec.iconEmbedded })
-
-	// Одна роль на обе кнопки: роли «влево» в контракте иконок нет, и ту
-	// стрелку, что смотрит в начало строки, зеркалит тема
-	icon.icon = 'arrowRight'
-	lend(button, DEFAULT_SLOT, icon)
-
-	return { button, icon }
-}
-
-/** Пропсы кнопки и её иконки — только сменившиеся: `disabled` кнопки нативный. */
-function syncArrow(arrow: TArrow, size: TButtonElementProps['size'], disabled: boolean): void {
-	const { button, icon } = arrow
-
-	if (button.size !== size) button.size = size
-	if (button.disabled !== disabled) button.disabled = disabled
-	if (icon && icon.size !== size) icon.size = size
-}
-
 export const scrollerTemplate: ITemplate<IScroller> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
-		const prev = arrowOf(ownerDocument, PREV, hasSlot(PREV.slot))
+		const prev = iconButton(ownerDocument, PREV, hasSlot(PREV.slot))
 		const viewport = ownerDocument.createElement('div')
-		const next = arrowOf(ownerDocument, NEXT, hasSlot(NEXT.slot))
+		const next = iconButton(ownerDocument, NEXT, hasSlot(NEXT.slot))
 
 		viewport.className = 'so-scroller__viewport'
 		root.append(prev.button, viewport, next.button)
@@ -137,8 +101,8 @@ export const scrollerTemplate: ITemplate<IScroller> = {
 
 			if (!own) return
 
-			syncArrow(own.prev, state.size, state.prevDisabled === true)
-			syncArrow(own.next, state.size, state.nextDisabled === true)
+			syncIconButton(own.prev, state.size, state.prevDisabled === true)
+			syncIconButton(own.next, state.size, state.nextDisabled === true)
 		}),
 
 		bind('prevAria', ({ root, state }) => {

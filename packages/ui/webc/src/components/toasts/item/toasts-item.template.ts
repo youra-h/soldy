@@ -47,11 +47,11 @@ import {
 	bind,
 	createDetail,
 	isToastRender,
-	lend,
 	ownerAttributes,
 	ownerStyles,
 	type ITemplate,
 } from '../../../adapter'
+import { lendRoleIcon } from '../../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 import { TProgressSpinnerElement, type TProgressSpinnerElementProps } from '../../progress-spinner'
@@ -138,12 +138,7 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 
 		// Своя иконка крестика — только без слота `close-icon`
 		if (!hasSlot('close-icon')) {
-			const icon = createDetail(ownerDocument, TIconElement, {
-				embedded: 'toasts.close-icon',
-			})
-
-			icon.icon = 'close'
-			lend(close, DEFAULT_SLOT, icon)
+			lendRoleIcon(close, 'close', 'toasts.close-icon')
 		}
 
 		close.addEventListener('click', () => ctx.ctrl?.close())

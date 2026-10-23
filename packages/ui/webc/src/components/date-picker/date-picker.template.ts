@@ -84,12 +84,12 @@ import {
 	type ITemplateContext,
 	type TItemSlots,
 } from '../../adapter'
+import { lendRoleIcon } from '../common/icon-button'
 import { clearButton, removeClearButton } from '../common/clear'
 import { TButtonElement, type TButtonElementProps } from '../button'
 import { TCalendarElement, type TCalendarElementProps } from '../calendar'
 import { TDateInputElement, type TDateInputElementProps } from '../date-input'
 import { TFrameElement, type TFrameElementProps } from '../frame'
-import { TIconElement } from '../icon'
 import type { TDatePickerOutputs } from './setup.component'
 
 /**
@@ -321,12 +321,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		// Своя иконка кнопки календаря — только без слота `trigger-icon`: заданный
 		// слот заменяет её целиком
 		if (!hasSlot('trigger-icon')) {
-			const icon = createDetail(ownerDocument, TIconElement, {
-				embedded: 'date-picker.trigger-icon',
-			})
-
-			icon.icon = 'calendar'
-			lend(trigger, DEFAULT_SLOT, icon)
+			lendRoleIcon(trigger, 'calendar', 'date-picker.trigger-icon')
 		}
 
 		// Сначала содержимое в панель, потом панель в корень: она входит в

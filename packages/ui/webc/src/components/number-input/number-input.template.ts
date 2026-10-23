@@ -58,16 +58,14 @@
 
 import type { INumberInput } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../adapter'
+import { bind, ownerAttributes, type ITemplate } from '../../adapter'
+import {
+	iconButton,
+	syncIconButton,
+	type TIconButton,
+	type TIconButtonSpec,
+} from '../common/icon-button'
 import { placeClearButton } from '../common/clear'
-import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement, type TIconElementProps } from '../icon'
-
-/** Кнопка шага и её иконка; иконки нет, когда задан слот значка. */
-type TStepButton = {
-	readonly button: TButtonElementProps
-	readonly icon: TIconElementProps | null
-}
 
 /** Части поля, одни на всё время жизни элемента. */
 type TNumberInputParts = {
@@ -75,21 +73,13 @@ type TNumberInputParts = {
 	readonly leading: HTMLElement
 	readonly trailing: HTMLElement
 	readonly stepper: HTMLElement
-	readonly decrement: TStepButton
-	readonly increment: TStepButton
+	readonly decrement: TIconButton
+	readonly increment: TIconButton
 	readonly hidden: HTMLInputElement
 }
 
 /** Как построить кнопку шага: имена мест, класс, роль значка и его слот. */
-type TStepSpec = {
-	/** Имя места кнопки (`embedded`). */
-	readonly embedded: string
-	/** Имя места иконки значка. */
-	readonly iconEmbedded: string
-	/** Класс кнопки: по нему кнопку находит плагин кнопок шага. */
-	readonly className: string
-	/** Роль иконки значка. */
-	readonly role: string
+type TStepSpec = TIconButtonSpec & {
 	/** Слот значка: заданный заменяет иконку целиком. */
 	readonly slot: string
 }
@@ -112,37 +102,6 @@ const INCREMENT: TStepSpec = {
 
 const parts = new WeakMap<HTMLElement, TNumberInputParts>()
 
-/**
- * Кнопка шага — деталь разметки. Своя иконка — только без слота значка:
- * заданный слот заменяет её целиком, а кнопка с удержанием остаётся своей.
- */
-function stepButton(owner: Document, spec: TStepSpec, slotted: boolean): TStepButton {
-	const button = createDetail(owner, TButtonElement, {
-		embedded: spec.embedded,
-		attributes: { type: 'button' },
-	})
-
-	button.className = spec.className
-
-	if (slotted) return { button, icon: null }
-
-	const icon = createDetail(owner, TIconElement, { embedded: spec.iconEmbedded })
-
-	icon.icon = spec.role
-	lend(button, DEFAULT_SLOT, icon)
-
-	return { button, icon }
-}
-
-/** Пропсы кнопки шага и её иконки — только сменившиеся (см. шапку). */
-function syncStep(step: TStepButton, size: TButtonElementProps['size'], disabled: boolean): void {
-	const { button, icon } = step
-
-	if (button.size !== size) button.size = size
-	if (button.disabled !== disabled) button.disabled = disabled
-	if (icon && icon.size !== size) icon.size = size
-}
-
 export const numberInputTemplate: ITemplate<INumberInput> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
@@ -151,8 +110,8 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 		const trailing = ownerDocument.createElement('div')
 		const stepper = ownerDocument.createElement('div')
 		const hidden = ownerDocument.createElement('input')
-		const decrement = stepButton(ownerDocument, DECREMENT, hasSlot(DECREMENT.slot))
-		const increment = stepButton(ownerDocument, INCREMENT, hasSlot(INCREMENT.slot))
+		const decrement = iconButton(ownerDocument, DECREMENT, hasSlot(DECREMENT.slot))
+		const increment = iconButton(ownerDocument, INCREMENT, hasSlot(INCREMENT.slot))
 
 		leading.className = 'so-number-input__leading'
 		field.type = 'text'
@@ -235,8 +194,8 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 
 			if (!own) return
 
-			syncStep(own.decrement, state.size, state.decrementDisabled === true)
-			syncStep(own.increment, state.size, state.incrementDisabled === true)
+			syncIconButton(own.decrement, state.size, state.decrementDisabled === true)
+			syncIconButton(own.increment, state.size, state.incrementDisabled === true)
 		}),
 
 		// Набор кнопки шага — одним слоем владельца на оба её набора (см. шапку)

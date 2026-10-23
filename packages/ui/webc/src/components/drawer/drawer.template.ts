@@ -45,16 +45,9 @@
 
 import type { IDrawer } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import {
-	bind,
-	createDetail,
-	lend,
-	ownerAttributes,
-	ownerStyles,
-	type ITemplate,
-} from '../../adapter'
+import { bind, createDetail, ownerAttributes, ownerStyles, type ITemplate } from '../../adapter'
+import { lendRoleIcon } from '../common/icon-button'
 import { TButtonElement, type TButtonElementProps } from '../button'
-import { TIconElement } from '../icon'
 import type { TDrawerOutputs } from './setup.component'
 
 /** Части панели — одни на всё время жизни элемента. */
@@ -95,12 +88,7 @@ export const drawerTemplate: ITemplate<IDrawer, unknown, TDrawerOutputs> = {
 		// Своя иконка крестика — только без слота `close-icon`: заданный слот
 		// заменяет её целиком
 		if (!hasSlot('close-icon')) {
-			const icon = createDetail(ownerDocument, TIconElement, {
-				embedded: 'drawer.close-icon',
-			})
-
-			icon.icon = 'close'
-			lend(close, DEFAULT_SLOT, icon)
+			lendRoleIcon(close, 'close', 'drawer.close-icon')
 		}
 
 		close.addEventListener('click', () => ctx.ctrl?.requestClose('button'))
