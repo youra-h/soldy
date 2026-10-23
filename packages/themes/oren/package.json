@@ -54,6 +54,7 @@
   "devDependencies": {
     "@tailwindcss/node": "^4.2.2",
     "postcss": "^8.5.9",
+    "postcss-selector-parser": "^7.1.6",
     "sass": "^1.99.0",
     "tailwindcss": "^4.2.2"
   }

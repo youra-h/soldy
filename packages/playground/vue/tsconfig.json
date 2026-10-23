@@ -23,11 +23,13 @@
     "src/**/*",
     "__tests__/**/*",
     "browser/**/*",
+    "styles-diff/**/*",
     "env.d.ts",
     "vite.base.ts",
     "vite.config.ts",
     "vitest.config.ts",
-    "vitest.browser.config.ts"
+    "vitest.browser.config.ts",
+    "vitest.styles.config.ts"
   ],
   // Хосты React, Svelte, Solid, Web Components и Angular — свои программы типов
   // (`src/hosts/<id>/tsconfig.json`: JSX React и Solid, `.svelte` проверяет

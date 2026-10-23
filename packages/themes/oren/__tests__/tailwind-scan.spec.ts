@@ -17,6 +17,12 @@ import { fileURLToPath } from 'node:url'
  * пакета сканер прочтёт снова — первым стал бы `CHANGELOG.md`, который пишет
  * выпуск. Поэтому поиск выключен целиком, а утилита, нужная в `dist` отдельным
  * классом, объявляется явно — `@source inline(…)`.
+ *
+ * Tailwind тема подключает частями — тему и утилиты, без preflight
+ * (`src/base.css`): preflight сбрасывал все элементы документа, а тема
+ * страницу не стилизует. Поиск классов — дело утилит, поэтому `source(none)`
+ * стоит у их импорта. Полный `tailwindcss` и `preflight.css` вернули бы сброс
+ * страницы; что его нет и в собранном CSS, сторожит `sealed.spec.ts`.
  */
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url))
@@ -37,15 +43,33 @@ function scan(pattern: RegExp): string[] {
 	)
 }
 
-describe('поиск классов Tailwind выключен', () => {
-	it('импорт Tailwind несёт source(none)', () => {
-		const imports = scan(/@import\s+(['"])tailwindcss\1[^;]*;/g)
+/** Импорты Tailwind: пакет целиком и его файлы (`tailwindcss/theme.css`). */
+const tailwindImports = () => scan(/@import\s+(['"])tailwindcss(?:\/[^'"]*)?\1[^;]*;/g)
 
-		expect(imports, 'импорт tailwindcss не найден').not.toEqual([])
-		expect(imports.filter((line) => !/\ssource\(\s*none\s*\)/.test(line))).toEqual([])
+/** Путь импорта без кавычек: `tailwindcss/utilities.css`. */
+const pathOf = (line: string) => /@import\s+(['"])([^'"]+)\1/.exec(line)?.[2] ?? ''
+
+describe('поиск классов Tailwind выключен', () => {
+	it('импорт утилит Tailwind несёт source(none)', () => {
+		const utilities = tailwindImports().filter((line) =>
+			/^tailwindcss\/utilities(?:\.css)?$/.test(pathOf(line)),
+		)
+
+		expect(utilities, 'импорт утилит tailwindcss не найден').not.toEqual([])
+		expect(utilities.filter((line) => !/\ssource\(\s*none\s*\)/.test(line))).toEqual([])
 	})
 
 	it('@source не возвращает поиск по путям', () => {
 		expect(scan(/@source\s+(?!not\s|inline\()[^;]*;/g)).toEqual([])
+	})
+})
+
+describe('Tailwind — частями, без preflight', () => {
+	it('ни полного tailwindcss, ни preflight.css', () => {
+		const page = tailwindImports().filter((line) =>
+			/^tailwindcss(?:\/index(?:\.css)?)?$|\/preflight/.test(pathOf(line)),
+		)
+
+		expect(page).toEqual([])
 	})
 })
