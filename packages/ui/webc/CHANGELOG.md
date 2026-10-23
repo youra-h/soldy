@@ -1,5 +1,20 @@
 # @soldy-ui/webc
 
+## 0.3.0-alpha.2
+
+### Minor Changes
+
+- 73fc447: Web Components: уборка адаптерного слоя. Ломающее: база элемента переименована — SoldyElement → ElementBase, ISoldyElement → IElementBase, ISoldyElementSpec → IElementSpec, TSoldyElementClass → TElementClass, TSoldyElementProps → TElementProps. Описание корня — стратегией: { strategy: 'host', … } вместо флагов, { strategy: 'wrapped' } вместо { wrapped: true, control: true }, { strategy: 'wrapped', teleport } вместо { wrapped: true, teleport }. ITemplate.create(root, ctx) — без параметра hasSlot, он есть в ctx.hasSlot. У TBinding больше нет поля plugins. Удалены useAttributes (берите ключи buildAttributeMap) и тип TSlotGiven.
+- 84f4ad3: Select.Item: выбор опции — клик по строке, как у ListBox, Menu и Tabs: клик потребителя по опции приходит после выбора (раньше — до него), и stopPropagation в нём выбор больше не отменяет. Кто читал в обработчике прежнее значение — берите его из события смены значения (oldValue); отменить выбор — подпиской на item:select:before.
+- 0ff415a: Web Components: уборка компонентов. Ломающее: в описании элемента descriptor, facade и ownerFacade — функции дескрипторов (descriptor: ButtonDescriptor), а не их результат. createDetail(owner, TButtonElement, { embedded, attributes }) и createItem(owner, TTabsItemElement) принимают класс элемента вместо тега, имени is и защиты: имя и тег класс получает при defineElement. Новое: у класса элемента — проверка с полным типом TButtonElement.is(node), типы TElementClassOf, TElementOf и TElementType (тип элемента класса), помощник patch(el, { size, disabled }) — запись только сменившихся свойств.
+
+### Patch Changes
+
+- 7359ae0: Web Components: комментарии компонентов и шаблонов сокращены до шапок со ссылкой на docs/architecture.md (Layer 8d) и AGENTS.md (Web Components); код не менялся.
+- @soldy-ui/core@0.3.0-alpha.2
+  - @soldy-ui/plugins@0.3.0-alpha.2
+  - @soldy-ui/setup@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes

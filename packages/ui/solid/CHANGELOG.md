@@ -1,5 +1,19 @@
 # @soldy-ui/solid
 
+## 0.3.0-alpha.2
+
+### Minor Changes
+
+- bd594ec: Адаптер Solid: удержание в окнах гидратации — один помощник createHeldMemo на раскладку, ветки и петли; комментарии сокращены до шапок со ссылкой на packages/ui/solid/AGENTS.md. Сломалось: у TBinding нет поля plugins — набор берите у контекста (adapter.bundle); useCollectionAdapter(adapter, props, owner) принимает связку компонента вместо её forwardProps и отдаёт слитую связку (состояние обоих — joinState, ctrl и ref — компонента), тип TCollectionBinding заменён на TJoinedBinding.
+- 84f4ad3: Select.Item: выбор опции — клик по строке, как у ListBox, Menu и Tabs: клик потребителя по опции приходит после выбора (раньше — до него), и stopPropagation в нём выбор больше не отменяет. Кто читал в обработчике прежнее значение — берите его из события смены значения (oldValue); отменить выбор — подпиской на item:select:before.
+- 17e61b1: Адаптер Solid: `useCollectionAdapter` снова отвечает только за фасад, связку компонента с фасадами сводит новый `joinBindings`, как в Angular и Web Components. Сломалось: `useCollectionAdapter(adapter, props, forward)` принимает аксессор атрибутов (`owner.forwardProps`) вместо связки владельца и отдаёт `TCollectionBinding`; у `TJoinedBinding` второй параметр — тип состояния фасада. Обновиться: `joinBindings(owner, useCollectionAdapter(facade, props, owner.forwardProps))` вместо `useCollectionAdapter(facade, props, owner)`.
+
+### Patch Changes
+
+- @soldy-ui/core@0.3.0-alpha.2
+  - @soldy-ui/plugins@0.3.0-alpha.2
+  - @soldy-ui/setup@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes

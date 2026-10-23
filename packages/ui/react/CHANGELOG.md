@@ -1,5 +1,18 @@
 # @soldy-ui/react
 
+## 0.3.0-alpha.2
+
+### Minor Changes
+
+- fad39ae: Адаптер React: хуки сборки useSetupXxx больше не экспортируются из пакета — это внутренняя проводка компонентов. Свою сборку собирайте хуками адаптера: useComponent((create) => create(XDescriptor(), { ctrl, props }), props) для одного контекста, useAdapterContext + useCollectionAdapter(useAdapter(adapter, props), facade, props) для коллекции. Сигнатура useCollectionAdapter сменилась: (owner, facade, props) вместо (adapter, props, forward), результат — связка компонента вместе с фасадом.
+- 84f4ad3: Select.Item: выбор опции — клик по строке, как у ListBox, Menu и Tabs: клик потребителя по опции приходит после выбора (раньше — до него), и stopPropagation в нём выбор больше не отменяет. Кто читал в обработчике прежнее значение — берите его из события смены значения (oldValue); отменить выбор — подпиской на item:select:before.
+
+### Patch Changes
+
+- @soldy-ui/core@0.3.0-alpha.2
+  - @soldy-ui/plugins@0.3.0-alpha.2
+  - @soldy-ui/setup@0.3.0-alpha.2
+
 ## 0.3.0-alpha.1
 
 ### Minor Changes
