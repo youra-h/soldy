@@ -108,7 +108,9 @@ BEM-классы и `data-*`, тема отдаёт под них CSS. Ты от
    - CSS под классы и `data-*`, которых ядро ещё не выпускает, писать можно:
      разметка придёт в той же ветке и в том же PR. Но каждый такой класс и
      атрибут перечисли в спецификации — иначе стиль останется мёртвым.
-   - Иконка: SVG в `src/`, затем `npm run generate --workspace=@soldy-ui/icons-material`.
+   - Иконка: SVG в `src/` каждого пакета иконок — `packages/icons/material` и
+     `packages/icons/lucide`, — затем `npm run generate` в каждом
+     (`--workspace=@soldy-ui/icons-material`, `--workspace=@soldy-ui/icons-lucide`).
      Цвет только через `currentColor`. Новая роль — в спецификацию.
 7. Прогон:
    - `npm run build:css --workspace=@soldy-ui/theme-oren` и `npm run test:theme`;

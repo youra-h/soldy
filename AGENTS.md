@@ -66,8 +66,9 @@ CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов 
 `test:plugins`), типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
 «Типы — Plugins», «Типы — Playground», «Типы — React», «Типы — Svelte», «Типы —
 Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
-сгенерированных файлов — `packages/ui/angular/src/generated` и
-`packages/icons/material/src/index.ts`, — импорты собранных пакетов шагом
+сгенерированных файлов — `packages/ui/angular/src/generated`,
+`packages/icons/material/src/index.ts` и `packages/icons/lucide/src/index.ts`, —
+импорты собранных пакетов шагом
 «Импорты пакетов объявлены» (см. «Версии пакетов») и сборки. «Типы — Angular» — это
 `ngc` без эмита, а не `tsc`: кроме TS он проверяет шаблоны `@Component`
 (`strictTemplates`) и ограничения AOT, которых `tsc` не видит (NG8110 и

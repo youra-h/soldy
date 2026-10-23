@@ -147,7 +147,8 @@ jobs:
       - name: Иконки — дрейф сгенерированного списка
         run: |
           npm run generate --workspace=@soldy-ui/icons-material
-          git diff --exit-code packages/icons/material/src/index.ts
+          npm run generate --workspace=@soldy-ui/icons-lucide
+          git diff --exit-code packages/icons/material/src/index.ts packages/icons/lucide/src/index.ts
 
       # Стенд один: оболочка на Vue, превью — хосты фреймворков, и хосты
       # собираются вместе с ней, каждый своим ленивым куском. Хост Angular

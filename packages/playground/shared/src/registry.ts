@@ -454,7 +454,10 @@ export function findComponent(id: string): TComponentEntry | undefined {
 export const THEMES: readonly TThemeEntry[] = [{ id: 'oren', label: 'Oren', value: 'oren' }]
 
 /** Пакеты иконок. Реализуют контракт `ICON_ROLES`. */
-export const ICON_PACKS: readonly TIconPackEntry[] = [{ id: 'material', label: 'Material' }]
+export const ICON_PACKS: readonly TIconPackEntry[] = [
+	{ id: 'material', label: 'Material' },
+	{ id: 'lucide', label: 'Lucide' },
+]
 
 /**
  * Режимы движения библиотеки (`useMotion`) с подписями — в порядке списка в

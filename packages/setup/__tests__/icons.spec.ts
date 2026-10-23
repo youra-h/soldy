@@ -3,13 +3,15 @@
  *
  * Пакет — не мешок SVG, а реализация списка ролей, которые нужны компонентам:
  * ровно как тема реализует классы, выпускаемые в разметку. Поэтому здесь два
- * рода проверок — механика реестра и conformance пакета `material`.
+ * рода проверок — механика реестра и conformance каждого пакета иконок.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { MISSING_ICON, getIcon, hasIcon, resetIcons, useIcons } from '../protected/registry/icons'
 import { ICON_ROLES, missingIconRoles } from '../content/icons/roles'
+import type { TIconSource } from '../protected/registry'
 import * as material from '@soldy-ui/icons-material'
+import * as lucide from '@soldy-ui/icons-lucide'
 
 const anIcon = { viewBox: '0 0 24 24', body: '<path d="M0 0h24v24H0z"/>' }
 
@@ -81,35 +83,36 @@ describe('реестр ролей', () => {
 	})
 })
 
-describe('conformance пакета material', () => {
+const PACKS: Record<string, Partial<Record<string, TIconSource>>> = { material, lucide }
+
+describe.each(Object.entries(PACKS))('conformance пакета %s', (_, pack) => {
 	it('закрывает все обязательные роли', () => {
 		// Список ролей и есть контракт: добавили иконку в компонент — добавьте
 		// роль, и этот тест сразу покажет, какие пакеты её не закрыли
-		expect(missingIconRoles(material)).toEqual([])
+		expect(missingIconRoles(pack)).toEqual([])
 	})
 
 	it('каждая иконка — данные, а не разметка с корневым <svg>', () => {
 		// Корень строит адаптер: только так он может задать размер,
 		// `aria-hidden` и классы
 		for (const role of ICON_ROLES) {
-			const icon = (material as Record<string, { viewBox: string; body: string }>)[role]
-
-			expect(icon.viewBox).toMatch(/^-?\d/)
-			expect(icon.body).not.toContain('<svg')
+			expect(pack[role]?.viewBox).toMatch(/^-?\d/)
+			expect(pack[role]?.body).not.toContain('<svg')
 		}
 	})
 
-	it('цвет не зашит — иконка наследует currentColor', () => {
-		// Исходники Material несут fill="#1f1f1f"; генератор его снимает,
-		// иначе иконка не подхватит цвет текста
+	it('рисунок красит тема — заливкой, без своих fill и stroke', () => {
+		// Тема красит глиф через `fill`: отметку CheckBox — цветом варианта,
+		// звезду Rating — двумя слоями. Свой `fill` (исходники Material несут
+		// fill="#1f1f1f") перебил бы её цвет, а обводка (Lucide рисует ею) ушла
+		// бы мимо покраски — генераторы снимают первое и переводят второе в
+		// контур
 		for (const role of ICON_ROLES) {
-			const icon = (material as Record<string, { body: string }>)[role]
-
-			expect(icon.body).not.toMatch(/fill="#/)
+			expect(pack[role]?.body).not.toMatch(/\s(fill|stroke)[\w-]*=/)
 		}
 	})
 
 	it('роли не зависят от имён файлов: check_indeterminate → checkIndeterminate', () => {
-		expect(material.checkIndeterminate).toBeDefined()
+		expect(pack.checkIndeterminate).toBeDefined()
 	})
 })
