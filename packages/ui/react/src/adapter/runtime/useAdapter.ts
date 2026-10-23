@@ -1,35 +1,8 @@
 /**
- * useAdapter — основной React-хук связывания (аналог useAdapter из Vue-пакета).
- * Держание adapter-context между рендерами и его уничтожение — отдельный хук,
- * useAdapterContext из этого же файла-баррела (см. `useAdapterContext.ts`).
- *
- * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-хуке компонента через
- * createAdapterContext + useAdapterContext) и связывает его с React через
- * обмен `adapter.connect()` из setup. Своё здесь — только куда писать значение
- * (связка — внешнее хранилище для `useSyncExternalStore`), как отдать событие
- * (колбэк-проп) и в какой момент цикла React это делать:
- *
- * 1. Core → React: подписка на состояние связки
- * 2. React → Core: входные пропсы, сменившиеся с прошлого рендера родителя
- * 3. События → колбэк-пропы
- * 4. DOM-биндинг через контекст (TElementPlugin), и тот же узел — `ref`
- *    потребителя (`TRootRef`)
- *
- * Контекст может смениться: useAdapterContext пересобирает его, когда React
- * заново устанавливает эффекты (StrictMode, `<Activity>`). Пересборка — такое
- * же монтирование: пропсы применяет сборка, у нового контекста своя связка, и
- * состояние заполняется заново из неё.
- *
- * Функции, которые отданы React или связке и живут дольше рендера, — стрелки
- * в полях объектов классов (`TStableSnapshot`, `TEventCallbacks`, `TRootRef`),
- * а не замыкания в теле хука: замыкание держит всю область вызова с пропсами
- * своего рендера (см. шапку `TEventCallbacks`).
- *
- * Возвращает ctrl, plugins, ref и bindRef, корень значением для
- * `useRootElement` (`root`), forwardProps и state (экспортированные props).
- *
- * Фасад коллекции связывает `useCollectionAdapter` — те же шаги 1–3 без
- * того, что принадлежит компоненту.
+ * useAdapter — связка adapter-context с React через обмен `adapter.connect()`:
+ * состояние — внешнее хранилище `useSyncExternalStore`, входы — эффектом,
+ * события — колбэкам-пропсам, корень — `TRootRef`.
+ * AGENTS.md (React), «Связка и состояние».
  */
 
 import {
@@ -62,44 +35,29 @@ export type TBinding<
 	plugins: IPluginBundle | null
 	/** Ref корня: привязка к `TElementPlugin`, и тот же узел — `ref` потребителя. */
 	ref: (el: Element | null) => void
-	/**
-	 * Ref корня внутри обёртки (`toWrappedRootProps`) — только привязка к
-	 * `TElementPlugin`: `ref` потребителя получает обёртка, с его атрибутами.
-	 */
+	/** Ref корня внутри обёртки (`toWrappedRootProps`): только привязка. */
 	bindRef: (el: Element | null) => void
-	/**
-	 * Корень значением — только для чтения: узел ставит `ref`. Значение рендера
-	 * из него делает `useRootElement` там, где корень нужен разметке (якорь
-	 * панели Popover и Tooltip), а не эта связка у всех: подписка на корень
-	 * перерисовывала бы после монтирования каждый компонент, вплоть до строк
-	 * таблицы.
-	 */
+	/** Корень значением — для `useRootElement`. */
 	root: TRootSource
 	/** Пропсы, которые компонент не съел: уходят атрибутами в DOM. */
 	forwardProps: Partial<TProps>
-	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
 	state: TAdapterState<C>
 }
 
-/**
- * То же, что `TBinding`, но без `ctrl` и ref корня: они принадлежат
- * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
- */
-export type TCollectionBinding<
-	C extends IComponentContract = IComponentContract,
-	TProps extends object = object,
-> = {
-	plugins: IPluginBundle | null
-	/** Пропсы, которые не съели ни компонент, ни фасад: уходят атрибутами в DOM. */
+/** Связка, к которой добавляют фасад: компонента или уже с фасадом. */
+type TOwnerBinding<TProps extends object> = {
 	forwardProps: Partial<TProps>
-	/** Свойства фасада и выходы плагинов его дескриптора — как у `TBinding`. */
-	state: TAdapterState<C>
+	state: object
 }
 
-/**
- * Связка своего контекста, её снимок для React и приёмник её событий:
- * контекст пересобран — все новые.
- */
+/** Связка `TOwner` вместе с фасадом коллекции `F`: состояние обоих. */
+export type TCollectionBinding<
+	TOwner extends TOwnerBinding<TProps>,
+	F extends IComponentContract,
+	TProps extends object,
+> = Omit<TOwner, 'state'> & { state: TOwner['state'] & TAdapterState<F> }
+
+/** Связка контекста, её снимок и приёмник событий: контекст пересобран — все новые. */
 type TStore = Readonly<{
 	adapter: IAdapterContext
 	binding: TExchange
@@ -122,46 +80,31 @@ function rebind(_: TStore, adapter: IAdapterContext): TStore {
 	return bind(adapter)
 }
 
-/**
- * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
- * состояние, входы и события. Отдаёт то, из чего каждый хук собирает свой
- * результат.
- */
+/** Общее у компонента и фасада: состояние, входы и события. */
 function useExchange(
 	adapter: IAdapterContext,
 	props: object,
 ): { binding: TExchange; state: TStateSnapshot } {
 	const [store, dispatch] = useReducer(rebind, adapter, bind)
 
-	// Контекст пересобран: у нового инстанса и плагинов свои значения и своя
-	// связка. Обновление во время рендера React применяет сразу, не отрисовав прошлое
+	// Пересобранный контекст: обновление на рендере React применяет сразу
 	if (store.adapter !== adapter) dispatch(adapter)
 
 	const { binding, snapshot, callbacks } = store
 
-	// 1. Core → React. Рендер идёт по снимку, подписка — при коммите, и React
-	// сам сверяет снимок после подписки: изменение ядра между ними не теряется.
-	// Подписка перечитывает каждое свойство тем же путём, что и триггер, а
-	// перечитанное, но то же по содержимому, `TStableSnapshot` отдаёт прежним
-	// объектом — иначе каждое монтирование перерисовывалось бы второй раз
 	const state = useSyncExternalStore(
 		binding.state.subscribe,
 		snapshot.getSnapshot,
 		snapshot.getSnapshot,
 	)
 
-	// 2. React → Core: эффект получает все props на каждом рендере родителя, а
-	// связка пишет из них только сменившиеся с прошлого раза — иначе повтор
-	// откатил бы то, что с тех пор поменяли ядро или код через инстанс
+	// Связка пишет только сменившееся с прошлого раза: повтор не откатит то,
+	// что поменяли ядро или код через инстанс
 	useEffect(() => {
 		binding.inputs.full(props)
 	}, [props, binding])
 
-	// 3. События — колбэкам из пропсов последнего рендера. useLayoutEffect:
-	// подписка до первой отрисовки, чтобы не пропустить события, привязанные к
-	// DOM (`ready` из TElementPlugin через rAF). Приёмник — стрелка объекта, а
-	// не замыкание здесь: его держит очистка первого коммита, а замыкание
-	// держало бы с собой пропсы этого рендера (см. `TEventCallbacks`)
+	// Подписка до первой отрисовки: `ready` из TElementPlugin не потеряется
 	callbacks.update(props)
 
 	useLayoutEffect(() => binding.events.listen(callbacks.sink), [binding, callbacks])
@@ -169,30 +112,16 @@ function useExchange(
 	return { binding, state }
 }
 
-/**
- * Инстанс и выходы плагинов берутся из контракта в типе контекста — его
- * выводит `createAdapterContext`.
- *
- * `ref` в пропсах — `ref` потребителя: в React 19 это обычный проп, и ведёт он
- * к корню компонента (`TRootRef`).
- */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
 ): TBinding<C, TProps> {
 	const { binding, state } = useExchange(adapter, props)
-
-	// 4. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin, а
-	// корень потребителю отдаёт тот же ref корня
 	const root = useMemo(() => new TRootRef(adapter), [adapter])
 	const consumer = consumerRefOf(props)
 
-	// `ref` потребителя коммита — раньше, чем React привяжет ref узлов: ref
-	// корня того же коммита отдаст узел уже ему, а отброшенный рендер ничего не
-	// запишет
+	// `ref` потребителя — до привязки ref узлов; сменился только он — после
 	useInsertionEffect(() => root.consume(consumer), [root, consumer])
-	// Сменился только `ref` потребителя: ref корня тот же, и React его не
-	// зовёт, — новый получает узел здесь, после привязки ref узлов
 	useLayoutEffect(() => root.sync(), [root, consumer])
 
 	const forwardProps = useMemo(() => binding.forward(props), [props, binding])
@@ -209,33 +138,19 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 }
 
 /**
- * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
- *
- * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы
- * и события у фасада те же, что у компонента, а `ctrl` и ref корня — нет:
- *
- * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
- *   ждут сам компонент;
- * - своего узла у фасада нет: он делит набор компонента, и корень к
- *   `TElementPlugin` привязывает `useAdapter` компонента.
- *
- * `props` — все пропсы компонента: фасад берёт из них свои входы и колбэки
- * своих событий. `forward` — то, что не съел компонент (`forwardProps` его
- * `useAdapter`): фасад отбирает из них свои имена, и в DOM уходит только то,
- * что не съели ни компонент, ни фасад.
+ * Связка компонента вместе с фасадом его коллекции. `ctrl` и корень —
+ * компонента; фасад добавляет своё состояние и отбирает свои имена из того,
+ * что компонент не съел.
  */
-export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
-	adapter: IAdapterContext<C>,
-	props: TProps,
-	forward: Partial<TProps>,
-): TCollectionBinding<C, TProps> {
-	const { binding, state } = useExchange(adapter, props)
-
-	const forwardProps = useMemo(() => binding.forward(forward), [forward, binding])
-
-	return {
-		plugins: adapter.bundle,
-		forwardProps,
-		state: toInstanceState<C>(state),
-	}
+export function useCollectionAdapter<
+	TOwner extends TOwnerBinding<TProps>,
+	F extends IComponentContract,
+	TProps extends object,
+>(owner: TOwner, facade: IAdapterContext<F>, props: TProps): TCollectionBinding<TOwner, F, TProps> {
+	const { binding, state } = useExchange(facade, props)
+	const forwardProps = useMemo(
+		() => binding.forward(owner.forwardProps),
+		[owner.forwardProps, binding],
+	)
+	return { ...owner, forwardProps, state: { ...owner.state, ...toInstanceState<F>(state) } }
 }

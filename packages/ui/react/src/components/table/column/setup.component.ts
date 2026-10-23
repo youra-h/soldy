@@ -1,26 +1,12 @@
-/**
- * useSetupTableColumn — setup-слой заголовка колонки (аналог setup.component.ts во Vue).
- *
- * Один контекст над экземпляром колонки, как у Vue. Фасада у части нет:
- * колонка — элемент своей коллекции, а лифт таблицы отдаёт движок строк, и
- * расширение элемента записало бы её строкой. Место колонки знает коллекция
- * колонок, а рисует заголовки таблица — по показанным колонкам.
- *
- * Логики здесь нет: имя кнопки сортировки — `TTableColumnNamesPlugin`, имя
- * заголовка и ручки — `TTableColumnIdsPlugin`, сортировку по нажатию кнопки —
- * расширение сортировки коллекции строк. Методы колонки состоянием не
- * отдаются, поэтому разметке уходит её инстанс (`column`): кнопка сортировки
- * зовёт его `toggleSort()`.
- */
-
 import { TableColumnDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useAdapterContext } from '../../../adapter'
+import { useComponent } from '../../../adapter'
 import type { TableColumnProps } from './base.component'
 
 export function useSetupTableColumn(props: TableColumnProps) {
-	const { contexts: adapter } = useAdapterContext((create) =>
-		create(TableColumnDescriptor(), { ctrl: props.ctrl, props }),
+	const binding = useComponent(
+		(create) => create(TableColumnDescriptor(), { ctrl: props.ctrl, props }),
+		props,
 	)
 
-	return { ...useAdapter(adapter, props), column: adapter.instance }
+	return { ...binding, column: binding.ctrl }
 }

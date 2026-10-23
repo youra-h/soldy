@@ -6,12 +6,7 @@ import type { EventProps, UseDomProps } from '../../../types'
 export type CalendarItemEventProps = EventProps<typeof CalendarItemDescriptor> &
 	EventProps<typeof CalendarCollectionItemDescriptor>
 
-/**
- * Пропсы дня. Входов у дня нет — дату, номер, «выключен» и «недоступен» ему
- * пишут вид и расширения коллекции, размер и вариант — календарь, — поэтому из
- * своего он получает только `ctrl` и слот. Атрибуты потребителя — корню,
- * ячейке: своей строки у дня нет.
- */
+/** Пропсы дня: входов нет — только `ctrl` и слот; атрибуты потребителя — ячейке. */
 export type CalendarItemProps = UseDomProps<
 	typeof CalendarItemDescriptor,
 	ICalendarItem,

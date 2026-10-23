@@ -13,30 +13,8 @@ import { useSetupTabsItem } from './setup.component'
 import type { TabsItemAttributes, TabsItemProps } from './base.component'
 
 /**
- * TabsItem — таб: корень по `tag` (по умолчанию `div`), внутри строка —
- * `Button` с `role="tab"` — и кнопка закрытия рядом с ней, как у Vue.
- *
- * Наборы ядра стоят там же, где у Vue. Корень несёт `dataset`, `attrs` и место
- * в коллекции (`order`): тема красит активный таб по `data-selected` на нём.
- * Строка несёт `aria` — вся ARIA таба на элементе, который и есть таб: роль от
- * ядра, `aria-selected` и остановку Tab (`tabindex`) от коллекции, связку с
- * панелью (`id`, `aria-controls`). Атрибуты потребителя делятся, как у
- * ListBox.Item: класс и стиль — корню, остальное — строке, поверх её `aria`.
- *
- * Клик строки активирует таб, потом зовёт клик потребителя — как у Vue, где
- * слушатели складываются.
- *
- * Кнопка закрытия — сосед строки, а не её часть: интерактивный потомок у
- * `<button role="tab">` HTML запрещает, а подпись крестика вошла бы в имя
- * таба. Имя кнопке ядро собирает вместе с текстом таба (`closeAria`),
- * рисуется она по итогу закрываемости фасада (`tab_closable`), размер и
- * `disabled` — явно: от строки она их не наследует.
- *
- * Закрывает кнопка по `onActionClick` — нативному клику её `TActionPlugin` — и
- * гасит всплытие у нативного события. Синтетический `stopPropagation` React
- * этого не сделал бы: к нему событие уже прошло корни таба и набора, и их
- * `TActionPlugin` отдал бы `action:press` на клик по крестику. Vue гасит то же
- * `@click.stop`.
+ * TabsItem — таб: строка `Button` с `role="tab"` и кнопка закрытия рядом с
+ * ней. Атрибуты потребителя — строке: AGENTS.md (React), «Корень и `ref` потребителя».
  */
 export function TabsItem(props: TabsItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupTabsItem(props)
@@ -89,6 +67,8 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 				size={size}
 				{...toAriaProps(closeAria)}
 				onActionClick={(event) => {
+					// Нативное событие: синтетическое к этому времени уже прошло корни таба и
+					// набора, и их `TActionPlugin` отдал бы `action:press` на клик по крестику
 					event.stopPropagation()
 					context?.adapters.tabs.close()
 				}}

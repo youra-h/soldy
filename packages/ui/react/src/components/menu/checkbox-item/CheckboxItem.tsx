@@ -16,27 +16,8 @@ import type { MenuCheckboxItemAttributes, MenuCheckboxItemProps } from './base.c
 const CheckIcon = roleIcon('check')
 
 /**
- * MenuCheckboxItem — флажок меню: строка пункта с отметкой в начале, как у
- * Vue.
- *
- * Корень несёт состояние для темы (`data-highlighted`, `data-disabled`,
- * `data-selected`) и модификаторы размера меню и своего варианта, а строка
- * красится от него: носитель `dataset` один. На строке — ARIA флажка (роль
- * `menuitemcheckbox`, `aria-checked` и `tabindex="-1"` от меню) и DOM-фокус,
- * когда флажок подсвечен. Атрибуты потребителя делятся, как у пункта: класс и
- * стиль — корню, остальное — строке.
- *
- * Нажатие — клик строки, из Enter и пробела его делает сама строка. Решает
- * меню (`adapters.menu.toggle()`): выключенному отказывает, а доступному
- * переключает отметку — выбор коллекции — и остаётся открытым. Клик
- * потребителя приходит после.
- *
- * Отметка — у неотмеченного флажка тоже: обёртка держит колонку, а её наличие
- * в списке тема читает как «у меню есть колонка отметок» — прямым ребёнком
- * строки, поэтому обёртки отметки и значка лежат в слоте `leading` строки
- * сами, без своей обёртки. Рисунок внутри — только у отмеченного, слот
- * `indicator-icon` (scope — `selected`) подменяет его. Обёртка скрыта от
- * скринридера: состояние объявляет `aria-checked`.
+ * MenuCheckboxItem — флажок меню: строка пункта с отметкой в начале. Обёртка отметки — прямой
+ * ребёнок строки и у неотмеченного: по ней тема узнаёт колонку отметок.
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuCheckboxItem(props)
@@ -49,7 +30,6 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 	const checked = selected ?? false
 	const { onClick, ...row } = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
 
-	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button

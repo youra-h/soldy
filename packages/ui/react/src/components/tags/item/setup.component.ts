@@ -1,19 +1,3 @@
-/**
- * useSetupTagsItem — setup-слой тега (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у элементов Vue: собственный
- * (`TagsItemDescriptor` — текст, значение, закрываемость, вариант) и фасада
- * (`TagsCollectionItemDescriptor` — выбор, порядок, итог закрываемости).
- * Расширение элемента берёт через лифт движок и регистратор набора и отдаёт
- * фасаду контекст тега.
- *
- * В коллекцию тег входит, когда `useAdapterContext` принимает контексты при
- * коммите, а не на рендере. Пересобранный набор — это новый движок: тег
- * пересобирается вслед за ним, потому что сменилось прочитанное через лифт.
- *
- * `context` отдаётся разметке явно: выбор и закрытие — методы item-адаптеров.
- */
-
 import {
 	TCollectionItemExtension,
 	TagsCollectionItemDescriptor,
@@ -37,13 +21,8 @@ export function useSetupTagsItem(props: TagsItemProps) {
 		return [adapter, item] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...facade.state, ...owner.state },
+		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
 	}
 }
