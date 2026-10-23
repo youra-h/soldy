@@ -9,10 +9,7 @@ export type SelectItemEventProps = EventProps<typeof SelectItemDescriptor> &
 /** Атрибуты опции: класс и стиль — корню, остальное — строке с `role="option"`. */
 export type SelectItemAttributes = TDomAttributes<typeof SelectItemDescriptor, SelectItemEventProps>
 
-/**
- * Пропсы опции. Членство в коллекции (`selected`) входит в интерфейс пропсов
- * ядра (`ISelectItemProps`), и тип его несёт дескриптор опции.
- */
+/** Пропсы опции; членство в коллекции (`selected`) несёт интерфейс ядра. */
 export type SelectItemProps = UseDomProps<
 	typeof SelectItemDescriptor,
 	ISelectItem,

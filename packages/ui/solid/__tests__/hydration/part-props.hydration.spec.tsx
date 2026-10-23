@@ -8,7 +8,7 @@
  * `undefined`, и мемо обязано отличить его от «ещё не считали»: иначе набор,
  * пришедший за гидратацию, оно приняло бы за первое значение, спред запомнил
  * бы его как записанный, и до узла он не дошёл бы
- * (`src/adapter/common/root.ts`, `createLayoutMemo`).
+ * (`src/adapter/common/hydration.ts`, `createHeldMemo`).
  *
  * Разметку сервера рисует перед прогоном его `globalSetup` (`server.tsx`);
  * страница — та же (`pages.tsx`).

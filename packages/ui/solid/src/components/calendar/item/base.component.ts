@@ -2,15 +2,11 @@ import type { ICalendarItem } from '@soldy-ui/core'
 import type { CalendarCollectionItemDescriptor, CalendarItemDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../../types'
 
-/** События дня — свои (ядро и плагины) и фасада. */
+/** События дня — свои и фасада. */
 export type CalendarItemEventProps = EventProps<typeof CalendarItemDescriptor> &
 	EventProps<typeof CalendarCollectionItemDescriptor>
 
-/**
- * Пропсы дня. Входов у дня нет — дату, номер, «выключен» и «недоступен» ему
- * пишут вид и расширения коллекции, размер и вариант — календарь, — поэтому из
- * своего он получает только `ctrl` и слот.
- */
+/** Пропсы дня: входов нет — всё дню пишут календарь и расширения коллекции. */
 export type CalendarItemProps = UseDomProps<
 	typeof CalendarItemDescriptor,
 	ICalendarItem,

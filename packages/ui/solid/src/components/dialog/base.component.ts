@@ -2,12 +2,8 @@ import type { IDialog } from '@soldy-ui/core'
 import type { DialogDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
-/** События Dialog (ядро и плагины), выведены из дескриптора автоматически. */
+/** События Dialog (ядро и плагины). */
 export type DialogEventProps = EventProps<typeof DialogDescriptor>
 
-/**
- * Пропсы Dialog. Атрибуты — панели: корень окна — она, а подложка — её сосед
- * без экземпляра. Слот `title` вычитает из атрибутов `TDomAttributes`: имя
- * совпало бы с атрибутом `title`.
- */
+/** Пропсы Dialog. Атрибуты — панели; слот `title` вычитает из атрибутов одноимённый атрибут. */
 export type DialogProps = UseDomProps<typeof DialogDescriptor, IDialog, DialogEventProps>

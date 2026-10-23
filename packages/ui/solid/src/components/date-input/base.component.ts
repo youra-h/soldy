@@ -2,13 +2,10 @@ import type { IDateInput } from '@soldy-ui/core'
 import type { DateInputDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
-/** События слоя DateInput (core + плагины), выведены из дескриптора автоматически. */
+/** События DateInput. */
 export type DateInputEventProps = EventProps<typeof DateInputDescriptor>
 
-/**
- * Пропсы DateInput. Атрибуты потребителя — корню целиком, как у Vue: поля
- * ввода, между которым их делить, у даты нет — части рисует сам компонент.
- */
+/** Пропсы DateInput: атрибуты потребителя — корню целиком, поля ввода у даты нет. */
 export type DateInputProps = UseDomProps<
 	typeof DateInputDescriptor,
 	IDateInput,

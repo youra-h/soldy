@@ -2,16 +2,10 @@ import type { IDragAndDrop } from '@soldy-ui/core'
 import type { DragAndDropDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseProps } from '../../types'
 
-/**
- * События DragAndDrop (ядро), выведены из дескриптора автоматически:
- * перестановка жестом (`onMoveBefore`, `onMove`) и набор.
- */
+/** События DragAndDrop, выведены из дескриптора автоматически. */
 export type DragAndDropEventProps = EventProps<typeof DragAndDropDescriptor>
 
-/**
- * Пропсы DragAndDrop — `UseProps`, без атрибутов DOM: своего узла у обёртки
- * нет, и класс, стиль или `id` положить некуда.
- */
+/** Без атрибутов DOM: своего узла у обёртки нет. */
 export type DragAndDropProps = UseProps<
 	typeof DragAndDropDescriptor,
 	IDragAndDrop,

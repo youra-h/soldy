@@ -9,8 +9,5 @@ export type MenuItemEventProps = EventProps<typeof MenuItemDescriptor> &
 /** Атрибуты пункта: класс и стиль — корню, остальное — строке с `role="menuitem"`. */
 export type MenuItemAttributes = TDomAttributes<typeof MenuItemDescriptor, MenuItemEventProps>
 
-/**
- * Пропсы пункта-действия. Размера среди них нет: его диктует меню. Вариант —
- * свой: «опасный» пункт красится своим цветом.
- */
+/** Пропсы пункта: размер диктует меню, вариант свой («опасный» пункт). */
 export type MenuItemProps = UseDomProps<typeof MenuItemDescriptor, IMenuItem, MenuItemEventProps>

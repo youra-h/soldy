@@ -1,11 +1,5 @@
 import type { Component } from 'solid-js'
 import type { IToastsItem } from '@soldy-ui/core'
 
-/**
- * Своё содержимое тоста в Solid (`render`) — компонент Solid, которому тост
- * приходит пропом `toast`: кнопка «Отменить» внутри может его закрыть
- * (`toast.close()`). Ядро значение не читает, поэтому там оно `unknown`, а
- * тип ему даёт API адаптера (`useToasts()`), как `TToastRender` у Vue и
- * Svelte.
- */
+/** Своё содержимое тоста (`render`): компонент с пропом `toast`, чтобы закрыть его. */
 export type TToastRender = Component<{ toast: IToastsItem }>

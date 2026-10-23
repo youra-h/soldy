@@ -5,10 +5,7 @@ import type { EventProps, UseDomProps } from '../../../types'
 /** События группы переключателей — свои (ядро и плагин имени): подпись и значение. */
 export type MenuRadioGroupEventProps = EventProps<typeof MenuRadioGroupDescriptor>
 
-/**
- * Пропсы группы переключателей: подпись — проп `label`, значение отмеченного
- * переключателя — `value`, переключатели — дети.
- */
+/** Пропсы группы переключателей: `value` — значение отмеченного. */
 export type MenuRadioGroupProps = UseDomProps<
 	typeof MenuRadioGroupDescriptor,
 	IMenuRadioGroup,
