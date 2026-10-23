@@ -9,8 +9,5 @@ export type TagsItemEventProps = EventProps<typeof TagsItemDescriptor> &
 /** Атрибуты тега: класс и стиль — корню, остальное — строке. */
 export type TagsItemAttributes = TDomAttributes<typeof TagsItemDescriptor, TagsItemEventProps>
 
-/**
- * Пропсы тега. Членство в коллекции (`selected`) входит в интерфейс пропсов
- * ядра (`ITagsItemProps`), и тип его несёт дескриптор тега.
- */
+/** Пропсы тега; членство в коллекции (`selected`) несёт интерфейс ядра. */
 export type TagsItemProps = UseDomProps<typeof TagsItemDescriptor, ITagsItem, TagsItemEventProps>

@@ -6,10 +6,7 @@ import type { EventProps, UseDomProps } from '../../types'
 /** События слоя Button (core + плагины), выведены из дескриптора автоматически. */
 export type ButtonEventProps = EventProps<typeof ButtonDescriptor>
 
-/**
- * Пропсы Button. Атрибуты — кнопки (`type`, `form`, `name`, `value`): корень
- * по умолчанию — `<button>`. Элемент — `HTMLElement`: `tag` свободен.
- */
+/** Атрибуты — кнопки (корень по умолчанию `<button>`), элемент — `HTMLElement`: `tag` свободен. */
 export type ButtonProps = UseDomProps<
 	typeof ButtonDescriptor,
 	IButton,

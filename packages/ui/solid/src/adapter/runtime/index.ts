@@ -2,8 +2,8 @@ export {
 	useAdapter,
 	useCollectionAdapter,
 	type TBinding,
-	type TCollectionBinding,
 	type TConsumerRef,
+	type TJoinedBinding,
 } from './useAdapter'
 export { joinState, type TJoinedState } from './state'
 export { KeyedFor, type TKeyedForProps } from './KeyedFor'

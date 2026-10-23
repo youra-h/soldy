@@ -20,32 +20,13 @@ import type { MenuCheckboxItemAttributes, MenuCheckboxItemProps } from './base.c
 const CHECK = roleIcon('check')
 
 /**
- * MenuCheckboxItem — флажок меню: строка пункта с отметкой в начале, как у
- * Vue.
- *
- * Корень несёт состояние для темы (`data-highlighted`, `data-disabled`,
- * `data-selected`) и модификаторы размера меню и своего варианта, а строка
- * красится от него: носитель `dataset` один. На строке — ARIA флажка (роль
- * `menuitemcheckbox`, `aria-checked` и `tabindex="-1"` от меню) и DOM-фокус,
- * когда флажок подсвечен. Атрибуты потребителя делятся, как у пункта: класс и
- * стиль — корню, остальное — строке.
- *
- * Нажатие — клик строки, из Enter и пробела его делает сама строка. Решает
- * меню (`adapters.menu.toggle()`): выключенному отказывает, а доступному
- * переключает отметку — выбор коллекции — и остаётся открытым.
- *
- * Отметка — у неотмеченного флажка тоже: обёртка держит колонку, а её наличие
- * в списке тема читает как «у меню есть колонка отметок». Рисунок внутри —
- * только у отмеченного, слот `indicator-icon` (scope — `selected`) подменяет
- * его. Обёртка скрыта от скринридера: состояние объявляет `aria-checked`. По
- * слотам отметки и текста разметка выбирает, что рисовать, поэтому их
- * разворачивает адаптер, один раз (`resolveSlot`).
+ * Флажок меню: строка пункта с отметкой в начале. Обёртка отметки — и у
+ * неотмеченного: по ней тема видит у меню колонку отметок.
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 	const binding = setupMenuCheckboxItem(props)
 	const state = binding.state
 	const context = binding.context
-	// Корню — его наборы, класс и стиль потребителя; `ref` адаптера последним
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
