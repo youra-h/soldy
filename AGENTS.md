@@ -951,10 +951,13 @@ input`), а правил на всё внутри части (`.so-x *`) нет:
 окно, куда `TScrollerViewportPlugin` доводит элемент под фокусом с клавиатуры
 вместе с его элементом ленты — целиком, если тот не шире окна (сторожит
 `playground/vue/browser/scroller.spec.ts`). Ряд тегов `scroll` — так
-же: окно ряда задаёт его `scroll-padding-inline` — запас под кольцо фокуса, в
-поле Select ширина подсказки, — и тег под фокусом с клавиатуры туда доводит
-`TTagsScrollPlugin` (сторожат `playground/vue/browser/tags-overflow.spec.ts` и
-`playground/vue/browser/select-tags.spec.ts`).
+же, но его окно задаёт общий слой тем (`components/tags.css` в
+`@soldy-ui/theme-base`): `scroll-padding-inline` ряда — запас под кольцо
+фокуса, в поле Select ширина подсказки, которую рисует тема, — и тег под
+фокусом с клавиатуры туда доводит `TTagsScrollPlugin` (сторожат
+`playground/vue/browser/tags-overflow.spec.ts`,
+`playground/vue/browser/select-tags.spec.ts` и, без темы,
+`playground/vue/browser/theme-base-fields.spec.ts`).
 
 ## Невизуальное против визуального
 

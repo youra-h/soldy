@@ -27,15 +27,19 @@ this package — the theme already carries it.
   the nearest `dir`.
 - **The structure of the components** — layout and mechanics: where a part stands, what catches a
   click, cursors, how a disabled component fades. So far for Label, Field, Icon, Switch, CheckBox,
-  RadioGroup and Button; the rest of the components follow. Without a theme they are bare but
-  working: a switch toggles by a click on its track, a label toggles its control, the slots of a
-  button stay at its edges.
+  RadioGroup, Button, Input, Textarea, NumberInput, Tabs, Tags and Accordion; the rest of the
+  components follow. Without a theme they are bare but working: a switch toggles by a click on its
+  track, a label toggles its control, the slots of a button and of a field stay at its edges, a
+  tabs list stands on its side of the panel, a row of tags scrolls, a collapsed accordion section
+  takes no room.
 - **The size scales** — heights, paddings, gaps and font sizes per size — as variables on the
   document root with defaults, such as `--so-button-height-sm` or `--so-caption-gap-lg`. A theme
   sets its own numbers there, an application on an ancestor of its area.
 
 It has no look: no colors, borders, radii, shadows, no names of a theme's variants or views — those
-are the theme's. Every variable a theme may set is listed with its meaning in
+are the theme's. Where the layout counts on a number of the look — the border width of a field, the
+width of the fade at the edge of a scrolling row of tags — the theme sets it in a variable, and
+without a theme it is zero. Every variable a theme may set is listed with its meaning in
 `theme-variables.json`.
 
 ## Usage in a theme

@@ -1,0 +1,365 @@
+/* ─── Tags ────────────────────────────────────────────────────
+ * Набор тегов — горизонтальный ряд, а не список: теги переносятся по
+ * строкам и держатся друг от друга на одинаковом зазоре.
+ *
+ *   .so-tags                     корень — ряд
+ *     .so-tags-item              тег — пилюля: строка (Button) и крестик рядом
+ *       .so-tags-item__close     кнопка закрытия — Button
+ *
+ * Что делать с тегами, которым не хватило ширины ряда, решает компонент, а
+ * сюда это приходит состоянием — `data-overflow`: `wrap` — перенос (база
+ * ряда), `scroll` — одна строка с прокруткой. Тег под фокусом с клавиатуры
+ * ряд `scroll` доводит до своего окна (`TTagsScrollPlugin`), а окно — паддинг
+ * ряда за вычетом отступа прокрутки (`scroll-padding-inline`).
+ *
+ * Шкала тега — переменные корня документа по размеру (`sm`…`2xl`): высота
+ * пилюли, кегль и интерлиньяж, поле строки и зазор между её частями. Своя, а
+ * не шкала Button: тег на ступень мельче кнопки того же размера — метка в
+ * ряду, а не действие. Зазор ряда, запас под кольцо фокуса и поле крестика —
+ * тоже переменные корня. Умолчания — числа темы oren; тема задаёт свои на
+ * корне документа.
+ *
+ * Облик — поверхность пилюли, виды и варианты набора и тега, цвет крестика,
+ * кольцо фокуса и подсказка у края ряда `scroll` в поле — рисует тема. */
+
+:root {
+	--so-tags-gap: 0.375rem;
+	--so-tags-field-gap: 0.25rem;
+	--so-tags-bleed: 0.25rem;
+	--so-tags-close-padding: 0.125rem;
+
+	--so-tags-item-height-sm: 1.5rem;
+	--so-tags-item-height-normal: 1.75rem;
+	--so-tags-item-height-lg: 2rem;
+	--so-tags-item-height-xl: 2.25rem;
+	--so-tags-item-height-2xl: 2.5rem;
+
+	--so-tags-item-font-size-sm: 0.75rem;
+	--so-tags-item-line-height-sm: calc(1 / 0.75);
+	--so-tags-item-font-size-normal: 0.875rem;
+	--so-tags-item-line-height-normal: calc(1.25 / 0.875);
+	--so-tags-item-font-size-lg: 1rem;
+	--so-tags-item-line-height-lg: 1.5;
+	--so-tags-item-font-size-xl: 1.125rem;
+	--so-tags-item-line-height-xl: calc(1.75 / 1.125);
+	--so-tags-item-font-size-2xl: 1.25rem;
+	--so-tags-item-line-height-2xl: calc(1.75 / 1.25);
+
+	--so-tags-item-padding-sm: 0.375rem;
+	--so-tags-item-padding-normal: 0.375rem;
+	--so-tags-item-padding-lg: 0.5rem;
+	--so-tags-item-padding-xl: 0.625rem;
+	--so-tags-item-padding-2xl: 0.75rem;
+
+	--so-tags-item-gap-sm: 0.25rem;
+	--so-tags-item-gap-normal: 0.25rem;
+	--so-tags-item-gap-lg: 0.375rem;
+	--so-tags-item-gap-xl: 0.375rem;
+	--so-tags-item-gap-2xl: 0.5rem;
+}
+
+/* Зазор — переменной, а не числом на месте: своя раскладка в слоте `default`
+ * (лента, ряд с хвостом в панели) ставит теги не прямыми детьми набора, и то
+ * же число нужно уже ей. В поле оно своё (ниже). */
+.so-tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--so-tags-gap);
+}
+
+/* Выключенный набор гаснет корнем целиком — ряд с тегами и содержимым слота
+ * (`disabled.css`). Состояние — `data-disabled` корня: ядро пишет его на любом
+ * теге, а модификатора `--disabled` у блока нет. Теги выключены вместе с
+ * набором — их `disabled` распространяется от владельца, нажатия они гасят
+ * сами — и под погасшим корнем второй раз не гаснут. */
+.so-tags[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-tags[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Одна строка с нативной прокруткой: ряд листают колесом и пальцем.
+ *
+ * Тег не сжимается: ширина у него натуральная, а что не поместилось, уходит
+ * за край ряда и прокручивается. Сжимайся он по месту, флексбокс ужал бы ряд
+ * под ширину контейнера, и листать стало бы нечего.
+ *
+ * Запас под кольцо фокуса. Прокрутка по строке делает ряд прокручиваемой
+ * областью и по вертикали (`overflow-y` у него вычисляется в `auto`), а такая
+ * область режет всё, что вышло за её паддинг-бокс, — запаса за краем обрезки
+ * (`overflow-clip-margin`) у неё не бывает. Место кольцу даёт только паддинг.
+ * По вертикали отрицательное поле сверху возвращает тегам прежнее место;
+ * снизу поля нет: под паддингом стоит полоса прокрутки, и поле вынесло бы её
+ * на соседа под рядом. По строке поля нет вовсе: ряд, выступающий за свой
+ * контейнер, накрыл бы соседа и перехватывал бы у него указатель. Поэтому
+ * теги стоят на запас дальше от края ряда, чем в `wrap`.
+ *
+ * Тот же запас по строке — и отступом прокрутки. Паддинг даёт место кольцу
+ * только в начале и в конце прокрутки, а тег, который ряд докручивает до края
+ * посередине, встаёт к краю вплотную. Отступ прокрутки сужает на запас окно,
+ * до края которого ряд докручивают плагин ряда и сам браузер, и кольцо
+ * остаётся внутри ряда. */
+.so-tags[data-overflow='scroll'] {
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	padding-block: var(--so-tags-bleed);
+	padding-inline: var(--so-tags-bleed);
+	margin-block-start: calc(-1 * var(--so-tags-bleed));
+	scroll-padding-inline: var(--so-tags-bleed);
+}
+
+.so-tags[data-overflow='scroll'] > .so-tags-item {
+	flex-shrink: 0;
+}
+
+/* Строка тега и кнопка закрытия — соседи в одну линию. Внутри строки кнопке
+ * не место: в режиме выбора строка — `role="option"`, её потомки для
+ * скринридера презентационны, и подпись крестика вошла бы в имя тега.
+ * Поэтому пилюлю рисует обёртка, и `relative` — опора для того, что встаёт
+ * поверх неё. Высота пилюли — переменной: её задают ступень (ниже) и строка
+ * слота в поле, а по ней же держит себя в пилюле зона нажатия крестика. */
+.so-tags-item {
+	position: relative;
+	display: flex;
+	align-items: center;
+	height: var(--so-tags-item-height);
+}
+
+/* Строка — во всю высоту пилюли изнутри, поэтому рамка вида тег не раздувает.
+ * Крестик — квадрат вокруг значка по центру пилюли: отступ от верха и низа —
+ * половина остатка высоты от значка без поля крестика. Тот же отступ — поле
+ * строки по оси блока: высота крестика — высота строки без него. `1em` —
+ * кегль того узла, на котором стоит отступ, а у строки и крестика он один:
+ * одна формула ставит крестик и в пилюлю своей ступени, и в строку слота
+ * поля, которая ниже пилюли. */
+.so-tags-item > :not(.so-tags-item__close) {
+	height: 100%;
+	padding-block: calc((var(--so-tags-item-height) - 1em) / 2 - var(--so-tags-close-padding));
+}
+
+/* Значок крестика — в кегль строки на любой ступени, а не по шкале иконок
+ * (`icon.css`): там с `lg` значок растёт быстрее кегля, и крестик рядом с
+ * подписью тега выходил бы жирнее её самой. Иконка из слота `close-icon` —
+ * тоже: размер ей здесь даёт крестик, а не её `size`. */
+.so-tags-item > .so-tags-item__close {
+	flex-shrink: 0;
+	align-self: stretch;
+	height: auto;
+	padding-inline: var(--so-tags-close-padding);
+	margin-block: calc((var(--so-tags-item-height) - 1em) / 2 - var(--so-tags-close-padding));
+}
+
+.so-tags-item > .so-tags-item__close .so-icon {
+	width: 1em;
+	height: 1em;
+}
+
+/* Зона нажатия крестика — невидимый квадрат по центру со стороной в минимум
+ * цели (`target.css`): сам крестик до `2xl` меньше, а в режиме выбора
+ * вплотную к нему стоит нажимаемая строка тега. Поверх строки зона лежит
+ * сама: строка и крестик позиционированы (`relative` у Button), и крестик в
+ * дереве позже.
+ *
+ * За пилюлю зона не выходит: снаружи она перехватывала бы нажатия у соседей,
+ * а ряду `scroll` добавила бы переполнение. По строке места хватает на любой
+ * ступени: от конца пилюли крестик отступает на поле строки, а к строке зона
+ * заходит на её концевое поле. По высоте зона — меньшее из минимума и высоты
+ * пилюли: крестик стоит по центру пилюли, и такая зона за неё не выходит. */
+.so-tags-item > .so-tags-item__close::before {
+	content: '';
+	position: absolute;
+	inset-inline: calc(50% - var(--so-target-size) / 2);
+	inset-block: calc(50% - min(var(--so-target-size), var(--so-tags-item-height)) / 2);
+}
+
+/* Размер тега — по его шкале. Строка и крестик — Button, и `size` тега
+ * доходит до них размерным классом Button; числа шкалы тега ложатся поверх
+ * него, на класс сильнее. Крестик встаёт на место последней части строки:
+ * перед ним — зазор строки, после — её поле. Строка, за которой он стоит,
+ * отдаёт ему своё концевое поле. */
+.so-tags-item--size-sm {
+	--so-tags-item-height: var(--so-tags-item-height-sm);
+}
+
+.so-tags-item--size-sm > .so-button {
+	font-size: var(--so-tags-item-font-size-sm);
+	line-height: var(--so-tags-item-line-height-sm);
+}
+
+.so-tags-item--size-sm > :not(.so-tags-item__close) {
+	gap: var(--so-tags-item-gap-sm);
+	padding-inline: var(--so-tags-item-padding-sm);
+}
+
+.so-tags-item--size-sm > :has(+ .so-tags-item__close) {
+	padding-inline-end: var(--so-tags-item-gap-sm);
+}
+
+.so-tags-item--size-sm > .so-tags-item__close {
+	margin-inline-end: var(--so-tags-item-padding-sm);
+}
+
+.so-tags-item--size-normal {
+	--so-tags-item-height: var(--so-tags-item-height-normal);
+}
+
+.so-tags-item--size-normal > .so-button {
+	font-size: var(--so-tags-item-font-size-normal);
+	line-height: var(--so-tags-item-line-height-normal);
+}
+
+.so-tags-item--size-normal > :not(.so-tags-item__close) {
+	gap: var(--so-tags-item-gap-normal);
+	padding-inline: var(--so-tags-item-padding-normal);
+}
+
+.so-tags-item--size-normal > :has(+ .so-tags-item__close) {
+	padding-inline-end: var(--so-tags-item-gap-normal);
+}
+
+.so-tags-item--size-normal > .so-tags-item__close {
+	margin-inline-end: var(--so-tags-item-padding-normal);
+}
+
+.so-tags-item--size-lg {
+	--so-tags-item-height: var(--so-tags-item-height-lg);
+}
+
+.so-tags-item--size-lg > .so-button {
+	font-size: var(--so-tags-item-font-size-lg);
+	line-height: var(--so-tags-item-line-height-lg);
+}
+
+.so-tags-item--size-lg > :not(.so-tags-item__close) {
+	gap: var(--so-tags-item-gap-lg);
+	padding-inline: var(--so-tags-item-padding-lg);
+}
+
+.so-tags-item--size-lg > :has(+ .so-tags-item__close) {
+	padding-inline-end: var(--so-tags-item-gap-lg);
+}
+
+.so-tags-item--size-lg > .so-tags-item__close {
+	margin-inline-end: var(--so-tags-item-padding-lg);
+}
+
+.so-tags-item--size-xl {
+	--so-tags-item-height: var(--so-tags-item-height-xl);
+}
+
+.so-tags-item--size-xl > .so-button {
+	font-size: var(--so-tags-item-font-size-xl);
+	line-height: var(--so-tags-item-line-height-xl);
+}
+
+.so-tags-item--size-xl > :not(.so-tags-item__close) {
+	gap: var(--so-tags-item-gap-xl);
+	padding-inline: var(--so-tags-item-padding-xl);
+}
+
+.so-tags-item--size-xl > :has(+ .so-tags-item__close) {
+	padding-inline-end: var(--so-tags-item-gap-xl);
+}
+
+.so-tags-item--size-xl > .so-tags-item__close {
+	margin-inline-end: var(--so-tags-item-padding-xl);
+}
+
+.so-tags-item--size-2xl {
+	--so-tags-item-height: var(--so-tags-item-height-2xl);
+}
+
+.so-tags-item--size-2xl > .so-button {
+	font-size: var(--so-tags-item-font-size-2xl);
+	line-height: var(--so-tags-item-line-height-2xl);
+}
+
+.so-tags-item--size-2xl > :not(.so-tags-item__close) {
+	gap: var(--so-tags-item-gap-2xl);
+	padding-inline: var(--so-tags-item-padding-2xl);
+}
+
+.so-tags-item--size-2xl > :has(+ .so-tags-item__close) {
+	padding-inline-end: var(--so-tags-item-gap-2xl);
+}
+
+.so-tags-item--size-2xl > .so-tags-item__close {
+	margin-inline-end: var(--so-tags-item-padding-2xl);
+}
+
+/* Выключенный тег гаснет целиком, с крестиком, и нажатий не ловит
+ * (`disabled.css`). Строка и крестик — Button со своим `data-disabled` и под
+ * погасшей пилюлей второй раз не гаснут. */
+.so-tags-item[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+	pointer-events: none;
+}
+
+.so-tags-item[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Теги внутри поля ввода: высоту задаёт строка слота поля (`input.css`) —
+ * высота размера поля без рамки и просветов, — ширину — слот, а не размерный
+ * класс. Кегль, поля и крестик — те же, что у тега вне поля: шкала тега и так
+ * мельче Button. Значение, а не процент от слота: поле Select растёт по
+ * строкам тегов, у растущего поля и слота высота авто, и процент от неё не
+ * разрешается.
+ *
+ * Ширину отдаёт слот. Ряд переносится по строкам, а один тег переносить
+ * некуда, поэтому тег шире слота сжимается сам: текст строки обрезается
+ * многоточием (у области текста Button оно уже есть), крестик не сжимается.
+ * Для этого автоматический минимум ширины — по всему тексту тега — снят у
+ * всей цепочки: у ряда, у тега и у строки. В `scroll` тег натуральной ширины:
+ * не поместившееся там прокручивается, а не сжимается (`flex-shrink` выше).
+ *
+ * Зазор в поле уже: строка поля коротка, и зазор ряда вне поля съедал бы
+ * ширину, которой не хватает вводу. */
+.so-input__leading > .so-tags,
+.so-input__trailing > .so-tags {
+	--so-tags-gap: var(--so-tags-field-gap);
+	min-width: 0;
+}
+
+.so-input__leading > .so-tags .so-tags-item,
+.so-input__trailing > .so-tags .so-tags-item {
+	--so-tags-item-height: var(--so-input-slot-row);
+	min-width: 0;
+}
+
+.so-input__leading > .so-tags .so-tags-item > :not(.so-tags-item__close),
+.so-input__trailing > .so-tags .so-tags-item > :not(.so-tags-item__close) {
+	min-width: 0;
+}
+
+/* Ряд `scroll` в поле — без полосы прокрутки. Классическая полоса (Windows,
+ * Linux) занимает место под тегами, а поле в `scroll` постоянной высоты: ряд
+ * вытягивался бы вниз мимо слота. Прокрутка остаётся: палец, трекпад, колесо
+ * с Shift.
+ *
+ * Запас под кольцо в поле — просвет слота: паддинг-бокс ряда с ним ровно до
+ * рамки поля. Полосы здесь нет, и низ ряд возвращает так же, как верх:
+ * внешняя высота ряда — строка слота, и поле не растёт. По строке запаса нет:
+ * у пилюли в поле остановки Tab нет, а крестик отступает от края пилюли
+ * дальше, чем выходит его кольцо. Отступ прокрутки по строке — ширина
+ * подсказки у края, если её рисует тема (`--so-tags-fade`, контракт): окно ряда
+ * — его чистая часть, и тег под фокусом докручивают туда, а не под подсказку.
+ * Без подсказки отступа нет, и тег встаёт вплотную к краю. */
+.so-input__leading > .so-tags[data-overflow='scroll'],
+.so-input__trailing > .so-tags[data-overflow='scroll'] {
+	--so-tags-bleed: var(--so-input-slot-gap);
+	margin-block-end: calc(-1 * var(--so-tags-bleed));
+	padding-inline: 0;
+	scroll-padding-inline: var(--so-tags-fade, 0px);
+	scrollbar-width: none;
+}
+
+/* Полоса в движках WebKit: `scrollbar-width` там появился поздно. */
+.so-input__leading > .so-tags[data-overflow='scroll']::-webkit-scrollbar,
+.so-input__trailing > .so-tags[data-overflow='scroll']::-webkit-scrollbar {
+	display: none;
+}

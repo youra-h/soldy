@@ -1,7 +1,8 @@
 /**
- * Кнопка очистки поля — квадрат со стороной в строку слота: так её рисует
- * тема (`themes/oren/src/components/input/_mixins.scss`, `field-clear`) у
- * Input, у DateInput и в поле Select. Раньше ширину кнопке давал паддинг
+ * Кнопка очистки поля — квадрат со стороной в строку слота: так её ставит
+ * общий слой тем у Input и в поле Select (`themes/base/src/components/input.css`)
+ * и тема у DateInput (`themes/oren/src/components/input/_mixins.scss`,
+ * `field-clear`). Раньше ширину кнопке давал паддинг
  * шкалы Button, а высоту резал `max-h-full`: на крупных размерах очистка
  * Select выходила низкой и широкой.
  *

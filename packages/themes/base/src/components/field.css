@@ -276,10 +276,11 @@
  *   базовая линия ползунка и обёртки. Вертикальный — по верху: первая строка
  *   подписи у его начала.
  * - Многострочное поле Textarea — по своей первой строке текста: она стоит по
- *   центру строки поля его размера — высоты Input того же размера.
- *   Распорка — у верха обёртки, высотой в эту строку: подпись встаёт на
- *   первую строку, как у Input, сколько бы строк ни было ниже. Высоту строки
- *   по размеру поля пока задаёт тема: шкала Input — не в общем слое. */
+ *   центру строки поля его размера — высоты Input того же размера
+ *   (`textarea.css`). Распорка — у верха обёртки, высотой в эту строку:
+ *   подпись встаёт на первую строку, как у Input, сколько бы строк ни было
+ *   ниже. Высота строки — по размеру самого поля, из шкалы поля
+ *   (`input.css`): размер подписи и размер поля задают отдельно. */
 .so-field--position-start > .so-field__control:has(> :is(.so-radio-group, .so-label))::before,
 .so-field--position-start
 	> .so-field__control:has(> .so-select .so-tags[data-overflow='wrap'] .so-tags-item)::before,
@@ -304,6 +305,31 @@
 .so-field--position-start > .so-field__control:has(> .so-textarea),
 .so-field--position-end > .so-field__control:has(> .so-textarea) {
 	align-items: flex-start;
+}
+
+.so-field--position-start > .so-field__control:has(> .so-textarea--size-sm)::before,
+.so-field--position-end > .so-field__control:has(> .so-textarea--size-sm)::before {
+	line-height: var(--so-input-height-sm);
+}
+
+.so-field--position-start > .so-field__control:has(> .so-textarea--size-normal)::before,
+.so-field--position-end > .so-field__control:has(> .so-textarea--size-normal)::before {
+	line-height: var(--so-input-height-normal);
+}
+
+.so-field--position-start > .so-field__control:has(> .so-textarea--size-lg)::before,
+.so-field--position-end > .so-field__control:has(> .so-textarea--size-lg)::before {
+	line-height: var(--so-input-height-lg);
+}
+
+.so-field--position-start > .so-field__control:has(> .so-textarea--size-xl)::before,
+.so-field--position-end > .so-field__control:has(> .so-textarea--size-xl)::before {
+	line-height: var(--so-input-height-xl);
+}
+
+.so-field--position-start > .so-field__control:has(> .so-textarea--size-2xl)::before,
+.so-field--position-end > .so-field__control:has(> .so-textarea--size-2xl)::before {
+	line-height: var(--so-input-height-2xl);
 }
 
 /* Подпись в начале строки. Колонка подписи — по тексту, но не шире 40 %
