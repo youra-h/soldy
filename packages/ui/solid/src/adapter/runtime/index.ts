@@ -1,7 +1,9 @@
 export {
 	useAdapter,
 	useCollectionAdapter,
+	joinBindings,
 	type TBinding,
+	type TCollectionBinding,
 	type TConsumerRef,
 	type TJoinedBinding,
 } from './useAdapter'

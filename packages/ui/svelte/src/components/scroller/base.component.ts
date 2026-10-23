@@ -2,11 +2,7 @@ import type { IScroller } from '@soldy-ui/core'
 import type { ScrollerDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
-/** События слоя Scroller (core + плагины), выведены из дескриптора автоматически. */
 export type ScrollerEventProps = EventProps<typeof ScrollerDescriptor>
 
-/**
- * Пропсы Scroller. Атрибуты — корня: ряда из кнопок и вьюпорта. Роль ряда и
- * всё, что к ней прилагается, вьюпорт получает пропом `viewportAria`.
- */
+/** Атрибуты — корню; роль ряда вьюпорт получает пропом `viewportAria`. */
 export type ScrollerProps = UseDomProps<typeof ScrollerDescriptor, IScroller, ScrollerEventProps>
