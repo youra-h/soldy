@@ -1,6 +1,7 @@
 import { TCollectionExtension, TagsCollectionDescriptor, TagsDescriptor } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -28,5 +29,11 @@ export function setupTags(getProps: () => TagsProps, mountId: string, receive: T
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	return useCollectionAdapter(collectionAdapter, getProps, owner)
+	const collectionBinding = useCollectionAdapter(
+		collectionAdapter,
+		getProps,
+		() => owner.forwardProps,
+	)
+
+	return joinBindings(owner, collectionBinding)
 }

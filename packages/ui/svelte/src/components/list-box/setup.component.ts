@@ -7,6 +7,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -41,5 +42,11 @@ export function setupListBox(
 		.use(TDragAndDropCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
-	return useCollectionAdapter(collectionAdapter, getProps, owner)
+	const collectionBinding = useCollectionAdapter(
+		collectionAdapter,
+		getProps,
+		() => owner.forwardProps,
+	)
+
+	return joinBindings(owner, collectionBinding)
 }

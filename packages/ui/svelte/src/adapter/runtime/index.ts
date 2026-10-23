@@ -1,7 +1,9 @@
 export {
 	useAdapter,
 	useCollectionAdapter,
+	joinBindings,
 	type TBinding,
+	type TCollectionBinding,
 	type TRootReceiver,
 } from './useAdapter.svelte'
 export { default as Dynamic } from './Dynamic.svelte'

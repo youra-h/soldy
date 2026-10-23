@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -33,7 +34,7 @@ export function setupMenuRadioItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const binding = useCollectionAdapter(item, getProps, owner)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return Object.assign(binding, { context: item.instance.context })
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

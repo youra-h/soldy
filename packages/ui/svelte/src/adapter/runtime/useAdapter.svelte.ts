@@ -9,7 +9,8 @@
  *    `rootElement`
  * 6. Очистка при уничтожении
  *
- * Фасад коллекции добавляет к связке компонента `useCollectionAdapter`.
+ * Фасад коллекции связывает `useCollectionAdapter`, со связкой компонента его
+ * сводит `joinBindings`.
  * AGENTS.md (Svelte), «Связка».
  */
 
@@ -45,6 +46,13 @@ export type TBinding<
 	bindRef: (node: Element) => () => void
 	/** Только `ref` — обёртке корня. */
 	consumerRef: (node: Element) => () => void
+}
+
+/** Связка фасада коллекции: своего `ctrl` и корня у него нет. */
+export type TCollectionBinding<TState extends object, TProps extends object = object> = {
+	readonly state: TState
+	/** Атрибуты, которые не съели ни компонент, ни фасад. */
+	readonly forwardProps: TForwardProps<TProps>
 }
 
 /** Общая часть `useAdapter` и `useCollectionAdapter`. */
@@ -166,33 +174,67 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 }
 
 /**
- * Связка компонента с фасадом коллекции: состояние фасада под состоянием
- * компонента, на корень — то, что не съели ни компонент, ни фасад. `ctrl` и
- * корень — компонента: своего узла у фасада нет. Два фасада (подменю) —
- * цепочкой, ближний к компоненту внутри.
+ * Адаптер фасада коллекции: его состояние и то, что из атрибутов `getForward`
+ * он не съел. `ctrl` и корня нет: они компонента, со связкой которого фасад
+ * сводит `joinBindings`.
  */
-export function useCollectionAdapter<
-	C extends IComponentContract,
-	F extends IComponentContract,
-	TProps extends object,
-	TState extends object,
->(
+export function useCollectionAdapter<F extends IComponentContract, TProps extends object>(
 	facade: IAdapterContext<F>,
 	getProps: () => TProps,
-	owner: TBinding<C, TProps, TState>,
-): TBinding<C, TProps, TJoinedState<TAdapterState<F>, TState>> {
+	getForward: () => TForwardProps<TProps>,
+): TCollectionBinding<TAdapterState<F>, TProps> {
 	const { exchange, state } = useExchange(facade, getProps)
-	const forwardProps = $derived(forwardOf(exchange, owner.forwardProps))
+	const forwardProps = $derived(forwardOf(exchange, getForward()))
+
+	return {
+		state: toInstanceState<F>(state),
+
+		get forwardProps() {
+			return forwardProps
+		},
+	}
+}
+
+/**
+ * Связка компонента с его фасадами — одна, для разметки: состояние всех одним
+ * видом, атрибуты — последнего фасада (каждый отбирает свои из остатка
+ * предыдущего), `ctrl` и корень — компонента.
+ */
+export function joinBindings<
+	C extends IComponentContract,
+	TProps extends object,
+	TState extends object,
+	TFacade extends object,
+>(
+	owner: TBinding<C, TProps, TState>,
+	facade: TCollectionBinding<TFacade, TProps>,
+): TBinding<C, TProps, TJoinedState<TFacade, TState>>
+export function joinBindings<
+	C extends IComponentContract,
+	TProps extends object,
+	TState extends object,
+	TFacade extends object,
+	TOwnerFacade extends object,
+>(
+	owner: TBinding<C, TProps, TState>,
+	facade: TCollectionBinding<TFacade, TProps>,
+	ownerFacade: TCollectionBinding<TOwnerFacade, TProps>,
+): TBinding<C, TProps, TJoinedState<TOwnerFacade, TJoinedState<TFacade, TState>>>
+export function joinBindings(
+	owner: TBinding<IComponentContract, object, object>,
+	...facades: TCollectionBinding<object, object>[]
+): TBinding<IComponentContract, object, object> {
+	const last = facades[facades.length - 1] ?? owner
 
 	return {
 		ctrl: owner.ctrl,
-		state: joinState(toInstanceState<F>(state), owner.state),
+		state: facades.reduce((state, facade) => joinState(facade.state, state), owner.state),
 		attachElement: owner.attachElement,
 		bindRef: owner.bindRef,
 		consumerRef: owner.consumerRef,
 
 		get forwardProps() {
-			return forwardProps
+			return last.forwardProps
 		},
 
 		get rootElement() {

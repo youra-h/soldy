@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -32,5 +33,7 @@ export function setupTabsContent(
 		{ bundle: adapter.bundle },
 	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
 
-	return useCollectionAdapter(content, getProps, owner)
+	const itemBinding = useCollectionAdapter(content, getProps, () => owner.forwardProps)
+
+	return joinBindings(owner, itemBinding)
 }

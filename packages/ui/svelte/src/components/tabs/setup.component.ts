@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -35,5 +36,11 @@ export function setupTabs(getProps: () => TabsProps, mountId: string, receive: T
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
 
-	return useCollectionAdapter(collectionAdapter, getProps, owner)
+	const collectionBinding = useCollectionAdapter(
+		collectionAdapter,
+		getProps,
+		() => owner.forwardProps,
+	)
+
+	return joinBindings(owner, collectionBinding)
 }

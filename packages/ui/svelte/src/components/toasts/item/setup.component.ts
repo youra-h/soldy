@@ -5,6 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -32,5 +33,7 @@ export function setupToastsItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	return useCollectionAdapter(item, getProps, owner)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+
+	return joinBindings(owner, itemBinding)
 }

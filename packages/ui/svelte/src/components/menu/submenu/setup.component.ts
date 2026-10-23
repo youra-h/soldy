@@ -7,6 +7,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -43,11 +44,14 @@ export function setupMenuSubmenu(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const binding = useCollectionAdapter(
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const menuBinding = useCollectionAdapter(
 		collectionAdapter,
 		getProps,
-		useCollectionAdapter(item, getProps, owner),
+		() => itemBinding.forwardProps,
 	)
 
-	return Object.assign(binding, { context: item.instance.context })
+	return Object.assign(joinBindings(owner, itemBinding, menuBinding), {
+		context: item.instance.context,
+	})
 }
