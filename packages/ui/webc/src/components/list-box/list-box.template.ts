@@ -48,26 +48,11 @@
  * снова `empty` встаёт туда же, за элементы.
  */
 
-import type {
-	IListBox,
-	IListBoxItem,
-	TDrawnEntry,
-	TDrawnSection,
-	TListBoxCollectionFacade,
-} from '@soldy-ui/core'
-import {
-	TKeyedLoop,
-	bind,
-	createItem,
-	lendSamples,
-	ownerAttributes,
-	ownerStyles,
-	type ITemplate,
-	type ITemplateContext,
-	type TItemSlots,
-} from '../../adapter'
+import type { IListBox, IListBoxItem, TListBoxCollectionFacade } from '@soldy-ui/core'
+import { bind, ownerAttributes, type ITemplate, type TItemSlots } from '../../adapter'
+import { TDrawnRows, type TDrawnRowsSpec } from '../common/drawn-rows'
 import { TListBoxItemElement } from './item'
-import { TListBoxGroupElement, type TListBoxGroupElementProps } from './group'
+import { TListBoxGroupElement } from './group'
 
 /**
  * Копии образцов в элементы из данных: слот списка → слот элемента, как
@@ -80,141 +65,18 @@ export const LIST_BOX_ITEM_SLOTS: TItemSlots = {
 	'item-indicator-icon': 'indicator-icon',
 }
 
-/** Запись того, что рисует список: элемент на своём месте или распорка. */
-type TListBoxEntry = TDrawnEntry<IListBoxItem>
-
-/** Секция того, что рисует список: записи одной группы. */
-type TListBoxSection = TDrawnSection<IListBoxItem>
-
-/**
- * Строка узла списка: разделитель перед секцией, группа с её записями или
- * запись без группы. Ключи у видов не пересекаются: у записи — её ключ
- * (число), у группы — ключ секции, у разделителя — свой от ключа секции.
- */
-type TListBoxRow =
-	| { readonly kind: 'separator'; readonly key: string }
-	| { readonly kind: 'group'; readonly key: string; readonly section: TListBoxSection }
-	| TListBoxEntry
+const ROWS: TDrawnRowsSpec<IListBoxItem> = {
+	block: 'list-box',
+	item: TListBoxItemElement,
+	group: TListBoxGroupElement,
+	slots: LIST_BOX_ITEM_SLOTS,
+}
 
 /** Узел списка каждого ListBox — один на всё время жизни элемента. */
 const lists = new WeakMap<HTMLElement, HTMLElement>()
 
-/** Петля строк — только у списка без элементов разметки. */
-const loops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxRow, string | number, HTMLElement>>()
-
-/** Петля записей каждой группы из данных — внутри группы. */
-const groupLoops = new WeakMap<HTMLElement, TKeyedLoop<TListBoxEntry, number, HTMLElement>>()
-
-/**
- * Строки списка по секциям: разделитель — перед всеми, кроме первой, пока
- * список их просит (`separated`).
- */
-function rowsOf(sections: ReadonlyArray<TListBoxSection>, separated: boolean): TListBoxRow[] {
-	return sections.flatMap((section, index): TListBoxRow[] => [
-		...(separated && index > 0
-			? [{ kind: 'separator' as const, key: `separator:${section.key}` }]
-			: []),
-		...(section.group
-			? [{ kind: 'group' as const, key: section.key, section }]
-			: section.entries),
-	])
-}
-
-/** Узел записи: элемент из данных — инстанс данных и копии образцов до вставки — или распорка. */
-function drawnOf(
-	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
-	entry: TListBoxEntry,
-): HTMLElement {
-	const { ownerDocument } = ctx.root
-
-	if (entry.kind === 'filler') {
-		const filler = ownerDocument.createElement('div')
-
-		filler.className = 'so-list-box__filler'
-		filler.setAttribute('aria-hidden', 'true')
-		// Высота пропущенных и место в составе — из записи
-		ownerStyles(filler, entry.style)
-
-		return filler
-	}
-
-	const item = createItem(ownerDocument, TListBoxItemElement)
-
-	item.ctrl = entry.item
-	lendSamples(ctx, item, LIST_BOX_ITEM_SLOTS)
-
-	return item
-}
-
-/** Живой записи — её стиль: элемент из данных всё берёт у своего инстанса. */
-function updateDrawn(node: HTMLElement, entry: TListBoxEntry): void {
-	if (entry.kind === 'filler') ownerStyles(node, entry.style)
-}
-
-/**
- * Подпись и записи группы — по её секции. Записи — своей петлёй внутри
- * группы: в конце её корня, за подписью. Новая группа ещё не в документе, и
- * записи становятся её светом — база группы раскладывает их в слот по
- * умолчанию, когда группа собирается.
- */
-function fillGroup(
-	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
-	group: TListBoxGroupElementProps,
-	section: TListBoxSection,
-): void {
-	group.label = section.group?.label
-
-	let loop = groupLoops.get(group)
-
-	if (!loop) {
-		loop = new TKeyedLoop(group, null, (entry: TListBoxEntry) => entry.key)
-		groupLoops.set(group, loop)
-	}
-
-	loop.draw(section.entries, (entry) => drawnOf(ctx, entry), updateDrawn)
-}
-
-/** Узел строки: разделитель, группа с записями или запись без группы. */
-function rowOf(
-	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
-	row: TListBoxRow,
-): HTMLElement {
-	if (row.kind === 'separator') {
-		const separator = ctx.root.ownerDocument.createElement('div')
-
-		separator.className = 'so-list-box__separator'
-		separator.setAttribute('aria-hidden', 'true')
-
-		return separator
-	}
-
-	if (row.kind === 'group') {
-		const group = createItem(ctx.root.ownerDocument, TListBoxGroupElement)
-
-		fillGroup(ctx, group, row.section)
-
-		return group
-	}
-
-	return drawnOf(ctx, row)
-}
-
-/** Живой строке — её запись: группе — подпись и записи, распорке — стиль. */
-function updateRow(
-	ctx: ITemplateContext<IListBox, TListBoxCollectionFacade>,
-	node: HTMLElement,
-	row: TListBoxRow,
-): void {
-	if (row.kind === 'separator') return
-
-	if (row.kind === 'group') {
-		if (TListBoxGroupElement.is(node)) fillGroup(ctx, node, row.section)
-
-		return
-	}
-
-	updateDrawn(node, row)
-}
+/** Строки — только у списка без элементов разметки. */
+const rows = new WeakMap<HTMLElement, TDrawnRows<IListBoxItem>>()
 
 export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 	create: (root, { hasSlot }) => {
@@ -229,7 +91,7 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 
 		// Элементы разметки — сами элементы списка: петли из данных при них нет
 		if (!hasSlot('default')) {
-			loops.set(root, new TKeyedLoop(list, end, (row: TListBoxRow) => row.key))
+			rows.set(root, new TDrawnRows(list, end, ROWS))
 		}
 
 		lists.set(root, list)
@@ -257,10 +119,10 @@ export const listBoxTemplate: ITemplate<IListBox, TListBoxCollectionFacade> = {
 		}),
 
 		bind(['drawnSections', 'groupSeparators'], (ctx) => {
-			loops.get(ctx.root)?.draw(
-				rowsOf(ctx.state.drawnSections ?? [], ctx.state.groupSeparators === true),
-				(row) => rowOf(ctx, row),
-				(node, row) => updateRow(ctx, node, row),
+			rows.get(ctx.root)?.draw(
+				ctx,
+				ctx.state.drawnSections,
+				ctx.state.groupSeparators === true,
 			)
 		}),
 
