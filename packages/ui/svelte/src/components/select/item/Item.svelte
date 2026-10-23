@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import {
+		chainHandler,
+		Dynamic,
+		roleIcon,
+		toControlAttrs,
+		toRootForward,
+		toRootProps,
+	} from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
 	import { setupSelectItem } from './setup.component'
@@ -13,11 +20,6 @@
 	const context = binding.context
 
 	const CHECK = roleIcon('check')
-
-	/** Выбор — клик корня: клик потребителя стоит на строке и приходит раньше, всплытием. */
-	function choose(): void {
-		context?.adapters.select.choose()
-	}
 </script>
 
 <!--
@@ -39,10 +41,7 @@
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}
-		attributes={{
-			...toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps)),
-			onclick: choose,
-		}}
+		attributes={toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps))}
 		attach={binding.attachElement}
 	>
 		<Button
@@ -55,6 +54,7 @@
 			{...state.aria}
 			{...state.dataset}
 			{...toControlAttrs<SelectItemAttributes>(binding.forwardProps)}
+			onclick={chainHandler(() => context?.adapters.select.choose(), binding.forwardProps.onclick)}
 		>
 			{#snippet leading()}
 				{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}

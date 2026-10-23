@@ -52,7 +52,6 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		v-show="visible"
 		:class="classes"
 		:style="{ order: order }"
-		@click="context?.adapters.select.choose()"
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<Button
@@ -62,6 +61,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 			:variant="variant"
 			:disabled="disabled"
 			tabindex="-1"
+			@click="context?.adapters.select.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
 			<template #leading>

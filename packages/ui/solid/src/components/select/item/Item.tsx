@@ -1,6 +1,7 @@
 import type { JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import {
+	chainHandler,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -20,7 +21,8 @@ const CHECK = roleIcon('check')
 
 /**
  * Опция: строка — `Button` на `span` с наборами `aria` и `dataset` опции
- * (`tabindex="-1"` — фокус остаётся на поле), выбор — клик по корню. Обёртка
+ * (`tabindex="-1"` — фокус остаётся на поле), выбор — клик по строке, как у
+ * ListBox: сначала выбор, затем клик потребителя. Обёртка
  * отметки — и у невыбранной: держит место, и строка не прыгает при выборе.
  */
 export function SelectItem(props: SelectItemProps): JSX.Element {
@@ -41,10 +43,16 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 		() => ({ selected: state.selected ?? false }),
 	)
 
-	const row = () => toControlAttrs<SelectItemAttributes>(binding.forwardProps())
+	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала выбор. */
+	const row = () => {
+		const { onClick, ...attributes } = toControlAttrs<SelectItemAttributes>(
+			binding.forwardProps(),
+		)
 
-	function choose(): void {
-		context?.adapters.select.choose()
+		return {
+			...attributes,
+			onClick: chainHandler(() => context?.adapters.select.choose(), onClick),
+		}
 	}
 
 	const mark = () => (
@@ -58,7 +66,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref} onClick={choose}>
+			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="select.row"
 					tag="span"

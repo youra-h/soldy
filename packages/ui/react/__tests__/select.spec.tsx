@@ -482,6 +482,30 @@ describe('опции', () => {
 		expect(onClick).toHaveBeenCalledTimes(1)
 		expect(field().value).toBe('A')
 	})
+
+	it('клик потребителя по опции — после выбора, как у ListBox; stopPropagation выбор не отменяет', async () => {
+		const order: string[] = []
+
+		await render({
+			select: { onChangeValue: () => order.push('выбор') },
+			items: [
+				{
+					value: 'a',
+					text: 'A',
+					onClick: (event) => {
+						order.push('клик')
+						event.stopPropagation()
+					},
+				},
+			],
+		})
+		await open()
+
+		click(find(document, '[role="option"]', HTMLElement))
+
+		expect(order).toEqual(['выбор', 'клик'])
+		expect(field().value).toBe('A')
+	})
 })
 
 /**

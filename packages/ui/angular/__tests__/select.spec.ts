@@ -560,6 +560,33 @@ describe('опции', () => {
 		expect(fixture.componentInstance.clicks).toEqual([row])
 		expect(field().value).toBe('A')
 	})
+
+	it('клик потребителя по опции — после выбора, как у ListBox; stopPropagation выбор не отменяет', async () => {
+		@Component({
+			selector: 'probe-select-option-click',
+			imports: [TSelectComponent, TSelectItemComponent],
+			template: `<div so-select (soChangeValue)="order.push('выбор')">
+				<div so-select-item value="a" text="A" (click)="onClick($event)"></div>
+			</div>`,
+		})
+		class OptionClickPage {
+			readonly order: string[] = []
+
+			onClick(event: MouseEvent): void {
+				this.order.push('клик')
+				event.stopPropagation()
+			}
+		}
+
+		const fixture = await render(OptionClickPage)
+
+		await open()
+
+		click(find(document, '[role="option"]', HTMLElement))
+
+		expect(fixture.componentInstance.order).toEqual(['выбор', 'клик'])
+		expect(field().value).toBe('A')
+	})
 })
 
 /**
