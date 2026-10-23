@@ -3,7 +3,7 @@ import type { IAccordionItem } from '@soldy-ui/core'
 import type { AccordionCollectionItemDescriptor, AccordionItemDescriptor } from '@soldy-ui/setup'
 import type { EventProps, TDomAttributes, UseDomProps } from '../../../types'
 
-/** События секции — свои (ядро и плагины) и фасада: раскрытость, порядок, вид. */
+/** События секции — свои и фасада. */
 export type AccordionItemEventProps = EventProps<typeof AccordionItemDescriptor> &
 	EventProps<typeof AccordionCollectionItemDescriptor>
 
@@ -14,11 +14,6 @@ export type AccordionItemAttributes = TDomAttributes<
 	AccordionItemEventProps
 >
 
-/**
- * Пропсы секции. Членство в коллекции (`selected` — раскрыта) входит в
- * интерфейс пропсов ядра (`IAccordionItemProps`), и тип его несёт дескриптор
- * секции.
- */
 export type AccordionItemProps = UseDomProps<
 	typeof AccordionItemDescriptor,
 	IAccordionItem,

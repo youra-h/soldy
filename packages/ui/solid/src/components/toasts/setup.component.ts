@@ -7,6 +7,7 @@ import {
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -28,5 +29,7 @@ export function setupToasts(props: ToastsProps) {
 		.use(TCollectionExtension, { elevator })
 		.use(TToastsApiExtension, { elevator })
 
-	return { ...useCollectionAdapter(collectionAdapter, props, owner), layer }
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+
+	return { ...joinBindings(owner, collectionBinding), layer }
 }

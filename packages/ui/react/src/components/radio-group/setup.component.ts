@@ -1,21 +1,3 @@
-/**
- * useSetupRadioGroup — setup-слой RadioGroup (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой: свой (`RadioGroupDescriptor`) и фасада
- * коллекции (`RadioGroupCollectionDescriptor`) на общем наборе. Фасад собран
- * на инстансе группы, поэтому пересобираются и уничтожаются они вместе.
- *
- * Расширение коллекции опускает движок и регистратор радио лифтом компонента;
- * детям его слой (`layer`) отдаёт `Elevate` в разметке. Drag-and-drop нет, как
- * у Vue: радио одной группы стоят где угодно в разметке, и порядка на экране
- * у них нет.
- *
- * Поле формы `Field` связывается с группой, а не с радио: подпись поля
- * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
- * своём контексте). Своему содержимому группа опускает пустую связку тем же
- * лифтом: радио и контролы в их подписях связку поля не берут.
- */
-
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
@@ -25,6 +7,7 @@ import {
 import { useAdapter, useAdapterContext, useCollectionAdapter } from '../../adapter'
 import type { RadioGroupProps } from './base.component'
 
+/** Поле формы `Field` связывается с группой, а не с радио: подпись называет группу, ошибка — её. */
 export function useSetupRadioGroup(props: RadioGroupProps) {
 	const {
 		contexts: [adapter, collectionAdapter],
@@ -39,9 +22,7 @@ export function useSetupRadioGroup(props: RadioGroupProps) {
 			RadioGroupCollectionDescriptor(),
 			{
 				props,
-				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-				// не создаёт, лишь доложит недостающие расширения в неё же.
-				// Не дали — соберёт свою. Развилка в `completeEngine`
+				// Движок снаружи: дали — фасад работает на нём, нет — соберёт свой
 				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle },
@@ -50,13 +31,8 @@ export function useSetupRadioGroup(props: RadioGroupProps) {
 		return [adapter, collectionAdapter] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: collectionBinding.forwardProps,
-		state: { ...owner.state, ...collectionBinding.state },
+		...useCollectionAdapter(useAdapter(adapter, props), collectionAdapter, props),
 		layer,
 	}
 }

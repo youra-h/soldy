@@ -1,15 +1,10 @@
-/**
- * useSetupComponentView — setup-слой ComponentView (аналог setup.component.ts во Vue).
- */
-
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
-import { useAdapter, useAdapterContext } from '../../adapter'
+import { useComponent } from '../../adapter'
 import type { ComponentViewProps } from './base.component'
 
 export function useSetupComponentView(props: ComponentViewProps) {
-	const { contexts: adapter } = useAdapterContext((create) =>
-		create(ComponentViewDescriptor(), { ctrl: props.ctrl, props }),
+	return useComponent(
+		(create) => create(ComponentViewDescriptor(), { ctrl: props.ctrl, props }),
+		props,
 	)
-
-	return useAdapter(adapter, props)
 }

@@ -1,11 +1,6 @@
 /**
- * React-стратегия именования props и событий.
- *
- * - props:  `styles` @ ns `icon-styles` → `iconStyles_styles` (общее правило)
- * - events: `element:ready`             → `onElementReady` (колбэки-пропсы React)
- *
- * Обе стратегии общие: то же именование у Svelte 5, где события тоже
- * колбэк-пропы. Тип-зеркало — `TCallbackEventProps` из @soldy-ui/setup.
+ * Именование React: проп плагина `iconStyles_styles`, событие
+ * `element:ready` → колбэк `onElementReady`.
  */
 
 import type { INamingStrategy } from '@soldy-ui/setup'

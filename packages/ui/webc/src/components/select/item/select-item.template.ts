@@ -20,7 +20,7 @@
  *   и `disabled` — опции. Слоты опции — свет строки: точки `leading`,
  *   `default` и `trailing` ведут в её одноимённые слоты (свет детали), а без
  *   `default` строке уходит текст опции (`text`).
- * - Выбор — клик по корню, как `@click` корня у Vue: команда коллекции
+ * - Выбор — клик по строке, как у ListBox: команда коллекции
  *   (`adapters.select.choose()` контекста элемента фасада текущей связки) с
  *   учётом режима и `closeOnSelect` поля. Выключенной опции отказывает она.
  * - Отметка выбранного — обёртка `span.so-select-item__indicator` под
@@ -114,7 +114,7 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 			icon.icon = 'check'
 		}
 
-		root.addEventListener('click', () => {
+		row.addEventListener('click', () => {
 			ctx.facade?.context?.adapters.select.choose()
 		})
 

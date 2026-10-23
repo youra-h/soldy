@@ -1,22 +1,3 @@
-/**
- * useSetupTableRow — setup-слой строки таблицы (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у элементов Vue: собственный
- * (`TableRowDescriptor` — запись, «выключена», наборы) и фасада
- * (`TableCollectionRowDescriptor` — выбор, ячейки, имя строки, выбор строк).
- * Расширение элемента берёт через лифт движок и регистратор строк таблицы и
- * отдаёт фасаду контекст строки.
- *
- * В коллекцию строка входит, когда `useAdapterContext` принимает контексты при
- * коммите, а не на рендере. Пересобранная таблица без движка снаружи — это
- * новый движок с новыми строками: таблица рисует их с новыми ключами.
- *
- * `context` отдаётся разметке явно: чекбокс выбора строки — экземпляр,
- * который держит таблица, и разметка берёт его у item-адаптера таблицы
- * (`context.adapters.table`) — и только в ячейке выбора, поэтому у таблицы
- * без выбора чекбоксов строк нет вовсе.
- */
-
 import {
 	TCollectionItemExtension,
 	TableCollectionRowDescriptor,
@@ -40,13 +21,9 @@ export function useSetupTableRow(props: TableRowProps) {
 		return [adapter, item] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
-
+	// Чекбокс выбора строки разметка берёт у item-адаптера таблицы
 	return {
-		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...facade.state, ...owner.state },
+		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
 	}
 }

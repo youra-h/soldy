@@ -3,7 +3,6 @@ import type { IMenuItem } from '@soldy-ui/core'
 import type { MenuCollectionItemDescriptor, MenuItemDescriptor } from '@soldy-ui/setup'
 import type { EventProps, TDomAttributes, UseDomProps } from '../../../types'
 
-/** События пункта — свои (ядро и плагины) и фасада: вход в коллекцию меню. */
 export type MenuItemEventProps = EventProps<typeof MenuItemDescriptor> &
 	EventProps<typeof MenuCollectionItemDescriptor>
 
@@ -14,8 +13,4 @@ export type MenuItemAttributes = TDomAttributes<
 	MenuItemEventProps
 >
 
-/**
- * Пропсы пункта-действия. Размера среди них нет: его диктует меню. Вариант —
- * свой: «опасный» пункт красится своим цветом.
- */
 export type MenuItemProps = UseDomProps<typeof MenuItemDescriptor, IMenuItem, MenuItemEventProps>

@@ -1,7 +1,3 @@
-/**
- * Общие типы для React-адаптера @soldy-ui/react.
- */
-
 import type { HTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 import type { IEntity } from '@soldy-ui/core'
 import type {
@@ -19,10 +15,7 @@ import type { TConsumerRef } from './adapter'
 export type EventProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> =
 	DescriptorCallbackEvents<TDescriptorFn>
 
-/**
- * Слоты компонента из дескриптора: `default` становится `children`,
- * остальные сохраняют имена. Слот со scope принимает и функцию.
- */
+/** Слоты из дескриптора: `default` — `children`; слот со scope принимает и функцию. */
 export type SlotProps<TDescriptorFn extends (...args: any[]) => IComponentDescriptor> = TSlotProps<
 	DescriptorSlots<TDescriptorFn>,
 	ReactNode
@@ -36,39 +29,9 @@ export type UseProps<
 > = DescriptorComponentProps<TDescriptorFn, TInstance> & TEvents & SlotProps<TDescriptorFn>
 
 /**
- * HTML-атрибуты DOM-компонента без пропсов, событий и слотов дескриптора.
- *
- * Вход дескриптора важнее одноимённого атрибута: пересечение сузило бы его до
- * типа атрибута. `content` — атрибут RDFa со строкой — не пустил бы разметку в
- * слот `content` у Label, а `onInput` DOM свёл бы колбэк события `input` у
- * полей с обработчиком `FormEvent` в функцию, которой не написать. В рантайме
- * этих имён в атрибутах и нет: `forward` связки съедает пропсы, события и
- * слоты дескриптора.
- *
- * `children` вычитается всегда, а не только у компонента со слотом `default`:
- * содержимое — это только слот `default`. `DOMAttributes.children` вернул бы
- * его компоненту, чья разметка содержимого не рисует:
- * `<CheckBox>подпись</CheckBox>` компилировался бы, а `forward` связки молча
- * съедал бы подпись. Компоненту со слотом `children` даёт `SlotProps`, и
- * атрибут `ReactNode` не сужает форму-функцию scoped-слота
- * (`ReactNode | ((scope) => ReactNode)`). Так же вычитают Solid и Svelte.
- *
- * Защищённые пропсы — тоже: `forward` съедает и их, хотя входа у разметки нет
- * (`DescriptorAllProps` их вычитает). Без вычета атрибут с тем же именем
- * вернул бы вход в тип: у радио `name` и `size` есть и у `<input>`, а их
- * раздаёт группа — в разметке радио их не задать.
- *
- * Это ровно то, что компонент не съел: его `forwardProps` без входов
- * дескриптора. Поле раздаёт их двум элементам — класс и стиль корню,
- * остальное `<input>` (`toControlAttrs`).
- *
- * События — те, что компонент принимает (`TEvents`): у коллекции это ещё и
- * события фасада, и `reset` коллекции иначе сошёлся бы с `onReset` формы.
- *
- * `ref` — проп React 19, и ведёт он к корню компонента (`TConsumerRef`) — у
- * поля тоже, а не к `<input>`: среди атрибутов `<input>` его нет, и поле не
- * отдаёт его туда (`toControlAttrs`). Узел — `Element`: `tag` свободен, корнем
- * бывает `<svg>`.
+ * HTML-атрибуты DOM-компонента без входов, событий, слотов и защищённых
+ * пропсов дескриптора, без `children`; `ref` — к корню. AGENTS.md (React),
+ * «Типы пропсов».
  */
 export type TDomAttributes<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -87,44 +50,19 @@ export type TDomAttributes<
 	ref?: TConsumerRef
 }
 
-/**
- * Атрибуты `<input>` полей (Input, CheckBox, Switch, RadioGroup.Item): всё,
- * кроме того, что поле ведёт само. Текст, отметку и её умолчание проводит
- * поле адаптера (`NativeInput`) из состояния ядра, а `readonly` — вход
- * дескриптора: атрибут `readOnly` рядом с ним был бы вторым путём к тому же
- * состоянию, а `checked` сделал бы поле контролируемым полем React. `ref` —
- * не атрибут `<input>`: у поля он ведёт к корню (`TDomAttributes`).
- */
+/** Атрибуты `<input>` полей без того, что поле ведёт само. */
 export type TFieldAttributes = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
 	'checked' | 'defaultChecked' | 'defaultValue' | 'readOnly'
 >
 
-/**
- * Атрибуты `<textarea>` Textarea — как `TFieldAttributes` у `<input>`: всё,
- * кроме того, что поле ведёт само. Текст и его умолчание проводит поле
- * адаптера (`NativeTextarea`) из состояния ядра — содержимое разметкой
- * (`dangerouslySetInnerHTML`) у `<textarea>` React не принимает вовсе, — а
- * `readonly` и `maxlength` — входы дескриптора: атрибуты `readOnly` и
- * `maxLength` — те же свойства узла под именами DOM, второй путь к тому же
- * состоянию.
- */
+/** Атрибуты `<textarea>` без того, что поле ведёт само. */
 export type TTextareaAttributes = Omit<
 	TextareaHTMLAttributes<HTMLTextAreaElement>,
 	'defaultValue' | 'dangerouslySetInnerHTML' | 'readOnly' | 'maxLength'
 >
 
-/**
- * Props DOM-компонента: UseProps + HTML-атрибуты без конфликтов с пропсами,
- * событиями и слотами дескриптора (см. `TDomAttributes`).
- *
- * Атрибуты по умолчанию — `HTMLAttributes` корня; поля берут `TFieldAttributes`
- * (Textarea — `TTextareaAttributes`): всё, кроме класса и стиля, у них уходит
- * на `<input>` или `<textarea>`. Button берёт атрибуты кнопки
- * (`ButtonHTMLAttributes`): его корень по умолчанию — `<button>`, и `type`,
- * `form`, `name`, `value` доходят до неё — так деталь разметки библиотеки
- * ставит себе `type="button"`.
- */
+/** Props DOM-компонента: `UseProps` и атрибуты корня (`TDomAttributes`). */
 export type UseDomProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TInstance extends IEntity = IEntity,

@@ -2,13 +2,9 @@ import type { IValueControl } from '@soldy-ui/core'
 import type { ValueControlDescriptor } from '@soldy-ui/setup'
 import type { EventProps, UseProps } from '../../types'
 
-/** События слоя ValueControl (core + плагины), выведены из дескриптора автоматически. */
 export type ValueControlEventProps = EventProps<typeof ValueControlDescriptor>
 
-/**
- * Пропсы слоя ValueControl. Тип значения у базы не известен: его задаёт
- * наследник (`TSliderValue` у Slider, ключ страницы у Pagination).
- */
+/** Тип значения задаёт наследник. */
 export type ValueControlProps = UseProps<
 	typeof ValueControlDescriptor,
 	IValueControl<unknown>,

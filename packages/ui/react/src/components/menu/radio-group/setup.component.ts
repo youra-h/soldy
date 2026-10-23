@@ -1,27 +1,17 @@
-/**
- * useSetupMenuRadioGroup — setup-слой группы переключателей меню (аналог setup.component.ts во Vue).
- *
- * Группа переключателей — та же группа меню и своё значение. Как группа
- * меню, она входит в группировку коллекции меню (`TItemGroupExtension`); себя
- * переключателям внутри опускает проводкой (`TMenuRadioGroupExtension`), а
- * что в группе отмечен один, держит коллекция меню. Обе проводки пишут в слой
- * лифта группы, детям его отдаёт `Elevate` в разметке.
- */
-
 import {
 	MenuRadioGroupDescriptor,
 	TItemGroupExtension,
 	TMenuRadioGroupExtension,
 } from '@soldy-ui/setup'
-import { useAdapter, useAdapterContext } from '../../../adapter'
+import { useComponent } from '../../../adapter'
 import type { MenuRadioGroupProps } from './base.component'
 
 export function useSetupMenuRadioGroup(props: MenuRadioGroupProps) {
-	const { contexts: adapter, layer } = useAdapterContext((create, elevator) =>
-		create(MenuRadioGroupDescriptor(), { ctrl: props.ctrl, props })
-			.use(TItemGroupExtension, { elevator })
-			.use(TMenuRadioGroupExtension, { elevator }),
+	return useComponent(
+		(create, elevator) =>
+			create(MenuRadioGroupDescriptor(), { ctrl: props.ctrl, props })
+				.use(TItemGroupExtension, { elevator })
+				.use(TMenuRadioGroupExtension, { elevator }),
+		props,
 	)
-
-	return { ...useAdapter(adapter, props), layer }
 }

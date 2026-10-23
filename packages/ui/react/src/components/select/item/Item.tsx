@@ -16,33 +16,8 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CheckIcon = roleIcon('check')
 
 /**
- * SelectItem — опция списка панели: корень по `tag` (по умолчанию `div`) и
- * строка внутри — `Button` на `span`, как у Vue.
- *
- * Наборы ядра стоят на двух элементах. Корень несёт `dataset`, `attrs` и место
- * в коллекции (`order`): опции стоят флексом по месту в составе. Строка несёт
- * `aria` — вся ARIA опции на элементе, который и есть опция: `role="option"`
- * от ядра, `id` и `aria-selected` от коллекции, — и тот же `dataset`: фон при
- * подсветке и выборе тема рисует на самой кнопке и читает `data-highlighted`
- * и `data-selected` с неё. Набор опции ложится поверх того, что `Button`
- * пишет себе сам: `role="option"` перекрывает `role="button"`, а
- * `tabIndex={-1}` выводит строку из обхода — фокус остаётся на поле. Атрибуты
- * потребителя делятся, как у Vue: класс и стиль — корню, остальное — строке,
- * поверх её наборов.
- *
- * Тег строки фиксирован (`span`), а не берётся из `tag` опции: `tag` — тег
- * корня, под фиксированный тег строки написан `TSelectItem._ariaTag`. Вида у
- * строки нет: значения вида объявляет тема, строку опции она красит по
- * контексту (`.so-select-item`).
- *
- * Выбор — клик по корню, как `@click` корня у Vue: выбирает через Select
- * (`adapters.select.choose()`), а выключенной опции отказывает он сам. Клик
- * потребителя стоит на строке и приходит раньше, всплытием.
- *
- * Обёртка отметки рисуется, пока `indicator` не `none`, — и у невыбранных
- * тоже: она резервирует место, и строка не прыгает при выборе. Иконка внутри
- * — только у выбранной, слот `indicator-icon` подменяет её. `aria-hidden`:
- * состояние скринридеру объявляет `aria-selected`.
+ * SelectItem — опция списка панели: корень по `tag` и строка-опция — `Button` на `span`
+ * (под этот тег написан `TSelectItem._ariaTag`).
  */
 export function SelectItem(props: SelectItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupSelectItem(props)
@@ -65,6 +40,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 	const chosen = selected ?? false
+	const { onClick, ...row } = toControlAttrs<SelectItemAttributes>(forwardProps)
 
 	const mark = (
 		<span className="so-select-item__indicator" aria-hidden="true">
@@ -74,10 +50,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 	)
 
 	return (
-		<Tag
-			{...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}
-			onClick={() => context?.adapters.select.choose()}
-		>
+		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
 				embedded="select.row"
 				tag="span"
@@ -87,7 +60,11 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 				tabIndex={-1}
 				{...toAriaProps(aria)}
 				{...toAriaProps(dataset)}
-				{...toControlAttrs<SelectItemAttributes>(forwardProps)}
+				{...row}
+				onClick={(event) => {
+					context?.adapters.select.choose()
+					onClick?.(event)
+				}}
 				leading={
 					<>
 						{indicator === 'start' ? mark : null}

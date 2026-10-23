@@ -1,18 +1,3 @@
-/**
- * setupListBoxItem — setup-слой элемента ListBox.
- *
- * Два контекста, как у элементов Vue: собственный (`ListBoxItemDescriptor` —
- * текст и значение) и фасада (`ListBoxCollectionItemDescriptor` — выбор,
- * порядок, вид списка). Расширение элемента берёт лифтом движок и регистратор
- * списка и отдаёт фасаду контекст элемента.
- *
- * В коллекцию элемент входит, когда контекст фасада принят, — при
- * инициализации компонента, и на сервере тоже: элемент разметки есть в
- * серверной разметке вместе с тем, что пишет ему коллекция.
- *
- * `context` отдаётся разметке явно: выбор — метод item-адаптера.
- */
-
 import {
 	ListBoxCollectionItemDescriptor,
 	ListBoxItemDescriptor,
@@ -20,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
+	joinBindings,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -48,17 +33,7 @@ export function setupListBoxItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

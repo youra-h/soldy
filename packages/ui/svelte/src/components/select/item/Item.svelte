@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import {
+		chainHandler,
+		Dynamic,
+		roleIcon,
+		toControlAttrs,
+		toRootForward,
+		toRootProps,
+	} from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
 	import { setupSelectItem } from './setup.component'
@@ -12,43 +19,14 @@
 	const state = binding.state
 	const context = binding.context
 
-	// Отметка без слота — иконка из пакета по роли: метка одна на роль
 	const CHECK = roleIcon('check')
-
-	/**
-	 * Выбор — клик по корню, как `@click` корня у Vue: выбирает через Select
-	 * (`adapters.select.choose()`), а выключенной опции отказывает он сам.
-	 * Клик потребителя стоит на строке и приходит раньше, всплытием.
-	 */
-	function choose(): void {
-		context?.adapters.select.choose()
-	}
 </script>
 
 <!--
-	SelectItem — опция списка панели: корень по `tag` (по умолчанию `div`) и
-	строка внутри — `Button` на `span`, как у Vue.
-
-	Наборы ядра стоят на двух элементах. Корень несёт `dataset`, `attrs` и место
-	в коллекции (`order`): опции стоят флексом по месту в составе. Строка несёт
-	`aria` — вся ARIA опции на элементе, который и есть опция: `role="option"`
-	от ядра, `id` и `aria-selected` от коллекции, — и тот же `dataset`: фон
-	при подсветке и выборе тема рисует на самой кнопке и читает
-	`data-highlighted` и `data-selected` с неё. Набор опции ложится поверх того,
-	что `Button` пишет себе сам: `role="option"` перекрывает `role="button"`, а
-	`tabindex="-1"` выводит строку из обхода — фокус остаётся на поле. Атрибуты
-	потребителя делятся, как у Vue: класс и стиль — корню, остальное — строке,
-	поверх её наборов.
-
-	Тег строки фиксирован (`span`), а не берётся из `tag` опции: `tag` — тег
-	корня, под фиксированный тег строки написан `TSelectItem._ariaTag`. Вида у
-	строки нет: значения вида объявляет тема, строку опции она красит по
-	контексту (`.so-select-item`).
-
-	Обёртка отметки рисуется, пока `indicator` не `none`, — и у невыбранных
-	тоже: она резервирует место, и строка не прыгает при выборе. Иконка внутри
-	— только у выбранной, слот `indicator-icon` подменяет её. `aria-hidden`:
-	состояние скринридеру объявляет `aria-selected`.
+	Тег строки фиксирован (`span`): под него написан `TSelectItem._ariaTag`. `dataset` — и на
+	строке: фон выбора и подсветки тема рисует на кнопке.
+	Отметка рисуется и у невыбранных: она держит место, и строка не прыгает при выборе.
+	`aria-hidden`: выбор скринридеру объявляет `aria-selected`.
 -->
 {#snippet mark()}
 	<span class="so-select-item__indicator" aria-hidden="true">
@@ -63,10 +41,7 @@
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}
-		attributes={{
-			...toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps)),
-			onclick: choose,
-		}}
+		attributes={toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps))}
 		attach={binding.attachElement}
 	>
 		<Button
@@ -79,6 +54,7 @@
 			{...state.aria}
 			{...state.dataset}
 			{...toControlAttrs<SelectItemAttributes>(binding.forwardProps)}
+			onclick={chainHandler(() => context?.adapters.select.choose(), binding.forwardProps.onclick)}
 		>
 			{#snippet leading()}
 				{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}

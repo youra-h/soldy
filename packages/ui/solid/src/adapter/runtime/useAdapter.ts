@@ -9,7 +9,8 @@
  *
  * `ref` адаптера привязывает корень к `TElementPlugin` и отдаёт тот же узел
  * `ref` потребителя. У коллекции контекстов два: фасад связывает
- * `useCollectionAdapter` поверх связки компонента. AGENTS.md (Solid), «Связка».
+ * `useCollectionAdapter`, со связкой компонента его сводит `joinBindings`.
+ * AGENTS.md (Solid), «Связка».
  */
 
 import { createEffect, createMemo, createSignal, onCleanup, type Accessor } from 'solid-js'
@@ -43,19 +44,20 @@ export type TBinding<
 	consumerRef: (el: Element) => void
 }
 
-/** Что фасад берёт у связки компонента: её состояние и несъеденные атрибуты. */
-type TOwnerBinding<TProps extends object> = {
-	readonly state: object
+/** Связка фасада коллекции: своего `ctrl` и `ref` у него нет. */
+export type TCollectionBinding<TState extends object, TProps extends object = object> = {
+	readonly state: TState
+	/** Мемо: атрибуты, которые не съели ни компонент, ни фасад. */
 	forwardProps: () => Partial<TProps>
 }
 
-/** Связка компонента с фасадом: состояние одним видом, атрибуты — что не съели оба. */
+/** Связка компонента с фасадом: состояние одним видом, атрибуты — фасада. */
 export type TJoinedBinding<
-	TOwner extends TOwnerBinding<TProps>,
-	C extends IComponentContract,
+	TOwner extends TCollectionBinding<object, TProps>,
+	TFacadeState extends object,
 	TProps extends object,
 > = Omit<TOwner, 'state' | 'forwardProps'> & {
-	readonly state: TJoinedState<TOwner['state'], TAdapterState<C>>
+	readonly state: TJoinedState<TOwner['state'], TFacadeState>
 	forwardProps: () => Partial<TProps>
 }
 
@@ -130,21 +132,55 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 }
 
 /**
- * Фасад коллекции поверх связки компонента `owner`: свои входы и события
- * фасад берёт из `props`, атрибуты отбирает из несъеденных компонентом. Узла
- * у фасада нет, `ctrl` и `ref` остаются компонента. Третий контекст
- * (`Menu.Submenu`) — тот же вызов поверх результата.
+ * Адаптер фасада коллекции: свои входы и события фасад берёт из `props`,
+ * атрибуты отбирает из `forward` — остатка компонента или предыдущего
+ * фасада. `ctrl` и `ref` нет: со связкой компонента фасад сводит `joinBindings`.
  */
-export function useCollectionAdapter<
-	C extends IComponentContract,
-	TProps extends object,
-	TOwner extends TOwnerBinding<TProps>,
->(adapter: IAdapterContext<C>, props: TProps, owner: TOwner): TJoinedBinding<TOwner, C, TProps> {
+export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
+	forward: () => Partial<TProps>,
+): TCollectionBinding<TAdapterState<C>, TProps> {
 	const { binding, state } = useExchange(adapter, props)
 
 	return {
+		state: toInstanceState<C>(state),
+		forwardProps: createMemo(() => binding.forward(forward())),
+	}
+}
+
+/**
+ * Связка компонента с его фасадами — одна, для разметки: состояние всех одним
+ * видом (`joinState`), атрибуты — последнего фасада (каждый отбирает свои из
+ * остатка предыдущего), остальное — компонента.
+ */
+export function joinBindings<
+	TProps extends object,
+	TOwner extends TCollectionBinding<object, TProps>,
+	TFacade extends object,
+>(
+	owner: TOwner,
+	facade: TCollectionBinding<TFacade, TProps>,
+): TJoinedBinding<TOwner, TFacade, TProps>
+export function joinBindings<
+	TProps extends object,
+	TOwner extends TCollectionBinding<object, TProps>,
+	TFacade extends object,
+	TOwnerFacade extends object,
+>(
+	owner: TOwner,
+	facade: TCollectionBinding<TFacade, TProps>,
+	ownerFacade: TCollectionBinding<TOwnerFacade, TProps>,
+): TJoinedBinding<TJoinedBinding<TOwner, TFacade, TProps>, TOwnerFacade, TProps>
+export function joinBindings(
+	owner: TCollectionBinding<object>,
+	...facades: TCollectionBinding<object>[]
+): TCollectionBinding<object> {
+	const last = facades[facades.length - 1] ?? owner
+
+	return {
 		...owner,
-		state: joinState(owner.state, toInstanceState<C>(state)),
-		forwardProps: createMemo(() => binding.forward(owner.forwardProps())),
+		state: facades.reduce((state, facade) => joinState(state, facade.state), owner.state),
+		forwardProps: last.forwardProps,
 	}
 }

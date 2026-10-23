@@ -1,14 +1,3 @@
-/**
- * useSetupAccordion — setup-слой Accordion (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой: свой (`AccordionDescriptor`) и фасада
- * коллекции (`AccordionCollectionDescriptor`) на общем наборе. Фасад собран на
- * инстансе владельца, поэтому пересобираются и уничтожаются они вместе.
- *
- * Расширения коллекции опускают движок и регистратор секций лифтом
- * компонента; детям его слой (`layer`) отдаёт `Elevate` в разметке.
- */
-
 import {
 	AccordionCollectionDescriptor,
 	AccordionDescriptor,
@@ -29,9 +18,6 @@ export function useSetupAccordion(props: AccordionProps) {
 			AccordionCollectionDescriptor(),
 			{
 				props,
-				// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-				// не создаёт, лишь доложит недостающие расширения в неё же.
-				// Не дали — соберёт свою. Развилка в `completeEngine`
 				options: { owner: adapter.instance, engine: props.engine },
 			},
 			{ bundle: adapter.bundle },
@@ -42,13 +28,8 @@ export function useSetupAccordion(props: AccordionProps) {
 		return [adapter, collectionAdapter] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: collectionBinding.forwardProps,
-		state: { ...owner.state, ...collectionBinding.state },
+		...useCollectionAdapter(useAdapter(adapter, props), collectionAdapter, props),
 		layer,
 	}
 }

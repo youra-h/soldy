@@ -1,15 +1,3 @@
-/**
- * useSetupMenuCheckboxItem — setup-слой флажка меню (аналог setup.component.ts во Vue).
- *
- * Два контекста одной сборкой, как у пункта: собственный
- * (`MenuCheckboxItemDescriptor` — текст и значение флажка) и фасада
- * (`MenuCollectionCheckboxItemDescriptor` — вход в коллекцию меню и отметка:
- * она — выбор коллекции). Движок и регистратор меню расширение элемента
- * берёт лифтом, из слоя, который флажок увидел на рендере.
- *
- * `context` отдаётся разметке явно: нажатие — метод item-адаптера `menu`.
- */
-
 import {
 	MenuCheckboxItemDescriptor,
 	MenuCollectionCheckboxItemDescriptor,
@@ -33,13 +21,8 @@ export function useSetupMenuCheckboxItem(props: MenuCheckboxItemProps) {
 		return [adapter, item] as const
 	})
 
-	const owner = useAdapter(adapter, props)
-	const facade = useCollectionAdapter(item, props, owner.forwardProps)
-
 	return {
-		...owner,
-		forwardProps: facade.forwardProps,
-		state: { ...facade.state, ...owner.state },
+		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
 	}
 }

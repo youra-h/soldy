@@ -7,6 +7,7 @@ import {
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -29,8 +30,10 @@ export function setupTable(props: TableProps) {
 		.use(TCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+
 	return {
-		...useCollectionAdapter(collectionAdapter, props, owner),
+		...joinBindings(owner, collectionBinding),
 		layer,
 		facade: collectionAdapter.instance,
 	}

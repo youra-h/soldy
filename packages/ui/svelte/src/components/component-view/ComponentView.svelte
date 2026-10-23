@@ -10,15 +10,7 @@
 	const state = binding.state
 </script>
 
-<!--
-	ComponentView — рендерит динамический `tag` с классами из Core.
-
-	- `rendered` — `{#if}`: при false корня нет
-	- `visible` — `display: none` поверх стиля корня, как `v-show` (`toRootProps`)
-	- `attrs`/`aria`/`dataset` — три набора ядра раскладываются на корень, как у
-	  Button: сам по себе ComponentView не пишет в них ничего, но наследники
-	  (Icon, Skeleton, …) пишут, и без раскладки здесь запись до DOM не доходит.
--->
+<!-- Наборы ядра раскладываются и здесь: сам ComponentView в них не пишет, пишут наследники. -->
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}

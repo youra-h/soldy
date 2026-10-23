@@ -2,6 +2,7 @@ import { MenuCollectionDescriptor, MenuDescriptor, TCollectionExtension } from '
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -21,5 +22,7 @@ export function setupMenu(props: MenuProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	return { ...useCollectionAdapter(collectionAdapter, props, owner), layer }
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+
+	return { ...joinBindings(owner, collectionBinding), layer }
 }

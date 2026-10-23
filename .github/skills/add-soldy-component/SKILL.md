@@ -127,25 +127,20 @@ import type { I<Name> } from '@soldy-ui/core'
 import type { <Name>Descriptor } from '@soldy-ui/setup'
 import type { EventProps, UseDomProps } from '../../types'
 
-/** События слоя <Name> (core + плагины), выведены из дескриптора автоматически. */
 export type <Name>EventProps = EventProps<typeof <Name>Descriptor>
 
 export type <Name>Props = UseDomProps<typeof <Name>Descriptor, I<Name>, <Name>EventProps>
 ```
 
-- `setup.component.ts`: one hook that creates the adapter context once per component lifetime. The context is held between renders by `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`), which takes a factory, not by the component's own `useRef`. The factory builds the context with `create`, which the hook hands it: `createAdapterContext` plus the mount id (`mountId`) from `useId`, from which plugins build ids in markup, so they match between server and client (AGENTS.md, «`id` в разметке — от монтирования, в плагинах»). The eslint block `soldy/react-components-no-framework` fails on any value imported from `'react'` in a component (`import type` passes) and on importing `createAdapterContext`:
+- `setup.component.ts`: one hook that creates the adapter context once per component lifetime. A single context is built by `useComponent(factory, props)` (`packages/ui/react/src/adapter/runtime/`): the factory creates the context at the call site — `(create, elevator) => create(<Name>Descriptor(), { ctrl: props.ctrl, props }).use(…)` — so the hook's binding type is inferred there and its `.d.ts` stays nameable. A collection owner or item builds two contexts with a `useAdapterContext` factory and joins them with `useCollectionAdapter(useAdapter(adapter, props), facade, props)` (packages/ui/react/AGENTS.md, «Сборка компонента»). The context is held between renders by `useAdapterContext` (`packages/ui/react/src/adapter/runtime/`), which takes a factory, not by the component's own `useRef`. The factory builds the context with `create`, which the hook hands it: `createAdapterContext` plus the mount id (`mountId`) from `useId`, from which plugins build ids in markup, so they match between server and client (AGENTS.md, «`id` в разметке — от монтирования, в плагинах»). The eslint block `soldy/react-components-no-framework` fails on any value imported from `'react'` in a component (`import type` passes) and on importing `createAdapterContext`:
 
 ```ts
 import { <Name>Descriptor } from '@soldy-ui/setup'
-import { useAdapter, useAdapterContext } from '../../adapter'
+import { useComponent } from '../../adapter'
 import type { <Name>Props } from './base.component'
 
 export function useSetup<Name>(props: <Name>Props) {
-  const adapter = useAdapterContext((create) =>
-    create(<Name>Descriptor(), { ctrl: props.ctrl, props }),
-  )
-
-  return useAdapter(adapter, props)
+  return useComponent((create) => create(<Name>Descriptor(), { ctrl: props.ctrl, props }), props)
 }
 ```
 
@@ -155,11 +150,10 @@ export function useSetup<Name>(props: <Name>Props) {
 
 ```ts
 export * from './base.component'
-export { useSetup<Name> } from './setup.component'
 export { <Name> } from './<Name>'
 ```
 
-React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `SlotProps`, `UseProps`, `UseDomProps` — built on `DescriptorComponentProps` and `DescriptorCallbackEvents` from `@soldy-ui/setup`.
+The setup hook is internal: `index.ts` does not export it. React type helpers live in `packages/ui/react/src/types.ts`: `EventProps`, `SlotProps`, `UseProps`, `UseDomProps` — built on `DescriptorComponentProps` and `DescriptorCallbackEvents` from `@soldy-ui/setup`.
 
 ### 5. Angular adapter — `packages/ui/angular/src/components/<name>/`
 
