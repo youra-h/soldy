@@ -9,7 +9,7 @@ import type { TCopy } from '../min-peers.ts'
  * Проверка дерева на фикстуре: каталог с `node_modules`, где у пакета списка
  * есть вложенная копия другой версии, — так у npm остаётся копия из
  * `devDependencies` воркспейса, которой нижняя граница не подходит. Дерево
- * читает сам npm (`npm query`), поэтому фикстура — настоящий каталог, а не
+ * читает сам npm (Arborist), поэтому фикстура — настоящий каталог, а не
  * список: проверяется, что вложенные копии, и со скоупом тоже, npm называет.
  */
 
@@ -24,7 +24,7 @@ function manifest(path: string, content: Readonly<Record<string, unknown>>): voi
 	writeFileSync(file, JSON.stringify(content))
 }
 
-beforeAll(() => {
+beforeAll(async () => {
 	root = mkdtempSync(join(tmpdir(), 'min-peers-'))
 	manifest('.', {
 		name: 'fixture',
@@ -43,7 +43,7 @@ beforeAll(() => {
 		name: '@angular/core',
 		version: '22.2.3',
 	})
-	tree = readTree(root)
+	tree = await readTree(root)
 })
 
 afterAll(() => {
