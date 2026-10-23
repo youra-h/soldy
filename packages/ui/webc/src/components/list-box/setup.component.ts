@@ -1,20 +1,3 @@
-/**
- * setupListBox — setup-слой ListBox.
- *
- * Два контекста, как у Vue и Angular: свой (`ListBoxDescriptor`) и фасада
- * коллекции (`ListBoxCollectionDescriptor`) на общем наборе, одной связкой.
- *
- * Расширения коллекции опускают движок и регистратор элементов лифтом —
- * хосту списка: элементы, что стоят ниже, находят их вверх по документу и
- * входят в коллекцию списка, а список в слоте элемента — в свою. Окно обёртки
- * `Virtual` над списком фасад подхватывает тем же лифтом
- * (`TVirtualCollectionExtension`), а своему поддереву опускает пустое
- * подключение: списки в слотах элементов окна не наследуют.
- *
- * `engine` — готовая коллекция снаружи, свойство элемента (`el.engine`):
- * фасад работает на ней, а без неё собирает свою (`completeEngine`).
- */
-
 import {
 	ListBoxCollectionDescriptor,
 	ListBoxDescriptor,
@@ -50,8 +33,7 @@ export function setupListBox(
 	)
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
-		// Окно обёртки `Virtual` над списком: подхват при сборке, подписка на
-		// обёртку — при приёме, снятие — с уничтожением
+		// Окно обёртки `Virtual`; спискам в слотах элементов окно не наследуется
 		.use(TVirtualCollectionExtension, { elevator })
 
 	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))

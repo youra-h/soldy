@@ -1,21 +1,3 @@
-/**
- * setupRadioGroup — setup-слой RadioGroup.
- *
- * Два контекста, как у остальных коллекций: собственный (пропсы группы) и
- * фасада коллекции (состав и отмеченное радио), одной связкой. Drag-and-drop
- * нет: радио одной группы стоят где угодно в разметке, и порядка на экране у
- * них нет. Движок и регистратор радио расширение коллекции опускает лифтом —
- * хосту группы: радио, что стоят ниже, находят их вверх по документу.
- *
- * `engine` — готовая коллекция снаружи, свойство элемента (`el.engine`):
- * фасад работает на ней, а без неё собирает свою (`completeEngine`).
- *
- * Поле формы `Field` связывается с группой, а не с радио: подпись поля
- * называет группу ссылкой, ошибка — группы (`TFieldControlExtension` на
- * своём контексте). Своему содержимому группа опускает пустую связку своим
- * хостом: радио и контролы в их подписях связку поля не берут.
- */
-
 import {
 	RadioGroupCollectionDescriptor,
 	RadioGroupDescriptor,
@@ -38,6 +20,7 @@ export function setupRadioGroup(
 	props: Record<string, unknown>,
 	onUpdate: TUpdateListener,
 ): TBinding<IRadioGroup, TRadioGroupCollectionFacade> {
+	// `Field` связывается с группой; радио под ней связку поля не берут
 	const adapter = createWebcAdapterContext(host, RadioGroupDescriptor(), {
 		ctrl,
 		props,

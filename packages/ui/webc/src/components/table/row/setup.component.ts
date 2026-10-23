@@ -1,19 +1,3 @@
-/**
- * setupTableRow — setup-слой строки таблицы (`Table.Row`).
- *
- * Два контекста, как у Vue и у элементов ListBox: собственный
- * (`TableRowDescriptor` — запись, «выключена», наборы) и фасада строки
- * (`TableCollectionRowDescriptor` — выбор, ячейки, имя строки, включён ли
- * выбор и набор ячеек сетки), одной связкой. Расширение элемента берёт лифтом
- * движок и регистратор таблицы — ближайшей выше по документу — и отдаёт фасаду
- * контекст строки. Порядок связок — как у Vue: фасад первым, и в коллекцию
- * строка входит, когда её контекст принят, — при подключении элемента.
- *
- * Чекбокс выбора строки — экземпляр, который держит таблица: разметка берёт
- * его у контекста строки (`context.adapters.table`), и только в ячейке
- * выбора.
- */
-
 import {
 	TCollectionItemExtension,
 	TableCollectionRowDescriptor,
@@ -47,6 +31,7 @@ export function setupTableRow(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым: в коллекцию строка входит, когда её контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

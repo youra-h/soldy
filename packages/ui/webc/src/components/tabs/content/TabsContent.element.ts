@@ -1,19 +1,7 @@
 /**
- * `<div is="so-tabs-content">` — панель таба. Видна, когда активен связанный
- * по `value` таб.
- *
- * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`): тег ядра по умолчанию. Стоит в слоте
- * `content` набора (`slot="content"`): слот `default` набора — список табов,
- * `[role=tablist]`, и панель, попав туда, оказалась бы в нём. Классы, `attrs`
- * и `aria` панели раскладывает на корень база; неактивная панель скрыта —
- * описание корня называет выход `active` фасада, без которого корня нет
- * (`shownBy`), — а её содержимое вне документа.
- *
- * Регистрирует элемент модуль набора (`Tabs.element.ts`).
- *
- * Разметка вынесена в tabs-content.template.ts, жизненный цикл — в
- * ElementBase.
+ * `<div is="so-tabs-content">` — панель таба, связанного по `value`; стоит в слоте
+ * `content` набора — в `default` попала бы в `[role=tablist]`. Неактивная скрыта
+ * (`shownBy`). Регистрирует модуль набора. docs/architecture.md, Layer 8d, «Коллекция».
  */
 
 import { TabsCollectionContentDescriptor, TabsContentDescriptor } from '@soldy-ui/setup'
@@ -36,10 +24,4 @@ export const TTabsContentElement: TElementClassOf<
 	setup: setupTabsContent,
 })
 
-/**
- * `<div is="so-tabs-content">` из JS: нативный `div`, своё элемента soldy
- * (`ctrl`, `state` — вместе с активностью фасада) и свойства пропов
- * дескриптора — без тех, что у `div` уже есть, и без `HOST_PROPS`
- * (`TElementProps`).
- */
 export type TTabsContentElementProps = TElementType<typeof TTabsContentElement>

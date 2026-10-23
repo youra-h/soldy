@@ -1,16 +1,6 @@
 /**
- * `<div is="so-list-box-group">` — элементы списка под общей подписью, как
- * `ListBox.Group` у Vue.
- *
- * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`): тег ядра по умолчанию. Классы и три набора
- * ядра — `role="group"` и `aria-labelledby` на подпись — база раскладывает на
- * него, рядом с атрибутами потребителя. Подпись и её набор рисует шаблон.
- *
- * Регистрирует элемент модуль списка (`ListBox.element.ts`).
- *
- * Разметка вынесена в list-box-group.template.ts, жизненный цикл — в
- * ElementBase.
+ * `<div is="so-list-box-group">` — элементы списка под общей подписью;
+ * регистрирует модуль списка. docs/architecture.md, Layer 8d, «Коллекция».
  */
 
 import { ListBoxGroupDescriptor } from '@soldy-ui/setup'
@@ -30,9 +20,4 @@ export const TListBoxGroupElement: TElementClassOf<
 	setup: setupListBoxGroup,
 })
 
-/**
- * `<div is="so-list-box-group">` из JS: нативный `div`, своё элемента soldy и
- * свойства пропов дескриптора (`label`) — без тех, что у `div` уже есть, и без
- * `HOST_PROPS` (`TElementProps`).
- */
 export type TListBoxGroupElementProps = TElementType<typeof TListBoxGroupElement>

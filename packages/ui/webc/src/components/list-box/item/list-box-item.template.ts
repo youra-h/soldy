@@ -1,43 +1,7 @@
 /**
- * Шаблон элемента ListBox.
- *
- * Корень — сам `<div is="so-list-box-item">`: классы, `attrs`, `dataset` (тема
- * читает с него `data-content-fit`) и место в коллекции (`order`) раскладывает
- * на него база (`ElementBase`). Здесь — строка, как у Vue и Angular.
- *
- * - Строка — Button на `div`, деталь
- *   `<div is="so-button-div" embedded="list-box.row">`, узел поля корня: на неё
- *   база переносит статические атрибуты разметки элемента, а шаблон кладёт
- *   `aria` и `dataset` элемента верхним слоем её раскладчика. Тег строки —
- *   `div`, а не `button`: у выключенного пункта списка остаются фокус и клик,
- *   а нативная кнопка с `disabled` теряет оба, и под строку на `div` ядро пишет
- *   элементу ARIA (`TListBoxItem._ariaTag`). `role`, `tabindex` и
- *   `aria-disabled` кнопка на `div` пишет себе сама, а набор элемента главнее:
- *   `role="option"` элемента, `tabindex="-1"` и `aria-selected` списка — на
- *   строке, и строка и есть опция. Тот же `dataset`, что на корне: выбор и
- *   подсветку тема красит на `.so-button`. Слоты элемента — свет строки: точки
- *   `leading`, `default` и `trailing` ведут в её одноимённые слоты (свет
- *   детали), а без `default` строке уходит текст элемента (`text`).
- * - Клик по строке выбирает через контекст элемента фасада текущей связки
- *   (`adapters.list.choose()`), а не `selection.toggle()`: выключенному
- *   элементу отказывает список, тем же путём, что и клавиатура. `click`, а не
- *   `so:action:press`: фокус после клика остаётся на строке, и Enter дал бы два
- *   переключения — нажатие строки и клавиатуру списка. Слушатель потребителя
- *   на корне слышит клик следом: клик всплывает со строки.
- * - Отметка выбранного — обёртка `span.so-list-box-item__indicator` под
- *   `aria-hidden` (состояние объявляет `aria-selected`). Стоит, пока
- *   `indicator` списка не `none`, и у невыбранных тоже: она резервирует место,
- *   иначе строка прыгала бы при выборе. Обёртка — край строки: при `start` —
- *   первым узлом её `leading`, при `end` — последним `trailing` (`lend`).
- *   Сторона логическая: `dir` стоит на корне, а строка — flex. В обёртке —
- *   слот `indicator-icon` или иконка роли `check`,
- *   `<span is="so-icon" embedded="list-box.indicator">`, — у выбранного.
- *
- * Scope у слотов нет, как у всех слотов Web Components: текст и выбор
- * содержимое слота берёт у элемента (`el.ctrl`, `el.state.selected`). Поэтому
- * слот `indicator-icon` — отметка выбранного, как своя иконка: его выводит
- * привязка (`showSlot`) только у выбранного элемента, у остальных он вне
- * документа.
+ * Шаблон элемента ListBox: строка — деталь Button на `div`, на ней `aria` и
+ * `dataset` элемента (тема красит выбор на `.so-button`); отметка выбранного —
+ * край строки. docs/architecture.md, Layer 8d, «Коллекция».
  */
 
 import type { IListBoxItem, TListBoxItemCollectionFacade, TListIndicator } from '@soldy-ui/core'
@@ -46,25 +10,19 @@ import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from
 import { registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** Строка — Button на `div`: регистрирует его фабрика кнопки, здесь тег нужен впервые. */
+/** На `<button>` выключенный пункт терял бы фокус и клик. */
 const TButtonDivElement = registerButtonTag('div')
 
-/** Части элемента — одни на всё время жизни элемента. */
 type TItemParts = {
 	readonly row: TButtonElementProps<HTMLDivElement>
-	/** Обёртка отметки выбранного — край строки по `indicator`. */
+	/** Стоит и у невыбранных: резервирует место, иначе строка прыгала бы при выборе. */
 	readonly indicator: HTMLElement
-	/** Иконка отметки — без слота `indicator-icon`. */
 	readonly icon: TIconElementProps | null
 }
 
 const parts = new WeakMap<HTMLElement, TItemParts>()
 
-/**
- * Обёртка отметки — на краю строки со стороны `side` или вне её. Край — свет
- * строки: до её сборки обёртка встаёт в слот (`leading`, `trailing`), после —
- * первым или последним ребёнком кнопки, то есть туда же (`lend`).
- */
+/** Край — свет строки: до её сборки обёртка встаёт в слот, после — ребёнком кнопки (`lend`). */
 function placeIndicator(
 	row: HTMLElement,
 	indicator: HTMLElement,
@@ -90,8 +48,6 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		indicator.className = 'so-list-box-item__indicator'
 		indicator.setAttribute('aria-hidden', 'true')
 
-		// Своя иконка отметки — только без слота `indicator-icon`: заданный слот
-		// заменяет её целиком
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('indicator-icon')) {
@@ -99,6 +55,8 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 			icon.icon = 'check'
 		}
 
+		// Через список, а не `selection.toggle()`: выключенному отказывает он, как
+		// клавиатуре. `click`, а не `so:action:press`: Enter дал бы два переключения
 		row.addEventListener('click', () => {
 			ctx.facade?.context?.adapters.list.choose()
 		})
@@ -118,8 +76,6 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 	},
 
 	bindings: [
-		// Пропсы деталей — только сменившиеся: каждая запись дошла бы до ядра
-		// строки и до её отрисовки
 		bind(['view', 'disabled', 'size', 'variant'], ({ root, state }) => {
 			const own = parts.get(root)
 
@@ -138,7 +94,6 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 			if (row) ownerAttributes(row, { ...state.aria, ...state.dataset })
 		}),
 
-		// Текст элемента — строке, пока содержимое не задано слотом `default`
 		bind('text', ({ root, state, hasSlot }) => {
 			const row = parts.get(root)?.row
 			const text = state.text ?? ''
@@ -152,7 +107,6 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 			if (own) placeIndicator(own.row, own.indicator, state.indicator)
 		}),
 
-		// Отметка — у выбранного: своя иконка или слот `indicator-icon`
 		bind('selected', ({ root, state, showSlot }) => {
 			const own = parts.get(root)
 			const selected = state.selected === true

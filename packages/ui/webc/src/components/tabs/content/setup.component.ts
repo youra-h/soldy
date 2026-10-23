@@ -1,19 +1,3 @@
-/**
- * setupTabsContent — setup-слой панели таба.
- *
- * Два контекста, как у таба: собственный (`TabsContentDescriptor` — `value`
- * панели) и фасада (`TabsCollectionContentDescriptor` — активность связанного
- * таба), одной связкой. Панель сама о коллекции ничего не знает: таб по
- * `value` находит `TTabsContentBindingExtension` лифтом — в движке набора,
- * ближайшего выше по документу, — он же пишет сторону панели в её `aria`.
- *
- * Табы набора к сборке панели уже в коллекции: панели — слот `content`, после
- * списка табов, и подключаются они в порядке документа, — и из данных, и из
- * разметки. Таб, вошедший позже, панель находит, когда её контекст принят:
- * тогда она подписана на `item:added`. Порядок связок — как у Vue: фасад
- * первым.
- */
-
 import {
 	TTabsContentBindingExtension,
 	TabsCollectionContentDescriptor,
@@ -47,6 +31,7 @@ export function setupTabsContent(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у Vue: с принятым контекстом панель слышит `item:added` поздних табов
 	const content = useCollectionAdapter(contentAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

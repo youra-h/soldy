@@ -1,19 +1,7 @@
 /**
- * `<th is="so-table-column">` — заголовок колонки таблицы (`Table.Column`).
- *
- * Элемент — настоящий `<th>`, расширенный классом soldy (customized built-in,
- * см. `ElementBase`): тег ядра по умолчанию. Рисует его таблица — по
- * заголовку на показанную колонку, над её экземпляром (`ctrl`), — а не
- * потребитель: колонки задаются только данными (`columns`). Входов у части
- * нет: всё своё у колонки защищено и только читается.
- *
- * На корне — классы, наборы колонки и ширина переменной
- * `--so-table-column-width`: стиль-выход колонки (`widthStyle`, считает ядро),
- * его база кладёт поверх выхода плагина раскладки. По ней тема режет колонку.
- *
- * Регистрирует элемент модуль таблицы (`Table.element.ts`), после неё.
- *
- * Разметка вынесена в table-column.template.ts, жизненный цикл — в ElementBase.
+ * `<th is="so-table-column">` — заголовок колонки (`Table.Column`): рисует
+ * таблица над экземпляром колонки, входов нет; регистрирует модуль таблицы.
+ * Ширина — `--so-table-column-width` из `widthStyle`, по ней тема режет колонку.
  */
 
 import { TableColumnDescriptor } from '@soldy-ui/setup'
@@ -34,9 +22,4 @@ export const TTableColumnElement: TElementClassOf<
 	setup: setupTableColumn,
 })
 
-/**
- * `<th is="so-table-column">` из JS: нативный `th`, своё элемента soldy
- * (`ctrl` — колонка, `state`) и свойства пропов дескриптора — без тех, что у
- * `th` уже есть, и без `HOST_PROPS` (`TElementProps`).
- */
 export type TTableColumnElementProps = TElementType<typeof TTableColumnElement>

@@ -1,13 +1,4 @@
-/**
- * `<div is="so-component-view">` — слой ComponentView.
- *
- * Элемент — настоящий `<div>`, расширенный классом soldy (customized built-in,
- * см. `ElementBase`). Light DOM: классы из ядра — обычные глобальные
- * BEM-классы, тема работает как есть. Содержимое остаётся в элементе, а классы
- * и наборы ядра база раскладывает на него же, рядом с атрибутами потребителя.
- *
- * Разметка вынесена в component-view.template.ts, жизненный цикл — в ElementBase.
- */
+/** `<div is="so-component-view">`. docs/architecture.md, Layer 8d, «Light DOM». */
 
 import { ComponentViewDescriptor } from '@soldy-ui/setup'
 import type { IComponentView } from '@soldy-ui/core'
@@ -28,9 +19,4 @@ export const TComponentViewElement: TElementClassOf<
 
 defineElement('so-component-view', TComponentViewElement, 'div')
 
-/**
- * `<div is="so-component-view">` из JS: нативный `div`, своё элемента soldy и
- * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
- * `HOST_PROPS` (`TElementProps`).
- */
 export type TComponentViewElementProps = TElementType<typeof TComponentViewElement>

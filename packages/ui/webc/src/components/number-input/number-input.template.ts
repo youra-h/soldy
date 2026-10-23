@@ -1,59 +1,7 @@
 /**
- * Шаблон NumberInput.
- *
- * Корень — сам `<div is="so-number-input">`: классы, `attrs` (`dir`),
- * `dataset` (`data-disabled`, `data-invalid`) и скрытие раскладывает на него
- * база (`ElementBase`). Здесь — то же, что в разметке Vue, в том же порядке:
- * обёртка слота `leading`, ввод, обёртка у конца числа, кнопки шага и
- * значение для формы.
- *
- * - Ввод — `<input type="text">` с классом `so-number-input__input`, узел поля
- *   корня: на него база переносит статические атрибуты разметки корня
- *   (`autocomplete`, `aria-label`), а по классу его находят плагины поля —
- *   рядом в корне лежит скрытое поле формы. Нативные `id`, `placeholder`,
- *   `disabled`, `readonly` и `required` — проводка разметки; `name` у ввода
- *   нет — в форму уходит число, а не текст. Ни проверки орфографии, ни
- *   автозаполнения: число — не слово.
- * - Наборы ввода — `inputAttrs` (`dir` и `lang` числа, экранная клавиатура
- *   `inputmode`), `aria` (имя, справка, ошибка) и `inputAria` (роль
- *   `spinbutton` и `aria-value*`). Слой владельца у элемента один
- *   (`ownerAttributes`), поэтому все три кладёт одна привязка, склеенными в
- *   порядке Vue: две привязки затёрли бы набор друг друга.
- * - Текст ввода — буфер правки ядра (`text`), а не `value`: пока набирают,
- *   набранное, после — строка формата. В узел его пишет привязка, свойством и
- *   только если текст разошёлся с узлом: запись того же текста сбросила бы
- *   каретку, а набор через IME прервала бы.
- * - Обёртка у конца числа — при слотах `clear` или `trailing` или при
- *   `clearable`, и встаёт она перед кнопками шага, а не в конец корня, как у
- *   Input. В ней первой — своя кнопка (слот `clear`) или встроенная очистка,
- *   за ней — `trailing`, при любом порядке в разметке. Очистка — как у Input:
- *   деталь `<button is="so-button" embedded="number-input.clear"
- *   type="button">` с иконкой роли `close`, размером поля, выключена вместе с
- *   полем, `readonly` её не гасит; имя — набор поля `clearAria`, очищает
- *   команда поля `clear` — и значение, и набранный текст — по нативному
- *   клику кнопки, гася его всплытие.
- * - Кнопки шага — детали `<button is="so-button" type="button">` в
- *   `so-number-input__stepper`: «меньше» (`number-input.decrement`), затем
- *   «больше» (`number-input.increment`), по классам `so-number-input__decrement`
- *   и `__increment` их находит плагин кнопок. Обработчиков у них нет:
- *   нажатие, удержание и клик скринридера ловит плагин на корне. Размер —
- *   поля, выключенность — у края, у выключенного поля и только для чтения
- *   (`decrementDisabled`, `incrementDisabled`). Набор кнопки — имя от локали и
- *   `tabindex="-1"` (`decrementAria`) и `data-pressed` удержания
- *   (`decrementDataset`) — одной привязкой на оба, по той же причине, что у
- *   ввода. Значок — слот `decrement-icon` или `increment-icon` в слот по
- *   умолчанию кнопки; своя иконка роли `minus` или `plus` ставится только без
- *   слота.
- * - Значение для формы — скрытое поле последним: `name`, `value` — число
- *   строкой («1234.5», а не «1 234,5 ₽»), без числа — пусто, `disabled` —
- *   поля.
- *
- * Пропсы деталей пишутся, только когда сменились: `disabled` кнопки нативный,
- * и каждая запись прошла бы через его атрибут. Вида у кнопок нет: тема красит
- * их по контексту.
- *
- * Scope у слотов нет, как у всех слотов Web Components: значение поля и его
- * команды содержимое слота берёт у элемента (`el.ctrl`).
+ * Шаблон NumberInput: `leading`, ввод, обёртка у конца числа, кнопки шага и
+ * скрытое поле формы. Нажатия кнопок шага ловит плагин на корне, находит их по
+ * классам; ввод плагины находят по классу. docs/architecture.md, Layer 8d, «Поле».
  */
 
 import type { INumberInput } from '@soldy-ui/core'
@@ -67,7 +15,6 @@ import {
 } from '../common/icon-button'
 import { placeClearButton } from '../common/clear'
 
-/** Части поля, одни на всё время жизни элемента. */
 type TNumberInputParts = {
 	readonly field: HTMLInputElement
 	readonly leading: HTMLElement
@@ -78,9 +25,8 @@ type TNumberInputParts = {
 	readonly hidden: HTMLInputElement
 }
 
-/** Как построить кнопку шага: имена мест, класс, роль значка и его слот. */
 type TStepSpec = TIconButtonSpec & {
-	/** Слот значка: заданный заменяет иконку целиком. */
+	/** Заданный слот значка заменяет иконку целиком. */
 	readonly slot: string
 }
 
@@ -122,12 +68,10 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 		stepper.className = 'so-number-input__stepper'
 		hidden.type = 'hidden'
 
-		// Сначала кнопки в обёртку, потом обёртка в корень: кнопки входят в
-		// документ одной вставкой и собираются по одному разу
+		// Кнопки в обёртку до вставки: в документ одной вставкой, собираются один раз
 		stepper.append(decrement.button, increment.button)
 
-		// Обёртка — только когда в неё есть что положить; у конца числа её
-		// приносит и `clearable` — см. привязку кнопки очистки
+		// Обёртку у конца числа приносит и `clearable` (`placeClearButton`)
 		if (hasSlot('leading')) root.appendChild(leading)
 
 		root.appendChild(field)
@@ -138,8 +82,7 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 		parts.set(root, { field, leading, trailing, stepper, decrement, increment, hidden })
 
 		return {
-			// `clear` объявлен раньше `trailing`: в обёртке у конца числа он первый.
-			// Значки — в слот по умолчанию своей кнопки шага
+			// `clear` раньше `trailing`: в обёртке он первый при любом порядке разметки
 			slots: {
 				leading: { mode: 'append', node: leading },
 				clear: { mode: 'append', node: trailing },
@@ -152,7 +95,6 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 	},
 
 	bindings: [
-		// Нативные атрибуты ввода фиксированного тега — проводка разметки
 		bind(['id', 'placeholder', 'disabled', 'readonly', 'required'], ({ root, state }) => {
 			const field = parts.get(root)?.field
 
@@ -167,7 +109,7 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 			field.required = state.required === true
 		}),
 
-		// Наборы ввода — одним слоем владельца, в порядке Vue (см. шапку)
+		// Слой владельца у узла один: две привязки затёрли бы наборы друг друга
 		bind(['inputAttrs', 'aria', 'inputAria'], ({ root, state }) => {
 			const field = parts.get(root)?.field
 
@@ -179,7 +121,7 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 			const field = parts.get(root)?.field
 			const text = state.text ?? ''
 
-			// Только если текст разошёлся с узлом: каретка остаётся на месте
+			// `text` — буфер правки ядра; запись того же текста сбросила бы каретку и IME
 			if (field && field.value !== text) field.value = text
 		}),
 
@@ -198,7 +140,7 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 			syncIconButton(own.increment, state.size, state.incrementDisabled === true)
 		}),
 
-		// Набор кнопки шага — одним слоем владельца на оба её набора (см. шапку)
+		// Одним слоем, как у ввода
 		bind(['decrementAria', 'decrementDataset'], ({ root, state }) => {
 			const button = parts.get(root)?.decrement.button
 
@@ -213,7 +155,7 @@ export const numberInputTemplate: ITemplate<INumberInput> = {
 				ownerAttributes(button, { ...state.incrementAria, ...state.incrementDataset })
 		}),
 
-		// Значение для формы — число строкой, без числа — пусто
+		// В форму уходит число строкой («1234.5»), а не текст ввода: `name` у ввода нет
 		bind(['name', 'value', 'disabled'], ({ root, state }) => {
 			const hidden = parts.get(root)?.hidden
 

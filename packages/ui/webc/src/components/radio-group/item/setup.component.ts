@@ -1,15 +1,3 @@
-/**
- * setupRadioGroupItem — setup-слой радио.
- *
- * Два контекста, как у элементов остальных коллекций: собственный (пропсы
- * радио) и фасада (отмечено ли радио в группе), одной связкой. Расширение
- * элемента берёт лифтом движок и регистратор группы — ближайшей выше по
- * документу — и отдаёт фасаду контекст радио. Порядок связок — как у Vue:
- * фасад первым, и в группу радио входит, когда его контекст принят, — при
- * подключении элемента; запись группы радио при входе до своей связки
- * событиями не доходит, а её состояние своя связка прочтёт сразу.
- */
-
 import {
 	RadioGroupCollectionItemDescriptor,
 	RadioGroupItemDescriptor,
@@ -43,6 +31,7 @@ export function setupRadioGroupItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым: запись группы при входе радио своя связка прочтёт сразу
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

@@ -1,58 +1,15 @@
 /**
- * Шаблон Menu.
+ * Шаблон Menu: триггер — слот `trigger` в корне перед панелью, панель — деталь
+ * Frame (`menu.frame`) со списком `div.so-menu__list`. `data-open` на корне —
+ * для потребителя, который красит свой триггер по контексту.
+ * docs/architecture.md, Layer 8d, «Меню».
  *
- * Корень — сам `<span is="so-menu">`: классы, `attrs` и `dataset` (`data-open`
- * — для потребителя, который красит свой триггер по контексту) раскладывает на
- * него база (`ElementBase`). ARIA на корне нет: она у панели и у триггера
- * (`sets` в описании корня). Здесь — то же, что в разметке Vue, в том же
- * порядке.
- *
- * - Триггер — содержимое потребителя в слоте `trigger`, в корне перед
- *   панелью: кнопка («…», «Действия»), а у контекстного меню
- *   (`openOn: 'contextmenu'`) — область, строка, файл, картинка. Нажатие по
- *   открытому триггеру — нажатие внутри владельца, и панель не мигает. Scope у
- *   слотов нет, и связку с панелью (`aria-haspopup="menu"`, `aria-expanded`,
- *   `id`, `aria-controls`) и вид «нажат» (`data-selected`) потребитель
- *   привязать не может. Поэтому оба набора — `triggerAria` и `triggerDataset`
- *   — шаблон кладёт на первый элемент слота (узлы слота отдаёт контекст,
- *   `slotted`) одним слоем владельца, как у Popover. У области контекстного
- *   меню связка пуста, и слой владельца на ней снимается.
- * - Панель — деталь Frame
- *   `<div is="so-frame" embedded="menu.frame" tabindex="-1">`: телепорт, слой,
- *   привязка к корню (`TAnchorPlugin`, отступ 4 px, как у Select) и пометка
- *   владельцем для закрытия по нажатию мимо. `tabindex="-1"` — фокус встаёт
- *   на саму панель, пока ни один пункт не подсвечен. Место — `fixed`;
- *   неизменное шаблон пишет панели при построении, как оно стоит в разметке
- *   Vue. У контекстного меню панель встаёт у точки вызова (`point` →
- *   `anchor_point`): точка главнее корня, пока задана, и выбирает между ними
- *   якорь, а не шаблон. Открытость — `visible` панели, а не `rendered`: пункты
- *   входят в коллекцию при монтировании, и закрытие не должно её вычищать.
- *   `rendered` панели шаблон не пишет: корень Web Components только прячется,
- *   до увезённой панели это скрытие не доходит, и прячет её база Frame по
- *   признаку поддерева меню (`ElementBase`, «Поддерево»), а с ней — и панели
- *   подменю и пунктов с панелью. На панель — `aria` меню (`role="menu"`, `id`,
- *   на который ссылается `aria-controls` триггера, и `aria-labelledby` на
- *   триггер — имя меню) и пометка владельцем `dismiss_ownerAttribute` — одним
- *   слоем владельца. Классы — свой набор меню (`panelClasses`): блок
- *   `so-menu__panel` с размером и вариантом меню — модификаторы корня до
- *   телепортированной панели не доходят.
- * - В панели — список `div.so-menu__list`: то, что прокручивается. Роли у
- *   него нет: фокус без подсветки держит панель, и узел с ролью и фокусом
- *   один. В списке — слот `default`, пункты разметкой, группы и разделители, а
- *   без них — пункты из данных по секциям (`items.ts`).
- * - `item`, `item-leading`, `item-trailing`, `item-header`, `item-arrow-icon`,
- *   `item-content` — образцы слотов пунктов из данных
- *   (`<template slot="item-leading">`): scope у слотов Web Components нет, и
- *   копию одного образца получает каждый пункт. Данные копия берёт у пункта
- *   (`el.ctrl`).
- *
- * Пропсы детали Frame пишутся, только когда сменились. Клавиш, подсветки,
- * фокуса и закрытия в шаблоне нет: открытие и наведение —
- * `TMenuPointerPlugin` и `TMenuHoverPlugin`, клавиши — `TMenuKeyboardPlugin`,
- * фокус, Escape и Tab — `TMenuFocusPlugin`, нажатие мимо — `TDismissPlugin`.
- *
- * Scope у слотов нет, как у всех слотов Web Components: открытость и команды
- * содержимое слота берёт у элемента (`el.ctrl`).
+ * Триггер в корне: нажатие по открытому триггеру — нажатие внутри владельца, и
+ * панель не мигает. `tabindex="-1"` панели — фокус на ней, пока пункт не
+ * подсвечен; у списка роли нет: узел с ролью и фокусом один. Открытость —
+ * `visible` панели, а не `rendered`: пункты входят в коллекцию при
+ * монтировании, и закрытие не должно её вычищать; увезённую панель прячет база
+ * Frame — AGENTS.md (Web Components), «Поддерево».
  */
 
 import type { IMenu, TMenuCollectionFacade } from '@soldy-ui/core'
@@ -117,7 +74,6 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 	},
 
 	bindings: [
-		// Пропсы панели — только сменившиеся
 		bind(['open', 'placement', 'point'], ({ root, state }) => {
 			const panel = panels.get(root)
 
@@ -129,6 +85,7 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 			patch(panel, { visible, anchor_placement: state.placement, anchor_point: point })
 		}),
 
+		// Свой набор классов: модификаторы корня до увезённой панели не доходят
 		bind('panelClasses', ({ root, state }) => {
 			const panel = panels.get(root)
 
@@ -142,7 +99,7 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 			if (panel) ownerAttributes(panel, { ...state.aria, ...state.dismiss_ownerAttribute })
 		}),
 
-		// Связка и вид «нажат» — триггеру, одним слоем владельца (см. шапку)
+		// Scope у слотов нет: связку и вид «нажат» триггеру кладёт шаблон
 		bind(['triggerAria', 'triggerDataset'], ({ state, slotted }) => {
 			const trigger = triggerOf(slotted('trigger'))
 

@@ -1,16 +1,3 @@
-/**
- * setupAccordion — setup-слой Accordion.
- *
- * Два контекста, как у Vue и Angular: свой (`AccordionDescriptor`) и фасада
- * коллекции (`AccordionCollectionDescriptor`) на общем наборе, одной связкой.
- * Расширения коллекции опускают движок и регистратор секций лифтом — хосту
- * аккордеона: секции, что стоят ниже, находят их вверх по документу, а список
- * в панели секции — свой, ближайший к нему.
- *
- * `engine` — готовая коллекция снаружи, свойство элемента (`el.engine`):
- * фасад работает на ней, а без неё собирает свою (`completeEngine`).
- */
-
 import {
 	AccordionCollectionDescriptor,
 	AccordionDescriptor,

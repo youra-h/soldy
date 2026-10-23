@@ -1,15 +1,3 @@
-/**
- * setupMenuRadioItem — setup-слой переключателя меню.
- *
- * Два контекста, как у флажка: собственный (`MenuRadioItemDescriptor` —
- * текст, значение и группа переключателя) и фасада
- * (`MenuCollectionRadioItemDescriptor` — вход в коллекцию меню и отметка —
- * её выбор), одной связкой. Группу — ближайшую `<div is="so-menu-radio-group">`
- * выше по документу — переключатель берёт проводкой при сборке
- * (`TMenuRadioItemExtension`), до входа в коллекцию: меню отмечает его по
- * значению группы уже на входе.
- */
-
 import {
 	MenuCollectionRadioItemDescriptor,
 	MenuRadioItemDescriptor,
@@ -33,6 +21,8 @@ export function setupMenuRadioItem(
 	onUpdate: TUpdateListener,
 ): TBinding<IMenuRadioItem, TMenuItemCollectionFacade> {
 	const elevator = createWebcElevator(host)
+	// Группу — до входа в коллекцию: меню отмечает переключатель по её значению
+	// уже на входе
 	const adapter = createWebcAdapterContext(host, MenuRadioItemDescriptor(), {
 		ctrl,
 		props,
@@ -45,6 +35,7 @@ export function setupMenuRadioItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
+	// Фасад первым, как у пункта
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

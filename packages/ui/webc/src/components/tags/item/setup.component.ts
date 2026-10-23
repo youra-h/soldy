@@ -1,16 +1,3 @@
-/**
- * setupTagsItem — setup-слой тега.
- *
- * Два контекста, как у элементов Vue и ListBox: собственный
- * (`TagsItemDescriptor` — текст, значение, своя закрываемость, набор крестика)
- * и фасада (`TagsCollectionItemDescriptor` — выбор, порядок, итог
- * закрываемости), одной связкой. Расширение элемента берёт лифтом движок и
- * регистратор набора — ближайшего выше по документу, у тегов поля Select —
- * набора в его поле — и отдаёт фасаду контекст тега. Порядок связок — как у
- * Vue: фасад первым, и в коллекцию тег входит, когда его контекст принят, — при
- * подключении элемента.
- */
-
 import {
 	TCollectionItemExtension,
 	TagsCollectionItemDescriptor,
@@ -44,6 +31,7 @@ export function setupTagsItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад — первым: в коллекцию тег входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

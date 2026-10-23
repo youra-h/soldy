@@ -1,15 +1,3 @@
-/**
- * setupListBoxItem — setup-слой элемента ListBox.
- *
- * Два контекста, как у элементов Vue и Angular: собственный
- * (`ListBoxItemDescriptor` — текст и значение) и фасада
- * (`ListBoxCollectionItemDescriptor` — выбор, порядок, вид и сторона отметки
- * списка), одной связкой. Расширение элемента берёт лифтом движок и
- * регистратор списка — ближайшего выше по документу — и отдаёт фасаду
- * контекст элемента. Порядок связок — как у Vue: фасад первым, и в коллекцию
- * элемент входит, когда его контекст принят, — при подключении элемента.
- */
-
 import {
 	ListBoxCollectionItemDescriptor,
 	ListBoxItemDescriptor,
@@ -43,6 +31,7 @@ export function setupListBoxItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у Vue: в коллекцию элемент входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

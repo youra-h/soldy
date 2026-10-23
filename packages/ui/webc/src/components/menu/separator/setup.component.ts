@@ -1,11 +1,3 @@
-/**
- * setupMenuSeparator — setup-слой разделителя меню.
- *
- * Собирает компонент (`createWebcAdapterContext`) и связывает его с элементом
- * через useAdapter. Своего у разделителя нет: роль `separator` пишет ядро, в
- * коллекцию меню он не входит.
- */
-
 import { MenuSeparatorDescriptor } from '@soldy-ui/setup'
 import type { TMenuSeparator } from '@soldy-ui/core'
 import { createWebcAdapterContext, useAdapter } from '../../../adapter'

@@ -1,16 +1,3 @@
-/**
- * setupSelectItem — setup-слой опции Select.
- *
- * Два контекста, как у элементов Vue и ListBox: собственный
- * (`SelectItemDescriptor` — текст и значение) и фасада
- * (`SelectCollectionItemDescriptor` — выбор, порядок, сторона отметки поля),
- * одной связкой. Расширение элемента берёт лифтом движок и регистратор Select
- * — ближайшего выше по документу, а из увезённой панели — от её якоря, корня
- * Select, — и отдаёт фасаду контекст опции. Порядок связок — как у Vue: фасад
- * первым, и в коллекцию опция входит, когда её контекст принят, — при
- * подключении элемента.
- */
-
 import {
 	SelectCollectionItemDescriptor,
 	SelectItemDescriptor,
@@ -44,6 +31,7 @@ export function setupSelectItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым: в коллекцию опция входит, когда её контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

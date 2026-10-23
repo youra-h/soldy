@@ -1,15 +1,3 @@
-/**
- * setupTabsItem — setup-слой таба.
- *
- * Два контекста, как у элементов Vue и Angular: собственный
- * (`TabsItemDescriptor` — текст, значение, закрываемость) и фасада
- * (`TabsCollectionItemDescriptor` — активность, порядок, итог закрываемости),
- * одной связкой. Расширение элемента берёт лифтом движок и регистратор набора —
- * ближайшего выше по документу — и отдаёт фасаду контекст таба. Порядок
- * связок — как у Vue: фасад первым, и в коллекцию таб входит, когда его
- * контекст принят, — при подключении элемента.
- */
-
 import {
 	TCollectionItemExtension,
 	TabsCollectionItemDescriptor,
@@ -43,6 +31,7 @@ export function setupTabsItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у Vue: в коллекцию таб входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

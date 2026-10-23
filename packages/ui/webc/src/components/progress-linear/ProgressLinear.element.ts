@@ -1,21 +1,7 @@
 /**
- * `<span is="so-progress-linear">` — индикатор выполнения линией.
- *
- * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`). Корень по умолчанию — `span`, как тег ядра:
- * полосу кладут в Button и Label, а внутри них HTML разрешает только строчную
- * разметку.
- *
- * Размер, вариант и ось (`--size-*`, `--variant-*`, `--horizontal` или
- * `--vertical`), бег (`data-indeterminate`), роль, значения и имя для
- * скринридера и `dir` раскладывает на элемент база. Долю готового —
- * переменную `--so-progress-linear-percent` выхода `percentStyle` — тоже она:
- * это стиль-выход компонента, и его имя элемент называет базе в описании
- * корня, как `fractionStyle` у кольца. Стиль потребителя главнее доли,
- * скрытие — главнее обоих.
- *
- * Разметка вынесена в progress-linear.template.ts, жизненный цикл — в
- * ElementBase.
+ * `<span is="so-progress-linear">` — индикатор линией. `span`: полосу кладут в
+ * Button и Label, а там HTML разрешает только строчное. Долю готового
+ * (`percentStyle`) база кладёт на корень стиль-выходом.
  */
 
 import { ProgressLinearDescriptor } from '@soldy-ui/setup'
@@ -38,10 +24,4 @@ export const TProgressLinearElement: TElementClassOf<
 
 defineElement('so-progress-linear', TProgressLinearElement, 'span')
 
-/**
- * `<span is="so-progress-linear">` из JS: нативный `span`, своё элемента
- * soldy (`ctrl`, `state`) и свойства пропов дескриптора вместе с пропсами его
- * плагинов (`aria_label`) — без тех, что у `span` уже есть, и без
- * `HOST_PROPS` (`TElementProps`).
- */
 export type TProgressLinearElementProps = TElementType<typeof TProgressLinearElement>

@@ -1,24 +1,6 @@
 /**
- * Шаблон переключателя меню, как `Menu.RadioItem` у Vue: строка пункта с
- * отметкой-точкой в начале.
- *
- * Корень — сам `<div is="so-menu-radio-item">`: классы, `attrs` и `dataset`
- * (`data-highlighted`, `data-disabled`, `data-selected`) раскладывает на него
- * база, и строка красится от него. Здесь — строка (`row.ts`).
- *
- * - Нажатие — клик строки: решает меню (`adapters.menu.check()`) —
- *   выключенному отказывает, а доступный отмечает — с остальных
- *   переключателей группы отметка снимается — и остаётся открытым.
- *   Отмеченный нажатием не снимается.
- * - Отметка — обёртка `span.so-menu-item__indicator` под `aria-hidden`
- *   (состояние объявляет `aria-checked`), у неотмеченного тоже: она держит
- *   колонку. В обёртке — слот `indicator-icon` или точка темы
- *   `span.so-menu-item__dot`, без иконки, — у отмеченного.
- * - Значок, текст и подсказка сочетания — как у действия
- *   (`menu-item.template.ts`).
- *
- * Scope у слотов нет: слот `indicator-icon` — отметка отмеченного, его
- * выводит привязка (`showSlot`) только у отмеченного, как у флажка.
+ * Шаблон переключателя меню: строка пункта (`row.ts`) с отметкой-точкой темы в
+ * начале. Обёртка отметки есть и у неотмеченного: она держит колонку.
  */
 
 import type { IMenuRadioItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
@@ -26,7 +8,7 @@ import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { bind, lend, type ITemplate } from '../../../adapter'
 import { createRow, partOf, placeMark, rowBindings } from '../row'
 
-/** Отметка переключателя — обёртка и точка в ней (со слотом `indicator-icon` — `null`). */
+/** Со слотом `indicator-icon` своей точки нет — `null`. */
 type TMark = {
 	readonly indicator: HTMLElement
 	readonly dot: HTMLElement | null
@@ -48,8 +30,6 @@ export const menuRadioItemTemplate: ITemplate<IMenuRadioItem, TMenuItemCollectio
 		lend(row, 'leading', icon)
 		lend(row, 'trailing', shortcut)
 
-		// Своя точка — только без слота `indicator-icon`: заданный слот заменяет
-		// её целиком
 		marks.set(root, {
 			indicator,
 			dot: hasSlot('indicator-icon') ? null : partOf(ownerDocument, 'so-menu-item__dot'),
@@ -69,7 +49,7 @@ export const menuRadioItemTemplate: ITemplate<IMenuRadioItem, TMenuItemCollectio
 	bindings: [
 		...rowBindings(DEFAULT_SLOT),
 
-		// Отметка — у отмеченного: своя точка или слот `indicator-icon`
+		// Scope у слотов нет: слот `indicator-icon` выводится только у отмеченного
 		bind('selected', ({ root, state, showSlot }) => {
 			const own = marks.get(root)
 			const selected = state.selected === true

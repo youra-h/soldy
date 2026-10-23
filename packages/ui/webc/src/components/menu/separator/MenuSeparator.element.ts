@@ -1,15 +1,6 @@
 /**
- * `<div is="so-menu-separator">` — разделитель меню, линия между группами
- * пунктов, как `Menu.Separator` у Vue.
- *
- * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`): тег ядра по умолчанию. Классы и наборы ядра
- * — `role="separator"` — база раскладывает на него. Ручной разделитель
- * разметки свойство меню `groupSeparators` не трогает: его поставил
- * потребитель.
- *
- * Разметка вынесена в menu-separator.template.ts, жизненный цикл — в
- * ElementBase.
+ * `<div is="so-menu-separator">` — линия между группами пунктов. Ручной
+ * разделитель разметки `groupSeparators` меню не трогает.
  */
 
 import { MenuSeparatorDescriptor } from '@soldy-ui/setup'
@@ -29,9 +20,4 @@ export const TMenuSeparatorElement: TElementClassOf<
 	setup: setupMenuSeparator,
 })
 
-/**
- * `<div is="so-menu-separator">` из JS: нативный `div`, своё элемента soldy и
- * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
- * `HOST_PROPS` (`TElementProps`).
- */
 export type TMenuSeparatorElementProps = TElementType<typeof TMenuSeparatorElement>

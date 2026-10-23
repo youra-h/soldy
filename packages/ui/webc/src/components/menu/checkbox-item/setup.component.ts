@@ -1,12 +1,3 @@
-/**
- * setupMenuCheckboxItem — setup-слой флажка меню.
- *
- * Два контекста, как у пункта: собственный (`MenuCheckboxItemDescriptor` —
- * текст и значение флажка) и фасада (`MenuCollectionCheckboxItemDescriptor` —
- * вход в коллекцию меню и отметка: `selected` — выбор коллекции), одной
- * связкой. Порядок связок — как у пункта: фасад первым.
- */
-
 import {
 	MenuCheckboxItemDescriptor,
 	MenuCollectionCheckboxItemDescriptor,
@@ -40,6 +31,7 @@ export function setupMenuCheckboxItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у пункта
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

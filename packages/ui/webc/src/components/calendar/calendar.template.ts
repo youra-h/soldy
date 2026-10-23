@@ -1,70 +1,7 @@
 /**
- * Шаблон Calendar — сетки показанных месяцев, одна пара кнопок листания на все
- * и подвал, если его передали, как у Vue.
- *
- * Корень — сам `<div is="so-calendar">`: классы, наборы `attrs`, `aria` и
- * `dataset` (`data-disabled`) и скрытие раскладывает на него база
- * (`ElementBase`). Роли у корня нет: сетку по APG (Date Picker Dialog) несёт
- * каждая таблица. Обработчиков у шаблона нет: нажатия по дням, кнопкам
- * листания, шапке и подложке панели выбора и наведение ловит плагин указателя,
- * клавиши — плагин клавиатуры, оба слушают корень и зовут команды коллекции.
- * Слота по умолчанию нет: дни кладёт в коллекцию вид по месяцам сеток.
- *
- * - Месяцы — в ряд, своей строкой (`div.so-calendar__months`), подвал —
- *   отдельной строкой под ним (`div.so-calendar__footer`, только при слоте
- *   `footer`): в одном ряду с месяцами он расширил бы его своей шириной.
- * - Месяц — по одному на сетку (`grids`), петлёй по месту (`TKeyedLoop`, ключ
- *   — номер сетки, как `:key="index"` у Vue): заголовок и его панель выбора —
- *   у места, листание меняет месяц, а кнопка заголовка, её поповер и живая
- *   область остаются тем же узлом. Иначе выбранный в панели месяц пересобрал
- *   бы кнопку, фокус, который панель возвращает на неё, упал бы на страницу,
- *   а новая живая область смену месяца не объявила бы.
- * - Заголовок месяца — кнопка-триггер панели выбора месяца и года. Панель —
- *   Popover места (`pickers[index]`) на `div`, деталь
- *   `<div is="so-popover-div" embedded="calendar.picker">` с классом
- *   `so-calendar__heading` над экземпляром поповера, который создаёт и ведёт
- *   расширение `picker`: `ctrl` — до вставки. Поповер — внутри календаря
- *   (`contained`, `edge="top"`): панель не уходит в `body`, а выезжает сверху
- *   календаря. Корень поповера — `div`: панель лежит в нём, а в строчном
- *   `span` блочной разметке не место. Экземпляр поповера места сменился —
- *   новая связка без движка снаружи, — деталь строится заново, как ряд тегов у
- *   Select.
- * - Триггер поповера — деталь `<button is="so-button" embedded="calendar.title"
- *   type="button">` с классом `so-calendar__title`, отданная в слот `trigger`
- *   поповера (`lend`): связку с панелью и вид «нажат» на неё кладёт сам
- *   Popover — scope у слотов нет. Размер и выключенность — календаря. Текст —
- *   во вложенном `span.so-calendar__title-text` с набором `titleAria` сетки
- *   (`id`, на который ссылается сетка, и `aria-live`): живая область — текст,
- *   а не контрол.
- * - Содержимое панели — карточка `div.so-calendar__picker`: список места —
- *   деталь ListBox `calendar.picker-list` над экземпляром и движком места
- *   (`indicator="none"`, имя — шапкой), — и шапка: кнопка года
- *   `calendar.picker-heading` с набором `headingAria` и текстом шапки, затем
- *   стрелки `calendar.picker-prev` и `calendar.picker-next` с наборами и
- *   выключенностью по уровню. Список в DOM раньше шапки: фокус при открытии
- *   встаёт на список. Содержимое до первого открытия вне документа: поповер
- *   места — с `lazyMount`.
- * - Кнопки листания — одна пара на весь календарь, у первого месяца, сразу за
- *   его заголовком: Tab идёт за глазом. Детали `calendar.prev` и
- *   `calendar.next`, вида нет — красит тема по контексту; выключенность — вид
- *   коллекции, имена — наборы `prevAria` и `nextAria`. Значок — слот
- *   `prev-icon` или `next-icon` в слот по умолчанию кнопки, иначе иконка роли
- *   `arrowRight` у обеих: стрелку «назад» зеркалит тема.
- * - Сетка — `table.so-calendar__grid` с набором `gridAria` (`role="grid"`, имя
- *   от заголовка, `aria-multiselectable`). Шапка дней недели скрыта от
- *   скринридера (`aria-hidden` на `thead`): имя дня — полная дата. Подписи
- *   колонок — `weekdays` по месту.
- * - Недели — петлёй по ключу первой даты, ячейки — по ключу дня: у дня — его
- *   элемент коллекции, у заполнителя — дата. Записи сеток новые на каждую
- *   смену, а день, оставшийся на экране, — тот же узел, с фокусом на нём;
- *   элемент дня сменился (новая связка без движка снаружи) — новый узел. День
- *   — элемент коллекции `<td is="so-calendar-item">` с инстансом дня и копией
- *   образца `item` в слоте по умолчанию — до вставки; заполнитель — пустой
- *   `td.so-calendar__filler` с набором ячейки (`aria-hidden`).
- *
- * Слот со scope (`item`) у Web Components — образец (`<template slot="item">`):
- * копию получает каждый день. Данные копия берёт у дня — `el.ctrl`
- * ближайшего `.so-calendar-item`.
+ * Шаблон Calendar: месяцы в ряд петлёй по месту сетки, одна пара кнопок листания
+ * у первого месяца, подвал — своей строкой. Обработчиков нет: нажатия и клавиши
+ * ловят плагины на корне. docs/architecture.md, Layer 8d, «Даты».
  */
 
 import type {
@@ -102,20 +39,17 @@ import { TListBoxElement, type TListBoxElementProps } from '../list-box'
 import { registerPopoverTag, type TPopoverElementProps } from '../popover'
 import { TCalendarItemElement } from './item'
 
-/**
- * Копия образца в день: слот календаря → слот дня, как проброс у остальных
- * адаптеров (`setup/__tests__/item-slots.spec.ts`).
- */
+/** Образец календаря → слот дня (`setup/__tests__/item-slots.spec.ts`). */
 export const CALENDAR_ITEM_SLOTS: TItemSlots = {
 	item: 'default',
 }
 
-/** Заголовок месяца — Popover на `div`: регистрирует его фабрика поповера, здесь тег нужен впервые. */
+/** Заголовок месяца — Popover на `div`: панель лежит в корне, а в `span` блоку не место. */
 const TPopoverDivElement = registerPopoverTag('div')
 
-/** Контекст шаблона календаря. */
 type TCalendarContext = ITemplateContext<ICalendar, TCalendarCollectionFacade>
 
+/** `arrowRight` у обеих стрелок: «назад» зеркалит тема. */
 const PREV: TIconButtonSpec = {
 	embedded: 'calendar.prev',
 	iconEmbedded: 'calendar.prev-icon',
@@ -144,13 +78,8 @@ const PICKER_NEXT: TIconButtonSpec = {
 	role: 'arrowRight',
 }
 
-/**
- * Заголовок месяца — поповер места над его экземпляром и части в нём: кнопка
- * заголовка с текстом, список и шапка панели выбора.
- */
 type THeading = {
 	readonly popover: TPopoverElementProps<HTMLDivElement>
-	/** Экземпляр поповера места, над которым построена деталь. */
 	readonly instance: IPopover
 	readonly title: TButtonElementProps
 	readonly titleText: HTMLElement
@@ -160,51 +89,42 @@ type THeading = {
 	readonly next: TIconButton
 }
 
-/** Месяц на месте сетки: заголовок, сетка и её недели. */
 type TMonth = {
 	readonly node: HTMLElement
 	/** Заголовок — пока у места есть панель выбора. */
 	heading: THeading | null
 	readonly table: HTMLTableElement
 	readonly weekdays: HTMLTableRowElement
-	/** Петля недель — по ключу первой даты. */
 	readonly weeks: TKeyedLoop<TCalendarCell[], string, HTMLTableRowElement>
 }
 
-/** Место сетки и её запись: ключ месяца — место, а не месяц. */
+/**
+ * Ключ месяца — место, а не месяц: при листании кнопка заголовка, её поповер и
+ * живая область остаются теми же узлами — фокус из панели не падает, смена объявляется.
+ */
 type TPlace = {
 	readonly index: number
 	readonly grid: TCalendarGrid
 }
 
-/** Ключ ячейки: у дня — его элемент коллекции, у заполнителя — дата. */
 type TCellKey = ICalendarItem | string
 
-/** Части календаря — одни на всё время жизни элемента. */
 type TCalendarParts = {
 	readonly prev: TIconButton
 	readonly next: TIconButton
-	/** Петля месяцев в ряду — по месту сетки. */
 	readonly months: TKeyedLoop<TPlace, number, HTMLElement>
 }
 
 const parts = new WeakMap<HTMLElement, TCalendarParts>()
 
-/** Месяц по своему узлу — узлы месяцев держит петля. */
 const monthsByNode = new WeakMap<HTMLElement, TMonth>()
 
-/** Петля ячеек каждой недели — внутри её строки. */
 const cellLoops = new WeakMap<
 	HTMLTableRowElement,
 	TKeyedLoop<TCalendarCell, TCellKey, HTMLElement>
 >()
 
-/**
- * Заголовок месяца над поповером места — деталь разметки со своими частями:
- * кнопка заголовка — в слоте `trigger` поповера, карточка панели — в его слоте
- * по умолчанию. Экземпляры места — до вставки: сборка берёт их при
- * подключении.
- */
+/** Экземпляры места — до вставки: сборка берёт их при подключении. */
 function headingOf(owner: Document, picker: TCalendarPicker): THeading {
 	const popover = createDetail(owner, TPopoverDivElement, { embedded: 'calendar.picker' })
 	const title = createDetail(owner, TButtonElement, {
@@ -236,9 +156,8 @@ function headingOf(owner: Document, picker: TCalendarPicker): THeading {
 	header.className = 'so-calendar__picker-header'
 	heading.className = 'so-calendar__picker-heading'
 
-	// Сначала части в детали, потом детали в поповер: они входят в документ
-	// одной вставкой и собираются по одному разу. В шапке год — перед
-	// стрелками, а список в карточке — раньше шапки
+	// Части в детали до поповера: в документ входят одной вставкой и собираются
+	// по разу. Список раньше шапки: фокус при открытии встаёт на него
 	lend(title, DEFAULT_SLOT, titleText)
 	header.append(heading, prev.button, next.button)
 	card.append(list, header)
@@ -248,11 +167,6 @@ function headingOf(owner: Document, picker: TCalendarPicker): THeading {
 	return { popover, instance: picker.popover, title, titleText, list, heading, prev, next }
 }
 
-/**
- * Заголовок месяца — по сетке и панели места: текст и живая область кнопки
- * заголовка, имя поповера и списка, шапка и стрелки панели. Пропсы деталей —
- * только сменившиеся.
- */
 function syncHeading(
 	ctx: TCalendarContext,
 	heading: THeading,
@@ -265,6 +179,7 @@ function syncHeading(
 
 	patch(title, { size, disabled })
 
+	// Живая область — текст, а не контрол
 	ownerAttributes(titleText, grid.titleAria)
 
 	patch(titleText, { textContent: grid.title })
@@ -279,10 +194,6 @@ function syncHeading(
 	ownerAttributes(heading.next.button, picker.nextAria)
 }
 
-/**
- * Подписи колонок — `th` по месту, по одной на день недели: короткое имя или
- * узкое, какое выбрало ядро по локали.
- */
 function drawWeekdays(row: HTMLTableRowElement, weekdays: readonly TCalendarWeekday[]): void {
 	while (row.cells.length > weekdays.length) row.lastElementChild?.remove()
 
@@ -299,10 +210,6 @@ function drawWeekdays(row: HTMLTableRowElement, weekdays: readonly TCalendarWeek
 	})
 }
 
-/**
- * Ячейка недели: день — элемент коллекции с инстансом дня и копией образца
- * `item` до вставки, заполнитель — пустая ячейка с набором ячейки.
- */
 function cellOf(ctx: TCalendarContext, cell: TCalendarCell): HTMLElement {
 	const { ownerDocument } = ctx.root
 
@@ -323,12 +230,11 @@ function cellOf(ctx: TCalendarContext, cell: TCalendarCell): HTMLElement {
 	return day
 }
 
-/** Живой ячейке — её запись: заполнителю — набор, день всё берёт у своего инстанса. */
+/** День всё берёт у своего инстанса. */
 function updateCell(node: HTMLElement, cell: TCalendarCell): void {
 	if (!cell.item) ownerAttributes(node, cell.aria)
 }
 
-/** Ячейки недели — своей петлёй внутри её строки. */
 function drawWeek(ctx: TCalendarContext, row: HTMLTableRowElement, week: TCalendarCell[]): void {
 	let loop = cellLoops.get(row)
 
@@ -340,7 +246,6 @@ function drawWeek(ctx: TCalendarContext, row: HTMLTableRowElement, week: TCalend
 	loop.draw(week, (cell) => cellOf(ctx, cell), updateCell)
 }
 
-/** Строка недели — семь ячеек, от первого дня недели. */
 function weekOf(ctx: TCalendarContext, week: TCalendarCell[]): HTMLTableRowElement {
 	const row = ctx.root.ownerDocument.createElement('tr')
 
@@ -350,10 +255,7 @@ function weekOf(ctx: TCalendarContext, week: TCalendarCell[]): HTMLTableRowEleme
 	return row
 }
 
-/**
- * Месяц места — по его сетке и панели выбора: заголовок (новый, когда у места
- * сменился экземпляр поповера), подписи колонок, набор сетки и недели.
- */
+/** Сменился экземпляр поповера места (новая связка без движка снаружи) — заголовок новый. */
 function drawMonth(ctx: TCalendarContext, month: TMonth, { index, grid }: TPlace): void {
 	const picker = ctx.state.pickers?.[index]
 
@@ -378,7 +280,6 @@ function drawMonth(ctx: TCalendarContext, month: TMonth, { index, grid }: TPlace
 	)
 }
 
-/** Узел месяца места: блок с сеткой — `table` с шапкой дней недели и неделями. */
 function monthOf(ctx: TCalendarContext, place: TPlace): HTMLElement {
 	const { ownerDocument } = ctx.root
 	const node = ownerDocument.createElement('div')
@@ -389,6 +290,7 @@ function monthOf(ctx: TCalendarContext, place: TPlace): HTMLElement {
 
 	node.className = 'so-calendar__month'
 	table.className = 'so-calendar__grid'
+	// Имя дня — полная дата: шапка скринридеру не нужна
 	thead.setAttribute('aria-hidden', 'true')
 	weekdays.className = 'so-calendar__weekdays'
 	thead.appendChild(weekdays)
@@ -409,10 +311,7 @@ function monthOf(ctx: TCalendarContext, place: TPlace): HTMLElement {
 	return node
 }
 
-/**
- * Кнопки листания — у первого месяца, сразу за его заголовком, перед сеткой.
- * Стоят на месте — не двигаются: перенос пересобрал бы их.
- */
+/** За заголовком первого месяца — Tab идёт за глазом. Не двигаются: перенос пересобрал бы их. */
 function placePaging(month: TMonth, prev: HTMLElement, next: HTMLElement): void {
 	if (next.nextSibling === month.table && prev.nextSibling === next) return
 
@@ -432,7 +331,7 @@ export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> =
 		footer.className = 'so-calendar__footer'
 		root.appendChild(months)
 
-		// Подвал — только при слоте: пустая строка держала бы место под сетками
+		// Подвал — своей строкой: в ряду месяцев расширил бы его; пустой держал бы место
 		if (hasSlot('footer')) root.appendChild(footer)
 
 		parts.set(root, {
@@ -442,8 +341,6 @@ export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> =
 		})
 
 		return {
-			// Содержимое дня — образец: копию шаблон кладёт в каждый день; значки —
-			// в слот по умолчанию своей кнопки листания
 			slots: {
 				item: { mode: 'sample' },
 				'prev-icon': { mode: 'append', node: prev.button, slot: DEFAULT_SLOT },
@@ -454,7 +351,6 @@ export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> =
 	},
 
 	bindings: [
-		// Месяцы — по сеткам и панелям мест; подписи колонок и размер — им же
 		bind(['grids', 'pickers', 'weekdays', 'size', 'disabled'], (ctx) => {
 			const own = parts.get(ctx.root)
 

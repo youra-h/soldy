@@ -1,27 +1,7 @@
 /**
- * Шаблон флажка меню, как `Menu.CheckboxItem` у Vue: строка пункта с
- * отметкой в начале.
- *
- * Корень — сам `<div is="so-menu-checkbox-item">`: классы, `attrs` и `dataset`
- * (`data-highlighted`, `data-disabled`, `data-selected`) раскладывает на него
- * база, и строка красится от него. Здесь — строка (`row.ts`).
- *
- * - Нажатие — клик строки: решает меню (`adapters.menu.toggle()`) —
- *   выключенному отказывает, а доступному переключает отметку — выбор
- *   коллекции — и остаётся открытым.
- * - Отметка — обёртка `span.so-menu-item__indicator` под `aria-hidden`
- *   (состояние объявляет `aria-checked`), первая у начала строки, — у
- *   неотмеченного флажка тоже: она держит колонку, а её наличие в списке тема
- *   читает как «у меню есть колонка отметок». В обёртке — слот
- *   `indicator-icon` или иконка роли `check`,
- *   `<span is="so-icon" embedded="menu.indicator">`, — у отмеченного.
- * - Значок, текст и подсказка сочетания — как у действия
- *   (`menu-item.template.ts`).
- *
- * Scope у слотов нет: отметку содержимое слота берёт у элемента
- * (`el.state.selected`). Поэтому слот `indicator-icon` — отметка отмеченного,
- * как своя иконка: его выводит привязка (`showSlot`) только у отмеченного, у
- * остальных он вне документа.
+ * Шаблон флажка меню: строка пункта (`row.ts`) с отметкой в начале. Обёртка
+ * отметки есть и у неотмеченного: она держит колонку, и по ней тема узнаёт, что
+ * у меню есть колонка отметок.
  */
 
 import type { IMenuCheckboxItem, TMenuItemCollectionFacade } from '@soldy-ui/core'
@@ -30,7 +10,7 @@ import { bind, lend, type ITemplate } from '../../../adapter'
 import type { TIconElementProps } from '../../icon'
 import { createRow, iconSize, partOf, placeMark, roleIconOf, rowBindings } from '../row'
 
-/** Отметка флажка — обёртка и своя иконка в ней (со слотом `indicator-icon` — `null`). */
+/** Со слотом `indicator-icon` своей иконки нет — `null`. */
 type TMark = {
 	readonly indicator: HTMLElement
 	readonly icon: TIconElementProps | null
@@ -52,8 +32,6 @@ export const menuCheckboxItemTemplate: ITemplate<IMenuCheckboxItem, TMenuItemCol
 		lend(row, 'leading', icon)
 		lend(row, 'trailing', shortcut)
 
-		// Своя отметка — только без слота `indicator-icon`: заданный слот
-		// заменяет её целиком
 		marks.set(root, {
 			indicator,
 			icon: hasSlot('indicator-icon')
@@ -77,7 +55,7 @@ export const menuCheckboxItemTemplate: ITemplate<IMenuCheckboxItem, TMenuItemCol
 
 		bind('size', ({ root, state }) => iconSize(marks.get(root)?.icon ?? null, state.size)),
 
-		// Отметка — у отмеченного: своя иконка или слот `indicator-icon`
+		// Scope у слотов нет: слот `indicator-icon` выводится только у отмеченного
 		bind('selected', ({ root, state, showSlot }) => {
 			const own = marks.get(root)
 			const selected = state.selected === true
