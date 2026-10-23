@@ -1,123 +1,30 @@
+@use 'sass:map';
 @use '../../mixins/motion';
 @use '../../mixins/tooltip';
 @use './mixins' as mixines;
 
 // Slider — ползунок: одна или несколько ручек на рельсе, заливка и метки.
 //
-// Всё, что зависит от значения, — позиции — приходит от ядра переменными в
-// `style` узла, процентом от начала оси и уже с учётом `inverted`:
-//
-// - `--so-slider-position` — у ручки и у метки: где её центр;
-// - `--so-slider-range-start`, `--so-slider-range-end` — у заливки: её края,
-//   начало не дальше конца.
-//
-// Ось раскладывает тема, и только логическими свойствами: горизонталь — от
-// начала строки (`inset-inline-start`), поэтому в RTL ползунок разворачивается
-// сам, без селектора по направлению; вертикаль — снизу вверх
-// (`inset-block-end`). Ни одного `translate`: у сдвига нет логических
-// направлений, и в RTL он увёл бы ручку и подпись не в ту сторону. Центруют
-// поля и выравнивание флекса.
-//
-// Контракт с плагином указателя: коробка `__track` — ход центров ручек, 0 % и
-// 100 % — её края по оси, мерить надо её. На краю хода ручка выступает за
-// коробку на полстороны; рельс лежит и там, но псевдоэлементом — коробку он не
-// сдвигает, а место под полстороны корень держит отступом.
+// Структура — ось и отступы корня под края хода и ореол, дорожка — ход
+// центров ручек, место рельса, заливки, ручек и меток, прозрачное поле во всю
+// ручку, место подсказки и её видимость в `auto`, кегль подписей меток, шкала
+// размеров, курсоры и гашение выключенного — в общем слое тем
+// (`components/slider.css` в `@soldy-ui/theme-base`). Здесь — облик: цвет
+// рельса, заливки, ручки и точек, скругления, кромка, тень и ореол ручки,
+// кольцо фокуса, вид плашки подсказки, цвет и начертание подписей, щелчок к
+// метке, ход ручки и вид в режиме принудительных цветов.
 .so-slider {
 	$this: &;
 
-	// Размер без модификатора — `normal`. Ядро пишет `--size-*` всегда, но блок
-	// и без него обязан выглядеть умолчанием.
-	@include mixines.slider-size('normal');
+	// Кромка ручки без модификатора — `normal`. Её толщину читает и общий слой
+	// тем: подсказка встаёт от края ручки за ней.
+	--so-slider-thumb-border: #{map.get(mixines.$borders, 'normal')};
 
-	// Точка метки — половина рельса и пиксель сверху: видна на тонком рельсе и
-	// не касается его краёв на толстом.
-	--so-slider-tick-size: calc(var(--so-slider-rail-size) / 2 + 1px);
-
-	// Ореол ручки — треть её стороны. Без наведения и перетаскивания ореола нет:
-	// кольцо нулевой ширины.
-	--so-slider-halo-size: calc(var(--so-slider-thumb-size) / 3);
-
-	// Свой слой: ручки подняты над заливкой и метками (`z-index`), но поверх
-	// соседей по странице этот подъём не выходит.
-	@apply relative isolate;
-
-	// Протяжка по подписям меток двигает ручку, а не выделяет текст.
-	@apply select-none;
-
-	// Нажатие в любом месте ползунка ведёт к нему ближнюю ручку — не только по
-	// рельсу, но и по полосе ручек и по подписям меток.
-	@apply cursor-pointer;
-
-	// Горизонтальный — блочный, во всю ширину контейнера: ползунок меряют длиной
-	// хода, а не содержимым.
-	//
-	// Отступ вдоль оси — полстороны ручки: на краю хода ручка выступает ровно на
-	// столько. Поперёк — ореол: он и кольцо фокуса остаются внутри коробки
-	// ползунка, и их не срежет прокручиваемый контейнер вокруг (содержимое
-	// Popover), а полоса, в которой нажатие ведёт ручку, выходит выше и ниже
-	// самой ручки — пальцу нужна цель крупнее неё.
-	//
-	// Жест поперёк оси остаётся странице: пальцем по ползунку её можно листать,
-	// а ручку плагин ведёт только вдоль.
-	&--horizontal {
-		@apply flex;
-		padding-inline: calc(var(--so-slider-thumb-size) / 2);
-		padding-block: var(--so-slider-halo-size);
-		touch-action: pan-y;
-	}
-
-	// Вертикальный — строчный: несколько вертикальных ползунков встают в ряд,
-	// как полосы эквалайзера. Высота — своя (ниже), ширина — по полосе ручек и
-	// подписям меток. Отступы — те же, что у горизонтального, повёрнутые.
-	&--vertical {
-		@apply inline-flex flex-col;
-		padding-block: calc(var(--so-slider-thumb-size) / 2);
-		padding-inline: var(--so-slider-halo-size);
-		touch-action: pan-x;
-	}
-
-	// Дорожка — ход центров ручек. Сама она ничего не рисует: рельс — её
-	// псевдоэлемент, заливка и ручки — позиционированные дети. В потоке у неё
-	// только метки, и ради подписей: ползунок растёт на них поперёк оси, а не
-	// наезжает подписями на соседей. Сетка — чтобы все метки легли в одну
-	// ячейку и её размер шёл по самой крупной подписи.
-	&__track {
-		@apply relative grid;
-		flex: 1 1 0;
-	}
-
-	// Рельс — от края до края корня: за края хода выходит на полстороны ручки,
-	// и ручка на краю лежит на нём, а не свисает. Скругление уходит под ручку.
+	// Рельс — псевдоэлемент дорожки. Скругление уходит под ручку.
 	&__track::before {
-		content: '';
-		@apply absolute rounded-full;
+		@apply rounded-full;
 		@apply transition-colors duration-150;
 		background-color: var(--so-slider-rail);
-	}
-
-	&--horizontal > #{$this}__track {
-		min-inline-size: 0;
-		// Полоса ручек: рельс, точки меток и ручки лежат по её центру.
-		min-block-size: var(--so-slider-thumb-size);
-
-		&::before {
-			inset-inline: calc(var(--so-slider-thumb-size) / -2);
-			inset-block-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
-			block-size: var(--so-slider-rail-size);
-		}
-	}
-
-	&--vertical > #{$this}__track {
-		min-block-size: 0;
-		min-inline-size: var(--so-slider-thumb-size);
-
-		&::before {
-			inset-block: calc(var(--so-slider-thumb-size) / -2);
-			inset-inline-start: calc(
-				(var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2
-			);
-			inline-size: var(--so-slider-rail-size);
-		}
 	}
 
 	// Наведение на ползунок — рельс отходит от поверхности на шаг: нажатие в
@@ -127,10 +34,10 @@
 		background-color: var(--so-slider-rail-hover);
 	}
 
-	// Заливка — от `--so-slider-range-start` до `--so-slider-range-end`, тем же
-	// цветом, что кромка ручки: ручка читается концом заливки.
+	// Заливка — тем же цветом, что кромка ручки: ручка читается концом
+	// заливки.
 	&__range {
-		@apply absolute rounded-full;
+		@apply rounded-full;
 		background-color: var(--so-slider-fill);
 		// Список переходов — явно, как у ручки: с умолчанием `all` края ехали
 		// переходом и при протяжке, и без движения, и заливка догоняла ручку.
@@ -140,68 +47,24 @@
 		transition-timing-function: ease-out;
 	}
 
-	&--horizontal #{$this}__range {
-		inset-block-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
-		block-size: var(--so-slider-rail-size);
-		inset-inline-start: calc(
-			var(--so-slider-range-start, 0%) - #{mixines.reach(var(--so-slider-range-start, 0%))}
-		);
-		inset-inline-end: calc(
-			100% - var(--so-slider-range-end, 0%) -
-				#{mixines.reach(calc(100% - var(--so-slider-range-end, 0%)))}
-		);
-	}
-
-	&--vertical #{$this}__range {
-		inset-inline-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
-		inline-size: var(--so-slider-rail-size);
-		inset-block-end: calc(
-			var(--so-slider-range-start, 0%) - #{mixines.reach(var(--so-slider-range-start, 0%))}
-		);
-		inset-block-start: calc(
-			100% - var(--so-slider-range-end, 0%) -
-				#{mixines.reach(calc(100% - var(--so-slider-range-end, 0%)))}
-		);
-	}
-
-	// Ручка — центром на своей позиции: полстороны назад логическим полем, в RTL
-	// оно само встаёт с другой стороны.
-	//
-	// Поверхность и тень — те же, что у ручки Switch (`--so-component-knob` и
-	// `shadow-md`): ручка контрола — одна роль, и тень у неё одна. Кромка — цвет
-	// заливки. Ореол — вуаль вокруг кромки: кольцо `ring` ложится в одну тень с
-	// `shadow-md` и её не перебивает.
-	//
-	// Содержимое — по центру ручки, флексом: от этого места подсказка со
-	// значением и считает своё вдоль оси (см. `__tooltip`).
+	// Поверхность и тень ручки — те же, что у ручки Switch
+	// (`--so-component-knob` и `shadow-md`): ручка контрола — одна роль, и тень
+	// у неё одна. Кромка — цвет заливки. Ореол — вуаль вокруг кромки: кольцо
+	// `ring` ложится в одну тень с `shadow-md` и её не перебивает. Ширина
+	// ореола — отступ корня поперёк оси, треть стороны ручки
+	// (`--so-slider-halo-size`, общий слой тем). Без наведения и
+	// перетаскивания ореола нет: кольцо нулевой ширины.
 	&__thumb {
-		@apply absolute flex items-center justify-center;
 		@apply rounded-full border-solid;
 		@apply bg-so-component-knob shadow-md;
-		@apply cursor-grab;
 		@apply ring-(length:--so-slider-halo) ring-(--so-slider-halo-color);
 		--so-slider-halo: 0px;
 		--so-slider-halo-color: transparent;
-		z-index: 1;
-		inline-size: var(--so-slider-thumb-size);
-		block-size: var(--so-slider-thumb-size);
 		border-width: var(--so-slider-thumb-border);
 		border-color: var(--so-slider-fill);
 		transition-property: box-shadow;
 		transition-duration: 150ms;
 		transition-timing-function: ease-out;
-	}
-
-	&--horizontal #{$this}__thumb {
-		inset-block-start: 0;
-		inset-inline-start: var(--so-slider-position, 0%);
-		margin-inline-start: calc(var(--so-slider-thumb-size) / -2);
-	}
-
-	&--vertical #{$this}__thumb {
-		inset-inline-start: 0;
-		inset-block-end: var(--so-slider-position, 0%);
-		margin-block-end: calc(var(--so-slider-thumb-size) / -2);
 	}
 
 	// Наведение на ручку — ореол. Только там, где нажатие что-то сделает.
@@ -210,16 +73,10 @@
 		--so-slider-halo-color: var(--so-slider-halo-hover);
 	}
 
-	// Тянут эту ручку — ореол плотнее. Две ручки на одном значении лежат друг
-	// на друге, и сверху та, что тянут или в фокусе: её и видно, её и
-	// двигают клавиши.
+	// Тянут эту ручку — ореол плотнее.
 	&__thumb[data-dragging='true'] {
 		--so-slider-halo: var(--so-slider-halo-size);
 		--so-slider-halo-color: var(--so-slider-halo-active);
-	}
-
-	&__thumb:is([data-dragging='true'], :focus-within) {
-		z-index: 2;
 	}
 
 	// Кольцо фокуса — на ручке: фокус у поля внутри неё, а поле невидимо.
@@ -227,184 +84,82 @@
 		@apply outline-2 outline-offset-2 outline-so-component;
 	}
 
-	// Поле — во всю ручку и прозрачное: остаётся в дереве доступности и в
-	// порядке фокуса, и рамку курсора скринридер рисует по ручке, а не по точке
-	// в её углу (так же поле лежит в коробке CheckBox). Указатель оно не ловит:
-	// иначе браузер начал бы свой перетаск поверх плагина, и значение двигали бы
-	// двое.
-	&__input {
-		@apply absolute inset-0 m-0 p-0 size-full opacity-0;
-		@apply appearance-none pointer-events-none;
-	}
-
 	// Подсказка со значением — плашка подсказки (`mixins/_tooltip.scss`), та
 	// же, что у Tooltip, и одна на все размеры ползунка. Разметка рисует её,
 	// только когда подсказка включена.
-	//
-	// Вдоль оси подсказка стоит там, куда её поставил бы флекс ручки, — по
-	// центру: она позиционирована, но сдвига вдоль оси у неё нет, и остаётся
-	// статическое место. Так она едет за ручкой по построению — и в протяжке,
-	// и в переходе темы. Поперёк оси — за ореолом с зазором: ореол появляется
-	// под наведением и на плашку не заходит.
-	//
-	// Строка не переносится: ширина по содержимому у позиционированного узла
-	// упирается в ширину ручки, и число с подписью сложилось бы в столбец.
 	//
 	// Указатель подсказка не гасит. Наведение на неё — наведение на ручку, и
 	// курсор, перешедший на подсказку, её не прячет (WCAG 1.4.13). Нажатие на
 	// неё берёт ручку: плагин указателя ищет ручку по `contains`.
 	&__tooltip {
-		@include tooltip.plate;
-		@apply absolute whitespace-nowrap;
+		@include tooltip.plate-look;
 	}
 
-	// Горизонтальный — над ручкой. Отступ считается от края ручки внутри
-	// кромки: `100%` — сторона ручки без кромок.
-	&--horizontal #{$this}__tooltip {
-		inset-block-end: calc(
-			100% + var(--so-slider-thumb-border) + var(--so-slider-halo-size) + var(--so-slider-gap)
-		);
-	}
-
-	// Вертикальный — сбоку, со стороны начала строки: с конца стоят подписи
-	// меток. Сторона логическая, и в RTL подсказка сама встаёт справа.
-	&--vertical #{$this}__tooltip {
-		inset-inline-end: calc(
-			100% + var(--so-slider-thumb-border) + var(--so-slider-halo-size) + var(--so-slider-gap)
-		);
-	}
-
-	// `auto` — подсказка видна, пока ручку наводят, держат, тянут или её поле в
-	// фокусе с клавиатуры. В покое она скрыта `visibility`, а не одной
-	// прозрачностью: невидимая плашка ловила бы наведение, и подсказка
-	// всплывала бы от курсора над пустым местом у ручки. Переход —
-	// прозрачностью, а `visibility` в списке переходов держит плашку видимой,
-	// пока она гаснет: курсор успевает перейти с ручки на подсказку.
-	// Прозрачность — не движение, и режим движения её не касается.
+	// `auto` — в покое плашку прячет общий слой тем (`visibility`), а здесь она
+	// гаснет и проявляется прозрачностью. `visibility` в списке переходов держит
+	// плашку видимой, пока она гаснет: курсор успевает перейти с ручки на
+	// подсказку. Прозрачность — не движение, и режим движения её не касается.
 	&--tooltip-auto #{$this}__tooltip {
-		@apply invisible opacity-0;
+		@apply opacity-0;
 		transition-property: opacity, visibility;
 		transition-duration: 150ms;
 		transition-timing-function: ease-out;
 	}
 
-	// «Тянут» — это и нажатие ручки. Плагин указателя захватывает указатель
-	// корнем, и наведение уходит с ручки на корень, а `data-dragging` ставит
-	// только первое движение. Нажатие (`:active`) остаётся у ручки: без него
-	// подсказка бросала бы ручку, которую держат, не сдвинув.
 	&--tooltip-auto
 		#{$this}__thumb:is([data-dragging='true'], :active, :has(> #{$this}__input:focus-visible))
 		> #{$this}__tooltip {
-		@apply visible opacity-100;
+		@apply opacity-100;
 	}
 
-	// Наведение — только там, где оно есть: после касания `:hover` залипает
-	// на ручке, и подсказка осталась бы висеть.
 	@media (hover: hover) {
 		&--tooltip-auto #{$this}__thumb:hover > #{$this}__tooltip {
-			@apply visible opacity-100;
+			@apply opacity-100;
 		}
 	}
 
-	// `always` — подсказка видна всегда, и горизонтальный держит под неё место
-	// над ручками, как под подписи меток под ними: подсказка остаётся в
-	// коробке ползунка, её не срежет прокручиваемый контейнер вокруг, и она не
-	// ляжет на соседа сверху. Место — под плашку в одну строку. Вертикальному
-	// место не держим: подсказка у него сбоку, а её ширины тема не знает.
-	&--horizontal#{$this}--tooltip-always {
-		padding-block-start: calc(
-			var(--so-slider-halo-size) + var(--so-slider-gap) + #{tooltip.$height}
-		);
+	// Точка метки на рельсе. На заливке — цветом ручки: вуаль той же ступени,
+	// что заливка, на ней невидима.
+	&__mark::before {
+		@apply rounded-full;
+		@apply transition-colors duration-150;
+		background-color: var(--so-slider-tick);
 	}
 
-	// Метки — в потоке дорожки и все в одной ячейке сетки; на свою позицию
-	// каждая сдвинута относительно, как ручка — абсолютно. Ячейка растёт по
-	// самой крупной подписи, и место под подписи ползунок держит сам.
-	&__marks {
-		@apply grid;
+	&__mark[data-in-range='true']::before {
+		background-color: color-mix(in oklab, var(--so-component-knob) 80%, transparent);
 	}
 
-	// Метка — нулевой протяжённости вдоль оси: её середина и есть позиция, а
-	// точка и подпись встают по центру выравниванием флекса и выходят в обе
-	// стороны поровну.
-	&__mark {
-		@apply relative flex;
-		grid-area: 1 / 1;
-
-		// Точка на рельсе. На заливке — цветом ручки: вуаль той же ступени, что
-		// заливка, на ней невидима.
-		&::before {
-			content: '';
-			@apply shrink-0 rounded-full;
-			@apply transition-colors duration-150;
-			inline-size: var(--so-slider-tick-size);
-			block-size: var(--so-slider-tick-size);
-			background-color: var(--so-slider-tick);
-		}
-
-		&[data-in-range='true']::before {
-			background-color: color-mix(in oklab, var(--so-component-knob) 80%, transparent);
-		}
-
-		// Щелчок: кольцо цвета заливки расходится от ручки, которая встала на
-		// метку при перетаскивании (анимация — ниже, в надстройке движения). В
-		// покое кольца нет.
-		&::after {
-			content: '';
-			@apply absolute rounded-full pointer-events-none opacity-0;
-			inline-size: var(--so-slider-thumb-size);
-			block-size: var(--so-slider-thumb-size);
-			margin-inline-start: calc(var(--so-slider-thumb-size) / -2);
-			margin-block-start: calc(var(--so-slider-thumb-size) / -2);
-			border: var(--so-slider-thumb-border) solid var(--so-slider-fill);
-		}
+	// Щелчок: кольцо цвета заливки расходится от ручки, которая встала на
+	// метку при перетаскивании (анимация — ниже, в надстройке движения). В
+	// покое кольца нет. Кольцо — облик темы целиком: без него у метки только
+	// точка и подпись.
+	&__mark::after {
+		content: '';
+		@apply absolute rounded-full pointer-events-none opacity-0;
+		inline-size: var(--so-slider-thumb-size);
+		block-size: var(--so-slider-thumb-size);
+		margin-inline-start: calc(var(--so-slider-thumb-size) / -2);
+		margin-block-start: calc(var(--so-slider-thumb-size) / -2);
+		border: var(--so-slider-thumb-border) solid var(--so-slider-fill);
 	}
 
-	&--horizontal #{$this}__mark {
-		@apply flex-col items-center;
-		justify-self: start;
-		inline-size: 0;
-		inset-inline-start: var(--so-slider-position, 0%);
-
-		&::before {
-			margin-block: calc((var(--so-slider-thumb-size) - var(--so-slider-tick-size)) / 2);
-		}
-
-		&::after {
-			inset-inline-start: 0;
-			inset-block-start: calc(var(--so-slider-thumb-size) / 2);
-		}
+	&--horizontal #{$this}__mark::after {
+		inset-inline-start: 0;
+		inset-block-start: calc(var(--so-slider-thumb-size) / 2);
 	}
 
-	&--vertical #{$this}__mark {
-		@apply flex-row items-center;
-		align-self: end;
-		block-size: 0;
-		inset-block-end: var(--so-slider-position, 0%);
-
-		&::before {
-			margin-inline: calc((var(--so-slider-thumb-size) - var(--so-slider-tick-size)) / 2);
-		}
-
-		&::after {
-			inset-inline-start: calc(var(--so-slider-thumb-size) / 2);
-			inset-block-start: 0;
-		}
+	&--vertical #{$this}__mark::after {
+		inset-inline-start: calc(var(--so-slider-thumb-size) / 2);
+		inset-block-start: 0;
 	}
 
 	// Подпись метки — приглушённый текст; внутри заливки — основной, на метке
 	// под ручкой — текст варианта и плотнее. Жирность раскладку не двигает:
 	// подпись стоит по центру метки нулевой ширины и растёт в обе стороны.
-	//
-	// Пустая подпись места не занимает: метка без подписи — одна точка.
 	&__mark-label {
-		@apply whitespace-nowrap text-so-neutral-500;
+		@apply text-so-neutral-500;
 		@apply transition-colors duration-150;
-		@include mixines.slider-mark-text('normal');
-
-		&:empty {
-			@apply hidden;
-		}
 	}
 
 	&__mark[data-in-range='true'] > #{$this}__mark-label {
@@ -416,33 +171,9 @@
 		color: var(--so-slider-current-text);
 	}
 
-	&--horizontal #{$this}__mark-label {
-		margin-block-start: var(--so-slider-gap);
-	}
-
-	&--vertical #{$this}__mark-label {
-		margin-inline-start: var(--so-slider-gap);
-	}
-
-	// Идёт перетаскивание — рука сжата, где бы над ползунком ни был указатель.
-	&[data-dragging='true'],
-	&[data-dragging='true'] * {
-		@apply cursor-grabbing;
-	}
-
-	// Disabled читается из `data-disabled`: ядро пишет его на корне при любом
-	// теге. Гаснет ползунок целиком.
-	&[data-disabled='true'] {
-		@apply opacity-so-component-disabled cursor-default pointer-events-none;
-	}
-
-	@each $size, $_ in mixines.$sizes {
+	@each $size, $border in mixines.$borders {
 		&--size-#{$size} {
-			@include mixines.slider-size($size);
-
-			#{$this}__mark-label {
-				@include mixines.slider-mark-text($size);
-			}
+			--so-slider-thumb-border: #{$border};
 		}
 	}
 
@@ -466,22 +197,6 @@
 // споря с ней.
 :where(.so-slider) {
 	@include mixines.slider-colors('neutral');
-}
-
-// Длина по умолчанию — нулевой специфичности: класс или стиль потребителя её
-// перекрывает, не споря.
-//
-// У горизонтального — нижняя граница, та же, что у поля Input (`min-w-40`): в
-// форме они стоят рядом. Своего содержимого по ширине у ползунка нет — всё
-// внутри позиционировано, — и там, где ширину берут по содержимому (строчный
-// флекс, обёртка контрола в подписи `Label`), он схлопнулся бы в одну ручку.
-// У вертикального длины по содержимому нет вовсе, высота своя.
-:where(.so-slider--horizontal) {
-	@apply min-w-40;
-}
-
-:where(.so-slider--vertical) {
-	@apply h-40;
 }
 
 // Ход ручек и заливки — плавный: от клавиатуры и от смены значения кодом.
@@ -524,28 +239,6 @@
 		opacity: 0;
 		scale: 1.9;
 	}
-}
-
-// Ползунок в подписи `Label`. Обёртка контрола в подписи жмётся к началу строки
-// и берёт ширину по содержимому, а у ползунка своего содержимого по ширине нет:
-// он встал бы в свою нижнюю границу, какой бы широкой ни была подпись. Поэтому
-// горизонтальный ползунок забирает ширину подписи — под текстом и над ним
-// обёртка тянется поперёк столбца, рядом с текстом забирает остаток ряда.
-//
-// Растяжка поперёк — только в столбце: в ряду обёртка стоит по базовой линии
-// первой строки текста, и растяжка её бы сбила.
-.so-label:is(.so-label--position-top, .so-label--position-bottom)
-	> .so-label__control:has(> .so-slider--horizontal) {
-	align-self: stretch;
-}
-
-.so-label:not(.so-label--position-top, .so-label--position-bottom)
-	> .so-label__control:has(> .so-slider--horizontal) {
-	flex-grow: 1;
-}
-
-.so-label__control > .so-slider--horizontal {
-	flex: 1 1 auto;
 }
 
 // Принудительные цвета (высокий контраст Windows): браузер заменяет фоны

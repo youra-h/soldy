@@ -1,0 +1,141 @@
+/* ─── Rating ──────────────────────────────────────────────────
+ * Оценка звёздами: ползунок с одной ручкой, у которого шкала — ряд звёзд.
+ *
+ *   .so-rating                  корень — строчный
+ *     .so-rating__track         дорожка — ряд звёзд
+ *       .so-rating__star        звезда — ячейка ряда, в ней иконка пустой звезды
+ *         .so-rating__star-fill слой заливки — та же иконка, обрезанная по доле
+ *       .so-rating__thumb       ручка — невидимая, во весь ряд
+ *         .so-rating__input     поле — нативный range, прозрачный, во всю ручку
+ *
+ * Доля заливки звезды приходит от ядра переменной в `style` звезды:
+ * `--so-rating-fraction`, число от 0 до 1. Слой заливки — от начала строки на
+ * эту долю звезды: он обрезает иконку, а не сжимает её, и в RTL заливка сама
+ * идёт справа налево, без селектора по направлению. Иконка обоих слоёв — во
+ * всю звезду: и `svg` роли, и иконка из слота, у которой размер свой (шкала
+ * иконок, `components/icon.css`).
+ *
+ * Контракт с плагином указателя — как у Slider: коробка `__track` и есть
+ * шкала, 0 и 1 доли — её края по оси. Поэтому звёзды стоят в ней встык и
+ * равными ячейками, ничего сверх них в ряду нет: доля коробки ложится на
+ * звёзды без остатка, а половина звезды по указателю — ровно половина значка.
+ * Звезда — коробка иконки целиком, с полями, которые оставляет вокруг значка
+ * пакет: зазор между звёздами — поля соседних коробок, своего у ряда нет.
+ *
+ * Корень строчный: оценку ставят в строку текста — «4,5 ★★★★☆ (120)».
+ * Нажатие в любом месте ряда ставит оценку, протяжка не выделяет текст
+ * вокруг. Ручка — невидимая и во весь ряд: в ней поле, а на ней тема рисует
+ * кольцо фокуса — вокруг всех звёзд. Указатель ни она, ни поле не ловят:
+ * наведение и нажатие достаются звёздам и корню, где их ловят плагины. Только
+ * для показа — курсор обычный: нажатие оценку не меняет.
+ *
+ * Шкала размеров — сторона звезды, переменная корня документа по размеру
+ * (`sm`…`2xl`); блок берёт ступень своего размера в `--so-rating-star-size`.
+ * Умолчания — числа темы oren, тема задаёт свои на корне документа.
+ *
+ * Облик — цвет пустой и залитой звезды, вид ошибки, подъём звезды под
+ * указателем, кольцо фокуса и вид в режиме принудительных цветов — рисует
+ * тема. */
+
+:root {
+	--so-rating-star-size-sm: 1.25rem;
+	--so-rating-star-size-normal: 1.5rem;
+	--so-rating-star-size-lg: 1.75rem;
+	--so-rating-star-size-xl: 2rem;
+	--so-rating-star-size-2xl: 2.25rem;
+}
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
+ * без него обязан выглядеть умолчанием. */
+.so-rating {
+	--so-rating-star-size: var(--so-rating-star-size-normal);
+	display: inline-flex;
+	vertical-align: middle;
+	-webkit-user-select: none;
+	user-select: none;
+	cursor: pointer;
+}
+
+.so-rating__track {
+	position: relative;
+	display: flex;
+}
+
+.so-rating__star {
+	position: relative;
+	display: flex;
+	flex-shrink: 0;
+	inline-size: var(--so-rating-star-size);
+	block-size: var(--so-rating-star-size);
+}
+
+.so-rating__star-fill {
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: 0;
+	display: flex;
+	inline-size: calc(var(--so-rating-fraction, 0) * 100%);
+	overflow: hidden;
+}
+
+/* Слой заливки уже звезды, и иконка в нём не сжимается. */
+.so-rating__star > :not(.so-rating__star-fill),
+.so-rating__star > .so-rating__star-fill > * {
+	flex: none;
+	inline-size: var(--so-rating-star-size);
+	block-size: var(--so-rating-star-size);
+}
+
+.so-rating__thumb {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.so-rating__input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	appearance: none;
+	pointer-events: none;
+}
+
+.so-rating--readonly {
+	cursor: default;
+}
+
+/* Выключенная — `data-disabled`: ядро пишет его на корне при любом теге.
+ * Гаснет оценка целиком (`disabled.css`) и нажатий не ловит. */
+.so-rating[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+	pointer-events: none;
+}
+
+.so-rating[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+.so-rating--size-sm {
+	--so-rating-star-size: var(--so-rating-star-size-sm);
+}
+
+.so-rating--size-normal {
+	--so-rating-star-size: var(--so-rating-star-size-normal);
+}
+
+.so-rating--size-lg {
+	--so-rating-star-size: var(--so-rating-star-size-lg);
+}
+
+.so-rating--size-xl {
+	--so-rating-star-size: var(--so-rating-star-size-xl);
+}
+
+.so-rating--size-2xl {
+	--so-rating-star-size: var(--so-rating-star-size-2xl);
+}

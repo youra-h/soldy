@@ -1,0 +1,482 @@
+/* ─── Slider ──────────────────────────────────────────────────
+ * Ползунок: одна или несколько ручек на рельсе, заливка и метки.
+ *
+ *   .so-slider                  корень — ось, отступы под края хода и ореол
+ *     .so-slider__track         дорожка — ход центров ручек; рельс — её `::before`
+ *       .so-slider__range       заливка
+ *       .so-slider__marks       метки — все в одной ячейке сетки
+ *         .so-slider__mark      метка — точка на рельсе (`::before`) и подпись
+ *           .so-slider__mark-label  подпись метки
+ *       .so-slider__thumb       ручка
+ *         .so-slider__input     поле — нативный range, прозрачный, во всю ручку
+ *         .so-slider__tooltip   подсказка со значением
+ *
+ * Всё, что зависит от значения, — позиции — приходит от ядра переменными в
+ * `style` узла, процентом от начала оси и уже с учётом `inverted`:
+ * `--so-slider-position` у ручки и у метки — где её центр,
+ * `--so-slider-range-start` и `--so-slider-range-end` у заливки — её края.
+ * Ось раскладывается только логическими свойствами: горизонталь — от начала
+ * строки (`inset-inline-start`), и в RTL ползунок разворачивается сам, без
+ * селектора по направлению; вертикаль — снизу вверх (`inset-block-end`). Ни
+ * одного `translate`: у сдвига нет логических направлений. Центруют поля и
+ * выравнивание флекса.
+ *
+ * Контракт с плагином указателя: коробка `__track` — ход центров ручек, 0 % и
+ * 100 % — её края по оси, мерить надо её. На краю хода ручка выступает за
+ * коробку на полстороны; рельс лежит и там, но псевдоэлементом — коробку он
+ * не сдвигает, а место под полстороны корень держит отступом вдоль оси.
+ * Поперёк оси отступ — ореол ручки, треть её стороны: ореол и кольцо фокуса
+ * остаются внутри коробки ползунка, и их не срежет прокручиваемый контейнер
+ * вокруг, а полоса, в которой нажатие ведёт ручку, выходит выше и ниже самой
+ * ручки — пальцу нужна цель крупнее неё. Жест поперёк оси остаётся странице.
+ *
+ * Горизонтальный — блочный, во всю ширину контейнера: ползунок меряют длиной
+ * хода. Вертикальный — строчный: несколько вертикальных встают в ряд, как
+ * полосы эквалайзера. Длина по умолчанию — нулевой специфичности: у
+ * горизонтального — нижняя граница, та же, что у поля Input
+ * (`--so-input-min-width`): в форме они стоят рядом, а своего содержимого по
+ * ширине у ползунка нет, и там, где ширину берут по содержимому, он схлопнулся
+ * бы в одну ручку; у вертикального длины по содержимому нет вовсе, высота
+ * своя.
+ *
+ * Дорожка в потоке держит только метки — ради подписей: ползунок растёт на них
+ * поперёк оси, а не наезжает подписями на соседей. Метки — все в одной ячейке
+ * сетки, и ячейка растёт по самой крупной подписи; на свою позицию каждая
+ * сдвинута относительно. Метка — нулевой протяжённости вдоль оси: её середина
+ * и есть позиция, а точка и подпись встают по центру и выходят в обе стороны
+ * поровну. Пустая подпись места не занимает: метка без подписи — одна точка.
+ * Кегль подписей — справка при контроле из шкалы подписи (`caption.css`).
+ *
+ * Свой слой (`isolation`): ручки подняты над заливкой и метками (`z-index`),
+ * но поверх соседей по странице этот подъём не выходит. Две ручки на одном
+ * значении лежат друг на друге, и сверху та, что тянут или в фокусе: её и
+ * видно, её и двигают клавиши. Поле — во всю ручку и прозрачное: остаётся в
+ * дереве доступности и в порядке фокуса, а указатель не ловит — иначе
+ * браузер начал бы свой перетаск поверх плагина. Нажатие в любом месте
+ * ползунка ведёт к нему ближнюю ручку, протяжка не выделяет текст, а пока
+ * тянут, рука сжата, где бы над ползунком ни был указатель.
+ *
+ * Подсказка со значением — плашка подсказки, та же, что у Tooltip
+ * (`components/tooltip.css`: поля и строка плашки — его переменные). Она
+ * позиционирована, но сдвига вдоль оси у неё нет: остаётся статическое место
+ * по центру ручки, и она едет за ручкой по построению. Поперёк оси — за
+ * ореолом с зазором подписей, у горизонтального — над ручкой, у вертикального
+ * — со стороны начала строки: с конца стоят подписи меток. Отступ считается
+ * от края ручки внутри кромки, поэтому кромку, которую рисует тема, он
+ * прибавляет (`--so-slider-thumb-border`, контракт; без темы — 0). Строка не
+ * переносится: ширина по содержимому у позиционированного узла упирается в
+ * ширину ручки. `auto` — подсказка видна, пока ручку наводят, держат, тянут
+ * или её поле в фокусе с клавиатуры; в покое скрыта `visibility`: невидимая
+ * плашка ловила бы наведение. «Тянут» — это и нажатие ручки: захват указателя
+ * уводит наведение на корень, а `data-dragging` ставит только первое
+ * движение. Наведение — только там, где оно есть: после касания `:hover`
+ * залипает. `always` — видна всегда, и горизонтальный держит под неё место над
+ * ручками, под плашку в одну строку; вертикальному место не держит — его
+ * подсказка сбоку, а её ширины никто не знает.
+ *
+ * Шкала размеров — переменные корня документа по размеру (`sm`…`2xl`):
+ * сторона ручки, толщина рельса и заливки, зазор подписей и подсказки от
+ * полосы ручек. Блок берёт ступень своего размера в `--so-slider-thumb-size`,
+ * `--so-slider-rail-size` и `--so-slider-gap`, и части считают от них: точка
+ * метки — половина рельса и пиксель сверху, ореол — треть ручки. По стороне
+ * ручки встаёт и подпись Field сбоку (`components/field.css`), а толщину
+ * рельса берёт полоса ProgressLinear. Длина вертикального — тоже переменная
+ * корня. Умолчания — числа темы oren; тема задаёт свои на корне документа.
+ *
+ * Облик — цвет рельса, заливки, ручки и точек, скругления, кромка, тень и
+ * ореол ручки, кольцо фокуса, вид плашки, цвет и начертание подписей, щелчок
+ * к метке, ход ручки переходом и вид в режиме принудительных цветов — рисует
+ * тема. */
+
+:root {
+	--so-slider-thumb-size-sm: 0.875rem;
+	--so-slider-thumb-size-normal: 1.125rem;
+	--so-slider-thumb-size-lg: 1.375rem;
+	--so-slider-thumb-size-xl: 1.625rem;
+	--so-slider-thumb-size-2xl: 1.875rem;
+
+	--so-slider-rail-size-sm: 0.25rem;
+	--so-slider-rail-size-normal: 0.375rem;
+	--so-slider-rail-size-lg: 0.5rem;
+	--so-slider-rail-size-xl: 0.625rem;
+	--so-slider-rail-size-2xl: 0.75rem;
+
+	--so-slider-gap-sm: 0.25rem;
+	--so-slider-gap-normal: 0.25rem;
+	--so-slider-gap-lg: 0.375rem;
+	--so-slider-gap-xl: 0.375rem;
+	--so-slider-gap-2xl: 0.5rem;
+
+	--so-slider-length: 10rem;
+}
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
+ * без него обязан выглядеть умолчанием. */
+.so-slider {
+	--so-slider-thumb-size: var(--so-slider-thumb-size-normal);
+	--so-slider-rail-size: var(--so-slider-rail-size-normal);
+	--so-slider-gap: var(--so-slider-gap-normal);
+	--so-slider-tick-size: calc(var(--so-slider-rail-size) / 2 + 1px);
+	--so-slider-halo-size: calc(var(--so-slider-thumb-size) / 3);
+	position: relative;
+	isolation: isolate;
+	-webkit-user-select: none;
+	user-select: none;
+	cursor: pointer;
+}
+
+.so-slider--horizontal {
+	display: flex;
+	padding-inline: calc(var(--so-slider-thumb-size) / 2);
+	padding-block: var(--so-slider-halo-size);
+	touch-action: pan-y;
+}
+
+.so-slider--vertical {
+	display: inline-flex;
+	flex-direction: column;
+	padding-block: calc(var(--so-slider-thumb-size) / 2);
+	padding-inline: var(--so-slider-halo-size);
+	touch-action: pan-x;
+}
+
+.so-slider__track {
+	position: relative;
+	display: grid;
+	flex: 1 1 0;
+}
+
+/* Рельс — от края до края корня: за края хода выходит на полстороны ручки, и
+ * ручка на краю лежит на нём, а не свисает. */
+.so-slider__track::before {
+	content: '';
+	position: absolute;
+}
+
+/* Полоса ручек — высота дорожки: рельс, точки меток и ручки лежат по её
+ * центру. */
+.so-slider--horizontal > .so-slider__track {
+	min-inline-size: 0;
+	min-block-size: var(--so-slider-thumb-size);
+}
+
+.so-slider--horizontal > .so-slider__track::before {
+	inset-inline: calc(var(--so-slider-thumb-size) / -2);
+	inset-block-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+	block-size: var(--so-slider-rail-size);
+}
+
+.so-slider--vertical > .so-slider__track {
+	min-block-size: 0;
+	min-inline-size: var(--so-slider-thumb-size);
+}
+
+.so-slider--vertical > .so-slider__track::before {
+	inset-block: calc(var(--so-slider-thumb-size) / -2);
+	inset-inline-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+	inline-size: var(--so-slider-rail-size);
+}
+
+/* Заливка — от `--so-slider-range-start` до `--so-slider-range-end`, по
+ * рельсу. Край, упёршийся в край хода, заливка дотягивает под конец рельса —
+ * на полстороны ручки, иначе между концом рельса и нулём остался бы
+ * незалитый хвост; край внутри хода остаётся ровно на месте: у заливки между
+ * ручками он под ручкой, а у заливки от середины — на самой середине. Край у
+ * края хода `clamp()` отличает без признака от ядра: расстояние до края хода,
+ * умноженное на тысячу, у любого ненулевого процента больше полустороны
+ * ручки, и вынос — ноль, а у нулевого — полсторона. */
+.so-slider__range {
+	position: absolute;
+}
+
+.so-slider--horizontal .so-slider__range {
+	inset-block-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+	block-size: var(--so-slider-rail-size);
+	inset-inline-start: calc(
+		var(--so-slider-range-start, 0%) -
+			clamp(
+				0px,
+				var(--so-slider-thumb-size) / 2 - var(--so-slider-range-start, 0%) * 1000,
+				var(--so-slider-thumb-size) / 2
+			)
+	);
+	inset-inline-end: calc(
+		100% - var(--so-slider-range-end, 0%) -
+			clamp(
+				0px,
+				var(--so-slider-thumb-size) / 2 - (100% - var(--so-slider-range-end, 0%)) * 1000,
+				var(--so-slider-thumb-size) / 2
+			)
+	);
+}
+
+.so-slider--vertical .so-slider__range {
+	inset-inline-start: calc((var(--so-slider-thumb-size) - var(--so-slider-rail-size)) / 2);
+	inline-size: var(--so-slider-rail-size);
+	inset-block-end: calc(
+		var(--so-slider-range-start, 0%) -
+			clamp(
+				0px,
+				var(--so-slider-thumb-size) / 2 - var(--so-slider-range-start, 0%) * 1000,
+				var(--so-slider-thumb-size) / 2
+			)
+	);
+	inset-block-start: calc(
+		100% - var(--so-slider-range-end, 0%) -
+			clamp(
+				0px,
+				var(--so-slider-thumb-size) / 2 - (100% - var(--so-slider-range-end, 0%)) * 1000,
+				var(--so-slider-thumb-size) / 2
+			)
+	);
+}
+
+/* Ручка — центром на своей позиции: полстороны назад логическим полем, в RTL
+ * оно само встаёт с другой стороны. Содержимое — по центру ручки: от этого
+ * места подсказка считает своё вдоль оси. */
+.so-slider__thumb {
+	position: absolute;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--so-slider-thumb-size);
+	block-size: var(--so-slider-thumb-size);
+	cursor: grab;
+}
+
+.so-slider--horizontal .so-slider__thumb {
+	inset-block-start: 0;
+	inset-inline-start: var(--so-slider-position, 0%);
+	margin-inline-start: calc(var(--so-slider-thumb-size) / -2);
+}
+
+.so-slider--vertical .so-slider__thumb {
+	inset-inline-start: 0;
+	inset-block-end: var(--so-slider-position, 0%);
+	margin-block-end: calc(var(--so-slider-thumb-size) / -2);
+}
+
+.so-slider__thumb:is([data-dragging='true'], :focus-within) {
+	z-index: 2;
+}
+
+.so-slider__input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	opacity: 0;
+	appearance: none;
+	pointer-events: none;
+}
+
+.so-slider__tooltip {
+	position: absolute;
+	box-sizing: border-box;
+	padding: var(--so-tooltip-padding-block) var(--so-tooltip-padding-inline);
+	line-height: var(--so-tooltip-line);
+	white-space: nowrap;
+}
+
+.so-slider--horizontal .so-slider__tooltip {
+	inset-block-end: calc(
+		100% + var(--so-slider-thumb-border, 0px) + var(--so-slider-halo-size) +
+			var(--so-slider-gap)
+	);
+}
+
+.so-slider--vertical .so-slider__tooltip {
+	inset-inline-end: calc(
+		100% + var(--so-slider-thumb-border, 0px) + var(--so-slider-halo-size) +
+			var(--so-slider-gap)
+	);
+}
+
+.so-slider--tooltip-auto .so-slider__tooltip {
+	visibility: hidden;
+}
+
+.so-slider--tooltip-auto
+	.so-slider__thumb:is([data-dragging='true'], :active, :has(> .so-slider__input:focus-visible))
+	> .so-slider__tooltip {
+	visibility: visible;
+}
+
+@media (hover: hover) {
+	.so-slider--tooltip-auto .so-slider__thumb:hover > .so-slider__tooltip {
+		visibility: visible;
+	}
+}
+
+.so-slider--horizontal.so-slider--tooltip-always {
+	padding-block-start: calc(
+		var(--so-slider-halo-size) + var(--so-slider-gap) + var(--so-tooltip-line) + 2 *
+			var(--so-tooltip-padding-block)
+	);
+}
+
+.so-slider__marks {
+	display: grid;
+}
+
+.so-slider__mark {
+	position: relative;
+	display: flex;
+	grid-area: 1 / 1;
+}
+
+/* Точка на рельсе. */
+.so-slider__mark::before {
+	content: '';
+	flex-shrink: 0;
+	inline-size: var(--so-slider-tick-size);
+	block-size: var(--so-slider-tick-size);
+}
+
+.so-slider--horizontal .so-slider__mark {
+	flex-direction: column;
+	align-items: center;
+	justify-self: start;
+	inline-size: 0;
+	inset-inline-start: var(--so-slider-position, 0%);
+}
+
+.so-slider--horizontal .so-slider__mark::before {
+	margin-block: calc((var(--so-slider-thumb-size) - var(--so-slider-tick-size)) / 2);
+}
+
+.so-slider--vertical .so-slider__mark {
+	flex-direction: row;
+	align-items: center;
+	align-self: end;
+	block-size: 0;
+	inset-block-end: var(--so-slider-position, 0%);
+}
+
+.so-slider--vertical .so-slider__mark::before {
+	margin-inline: calc((var(--so-slider-thumb-size) - var(--so-slider-tick-size)) / 2);
+}
+
+.so-slider__mark-label {
+	white-space: nowrap;
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
+}
+
+.so-slider__mark-label:empty {
+	display: none;
+}
+
+.so-slider--horizontal .so-slider__mark-label {
+	margin-block-start: var(--so-slider-gap);
+}
+
+.so-slider--vertical .so-slider__mark-label {
+	margin-inline-start: var(--so-slider-gap);
+}
+
+.so-slider[data-dragging='true'],
+.so-slider[data-dragging='true'] * {
+	cursor: grabbing;
+}
+
+/* Выключенный — `data-disabled`: ядро пишет его на корне при любом теге.
+ * Гаснет ползунок целиком (`disabled.css`) и нажатий не ловит. */
+.so-slider[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+	pointer-events: none;
+}
+
+.so-slider[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+.so-slider--size-sm {
+	--so-slider-thumb-size: var(--so-slider-thumb-size-sm);
+	--so-slider-rail-size: var(--so-slider-rail-size-sm);
+	--so-slider-gap: var(--so-slider-gap-sm);
+}
+
+.so-slider--size-sm .so-slider__mark-label {
+	font-size: var(--so-caption-note-font-size-sm);
+	line-height: var(--so-caption-note-line-height-sm);
+}
+
+.so-slider--size-normal {
+	--so-slider-thumb-size: var(--so-slider-thumb-size-normal);
+	--so-slider-rail-size: var(--so-slider-rail-size-normal);
+	--so-slider-gap: var(--so-slider-gap-normal);
+}
+
+.so-slider--size-normal .so-slider__mark-label {
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
+}
+
+.so-slider--size-lg {
+	--so-slider-thumb-size: var(--so-slider-thumb-size-lg);
+	--so-slider-rail-size: var(--so-slider-rail-size-lg);
+	--so-slider-gap: var(--so-slider-gap-lg);
+}
+
+.so-slider--size-lg .so-slider__mark-label {
+	font-size: var(--so-caption-note-font-size-lg);
+	line-height: var(--so-caption-note-line-height-lg);
+}
+
+.so-slider--size-xl {
+	--so-slider-thumb-size: var(--so-slider-thumb-size-xl);
+	--so-slider-rail-size: var(--so-slider-rail-size-xl);
+	--so-slider-gap: var(--so-slider-gap-xl);
+}
+
+.so-slider--size-xl .so-slider__mark-label {
+	font-size: var(--so-caption-note-font-size-xl);
+	line-height: var(--so-caption-note-line-height-xl);
+}
+
+.so-slider--size-2xl {
+	--so-slider-thumb-size: var(--so-slider-thumb-size-2xl);
+	--so-slider-rail-size: var(--so-slider-rail-size-2xl);
+	--so-slider-gap: var(--so-slider-gap-2xl);
+}
+
+.so-slider--size-2xl .so-slider__mark-label {
+	font-size: var(--so-caption-note-font-size-2xl);
+	line-height: var(--so-caption-note-line-height-2xl);
+}
+
+/* Длина по умолчанию — нулевой специфичности: класс или стиль потребителя её
+ * перекрывает, не споря. */
+:where(.so-slider--horizontal) {
+	min-width: var(--so-input-min-width);
+}
+
+:where(.so-slider--vertical) {
+	height: var(--so-slider-length);
+}
+
+/* Ползунок в подписи `Label`. Обёртка контрола в подписи жмётся к началу
+ * строки и берёт ширину по содержимому, а у ползунка своего содержимого по
+ * ширине нет: он встал бы в свою нижнюю границу, какой бы широкой ни была
+ * подпись. Поэтому горизонтальный ползунок забирает ширину подписи — под
+ * текстом и над ним обёртка тянется поперёк столбца, рядом с текстом забирает
+ * остаток ряда. Растяжка поперёк — только в столбце: в ряду обёртка стоит по
+ * базовой линии первой строки текста, и растяжка её бы сбила. */
+.so-label:is(.so-label--position-top, .so-label--position-bottom)
+	> .so-label__control:has(> .so-slider--horizontal) {
+	align-self: stretch;
+}
+
+.so-label:not(.so-label--position-top, .so-label--position-bottom)
+	> .so-label__control:has(> .so-slider--horizontal) {
+	flex-grow: 1;
+}
+
+.so-label__control > .so-slider--horizontal {
+	flex: 1 1 auto;
+}

@@ -946,13 +946,16 @@ input`), а правил на всё внутри части (`.so-x *`) нет:
 стенда под двумя листами темы (`packages/playground/AGENTS.md`, «Сравнение
 стилей»).
 
-Лента (`Scroller`) опирается на CSS темы — на снап `start` у элементов
-вьюпорта и на `scroll-padding-inline` вьюпорта шириной в подсказку у края: это
-окно, куда `TScrollerViewportPlugin` доводит элемент под фокусом с клавиатуры
-вместе с его элементом ленты — целиком, если тот не шире окна (сторожит
-`playground/vue/browser/scroller.spec.ts`). Ряд тегов `scroll` — так
-же, но его окно задаёт общий слой тем (`components/tags.css` в
-`@soldy-ui/theme-base`): `scroll-padding-inline` ряда — запас под кольцо
+Лента (`Scroller`) опирается на общий слой тем (`components/scroller.css` в
+`@soldy-ui/theme-base`) — на снап `start` у элементов вьюпорта и на
+`scroll-padding-inline` вьюпорта: шириной в подсказку у края, которую рисует
+тема, и не уже запаса под кольцо фокуса. Это окно, куда
+`TScrollerViewportPlugin` доводит элемент под фокусом с клавиатуры вместе с
+его элементом ленты — целиком, если тот не шире окна (сторожат
+`playground/vue/browser/scroller.spec.ts` и, без темы, — что лента встаёт на
+начало элемента, — `playground/vue/browser/theme-base-scales.spec.ts`). Ряд
+тегов `scroll` — так же, и его окно тоже задаёт общий слой тем
+(`components/tags.css`): `scroll-padding-inline` ряда — запас под кольцо
 фокуса, в поле Select ширина подсказки, которую рисует тема, — и тег под
 фокусом с клавиатуры туда доводит `TTagsScrollPlugin` (сторожат
 `playground/vue/browser/tags-overflow.spec.ts`,

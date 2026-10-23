@@ -1,40 +1,19 @@
 @use './mixins' as mixins;
 @use '../../mixins/motion';
 @use '../../mixins/veil';
+
+// Skeleton — заглушка на месте будущего содержимого.
+//
+// Структура — блочный корень, заглушка поверх содержимого во весь корень и
+// скрытое под ней содержимое — в общем слое тем (`components/skeleton.css` в
+// `@soldy-ui/theme-base`). Размера по шкале у заглушки нет: `size` у Skeleton
+// нет, ширину и высоту пишет библиотека. Здесь — облик: цвет заглушки, её
+// формы и анимации — значения наборов темы — и вид в режиме принудительных
+// цветов.
 .so-skeleton {
 	$this: &;
 
-	@apply relative block;
-
-	// скрываем всё содержимое slot, пока показывается placeholder
-	&:has(.so-skeleton__placeholder) > :not(.so-skeleton__placeholder) {
-		@apply opacity-0;
-	}
-
-	// size
-	&--size-sm {
-		@apply w-16 h-4;
-	}
-
-	&--size-normal {
-		@apply w-20 h-5;
-	}
-
-	&--size-lg {
-		@apply w-24 h-6;
-	}
-
-	&--size-xl {
-		@apply w-28 h-7;
-	}
-
-	&--size-2xl {
-		@apply w-32 h-8;
-	}
-
 	&__placeholder {
-		@apply absolute inset-0 z-10;
-
 		// shape
 		#{$this}--shape-rect & {
 			@apply rounded-none;

@@ -1,0 +1,127 @@
+/* ─── ProgressSpinner ─────────────────────────────────────────
+ * Индикатор выполнения кольцом: доля готового, когда она известна, и бег,
+ * когда неизвестна. Модель та же, что у ProgressLinear, своё у кольца —
+ * рисунок.
+ *
+ *   .so-progress-spinner        корень — строчный, диаметр кольца
+ *     svg.so-progress-spinner__ring  рисунок
+ *       .so-progress-spinner__track  дорожка — полное кольцо
+ *       .so-progress-spinner__range  дуга доли
+ *       .so-progress-spinner__runner бегущая дуга, пока доля неизвестна
+ *
+ * От ядра на корне приходят доля готового — `--so-progress-spinner-fraction`
+ * в `style`, число от 0 до 1, без единиц: длину дуги SVG меряет в долях
+ * окружности (`pathLength="1"` в разметке), и доля ложится в штрих как есть;
+ * пока кольцо бежит, переменной нет, — и `data-indeterminate`.
+ *
+ * Рисунок — SVG в разметке: дорожка и две дуги на одной окружности радиуса 7
+ * в поле 16 × 16. Окружности — только штрих: заливка у фигуры SVG по
+ * умолчанию сплошная, и кольцо стало бы кругом. Толщина — 2 в тех же
+ * единицах, восьмая часть диаметра, и кольцо ровно касается краёв поля: 7 +
+ * 2 / 2 = 8. Толщина — доля диаметра, а не пиксели: с диаметром она растёт
+ * сама, и у кольца, которому потребитель задал свой размер, тоже. За край
+ * поля рисунок не обрезается: кольцо касается его, и обрезка срезала бы
+ * сглаживание внешнего края.
+ *
+ * Дуги начинаются сверху: окружность SVG начинается справа, на трёх часах, и
+ * поворот рисунка на четверть назад ставит её начало на двенадцать. Идут они
+ * по часовой в любом направлении письма: кольцо читается как циферблат, а у
+ * кольца строки нет. Поворот — `transform`, а бег, который рисует тема, —
+ * свойство `rotate`: они складываются, и начало дуг от бега не зависит.
+ *
+ * Дуга доли — от начала кольца на долю готового. Промежуток штриха дополняет
+ * дугу до целой окружности, а не равен ей: на 100 % он нулевой, и браузер
+ * рисует кольцо сплошным, без шва на двенадцати. Доля неизвестна — дуга доли
+ * спрятана (`visibility`), а не убрана из отрисовки: когда бег снимут, тема
+ * ведёт её к доле от начала кольца переходом. Вместо неё — бегущая дуга: в
+ * покое она — всё кольцо, сплошным штрихом, как полная доля, а её бег — дугой
+ * в четверть кольца — движение, и его рисует тема.
+ *
+ * Строчный: кольцо встаёт в строку текста и во флекс кнопки рядом с текстом,
+ * и в сжатой кнопке не сжимается. Диаметр — нулевой специфичности: класс или
+ * стиль потребителя его перекрывает, не споря, и толщина вырастает вместе с
+ * ним.
+ *
+ * Диаметр по размеру — переменные корня документа (`sm`…`2xl`); блок берёт
+ * ступень своего размера в `--so-progress-spinner-size`. Умолчания — числа
+ * темы oren, тема задаёт свои на корне документа.
+ *
+ * Облик — цвет дорожки и дуг, переход доли, бег и мерцание и вид в режиме
+ * принудительных цветов — рисует тема. */
+
+:root {
+	--so-progress-spinner-size-sm: 0.75rem;
+	--so-progress-spinner-size-normal: 1rem;
+	--so-progress-spinner-size-lg: 1.25rem;
+	--so-progress-spinner-size-xl: 1.5rem;
+	--so-progress-spinner-size-2xl: 1.75rem;
+}
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
+ * без него обязан выглядеть умолчанием. */
+.so-progress-spinner {
+	--so-progress-spinner-size: var(--so-progress-spinner-size-normal);
+	display: inline-flex;
+	flex-shrink: 0;
+}
+
+.so-progress-spinner__ring {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	transform: rotate(-90deg);
+}
+
+.so-progress-spinner__track,
+.so-progress-spinner__range,
+.so-progress-spinner__runner {
+	fill: none;
+	stroke-width: 2;
+}
+
+.so-progress-spinner__range {
+	stroke-dasharray: var(--so-progress-spinner-fraction, 0)
+		calc(1 - var(--so-progress-spinner-fraction, 0));
+}
+
+.so-progress-spinner__runner {
+	visibility: hidden;
+	stroke-dasharray: 1 0;
+}
+
+.so-progress-spinner[data-indeterminate='true']
+	> .so-progress-spinner__ring
+	> .so-progress-spinner__range {
+	visibility: hidden;
+}
+
+.so-progress-spinner[data-indeterminate='true']
+	> .so-progress-spinner__ring
+	> .so-progress-spinner__runner {
+	visibility: visible;
+}
+
+.so-progress-spinner--size-sm {
+	--so-progress-spinner-size: var(--so-progress-spinner-size-sm);
+}
+
+.so-progress-spinner--size-normal {
+	--so-progress-spinner-size: var(--so-progress-spinner-size-normal);
+}
+
+.so-progress-spinner--size-lg {
+	--so-progress-spinner-size: var(--so-progress-spinner-size-lg);
+}
+
+.so-progress-spinner--size-xl {
+	--so-progress-spinner-size: var(--so-progress-spinner-size-xl);
+}
+
+.so-progress-spinner--size-2xl {
+	--so-progress-spinner-size: var(--so-progress-spinner-size-2xl);
+}
+
+:where(.so-progress-spinner) {
+	inline-size: var(--so-progress-spinner-size);
+	block-size: var(--so-progress-spinner-size);
+}

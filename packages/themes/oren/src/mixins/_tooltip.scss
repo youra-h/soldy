@@ -17,29 +17,16 @@
 //
 // Кегль меньше, чем у текста контролов: подсказка поясняет, а не называет.
 // Шкалы размеров нет — вид у плашки один, и у ползунка любого размера тоже.
-
-// Кегль и поля по вертикали — ступени утилит Tailwind. Из них складывается
-// высота плашки в одну строку.
-$text: 'sm';
-$pad-block: 1;
-
-// Высота плашки в одну строку: строка кегля и поля сверху и снизу. По ней
-// ползунок держит место над ручками под подсказку, которая видна всегда.
-$height: calc(
-	var(--text-#{$text}) * var(--text-#{$text}--line-height) + var(--spacing) * #{2 * $pad-block}
-);
-
-// Облик плашки. Её поля у Tooltip ставит общий слой тем
-// (`components/tooltip.css` в `@soldy-ui/theme-base`), у подсказки Slider,
-// чья структура ещё здесь, — `plate` с теми же числами: с переносом структуры
-// Slider они уйдут в общий слой.
+//
+// Структура плашки — её поля, строка и место — в общем слое тем: у Tooltip
+// (`components/tooltip.css` в `@soldy-ui/theme-base`), у подсказки Slider
+// (`components/slider.css` там же). Строку плашки задаёт общий слой
+// (`--so-tooltip-line`): по ней ползунок держит место над ручками под
+// подсказку, которая видна всегда, — поэтому кегль здесь без интерлиньяжа
+// утилиты, иначе строка разошлась бы с этим местом.
 @mixin plate-look {
 	@apply rounded-md;
-	@apply bg-so-neutral-800 text-so-neutral-50 text-#{$text};
+	@apply bg-so-neutral-800 text-so-neutral-50;
 	@apply outline outline-transparent;
-}
-
-@mixin plate {
-	@apply box-border px-2 py-#{$pad-block};
-	@include plate-look;
+	font-size: var(--text-sm);
 }
