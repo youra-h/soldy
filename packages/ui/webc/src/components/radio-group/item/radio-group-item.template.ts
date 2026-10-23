@@ -1,40 +1,14 @@
 /**
- * Шаблон радио.
- *
- * Корень — сам `<label is="so-radio-group-item">`: клик по подписи выбирает
- * радио, а подпись становится его доступным именем. Классы, `attrs` (`dir`) и
- * `dataset` (`data-selected`, `data-disabled`) раскладывает на него база
- * (`ElementBase`). Здесь — поле, кольцо с точкой и текст подписи, как у Vue.
- *
- * - Поле — нативный `<input type="radio">`, узел поля корня: на него база
- *   переносит статические атрибуты разметки корня (`id` для `<label for>`
- *   снаружи, `aria-label`, `data-*`), а шаблон кладёт `aria` ядра
- *   (`ownerAttributes`) и нативные `name`, `value` и `disabled` — ARIA-дублей
- *   им ядро не пишет. Группировку по общему `name` (его раздаёт плагин группы),
- *   стрелки по кругу, пропуск выключенных, одну остановку Tab и участие в
- *   форме даёт браузер. Стоит перед кольцом: кольцо фокуса тема рисует
- *   соседним селектором от поля.
- * - Отметку сообщает нативный `checked` — свойство узла: шаблон пишет его на
- *   смену активности и только если узел с ней расходится. Выбор пользователя
- *   приходит `change` поля: браузер уже отметил радио и снял отметку с соседа,
- *   коллекции остаётся сделать его активным — через контекст элемента фасада
- *   текущей связки. Выбор, в котором коллекция отказала, к модели возвращает
- *   плагин группы (`TRadioGroupCheckedPlugin`).
- * - Кольцо и точка — декор без текста. Подпись — только слот `default`:
- *   текста у радио нет. Вокруг слота нет пробелов: пустую обёртку тема прячет
- *   по `:empty`.
- *
- * Scope у слотов нет, как у всех слотов Web Components: отметку подпись берёт
- * у элемента (`el.state.active`).
+ * Шаблон радио: нативный `<input type="radio">` (поле корня), кольцо с точкой
+ * и текст подписи. Группировку по `name`, стрелки, Tab и форму даёт браузер.
+ * docs/architecture.md, Layer 8d, «Коллекция».
  */
 
 import type { IRadioGroupItem, TRadioGroupItemCollectionFacade } from '@soldy-ui/core'
 import { bind, ownerAttributes, type ITemplate } from '../../../adapter'
 
-/** Поле каждого радио — одно на всё время жизни элемента. */
 const fields = new WeakMap<HTMLElement, HTMLInputElement>()
 
-/** Нативный атрибут поля по значению: нет значения — атрибута нет. */
 function attribute(field: HTMLInputElement, name: string, value: unknown): void {
 	if (value === undefined || value === null) field.removeAttribute(name)
 	else field.setAttribute(name, String(value))
@@ -54,11 +28,12 @@ export const radioGroupItemTemplate: ITemplate<IRadioGroupItem, TRadioGroupItemC
 		indicator.className = 'so-radio-group-item__indicator'
 		text.className = 'so-radio-group-item__text'
 		control.appendChild(indicator)
+		// Поле перед кольцом: кольцо фокуса тема рисует соседним селектором от поля
 		root.append(field, control, text)
 		fields.set(root, field)
 
-		// Выбор пользователя — единственный путь к коллекции: плагина ввода у
-		// радио нет, и `change` поля разметка отдаёт ей сама, как `@change` у Vue
+		// Плагина ввода у радио нет, выбор в коллекцию несёт `change`; отказ
+		// коллекции к полю возвращает `TRadioGroupCheckedPlugin`
 		field.addEventListener('change', () => {
 			const context = ctx.facade?.context
 
@@ -72,7 +47,6 @@ export const radioGroupItemTemplate: ITemplate<IRadioGroupItem, TRadioGroupItemC
 	},
 
 	bindings: [
-		// Нативные атрибуты поля фиксированного тега — проводка разметки
 		bind(['name', 'value', 'disabled'], ({ root, state }) => {
 			const field = fields.get(root)
 
@@ -93,8 +67,7 @@ export const radioGroupItemTemplate: ITemplate<IRadioGroupItem, TRadioGroupItemC
 			const field = fields.get(root)
 			const checked = state.active === true
 
-			// Свойство узла — только если он разошёлся с моделью: после клика
-			// браузер уже отметил радио сам
+			// После клика браузер уже отметил радио сам
 			if (field && field.checked !== checked) field.checked = checked
 		}),
 	],

@@ -1,20 +1,7 @@
 /**
- * Шаблон группы меню, как `Group.vue` у Vue.
- *
- * Корень — сам `<div is="so-menu-group">`: классы и три набора ядра —
- * `role="group"` и `aria-labelledby` на подпись — раскладывает на него база
- * (`ElementBase`). Здесь — подпись: первый узел корня, пока `label` не пуст.
- * Нет подписи — нет и её узла, и ссылки на неё у группы тоже нет. Набор
- * подписи (`labelAria`) — её `id` — шаблон кладёт на её узел
- * (`ownerAttributes`): подпись — разметка без своего экземпляра.
- *
- * - Пункты — слот `default`: пункты разметки и пункты из данных, которые в
- *   группу ставит шаблон меню. В коллекцию меню они входят сквозь группу:
- *   движок меню находят лифтом вверх по документу, и навигация ходит по ним,
- *   как по одному списку. Встают они в конец корня — подпись остаётся первой.
- *
- * Разметка у группы переключателей та же (`menu-radio-group.template.ts`), и
- * подпись обе рисуют функциями этого модуля.
+ * Шаблон группы меню; его функции рисуют и группу переключателей. Подпись —
+ * первый узел корня, пока `label` не пуст: нет подписи — нет и ссылки на неё.
+ * Пункты встают в конец корня.
  */
 
 import type { IItemGroup, TAttributesMap } from '@soldy-ui/core'
@@ -23,7 +10,6 @@ import { bind, ownerAttributes, type ITemplate, type TTemplateParts } from '../.
 /** Узел подписи каждой группы — один на всё время жизни элемента. */
 const labels = new WeakMap<HTMLElement, HTMLElement>()
 
-/** Подпись группы — узел, который встаёт в корень с первым непустым `label`. */
 export function createGroup(root: HTMLElement): TTemplateParts {
 	const label = root.ownerDocument.createElement('div')
 
@@ -33,7 +19,6 @@ export function createGroup(root: HTMLElement): TTemplateParts {
 	return { slots: { default: { mode: 'append', node: root } } }
 }
 
-/** Текст подписи — первым узлом корня; пустой — подписи нет. */
 export function showLabel(root: HTMLElement, value: string | undefined): void {
 	const label = labels.get(root)
 
@@ -52,7 +37,7 @@ export function showLabel(root: HTMLElement, value: string | undefined): void {
 	if (root.firstChild !== label) root.prepend(label)
 }
 
-/** Набор подписи — её `id`, на который ссылается группа. */
+/** Подпись — разметка без своего экземпляра: её набор (`id`) держит группа. */
 export function labelAttributes(root: HTMLElement, set: TAttributesMap | undefined): void {
 	const label = labels.get(root)
 

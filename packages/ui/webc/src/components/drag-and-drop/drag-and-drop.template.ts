@@ -1,12 +1,4 @@
-/**
- * Шаблон DragAndDrop.
- *
- * Структуры нет: коллекции — слот `default` — остаются прямо в элементе, как
- * у окна `<so-virtual>`, а своей коробки у элемента нет (`displayContents`):
- * дети раскладываются его родителем, как будто обёртки нет, — у Vue и React у
- * неё нет и узла. Свой экземпляр коллекциям опускает сборка
- * (`setupDragAndDrop`), а не разметка, поэтому привязок нет.
- */
+/** Шаблон DragAndDrop: структуры и коробки нет (`displayContents`); экземпляр опускает сборка. */
 
 import type { IDragAndDrop } from '@soldy-ui/core'
 import type { ITemplate } from '../../adapter'

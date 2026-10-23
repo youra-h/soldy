@@ -1,44 +1,8 @@
 /**
- * Шаблон тоста.
- *
- * Корень — сам `<li is="so-toasts-item">`, место тоста в списке: высота места,
- * сдвиг жеста, уход и прозрачность (тема). Классы (вид сообщения
- * `so-toasts-item--type-*`), наборы `aria` (роль `status` или `alert`,
- * `tabindex` — фокус по F8 и Escape), `attrs` и `dataset` (`data-open`,
- * `data-swiping`) и скрытие раскладывает на него база (`ElementBase`). Сдвиг
- * во время жеста (`--so-swipe-offset`) плагин жеста пишет в корень сам. Здесь
- * — то же, что в разметке Vue, в том же порядке.
- *
- * - Глубина в стопке — переменная `--so-toasts-depth` корня из `order` фасада
- *   (место тоста в составе): в стопке передний — первый. Это запись разметки,
- *   как `:style` корня у Vue, и кладёт её шаблон (`ownerStyles`).
- * - Плашка `div.so-toasts-item__card` — то, что видно: поверхность, кромка,
- *   тень и кольцо фокуса корня. Отдельный узел: место растёт и схлопывается
- *   переходом высоты, а плашка своего размера не меняет.
- * - Коробка значка `span.so-toasts-item__icon` под `aria-hidden` стоит всегда,
- *   и в ней одно из трёх: пока тост ждёт (`loading`) — бегущее кольцо, деталь
- *   ProgressSpinner `toasts.spinner`, при любом виде и что бы ни стояло в
- *   слоте; задан слот `icon` — свой значок; иначе — значок вида по роли иконки
- *   (`<span is="so-icon" embedded="toasts.icon">`): `info`, `success`,
- *   `warning`, `error`, у обычного сообщения — `notification`. Слот выводит
- *   привязка (`showSlot`), кольцо и значок вида — шаблон: у скрытого узлов в
- *   документе нет.
- * - Текст — `div.so-toasts-item__body`: заголовок `div.so-toasts-item__text`
- *   (слот `default`, без него — `text` тоста), описание
- *   `div.so-toasts-item__description` (`description` тоста) и своё содержимое
- *   `div.so-toasts-item__content` (слот `content`, без него — то, что отдал
- *   `render` тоста: функция получает тост и отдаёт узел — кнопку «Отменить»,
- *   которая его закрывает). Пустую часть тема сворачивает по `:empty`.
- * - Крестик — деталь `<button is="so-button" embedded="toasts.close"
- *   type="button">` с классом `so-toasts-item__close`, последним в плашке —
- *   пока `closable`, а без него вне документа. Имя — набор `closeAria` (из
- *   локали вместе с текстом тоста), нажатие — `close()` инстанса текущей
- *   связки. В кнопке — слот `close-icon` или иконка роли `close`.
- *
- * Слоты тоста владелец задаёт копиями своих образцов `item-*`
- * (`TOASTS_ITEM_SLOTS`): тост — внутренняя часть, его рисует только регион.
- * Scope у слотов нет, как у всех слотов Web Components: тост и его вид копия
- * берёт у элемента тоста — `el.ctrl` ближайшего `.so-toasts-item`.
+ * Шаблон тоста: корень — место в списке, в нём плашка `so-toasts-item__card`
+ * (место схлопывается переходом высоты, плашка размера не меняет) с коробкой
+ * значка, текстом и крестиком-деталью. Пустую часть текста тема сворачивает по
+ * `:empty`.
  */
 
 import type { IToastsItem, TToastsItemCollectionFacade, TToastsItemType } from '@soldy-ui/core'
@@ -57,11 +21,7 @@ import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 import { TProgressSpinnerElement, type TProgressSpinnerElementProps } from '../../progress-spinner'
 
-/**
- * Значок вида — по роли, своей у каждого вида: в режиме принудительных цветов
- * вид различает только глиф. Таблица закрыта по виду (`satisfies`): новый вид
- * без своего значка не соберётся.
- */
+/** Роль на каждый вид: в принудительных цветах вид различает только глиф. */
 const TYPE_ICONS = {
 	info: 'info',
 	success: 'success',
@@ -69,17 +29,13 @@ const TYPE_ICONS = {
 	error: 'error',
 } satisfies Record<TToastsItemType, string>
 
-/** Значок обычного сообщения — тоста без вида. */
 const NOTIFICATION_ICON = 'notification'
 
-/** Части тоста — одни на всё время жизни элемента. */
 type TToastParts = {
 	readonly card: HTMLElement
-	/** Коробка значка. */
 	readonly box: HTMLElement
-	/** Кольцо ожидания. */
 	readonly spinner: TProgressSpinnerElementProps
-	/** Значок вида — без слота `icon`. */
+	/** `null`, когда задан слот `icon`. */
 	readonly glyph: TIconElementProps | null
 	readonly text: HTMLElement
 	readonly description: HTMLElement
@@ -89,7 +45,6 @@ type TToastParts = {
 
 const parts = new WeakMap<HTMLElement, TToastParts>()
 
-/** Узел — в коробке значка, пока он виден, и вне документа, пока нет. */
 function toggleIn(box: HTMLElement, node: HTMLElement | null, shown: boolean): void {
 	if (!node) return
 
@@ -128,16 +83,13 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 		content.className = 'so-toasts-item__content'
 		close.className = 'so-toasts-item__close'
 
-		// Размер и вариант кольцу разметка не передаёт: диаметр и цвет даёт тема
-		// по месту — коробке значка
+		// Размер и вариант кольцу не задаются: диаметр и цвет даёт тема по коробке значка
 		spinner.indeterminate = true
 
-		// Значок вида — только без слота `icon`: заданный слот заменяет его
 		const glyph = hasSlot('icon')
 			? null
 			: createDetail(ownerDocument, TIconElement, { embedded: 'toasts.icon' })
 
-		// Своя иконка крестика — только без слота `close-icon`
 		if (!hasSlot('close-icon')) {
 			lendRoleIcon(close, 'close', 'toasts.close-icon')
 		}
@@ -160,7 +112,6 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 	},
 
 	bindings: [
-		// Глубина в стопке — место тоста в составе
 		bind('order', ({ root, state }) => {
 			ownerStyles(
 				root,
@@ -168,8 +119,7 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 			)
 		}),
 
-		// Значок вида — по роли вида, у обычного сообщения — своя. Раньше, чем
-		// значок встанет в коробку: он собирается уже со своей ролью
+		// Раньше `loading`: значок встаёт в коробку уже со своей ролью
 		bind('type', ({ root, state }) => {
 			const glyph = parts.get(root)?.glyph
 
@@ -180,7 +130,6 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 			patch(glyph, { icon: role })
 		}),
 
-		// В коробке значка — кольцо, пока тост ждёт; иначе слот или значок вида
 		bind('loading', ({ root, state, showSlot }) => {
 			const own = parts.get(root)
 
@@ -193,7 +142,6 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 			toggleIn(own.box, own.glyph, !loading)
 		}),
 
-		// Текст — заголовку, пока он не задан слотом `default`
 		bind('text', ({ root, state, hasSlot }) => {
 			const text = parts.get(root)?.text
 			const value = state.text ?? ''
@@ -210,7 +158,6 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 			if (description && description.textContent !== value) description.textContent = value
 		}),
 
-		// Своё содержимое — узел от `render`, пока оно не задано слотом `content`
 		bind('render', ({ root, state, ctrl, hasSlot }) => {
 			const content = parts.get(root)?.content
 
@@ -221,7 +168,7 @@ export const toastsItemTemplate: ITemplate<IToastsItem, TToastsItemCollectionFac
 			content.replaceChildren(...(ctrl && isToastRender(render) ? [render(ctrl)] : []))
 		}),
 
-		// Крестик — последним в плашке, пока тост можно закрыть им
+		// Крестик — последним в плашке
 		bind(['closable', 'closeAria'], ({ root, state }) => {
 			const own = parts.get(root)
 

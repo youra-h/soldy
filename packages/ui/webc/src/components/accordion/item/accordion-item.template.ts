@@ -1,34 +1,7 @@
 /**
- * Шаблон секции Accordion.
- *
- * Корень — сам `<div is="so-accordion-item">`: классы, `attrs`, `dataset`
- * (тема раскрывает панель по `data-selected`) и место в коллекции (`order`)
- * раскладывает на него база (`ElementBase`). Здесь — заголовок и панель под
- * ним, как у Vue.
- *
- * - Заголовок — деталь
- *   `<button is="so-button" embedded="accordion.header" type="button">` с
- *   классом `so-accordion-item__header`, узел поля корня: на неё база
- *   переносит статические атрибуты разметки секции, а шаблон кладёт `aria`
- *   секции (`aria-expanded`, `id` и `aria-controls` на панель) верхним слоем
- *   её раскладчика. Слоты секции — свет заголовка (свет детали): `leading` —
- *   его `leading`, `header` — его `default`, `trailing` — его `trailing`, а без
- *   `header` заголовку уходит текст секции (`text`). Клик раскрывает или
- *   сворачивает секцию — через контекст элемента фасада текущей связки.
- * - Стрелка — в обёртке `span.so-accordion-item__arrow`, и класс стрелки на
- *   обёртке, а не на иконке: тема поворачивает стрелку раскрытой секции по
- *   ней, и иконка, подменённая слотом `leading-icon` или `trailing-icon`,
- *   поворачивается так же. Обёртка — край заголовка: в начале — первым узлом
- *   его `leading`, в конце — последним `trailing`; тема ждёт её ребёнком
- *   заголовка. Стоит обёртка, пока на её стороне стрелка по умолчанию
- *   (`arrowPlacement`) или задан её слот; без слота в ней — иконка роли
- *   `arrowRight`, `<span is="so-icon" embedded="accordion.arrow">`.
- * - Панель — `.so-accordion-item__body > .so-accordion-item__content` со
- *   слоем `contentAria` (`role="region"`, `id`, `aria-labelledby`): в ней слот
- *   `default`, содержимое секции.
- *
- * Scope у слотов нет, как у всех слотов Web Components: текст и раскрытость
- * содержимое слота берёт у элемента (`el.ctrl`, `el.state.selected`).
+ * Шаблон секции Accordion: заголовок — деталь Button (поле корня, слоты
+ * секции — его свет), панель под ним со слотом `default`.
+ * docs/architecture.md, Layer 8d, «Коллекция».
  */
 
 import type { IAccordionItem, TAccordionItemCollectionFacade } from '@soldy-ui/core'
@@ -45,13 +18,15 @@ import {
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** Обёртка стрелки на краю заголовка и стрелка по умолчанию в ней (без слота — `null`). */
+/**
+ * Класс стрелки — на обёртке, а не на иконке: тема поворачивает по ней и
+ * иконку из слота; обёртку она ждёт ребёнком заголовка.
+ */
 type TArrow = {
 	readonly wrapper: HTMLElement
 	readonly icon: TIconElementProps | null
 }
 
-/** Части секции — одни на всё время жизни элемента. */
 type TSectionParts = {
 	readonly header: TButtonElementProps
 	readonly start: TArrow
@@ -61,7 +36,6 @@ type TSectionParts = {
 
 const parts = new WeakMap<HTMLElement, TSectionParts>()
 
-/** Обёртка стрелки; без слота её стороны — со стрелкой роли `arrowRight` внутри. */
 function arrowOf(owner: Document, slotted: boolean): TArrow {
 	const wrapper = owner.createElement('span')
 
@@ -77,11 +51,7 @@ function arrowOf(owner: Document, slotted: boolean): TArrow {
 	return { wrapper, icon }
 }
 
-/**
- * Обёртка стрелки на краю заголовка — или её нет. Край — свет заголовка: до
- * его сборки обёртка встаёт в слот (`leading`, `trailing`), после — первым или
- * последним ребёнком кнопки, то есть туда же (`lend`).
- */
+/** `lend`: до сборки заголовка — в его слот, после — его краем, то есть туда же. */
 function edge(
 	header: TButtonElementProps,
 	arrow: TArrow,
@@ -138,8 +108,7 @@ export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemColl
 	},
 
 	bindings: [
-		// Пропсы деталей — только сменившиеся: `disabled` кнопки нативный, и
-		// каждая запись прошла бы через его атрибут
+		// Только сменившееся: `disabled` кнопки нативный, и запись прошла бы через атрибут
 		bind(['view', 'disabled', 'size', 'variant'], ({ root, state }) => {
 			const own = parts.get(root)
 
@@ -167,7 +136,6 @@ export const accordionItemTemplate: ITemplate<IAccordionItem, TAccordionItemColl
 			if (content) ownerAttributes(content, state.contentAria)
 		}),
 
-		// Текст секции — заголовку, пока он не задан слотом `header`
 		bind('text', ({ root, state, hasSlot }) => {
 			const header = parts.get(root)?.header
 			const text = state.text ?? ''

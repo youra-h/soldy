@@ -1,73 +1,8 @@
 /**
- * Шаблон DatePicker — поле даты и календарь в панели, как у Vue.
- *
- * Корень — сам `<div is="so-date-picker">`, якорь панели: классы (`--single`,
- * `--range`, `--clearable`), `attrs`, набор корня `rootAria` и `dataset`
- * (`data-open`, `data-disabled`) и скрытие раскладывает на него база
- * (`ElementBase`), `id` корня — привязка, как `:id="id"` у Vue. В корне стоит
- * разметка одного режима — по `mode`, — перед местом режима (пустой
- * комментарий), а за ним — панель.
- *
- * - Одна дата. Поле — деталь DateInput
- *   `<div is="so-date-input" embedded="date-picker.field">` с классом
- *   `so-date-picker__field` над полем одной даты DatePicker (`ctrl.field`).
- *   Поле — группа частей, поэтому имя DatePicker (`aria_label`,
- *   `aria_labelledBy`, `aria_describedBy`) уходит ему пропсами, а набор
- *   `aria` DatePicker — со ссылками поля формы и ошибкой — ложится на него
- *   слоем владельца, поверх его собственного (`ownerAttributes`). Кнопки
- *   очистки и календаря — в его слотах `clear` и `trailing`, в этом порядке:
- *   шаблон кладёт в оба метку (`lendMark`), и кнопки встают перед ней — до
- *   сборки поля в его свет, после — в обёртку у его конца (`lendBefore`).
- * - Диапазон: поле начала (`date-picker.start`), тире под `aria-hidden`, поле
- *   конца (`date-picker.end`) и кнопки — после поля конца, а не в его слоте:
- *   они работают со всем периодом. Имена концов — выходы плагина имён
- *   (`names_start`, `names_end`), пропом `aria_label` полей.
- * - Смена режима переставляет кнопки и вынимает разметку прежнего режима:
- *   поля — экземпляры DatePicker на всю жизнь, и детали над ними остаются за
- *   шаблоном, а вернувшись, собираются над теми же экземплярами.
- * - Кнопка очистки — DatePicker'а, одна на значение: по `clearable`,
- *   `<button is="so-button" embedded="date-picker.clear" type="button">` с
- *   иконкой роли `close`, размером DatePicker, выключена вместе с ним,
- *   `readonly` её не гасит; имя — набор `clearAria`, очищает команда
- *   DatePicker `clear` — у диапазона оба конца — по нативному клику, гася его
- *   всплытие. Своя кнопка — слот `clear` DatePicker'а на том же месте: свет
- *   элемента, команду она берёт у него (`el.ctrl.clear()`).
- * - Кнопка календаря — `date-picker.trigger` с классом
- *   `so-date-picker__trigger`: связка с панелью и имя — набор `triggerAria`,
- *   вид «нажат» — `triggerDataset`, одним слоем владельца; выключена, когда
- *   открыть нельзя (`openable`). Нажатие ловит плагин открытия на корне.
- *   Значок — слот `trigger-icon` в её слоте по умолчанию или иконка роли
- *   `calendar` без своего размера — по кеглю кнопки.
- * - Панель — деталь Frame `<div is="so-frame" embedded="date-picker.frame"
- *   tabindex="-1">` с классом `so-date-picker__panel`: телепорт, слой,
- *   привязка к корню (`fixed`, в 4 px от него) — неизменное шаблон пишет при
- *   построении. Открытость — `visible` панели, а не `rendered`: закрытая
- *   панель прячется, а не размонтируется. `rendered` панели шаблон не пишет:
- *   до увезённой панели скрытие корня не доходит, и прячет её база Frame по
- *   признаку поддерева DatePicker (`ElementBase`, «Поддерево»), как у Select.
- *   Наборы панели — `panelAria` (`role="dialog"`, `aria-modal`, имя, `id`),
- *   `panelDataset` (`data-swiping`) и пометка владельцем
- *   `dismiss_ownerAttribute` — одним слоем владельца.
- * - В панели — свет детали: полоса жеста `div.so-date-picker__handle` под
- *   `aria-hidden`, пока жест включён (`handleRendered`), — первой; обёртка
- *   содержимого `div.so-date-picker__content` — она прокручивается, а не
- *   панель; в ней — календарь, деталь Calendar
- *   `<div is="so-calendar" embedded="date-picker.calendar">` над календарём и
- *   движком DatePicker. Содержимое дня — образец `item` DatePicker'а, отданный
- *   календарю образцом под тем же именем (`lendTemplates`).
- * - Подвал — только при `confirmable`: «Отмена» (`date-picker.cancel`) и «OK»
- *   (`date-picker.confirm`) в слоте `footer` календаря, «Отмена» первой. Текст
- *   — строки локали, выходы плагина имён; «OK» выключена посреди диапазона
- *   (`confirmDisabled`). «Отмена» закрывает панель, «OK» — `confirm()`.
- *   Подвал у календаря Web Components — свет к построению: смена
- *   `confirmable` строит календарь панели заново, над теми же календарём и
- *   движком.
- *
- * Обработчиков открытия и закрытия, кроме кнопок подвала, у шаблона нет:
- * кнопка календаря и Alt+↓ — плагин открытия, нажатие мимо — закрытия, фокус,
- * Tab и Escape — плагин фокуса, жест — жеста. Scope у слотов нет, как у всех
- * слотов Web Components: значение и команды содержимое слота берёт у элемента
- * (`el.ctrl`), день — у элемента дня.
+ * Шаблон DatePicker: разметка режима (`mode`) — перед местом режима, за ним
+ * панель — деталь Frame с календарём. Поля и календарь — экземпляры DatePicker
+ * на всю жизнь: при смене режима детали над ними остаются за шаблоном.
+ * docs/architecture.md, Layer 8d, «Даты».
  */
 
 import type { IDatePicker } from '@soldy-ui/core'
@@ -94,47 +29,35 @@ import { TFrameElement, type TFrameElementProps } from '../frame'
 import type { TDatePickerOutputs } from './setup.component'
 
 /**
- * Образец DatePicker — образцом календаря под тем же именем: календарь
- * копирует его в каждый день (`setup/__tests__/item-slots.spec.ts`: день уже
- * в scope слота календаря). Копия уходит календарю `<template>`
- * (`lendTemplates`): в самом календаре она не оживает.
+ * Образец `item` — календарю образцом под тем же именем, `<template>`: в самом
+ * календаре копия не оживает (`setup/__tests__/item-slots.spec.ts`).
  */
 export const DATE_PICKER_CALENDAR_SLOTS: TItemSlots = {
 	item: 'item',
 }
 
-/** Контекст шаблона DatePicker. */
 type TDatePickerContext = ITemplateContext<IDatePicker, unknown, TDatePickerOutputs>
 
-/** Части DatePicker — одни на всё время жизни элемента. */
 type TDatePickerParts = {
-	/** Поле одной даты. */
 	readonly field: TDateInputElementProps
-	/** Метка слота `clear` поля: перед ней встаёт кнопка очистки. */
 	readonly clearMark: Comment
-	/** Метка слота `trailing` поля: перед ней встаёт кнопка календаря. */
 	readonly trailingMark: Comment
-	/** Поле начала диапазона. */
 	readonly start: TDateInputElementProps
 	readonly dash: HTMLElement
-	/** Поле конца диапазона. */
 	readonly end: TDateInputElementProps
 	readonly trigger: TButtonElementProps
 	/** Место разметки режима в корне: поля и кнопки встают перед ним. */
 	readonly place: Comment
 	readonly panel: TFrameElementProps
 	readonly handle: HTMLElement
-	/** Обёртка содержимого панели — в ней календарь. */
 	readonly content: HTMLElement
 }
 
-/** Подвал подтверждения: «Отмена» и «OK». */
 type TFooter = {
 	readonly cancel: TButtonElementProps
 	readonly confirm: TButtonElementProps
 }
 
-/** Календарь панели — и с подвалом ли он построен. */
 type TPanelCalendar = {
 	readonly node: TCalendarElementProps
 	readonly confirmable: boolean
@@ -142,16 +65,11 @@ type TPanelCalendar = {
 
 const parts = new WeakMap<HTMLElement, TDatePickerParts>()
 
-/** Кнопки подвала каждого DatePicker — строятся с первым `confirmable`. */
 const footers = new WeakMap<HTMLElement, TFooter>()
 
-/** Календарь панели каждого DatePicker. */
 const calendars = new WeakMap<HTMLElement, TPanelCalendar>()
 
-/**
- * Узлы — перед `ref` в `parent`, по порядку. Узел, который уже стоит на своём
- * месте, не двигается: перенос элемента soldy — его отключение и подключение.
- */
+/** Стоящий на месте узел не двигается: перенос элемента soldy — его отключение и подключение. */
 function placeBefore(parent: Node, nodes: readonly Node[], ref: Node): void {
 	let next = ref
 
@@ -166,20 +84,13 @@ function placeBefore(parent: Node, nodes: readonly Node[], ref: Node): void {
 	}
 }
 
-/**
- * Узлы — перед меткой слота поля, по порядку: до сборки поля — в его свет, после
- * — в его слот (`lendBefore`). Стоят на месте — не двигаются.
- */
+/** До сборки поля — в его свет, после — в слот (`lendBefore`); стоящие на месте не двигаются. */
 function lendAllBefore(mark: Comment, nodes: readonly Node[]): void {
 	if (nodes.every((node, index) => node.nextSibling === (nodes[index + 1] ?? mark))) return
 
 	for (const node of nodes) lendBefore(mark, node)
 }
 
-/**
- * Кнопка очистки на своём месте: своя — слот `clear`, встроенная — по
- * `clearable`, без него её нет.
- */
 function clearNodes(ctx: TDatePickerContext): readonly Node[] {
 	if (ctx.hasSlot('clear')) return ctx.slotted('clear')
 
@@ -192,12 +103,7 @@ function clearNodes(ctx: TDatePickerContext): readonly Node[] {
 	return [clearButton(ctx, 'date-picker')]
 }
 
-/**
- * Кнопки подвала — детали разметки DatePicker. «Отмена» закрывает панель, а
- * черновик сбрасывает само закрытие, «OK» принимает выбор (`confirm()`) —
- * команды того инстанса, что живёт сейчас. Куда вернуть фокус, решает плагин
- * фокуса.
- */
+/** «Отмена» только закрывает: черновик сбрасывает само закрытие, фокус возвращает плагин фокуса. */
 function footerOf(ctx: TDatePickerContext): TFooter {
 	const known = footers.get(ctx.root)
 
@@ -232,7 +138,6 @@ function footerOf(ctx: TDatePickerContext): TFooter {
 	return footer
 }
 
-/** Пропсы кнопок подвала — только сменившиеся: `disabled` кнопки нативный. */
 function syncFooter(ctx: TDatePickerContext, { cancel, confirm }: TFooter): void {
 	const { state } = ctx
 	const disabled = state.confirmDisabled === true
@@ -241,11 +146,7 @@ function syncFooter(ctx: TDatePickerContext, { cancel, confirm }: TFooter): void
 	patch(confirm, { size: state.size, disabled, text: state.names_confirm })
 }
 
-/**
- * Календарь панели — деталь над календарём и движком DatePicker, до вставки:
- * сборка календаря берёт их при подключении. Образец `item` — образцом
- * календаря, подвал — при `confirmable`, в его слоте `footer`.
- */
+/** Календарь и движок — до вставки: сборка календаря берёт их при подключении. */
 function calendarOf(ctx: TDatePickerContext, confirmable: boolean): TCalendarElementProps {
 	const calendar = createDetail(ctx.root.ownerDocument, TCalendarElement, {
 		embedded: 'date-picker.calendar',
@@ -271,7 +172,6 @@ function calendarOf(ctx: TDatePickerContext, confirmable: boolean): TCalendarEle
 	return calendar
 }
 
-/** Поле DatePicker — деталь DateInput с именем места и классом. */
 function fieldOf(owner: Document, embedded: string, className: string): TDateInputElementProps {
 	const field = createDetail(owner, TDateInputElement, { embedded })
 
@@ -299,8 +199,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		const handle = ownerDocument.createElement('div')
 		const content = ownerDocument.createElement('div')
 
-		// Метки — в слоты `clear` и `trailing` поля: обёртка у его конца стоит
-		// всегда, кнопки встают перед метками
+		// Обёртка у конца поля стоит всегда: кнопки встают перед метками
 		const clearMark = lendMark(field, 'clear')
 		const trailingMark = lendMark(field, 'trailing')
 
@@ -316,15 +215,12 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		handle.setAttribute('aria-hidden', 'true')
 		content.className = 'so-date-picker__content'
 
-		// Своя иконка кнопки календаря — только без слота `trigger-icon`: заданный
-		// слот заменяет её целиком
 		if (!hasSlot('trigger-icon')) {
 			lendRoleIcon(trigger, 'calendar', 'date-picker.trigger-icon')
 		}
 
-		// Сначала содержимое в панель, потом панель в корень: она входит в
-		// документ одной вставкой и собирается один раз. Разметку режима
-		// ставит первая отрисовка — перед местом режима
+		// Содержимое — до вставки панели: она входит в документ одной вставкой и
+		// собирается один раз
 		lend(panel, DEFAULT_SLOT, content)
 		root.append(place, panel)
 		parts.set(root, {
@@ -342,8 +238,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		})
 
 		return {
-			// Своя кнопка очистки встаёт на место режима первой отрисовкой; значок —
-			// в слот по умолчанию кнопки календаря; содержимое дня — образец
+			// Своя кнопка очистки — у места режима: на её место ставит первая отрисовка
 			slots: {
 				clear: { mode: 'before', node: place },
 				'trigger-icon': { mode: 'append', node: trigger, slot: DEFAULT_SLOT },
@@ -353,10 +248,8 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 	},
 
 	bindings: [
-		// Экземпляры полей и календаря — деталям, на каждую полную отрисовку, то
-		// есть на каждое подключение: пропсов у привязки нет. Детали собираются
-		// после DatePicker и берут их при подключении; DatePicker, переставленный
-		// с другим `ctrl`, отдаёт новые раньше, чем пересобираются его детали
+		// Экземпляры — деталям на каждое подключение: детали собираются после
+		// DatePicker, и переставленный с другим `ctrl` отдаёт новые раньше их пересборки
 		bind([], ({ root, ctrl }) => {
 			const own = parts.get(root)
 
@@ -374,8 +267,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			}
 		}),
 
-		// `id` корня — `id` DatePicker, как `:id="id"` у Vue: атрибут разметки —
-		// его вход, а записанный инстансу из кода доходит до узла здесь
+		// Атрибут `id` разметки — вход; записанный инстансу из кода доходит до узла здесь
 		bind('id', ({ root, state }) => {
 			if (state.id === undefined) {
 				if (root.hasAttribute('id')) root.removeAttribute('id')
@@ -384,7 +276,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			}
 		}),
 
-		// Разметка режима — перед местом режима; кнопки — на месте режима
+		// У диапазона кнопки — после поля конца, а не в его слоте: они работают со всем периодом
 		bind(['mode', 'clearable'], (ctx) => {
 			const own = parts.get(ctx.root)
 
@@ -412,12 +304,10 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		}),
 
 		bind(['clearable', 'size', 'disabled', 'clearAria'], (ctx) => {
-			// Своя кнопка — слот `clear`: заменяет встроенную целиком
 			if (!ctx.hasSlot('clear') && ctx.state.clearable === true)
 				clearButton(ctx, 'date-picker')
 		}),
 
-		// Кнопка календаря: связка и вид «нажат» — одним слоем владельца
 		bind(['size', 'openable', 'triggerAria', 'triggerDataset'], ({ root, state }) => {
 			const trigger = parts.get(root)?.trigger
 
@@ -430,7 +320,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			ownerAttributes(trigger, { ...state.triggerAria, ...state.triggerDataset })
 		}),
 
-		// Имя DatePicker и его набор — полю одной даты (см. шапку)
+		// Поле одной даты — группа частей: имя ему пропсами, набор `aria` — слоем владельца
 		bind(['aria', 'aria_label', 'aria_labelledBy', 'aria_describedBy'], ({ root, state }) => {
 			const field = parts.get(root)?.field
 
@@ -445,7 +335,6 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			})
 		}),
 
-		// Имена концов диапазона — полям концов
 		bind(['names_start', 'names_end'], ({ root, state }) => {
 			const own = parts.get(root)
 
@@ -455,7 +344,8 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			patch(own.end, { aria_label: state.names_end })
 		}),
 
-		// Пропсы панели — только сменившиеся
+		// `visible`, а не `rendered`: увезённую панель прячет база Frame по поддереву
+		// (AGENTS.md (Web Components), «Поддерево»)
 		bind('open', ({ root, state }) => {
 			const panel = parts.get(root)?.panel
 			const visible = state.open === true
@@ -463,7 +353,6 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			if (panel && panel.visible !== visible) panel.visible = visible
 		}),
 
-		// Наборы панели — одним слоем владельца, в порядке Vue
 		bind(['panelAria', 'panelDataset', 'dismiss_ownerAttribute'], ({ root, state }) => {
 			const panel = parts.get(root)?.panel
 
@@ -476,7 +365,6 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			}
 		}),
 
-		// Полоса жеста — первой в панели, пока жест включён
 		bind('handleRendered', ({ root, state }) => {
 			const own = parts.get(root)
 
@@ -491,8 +379,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			}
 		}),
 
-		// Календарь панели — с подвалом при `confirmable`: подвал у календаря —
-		// свет к построению, и смена `confirmable` строит календарь заново
+		// Подвал у календаря — свет к построению: смена `confirmable` строит календарь заново
 		bind('confirmable', (ctx) => {
 			const own = parts.get(ctx.root)
 
@@ -511,7 +398,6 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			calendars.set(ctx.root, { node: calendar, confirmable })
 		}),
 
-		// Кнопки подвала: текст — строки локали, «OK» гаснет посреди диапазона
 		bind(['size', 'confirmDisabled', 'names_cancel', 'names_confirm'], (ctx) => {
 			const footer = footers.get(ctx.root)
 

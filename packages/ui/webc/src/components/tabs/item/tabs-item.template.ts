@@ -1,37 +1,7 @@
 /**
- * Шаблон таба.
- *
- * Корень — сам `<div is="so-tabs-item">`: классы, `attrs`, `dataset` (тема
- * красит активный таб по `data-selected`) и место в коллекции (`order`)
- * раскладывает на него база (`ElementBase`). Здесь — строка и кнопка закрытия
- * рядом с ней, как у Vue.
- *
- * - Строка — деталь `<button is="so-button" embedded="tabs.row" type="button">`,
- *   узел поля корня: на неё база переносит статические атрибуты разметки
- *   таба, а шаблон кладёт `aria` таба верхним слоем её раскладчика — вся ARIA
- *   таба на элементе, который и есть таб: роль, `aria-selected` и остановка Tab
- *   (`tabindex`) от коллекции, связка с панелью (`id`, `aria-controls`). Она
- *   главнее того, что кнопка пишет себе сама. Слоты таба — свет строки: точки
- *   `leading`, `default` и `trailing` ведут в её одноимённые слоты (свет детали),
- *   а без `default` строке уходит текст таба (`text`). Клик по строке делает
- *   таб активным — через контекст элемента фасада текущей связки.
- * - Кнопка закрытия — сосед строки, а не её часть: интерактивный потомок у
- *   `<button role="tab">` HTML запрещает, а подпись крестика вошла бы в имя
- *   таба. Деталь `<button is="so-button" embedded="tabs.close" type="button">`
- *   стоит в табе, только пока его можно закрыть (`tab_closable` фасада), сразу
- *   после строки. Имя ей ядро собирает с текстом таба (`closeAria`), и на
- *   кнопку его кладёт шаблон верхним слоем. Размер и `disabled` — явно: от
- *   строки она их не наследует. Клик закрывает таб и не всплывает, как
- *   `@click.stop` у Vue: корни таба и набора слушают нативный клик
- *   (`TActionPlugin`), и всплывший клик дал бы им `action:press`. В кнопке —
- *   слот `close-icon` или иконка роли `close`,
- *   `<span is="so-icon" embedded="tabs.close-icon">`.
- *
- * У строки и кнопки нет `view`: значения вида объявляет тема, и разметка
- * библиотеки их не знает — обе части тема красит по контексту.
- *
- * Scope у слотов нет, как у всех слотов Web Components: текст и активность
- * содержимое слота берёт у элемента (`el.ctrl`, `el.state.active`).
+ * Шаблон таба: строка — деталь Button с ARIA таба; закрытие — её сосед, а не часть:
+ * интерактивный потомок у `role="tab"` HTML запрещает, а подпись крестика вошла бы
+ * в имя таба. `view` частям не пишется — их красит тема по контексту.
  */
 
 import type { ITabsItem, TTabsItemCollectionFacade } from '@soldy-ui/core'
@@ -40,11 +10,9 @@ import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** Части таба: строка, кнопка закрытия и иконка в ней — одни на всё время жизни элемента. */
 type TTabParts = {
 	readonly row: TButtonElementProps
 	readonly close: TButtonElementProps
-	/** Иконка крестика — без слота `close-icon`. */
 	readonly icon: TIconElementProps | null
 }
 
@@ -66,8 +34,6 @@ export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> =
 
 		close.className = 'so-tabs-item__close'
 
-		// Своя иконка крестика — только без слота `close-icon`: заданный слот
-		// заменяет её целиком
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('close-icon')) {
@@ -83,6 +49,7 @@ export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> =
 		})
 
 		close.addEventListener('click', (event) => {
+			// Как `@click.stop` у Vue: всплывший клик дал бы корням таба и набора `action:press`
 			event.stopPropagation()
 			ctx.facade?.context?.adapters.tabs.close()
 		})
@@ -102,8 +69,6 @@ export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> =
 	},
 
 	bindings: [
-		// Пропсы деталей — только сменившиеся: `disabled` кнопки нативный, и
-		// каждая запись прошла бы через его атрибут
 		bind(['disabled', 'size', 'variant'], ({ root, state }) => {
 			const own = parts.get(root)
 
@@ -123,7 +88,6 @@ export const tabsItemTemplate: ITemplate<ITabsItem, TTabsItemCollectionFacade> =
 			if (row) ownerAttributes(row, state.aria)
 		}),
 
-		// Текст таба — строке, пока содержимое не задано слотом `default`
 		bind('text', ({ root, state, hasSlot }) => {
 			const row = parts.get(root)?.row
 			const text = state.text ?? ''

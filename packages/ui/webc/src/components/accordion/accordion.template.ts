@@ -1,23 +1,7 @@
 /**
- * Шаблон Accordion.
- *
- * Корень — сам `<div is="so-accordion">`: классы, `attrs` и скрытие
- * раскладывает на него база (`ElementBase`). Своей разметки у аккордеона
- * нет — только секции.
- *
- * - Секции — слот `default`: элементы разметки `<div is="so-accordion-item">`.
- *   В коллекцию секция входит сама, когда собирается: движок аккордеона она
- *   находит лифтом вверх по документу.
- * - Без секций разметки — секции из данных (`items`, `engine`): петля по
- *   `shown` (`TKeyedLoop`) строит `<div is="so-accordion-item">` на каждый
- *   элемент, с инстансом данных и копиями образцов `item-*`. Панели у секции
- *   нет отдельной частью: она внутри элемента, и содержимое секции из данных —
- *   образец `item-content`.
- * - `item`, `item-leading-icon`, `item-leading`, `item-trailing`,
- *   `item-trailing-icon`, `item-content` — образцы слотов секций из данных
- *   (`<template slot="item-content">`): scope у слотов Web Components нет, и
- *   копию одного образца получает каждая секция. Данные копия берёт у секции
- *   (`el.ctrl`).
+ * Шаблон Accordion: своей разметки нет, только секции; без секций разметки —
+ * секции из данных петлёй по `shown` с копиями образцов `item-*`.
+ * docs/architecture.md, Layer 8d, «Коллекция».
  */
 
 import type { IAccordion, IAccordionItem, TAccordionCollectionFacade } from '@soldy-ui/core'
@@ -32,11 +16,7 @@ import {
 } from '../../adapter'
 import { TAccordionItemElement, type TAccordionItemElementProps } from './item'
 
-/**
- * Копии образцов в секции из данных: слот аккордеона → слот секции, как
- * проброс у остальных адаптеров (`setup/__tests__/item-slots.spec.ts`):
- * заголовок секции (`header`) — `item`, панель (`default`) — `item-content`.
- */
+/** Слот аккордеона → слот секции; сверяет `setup/__tests__/item-slots.spec.ts`. */
 export const ACCORDION_ITEM_SLOTS: TItemSlots = {
 	'item-leading-icon': 'leading-icon',
 	'item-leading': 'leading',
@@ -46,10 +26,9 @@ export const ACCORDION_ITEM_SLOTS: TItemSlots = {
 	'item-content': 'default',
 }
 
-/** Петля секций из данных — только у аккордеона без секций разметки. */
 const loops = new WeakMap<HTMLElement, TKeyedLoop<IAccordionItem, number>>()
 
-/** Секция из данных: инстанс данных и копии образцов — до вставки. */
+/** Инстанс данных и копии образцов — до вставки. */
 function sectionOf(
 	ctx: ITemplateContext<IAccordion, TAccordionCollectionFacade>,
 	item: IAccordionItem,
@@ -64,7 +43,6 @@ function sectionOf(
 
 export const accordionTemplate: ITemplate<IAccordion, TAccordionCollectionFacade> = {
 	create: (root, { hasSlot }) => {
-		// Секции разметки — сами секции аккордеона: петли из данных при них нет
 		if (!hasSlot('default')) {
 			loops.set(root, new TKeyedLoop(root, null, (item: IAccordionItem) => item.uid))
 		}

@@ -1,14 +1,3 @@
-/**
- * setupProgressLinear — setup-слой ProgressLinear.
- *
- * Собирает компонент (`createWebcAdapterContext` — с локалью ближайшего
- * `<so-locale-provider>` вверх от элемента) и связывает его с элементом через
- * useAdapter. Логики здесь нет: долю, `aria-value*`, `data-indeterminate` и
- * модификатор оси считает ядро, бег рисует тема. Выход `percentStyle` на
- * корень кладёт база элемента — как стиль-выход, имя которого называет
- * элемент.
- */
-
 import { ProgressLinearDescriptor } from '@soldy-ui/setup'
 import type { IProgressLinear } from '@soldy-ui/core'
 import { createWebcAdapterContext, useAdapter } from '../../adapter'

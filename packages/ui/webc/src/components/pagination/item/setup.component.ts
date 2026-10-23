@@ -1,16 +1,3 @@
-/**
- * setupPaginationItem — setup-слой страницы пагинации.
- *
- * Два контекста, как у страницы Vue и элемента ListBox: собственный
- * (`PaginationItemDescriptor` — ключ и текст страницы) и фасада
- * (`PaginationCollectionItemDescriptor` — членство в коллекции пагинации),
- * одной связкой. Расширение элемента берёт лифтом движок и регистратор
- * пагинации — ближайшей выше по документу — и отдаёт фасаду контекст
- * элемента: через него нажатие делает страницу текущей. Порядок связок — как
- * у Vue: фасад первым, и в коллекцию страница входит, когда её контекст
- * принят, — при подключении элемента.
- */
-
 import {
 	PaginationCollectionItemDescriptor,
 	PaginationItemDescriptor,
@@ -44,6 +31,7 @@ export function setupPaginationItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад — первым: в коллекцию страница входит, когда её контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

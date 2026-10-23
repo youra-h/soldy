@@ -1,25 +1,3 @@
-/**
- * setupToasts — setup-слой Toasts.
- *
- * Два контекста, как у Vue: свой (`ToastsDescriptor`) и фасада коллекции
- * (`ToastsCollectionDescriptor`) на общем наборе, одной связкой. Логики здесь
- * нет: очередь, предел видимых и подъём региона — расширение коллекции
- * `toasts`, отсчёт — `TToastsTimerPlugin`, удаление догасших —
- * `TToastsRemovalPlugin`, F8 и Escape — `TToastsKeyboardPlugin`, листание
- * стопки — `TToastsCascadePlugin`, слой в стилях — `TToastsLayoutPlugin`, имя
- * региона — `TToastsNamesPlugin`.
- *
- * Расширения коллекции опускают лифтом своему хосту — элементу `<so-toasts>` —
- * движок с регистратором тостов (`TCollectionExtension`) и API тостов
- * (`TToastsApiExtension`). Тосты в регионе находят движок вверх по документу:
- * регион, увезённый в цель, ищет от своего якоря в элементе. API берёт
- * `toastsOf(node)` — у узла под менеджером, где бы он ни стоял.
- *
- * `engine` — готовая коллекция снаружи, свойство элемента (`el.engine`): фасад
- * работает на ней, а без неё собирает свою (`completeEngine`). Тем же движком
- * код вне документа показывает тосты (`engine.extensions.toasts.show`).
- */
-
 import {
 	TCollectionExtension,
 	TToastsApiExtension,

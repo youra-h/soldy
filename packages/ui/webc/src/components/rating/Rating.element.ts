@@ -1,23 +1,7 @@
 /**
- * `<span is="so-rating">` — оценка звёздами: ползунок с одной ручкой (APG,
- * Rating Slider), у которого шкала — ряд звёзд.
- *
- * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`): тег ядра по умолчанию, строчный — оценку
- * кладут в подпись `Label`, а внутри `label` HTML разрешает только строчную
- * разметку. Поле — нативный `input[type="range"]` в обычном DOM страницы:
- * роль, значение, границы, `disabled` и отправку формы даёт браузер.
- *
- * На корне из наборов ядра — `attrs` (`dir`) и `dataset` (`data-disabled`),
- * `aria` — на поле, его кладёт шаблон. Атрибуты потребителя остаются на
- * корне, как у Vue: указатель поле не ловит, и обработчик потребителя на поле
- * не сработал бы никогда. `id` — проп поля (`fieldId` в описании корня):
- * атрибут разметки база берёт пропом первой сборки и снимает с корня, на поле
- * его пишет шаблон, из кода — `ctrl.id`, а `el.id` — собственный `id` корня.
- * Без признака `id` встал бы и на корень, и на поле, и `<label for>` нашёл бы
- * корень.
- *
- * Разметка вынесена в rating.template.ts, жизненный цикл — в ElementBase.
+ * `<span is="so-rating">` — оценка звёздами на нативном `input[type="range"]`.
+ * Атрибуты потребителя — на корне: указатель поле не ловит. `fieldId`: без него
+ * `id` встал бы и на корень, и `<label for>` нашёл бы корень.
  */
 
 import { RatingDescriptor } from '@soldy-ui/setup'
@@ -40,10 +24,4 @@ export const TRatingElement: TElementClassOf<
 
 defineElement('so-rating', TRatingElement, 'span')
 
-/**
- * `<span is="so-rating">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
- * `state`) и свойства пропов дескриптора вместе с пропсами его плагинов
- * (`aria_label`) — без тех, что у `span` уже есть (`id` — собственный `id`
- * корня), и без `HOST_PROPS` (`TElementProps`).
- */
 export type TRatingElementProps = TElementType<typeof TRatingElement>

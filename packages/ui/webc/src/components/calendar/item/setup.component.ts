@@ -1,19 +1,3 @@
-/**
- * setupCalendarItem — setup-слой дня календаря.
- *
- * Два контекста, как у дня Vue: собственный (`CalendarItemDescriptor` — дата,
- * номер, «недоступен») и фасада (`CalendarCollectionItemDescriptor` — членство
- * в коллекции календаря), одной связкой. Расширение элемента берёт лифтом
- * движок и регистратор календаря — ближайшего выше по документу — и отдаёт
- * фасаду контекст дня: по нему плагины календаря находят узел дня. Порядок
- * связок — как у Vue: фасад первым, и в коллекцию день входит, когда его
- * контекст принят, — при подключении элемента.
- *
- * Логики здесь нет: дату, номер и наборы дню пишут вид и расширения
- * коллекции, а выбирают его плагины календаря по нажатию и клавишам на корне
- * календаря.
- */
-
 import {
 	CalendarCollectionItemDescriptor,
 	CalendarItemDescriptor,
@@ -47,6 +31,7 @@ export function setupCalendarItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у Vue: в коллекцию день входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

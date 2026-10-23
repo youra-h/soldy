@@ -1,47 +1,7 @@
 /**
- * Шаблон заголовка колонки (`Table.Column`), как у Vue.
- *
- * Корень — сам `<th is="so-table-column">`: классы, наборы колонки
- * (`aria-sort`, `aria-labelledby`, `data-sort`, `data-align`, `data-sized`…),
- * ширину переменной `--so-table-column-width` (стиль-выход `widthStyle`) и
- * скрытие раскладывает на него база (`ElementBase`). Обработчиков на ячейке
- * нет: протяжку ловит плагин ручки на корне, клавиши и жест скринридера — он
- * же на поле. Нажатие по ячейке не сортирует: у `th` нет фокуса, и действие на
- * нём с клавиатуры было бы недоступно.
- *
- * - Содержимое — ряд `span.so-table-column__content`: подпись, а у сортируемой
- *   колонки за ней кнопка сортировки. Где ряд стоит в ячейке и с какой стороны
- *   подписи кнопка, решает тема по `data-align`.
- * - Подпись — `span.so-table-column__text` с набором `textAria`: им названы
- *   заголовок и поле ручки. Содержимое — слот `default`, в него таблица кладёт
- *   копию своего образца `header`, а без него — текст колонки. Свой контрол в
- *   подписи — кнопка, триггер — и есть своё действие по заголовку. Scope у
- *   слотов Web Components нет: колонку копия находит у заголовка — `el.ctrl`
- *   ближайшего `<th is="so-table-column">`.
- * - Кнопка сортировки — деталь Button
- *   `<button is="so-button" embedded="table.sort" type="button">`, только у
- *   `sortable`: её рисует колонка, а не таблица через слот — кнопка в подписи
- *   дописала бы своё имя к имени заголовка. Нажатие (`so:action:press`) —
- *   просьба колонки, `toggleSort()` инстанса текущей связки: сортирует
- *   расширение коллекции строк по своим правилам. Выключена вместе с
- *   таблицей — `disabled` колонке пишет таблица. Текста у кнопки нет: имя ей с
- *   подписью колонки пишет плагин имён от локали (`sortAria`), и на кнопку его
- *   кладёт шаблон верхним слоем её раскладчика. В ней — обёртка стрелки
- *   `span.so-table-column__sort-icon` под `aria-hidden` (направление
- *   скринридер объявляет по `aria-sort` заголовка) с иконкой роли
- *   `arrowUpward`, `<span is="so-icon" embedded="table.sort-icon">`: вниз её
- *   поворачивает тема. Вида и размера разметка кнопке не передаёт — колонка не
- *   знает размера таблицы, а значения вида объявляет тема: их даёт тема по
- *   контексту.
- * - Ручка ширины — полоса `span.so-table-column__resizer` у края заголовка,
- *   пока она есть (`resizerRendered`: колонка `resizable`, не выключена, и
- *   ширина известна). Разметка, а не часть: потребитель её не адресует. Поле в
- *   ней — нативный `range`, как поле ручки Slider: мобильные скринридеры
- *   двигают его своим жестом. Ход и ширина — значение ядра (`resizer`), имя —
- *   ссылка на подпись (`resizerAria`). Границы хода поле получает раньше
- *   значения: ширина за краем хода по умолчанию (0–100) иначе прижалась бы к
- *   нему. Значение привязка пишет, только когда оно разошлось с узлом: ширину
- *   ведёт ядро, и тянет её плагин ручки, а не браузер.
+ * Шаблон заголовка колонки: ряд с подписью и кнопкой сортировки, ручка ширины.
+ * Нажатие по ячейке не сортирует: у `th` нет фокуса, и с клавиатуры действие
+ * было бы недоступно.
  */
 
 import type { ITableColumn } from '@soldy-ui/core'
@@ -57,13 +17,11 @@ import {
 import { TButtonElement, type TButtonElementProps } from '../../button'
 import { TIconElement } from '../../icon'
 
-/** Части заголовка — одни на всё время жизни элемента: ряд содержимого и подпись. */
 type TColumnParts = {
 	readonly content: HTMLElement
 	readonly text: HTMLElement
 }
 
-/** Ручка ширины — полоса и поле в ней. */
 type TResizer = {
 	readonly strip: HTMLElement
 	readonly field: HTMLInputElement
@@ -71,16 +29,13 @@ type TResizer = {
 
 const parts = new WeakMap<HTMLElement, TColumnParts>()
 
-/** Кнопка сортировки каждого заголовка — строится с первым `sortable` и остаётся за ним. */
 const sorts = new WeakMap<HTMLElement, TButtonElementProps>()
 
-/** Ручка ширины каждого заголовка — строится, когда ручка впервые нужна, и остаётся за ним. */
 const resizers = new WeakMap<HTMLElement, TResizer>()
 
 /**
- * Кнопка сортировки — деталь разметки заголовка, со стрелкой в обёртке.
- * Нажатие — просьба колонки той связки, что живёт сейчас: контекст шаблона
- * отдаёт её инстанс в момент обращения.
+ * Кнопку рисует колонка, а не слот: в подписи она дописала бы своё имя к имени
+ * заголовка. Вида и размера нет — их по контексту даёт тема.
  */
 function sortOf(ctx: ITemplateContext<ITableColumn>): TButtonElementProps {
 	const known = sorts.get(ctx.root)
@@ -97,17 +52,19 @@ function sortOf(ctx: ITemplateContext<ITableColumn>): TButtonElementProps {
 
 	button.className = 'so-table-column__sort'
 	arrow.className = 'so-table-column__sort-icon'
+	// Направление скринридер объявляет по `aria-sort`; вниз стрелку поворачивает тема
 	arrow.setAttribute('aria-hidden', 'true')
 	icon.icon = 'arrowUpward'
 	arrow.appendChild(icon)
 	button.appendChild(arrow)
+	// Инстанс живой связки — на момент нажатия
 	button.addEventListener('so:action:press', () => ctx.ctrl?.toggleSort())
 	sorts.set(ctx.root, button)
 
 	return button
 }
 
-/** Ручка ширины заголовка: полоса и нативное поле `range` в ней. */
+/** Нативный `range`, как у ручки Slider: мобильные скринридеры двигают его своим жестом. */
 function resizerOf(root: HTMLElement): TResizer {
 	const known = resizers.get(root)
 
@@ -155,7 +112,6 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 			if (text) ownerAttributes(text, state.textAria)
 		}),
 
-		// Текст колонки — подписи, пока она не задана слотом `default`
 		bind('text', ({ root, state, hasSlot }) => {
 			const text = parts.get(root)?.text
 			const value = state.text ?? ''
@@ -185,7 +141,6 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 
 			ownerAttributes(button, state.sortAria)
 
-			// За подписью, в ряду содержимого
 			if (button.parentNode !== own.content) own.content.appendChild(button)
 		}),
 
@@ -201,7 +156,7 @@ export const tableColumnTemplate: ITemplate<ITableColumn> = {
 			const { strip, field } = resizerOf(root)
 			const value = String(resizer.value)
 
-			// Ход — раньше значения, значение — только разошедшееся с узлом
+			// Ход раньше значения, иначе ширина прижалась бы к 0–100; ширину ведёт ядро
 			field.min = String(resizer.min)
 			field.max = String(resizer.max)
 

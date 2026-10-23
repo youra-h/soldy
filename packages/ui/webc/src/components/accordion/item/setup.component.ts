@@ -1,15 +1,3 @@
-/**
- * setupAccordionItem — setup-слой секции Accordion.
- *
- * Два контекста, как у элементов Vue и Angular: собственный
- * (`AccordionItemDescriptor` — текст, значение, сторона стрелки) и фасада
- * (`AccordionCollectionItemDescriptor` — раскрыта ли секция, порядок, вид),
- * одной связкой. Расширение элемента берёт лифтом движок и регистратор
- * аккордеона — ближайшего выше по документу — и отдаёт фасаду контекст секции.
- * Порядок связок — как у Vue: фасад первым, и в коллекцию секция входит, когда
- * его контекст принят, — при подключении элемента.
- */
-
 import {
 	AccordionCollectionItemDescriptor,
 	AccordionItemDescriptor,
@@ -43,6 +31,7 @@ export function setupAccordionItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым: в коллекцию секция входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

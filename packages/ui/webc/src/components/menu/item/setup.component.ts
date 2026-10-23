@@ -1,15 +1,3 @@
-/**
- * setupMenuItem — setup-слой пункта меню.
- *
- * Два контекста, как у Vue: собственный (`MenuItemDescriptor` — текст и
- * значение пункта) и фасада (`MenuCollectionItemDescriptor` — вход в
- * коллекцию меню), одной связкой. Расширение пункта берёт лифтом движок и
- * регистратор меню — ближайшего выше по документу, а у пункта в панели —
- * от её якоря, — и отдаёт фасаду контекст пункта: через него шаблон зовёт
- * нажатие (`adapters.menu.choose()`). Порядок связок — как у Vue: фасад первым,
- * и в коллекцию пункт входит, когда его контекст принят, — при подключении.
- */
-
 import {
 	MenuCollectionItemDescriptor,
 	MenuItemDescriptor,
@@ -43,6 +31,7 @@ export function setupMenuItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у Vue: в коллекцию пункт входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
 

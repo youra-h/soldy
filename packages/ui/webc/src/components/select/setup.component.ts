@@ -1,33 +1,3 @@
-/**
- * setupSelect — setup-слой Select.
- *
- * Два контекста, как у Vue: свой (`SelectDescriptor` — поле, панель,
- * клавиатура, жест) и фасада коллекции (`SelectCollectionDescriptor` — опции,
- * выбор, группы, теги поля и что рисует список панели) на общем наборе, одной
- * связкой.
- *
- * Поле формы `Field` над Select связывается с ним, а не с его полем: поле —
- * деталь его разметки (`embedded`), его связку не берёт, а `aria` Select
- * шаблон кладёт на неё — и уходит он на `<input>`. Связку берёт расширение
- * Select (`TFieldControlExtension`) вверх по документу, а своему содержимому
- * опускает пустую своим хостом.
- *
- * Расширения коллекции опускают движок и регистратор опций лифтом — хосту
- * Select: опции в панели находят их вверх по документу — от увезённой панели
- * поиск идёт к её якорю, в корень Select, — и входят в его коллекцию. Окно
- * обёртки `<so-virtual>` над Select фасад подхватывает тем же лифтом
- * (`TVirtualCollectionExtension`): список панели рисует только видимые опции.
- *
- * `engine` — готовая коллекция снаружи, свойство элемента (`el.engine`): фасад
- * работает на ней, а без неё собирает свою (`completeEngine`).
- *
- * Логики здесь нет: клик — `TSelectPointerPlugin`, клавиши —
- * `TSelectKeyboardPlugin`, ввод — `TEditablePlugin`, нажатие мимо —
- * `TDismissPlugin`, координаты панели — `TAnchorPlugin` её Frame, жест —
- * `TSwipePlugin`. Шаблон раскладывает то, что отдали ядро и плагины: выход
- * `dismiss_ownerAttribute` — пометкой на панель.
- */
-
 import {
 	SelectCollectionDescriptor,
 	SelectDescriptor,
@@ -56,6 +26,7 @@ export function setupSelect(
 	onUpdate: TUpdateListener,
 ): TBinding<ISelect, TSelectCollectionFacade, TSelectOutputs> {
 	const elevator = createWebcElevator(host)
+	// `Field` связывается с Select, а не с его полем: деталь связку не берёт
 	const adapter = createWebcAdapterContext(host, SelectDescriptor(), { ctrl, props }).use(
 		TFieldControlExtension,
 		{ elevator },
@@ -69,8 +40,7 @@ export function setupSelect(
 		{ bundle: adapter.bundle },
 	)
 		.use(TCollectionExtension, { elevator })
-		// Окно обёртки `<so-virtual>` над Select: подхват при сборке, подписка на
-		// обёртку — при приёме, снятие — с уничтожением
+		// Окно обёртки `<so-virtual>` над Select
 		.use(TVirtualCollectionExtension, { elevator })
 
 	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))

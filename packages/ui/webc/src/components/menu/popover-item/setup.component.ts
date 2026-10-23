@@ -1,17 +1,3 @@
-/**
- * setupMenuPopoverItem — setup-слой пункта с панелью.
- *
- * Два контекста, как у пункта: собственный (`MenuPopoverItemDescriptor` —
- * текст, открытость, наборы панели) и фасада (`MenuCollectionItemDescriptor` —
- * вход в коллекцию меню), одной связкой. Своей коллекции у пункта с панелью
- * нет: в панели лежит что угодно.
- *
- * Логики здесь нет: стрелка к концу строки — `TMenuPopoverItemKeyboardPlugin`,
- * фокус, Escape и Tab — `TMenuPopoverItemFocusPlugin`, нажатие и уход фокуса
- * мимо — `TDismissPlugin`, координаты панели у строки — `TAnchorPlugin` её
- * Frame, одна открытая панель на меню — коллекция меню.
- */
-
 import {
 	MenuCollectionItemDescriptor,
 	MenuPopoverItemDescriptor,
@@ -28,7 +14,7 @@ import {
 import type { TBinding, TUpdateListener } from '../../../adapter'
 import { createWebcElevator } from '../../../adapter/elevator'
 
-/** Выходы плагинов пункта с панелью — их читает шаблон: пометку панели владельцем. */
+/** Выходы плагинов пункта с панелью — шаблон читает из них пометку панели владельцем. */
 export type TMenuPopoverItemOutputs = DescriptorPluginOutputs<typeof MenuPopoverItemDescriptor>
 
 export function setupMenuPopoverItem(
@@ -49,8 +35,8 @@ export function setupMenuPopoverItem(
 		elevator: createWebcElevator(host),
 	})
 
+	// Фасад первым, как у пункта
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
-	// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
 	const owner = useAdapter(adapter, host, onUpdate)
 
 	return joinBindings(owner, item)

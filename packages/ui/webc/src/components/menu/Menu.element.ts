@@ -1,39 +1,7 @@
 /**
  * `<span is="so-menu">` — меню действий у кнопки (APG Menu Button) или
- * контекстное меню области.
- *
- * Элемент — настоящий `<span>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`): тег ядра по умолчанию. Строчный корень —
- * обёртка триггера и якорь панели, как у Popover: меню встаёт и в строку
- * текста, и в ряд кнопок. Панель — деталь Frame: в `body` её уводит база самого
- * Frame, на месте в корне остаётся якорь-комментарий, поэтому в корне лежит
- * только триггер, и прямоугольник корня — прямоугольник триггера.
- *
- * Триггер — элемент потребителя в слоте `trigger`:
- * `<span is="so-menu"><button is="so-button" slot="trigger" text="Действия"></button>…</span>`.
- * Связку с меню (`aria-haspopup`, `aria-expanded`, `id`, `aria-controls`) и вид
- * «нажат» (`data-selected`) он получает сам — шаблон кладёт их на первый
- * элемент слота: scope у слотов нет. У контекстного меню
- * (`open-on="contextmenu"`) в слоте — область, и связки у неё нет.
- *
- * Пункты — свет меню в слоте по умолчанию: пункты, флажки, группы
- * переключателей, подменю, пункты с панелью, группы и разделители, — или
- * данные (`el.items`, `el.engine`). На корне из наборов ядра — `attrs` и
- * `dataset` (`data-open`): ARIA у панели и у триггера.
- *
- * Контекстов два — свой и фасада коллекции (`setupMenu`), и пропсы фасада
- * (`items`, `engine`, `trackBy`, `groups`, `groupBy`) — атрибуты-входы и
- * свойства того же элемента: дескриптор фасада элемент называет рядом со
- * своим.
- *
- * Модуль регистрирует и части. Разметку, ожившую при регистрации, база
- * собирает по месту (`deferral.ts`): меню, группы и подменю — раньше пунктов
- * под ними, пункты — в порядке документа, в каком бы порядке ни
- * регистрировались их виды. Строку пунктов — Button на `div`
- * (`<div is="so-button-div">`) — регистрирует фабрика кнопки там, где она
- * впервые нужна, — модуль строки пункта (`row.ts`).
- *
- * Разметка вынесена в menu.template.ts, жизненный цикл — в ElementBase.
+ * контекстное меню области. Модуль регистрирует и части меню.
+ * docs/architecture.md, Layer 8d, «Меню».
  */
 
 import { MenuCollectionDescriptor, MenuDescriptor } from '@soldy-ui/setup'
@@ -74,10 +42,4 @@ defineElement('so-menu-radio-item', TMenuRadioItemElement, 'div')
 defineElement('so-menu-popover-item', TMenuPopoverItemElement, 'div')
 defineElement('so-menu-separator', TMenuSeparatorElement, 'div')
 
-/**
- * `<span is="so-menu">` из JS: нативный `span`, своё элемента soldy (`ctrl`,
- * `state` — вместе со свойствами фасада) и свойства пропов дескриптора вместе
- * с пропсами его плагинов и фасада (`items`, `engine`) — без тех, что у `span`
- * уже есть, и без `HOST_PROPS` (`TElementProps`).
- */
 export type TMenuElementProps = TElementType<typeof TMenuElement>

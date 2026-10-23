@@ -1,14 +1,3 @@
-/**
- * setupTooltip — setup-слой Tooltip.
- *
- * Собирает компонент (`createWebcAdapterContext` — с локалью ближайшего
- * `<so-locale-provider>` вверх от элемента) и связывает его с элементом через
- * useAdapter. Логики здесь нет: наведение, фокус с клавиатуры, нажатие и
- * Escape — `TTooltipTriggerPlugin`, нажатие мимо — `TDismissPlugin`. Шаблон
- * раскладывает то, что отдали ядро и плагины: связку — панели и триггеру, а
- * выход `dismiss_ownerAttribute` — пометкой на панель.
- */
-
 import { TooltipDescriptor, type DescriptorPluginOutputs } from '@soldy-ui/setup'
 import type { ITooltip } from '@soldy-ui/core'
 import { createWebcAdapterContext, useAdapter } from '../../adapter'

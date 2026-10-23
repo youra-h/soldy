@@ -1,16 +1,7 @@
 /**
- * `<div is="so-skeleton">` — заглушка поверх будущего содержимого.
- *
- * Элемент — настоящий `<div>`, расширенный классом soldy (customized
- * built-in, см. `ElementBase`): тег ядра по умолчанию. Содержимое элемента —
- * слот `default`, настоящее содержимое; заглушку перед ним рисует шаблон.
- *
- * Корень есть всегда, а `rendered` и `visible` решают только, показана ли
- * заглушка. Поэтому база видимостью корень не прячет (`hides: false`):
- * `display: none` спрятал бы и содержимое. Классы, наборы и размер
- * (`layout_styles`) раскладывает на элемент база.
- *
- * Разметка вынесена в skeleton.template.ts, жизненный цикл — в ElementBase.
+ * `<div is="so-skeleton">` — заглушка поверх содержимого (слот `default`).
+ * Видимость решает только, показана ли заглушка, поэтому корень база не прячет
+ * (`hides: false`): `display: none` спрятал бы и содержимое.
  */
 
 import { SkeletonDescriptor } from '@soldy-ui/setup'
@@ -33,9 +24,4 @@ export const TSkeletonElement: TElementClassOf<
 
 defineElement('so-skeleton', TSkeletonElement, 'div')
 
-/**
- * `<div is="so-skeleton">` из JS: нативный `div`, своё элемента soldy и
- * свойства пропов дескриптора — без тех, что у `div` уже есть, и без
- * `HOST_PROPS` (`TElementProps`).
- */
 export type TSkeletonElementProps = TElementType<typeof TSkeletonElement>

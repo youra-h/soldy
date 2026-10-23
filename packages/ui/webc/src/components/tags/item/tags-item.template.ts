@@ -1,45 +1,8 @@
 /**
- * Шаблон тега.
- *
- * Корень — сам `<div is="so-tags-item">`, пилюля тега: классы, `attrs`,
- * `dataset` (выбранный тег тема красит по `data-selected` корня) и место в
- * коллекции (`order`) раскладывает на него база (`ElementBase`). Вид набора
- * рисует корень, а не строка: фон, рамка, наведение и выбор обязаны покрывать
- * и крестик, а он стоит рядом со строкой, — поэтому строке и крестику вида
- * разметка не передаёт, части тега тема красит по контексту (`.so-tags-item`).
- * Здесь — строка и кнопка закрытия рядом с ней, как у Vue.
- *
- * - Строка — Button на `div`, деталь
- *   `<div is="so-button-div" embedded="tags.row">`, узел поля корня: на неё база
- *   переносит статические атрибуты разметки тега, а шаблон кладёт `aria` тега
- *   верхним слоем её раскладчика — роль по режиму набора (`listitem` без
- *   выбора, `option` с выбором), `aria-selected` и `tabindex` от коллекции. Он
- *   главнее того, что кнопка на `div` пишет себе сама: с выбором весь набор —
- *   одна остановка Tab, без выбора у строк `-1`. Тег строки — `div`: под него
- *   ядро пишет тегу ARIA (`TTagsItem._ariaTag`). Направление письма, размер,
- *   вариант и `disabled` — тега, явно: строка — свой узел. Слоты тега — свет
- *   строки: точки `leading`, `default` и `trailing` ведут в её одноимённые
- *   слоты (свет детали), а без `default` строке уходит текст тега (`text`).
- * - Выбор — по `so:action:press` строки, а не по клику: строка держит фокус
- *   сама, и клик из Enter и пробела на ней делает её `TActionPlugin`. `press`
- *   не приходит на выключенный тег, а выбор (`selection.toggle()` контекста
- *   элемента фасада текущей связки) выключенность не проверяет — на клик
- *   выключенный тег выбирался бы.
- * - Кнопка закрытия — сосед строки, а не её часть: потомки опции для
- *   скринридера презентационны, и подпись крестика приклеилась бы к названию
- *   тега. Деталь `<button is="so-button" embedded="tags.close" type="button">`
- *   с классом `so-tags-item__close` стоит в теге, только пока его можно
- *   закрыть (`tag_closable` фасада: выключенный тег не закрывается), сразу
- *   после строки. Имя и `tabindex` (с выбором `-1`: тег закрывает Delete) —
- *   набор `closeAria`, верхним слоем её раскладчика. Размер и `disabled` —
- *   явно: от строки она их не наследует. Клик закрывает тег
- *   (`tags.close()`) и не всплывает, как `@click.stop` у Vue: корни тега и
- *   набора слушают нативный клик (`TActionPlugin`), а поле Select, в котором
- *   стоят теги, открыло бы по нему панель. В кнопке — слот `close-icon` или
- *   иконка роли `close`, `<span is="so-icon" embedded="tags.close-icon">`.
- *
- * Scope у слотов нет, как у всех слотов Web Components: текст и выбор
- * содержимое слота берёт у элемента (`el.ctrl`, `el.state.selected`).
+ * Шаблон тега: строка и крестик рядом с ней. Крестик — сосед строки, а не её
+ * часть: потомки опции для скринридера презентационны, и его подпись
+ * приклеилась бы к названию тега. Вид набора рисует корень: фон и выбор
+ * покрывают и крестик.
  */
 
 import type { ITagsItem, TTagsItemCollectionFacade } from '@soldy-ui/core'
@@ -48,14 +11,13 @@ import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from
 import { TButtonElement, registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** Строка — Button на `div`: регистрирует его фабрика кнопки. */
+/** Строка — на `div`: под него ядро пишет тегу ARIA (`TTagsItem._ariaTag`). */
 const TButtonDivElement = registerButtonTag('div')
 
-/** Части тега — одни на всё время жизни элемента. */
 type TTagParts = {
 	readonly row: TButtonElementProps<HTMLDivElement>
 	readonly close: TButtonElementProps
-	/** Иконка крестика — без слота `close-icon`. */
+	/** `null`, когда задан слот `close-icon`. */
 	readonly icon: TIconElementProps | null
 }
 
@@ -74,8 +36,6 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 
 		close.className = 'so-tags-item__close'
 
-		// Своя иконка крестика — только без слота `close-icon`: заданный слот
-		// заменяет её целиком
 		let icon: TIconElementProps | null = null
 
 		if (!hasSlot('close-icon')) {
@@ -84,10 +44,12 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 			lend(close, DEFAULT_SLOT, icon)
 		}
 
+		// Не клик: `press` не приходит на выключенный тег, а `toggle()` выключенность не проверяет
 		row.addEventListener('so:action:press', () => {
 			ctx.facade?.context?.adapters.selection.toggle()
 		})
 
+		// Не всплывает: корни тега и набора слушают клик, а поле Select открыло бы по нему панель
 		close.addEventListener('click', (event) => {
 			event.stopPropagation()
 			ctx.facade?.context?.adapters.tags.close()
@@ -108,8 +70,8 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 	},
 
 	bindings: [
-		// Пропсы деталей — только сменившиеся: `disabled` кнопки нативный, и
-		// каждая запись прошла бы через его атрибут
+		// Строке и крестику — явно, от тега они не наследуют; только сменившиеся:
+		// `disabled` кнопки нативный, и запись прошла бы через атрибут
 		bind(['direction', 'disabled', 'size', 'variant'], ({ root, state }) => {
 			const own = parts.get(root)
 
@@ -134,7 +96,6 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 			if (row) ownerAttributes(row, state.aria)
 		}),
 
-		// Текст тега — строке, пока содержимое не задано слотом `default`
 		bind('text', ({ root, state, hasSlot }) => {
 			const row = parts.get(root)?.row
 			const text = state.text ?? ''
@@ -142,7 +103,7 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 			if (row && !hasSlot(DEFAULT_SLOT) && row.text !== text) row.text = text
 		}),
 
-		// Крестик — сразу за строкой, пока тег можно закрыть
+		// Крестик — сразу за строкой
 		bind(['tag_closable', 'closeAria'], ({ root, state }) => {
 			const own = parts.get(root)
 

@@ -1,14 +1,7 @@
 /**
- * Шаблон Button.
- *
- * Корень — сама `<button is="so-button">`: классы, наборы `aria`, `attrs` и
- * `dataset` (`data-disabled` для темы) и скрытие на неё раскладывает база
- * (`ElementBase`), здесь остаётся своё.
- *
- * Слоты контракта: `leading`, `default`, `trailing`. В корне создаётся только
- * span для текста — `leading` кладётся перед ним, `trailing` дописывается в
- * корень (то есть после него). Узлов-обёрток нет: в остальных пяти адаптерах их
- * тоже нет, а лишний span сломал бы селекторы темы.
+ * Шаблон Button: в корне только `span` текста, `leading` — перед ним,
+ * `trailing` — в конце корня. Обёрток нет: лишний узел сломал бы селекторы
+ * темы.
  */
 
 import type { IButton } from '@soldy-ui/core'
@@ -32,7 +25,7 @@ export const buttonTemplate: ITemplate<IButton> = {
 
 	bindings: [
 		bind('text', ({ content, state, hasSlot }) => {
-			// Содержимое слота по умолчанию переопределяет проп text
+			// Слот по умолчанию главнее пропа `text`
 			if (hasSlot('default')) return
 
 			content.textContent = String(state.text ?? '')
