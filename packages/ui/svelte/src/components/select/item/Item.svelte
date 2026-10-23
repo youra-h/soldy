@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { MouseEventHandler } from 'svelte/elements'
 	import { Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
@@ -16,12 +17,18 @@
 	const CHECK = roleIcon('check')
 
 	/**
-	 * Выбор — клик по корню, как `@click` корня у Vue: выбирает через Select
-	 * (`adapters.select.choose()`), а выключенной опции отказывает он сам.
-	 * Клик потребителя стоит на строке и приходит раньше, всплытием.
+	 * Атрибуты строки — всё от потребителя, кроме класса и стиля. Клик
+	 * выбирает через Select (`adapters.select.choose()`, выключенной опции он
+	 * откажет сам), потом зовёт клик потребителя — как у ListBox.
 	 */
-	function choose(): void {
-		context?.adapters.select.choose()
+	function rowAttributes() {
+		const { onclick, ...row } = toControlAttrs<SelectItemAttributes>(binding.forwardProps)
+		const choose: MouseEventHandler<HTMLElement> = (event) => {
+			context?.adapters.select.choose()
+			onclick?.(event)
+		}
+
+		return { ...row, onclick: choose }
 	}
 </script>
 
@@ -63,10 +70,7 @@
 {#if state.rendered}
 	<Dynamic
 		tag={state.tag}
-		attributes={{
-			...toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps)),
-			onclick: choose,
-		}}
+		attributes={toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps))}
 		attach={binding.attachElement}
 	>
 		<Button
@@ -78,7 +82,7 @@
 			disabled={state.disabled}
 			{...state.aria}
 			{...state.dataset}
-			{...toControlAttrs<SelectItemAttributes>(binding.forwardProps)}
+			{...rowAttributes()}
 		>
 			{#snippet leading()}
 				{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}

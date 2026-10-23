@@ -409,6 +409,24 @@ describe('строка опции — кнопка на span', () => {
 		expect(row.getAttribute('title')).toBe('Город')
 		expect(row.dataset['testid']).toBe('option')
 	})
+
+	it('клик потребителя по опции — после выбора, как у ListBox; stopPropagation выбор не отменяет', async () => {
+		const el = await render()
+		const order: string[] = []
+
+		el.addEventListener('so:change:value', (event) => {
+			if (event.target === el) order.push('выбор')
+		})
+		find(document, '.so-select-item', HTMLElement).addEventListener('click', (event) => {
+			order.push('клик')
+			event.stopPropagation()
+		})
+
+		await click(optionOf('Москва'))
+
+		expect(order).toEqual(['выбор', 'клик'])
+		expect(fieldOf().value).toBe('Москва')
+	})
 })
 
 /**

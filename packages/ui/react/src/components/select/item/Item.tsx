@@ -35,9 +35,9 @@ const CheckIcon = roleIcon('check')
  * строки нет: значения вида объявляет тема, строку опции она красит по
  * контексту (`.so-select-item`).
  *
- * Выбор — клик по корню, как `@click` корня у Vue: выбирает через Select
+ * Выбор — клик по строке, как у ListBox: выбирает через Select
  * (`adapters.select.choose()`), а выключенной опции отказывает он сам. Клик
- * потребителя стоит на строке и приходит раньше, всплытием.
+ * потребителя приходит после выбора.
  *
  * Обёртка отметки рисуется, пока `indicator` не `none`, — и у невыбранных
  * тоже: она резервирует место, и строка не прыгает при выборе. Иконка внутри
@@ -65,6 +65,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 	const chosen = selected ?? false
+	const { onClick, ...row } = toControlAttrs<SelectItemAttributes>(forwardProps)
 
 	const mark = (
 		<span className="so-select-item__indicator" aria-hidden="true">
@@ -74,10 +75,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 	)
 
 	return (
-		<Tag
-			{...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}
-			onClick={() => context?.adapters.select.choose()}
-		>
+		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
 				embedded="select.row"
 				tag="span"
@@ -87,7 +85,11 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 				tabIndex={-1}
 				{...toAriaProps(aria)}
 				{...toAriaProps(dataset)}
-				{...toControlAttrs<SelectItemAttributes>(forwardProps)}
+				{...row}
+				onClick={(event) => {
+					context?.adapters.select.choose()
+					onClick?.(event)
+				}}
 				leading={
 					<>
 						{indicator === 'start' ? mark : null}

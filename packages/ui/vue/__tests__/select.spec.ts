@@ -234,6 +234,36 @@ describe('опции', () => {
 		// красит строку по контексту
 		expect(button.className).not.toMatch(/--view-/)
 	})
+
+	it('клик потребителя по опции — после выбора, как у ListBox; stopPropagation выбор не отменяет', async () => {
+		const order: string[] = []
+
+		wrapper = mount(
+			defineComponent({
+				setup: () => () =>
+					h(Select, { 'onUpdate:value': () => order.push('выбор') }, () => [
+						h(SelectItem, {
+							value: 'msk',
+							text: 'Москва',
+							onClick: (event: MouseEvent) => {
+								order.push('клик')
+								event.stopPropagation()
+							},
+						}),
+					]),
+			}),
+			{ attachTo: document.body },
+		)
+
+		await nextFrame()
+		await wrapper.find('input').trigger('click')
+		await nextTick()
+		;(options()[0] as HTMLElement).click()
+		await nextTick()
+
+		expect(order).toEqual(['выбор', 'клик'])
+		expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Москва')
+	})
 })
 
 /**
