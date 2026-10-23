@@ -1,0 +1,95 @@
+/* ─── Dialog ──────────────────────────────────────────────────
+ * Модальное окно. Корень — сама панель: она телепортирована в `body` целиком
+ * и несёт слой окна, подложка — её сосед. Подложка, сетка панели, заголовок,
+ * тело, подвал и кнопки шапки — общие с выезжающей панелью (`modal.css`).
+ * Своё у окна — место, размер, отступ от краёв экрана и разворот: раскладка
+ * без замеров. Код отдаёт значения модификатором (`--placement-*`),
+ * переменными и `data-maximized`, остальное делает CSS.
+ *
+ * Место — полями, как у нативного `<dialog>`. Панель растянута по области —
+ * экрану без отступов, — а `auto`-поля по обе стороны оси ставят её по центру
+ * области: и размер, и место считает браузер. Отступы — `inset`, а не поля:
+ * процент поля считается от ширины экрана и по вертикали, а у `inset` — от
+ * экрана по своей оси. Неравные отступы сдвигают центр: окно стоит по центру
+ * области, а не экрана. Окно у края прижато к краю области и стоит по центру
+ * по другой оси; `start` и `end` — логические стороны, в RTL окно само
+ * встаёт у другого края.
+ *
+ * Отступ по сторонам код отдаёт переменными — из свойства `offset` и поправок
+ * подписчиков `layout:offset:before` (`--so-dialog-offset-top`, `-bottom`,
+ * `-start`, `-end`), — и только заданные: у незаданной стороны отступ по
+ * умолчанию (`--so-dialog-offset`). Он один на место и на потолок размера,
+ * поэтому окно у края, выросшее до потолка, встаёт от края до края с тем же
+ * отступом.
+ *
+ * Размер — `--so-dialog-width` и `--so-dialog-height`: умолчания — у корня
+ * документа (постоянная ширина: форма с полями на всю строку иначе сжалась бы
+ * до их ширины; высота по содержимому), а свойства `width` и `height` код
+ * пишет на окно инлайном. Значения — размер панели, растянутой по области,
+ * поэтому `auto` здесь значит «по экрану с отступом», а по содержимому —
+ * `fit-content`. Потолок — область, какой бы размер ни задали: на узком экране
+ * окно сжимается само, но не разворачивается. Проценты — от области просмотра
+ * без полосы прокрутки, а не `vw`: с полосой окно заходило бы под неё.
+ *
+ * Развёрнутое окно — на весь экран: место, размер и отступ не действуют.
+ *
+ * Облик — поверхность, кромка, тень и скругление, их снятие у развёрнутого
+ * окна, появление и исчезание — рисует тема. */
+
+:root {
+	--so-dialog-width: 32rem;
+	--so-dialog-height: fit-content;
+	--so-dialog-offset: 1rem;
+}
+
+/* Без кнопки её колонка пуста и ширины не занимает: колонки между собой без
+ * зазора, промежутки держат сами кнопки. */
+.so-dialog {
+	position: fixed;
+	inset-block: var(--so-dialog-offset-top, var(--so-dialog-offset))
+		var(--so-dialog-offset-bottom, var(--so-dialog-offset));
+	inset-inline: var(--so-dialog-offset-start, var(--so-dialog-offset))
+		var(--so-dialog-offset-end, var(--so-dialog-offset));
+	margin: auto;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'title maximize close'
+		'body body body'
+		'footer footer footer';
+	width: var(--so-dialog-width);
+	height: var(--so-dialog-height);
+	max-width: calc(
+		100% - var(--so-dialog-offset-start, var(--so-dialog-offset)) -
+			var(--so-dialog-offset-end, var(--so-dialog-offset))
+	);
+	max-height: calc(
+		100% - var(--so-dialog-offset-top, var(--so-dialog-offset)) -
+			var(--so-dialog-offset-bottom, var(--so-dialog-offset))
+	);
+}
+
+.so-dialog--placement-top {
+	margin-block-start: 0;
+}
+
+.so-dialog--placement-bottom {
+	margin-block-end: 0;
+}
+
+.so-dialog--placement-start {
+	margin-inline-start: 0;
+}
+
+.so-dialog--placement-end {
+	margin-inline-end: 0;
+}
+
+.so-dialog[data-maximized='true'] {
+	inset: 0;
+	margin: 0;
+	width: auto;
+	height: auto;
+	max-width: none;
+	max-height: none;
+}

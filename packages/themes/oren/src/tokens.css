@@ -162,27 +162,7 @@
 	--so-component-fill: 8%;
 }
 
-/* ─── Кегль мельче шкалы Tailwind ───────────────────────────
- * Кегли темы — шкала Tailwind, и нижняя её ступень — `text-xs`, 12px. Ступень
- * мельче нужна подписи группы элементов размера `sm`: её кегль — на ступень
- * мельче справки того же размера (`mixins/_group.scss`), а справка `sm` уже
- * `text-xs`. Шаг вниз — тот же, что у шкалы внизу, 2px: 10px. Интерлиньяж —
- * 14px, на те же 2px меньше, чем у `text-xs`; записан долей кегля, как у
- * Tailwind.
- *
- * От схемы кегль не зависит: блок свой, тёмная схема его не переопределяет.
- * Утилиту `text-2xs` даёт регистрация в `@theme inline` ниже; имя — как у
- * ступеней Tailwind мельче `xs` (`shadow-2xs`, `container-2xs`). Ступень,
- * объявленная прямо в `@theme`, вышла бы на корень документа переменной
- * Tailwind без префикса `so-` (AGENTS.md пакета, «Открытые вопросы»).
- */
-:root {
-	--so-text-2xs: 0.625rem;
-	--so-text-2xs--line-height: calc(0.875 / 0.625);
-}
-
-/* Регистрируем токены в Tailwind — цвета и ступень кегля (утилиты ссылаются
- * на var) */
+/* Регистрируем токены в Tailwind — цвета (утилиты ссылаются на var) */
 @theme inline {
 	--color-so-accent-50: var(--so-accent-50);
 	--color-so-accent-100: var(--so-accent-100);
@@ -243,7 +223,4 @@
 	--color-so-neutral-800: var(--so-neutral-800);
 	--color-so-neutral-900: var(--so-neutral-900);
 	--color-so-neutral-950: var(--so-neutral-950);
-
-	--text-2xs: var(--so-text-2xs);
-	--text-2xs--line-height: var(--so-text-2xs--line-height);
 }

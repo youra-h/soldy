@@ -1,0 +1,166 @@
+/* ─── Drawer ──────────────────────────────────────────────────
+ * Выезжающая панель. Анатомия — как у модального окна: корень — сама панель и
+ * несёт слой, подложка — её сосед, раньше в DOM. Подложка, сетка панели,
+ * заголовок, тело, подвал и кнопка закрытия — общие с окном (`modal.css`).
+ * Своё у панели — край, размер по оси края, место полосы жеста и место в
+ * контейнере: раскладка без замеров. Код отдаёт значения модификатором края
+ * (`--placement-*`), переменными размера и `data-*` (`data-swiping`,
+ * `data-contained`).
+ *
+ * Край. Боковая панель — во всю высоту, ширина — `--so-drawer-width`; верхняя
+ * и нижняя — во всю ширину, высота — `--so-drawer-height`, по умолчанию — по
+ * содержимому. Умолчания — у корня документа, а свойства `width` и `height`
+ * код пишет на панель инлайном. Потолок — экран (контейнер) без полосы
+ * подложки (`--so-drawer-gap`): по ней панель закрывают нажатием мимо, и из-под
+ * панели видно, откуда её открыли. Длинное содержимое прокручивается в теле.
+ * `start` и `end` — логические стороны: в RTL панель сама встаёт у другого
+ * края.
+ *
+ * Внутри контейнера (`contained`) панель и подложка стоят в ближайшем
+ * позиционированном предке, а не на экране.
+ *
+ * Полоса жеста — посередине края, за который тянут, то есть края со стороны
+ * страницы. Своя дорожка сетки, а не наложение: зона захвата
+ * (`--so-target-size`) не накрывает заголовок и кнопку закрытия. Отступ
+ * содержимого с её стороны держит сама зона: он шире обычного, и второй
+ * отступ сверх неё отодвинул бы содержимое дальше, чем у панели без полосы.
+ * У бокового края штрих полосы — поперёк строки (`swipe.css`). Пока панель
+ * тянут, курсор «держу» — по всей панели.
+ *
+ * Облик — поверхность, кромка, тень, скругление углов со стороны страницы,
+ * вуаль подложки, въезд и выезд, сдвиг за указателем — рисует тема. */
+
+:root {
+	--so-drawer-width: 20rem;
+	--so-drawer-height: auto;
+	--so-drawer-gap: 3rem;
+}
+
+.so-drawer__backdrop[data-contained='true'] {
+	position: absolute;
+}
+
+.so-drawer {
+	position: fixed;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'title close'
+		'body body'
+		'footer footer';
+}
+
+.so-drawer[data-contained='true'] {
+	position: absolute;
+}
+
+.so-drawer--placement-start,
+.so-drawer--placement-end {
+	inset-block: 0;
+	width: var(--so-drawer-width);
+	max-width: calc(100% - var(--so-drawer-gap));
+}
+
+.so-drawer--placement-top,
+.so-drawer--placement-bottom {
+	inset-inline: 0;
+	height: var(--so-drawer-height);
+	max-height: calc(100% - var(--so-drawer-gap));
+}
+
+.so-drawer--placement-start {
+	inset-inline-start: 0;
+}
+
+.so-drawer--placement-end {
+	inset-inline-end: 0;
+}
+
+.so-drawer--placement-top {
+	inset-block-start: 0;
+}
+
+.so-drawer--placement-bottom {
+	inset-block-end: 0;
+}
+
+.so-drawer[data-swiping='true'] {
+	cursor: grabbing;
+}
+
+.so-drawer__handle {
+	grid-area: handle;
+}
+
+.so-drawer--placement-top > .so-drawer__handle,
+.so-drawer--placement-bottom > .so-drawer__handle {
+	block-size: var(--so-target-size);
+}
+
+.so-drawer--placement-start > .so-drawer__handle,
+.so-drawer--placement-end > .so-drawer__handle {
+	inline-size: var(--so-target-size);
+}
+
+.so-drawer--placement-start > .so-drawer__handle::before,
+.so-drawer--placement-end > .so-drawer__handle::before {
+	inline-size: var(--so-swipe-grip-thickness);
+	block-size: var(--so-swipe-grip-length);
+}
+
+/* Дорожка полосы — у края со стороны страницы. */
+.so-drawer--placement-bottom:has(> .so-drawer__handle) {
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'handle handle'
+		'title close'
+		'body body'
+		'footer footer';
+}
+
+.so-drawer--placement-bottom:has(> .so-drawer__handle) > .so-drawer__title {
+	padding-block-start: 0;
+}
+
+.so-drawer--placement-bottom:has(> .so-drawer__handle) > .so-drawer__close {
+	margin-block-start: calc((var(--so-modal-title-line) - var(--so-button-height-normal)) / 2);
+}
+
+.so-drawer--placement-top:has(> .so-drawer__handle) {
+	grid-template-rows: auto minmax(0, 1fr) auto auto;
+	grid-template-areas:
+		'title close'
+		'body body'
+		'footer footer'
+		'handle handle';
+}
+
+.so-drawer--placement-top:has(> .so-drawer__handle) > .so-drawer__footer {
+	padding-block-end: 0;
+}
+
+.so-drawer--placement-end:has(> .so-drawer__handle) {
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	grid-template-areas:
+		'handle title close'
+		'handle body body'
+		'handle footer footer';
+}
+
+.so-drawer--placement-end:has(> .so-drawer__handle)
+	> :is(.so-drawer__title, .so-drawer__body, .so-drawer__footer) {
+	padding-inline-start: 0;
+}
+
+.so-drawer--placement-start:has(> .so-drawer__handle) {
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	grid-template-areas:
+		'title close handle'
+		'body body handle'
+		'footer footer handle';
+}
+
+.so-drawer--placement-start:has(> .so-drawer__handle)
+	> :is(.so-drawer__title, .so-drawer__body, .so-drawer__footer) {
+	padding-inline-end: 0;
+}

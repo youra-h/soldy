@@ -1,0 +1,183 @@
+/* ─── Модальный слой ─────────────────────────────────────────
+ * Общее у модального окна (Dialog) и выезжающей панели (Drawer). Анатомия у
+ * них одна: корень — сама панель, подложка — её сосед, раньше в DOM, а внутри
+ * панели — заголовок, тело, подвал и кнопки шапки, которые стоят в DOM
+ * последними, а в ряд заголовка их переносят области сетки. Своё у
+ * компонента — место и размер, колонки и строки сетки и состав кнопок шапки
+ * (`components/dialog.css`, `components/drawer.css`).
+ *
+ *   .so-dialog__backdrop, .so-drawer__backdrop   подложка
+ *   .so-dialog, .so-drawer                       панель — сетка
+ *     .so-…__title                               заголовок, `h2`
+ *     .so-…__body                                тело — прокручивается оно
+ *     .so-…__footer                              подвал — ряд действий
+ *     .so-dialog__maximize, .so-…__close         кнопки шапки — Button
+ *
+ * Подложка — на весь экран, под панелью. Она обязательная разметка, а не
+ * украшение: фон под панелью скрыт от скринридера, но не от указателя, и к
+ * странице его не пускает только она. Нажатие по ней плагины слоя считают
+ * нажатием мимо панели. `z-index` подложке и панели пишет код, одним числом:
+ * панель рисуется поверх просто порядком.
+ *
+ * Прокручивается тело, а не панель, поэтому шапка, подвал и кнопки остаются на
+ * месте: панель — сетка, и строка тела сжимается до остатка высоты. Отступ —
+ * внутри прокрутки: у края прокручиваемой области обрезалось бы кольцо фокуса
+ * вложенного контрола. Прокрутка до конца не переходит на страницу под
+ * панелью, а длинное слово переносится, а не заводит полосу по горизонтали.
+ * Пустые заголовок и подвал места не занимают: тело тогда начинается или
+ * кончается у края панели полным отступом.
+ *
+ * Кнопки шапки — квадрат высоты Button своего размера (`normal`: размера у них
+ * нет), в конце строки заголовка, каждая по центру его первой строки:
+ * заголовок переносится — кнопки остаются наверху. Строка заголовка —
+ * переменная, и от неё считается место кнопок: разойдись они, кнопка съехала
+ * бы с заголовка молча. Промежуток между кнопками держит первая из них, а
+ * угол — последняя: её значок отстоит от края панели на тот же отступ, что
+ * текст заголовка с другой стороны. Значок в квадрате отстоит от его края на
+ * четверть высоты, поэтому до края панели — отступ без этой четверти.
+ *
+ * Таблица прямо в теле — её окно (`.so-table__viewport`) прямой ребёнок тела:
+ * закреплённая шапка встаёт к краю тела, а не под отступ
+ * (`--so-table-head-offset` — минус отступ сверху, таблица наследует его от
+ * окна). Закреплённое браузер ставит под отступ контейнера, и в отступе над
+ * шапкой проступали бы строки, которые уходят под неё. Только прямой ребёнок:
+ * глубже у таблицы бывает свой контейнер прокрутки, и сдвиг тела унёс бы её
+ * шапку за его край. Контекст нулевой специфичности — свой сдвиг таблицы
+ * сильнее.
+ *
+ * Отступы, промежутки и строка заголовка — переменные корня документа;
+ * умолчания — числа темы oren, тема задаёт свои на корне документа.
+ *
+ * Облик — вуаль подложки, поверхность, кромка, тень и скругление панели, кегль
+ * и начертание заголовка, вид кнопок шапки, проявление, въезд и жест — рисует
+ * тема. */
+
+:root {
+	--so-modal-padding: 1.25rem;
+	--so-modal-gap: 0.5rem;
+	--so-modal-title-line: 1.75rem;
+	--so-modal-footer-gap: 0.5rem;
+	--so-modal-button-gap: 0.25rem;
+}
+
+.so-dialog__backdrop,
+.so-drawer__backdrop {
+	position: fixed;
+	inset: 0;
+}
+
+.so-dialog,
+.so-drawer {
+	display: grid;
+	overflow: hidden;
+}
+
+/* Заголовок рисуется всегда: на него панель ссылается `aria-labelledby`. */
+.so-dialog__title,
+.so-drawer__title {
+	grid-area: title;
+	padding: var(--so-modal-padding) var(--so-modal-padding) 0;
+	line-height: var(--so-modal-title-line);
+	overflow-wrap: break-word;
+}
+
+.so-dialog__title:empty,
+.so-drawer__title:empty {
+	display: none;
+}
+
+.so-dialog__body,
+.so-drawer__body {
+	grid-area: body;
+	min-height: 0;
+	padding: var(--so-modal-gap) var(--so-modal-padding);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	overflow-wrap: break-word;
+}
+
+:where(.so-dialog__body > .so-table__viewport, .so-drawer__body > .so-table__viewport) {
+	--so-table-head-offset: calc(-1 * var(--so-modal-gap));
+}
+
+/* Подвал — ряд действий в конце строки, в RTL он сам встаёт слева. */
+.so-dialog__footer,
+.so-drawer__footer {
+	grid-area: footer;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--so-modal-footer-gap);
+	padding: calc(var(--so-modal-gap) * 1.5) var(--so-modal-padding) var(--so-modal-padding);
+}
+
+.so-dialog__footer:empty,
+.so-drawer__footer:empty {
+	display: none;
+}
+
+/* Шапки нет — ни заголовка, ни кнопок: тело начинается от верхнего края
+ * панели полным отступом, а не промежутком после шапки. */
+.so-dialog:not(:has(> .so-dialog__title:not(:empty), > .so-dialog__maximize, > .so-dialog__close))
+	> .so-dialog__body,
+.so-drawer:not(:has(> .so-drawer__title:not(:empty), > .so-drawer__close)) > .so-drawer__body {
+	padding-block-start: var(--so-modal-padding);
+}
+
+:where(
+	.so-dialog:not(
+			:has(> .so-dialog__title:not(:empty), > .so-dialog__maximize, > .so-dialog__close)
+		)
+		> .so-dialog__body
+		> .so-table__viewport,
+	.so-drawer:not(:has(> .so-drawer__title:not(:empty), > .so-drawer__close))
+		> .so-drawer__body
+		> .so-table__viewport
+) {
+	--so-table-head-offset: calc(-1 * var(--so-modal-padding));
+}
+
+/* Подвала нет — тело кончается у нижнего края панели полным отступом. */
+.so-dialog:has(> .so-dialog__footer:empty) > .so-dialog__body,
+.so-drawer:has(> .so-drawer__footer:empty) > .so-drawer__body {
+	padding-block-end: var(--so-modal-padding);
+}
+
+.so-dialog__maximize,
+.so-dialog__close,
+.so-drawer__close {
+	flex-shrink: 0;
+	align-self: flex-start;
+	aspect-ratio: 1;
+	padding-inline: 0;
+	margin-block-start: calc(
+		var(--so-modal-padding) + (var(--so-modal-title-line) - var(--so-button-height-normal)) / 2
+	);
+	margin-inline-end: var(--so-modal-button-gap);
+}
+
+.so-dialog__maximize:last-child,
+.so-dialog__close:last-child,
+.so-drawer__close:last-child {
+	margin-inline-end: calc(var(--so-modal-padding) - var(--so-button-height-normal) / 4);
+}
+
+/* Значок — по центру квадрата. Иконка блочная (`icon.css`), и выравнивание
+ * текста области её не двигает; флекс центрует и значок из слота
+ * потребителя, что бы в нём ни лежало. */
+.so-dialog__maximize > .so-button__text,
+.so-dialog__close > .so-button__text,
+.so-drawer__close > .so-button__text {
+	display: flex;
+	justify-content: center;
+}
+
+.so-dialog__maximize {
+	grid-area: maximize;
+}
+
+.so-dialog__close,
+.so-drawer__close {
+	grid-area: close;
+}

@@ -231,7 +231,7 @@ const glyph = (element: Element): SVGSVGElement => {
  * не было: область совпадала со значком, а значок брал кегль страницы на любом
  * размере, и на `2xl` в поле 44px в стрелку надо было попасть 23px. Теперь
  * обёртка — квадрат очистки рядом, в строку слота, а значок — её значка: кегль
- * поля по размеру (`themes/oren/src/components/select/_select.scss`).
+ * поля по размеру (`themes/base/src/components/select.css`).
  */
 describe('стрелка', () => {
 	it.each(COMPONENT_SIZES)('%s: область — квадрат очистки, значок — её значка', async (size) => {
@@ -288,7 +288,7 @@ const visibleOpacity = (element: Element): number => {
  * Выключенная опция гаснет одной строкой, как пункт ListBox: строка — Button и
  * гасит себя сама по своему `data-disabled`, а обёртка опции прозрачность не
  * трогает. Раньше гасла и обёртка, и опция выходила вдвое бледнее такого же
- * пункта ListBox (`themes/oren/src/components/select/_select.scss`). Чисел
+ * пункта ListBox (`themes/base/src/components/select.css`). Чисел
  * темы проверка не знает: образец — выключенный пункт ListBox рядом.
  */
 describe('выключенная опция', () => {

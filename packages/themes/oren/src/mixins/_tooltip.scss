@@ -29,8 +29,17 @@ $height: calc(
 	var(--text-#{$text}) * var(--text-#{$text}--line-height) + var(--spacing) * #{2 * $pad-block}
 );
 
-@mixin plate {
-	@apply box-border rounded-md px-2 py-#{$pad-block};
+// Облик плашки. Её поля у Tooltip ставит общий слой тем
+// (`components/tooltip.css` в `@soldy-ui/theme-base`), у подсказки Slider,
+// чья структура ещё здесь, — `plate` с теми же числами: с переносом структуры
+// Slider они уйдут в общий слой.
+@mixin plate-look {
+	@apply rounded-md;
 	@apply bg-so-neutral-800 text-so-neutral-50 text-#{$text};
 	@apply outline outline-transparent;
+}
+
+@mixin plate {
+	@apply box-border px-2 py-#{$pad-block};
+	@include plate-look;
 }
