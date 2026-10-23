@@ -2,6 +2,7 @@ import { TCollectionExtension, TagsCollectionDescriptor, TagsDescriptor } from '
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -21,5 +22,7 @@ export function setupTags(props: TagsProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	return { ...useCollectionAdapter(collectionAdapter, props, owner), layer }
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+
+	return { ...joinBindings(owner, collectionBinding), layer }
 }

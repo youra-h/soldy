@@ -8,6 +8,7 @@ import {
 import {
 	createSolidAdapterContext,
 	useAdapter,
+	joinBindings,
 	useCollectionAdapter,
 	useElevator,
 } from '../../adapter'
@@ -33,8 +34,10 @@ export function setupSelect(props: SelectProps) {
 		.use(TCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+
 	return {
-		...useCollectionAdapter(collectionAdapter, props, owner),
+		...joinBindings(owner, collectionBinding),
 		field: adapter.instance.field,
 		layer,
 	}
