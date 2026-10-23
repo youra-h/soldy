@@ -1,77 +1,28 @@
 /**
- * useAdapter — единственный Svelte-хук на весь проект (аналог useAdapter
- * из Vue/React-пакетов).
+ * useAdapter — связка adapter-context со Svelte, аналог `useAdapter` у Vue.
  *
- * Принимает ГОТОВЫЙ adapter-context (создаётся в setup-слое компонента через
- * createAdapterContext) и связывает его со Svelte через обмен `adapter.connect()`
- * из setup. Своё здесь — только куда писать значение (руна `$state`), как
- * отдать событие (колбэк-проп) и в какой момент цикла Svelte это делать:
- *
- * 1. Core → Svelte: подписка на состояние связки
+ * 1. Core → Svelte: подписка на состояние связки, значения — в руну `$state`
  * 2. Svelte → Core: входные пропсы в эффекте
- * 3. События (Core → колбэк-пропы onXxx)
- * 4. Компонент принят — adapter.attach()
- * 5. DOM-биндинг через attachment (аналог callback-ref в React), и тот же
- *    узел — связываемому пропу `ref` компонента и руне `rootElement`
- * 6. Очистка при уничтожении компонента
+ * 3. События — в колбэк-пропы `onXxx`
+ * 4. Компонент принят — `adapter.attach()` при инициализации
+ * 5. Корень — attachment-ом: к `TElementPlugin`, в `ref` компонента и в руну
+ *    `rootElement`
+ * 6. Очистка при уничтожении
  *
- * Фасад коллекции связывает `useCollectionAdapter` — те же шаги, кроме
- * привязки узла: она принадлежит компоненту.
- *
- * Принимает геттер props: в Svelte 5 деструктуризация рвёт реактивность,
- * поэтому наружу передаётся сам объект `$props()`, а читается он лениво.
- *
- * Корень компонента потребитель получает связываемым пропом `ref`
- * (`<Button bind:ref={button}>`): `bind:this` у компонента Svelte даёт его
- * экземпляр, а не узел. `ref` — корень, у поля (Input, CheckBox, Switch,
- * RadioGroup.Item) тоже, а не `<input>`: от корня до поля потребитель дойдёт
- * `querySelector`, а от поля до корня — только по родителям, и этот путь
- * ломается при каждой правке разметки. `$bindable` компилятор пускает только
- * в деструктуризацию `$props()` компонента, поэтому проп объявляет сам
- * компонент (`ref = $bindable()`), а сюда отдаёт приёмник —
- * `(node) => (ref = node)`, как отдаёт id монтирования. Узел приёмник
- * получает тем же attachment-ом корня, что привязывает его к
- * `TElementPlugin`, — после привязки, а при снятии — `null`. На сервере
- * attachment-ов нет, и `ref` не пишется вовсе.
- *
- * Запасного значения у `ref` нет (`$bindable()`, а не `$bindable(null)`):
- * переменную потребителя, ещё пустую — `let button = $state<Element>()`, —
- * Svelte с запасным значением не связывает и падает (`props_invalid_value`).
- *
- * Корень внутри обёртки (окно таблицы вокруг `table`, `toWrappedRootProps`)
- * получает эти две половины attachment-а корня по отдельности: корню — только
- * привязку (`bindRef`), обёртке — только запись `ref` (`consumerRef`): внешний
- * узел — тот, на который легли атрибуты потребителя.
- *
- * Узел, привязанный к `TElementPlugin`, разметка компонента получает и сама —
- * руной `rootElement`, как `rootElement` у Vue: корень Popover и Tooltip —
- * якорь панели, и разметка отдаёт его своему Frame (`anchor_anchor`). `ref` для
- * этого не годится: это привязка потребителя, и при `bind:ref={get, set}`
- * разметка читала бы его код. Пишет руну та же половина attachment-а, что
- * привязывает узел (`bindRef`), — у таблицы это `table`, — при снятии —
- * `null`, и смена тега доходит до разметки новым узлом. На сервере
- * attachment-ов нет, и узла там нет тоже.
- *
- * Файл `.svelte.ts` — иначе руны `$effect` / `$derived` недоступны.
+ * Фасад коллекции добавляет к связке компонента `useCollectionAdapter`.
+ * AGENTS.md (Svelte), «Связка».
  */
 
 import { onDestroy, untrack } from 'svelte'
 import { toInstanceState } from '@soldy-ui/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } from '@soldy-ui/setup'
-import type { IPluginBundle } from '@soldy-ui/plugins'
 import { SvelteProfile } from '../common'
+import { joinState, type TJoinedState } from './state'
 
-/**
- * Пропсы, которые компонент не съел. `children` и `ctrl` он съедает всегда, а
- * `ref` — связываемый проп компонента: его компонент берёт из `$props()` сам.
- */
+/** Пропсы, которые компонент не съел; `ref` он берёт из `$props()` сам. */
 type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl' | 'ref'>
 
-/**
- * Приёмник корня — связываемый проп `ref` компонента: `(node) => (ref = node)`.
- * Узел — `Element`, а не `HTMLElement`: `tag` свободен, и корнем бывает
- * `<svg>` (иконка по роли).
- */
+/** Приёмник корня — связываемый проп `ref` компонента: `(node) => (ref = node)`. */
 export type TRootReceiver = (node: Element | null) => void
 
 /** Сборка без своего корня (`setupControl`): узел отдавать некому. */
@@ -80,91 +31,36 @@ const NO_RECEIVER: TRootReceiver = () => {}
 export type TBinding<
 	C extends IComponentContract = IComponentContract,
 	TProps extends object = object,
+	TState extends object = TAdapterState<C>,
 > = {
 	readonly ctrl: C['instance']
-	readonly plugins: IPluginBundle | null
-	/** Свойства инстанса и выходы плагинов со снимком через `valueOf()` — см. `TAdapterState`. */
-	readonly state: TAdapterState<C>
-	/**
-	 * Атрибуты корня от потребителя: пропсы, которые не съела связка, и
-	 * attachment-ы потребителя — пропсы с ключом-символом.
-	 */
+	readonly state: TState
+	/** Атрибуты корня от потребителя, вместе с его attachment-ами (ключи-символы). */
 	readonly forwardProps: TForwardProps<TProps>
-	/**
-	 * Корень, привязанный к `TElementPlugin`, — руной: разметка, которая отдаёт
-	 * его дальше (якорь панели Frame у Popover и Tooltip), следит за ним, как за
-	 * состоянием. Не отрисован или снят — `null`; у корня внутри обёртки — сам
-	 * корень (`table`), а не обёртка.
-	 */
+	/** Корень, привязанный к `TElementPlugin`; не отрисован — `null`. */
 	readonly rootElement: Element | null
-	/**
-	 * Svelte-attachment корня: `<div {@attach binding.attachElement}>` —
-	 * привязка к `TElementPlugin`, затем тот же узел — `ref` компонента.
-	 */
-	attachElement: (node: Element) => (() => void) | void
-	/**
-	 * Svelte-attachment корня внутри обёртки (`toWrappedRootProps`) — только
-	 * привязка к `TElementPlugin`: `ref` компонента получает обёртка.
-	 */
+	/** Attachment корня: привязка к `TElementPlugin`, затем `ref` компонента. */
+	attachElement: (node: Element) => () => void
+	/** Только привязка — корню внутри обёртки (`toWrappedRootProps`). */
 	bindRef: (node: Element) => () => void
-	/**
-	 * Svelte-attachment обёртки корня — только `ref` компонента: узел, на
-	 * который легли атрибуты потребителя. К `TElementPlugin` привязан корень
-	 * внутри неё (`bindRef`).
-	 */
+	/** Только `ref` — обёртке корня. */
 	consumerRef: (node: Element) => () => void
 }
 
-/**
- * То же, что `TBinding`, но без `ctrl` и привязки узла: они принадлежат
- * компоненту, а не фасаду его коллекции (см. `useCollectionAdapter`).
- */
-export type TCollectionBinding<
-	C extends IComponentContract = IComponentContract,
-	TProps extends object = object,
-> = {
-	readonly plugins: IPluginBundle | null
-	/** Свойства фасада и выходы плагинов его дескриптора — как у `TBinding`. */
-	readonly state: TAdapterState<C>
-	/** Атрибуты, которые не съели ни компонент, ни фасад, и attachment-ы потребителя. */
-	readonly forwardProps: TForwardProps<TProps>
-}
-
-/**
- * Общая часть `useAdapter` и `useCollectionAdapter`: связка контекста,
- * состояние, входы, события, приём и уничтожение. Отдаёт то, из чего каждый
- * хук собирает свой результат.
- */
+/** Общая часть `useAdapter` и `useCollectionAdapter`. */
 function useExchange(
 	adapter: IAdapterContext,
 	getProps: () => object,
-): { binding: TExchange; state: Record<string, unknown> } {
-	const binding = adapter.connect(SvelteProfile)
+): { exchange: TExchange; state: Record<string, unknown> } {
+	const exchange = adapter.connect(SvelteProfile)
 	const values: Record<string, unknown> = {}
 	let target = values
 
-	// 1. Core → Svelte: подписка сразу, при инициализации компонента, а не в
-	// эффекте — иначе изменение ядра до эффекта не дошло бы. Она же отдаёт
-	// значение каждого свойства тем же вызовом, что и триггер: так состояние и
-	// заполняется. onDestroy, а не cleanup эффекта: эффект на сервере не
-	// выполняется, а отписаться нужно и там.
-	//
-	// Значения, которые подписка отдаёт сразу, ложатся в обычный объект, и руна
-	// заводится над ним уже с полным составом; дальше подписка пишет в руну.
-	// Свойство, которого у руны ещё нет, Svelte считает ростом её состава, а в
-	// разработке с шестой такой записи за такт снимает на каждую стек вызовов:
-	// у элемента коллекции с двумя контекстами по десяткам свойств на это
-	// уходила большая часть монтирования.
-	//
-	// Запись — мимо слежения (`untrack`): ядро меняется и посреди отрисовки
-	// Svelte. Плагины слушают DOM своими обработчиками, а браузер шлёт событие
-	// тем же вызовом DOM, внутри эффекта блока: `focusout` узла в фокусе,
-	// который петля с ключом переставила или блок вынул. Запись в руну из
-	// эффекта блока Svelte считает мутацией из шаблона и бросает
-	// `state_unsafe_mutation`, а свои обработчики событий зовёт вне
-	// реактивного контекста — запись ядра такая же внешняя
+	// 1. Подписка — сразу, а не в эффекте: эффекта нет на сервере. Первые
+	// значения ложатся в обычный объект, руна заводится над полным составом.
+	// Запись — мимо слежения: ядро меняется и посреди отрисовки
 	onDestroy(
-		binding.state.subscribe((name, value) => {
+		exchange.state.subscribe((name, value) => {
 			untrack(() => {
 				target[name] = value
 			})
@@ -175,45 +71,36 @@ function useExchange(
 
 	target = state
 
-	// 2. Svelte → Core: эффект читает все props и перезапускается при смене любого,
-	// а связка пишет из них только сменившиеся с прошлого раза
+	// 2. Эффект читает все пропсы, связка пишет только сменившиеся
 	$effect(() => {
-		binding.inputs.full(getProps())
+		exchange.inputs.full(getProps())
 	})
 
-	// 3. События: подписка одна на всё время жизни, props читаются лениво в колбэке.
+	// 3. Подписка одна на всё время жизни, колбэк читается лениво
 	$effect(() =>
-		binding.events.listen((exportName, args) => {
+		exchange.events.listen((exportName, args) => {
 			const callback: unknown = Reflect.get(getProps(), exportName)
 
 			if (typeof callback === 'function') callback(...args)
 		}),
 	)
 
-	// 4. Компонент принят: инициализация компонента Svelte выполняется один
-	// раз, и на сервере тоже, — это и есть его монтирование. Не в эффекте:
-	// эффект на сервере не выполняется, а элемент коллекции обязан войти в неё
-	// к серверной разметке. Дети инициализируются в порядке документа, и
-	// элементы разметки входят в коллекцию в порядке DOM
+	// 4. Инициализация компонента — и на сервере тоже — это его монтирование:
+	// элемент коллекции входит в неё к серверной разметке, в порядке DOM
 	adapter.attach()
 
-	// 6. Очистка контекста
+	// 6.
 	$effect(() => () => adapter.destroy())
 
-	return { binding, state }
+	return { exchange, state }
 }
 
 /**
- * Атрибуты от потребителя: то, что из `props` не съела связка, и все
- * attachment-ы потребителя. Связка отдаёт пропсы по строковым ключам, а
- * attachment потребителя (`<Button {@attach tooltip}>`) Svelte передаёт
- * пропом с ключом-символом — его связка не видит. Поэтому собственные
- * символьные ключи добавляются здесь, все: attachment среди них при спреде на
- * корень отбирает сам Svelte. С привязкой корня адаптера ключ не совпадёт —
- * её attachment `Dynamic` ставит под своим ключом.
+ * Не съеденное связкой и attachment-ы потребителя: их Svelte передаёт пропами
+ * с ключом-символом, и связка их не видит.
  */
-function forwardOf<TProps extends object>(binding: TExchange, props: TProps): Partial<TProps> {
-	const forward = binding.forward(props)
+function forwardOf<TProps extends object>(exchange: TExchange, props: TProps): Partial<TProps> {
+	const forward = exchange.forward(props)
 
 	for (const key of Object.getOwnPropertySymbols(props)) {
 		Reflect.set(forward, key, Reflect.get(props, key))
@@ -222,30 +109,18 @@ function forwardOf<TProps extends object>(binding: TExchange, props: TProps): Pa
 	return forward
 }
 
-/**
- * Инстанс и выходы плагинов берутся из контракта в типе контекста — его
- * выводит `createAdapterContext`.
- *
- * `receive` — приёмник корня: связываемый проп `ref` компонента. У сборки без
- * своего корня (`setupControl`) его нет.
- */
+/** `receive` — приёмник корня; у сборки без своего корня (`setupControl`) его нет. */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	getProps: () => TProps,
 	receive: TRootReceiver = NO_RECEIVER,
 ): TBinding<C, TProps> {
-	const { binding, state } = useExchange(adapter, getProps)
-	const forwardProps = $derived(forwardOf(binding, getProps()))
+	const { exchange, state } = useExchange(adapter, getProps)
+	const forwardProps = $derived(forwardOf(exchange, getProps()))
 
-	// Узел корня для разметки — сырой руной: прокси узлу не нужен, сравнивается
-	// он по ссылке
 	let rootElement = $state.raw<Element | null>(null)
 
-	// 5. DOM-биндинг: контекст сам знает, есть ли у набора TElementPlugin.
-	// Отвязка — очисткой attachment-а: смена тега пересоздаёт узел, и прежний
-	// отвязывается, а новый привязывается. Тот же узел — руне разметки. Svelte
-	// эту запись пускает: attachment выполняется эффектом, а не блоком, а его
-	// очистка — вне реакции
+	// 5. Смена тега пересоздаёт узел: очистка отвязывает прежний
 	const bindRef = (node: Element): (() => void) => {
 		adapter.bindElement(node)
 		rootElement = node
@@ -256,11 +131,8 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		}
 	}
 
-	// Узел — `ref` компонента, при снятии — `null`. Запись — мимо слежения
-	// attachment-а: сеттер привязки — код потребителя (`bind:ref={get, set}`),
-	// и прочитанное в нём attachment счёл бы своим и на его смену перезапустился
-	// бы — а `attachElement` с ним отвязал бы узел от `TElementPlugin` и
-	// привязал заново
+	// Мимо слежения: сеттер `bind:ref={get, set}` — код потребителя, и
+	// прочитанное в нём перезапускало бы attachment
 	const consumerRef = (node: Element): (() => void) => {
 		untrack(() => receive(node))
 
@@ -269,7 +141,6 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 
 	return {
 		ctrl: adapter.instance,
-		plugins: adapter.bundle,
 		state: toInstanceState<C>(state),
 		bindRef,
 		consumerRef,
@@ -282,8 +153,6 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 			return rootElement
 		},
 
-		// Корень и есть внешний узел: привязка, затем тот же узел — `ref`
-		// компонента; при снятии — в том же порядке
 		attachElement(node: Element) {
 			const unbind = bindRef(node)
 			const release = consumerRef(node)
@@ -297,36 +166,37 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 }
 
 /**
- * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
- *
- * У коллекционного компонента контекстов два: свой и фасада. Состояние, входы,
- * события, приём и уничтожение у фасада те же, что у компонента, а `ctrl` и
- * привязки узла — нет:
- *
- * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
- *   ждут сам компонент;
- * - своего узла у фасада нет: он делит набор компонента, и корень к
- *   `TElementPlugin` привязывает `useAdapter` компонента.
- *
- * `getProps` — все пропсы компонента: фасад берёт из них свои входы и колбэки
- * своих событий. `getForward` — то, что не съел компонент (`forwardProps` его
- * `useAdapter`): фасад отбирает из них свои имена, и на корень уходит только
- * то, что не съели ни компонент, ни фасад.
+ * Связка компонента с фасадом коллекции: состояние фасада под состоянием
+ * компонента, на корень — то, что не съели ни компонент, ни фасад. `ctrl` и
+ * корень — компонента: своего узла у фасада нет. Два фасада (подменю) —
+ * цепочкой, ближний к компоненту внутри.
  */
-export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
-	adapter: IAdapterContext<C>,
+export function useCollectionAdapter<
+	C extends IComponentContract,
+	F extends IComponentContract,
+	TProps extends object,
+	TState extends object,
+>(
+	facade: IAdapterContext<F>,
 	getProps: () => TProps,
-	getForward: () => TForwardProps<TProps>,
-): TCollectionBinding<C, TProps> {
-	const { binding, state } = useExchange(adapter, getProps)
-	const forwardProps = $derived(forwardOf(binding, getForward()))
+	owner: TBinding<C, TProps, TState>,
+): TBinding<C, TProps, TJoinedState<TAdapterState<F>, TState>> {
+	const { exchange, state } = useExchange(facade, getProps)
+	const forwardProps = $derived(forwardOf(exchange, owner.forwardProps))
 
 	return {
-		plugins: adapter.bundle,
-		state: toInstanceState<C>(state),
+		ctrl: owner.ctrl,
+		state: joinState(toInstanceState<F>(state), owner.state),
+		attachElement: owner.attachElement,
+		bindRef: owner.bindRef,
+		consumerRef: owner.consumerRef,
 
 		get forwardProps() {
 			return forwardProps
+		},
+
+		get rootElement() {
+			return owner.rootElement
 		},
 	}
 }

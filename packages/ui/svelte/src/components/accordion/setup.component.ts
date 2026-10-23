@@ -1,15 +1,3 @@
-/**
- * setupAccordion — setup-слой Accordion.
- *
- * Два контекста, как у Vue: свой (`AccordionDescriptor`) и фасада коллекции
- * (`AccordionCollectionDescriptor`) на общем наборе, с тем же id
- * монтирования.
- *
- * Расширения коллекции опускают движок и регистратор секций лифтом
- * (`setContext`): секция, смонтированная внутри, войдёт в коллекцию
- * аккордеона при своей инициализации.
- */
-
 import {
 	AccordionCollectionDescriptor,
 	AccordionDescriptor,
@@ -18,7 +6,6 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -45,9 +32,6 @@ export function setupAccordion(
 		{
 			props,
 			mountId,
-			// Готовая коллекция снаружи. Дали — фасад работает на ней и своей
-			// не создаёт, лишь доложит недостающие расширения в неё же.
-			// Не дали — соберёт свою. Развилка в `completeEngine`
 			options: { owner: adapter.instance, engine: props.engine },
 		},
 		{ bundle: adapter.bundle },
@@ -55,20 +39,5 @@ export function setupAccordion(
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
-
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(owner.state, collectionBinding.state),
-
-		get forwardProps() {
-			return collectionBinding.forwardProps
-		},
-	}
+	return useCollectionAdapter(collectionAdapter, getProps, owner)
 }

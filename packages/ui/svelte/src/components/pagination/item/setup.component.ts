@@ -1,17 +1,3 @@
-/**
- * setupPaginationItem — setup-слой страницы пагинации.
- *
- * Два контекста, как у элементов Vue: собственный (`PaginationItemDescriptor`
- * — ключ, текст, выключенность, размер и вариант) и фасада
- * (`PaginationCollectionItemDescriptor` — членство в коллекции). Расширение
- * элемента берёт лифтом движок и регистратор пагинации и отдаёт фасаду
- * контекст страницы.
- *
- * Своего у страницы в разметке нет — ключ, текст и наборы ей пишет
- * расширение коллекции, а текущей её делает активация коллекции по нажатию.
- * Поэтому `context` отдаётся разметке явно: активация — метод item-адаптера.
- */
-
 import {
 	PaginationCollectionItemDescriptor,
 	PaginationItemDescriptor,
@@ -19,7 +5,6 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSvelteAdapterContext,
-	joinState,
 	useAdapter,
 	useCollectionAdapter,
 	useElevator,
@@ -47,17 +32,7 @@ export function setupPaginationItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const facade = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const binding = useCollectionAdapter(item, getProps, owner)
 
-	return {
-		ctrl: owner.ctrl,
-		plugins: owner.plugins,
-		attachElement: owner.attachElement,
-		state: joinState(facade.state, owner.state),
-		context: item.instance.context,
-
-		get forwardProps() {
-			return facade.forwardProps
-		},
-	}
+	return Object.assign(binding, { context: item.instance.context })
 }
