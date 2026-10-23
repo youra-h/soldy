@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand/soldy-banner-mini.jpg" alt="Soldy UI — Headless. Universal. Flexible." width="100%">
+  <img src="brand/soldy-banner-mini2.jpg" alt="Soldy UI — Headless. Universal. Flexible." width="100%">
 </p>
 
 # Soldy UI
