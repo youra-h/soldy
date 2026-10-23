@@ -35,7 +35,17 @@ import type {
 import { useMotion } from '@soldy-ui/plugins'
 import { Button, Table } from '@soldy-ui/vue'
 
-import { find, opacity, outlined, pixel, settled, shift, style, systemColor } from './colors'
+import {
+	find,
+	iconPaint,
+	opacity,
+	outlined,
+	pixel,
+	settled,
+	shift,
+	style,
+	systemColor,
+} from './colors'
 import { forcedColors } from './media'
 import {
 	delayOf,
@@ -752,7 +762,7 @@ describe('заголовок колонки', () => {
 		if (!arrow) throw new Error('стрелки нет')
 
 		expect(opacity(style(button).color)).toBe(1)
-		expect(pixel([style(arrow).fill])).toEqual(pixel([style(button).color]))
+		expect(pixel([iconPaint(arrow)])).toEqual(pixel([style(button).color]))
 		expect(await arrowOf(headers()[0])).toBe(1)
 
 		button.focus({ focusVisible: true })

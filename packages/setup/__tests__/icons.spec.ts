@@ -83,9 +83,24 @@ describe('реестр ролей', () => {
 	})
 })
 
-const PACKS: Record<string, Partial<Record<string, TIconSource>>> = { material, lucide }
+/**
+ * Пакеты и цвет, с которым загружены их иконки, — то, что стоит в SVG пакета:
+ * слабейшая ступень лестницы цвета (`docs/agents/theming.md`, «Пакеты
+ * иконок»). Material рисует заливкой цвета `#1f1f1f`, Lucide — линией цвета
+ * текста.
+ */
+const PACKS: { name: string; pack: Partial<Record<string, TIconSource>>; loaded: string }[] = [
+	{ name: 'material', pack: material, loaded: '#1f1f1f' },
+	{ name: 'lucide', pack: lucide, loaded: 'currentColor' },
+]
 
-describe.each(Object.entries(PACKS))('conformance пакета %s', (_, pack) => {
+/** Покраска в рисунке: атрибут `fill` или `stroke` и его значение. */
+const PAINT = /\s(fill|stroke)="([^"]*)"/g
+
+/** Ссылка на цвет иконки темы; в группе — запасное значение. */
+const ICON_COLOR = /^var\(--so-icon-color, ([^()]+)\)$/
+
+describe.each(PACKS)('conformance пакета $name', ({ pack, loaded }) => {
 	it('закрывает все обязательные роли', () => {
 		// Список ролей и есть контракт: добавили иконку в компонент — добавьте
 		// роль, и этот тест сразу покажет, какие пакеты её не закрыли
@@ -101,14 +116,34 @@ describe.each(Object.entries(PACKS))('conformance пакета %s', (_, pack) =>
 		}
 	})
 
-	it('рисунок красит тема — заливкой, без своих fill и stroke', () => {
-		// Тема красит глиф через `fill`: отметку CheckBox — цветом варианта,
-		// звезду Rating — двумя слоями. Свой `fill` (исходники Material несут
-		// fill="#1f1f1f") перебил бы её цвет, а обводка (Lucide рисует ею) ушла
-		// бы мимо покраски — генераторы снимают первое и переводят второе в
-		// контур
+	it('вся покраска рисунка — ссылкой на цвет иконки темы, с цветом пакета запасным', () => {
+		// Лестница цвета: правило темы для места сильнее её цвета по умолчанию,
+		// а тот — цвета, с которым иконка загружена. Тема пишет переменную
+		// `--so-icon-color`, а не `fill` и не `stroke`, и не знает, рисует пакет
+		// заливкой или линией. Цвет, записанный значением, прошёл бы мимо неё, а
+		// рисунок без покраски взял бы умолчание SVG — чёрный, а не цвет пакета.
+		// `none` — способ рисования, а не цвет: линия Lucide без заливки
 		for (const role of ICON_ROLES) {
-			expect(pack[role]?.body).not.toMatch(/\s(fill|stroke)[\w-]*=/)
+			const colors = [...(pack[role]?.body ?? '').matchAll(PAINT)]
+				.map(([, , value]) => value)
+				.filter((value) => value !== 'none')
+
+			expect(colors, role).not.toEqual([])
+			expect(
+				colors.map((color) => ICON_COLOR.exec(color)?.[1]),
+				role,
+			).toEqual(colors.map(() => loaded))
+		}
+	})
+
+	it('покраска — атрибутом представления, а не стилем', () => {
+		// Атрибут слабее любого правила CSS: тема, которой нужно сменить способ
+		// рисования (контур звезды Rating в режиме принудительных цветов), пишет
+		// правило фигурам. `style` в разметке перебил бы такое правило, а
+		// политика безопасности без 'unsafe-inline' для стилей снимает его, и
+		// иконка осталась бы без цвета
+		for (const role of ICON_ROLES) {
+			expect(pack[role]?.body, role).not.toMatch(/\sstyle=|<style/)
 		}
 	})
 

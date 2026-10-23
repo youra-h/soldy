@@ -442,9 +442,12 @@ useIcons({ close: myCloseIcon }) // точечно, поверх
 
 Пакеты (`packages/icons/material/`, `packages/icons/lucide/`): SVG в
 `src/*.svg` правятся глазами, `src/index.ts` генерируется и коммитится — как
-метаданные Angular. Глиф красит тема заливкой: генератор Material снимает
-`fill="#…"`, иначе иконка не наследует `currentColor`, а генератор Lucide
-переводит обводку в залитый контур.
+метаданные Angular. Цвет рисунку даёт тема переменной `--so-icon-color`, а не
+`fill` и не `stroke`: генератор переносит покраску корня SVG на группу вокруг
+рисунка ссылкой на неё, с цветом исходника запасным значением —
+`fill="var(--so-icon-color, #1f1f1f)"` у Material, который рисует заливкой, и
+`stroke="var(--so-icon-color, currentColor)"` у Lucide, который рисует линией
+(`docs/agents/theming.md`, «Пакеты иконок»).
 
 ### Тёмная схема: инвертируется шкала, а не компоненты
 

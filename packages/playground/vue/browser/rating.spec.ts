@@ -19,10 +19,13 @@ import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { TRating } from '@soldy-ui/core'
 import type { IRatingProps } from '@soldy-ui/core'
+import { useIcons } from '@soldy-ui/setup'
+import * as lucide from '@soldy-ui/icons-lucide'
+import * as material from '@soldy-ui/icons-material'
 import { Label, Rating } from '@soldy-ui/vue'
 
-import { hue, style } from './colors'
-import { reducedMotion } from './media'
+import { hue, iconPaint, pixel, style, systemColor } from './colors'
+import { forcedColors, reducedMotion } from './media'
 
 import '@soldy-ui/theme-oren'
 
@@ -185,6 +188,7 @@ beforeEach(async () => {
 afterEach(async () => {
 	cleanup()
 	await reducedMotion('no-preference')
+	await forcedColors('none')
 })
 
 describe('раскладка', () => {
@@ -450,5 +454,75 @@ describe('обязательная оценка в форме', () => {
 		await nextFrame()
 
 		expect(empty()).toBe(resting)
+	})
+})
+
+/** Фигуры рисунка пустой звезды — иконки её нижнего слоя. */
+const emptyShapes = (star: HTMLElement): SVGGeometryElement[] =>
+	[...star.querySelectorAll(':scope > svg *')].filter(
+		(node): node is SVGGeometryElement => node instanceof SVGGeometryElement,
+	)
+
+/** Иконка залитого слоя звезды; нет её — тест падает здесь. */
+function fillIcon(star: HTMLElement): SVGSVGElement {
+	const icon = star.querySelector(':scope > .so-rating__star-fill > svg')
+
+	if (!(icon instanceof SVGSVGElement)) throw new Error('иконки залитого слоя нет')
+
+	return icon
+}
+
+/**
+ * Режим принудительных цветов: залитая часть — `Highlight`, а пустая звезда —
+ * контур цвета текста (`themes/oren/src/components/rating/_rating.scss`).
+ * Здесь тема меняет не цвет, а способ рисования, и не знает, как рисует пакет:
+ * покраска пакета — атрибуты представления, правило темы фигурам сильнее их, и
+ * контур встаёт у Material, который рисует звезду заливкой, и у Lucide, чья
+ * звезда залита под обводкой. Ошибку обязательности здесь отличает толщина
+ * контура — вдвое толще. Пакет на время тестов — тот, что проверяется, после —
+ * снова Material, как в общей настройке прогона.
+ */
+describe.each([
+	{ name: 'material', pack: material },
+	{ name: 'lucide', pack: lucide },
+])('принудительные цвета, $name', ({ pack }) => {
+	beforeEach(() => {
+		useIcons(pack)
+	})
+
+	afterEach(() => {
+		useIcons(material)
+	})
+
+	it('пустая звезда — контур цвета текста, залитая часть — Highlight', async () => {
+		await mount({ value: 2 })
+		await forcedColors('active')
+
+		const [first, , third] = stars()
+		const shapes = emptyShapes(third)
+		const text = [...pixel([systemColor('CanvasText')])]
+
+		expect(shapes.length).toBeGreaterThan(0)
+
+		for (const shape of shapes) {
+			expect(style(shape).fill, 'заливки у контура нет').toBe('none')
+			expect([...pixel([style(shape).stroke])]).toEqual(text)
+			expect(style(shape).strokeWidth).toBe('1.5px')
+		}
+
+		expect([...pixel([iconPaint(fillIcon(first))])]).toEqual([
+			...pixel([systemColor('Highlight')]),
+		])
+	})
+
+	it('ошибка обязательности — контур вдвое толще', async () => {
+		const { form } = await mountForm({ required: true })
+
+		form.requestSubmit()
+		await forcedColors('active')
+
+		for (const shape of emptyShapes(stars()[4])) {
+			expect(style(shape).strokeWidth).toBe('3px')
+		}
 	})
 })

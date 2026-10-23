@@ -58,6 +58,7 @@ import { BUTTON_VIEWS, TOASTS_ITEM_TYPES } from '@soldy-ui/playground-shared'
 import {
 	contrast,
 	find,
+	iconPaint,
 	lightness,
 	opacity,
 	outlined,
@@ -490,7 +491,7 @@ describe('вид', () => {
 				const icon = style(part(item, 'icon')).color
 
 				// Рисунок значка — цвета коробки
-				expect(pixel([style(glyph(item)).fill]), `${name}: рисунок значка`).toEqual(
+				expect(pixel([iconPaint(glyph(item))]), `${name}: рисунок значка`).toEqual(
 					pixel([icon]),
 				)
 

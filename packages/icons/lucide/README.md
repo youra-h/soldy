@@ -13,9 +13,9 @@ fixed set of roles (`check`, `checkIndeterminate`, `close`, `arrowDown`, `arrowR
 of the `<svg>`. The root element is built by the adapter, so it can set the size, the classes and
 `aria-hidden`; there is no bundler-specific import and no runtime template compiler.
 
-The pack ships only these roles, not the whole Lucide set. Lucide draws with a stroke; here the
-stroke, 1.5 units wide, is turned into a filled outline, so a theme colors a Lucide icon the same
-way it colors any other pack — with `fill`.
+The pack ships only these roles, not the whole Lucide set. Lucide draws with a stroke, and so
+does the pack — 1.5 units wide instead of 2; only the star is filled. A theme does not need to know
+that: it colors a Lucide icon the same way it colors any other pack (see [Color](#color) below).
 
 ## Install
 
@@ -38,6 +38,17 @@ useIcons({ close: myCloseIcon }) // a single role, on top of the pack
 Without a registered pack the components render an empty placeholder and report the missing role
 once — a missing icon must not bring the whole application down.
 
+## Color
+
+An icon is painted with a reference to the icon color of the theme, with the color of the source
+SVG as the fallback: `stroke="var(--so-icon-color, currentColor)"` (the star is filled the same
+way). Without a theme rule an icon has the color of the text, as Lucide draws it; a theme recolors
+every icon of any pack by setting `--so-icon-color`, and a rule for a place — the mark of a
+checkbox, say — is stronger than that default. The reference is an SVG presentation attribute
+rather than a `style`: any CSS rule of a theme still overrides it, and a Content Security Policy
+without `'unsafe-inline'` styles does not strip it. An icon of your own
+(`useIcons({ close: myCloseIcon })`) takes the color of the theme when it is painted the same way.
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
@@ -52,5 +63,6 @@ The code of the package is [MIT](https://github.com/youra-h/soldy/blob/main/LICE
 The icons are [Lucide](https://lucide.dev), © Lucide Icons and Contributors, licensed under the
 ISC License; the icons Lucide derives from [Feather](https://feathericons.com) are © Cole Bemis,
 licensed under the MIT License. Both texts ship with the package as `LICENSE-ISC`. The icons are
-changed from the source SVG files: the stroke is 1.5 units wide instead of 2 and is converted to a
-filled outline, and the star is filled.
+changed from the source SVG files: the stroke is 1.5 units wide instead of 2, the star is filled,
+and every color becomes a reference to the icon color of the theme with the source color as the
+fallback.

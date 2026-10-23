@@ -20,6 +20,8 @@ import { defineComponent, h } from 'vue'
 import { COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'
 import { CheckBox } from '@soldy-ui/vue'
 
+import { iconPaint } from './colors'
+
 import '@soldy-ui/theme-oren'
 
 type TProps = Record<string, unknown>
@@ -28,6 +30,7 @@ type TProps = Record<string, unknown>
 type TLook = {
 	background: string
 	border: string
+	/** Цвет рисунка отметки — у её фигуры, а не у корня `svg` (`iconPaint`) */
 	mark: string | null
 	opacity: string
 }
@@ -108,7 +111,7 @@ function look(name: string): TLook {
 	return {
 		background: style(box).backgroundColor,
 		border: style(box).borderTopColor,
-		mark: mark && style(mark).fill,
+		mark: mark && iconPaint(mark),
 		opacity: style(box).opacity,
 	}
 }

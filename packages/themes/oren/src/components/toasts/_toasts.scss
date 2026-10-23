@@ -468,9 +468,11 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 // `em`, и `normal` встаёт в неё целиком.
 //
 // Цвет — тон значка: на белой плашке нейтраль, на заливке вида — цвет текста
-// плашки. Иконка берёт `currentColor`, кольцо — цвет места
-// (`indicator.text-colored`, как в кнопке): дуга — тоном, дорожка — его
-// вуалью. Свой значок потребителя — тоже тоном, если не красит себя сам.
+// плашки. Иконка берёт цвет текста места (база иконки, `icon/_icon.scss`),
+// кольцо — цвет места (`indicator.text-colored`, как в кнопке): дуга — тоном,
+// дорожка — его вуалью. Свой значок потребителя — тоже тоном: `<Icon>` — по
+// той же базе, свой `<svg>` — если красит себя `currentColor`. Заливкой его
+// тема не красит: `fill` залил бы и рисунок линией.
 .so-toasts-item__icon {
 	@apply flex shrink-0 items-center justify-center;
 	min-inline-size: calc(var(--spacing) * #{$line});
@@ -478,10 +480,6 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 	font-size: calc(var(--spacing) * #{$line});
 	color: var(--so-toasts-item-tone);
 	@include indicator.text-colored;
-
-	svg {
-		fill: currentColor;
-	}
 }
 
 // Кольцо — по кругу глифа (`$spinner`), а не по своей шкале: `normal` у

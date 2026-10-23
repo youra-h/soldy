@@ -47,7 +47,7 @@ import {
 } from '@soldy-ui/vue'
 import { COMPONENT_VARIANTS, TOASTS_ITEM_TYPES } from '@soldy-ui/playground-shared'
 
-import { find, gradientColor, pixel, settled, style } from './colors'
+import { find, gradientColor, iconPaint, pixel, settled, style } from './colors'
 
 import '@soldy-ui/theme-oren'
 
@@ -185,7 +185,7 @@ const SIGNALS: Record<string, ISignal> = {
 	'отметка CheckBox': {
 		variants: COMPONENT_VARIANTS,
 		render: (variant) => h(CheckBox, { variant, value: true }),
-		color: (cell) => style(part(cell, '.so-check-box__container svg')).fill,
+		color: (cell) => iconPaint(part(cell, '.so-check-box__container svg')),
 	},
 	'отметка радио': {
 		variants: COMPONENT_VARIANTS,
