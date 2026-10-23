@@ -1,0 +1,172 @@
+/* ─── Сброс узлов библиотеки ─────────────────────────────────
+ * Тема не стилизует страницу (корневой `AGENTS.md`, «Темы: у пакета темы
+ * свои инструкции»): глобального сброса у неё нет, а то, на что опираются
+ * части soldy, даёт этот сброс — только узлам библиотеки. Нужен он частям, а
+ * не облику, поэтому он в общем слое, а не в теме.
+ *
+ * Выведен из `tailwindcss/preflight.css` правило за правилом: на preflight
+ * части опирались, пока тема oren подключала Tailwind целиком. Правило,
+ * которое задевает узел с классом `so-*` или его псевдоэлемент, перенесено
+ * тем же селектором, суженным до таких узлов, с нулевой специфичностью
+ * (`:where`): правила темы перекрывают его, как перекрывали preflight. Узел
+ * библиотеки — элемент, у которого класс начинается с `so-`
+ * (`[class^='so-'], [class*=' so-']`): у каждого узла разметки библиотеки
+ * такой класс есть. Внутренние узлы без класса сброс называет через класс их
+ * компонента: поле `<input>` у Input, CheckBox и Switch, `<textarea>` у
+ * Textarea, `<svg>` рисунка в иконке Web Components (`<span class="so-icon">`)
+ * и группы строк сетки Calendar (`thead`, `tbody`). Узлы самого рисунка
+ * иконки (`g`, `path`) сброс не называет: свойства коробки рисунок SVG не
+ * читает, а свой рисунок в иконке бывает и у приложения (`<svg so-icon>` с
+ * путями у Angular).
+ *
+ * Чего здесь нет — намеренно:
+ * - правил `html`, `:host` и `body`: шрифт, высота строки, `tab-size`,
+ *   подсветка касания и отступ `body` — типографика страницы, дело
+ *   приложения, и части берут шрифт приложения;
+ * - правил на всё внутри части (`.so-x *`): содержимое слотов — узлы
+ *   приложения;
+ * - правил тегов, которых узлами библиотеки не бывает (`hr`, `abbr`, `b`,
+ *   `code`, `small`, `sub`, `img`, `select`, `summary`, `progress`…), и
+ *   псевдоэлементов, которых у них нет: `::backdrop` (верхнего слоя
+ *   библиотека не берёт), `::file-selector-button`, спиннеров числа и
+ *   частей поля даты (полей `file`, `number`, `date` и `search` у неё нет).
+ *   Ссылка `a` — узел библиотеки: её тегом корня ставит потребитель
+ *   (`<Button tag="a">`).
+ *
+ * Слой — `so.reset`, нижний в слое базы (`index.css`): остальные правила
+ * базы и правила темы встают над ним без спора специфичностью. Сторож того,
+ * что тема не задевает страницу, — `__tests__/sealed.spec.ts`; что облик
+ * частей не изменился — `npm run compare:styles` (`packages/playground/AGENTS.md`,
+ * «Сравнение стилей»). */
+
+/* Коробка от рамки, без полей и отступов браузера, рамка — сплошная нулевой
+ * толщины: ширину рамки задаёт тема, и рамка сразу видна. */
+:where([class^='so-'], [class*=' so-']),
+:where([class^='so-'], [class*=' so-'])::before,
+:where([class^='so-'], [class*=' so-'])::after,
+:where(
+	.so-input > input,
+	.so-check-box > input,
+	.so-switch > input,
+	.so-textarea > textarea,
+	.so-icon > svg,
+	.so-calendar__grid > thead,
+	.so-calendar__grid > tbody
+) {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	border: 0 solid;
+}
+
+/* Ссылка — цвета и оформления текста места, как кнопка. */
+:where(a:is([class^='so-'], [class*=' so-'])) {
+	color: inherit;
+	-webkit-text-decoration: inherit;
+	text-decoration: inherit;
+}
+
+/* Заголовок окна и выезжающей панели — кеглем и начертанием места: их задаёт
+ * тема. */
+:where(h2:is([class^='so-'], [class*=' so-'])) {
+	font-size: inherit;
+	font-weight: inherit;
+}
+
+/* Таблица и сетка Calendar: без отступа строки, цвет рамки — от места, рамки
+ * ячеек слиты. */
+:where(table:is([class^='so-'], [class*=' so-'])) {
+	text-indent: 0;
+	border-color: inherit;
+	border-collapse: collapse;
+}
+
+/* Кольцо фокуса Firefox — нынешнее, `auto`: там, где кольцо не рисует тема.
+ * Другие браузеры этот псевдокласс не знают, и `:where` для них пуст. */
+:where(:is([class^='so-'], [class*=' so-']):-moz-focusring) {
+	outline: auto;
+}
+
+/* Списки Pagination и Toasts — без маркеров. */
+:where(ol:is([class^='so-'], [class*=' so-'])) {
+	list-style: none;
+}
+
+/* Рисунок — блоком, а не строкой текста: без зазора под базовой линией. */
+:where(svg:is([class^='so-'], [class*=' so-']), .so-icon > svg) {
+	display: block;
+	vertical-align: middle;
+}
+
+/* Кнопки и поля — шрифтом и цветом места, без фона, скругления и
+ * прозрачности браузера. */
+:where(
+	button:is([class^='so-'], [class*=' so-']),
+	input:is([class^='so-'], [class*=' so-']),
+	textarea:is([class^='so-'], [class*=' so-']),
+	.so-input > input,
+	.so-check-box > input,
+	.so-switch > input,
+	.so-textarea > textarea
+) {
+	font: inherit;
+	font-feature-settings: inherit;
+	font-variation-settings: inherit;
+	letter-spacing: inherit;
+	color: inherit;
+	border-radius: 0;
+	background-color: transparent;
+	opacity: 1;
+}
+
+/* Подсказка пустого поля — полупрозрачный текст поля, а не серый браузера.
+ * Смесь — в браузерах, которые с `currentcolor` в ней не падают (Safari до 17
+ * падал). */
+:where(
+	input:is([class^='so-'], [class*=' so-']),
+	textarea:is([class^='so-'], [class*=' so-']),
+	.so-input > input,
+	.so-textarea > textarea
+)::placeholder {
+	opacity: 1;
+}
+
+@supports (not (-webkit-appearance: -apple-pay-button)) or (contain-intrinsic-size: 1px) {
+	:where(
+		input:is([class^='so-'], [class*=' so-']),
+		textarea:is([class^='so-'], [class*=' so-']),
+		.so-input > input,
+		.so-textarea > textarea
+	)::placeholder {
+		color: color-mix(in oklab, currentcolor 50%, transparent);
+	}
+}
+
+/* Многострочное поле тянется только по высоте. */
+:where(textarea:is([class^='so-'], [class*=' so-']), .so-textarea > textarea) {
+	resize: vertical;
+}
+
+/* Без красной тени Firefox у невалидного поля: ошибку рисует тема. */
+:where(
+	:is(
+		input:is([class^='so-'], [class*=' so-']),
+		textarea:is([class^='so-'], [class*=' so-']),
+		.so-input > input,
+		.so-check-box > input,
+		.so-switch > input,
+		.so-textarea > textarea
+	):-moz-ui-invalid
+) {
+	box-shadow: none;
+}
+
+/* Скругление кнопки в Safari на iOS. */
+:where(button:is([class^='so-'], [class*=' so-'])) {
+	appearance: button;
+}
+
+/* `hidden` на части прячет её и тогда, когда тема задаёт ей `display`. */
+:where(:is([class^='so-'], [class*=' so-'])[hidden]:not([hidden='until-found'])) {
+	display: none !important;
+}

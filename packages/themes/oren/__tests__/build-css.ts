@@ -3,8 +3,9 @@ import { build as viteBuild } from 'vite'
 
 /**
  * Сборка CSS темы — в памяти, тем же конфигом, что у `build:css`: сторожа,
- * которые читают собранный CSS (`motion.spec.ts`, `button-tones.spec.ts`), не
- * зависят от `dist` — шаг «Тесты» в CI идёт до сборки.
+ * которые читают собранный CSS (`button-tones.spec.ts`, `color-mix.spec.ts`),
+ * не зависят от `dist` — шаг «Тесты» в CI идёт до сборки. Сторожа любой темы
+ * собирают её так же, своим помощником (`packages/themes/base/__tests__/themes.ts`).
  */
 
 const ROOT = resolve(import.meta.dirname, '..')

@@ -484,7 +484,7 @@ $saturated: ();
 				// знаком строки, как у ленты (`scroller/_scroller.scss`): в RTL
 				// начало строки — правый край, и подсказки меняются местами
 				// вместе с ним, а ступени остаются на своих логических местах.
-				// Знак — ближайшего `dir` (`direction.css`): у Select с
+				// Знак — ближайшего `dir` (общий слой тем): у Select с
 				// `direction="ltr"` в RTL-предке ряд гаснет как в LTR.
 				mask-image: linear-gradient(
 					calc(90deg * var(--so-dir-sign)),

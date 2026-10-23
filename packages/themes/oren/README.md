@@ -18,6 +18,10 @@ from it, not the other way round.
 npm install @soldy-ui/theme-oren
 ```
 
+The stylesheet already carries
+[`@soldy-ui/theme-base`](https://www.npmjs.com/package/@soldy-ui/theme-base), the shared layer of
+Soldy UI themes; it is not installed separately.
+
 ## Usage
 
 The stylesheet and the theme's own behavior are plugged in side by side, in the application's entry

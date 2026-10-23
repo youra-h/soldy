@@ -1,8 +1,11 @@
 /* Tailwind — частями: тема и утилиты, без preflight. Preflight сбрасывает
  * все элементы документа, а тема не стилизует страницу (корневой `AGENTS.md`,
  * «Темы: у пакета темы свои инструкции»): то, на что части soldy в нём
- * опирались, даёт сброс узлов библиотеки (`reset.css`) в том же слое `base`.
- * Порядок слоёв — прежний, как у `@import 'tailwindcss'`.
+ * опирались, даёт сброс узлов библиотеки из общего слоя тем
+ * (`@soldy-ui/theme-base`, там же знак направления письма). База встаёт в
+ * слой `base`, на место preflight: правила темы вне слоёв и утилиты
+ * приложения перекрывают её в прежнем порядке. Порядок слоёв — прежний, как у
+ * `@import 'tailwindcss'`.
  *
  * Поиск классов выключен — `source(none)` у импорта утилит. Стилям
  * компонентов он не нужен — `@apply` разворачивает утилиту на месте, — а по
@@ -10,14 +13,13 @@
  * глобальные классы вроде `.ring` и `.rounded`, и в разметке приложения они
  * получали стили темы. Утилита, нужная в dist отдельным классом, объявляется
  * явно: `@source inline(…)`. Сторожа — `__tests__/tailwind-scan.spec.ts` и
- * `__tests__/sealed.spec.ts`. */
+ * `sealed.spec.ts` общего слоя (`packages/themes/base/__tests__/`). */
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
-@import './reset.css';
+@import '@soldy-ui/theme-base' layer(base);
 @import './tokens.css';
 /* Строго после tokens.css: у `:root` и `[data-so-theme='oren-dark']`
  * одинаковая специфичность, побеждает тот, кто ниже. */
 @import './tokens-dark.css';
 @import './utilities.css';
-@import './direction.css';

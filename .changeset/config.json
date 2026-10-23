@@ -13,6 +13,7 @@
       "@soldy-ui/icons-material",
       "@soldy-ui/plugins",
       "@soldy-ui/setup",
+      "@soldy-ui/theme-base",
       "@soldy-ui/theme-oren",
       "@soldy-ui/angular",
       "@soldy-ui/react",

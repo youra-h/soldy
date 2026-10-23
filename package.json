@@ -18,7 +18,7 @@
     "dev": "concurrently -k -n theme,playground -c blue,green \"npm run watch:theme\" \"npm run dev --workspace=@soldy-ui/playground-vue\"",
     "test:setup": "npm run test --workspace=@soldy-ui/setup",
     "test:core": "npm run test --workspace=@soldy-ui/core",
-    "test:theme": "npm run test --workspace=@soldy-ui/theme-oren",
+    "test:theme": "npm run test --workspace=@soldy-ui/theme-base && npm run test --workspace=@soldy-ui/theme-oren",
     "test:plugins": "npm run test --workspace=@soldy-ui/plugins",
     "test:vue": "npm run test --workspace=@soldy-ui/vue",
     "test:react": "npm run test --workspace=@soldy-ui/react",

@@ -25,8 +25,9 @@ import { join, resolve, relative } from 'node:path'
  *
  * Свои переменные тема называет сама (`packages/themes/oren/AGENTS.md`), и те,
  * что пишет её поведение (`setup/` пакета темы), — тоже её: их читает она же.
- * Поведение тем сторож не сканирует: у oren схема та же, `--so-*`, и стережёт
- * её сама тема (`packages/themes/oren/__tests__/variable-prefix.spec.ts`).
+ * Поведение тем сторож не сканирует: у тем схема та же, `--so-*`, и стережёт
+ * её сторож каждой темы в общем слое тем
+ * (`packages/themes/base/__tests__/variable-prefix.spec.ts`).
  */
 
 const ROOT = resolve(__dirname, '../../..')
