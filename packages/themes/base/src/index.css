@@ -27,7 +27,9 @@
  * Части внутри слоя — в том порядке, в каком их стили подключает тема oren:
  * правила разных блоков с одной специфичностью спорят порядком. Модальный
  * слой стоит перед окном, а не с общими шкалами: его кнопки шапки снимают поле
- * размера Button той же специфичностью, и он обязан быть ниже `button.css`. */
+ * размера Button той же специфичностью, и он обязан быть ниже `button.css`.
+ * Так же снимают шкалу Button кнопки листания Scroller и стрелки Pagination —
+ * их файлы ниже него по порядку темы. */
 
 @layer so.reset;
 
@@ -54,9 +56,16 @@
 @import './components/list-box.css' layer(so);
 @import './components/menu.css' layer(so);
 @import './components/number-input.css' layer(so);
+@import './components/pagination.css' layer(so);
 @import './components/popover.css' layer(so);
+@import './components/progress-linear.css' layer(so);
+@import './components/progress-spinner.css' layer(so);
 @import './components/radio-group.css' layer(so);
+@import './components/rating.css' layer(so);
+@import './components/scroller.css' layer(so);
 @import './components/select.css' layer(so);
+@import './components/skeleton.css' layer(so);
+@import './components/slider.css' layer(so);
 @import './components/switch.css' layer(so);
 @import './components/tabs.css' layer(so);
 @import './components/tags.css' layer(so);

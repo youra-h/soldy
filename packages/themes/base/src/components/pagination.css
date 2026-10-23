@@ -1,0 +1,147 @@
+/* ─── Pagination ──────────────────────────────────────────────
+ * Постраничная навигация: стрелки по краям, между ними — список страниц с
+ * пропусками. Первая и последняя страницы видны всегда, между ними — N
+ * страниц вокруг текущей, на месте пропущенных — многоточие:
+ * `‹ 1 … 4 5 6 … 10 ›`.
+ *
+ *   .so-pagination                 корень — `nav`, ряд в одну строку
+ *     .so-pagination__prev         стрелка «назад» (Button)
+ *     .so-pagination__list         список — `ol`: страницы и пропуски по порядку
+ *       .so-pagination-item        страница — `li`, элемент коллекции
+ *         .so-button               строка страницы: номер или текст (Button)
+ *       .so-pagination__ellipsis   пропуск — `li` с «…», разметка владельца
+ *     .so-pagination__next         стрелка «вперёд» (Button)
+ *
+ * Ряд в одну строку и без переноса, ширина — по содержимому: сжать ряд
+ * контейнер не может — строка страницы под нажимом обрезалась бы
+ * многоточием, и номер пропал бы. Поставить ряд по центру или у конца — дело
+ * места. Цифры одной ширины: номер «11» не уже «18», и ряд не прыгает при
+ * листании. Клетки не сжимаются.
+ *
+ * Шкала — Button (`components/button.css`): сторона клетки — его высота,
+ * зазор между клетками — зазор частей его строки, кегль — его кегль. Страницы
+ * и стрелки — те же Button этого размера, и клетка пропуска обязана совпасть с
+ * ними. Кегль — у корня, и пропуск берёт его наследованием; у `normal` своего
+ * кегля нет, как у Button. Блок берёт ступени своего размера в
+ * `--so-pagination-cell` и `--so-pagination-gap`.
+ *
+ * Строка страницы — не уже клетки и её высоты: узкий номер стоит квадратом, а
+ * номер шире и текст раздвигают строку в своём поле. Поле — сколько остаётся
+ * в клетке от двух цифр (`ch` — ширина цифры: цифры одной ширины), поровну с
+ * каждой стороны: квадратами стоят и однозначные, и двузначные номера, и ряд
+ * не меняет ширину на переходе от 9 к 10. Поле Button для этого велико. Стрелки
+ * — квадрат клетки: в кнопке одна иконка, и поле снято. Строки и стрелки
+ * перекрывают шкалу Button той же или большей специфичностью, поэтому файл
+ * подключён ниже `button.css`.
+ *
+ * Текущая — `data-selected` на обёртке страницы: клик по ней ничего не
+ * меняет, и курсор обычный. Пропуск — клетка той же ширины, что узкая
+ * страница, на которой ничего не нажимают. Выключенный компонент гаснет
+ * корнем целиком (`disabled.css`); страницы и стрелки выключены вместе с ним
+ * и под погасшим корнем второй раз не гаснут.
+ *
+ * Облик — вид страниц и стрелок, отметка текущей, цвет пропуска, переходы,
+ * зеркало стрелок в RTL и вид в режиме принудительных цветов — рисует тема. */
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
+ * без него обязан выглядеть умолчанием. */
+.so-pagination {
+	--so-pagination-cell: var(--so-button-height-normal);
+	--so-pagination-gap: var(--so-button-gap-normal);
+	display: flex;
+	align-items: center;
+	gap: var(--so-pagination-gap);
+	width: max-content;
+	font-variant-numeric: tabular-nums;
+}
+
+.so-pagination--size-sm {
+	--so-pagination-cell: var(--so-button-height-sm);
+	--so-pagination-gap: var(--so-button-gap-sm);
+	font-size: var(--so-button-font-size-sm);
+	line-height: var(--so-button-line-height-sm);
+}
+
+.so-pagination--size-normal {
+	--so-pagination-cell: var(--so-button-height-normal);
+	--so-pagination-gap: var(--so-button-gap-normal);
+}
+
+.so-pagination--size-lg {
+	--so-pagination-cell: var(--so-button-height-lg);
+	--so-pagination-gap: var(--so-button-gap-lg);
+	font-size: var(--so-button-font-size-lg);
+	line-height: var(--so-button-line-height-lg);
+}
+
+.so-pagination--size-xl {
+	--so-pagination-cell: var(--so-button-height-xl);
+	--so-pagination-gap: var(--so-button-gap-xl);
+	font-size: var(--so-button-font-size-xl);
+	line-height: var(--so-button-line-height-xl);
+}
+
+.so-pagination--size-2xl {
+	--so-pagination-cell: var(--so-button-height-2xl);
+	--so-pagination-gap: var(--so-button-gap-2xl);
+	font-size: var(--so-button-font-size-2xl);
+	line-height: var(--so-button-line-height-2xl);
+}
+
+/* Список — тот же ряд: страницы и пропуски через тот же зазор, что между
+ * стрелкой и списком. */
+.so-pagination__list {
+	display: flex;
+	align-items: center;
+	gap: var(--so-pagination-gap);
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+.so-pagination-item {
+	display: flex;
+	flex-shrink: 0;
+	margin: 0;
+	padding: 0;
+}
+
+.so-pagination-item > .so-button {
+	min-inline-size: var(--so-pagination-cell);
+	block-size: var(--so-pagination-cell);
+	padding-inline: max(0px, (var(--so-pagination-cell) - 2ch) / 2);
+}
+
+.so-pagination__prev,
+.so-pagination__next {
+	flex-shrink: 0;
+	inline-size: var(--so-pagination-cell);
+	block-size: var(--so-pagination-cell);
+	padding-inline: 0;
+}
+
+.so-pagination-item[data-selected='true'] > .so-button {
+	cursor: default;
+}
+
+.so-pagination__ellipsis {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--so-pagination-cell);
+	block-size: var(--so-pagination-cell);
+	margin: 0;
+	padding: 0;
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.so-pagination[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-pagination[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
