@@ -2,8 +2,16 @@
  * Дескриптор ListBoxItem (TListBoxItem).
  *
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
- * variant, ...), добавляет `text`, `contentFit`, плагин подсветки элемента
- * (клавиатурная навигация) и его `id` в документе.
+ * variant, ...), добавляет `text`, `contentFit`, `view`, плагин подсветки
+ * элемента (клавиатурная навигация) и его `id` в документе.
+ *
+ * `size`, `variant` и `view` раздаёт список — и только он, поэтому входами
+ * разметки они у элемента не объявлены: `size` и `variant` сняты общим
+ * фрагментом, `view` объявлен защищённым сразу, как у радио.
+ *
+ * Строка элемента (`row`) — не проп, а экземпляр, которым владеет элемент, как
+ * поле Select: за жизнь элемента он не меняется, и разметка отдаёт его кнопке
+ * через `ctrl`.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -50,6 +58,8 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				contentFit: { type: String, triggers: ['change:contentFit'] },
+				// Вид строки тоже задаёт список — вход не объявлен
+				view: { type: String, protected: true, triggers: ['change:view'] },
 			},
 		},
 

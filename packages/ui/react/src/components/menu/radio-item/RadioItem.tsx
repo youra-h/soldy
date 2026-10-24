@@ -10,27 +10,30 @@ import { Button } from '../../button'
 import { useSetupMenuRadioItem } from './setup.component'
 import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
 
-/** MenuRadioItem — переключатель меню: строка пункта с точкой-отметкой в начале, как у флажка. */
+/**
+ * MenuRadioItem — переключатель меню: строка пункта с точкой-отметкой в начале, как у флажка.
+ * Строка — `Button` над экземпляром переключателя (`row`, `TItemRow` на `div`), ключ —
+ * экземпляр, как у пункта.
+ */
 export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context } = useSetupMenuRadioItem(props)
+	const { ref, forwardProps, state, context, row } = useSetupMenuRadioItem(props)
 
-	const { rendered, tag, text, size, disabled, selected, aria, dataset, attrs } = state
+	const { rendered, tag, text, selected, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	const checked = selected ?? false
-	const { onClick, ...row } = toControlAttrs<MenuRadioItemAttributes>(forwardProps)
+	const { onClick, ...rowAttrs } = toControlAttrs<MenuRadioItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="menu.row"
-				tag="div"
-				size={size}
-				disabled={disabled}
+				ctrl={row}
 				{...toAriaProps(aria)}
-				{...row}
+				{...rowAttrs}
 				onClick={(event) => {
 					context?.adapters.menu.check()
 					onClick?.(event)

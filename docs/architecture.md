@@ -3504,8 +3504,10 @@ WebKit:
   `<div is="so-menu-item">`, `so-menu-checkbox-item`, `so-menu-radio-item`,
   `so-menu-submenu`, `so-menu-popover-item`, `so-menu-group`,
   `so-menu-radio-group`, `so-menu-separator`: у пунктов всех видов строка —
-  Button на `div` (`menu.row`, `row.ts`), поле корня, а края строки — обёртки
-  значка, подсказки, отметки и стрелки, светом детали. Пункт с подменю — часть
+  Button на `div` (`menu.row`, `row.ts`) над экземпляром пункта (`row`,
+  `TItemRow`: `ctrl` ей отдаёт каждая связка пункта, размер и выключенность
+  пишет пункт, а роль и `tabindex="-1"` — его набор), поле корня, а края
+  строки — обёртки значка, подсказки, отметки и стрелки, светом детали. Пункт с подменю — часть
   с тремя контекстами: фасад элемента (`facade` описания) — его место в меню
   над ним, и через его контекст строка открывает панель; фасад владельца
   (`ownerFacade` описания) — коллекция своих пунктов, а его пропсы (`items`,
@@ -3575,9 +3577,11 @@ WebKit:
   того, что кнопка пишет себе сама. Строка элемента ListBox — кнопка на
   `div`, `<div is="so-button-div" embedded="list-box.row">`, без `type`: на
   `<button>` выключенный пункт терял бы фокус и клик, а ядро пишет строке ARIA
-  под `div` (`TListBoxItem._ariaTag`). На неё ложатся `aria` и `dataset`
-  элемента: `tabindex="-1"` и `aria-selected` списка поверх `role="button"`
-  и остановки Tab кнопки. Отметка выбранного — край строки
+  под `div` (`TListBoxItem._ariaTag`). Это деталь над экземпляром элемента
+  (`row`, `TItemRow`: `ctrl` ей отдаёт каждая связка элемента, вид, размер,
+  вариант и выключенность пишет элемент): своих роли и остановки у неё нет, и
+  на неё ложатся `aria` и `dataset` элемента — роль элемента, `tabindex="-1"`
+  и `aria-selected` списка. Отметка выбранного — край строки
   (`span.so-list-box-item__indicator`), иконка роли `check` в ней — у
   выбранного. Остановка Tab списка — узел списка в корне
   (`div.so-list-box__list`): `tabindex="0"` и набор `aria` списка ставит ему
@@ -3639,8 +3643,9 @@ WebKit:
   меню; в ней полоса жеста и список `div.so-select__list` — как узел списка
   ListBox (петля по `drawnSections`, распорки окна, `empty`), но без остановки
   Tab: фокус держит поле. Опция — как элемент ListBox, но строка — кнопка на
-  `span` (`<span is="so-button-span" embedded="select.row" tabindex="-1">`,
-  `TSelectItem._ariaTag`), а выбор — клик корня. Сторожат
+  `span` (`<span is="so-button-span" embedded="select.row">` над экземпляром
+  опции, `TSelectItem._ariaTag`; `tabindex="-1"` — из набора опции, его пишет
+  коллекция), а выбор — клик корня. Сторожат
   `ui/webc/__tests__/tags.spec.ts`, `select.spec.ts`, `field.spec.ts`,
   `focus-target.spec.ts`, `item-slots.spec.ts`, `root-attributes.spec.ts`,
   `collection-item-lifetime.spec.ts`, `external-engine-lifetime.spec.ts`,
@@ -4050,9 +4055,9 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 наследник у него был один, а второй потребитель раскладки — `TSelect` — растёт
 от `TInputControl` и наследоваться от списка не мог в принципе.
 
-- Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
+- Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка», + `view`, который пишет список, и строка `row` — `TItemRow`, которой элемент пишет размер, вариант, выключенность и вид). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/content/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
-- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
+- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам; `tabindex="-1"` и `aria-selected` — в набор элемента) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`indicator`, `choose`) ← `TBaseItemExtension`.
 - List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).
 - Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListHeight/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + ListHeight + ListKeyboard + ListScroll + Drag.

@@ -22,12 +22,14 @@ const ARROW = roleIcon('arrowRight')
 
 /**
  * Пункт с панелью: строка пункта и своя панель сбоку с любым содержимым. Текст
- * строки — слот `header`: `default` — содержимое панели.
+ * строки — слот `header`: `default` — содержимое панели. Строка — `Button` над
+ * экземпляром пункта (`row`, `TItemRow` на `div`), как у пункта-действия.
  */
 export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 	const binding = setupMenuPopoverItem(props)
 	const state = binding.state
 	const context = binding.context
+	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -43,7 +45,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала открытие. */
-	const row = () => {
+	const rowAttrs = () => {
 		const { onClick, ...attributes } = toControlAttrs<MenuPopoverItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -59,11 +61,9 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="menu.row"
-					tag="div"
-					size={state.size}
-					disabled={state.disabled}
+					ctrl={row}
 					{...state.aria}
-					{...row()}
+					{...rowAttrs()}
 					leading={<span class="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 					trailing={
 						<span class="so-menu-item__arrow" aria-hidden="true">

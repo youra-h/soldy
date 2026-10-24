@@ -4,6 +4,7 @@ import type {
 	TValueControlEvents,
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload } from '../../../../common'
+import type { IButton } from '../../button/types'
 import type { ISelectCollectionItemProps } from '../collection/types'
 
 export type TSelectItemEvents = TValueControlEvents<string | number> & {
@@ -25,4 +26,11 @@ export interface ISelectItem<
 > extends IValueControl<string | number, TProps, TEvents> {
 	/** Текст опции */
 	text: string
+	/**
+	 * Строка опции — кнопка, которой владеет опция (`TItemRow`): роль и
+	 * остановку Tab ей пишет набор `aria` опции, а `size`, `variant` и
+	 * `disabled` — опция. Создаётся при первом чтении и дальше не меняется,
+	 * событий `change:` у геттера нет.
+	 */
+	readonly row: IButton
 }

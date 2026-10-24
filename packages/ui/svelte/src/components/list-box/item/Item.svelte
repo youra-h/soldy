@@ -11,13 +11,16 @@
 	const binding = setupListBoxItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	// Строка — экземпляр, которым владеет элемент (`TItemRow` на `div`): размер, вариант,
+	// выключенность и вид ей пишет элемент, а роль и `tabindex` — его набор `aria`
+	const row = binding.ctrl.row
 
 	const CHECK = roleIcon('check')
 </script>
 
 <!--
-	Тег строки фиксирован (`div`): под него написан `TListBoxItem._ariaTag`. `tabindex="-1"`
-	элемента перекрывает `tabindex="0"`, который кнопка на `div` ставит себе сама.
+	Тег строки задаёт её экземпляр (`div`): под него написан `TListBoxItem._ariaTag`. Своих роли
+	и `tabindex` у строки нет — `tabindex="-1"` пишет ей список набором элемента.
 	Отметка рисуется и у невыбранных: она держит место. `aria-hidden`: выбор скринридеру
 	объявляет `aria-selected`.
 -->
@@ -43,11 +46,7 @@
 	>
 		<Button
 			embedded="list-box.row"
-			tag="div"
-			view={state.view}
-			disabled={state.disabled}
-			size={state.size}
-			variant={state.variant}
+			ctrl={row}
 			{...state.aria}
 			{...state.dataset}
 			{...toControlAttrs<ListBoxItemAttributes>(binding.forwardProps)}

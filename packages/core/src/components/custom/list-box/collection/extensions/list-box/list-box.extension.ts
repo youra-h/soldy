@@ -23,18 +23,19 @@ import { TListBoxItemExtension, type IListBoxItemExtension } from './item'
  * расширение наблюдает его (`ctx.options.watch`). Без владельца у списка
  * значения по умолчанию.
  *
- * Отдаёт элементам свойства владельца. `view` — читая со списка. `size` и
- * `variant` расширение пишет элементу значениями списка — их диктует он.
- * `disabled` списка распространяется на элементы, как у `<fieldset>`:
- * выключенный список выключает их, включённый — включает.
+ * Отдаёт элементам свойства владельца. `size`, `variant` и `view` расширение
+ * пишет элементу значениями списка — их диктует он, а строке элемента их
+ * пишет уже сам элемент. `disabled` списка распространяется на элементы, как
+ * у `<fieldset>`: выключенный список выключает их, включённый — включает.
  *
  * Ещё ставит элементам атрибуты для темы: `data-content-fit` — своё значение
  * элемента поверх списочного, `data-indicator` — значение списка. Сами
  * свойства лежат на инстансе списка по контракту `IList`. Для скринридера —
  * `aria-selected` всем элементам и `aria-multiselectable` списку в `multiple`,
- * как у Select и Tags. Роли пишут сами список и элемент (`listbox`, `option`):
- * от коллекции они не зависят. Место элемента в наборе, пока список рисует
- * окно, пишет не он, а общее расширение `positionInSet` — то же у Select.
+ * как у Select и Tags, и `tabindex="-1"` строкам (`_applyItem`). Роли пишут
+ * сами список и элемент (`listbox`, `option`): от коллекции они не зависят.
+ * Место элемента в наборе, пока список рисует окно, пишет не он, а общее
+ * расширение `positionInSet` — то же у Select.
  *
  * Через него идёт выбор пользователя (`chooseItem`): и клик по строке, и
  * клавиатура списка. Выключенному элементу он отказывает.
@@ -101,17 +102,11 @@ export class TListBoxExtension<
 
 		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
 		// него живут в области наблюдателя — сменился владелец, прежние сняты
-		let view = this.view
 		let indicator = this.indicator
 
 		ctx.options.watch('owner', (owner, scope) => {
-			// `view` и `indicator` item-адаптеры читают из расширения — сообщить,
-			// если они сменились вместе с владельцем
-			if (view !== this.view) {
-				view = this.view
-				this.events.emit('change:view', view)
-			}
-
+			// `indicator` item-адаптеры читают из расширения — сообщить, если он
+			// сменился вместе с владельцем
 			if (indicator !== this.indicator) {
 				indicator = this.indicator
 				this.events.emit('change:indicator', indicator)
@@ -129,7 +124,7 @@ export class TListBoxExtension<
 			ctx.driver.valueOf().forEach((item) => this._inheritOwner(item as TItem))
 
 			// Смена у владельца — всем элементам: `disabled` распространяется на
-			// них, как у `<fieldset>`, `size` и `variant` диктует он
+			// них, как у `<fieldset>`, `size`, `variant` и `view` диктует он
 			scope.on(owner.events, 'change:disabled', (value: boolean) => {
 				ctx.driver.valueOf().forEach((item) => {
 					item.disabled = value
@@ -141,6 +136,9 @@ export class TListBoxExtension<
 			scope.on(owner.events, 'change:variant', () =>
 				ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem, owner)),
 			)
+			scope.on(owner.events, 'change:view', () =>
+				ctx.driver.valueOf().forEach((item) => this._applyStyle(item as TItem, owner)),
+			)
 
 			// У `data-content-fit` два источника — список и сам элемент, и атрибут
 			// пересчитывается на смену любого из них
@@ -148,15 +146,11 @@ export class TListBoxExtension<
 				ctx.driver.valueOf().forEach((item) => this._applyContentFit(item as TItem))
 			})
 
-			// Сторона отметки и внешний вид доезжают до элементов и item-адаптеров
+			// Сторона отметки доезжает до элементов и item-адаптеров
 			scope.on(owner.events, 'change:indicator', (value: TListIndicator) => {
 				indicator = value
 				ctx.driver.valueOf().forEach((item) => this._applyIndicator(item as TItem))
 				this.events.emit('change:indicator', value)
-			})
-			scope.on(owner.events, 'change:view', (value: TListBoxView | undefined) => {
-				view = value
-				this.events.emit('change:view', value)
 			})
 
 			// Можно ли выбрать несколько, решает режим выбора — его знает коллекция,
@@ -215,7 +209,7 @@ export class TListBoxExtension<
 	}
 
 	/**
-	 * Свойства владельца на элементе: `size` и `variant` — всегда его,
+	 * Свойства владельца на элементе: `size`, `variant` и `view` — всегда его,
 	 * `disabled` — когда владелец выключен. Владельца нет — элемент со своим.
 	 */
 	private _inheritOwner(item: TItem): void {
@@ -228,18 +222,25 @@ export class TListBoxExtension<
 		if (owner.disabled) item.disabled = true
 	}
 
-	/** `size` и `variant` элемента — всегда владельца. */
+	/** `size`, `variant` и `view` элемента — всегда владельца. */
 	private _applyStyle(item: TItem, owner: TOwner): void {
 		item.size = owner.size
 		item.variant = owner.variant
+		item.view = owner.view
 	}
 
-	/** Что элемент получает от списка: место в обходе и атрибуты. */
+	/**
+	 * Что элемент получает от списка: место в обходе и атрибуты.
+	 *
+	 * `tabindex="-1"` — модель фокуса списка (APG Listbox,
+	 * `aria-activedescendant`): остановка Tab у списка одна — его узел, а по
+	 * элементам ходят стрелки (`TListKeyboardPlugin`). Строка при этом фокус
+	 * принимает: клик оставляет его на ней, и клавиша со строки — клавиша
+	 * списка с места этой строки, а строку клавиатура находит по атрибуту
+	 * (`rowIn`). Без `-1` клик отдавал бы фокус узлу списка. Своего `tabindex`
+	 * у строки нет (`TItemRow`), и этот — единственный.
+	 */
 	private _applyItem(item: TItem): void {
-		// Фокус — на контейнере (APG Listbox, `aria-activedescendant`): по
-		// элементам ходят стрелки (`TListKeyboardPlugin`), а не Tab. Без этого Tab
-		// перебирал бы элементы по одному — при тысяче опций так невозможно уйти
-		// со списка.
 		item.aria.add('tabindex', '-1')
 
 		this._applySelectedAria(item)

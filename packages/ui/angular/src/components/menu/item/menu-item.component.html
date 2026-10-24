@@ -1,4 +1,6 @@
 <!--
+	Строка — Button над экземпляром пункта (`row`, `TItemRow` на `div`, у пунктов всех видов):
+	размер и выключенность ей пишет пункт, а роль и `tabindex="-1"` — его набор `aria`.
 	Вида и варианта строка не получает: вид даёт тема по контексту, цвет — пункт и панель.
 	Обёртки колонок — у каждого пункта; пустые тема прячет по `:empty`, поэтому внутри —
 	только проекция.
@@ -7,8 +9,7 @@
 	so-button
 	#control
 	embedded="menu.row"
-	[size]="state()['size']"
-	[disabled]="state()['disabled']"
+	[ctrl]="instance()?.row"
 	[so-attributes]="state()['aria']"
 	(click)="facade()?.context?.adapters.menu.choose()"
 >

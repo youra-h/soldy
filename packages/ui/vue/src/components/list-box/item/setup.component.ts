@@ -41,6 +41,12 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
+			/**
+			 * Строка — экземпляр `TItemRow`, которым владеет элемент. Не проп (не
+			 * меняется за время жизни элемента), поэтому отдаём инстансом —
+			 * `<Button :ctrl="row">` берёт его целиком, как поле Select.
+			 */
+			row: adapter.instance.row,
 			indicatorIconTag: roleIcon('check'),
 			...useSplitAttrs(),
 		}

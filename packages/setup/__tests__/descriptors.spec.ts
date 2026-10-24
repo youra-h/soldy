@@ -4,6 +4,7 @@ import {
 	TComponentView,
 	TDragAndDrop,
 	TListBox,
+	TListBoxItem,
 	TTabs,
 	TAccordion,
 	TListBoxCollectionFacade,
@@ -36,6 +37,7 @@ import {
 	ComponentViewDescriptor,
 	DragAndDropDescriptor,
 	ListBoxDescriptor,
+	ListBoxItemDescriptor,
 	ListBoxCollectionDescriptor,
 	ListBoxCollectionItemDescriptor,
 	TabsDescriptor,
@@ -242,7 +244,7 @@ describe('дескрипторы коллекций (фасады)', () => {
 		expect(eventNames(d)).toContain('engine:create')
 	})
 
-	it('ListBoxCollectionItemDescriptor объявляет item-пропсы (selected, order, view)', () => {
+	it('ListBoxCollectionItemDescriptor объявляет item-пропсы (selected, order, indicator)', () => {
 		const d = ListBoxCollectionItemDescriptor()
 
 		expect(d.ctor).toBe(TListBoxItemCollectionFacade)
@@ -250,17 +252,37 @@ describe('дескрипторы коллекций (фасады)', () => {
 		const names = propNames(d)
 		expect(names).toContain('selected')
 		expect(names).toContain('order')
-		expect(names).toContain('view')
+		expect(names).toContain('indicator')
 
 		// `list_wordWrap` отсюда ушёл: разрешение «элемент поверх списка»
-		// делает расширение коллекции, а не фасад
+		// делает расширение коллекции, а не фасад. `view` — тоже: это свойство
+		// элемента, его пишет список (`ListBoxItemDescriptor`)
 		expect(names).not.toContain('list_wordWrap')
+		expect(names).not.toContain('view')
+
+		const indicator = required(
+			d.props.find((p) => p.name.name === 'indicator'),
+			'prop indicator',
+		)
+		expect(indicator.protected).toBe(true)
+	})
+
+	/**
+	 * Вид строк — свойство элемента, а не фасада: его пишет список, как размер и
+	 * вариант, и вход у разметки обещал бы то, чего нет. Защищённый, но в
+	 * состоянии и с событием: его читают шаблон и тема.
+	 */
+	it('ListBoxItemDescriptor объявляет view защищённым, с событием', () => {
+		const d = ListBoxItemDescriptor()
+
+		expect(d.ctor).toBe(TListBoxItem)
 
 		const view = required(
 			d.props.find((p) => p.name.name === 'view'),
 			'prop view',
 		)
 		expect(view.protected).toBe(true)
+		expect(view.triggers.map((trigger) => trigger.getName())).toEqual(['change:view'])
 	})
 
 	it('TabsCollectionDescriptor добавляет activeItem и события активации', () => {

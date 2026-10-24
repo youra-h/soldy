@@ -1,11 +1,12 @@
+<!--
+	Строка — Button над экземпляром элемента (`row`, `TItemRow` на `div`): размер, вариант,
+	выключенность и вид ей пишет элемент, а роль и `tabindex="-1"` — его набор `aria`.
+-->
 <div
 	so-button
 	#control
 	embedded="list-box.row"
-	[view]="state()['view']"
-	[disabled]="state()['disabled']"
-	[size]="state()['size']"
-	[variant]="state()['variant']"
+	[ctrl]="instance()?.row"
 	[so-attributes]="{ ...state()['aria'], ...state()['dataset'] }"
 	(click)="facade()?.context?.adapters.list.choose()"
 >

@@ -1,5 +1,6 @@
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
 import {
+	TItemRow,
 	TMenu,
 	TMenuCheckboxItem,
 	TMenuCollectionFacade,
@@ -446,6 +447,100 @@ describe('пункты меню', () => {
 		item.text = '  Удалить  '
 
 		expect(item.text).toBe('Удалить')
+	})
+})
+
+/**
+ * Строка пункта — кнопка, которой владеет пункт любого вида (`TItemRow`, в
+ * базе всех пунктов), как Select — полем: разметка отдаёт её кнопке через
+ * `ctrl`, а `size` и `disabled` пишет ей пункт. Вида и варианта строка не
+ * получает: цвет она берёт с пункта и панели. Роль и остановку Tab строка себе
+ * не пишет: их несёт набор `aria` пункта, который разметка кладёт на неё же, —
+ * роль от пункта, `tabindex="-1"` от меню.
+ */
+describe('строка пункта', () => {
+	const KINDS: Array<[string, () => IMenuItem]> = [
+		['действие', () => new TMenuItem({ value: 'a' })],
+		['флажок', () => new TMenuCheckboxItem({ value: 'a' })],
+		['переключатель', () => new TMenuRadioItem({ value: 'a' })],
+		['подменю', () => new TMenuSubmenu({ value: 'a' })],
+		['пункт с панелью', () => new TMenuPopoverItem({ value: 'a' })],
+	]
+
+	it.each(KINDS)('%s: TItemRow на div — один экземпляр, за пунктом', (_kind, create) => {
+		const item = create()
+		const row = item.row
+
+		expect(row).toBeInstanceOf(TItemRow)
+		expect(row.tag).toBe('div')
+		expect(row.classes.toArray()).toContain('so-button')
+
+		item.size = 'lg'
+		item.disabled = true
+
+		expect(item.row).toBe(row)
+		expect(row.size).toBe('lg')
+		expect(row.disabled).toBe(true)
+	})
+
+	/**
+	 * Строку создаёт первое чтение: пункт, которого никто не рисует, её не
+	 * держит, а прочитанная позже — со значениями, сменёнными до неё.
+	 */
+	it('строка, прочитанная после смен, стартует с текущих значений пункта', () => {
+		const item = new TMenuItem({ value: 'a', size: 'sm' })
+
+		item.size = 'lg'
+		item.disabled = true
+
+		expect([item.row.size, item.row.disabled]).toEqual(['lg', true])
+	})
+
+	it('вариант пункта строке не пишется — ни при сборке, ни на смену', () => {
+		const item = new TMenuItem({ value: 'a', variant: 'danger' })
+
+		expect(item.row.variant).toBeUndefined()
+
+		item.variant = 'brand'
+
+		expect(item.row.variant).toBeUndefined()
+	})
+
+	it('размер меню — через пункт и до строки', () => {
+		const owner = new TMenu({ size: 'sm' })
+		const { batch } = createEngineMenu({ owner, items: [{ value: 'a' }] }).extensions
+		const row = itemOf(batch.items, 'a').row
+
+		expect(row.size).toBe('sm')
+
+		owner.size = 'lg'
+
+		expect(row.size).toBe('lg')
+	})
+
+	it('роли и tabindex у строки нет — их несёт набор пункта', () => {
+		const { batch } = createEngineMenu({
+			owner: new TMenu(),
+			items: [{ value: 'a' }, new TMenuCheckboxItem({ value: 'b' })],
+		}).extensions
+
+		for (const item of batch.items) {
+			expect(item.row.aria.has('role')).toBe(false)
+			expect(item.row.aria.has('tabindex')).toBe(false)
+		}
+
+		expect(batch.items.map((item) => item.aria.get('role'))).toEqual([
+			'menuitem',
+			'menuitemcheckbox',
+		])
+		expect(batch.items.map((item) => item.aria.get('tabindex'))).toEqual(['-1', '-1'])
+	})
+
+	it('aria-disabled строки — то же, что у пункта: одно состояние одного узла', () => {
+		const item = new TMenuItem({ value: 'a', disabled: true })
+
+		expect(item.row.aria.get('aria-disabled')).toBe('true')
+		expect(item.aria.get('aria-disabled')).toBe('true')
 	})
 })
 

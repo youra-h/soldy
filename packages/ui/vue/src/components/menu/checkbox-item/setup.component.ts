@@ -48,6 +48,8 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
+			/** Строка — экземпляр `TItemRow`, которым владеет флажок: кнопка берёт его целиком. */
+			row: adapter.instance.row,
 			indicatorIconTag: roleIcon('check'),
 			...useSplitAttrs(),
 		}

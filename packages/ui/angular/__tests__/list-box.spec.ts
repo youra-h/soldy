@@ -176,10 +176,10 @@ describe('выбор', () => {
 
 	/**
 	 * Остановка Tab одна — узел списка (APG Listbox), а по элементам ходят
-	 * стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
-	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
-	 * сама: набор владельца главнее. Корень — рамка вокруг шапки, списка и
-	 * подвала, остановкой он не бывает.
+	 * стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, а своей
+	 * остановки строка не ставит (`TItemRow`): атрибут на ней — только из
+	 * набора элемента. Корень — рамка вокруг шапки, списка и подвала,
+	 * остановкой он не бывает.
 	 */
 	it('строки — не остановки Tab, узел списка — остановка, корень — нет', () => {
 		const fixture = mountHost(Harness)
@@ -194,8 +194,8 @@ describe('выбор', () => {
 	 * Роли пишет ядро: узел списка — `listbox`, в `multiple` — с
 	 * `aria-multiselectable`, строка — `option`. Набор `aria` списка кладёт на
 	 * узел директива набора, а не база на корень. Набор элемента лежит верхним
-	 * слоем раскладчика строки, и `role="button"`, который кнопка на `div`
-	 * пишет себе сама, в разметку не попадает.
+	 * слоем раскладчика строки, а своей роли строка не пишет (`TItemRow`):
+	 * `role="button"` в разметку не попадает.
 	 */
 	it('узел списка — listbox с aria-multiselectable, строки — опции, а не кнопки', () => {
 		const fixture = mountHost(Harness)
@@ -206,6 +206,43 @@ describe('выбор', () => {
 		expect(rootOf(fixture).hasAttribute('role')).toBe(false)
 		expect(rows().map((row) => row.getAttribute('role'))).toEqual(['option', 'option'])
 		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
+	})
+
+	/**
+	 * Строка — кнопка над экземпляром элемента (`row`, `TItemRow`): вид и
+	 * размер списка и выключенность элемента ей пишет элемент, а не шаблон, —
+	 * а роли и `tabindex` своих у неё нет, их кладёт набор элемента.
+	 */
+	it('строка — над экземпляром элемента: вид, размер и выключенность доходят до неё', () => {
+		@Component({
+			selector: 'probe-list-box-item-row',
+			imports: [TListBoxComponent, TListBoxItemComponent],
+			template: `<div so-list-box [size]="size()" [view]="view()">
+				<div so-list-box-item value="a" text="A" [disabled]="off()"></div>
+			</div>`,
+		})
+		class RowHost {
+			readonly size = signal<'sm' | 'lg'>('sm')
+			readonly view = signal<'ghost' | 'solid'>('ghost')
+			readonly off = signal(false)
+		}
+
+		const fixture = mountHost(RowHost)
+
+		expect(rowOf('A').classList.contains('so-button--size-sm')).toBe(true)
+		expect(rowOf('A').classList.contains('so-button--view-ghost')).toBe(true)
+
+		fixture.componentInstance.size.set('lg')
+		fixture.componentInstance.view.set('solid')
+		fixture.componentInstance.off.set(true)
+		fixture.detectChanges()
+
+		expect(rowOf('A').classList.contains('so-button--size-lg')).toBe(true)
+		expect(rowOf('A').classList.contains('so-button--view-solid')).toBe(true)
+		expect(rowOf('A').classList.contains('so-button--view-ghost')).toBe(false)
+		expect(rowOf('A').getAttribute('data-disabled')).toBe('true')
+		expect(rowOf('A').getAttribute('role')).toBe('option')
+		expect(rowOf('A').getAttribute('tabindex')).toBe('-1')
 	})
 
 	it('стрелки ведут подсветку, Enter и пробел переключают выбор', async () => {

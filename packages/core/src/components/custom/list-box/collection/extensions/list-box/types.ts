@@ -8,8 +8,10 @@ import type { IListBoxItem } from '../../../item/types'
  * Контракт расширения списка.
  *
  * Используется как тип `TParent` в `TListBoxItemExtension` — через него
- * item-адаптер типизированно достаёт `view` владельца и передаёт списку
- * выбор своего элемента.
+ * item-адаптер типизированно достаёт сторону отметки (`indicator`) владельца и
+ * передаёт списку выбор своего элемента. Вид (`view`) элементам расширение
+ * пишет само, в их собственное свойство, и item-адаптеру он не нужен: со
+ * списка его читает фасад коллекции.
  */
 export interface IListBoxExtension<
 	TItem extends IListBoxItem = IListBoxItem,
@@ -35,7 +37,6 @@ export type TListBoxEngineOptions<TOwner extends IListBox = IListBox> = {
 }
 
 export type TListBoxExtensionEvents = {
-	'change:view': (value: TListBoxView | undefined) => void
 	'change:indicator': (value: TListIndicator) => void
 	/**
 	 * Пользователь выбрал элемент — кликом по строке или Enter и пробелом.

@@ -10,27 +10,32 @@ import { Button } from '../../button'
 import { useSetupMenuItem } from './setup.component'
 import type { MenuItemAttributes, MenuItemProps } from './base.component'
 
-/** MenuItem — пункт-действие: корень по `tag` и строка — `Button` на `div` с ARIA пункта. */
+/**
+ * MenuItem — пункт-действие: корень по `tag` и строка — `Button` над экземпляром пункта
+ * (`row`, `TItemRow` на `div`) с ARIA пункта: тег, размер и выключенность ей пишет пункт, а
+ * роль и `tabindex` — его набор `aria`. Ключ — экземпляр: пересобранный пункт без `ctrl` —
+ * новая строка, и кнопка над ней монтируется заново (AGENTS.md (React), «Пересобранный
+ * инстанс и `key`»).
+ */
 export function MenuItem(props: MenuItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context } = useSetupMenuItem(props)
+	const { ref, forwardProps, state, context, row } = useSetupMenuItem(props)
 
-	const { rendered, tag, text, size, disabled, aria, dataset, attrs } = state
+	const { rendered, tag, text, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	// Клик потребителя — после выбора меню, как у Vue, где слушатели складываются
-	const { onClick, ...row } = toControlAttrs<MenuItemAttributes>(forwardProps)
+	const { onClick, ...rowAttrs } = toControlAttrs<MenuItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="menu.row"
-				tag="div"
-				size={size}
-				disabled={disabled}
+				ctrl={row}
 				{...toAriaProps(aria)}
-				{...row}
+				{...rowAttrs}
 				onClick={(event) => {
 					context?.adapters.menu.choose()
 					onClick?.(event)

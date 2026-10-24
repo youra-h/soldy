@@ -28,9 +28,10 @@ export default { ...SetupMenuCheckboxItem, components: { Icon, Button } }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у пункта: на ней ARIA флажка (роль
-			`menuitemcheckbox`, `aria-checked` и `tabindex="-1"` от меню) и
-			DOM-фокус, когда флажок подсвечен.
+			Строка — `Button` над экземпляром флажка (`row`, `TItemRow` на
+			`div`), как у пункта: на ней ARIA флажка (роль `menuitemcheckbox`,
+			`aria-checked` и `tabindex="-1"` от меню) и DOM-фокус, когда флажок
+			подсвечен. Размер и `disabled` ей пишет флажок.
 
 			Нажатие — клик строки, из Enter и пробела его делает сама строка.
 			Решает меню (`adapters.menu.toggle()`): выключенному отказывает, а
@@ -39,9 +40,7 @@ export default { ...SetupMenuCheckboxItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="menu.row"
-			tag="div"
-			:size="size"
-			:disabled="disabled"
+			:ctrl="row"
 			@click="context?.adapters.menu.toggle()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>

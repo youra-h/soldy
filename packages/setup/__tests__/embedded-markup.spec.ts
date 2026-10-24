@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative, sep } from 'node:path'
-import { TButton, TTagsItem } from '@soldy-ui/core'
+import { TButton, TListBoxItem, TMenuItem, TSelectItem, TTagsItem } from '@soldy-ui/core'
 
 /**
  * Сторож признака `embedded`: компонент soldy, который разметка библиотеки
@@ -23,15 +23,16 @@ import { TButton, TTagsItem } from '@soldy-ui/core'
  * вместо отправки. Корень детали — `tag` разметки, без него — тег Button по
  * умолчанию (`TButton.defaultValues`), в Angular — сам элемент с атрибутом
  * `so-button`. У детали над экземпляром владельца (`ctrl` без `tag`) тег
- * задаёт экземпляр, а не разметка: строку тега создаёт тег (`TTagsItem.row`),
- * и сторож берёт тег у экземпляра (`ROW_DETAILS`). Деталь другого тега
- * (`tag="div"` у строки элемента списка, строка тега, `<div so-button>`)
- * `type` не несёт: у её тега такого атрибута нет. Сторож читает только
- * статические `tag` и `type`, поэтому тег, заданный выражением, — тоже
- * нарушение: нужен ли `type`, по нему не узнать. Button потребителя не деталь
- * и остаётся кнопкой отправки, как нативная `<button>`. Шаблон Web Components
- * — код, и `type` своей детали он ставит помощником `createDetail`
- * (`attributes`).
+ * задаёт экземпляр, а не разметка: строку элемента создаёт элемент — тег
+ * (`TTagsItem.row`), элемент ListBox, опция Select и пункт меню, — и сторож
+ * берёт тег у экземпляра (`ROW_DETAILS`). Деталь другого тега (строка
+ * элемента списка, тега и пункта на `div`, опции на `span`,
+ * `<div so-button>`) `type` не несёт: у её тега такого атрибута нет. Сторож
+ * читает только статические `tag` и `type`, поэтому тег, заданный
+ * выражением, — тоже нарушение: нужен ли `type`, по нему не узнать. Button
+ * потребителя не деталь и остаётся кнопкой отправки, как нативная `<button>`.
+ * Шаблон Web Components — код, и `type` своей детали он ставит помощником
+ * `createDetail` (`attributes`).
  *
  * Компонентом soldy считается тег с именем папки компонента (`Button`,
  * `so-button`) или с её префиксом (`TagsItem`), а в Angular — ещё и атрибут
@@ -237,8 +238,12 @@ function attributeOf(opening: string, attribute: string): string | true | null {
  * `type="button"`.
  */
 const ROW_DETAILS: Readonly<Record<string, () => { readonly tag: string | object }>> = {
-	// Строка тега — `TItemRow`, которым владеет тег
+	// Строки элементов коллекций — `TItemRow`, которыми владеют элементы
 	'tags.row': () => new TTagsItem().row,
+	'list-box.row': () => new TListBoxItem().row,
+	'select.row': () => new TSelectItem().row,
+	// Одна у пунктов всех видов: строку создаёт база пункта
+	'menu.row': () => new TMenuItem().row,
 }
 
 /** Деталь-кнопка разметки. */

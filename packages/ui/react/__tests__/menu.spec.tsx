@@ -2270,6 +2270,37 @@ describe('React', () => {
 		engine.extensions.batch.items.map((item) => item.value)
 
 	/**
+	 * Строка пункта — экземпляр, которым владеет пункт (`row`, `TItemRow`).
+	 * StrictMode пересобирает пункт без `ctrl` новым экземпляром — с новой
+	 * строкой, — и кнопка с ключом-экземпляром встаёт над ней. Без ключа она
+	 * осталась бы над строкой выброшенной сборки, и размер, который меню пишет
+	 * пункту, до видимой строки не дошёл бы.
+	 */
+	it('StrictMode: строка пункта — над строкой текущей сборки, размер меню доходит до неё', async () => {
+		const tree = (size: 'sm' | 'lg') => (
+			<StrictMode>
+				<Menu size={size} trigger={trigger}>
+					<Menu.Item value="edit" text="Изменить" />
+					<Menu.CheckboxItem value="grid" text="Сетка" />
+				</Menu>
+			</StrictMode>
+		)
+		const mounted = await render(tree('sm'))
+
+		mounted.render(tree('lg'))
+		await nextFrame()
+
+		expect(rows()).toHaveLength(2)
+
+		for (const row of rows()) {
+			expect(row.classList.contains('so-button--size-lg')).toBe(true)
+			expect(row.classList.contains('so-button--size-sm')).toBe(false)
+			// Своей остановки у строки нет: `-1` — из набора пункта, от меню
+			expect(row.getAttribute('tabindex')).toBe('-1')
+		}
+	})
+
+	/**
 	 * StrictMode пересобирает меню, а с ним и подменю: у пересобранного
 	 * подменю три контекста снова на одном лифте, фасад пункта читает слой
 	 * пересобранного меню. Пункты разметки входят в коллекции по одному разу —

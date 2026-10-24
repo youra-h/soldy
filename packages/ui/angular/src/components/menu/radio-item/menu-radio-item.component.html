@@ -2,8 +2,7 @@
 	so-button
 	#control
 	embedded="menu.row"
-	[size]="state()['size']"
-	[disabled]="state()['disabled']"
+	[ctrl]="instance()?.row"
 	[so-attributes]="state()['aria']"
 	(click)="facade()?.context?.adapters.menu.check()"
 >

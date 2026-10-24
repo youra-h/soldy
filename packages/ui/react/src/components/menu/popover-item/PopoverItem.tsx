@@ -18,17 +18,17 @@ const ArrowIcon = roleIcon('arrowRight')
 
 /**
  * MenuPopoverItem — пункт со своей панелью сбоку с любым содержимым. Текст строки — слот
- * `header`: `default` — содержимое панели, как у `Accordion.Item` и `Popover`.
+ * `header`: `default` — содержимое панели, как у `Accordion.Item` и `Popover`. Строка —
+ * `Button` над экземпляром пункта (`row`, `TItemRow` на `div`), ключ — экземпляр, как у пункта.
  */
 export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context, rootElement } = useSetupMenuPopoverItem(props)
+	const { ref, forwardProps, state, context, rootElement, row } = useSetupMenuPopoverItem(props)
 
 	const {
 		rendered,
 		tag,
 		text,
 		size,
-		disabled,
 		open,
 		aria,
 		dataset,
@@ -41,17 +41,16 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...row } = toControlAttrs<MenuPopoverItemAttributes>(forwardProps)
+	const { onClick, ...rowAttrs } = toControlAttrs<MenuPopoverItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="menu.row"
-				tag="div"
-				size={size}
-				disabled={disabled}
+				ctrl={row}
 				{...toAriaProps(aria)}
-				{...row}
+				{...rowAttrs}
 				onClick={(event) => {
 					context?.adapters.menu.open()
 					onClick?.(event)

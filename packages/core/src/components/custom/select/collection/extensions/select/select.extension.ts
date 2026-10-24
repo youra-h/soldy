@@ -327,8 +327,22 @@ export class TSelectExtension<
 		item.variant = owner.variant
 	}
 
+	/**
+	 * Что опция получает от Select: свойства владельца, место в обходе и
+	 * атрибуты. Зовётся на добавление и догоном — на опции, лежавшие в
+	 * коллекции до установки.
+	 *
+	 * `tabindex="-1"` — модель фокуса комбобокса (APG Combobox): остановка Tab
+	 * у Select одна — его поле, а подсвеченную опцию объявляет
+	 * `aria-activedescendant` поля, и опции в обход Tab не входят. Значение то
+	 * же, что разметка шести адаптеров писала строке поверх остановки кнопки
+	 * на `span`. Своего `tabindex` у строки опции нет (`TItemRow`), и этот —
+	 * единственный.
+	 */
 	private _onItemAdded(item: TItem): void {
 		this._inheritOwner(item)
+
+		item.aria.add('tabindex', '-1')
 
 		this._applyContentFit(item)
 		this._applyIndicator(item)

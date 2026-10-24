@@ -24,5 +24,7 @@ export function useSetupMenuCheckboxItem(props: MenuCheckboxItemProps) {
 	return {
 		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
+		/** Строка — экземпляр, которым владеет флажок: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
 	}
 }

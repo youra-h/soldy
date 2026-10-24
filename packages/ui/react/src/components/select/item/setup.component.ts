@@ -24,5 +24,7 @@ export function useSetupSelectItem(props: SelectItemProps) {
 	return {
 		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
+		/** Строка — экземпляр, которым владеет опция: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
 	}
 }

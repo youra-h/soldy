@@ -477,9 +477,9 @@ describe('строка — кнопка на div', () => {
 	})
 
 	/**
-	 * Роль и остановку Tab кнопка на `div` пишет себе сама, а набор элемента —
-	 * `role="option"` элемента, `tabindex` и `aria-selected` списка — ложится
-	 * поверх: строка и есть опция, и кнопкой себя не объявляет.
+	 * Своих роли и остановки Tab строка не пишет (`TItemRow`): набор элемента —
+	 * `role="option"` элемента, `tabindex` и `aria-selected` списка — на ней
+	 * единственный. Строка и есть опция, и кнопкой себя не объявляет.
 	 */
 	it('роль, tabindex и aria-selected — элемента: строка — опция', async () => {
 		await mount(HARNESS)
@@ -490,6 +490,36 @@ describe('строка — кнопка на div', () => {
 		expect(row.getAttribute('tabindex')).toBe('-1')
 		expect(row.getAttribute('aria-selected')).toBe('false')
 		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
+	})
+
+	/**
+	 * Строка — деталь над экземпляром элемента (`row`, `TItemRow`): вид и
+	 * размер списка и выключенность элемента ей пишет элемент, а не шаблон.
+	 */
+	it('строка — над экземпляром элемента: вид, размер и выключенность доходят до неё', async () => {
+		const host = await mount(`<div is="so-list-box" size="sm" view="ghost">
+			<div is="so-list-box-item" value="a" text="A"></div>
+		</div>`)
+		const item = itemOf('A')
+		const row = rowOf('A')
+
+		expect(row.ctrl).toBe(item.ctrl?.row)
+		expect(row.classList.contains('so-button--size-sm')).toBe(true)
+		expect(row.classList.contains('so-button--view-ghost')).toBe(true)
+
+		const list = listIn(host)
+
+		list.size = 'lg'
+		list.view = 'solid'
+		item.disabled = true
+		await flush()
+
+		expect(row.classList.contains('so-button--size-lg')).toBe(true)
+		expect(row.classList.contains('so-button--view-solid')).toBe(true)
+		expect(row.classList.contains('so-button--view-ghost')).toBe(false)
+		expect(row.dataset['disabled']).toBe('true')
+		expect(row.getAttribute('role')).toBe('option')
+		expect(row.getAttribute('tabindex')).toBe('-1')
 	})
 
 	it('выключенный пункт: aria-disabled без disabled, фокус на нём остаётся', async () => {

@@ -3,13 +3,18 @@
  * Тег `div`, а не `button`: у выключенного пункта остаются фокус и подсветка.
  * DOM-фокус подсвеченного пункта — на строке: клавиатура меню находит её по
  * `tabindex` (`rowIn`). docs/architecture.md, Layer 8d, «Меню».
+ *
+ * Строка — деталь над экземпляром пункта (`row`, `TItemRow`): размер и
+ * выключенность ей пишет пункт, а роль и `tabindex="-1"` — его набор `aria`,
+ * слоем владельца.
  */
 
 import type { IMenuItem, TComponentSize } from '@soldy-ui/core'
-import { bind, createDetail, ownerAttributes, type ITemplateBinding, patch } from '../../adapter'
+import { bind, createDetail, ownerAttributes, type ITemplateBinding } from '../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../button'
 import { TIconElement, type TIconElementProps } from '../icon'
 
+/** `div` — тег экземпляра строки: под него ядро пишет пункту ARIA (`TMenuItem._ariaTag`). */
 const TButtonDivElement = registerButtonTag('div')
 
 export type TMenuRow = TButtonElementProps<HTMLDivElement>
@@ -56,16 +61,14 @@ export function roleIconOf(owner: Document, embedded: string, role: string): TIc
 /** `textSlot` — `default`, а у пунктов со своей панелью `header`: `default` у них — панель. */
 export function rowBindings(textSlot: string): readonly ITemplateBinding<IMenuItem>[] {
 	return [
-		// Только сменившиеся: каждая запись дошла бы до ядра строки. Вида и
-		// варианта строка не получает — их даёт тема по контексту
-		bind<IMenuItem>(['size', 'disabled'], ({ root, state }) => {
+		// На каждое подключение: в построении инстанса ещё нет, а строка собирается
+		// после пункта и берёт свой экземпляр при подключении. Размер и
+		// выключенность строке пишет сам пункт — в её экземпляр; вида и варианта
+		// она не получает — их даёт тема по контексту
+		bind<IMenuItem>([], ({ root, ctrl }) => {
 			const row = rows.get(root)
 
-			if (!row) return
-
-			const disabled = state.disabled === true
-
-			patch(row, { size: state.size, disabled })
+			if (row && ctrl && row.ctrl !== ctrl.row) row.ctrl = ctrl.row
 		}),
 
 		bind<IMenuItem>('aria', ({ root, state }) => {

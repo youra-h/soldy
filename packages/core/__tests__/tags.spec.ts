@@ -835,6 +835,26 @@ describe('строка тега', () => {
 		expect(ownProps(tag.row)).toEqual(ownProps(tag))
 	})
 
+	/**
+	 * Строку создаёт первое чтение: тег, которого никто не рисует, её не
+	 * держит, а прочитанная позже — со значениями, сменёнными до неё.
+	 */
+	it('строка, прочитанная после смен, стартует с текущих значений тега', () => {
+		const tag = createTag('Настройки', { size: 'sm' })
+
+		tag.size = 'lg'
+		tag.variant = 'brand'
+		tag.disabled = true
+		tag.direction = 'rtl'
+
+		expect(ownProps(tag.row)).toEqual({
+			size: 'lg',
+			variant: 'brand',
+			disabled: true,
+			direction: 'rtl',
+		})
+	})
+
 	it('смена у тега доходит до строки', () => {
 		const tag = createTag('Настройки')
 

@@ -27,9 +27,11 @@ export default { ...SetupMenuRadioItem, components: { Button } }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у флажка: на ней ARIA переключателя
-			(роль `menuitemradio`, `aria-checked` и `tabindex="-1"` от меню) и
-			DOM-фокус, когда переключатель подсвечен.
+			Строка — `Button` над экземпляром переключателя (`row`, `TItemRow` на
+			`div`), как у флажка: на ней ARIA переключателя (роль
+			`menuitemradio`, `aria-checked` и `tabindex="-1"` от меню) и
+			DOM-фокус, когда переключатель подсвечен. Размер и `disabled` ей
+			пишет переключатель.
 
 			Нажатие — клик строки, из Enter и пробела его делает сама строка.
 			Решает меню (`adapters.menu.check()`): выключенному отказывает, а
@@ -38,9 +40,7 @@ export default { ...SetupMenuRadioItem, components: { Button } }
 		-->
 		<Button
 			embedded="menu.row"
-			tag="div"
-			:size="size"
-			:disabled="disabled"
+			:ctrl="row"
 			@click="context?.adapters.menu.check()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>

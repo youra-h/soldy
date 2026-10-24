@@ -37,15 +37,17 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			`.so-button` подсветка и выбор раскрашены по вариантам, а у элемента
 			списка своих таких правил нет.
 
-			`aria` — только на строке: строка и есть опция. Набор ложится поверх
-			того, что `Button` пишет себе сам, и `role="option"` элемента
-			перекрывает его `role="button"`. `aria-selected` всем элементам пишет
-			`TListBoxExtension`, как у Select и Tags.
+			`aria` — только на строке: строка и есть опция. Строка — экземпляр,
+			которым владеет элемент (`row`, `TItemRow` на `div`): своих роли и
+			`tabindex` она не пишет, их несёт набор элемента — `role="option"` от
+			элемента, `tabindex="-1"` и `aria-selected` от `TListBoxExtension`,
+			как у Select и Tags.
 
-			Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
-			`tag` — тег корня (`TComponentView`), и рисует по нему корень
-			`<component :is>` выше. Под фиксированный тег строки написан и
-			`TListBoxItem._ariaTag` — он решает, писать ли `aria-disabled`.
+			Шаблон отдаёт строку кнопке целиком (`:ctrl="row"`), как Select — своё
+			поле: тег строки, её `size`, `variant`, `disabled` и `view` пишет ей
+			сам элемент, поэтому пропсов рядом с `ctrl` нет. Под тег строки
+			написан и `TListBoxItem._ariaTag` — он решает, писать ли
+			`aria-disabled`.
 
 			Клик выбирает через `adapters.list.choose()`, а не
 			`selection.toggle()`: выключенному элементу отказывает список, тем же
@@ -56,11 +58,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 		-->
 		<Button
 			embedded="list-box.row"
-			tag="div"
-			:view="view"
-			:disabled="disabled"
-			:size="size"
-			:variant="variant"
+			:ctrl="row"
 			@click="context?.adapters.list.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>

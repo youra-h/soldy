@@ -32,5 +32,7 @@ export function useSetupMenuPopoverItem(props: MenuPopoverItemProps) {
 		...binding,
 		context: item.instance.context,
 		rootElement: useRootElement(binding.root),
+		/** Строка — экземпляр, которым владеет пункт: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
 	}
 }

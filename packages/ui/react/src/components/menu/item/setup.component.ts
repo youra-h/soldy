@@ -24,5 +24,7 @@ export function useSetupMenuItem(props: MenuItemProps) {
 	return {
 		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
+		/** Строка — экземпляр, которым владеет пункт: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
 	}
 }

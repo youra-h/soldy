@@ -43,5 +43,7 @@ export function setupMenuSubmenu(props: MenuSubmenuProps) {
 		...joinBindings(owner, itemBinding, menuBinding),
 		context: item.instance.context,
 		layer,
+		/** Строка — экземпляр, которым владеет пункт: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
 	}
 }

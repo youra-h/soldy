@@ -51,10 +51,11 @@ export default { ...SetupMenuSubmenu, components }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у пункта: на ней ARIA пункта (роль
-			`menuitem`, `aria-haspopup="menu"`, `aria-expanded`, `id` и
-			`aria-controls` на панель, `tabindex="-1"` от меню) и DOM-фокус,
-			когда пункт подсвечен.
+			Строка — `Button` над экземпляром пункта (`row`, `TItemRow` на
+			`div`), как у пункта: на ней ARIA пункта (роль `menuitem`,
+			`aria-haspopup="menu"`, `aria-expanded`, `id` и `aria-controls` на
+			панель, `tabindex="-1"` от меню) и DOM-фокус, когда пункт подсвечен.
+			Размер и `disabled` ей пишет пункт.
 
 			Нажатие строки открывает подменю, а не переключает: открытое
 			наведением клик не закроет. Решает меню
@@ -64,9 +65,7 @@ export default { ...SetupMenuSubmenu, components }
 		-->
 		<Button
 			embedded="menu.row"
-			tag="div"
-			:size="size"
-			:disabled="disabled"
+			:ctrl="row"
 			@click="context?.adapters.menu.open()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>

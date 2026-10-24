@@ -18,13 +18,16 @@
 	const binding = setupSelectItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	// Строка — экземпляр, которым владеет опция (`TItemRow` на `span`): размер, вариант и
+	// выключенность ей пишет опция, а роль и `tabindex="-1"` — её набор `aria`
+	const row = binding.ctrl.row
 
 	const CHECK = roleIcon('check')
 </script>
 
 <!--
-	Тег строки фиксирован (`span`): под него написан `TSelectItem._ariaTag`. `dataset` — и на
-	строке: фон выбора и подсветки тема рисует на кнопке.
+	Тег строки задаёт её экземпляр (`span`): под него написан `TSelectItem._ariaTag`. `dataset` —
+	и на строке: фон выбора и подсветки тема рисует на кнопке.
 	Отметка рисуется и у невыбранных: она держит место, и строка не прыгает при выборе.
 	`aria-hidden`: выбор скринридеру объявляет `aria-selected`.
 -->
@@ -46,11 +49,7 @@
 	>
 		<Button
 			embedded="select.row"
-			tag="span"
-			tabindex={-1}
-			size={state.size}
-			variant={state.variant}
-			disabled={state.disabled}
+			ctrl={row}
 			{...state.aria}
 			{...state.dataset}
 			{...toControlAttrs<SelectItemAttributes>(binding.forwardProps)}

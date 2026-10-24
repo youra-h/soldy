@@ -50,6 +50,8 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
+			/** Строка — экземпляр `TItemRow`, которым владеет переключатель: кнопка берёт его целиком. */
+			row: adapter.instance.row,
 			...useSplitAttrs(),
 		}
 	},

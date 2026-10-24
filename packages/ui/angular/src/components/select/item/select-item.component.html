@@ -1,12 +1,13 @@
-<!-- `tabindex` — в наборе, а не статикой: статичный база кнопки переписала бы. -->
+<!--
+	Строка — Button над экземпляром опции (`row`, `TItemRow` на `span`): размер, вариант и
+	выключенность ей пишет опция, а роль и `tabindex="-1"` — её набор `aria`.
+-->
 <span
 	so-button
 	#control
 	embedded="select.row"
-	[size]="state()['size']"
-	[variant]="state()['variant']"
-	[disabled]="state()['disabled']"
-	[so-attributes]="{ tabindex: '-1', ...state()['aria'], ...state()['dataset'] }"
+	[ctrl]="instance()?.row"
+	[so-attributes]="{ ...state()['aria'], ...state()['dataset'] }"
 	(click)="facade()?.context?.adapters.select.choose()"
 >
 	<ng-container ngProjectAs="[slot=leading]">

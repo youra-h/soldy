@@ -163,9 +163,10 @@ describe.each(ARIA_LINE)('%s · строка', (_name, selector, render, lineTag
 })
 
 /**
- * Строка Select — не только вид, но и сама опция, как строка Tabs — сам таб:
- * набор опции ложится поверх того, что `Button` пишет себе сам. Узел с ролью
- * один — обёртка ничего не объявляет, строка не объявляет себя кнопкой.
+ * Строка Select — не только вид, но и сама опция, как строка Tabs — сам таб.
+ * Строка — экземпляр, которым владеет опция (`TItemRow`): своих роли и
+ * `tabindex` она не пишет, их несёт набор опции. Узел с ролью один — обёртка
+ * ничего не объявляет, строка не объявляет себя кнопкой.
  */
 describe('Select.Item · строка и есть опция', () => {
 	it('role, id и aria-selected опции стоят на строке', async () => {
@@ -197,9 +198,9 @@ describe('Select.Item · строка и есть опция', () => {
 })
 
 /**
- * Строка ListBox — тоже сама опция: `role="option"` элемента ложится поверх
- * того, что `Button` на `div` пишет себе сам, и перекрывает его
- * `role="button"`. Узел с ролью один — обёртка ничего не объявляет.
+ * Строка ListBox — тоже сама опция: строка — экземпляр, которым владеет
+ * элемент (`TItemRow`), и `role="option"` с `tabindex="-1"` на ней — только
+ * из набора элемента. Узел с ролью один — обёртка ничего не объявляет.
  */
 describe('ListBox.Item · строка и есть опция', () => {
 	it('role и aria-selected опции стоят на строке', async () => {
@@ -226,5 +227,66 @@ describe('ListBox.Item · строка и есть опция', () => {
 
 		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
 		expect(line('.so-list-box-item')?.getAttribute('tabindex')).toBe('-1')
+	})
+})
+
+/**
+ * Строка — кнопка над экземпляром элемента (`row`, `TItemRow`): вид, размер,
+ * вариант и выключенность ей пишет элемент, а не шаблон пропсами рядом с
+ * `ctrl`. Свойства владельца доходят до строки и на смене: владелец пишет их
+ * элементу, элемент — строке.
+ */
+describe('строка — над экземпляром элемента', () => {
+	const has = (node: Element | null, cls: string) => node?.classList.contains(cls) ?? false
+
+	it('ListBox: вид и размер списка — на строке, и на смене тоже', async () => {
+		wrapper = mount(
+			{
+				components: { ListBox, ListBoxItem },
+				props: { view: String, size: String },
+				template: `<ListBox :view="view" :size="size"><ListBoxItem value="a" text="A" /></ListBox>`,
+			},
+			{ props: { view: 'ghost', size: 'sm' }, attachTo: document.body },
+		)
+		await nextTick()
+
+		const row = line('.so-list-box-item')
+
+		expect(has(row, 'so-button--view-ghost')).toBe(true)
+		expect(has(row, 'so-button--size-sm')).toBe(true)
+
+		await wrapper.setProps({ view: 'solid', size: 'lg' })
+
+		expect(line('.so-list-box-item')).toBe(row)
+		expect(has(row, 'so-button--view-solid')).toBe(true)
+		expect(has(row, 'so-button--view-ghost')).toBe(false)
+		expect(has(row, 'so-button--size-lg')).toBe(true)
+		// Своих роли и остановки у строки нет — на ней набор элемента
+		expect(row?.getAttribute('role')).toBe('option')
+		expect(row?.getAttribute('tabindex')).toBe('-1')
+	})
+
+	it('Select: размер и вариант поля — на строке опции, и на смене тоже', async () => {
+		wrapper = mount(
+			{
+				components: { Select, SelectItem },
+				props: { size: String, variant: String },
+				template: `<Select :size="size" :variant="variant"><SelectItem value="a" text="A" /></Select>`,
+			},
+			{ props: { size: 'sm', variant: 'brand' }, attachTo: document.body },
+		)
+		await nextTick()
+
+		const row = line('.so-select-item')
+
+		expect(has(row, 'so-button--size-sm')).toBe(true)
+		expect(has(row, 'so-button--variant-brand')).toBe(true)
+
+		await wrapper.setProps({ size: 'lg', variant: 'danger' })
+
+		expect(has(row, 'so-button--size-lg')).toBe(true)
+		expect(has(row, 'so-button--variant-danger')).toBe(true)
+		expect(row?.getAttribute('role')).toBe('option')
+		expect(row?.getAttribute('tabindex')).toBe('-1')
 	})
 })

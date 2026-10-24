@@ -21,12 +21,14 @@ const CHECK = roleIcon('check')
 
 /**
  * Флажок меню: строка пункта с отметкой в начале. Обёртка отметки — и у
- * неотмеченного: по ней тема видит у меню колонку отметок.
+ * неотмеченного: по ней тема видит у меню колонку отметок. Строка — `Button` над
+ * экземпляром флажка (`row`, `TItemRow` на `div`), как у пункта.
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 	const binding = setupMenuCheckboxItem(props)
 	const state = binding.state
 	const context = binding.context
+	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -42,7 +44,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала отметка. */
-	const row = () => {
+	const rowAttrs = () => {
 		const { onClick, ...attributes } = toControlAttrs<MenuCheckboxItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -58,11 +60,9 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="menu.row"
-					tag="div"
-					size={state.size}
-					disabled={state.disabled}
+					ctrl={row}
 					{...state.aria}
-					{...row()}
+					{...rowAttrs()}
 					leading={
 						<>
 							<span class="so-menu-item__indicator" aria-hidden="true">

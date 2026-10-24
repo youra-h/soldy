@@ -106,17 +106,18 @@ export function drawItems(state: TItemsState, slots: TItemSlots): ReactElement[]
 
 /**
  * MenuSubmenu — пункт с подменю: строка в меню над ним и своя панель с пунктами; панель —
- * в слое лифта подменю, и её пункты входят в его коллекцию, а не в коллекцию меню.
+ * в слое лифта подменю, и её пункты входят в его коллекцию, а не в коллекцию меню. Строка —
+ * `Button` над экземпляром пункта (`row`, `TItemRow` на `div`), ключ — экземпляр, как у пункта.
  */
 export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
-	const { ref, forwardProps, state, context, rootElement, layer } = useSetupMenuSubmenu(props)
+	const { ref, forwardProps, state, context, rootElement, layer, row } =
+		useSetupMenuSubmenu(props)
 
 	const {
 		rendered,
 		tag,
 		text,
 		size,
-		disabled,
 		open,
 		aria,
 		dataset,
@@ -129,17 +130,16 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...row } = toControlAttrs<MenuSubmenuAttributes>(forwardProps)
+	const { onClick, ...rowAttrs } = toControlAttrs<MenuSubmenuAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="menu.row"
-				tag="div"
-				size={size}
-				disabled={disabled}
+				ctrl={row}
 				{...toAriaProps(aria)}
-				{...row}
+				{...rowAttrs}
 				onClick={(event) => {
 					context?.adapters.menu.open()
 					onClick?.(event)

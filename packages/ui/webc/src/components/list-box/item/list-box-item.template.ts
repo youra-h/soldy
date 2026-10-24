@@ -2,15 +2,22 @@
  * Шаблон элемента ListBox: строка — деталь Button на `div`, на ней `aria` и
  * `dataset` элемента (тема красит выбор на `.so-button`); отметка выбранного —
  * край строки. docs/architecture.md, Layer 8d, «Коллекция».
+ *
+ * Строка — деталь над экземпляром элемента (`row`, `TItemRow`): размер,
+ * вариант, выключенность и вид ей пишет элемент, а роль и `tabindex="-1"` —
+ * его набор `aria`, слоем владельца.
  */
 
 import type { IListBoxItem, TListBoxItemCollectionFacade, TListIndicator } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** На `<button>` выключенный пункт терял бы фокус и клик. */
+/**
+ * На `<button>` выключенный пункт терял бы фокус и клик. `div` — тег экземпляра
+ * строки: под него ядро пишет элементу ARIA (`TListBoxItem._ariaTag`).
+ */
 const TButtonDivElement = registerButtonTag('div')
 
 type TItemParts = {
@@ -76,15 +83,19 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 	},
 
 	bindings: [
-		bind(['view', 'disabled', 'size', 'variant'], ({ root, state }) => {
-			const own = parts.get(root)
+		// На каждое подключение: в построении инстанса ещё нет, а строка собирается
+		// после элемента и берёт свой экземпляр при подключении
+		bind([], ({ root, ctrl }) => {
+			const row = parts.get(root)?.row
 
-			if (!own) return
+			if (row && ctrl && row.ctrl !== ctrl.row) row.ctrl = ctrl.row
+		}),
 
-			const { row, icon } = own
-			const disabled = state.disabled === true
+		// Иконке — явно, от элемента она не наследует. Строке размер пишет сам
+		// элемент — в её экземпляр
+		bind('size', ({ root, state }) => {
+			const icon = parts.get(root)?.icon
 
-			patch(row, { view: state.view, disabled, size: state.size, variant: state.variant })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

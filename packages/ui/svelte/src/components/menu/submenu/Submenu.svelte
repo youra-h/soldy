@@ -36,6 +36,9 @@
 	const binding = setupMenuSubmenu(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	// Строка — экземпляр, которым владеет пункт (`TItemRow` на `div`): размер и выключенность ей
+	// пишет пункт, а роль и `tabindex` — его набор `aria`
+	const row = binding.ctrl.row
 
 	const ARROW = roleIcon('arrowRight')
 </script>
@@ -136,9 +139,7 @@
 	>
 		<Button
 			embedded="menu.row"
-			tag="div"
-			size={state.size}
-			disabled={state.disabled}
+			ctrl={row}
 			{...state.aria}
 			{...toControlAttrs<MenuSubmenuAttributes>(binding.forwardProps)}
 			onclick={chainHandler(() => context?.adapters.menu.open(), binding.forwardProps.onclick)}

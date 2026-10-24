@@ -69,13 +69,13 @@ export const ListBoxItemOutputNames = [
 	'soChangeName',
 	'soChangeText',
 	'soChangeContentFit',
+	'soChangeView',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
 	'soListItemChangeHighlighted',
 	'soChangeSelected',
 	'soChangeOrder',
-	'soChangeView',
 	'soChangeIndicator',
 ] as const
 
@@ -246,6 +246,9 @@ export abstract class TListBoxItemSurface<TInstance extends IEntity> extends TCo
 	get soChangeContentFit(): TOutputEmitter<typeof descriptor, 'change:contentFit'> {
 		return this.createOutput('soChangeContentFit')
 	}
+	get soChangeView(): TOutputEmitter<typeof descriptor, 'change:view'> {
+		return this.createOutput('soChangeView')
+	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')
 	}
@@ -266,9 +269,6 @@ export abstract class TListBoxItemSurface<TInstance extends IEntity> extends TCo
 	}
 	get soChangeOrder(): TOutputEmitter<typeof facade, 'change:order'> {
 		return this.createOutput('soChangeOrder')
-	}
-	get soChangeView(): TOutputEmitter<typeof facade, 'change:view'> {
-		return this.createOutput('soChangeView')
 	}
 	get soChangeIndicator(): TOutputEmitter<typeof facade, 'change:indicator'> {
 		return this.createOutput('soChangeIndicator')

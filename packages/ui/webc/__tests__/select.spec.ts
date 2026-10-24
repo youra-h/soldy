@@ -356,9 +356,9 @@ describe('опции', () => {
 })
 
 /**
- * Строка опции — Button на `span`, как `tag="span"` у Vue: под этот тег ядро
- * пишет опции ARIA. Набор опции перекрывает `role="button"` строки, а
- * `tabindex="-1"` — статика детали: фокус остаётся на поле.
+ * Строка опции — Button на `span` над экземпляром опции (`row`, `TItemRow`):
+ * под этот тег ядро пишет опции ARIA. Своих роли и остановки у строки нет, а
+ * `tabindex="-1"` — из набора опции, от коллекции: фокус остаётся на поле.
  */
 describe('строка опции — кнопка на span', () => {
 	it('строка — <span is="so-button-span"> с именем места, tabindex="-1", без type', async () => {
@@ -372,6 +372,32 @@ describe('строка опции — кнопка на span', () => {
 		expect(row.getAttribute('tabindex')).toBe('-1')
 		expect(row.hasAttribute('type')).toBe(false)
 		expect(document.querySelectorAll('.so-select-item [role="button"]')).toHaveLength(0)
+	})
+
+	/**
+	 * Строка — деталь над экземпляром опции: размер и вариант поля ей пишет
+	 * опция, а не шаблон.
+	 */
+	it('строка — над экземпляром опции: размер и вариант поля доходят до неё', async () => {
+		const el = await render('size="sm" variant="brand"')
+		const row = optionOf('Москва')
+		const option = row.closest('.so-select-item')
+
+		if (!(row instanceof TButtonSpanElement) || !isOption(option)) {
+			throw new Error('опции «Москва» нет')
+		}
+
+		expect(row.ctrl).toBe(option.ctrl?.row)
+		expect(row.classList.contains('so-button--size-sm')).toBe(true)
+		expect(row.classList.contains('so-button--variant-brand')).toBe(true)
+
+		el.size = 'lg'
+		el.variant = 'danger'
+		await settle()
+
+		expect(row.classList.contains('so-button--size-lg')).toBe(true)
+		expect(row.classList.contains('so-button--variant-danger')).toBe(true)
+		expect(row.getAttribute('tabindex')).toBe('-1')
 	})
 
 	it('выключенная опция — aria-disabled без disabled', async () => {

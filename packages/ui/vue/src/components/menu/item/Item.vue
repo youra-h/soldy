@@ -28,11 +28,13 @@ export default { ...SetupMenuItem, components: { Button } }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у ListBox: на ней ARIA пункта (роль
-			`menuitem`, `tabindex="-1"` от меню) и DOM-фокус, когда пункт
-			подсвечен. Размер и `disabled` — пункта. Вида и варианта строка не
-			получает: вид ей даёт тема по контексту, а цвет она берёт с пункта и
-			панели.
+			Строка — `Button` над экземпляром пункта (`row`, `TItemRow` на
+			`div`), как у ListBox: на ней ARIA пункта (роль `menuitem`,
+			`tabindex="-1"` от меню) и DOM-фокус, когда пункт подсвечен. Своих
+			роли и `tabindex` у строки нет — их несёт набор пункта. Размер и
+			`disabled` ей пишет пункт, поэтому пропсов рядом с `ctrl` нет. Вида
+			и варианта строка не получает: вид ей даёт тема по контексту, а цвет
+			она берёт с пункта и панели.
 
 			Нажатие — клик строки: Enter и пробел на ней превращает в клик сама
 			строка (`TActionPlugin`), и путь у мыши и клавиатуры один. Решает
@@ -41,9 +43,7 @@ export default { ...SetupMenuItem, components: { Button } }
 		-->
 		<Button
 			embedded="menu.row"
-			tag="div"
-			:size="size"
-			:disabled="disabled"
+			:ctrl="row"
 			@click="context?.adapters.menu.choose()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>

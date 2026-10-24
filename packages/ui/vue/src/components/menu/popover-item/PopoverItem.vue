@@ -36,10 +36,11 @@ export default { ...SetupMenuPopoverItem, components: { Button, Frame, Icon } }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у пункта (`menu.row`): на ней ARIA
-			пункта — роль `menuitem`, `aria-haspopup="dialog"`, `aria-expanded`,
-			`id` и `aria-controls` на панель, `tabindex="-1"` от меню — и
-			DOM-фокус, когда пункт подсвечен.
+			Строка — `Button` над экземпляром пункта (`row`, `TItemRow` на
+			`div`), как у пункта (`menu.row`): на ней ARIA пункта — роль
+			`menuitem`, `aria-haspopup="dialog"`, `aria-expanded`, `id` и
+			`aria-controls` на панель, `tabindex="-1"` от меню — и DOM-фокус,
+			когда пункт подсвечен. Размер и `disabled` ей пишет пункт.
 
 			Нажатие строки открывает панель, а не выполняет действие: меню
 			остаётся открытым, а открытую панель повторное нажатие не закрывает.
@@ -50,9 +51,7 @@ export default { ...SetupMenuPopoverItem, components: { Button, Frame, Icon } }
 		-->
 		<Button
 			embedded="menu.row"
-			tag="div"
-			:size="size"
-			:disabled="disabled"
+			:ctrl="row"
 			@click="context?.adapters.menu.open()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>

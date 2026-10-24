@@ -20,15 +20,17 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CHECK = roleIcon('check')
 
 /**
- * Опция: строка — `Button` на `span` с наборами `aria` и `dataset` опции
- * (`tabindex="-1"` — фокус остаётся на поле), выбор — клик по строке, как у
- * ListBox: сначала выбор, затем клик потребителя. Обёртка
- * отметки — и у невыбранной: держит место, и строка не прыгает при выборе.
+ * Опция: строка — `Button` над экземпляром опции (`row`, `TItemRow` на `span`) с наборами
+ * `aria` и `dataset` опции: тег, размер, вариант и выключенность строке пишет опция, а роль и
+ * `tabindex="-1"` — её набор (фокус остаётся на поле). Выбор — клик по строке, как у ListBox:
+ * сначала выбор, затем клик потребителя. Обёртка отметки — и у невыбранной: держит место, и
+ * строка не прыгает при выборе.
  */
 export function SelectItem(props: SelectItemProps): JSX.Element {
 	const binding = setupSelectItem(props)
 	const state = binding.state
 	const context = binding.context
+	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -44,7 +46,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала выбор. */
-	const row = () => {
+	const rowAttrs = () => {
 		const { onClick, ...attributes } = toControlAttrs<SelectItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -69,14 +71,10 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="select.row"
-					tag="span"
-					tabindex={-1}
-					size={state.size}
-					variant={state.variant}
-					disabled={state.disabled}
+					ctrl={row}
 					{...state.aria}
 					{...state.dataset}
-					{...row()}
+					{...rowAttrs()}
 					leading={
 						<>
 							{state.indicator === 'start' ? mark() : null}

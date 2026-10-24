@@ -17,28 +17,28 @@ const CheckIcon = roleIcon('check')
 
 /**
  * MenuCheckboxItem — флажок меню: строка пункта с отметкой в начале. Обёртка отметки — прямой
- * ребёнок строки и у неотмеченного: по ней тема узнаёт колонку отметок.
+ * ребёнок строки и у неотмеченного: по ней тема узнаёт колонку отметок. Строка — `Button` над
+ * экземпляром флажка (`row`, `TItemRow` на `div`), ключ — экземпляр, как у пункта.
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context } = useSetupMenuCheckboxItem(props)
+	const { ref, forwardProps, state, context, row } = useSetupMenuCheckboxItem(props)
 
-	const { rendered, tag, text, size, disabled, selected, aria, dataset, attrs } = state
+	const { rendered, tag, text, size, selected, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	const checked = selected ?? false
-	const { onClick, ...row } = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
+	const { onClick, ...rowAttrs } = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="menu.row"
-				tag="div"
-				size={size}
-				disabled={disabled}
+				ctrl={row}
 				{...toAriaProps(aria)}
-				{...row}
+				{...rowAttrs}
 				onClick={(event) => {
 					context?.adapters.menu.toggle()
 					onClick?.(event)

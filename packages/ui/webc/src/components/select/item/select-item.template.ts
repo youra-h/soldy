@@ -1,16 +1,19 @@
 /**
- * Шаблон опции Select: строка — `span`, под него ядро пишет ARIA опции
- * (`TSelectItem._ariaTag`), и `role="option"` перекрывает `role="button"`
- * кнопки — узел с ролью у опции один. `tabindex="-1"`: фокус остаётся на поле
- * Select, опцию объявляет его `aria-activedescendant`.
+ * Шаблон опции Select: строка — деталь над экземпляром опции (`row`,
+ * `TItemRow` на `span`): размер, вариант и выключенность ей пишет опция, а
+ * роль и остановку — её набор `aria`, слоем владельца: своих роли и
+ * `tabindex` у строки нет, и узел с ролью у опции один. `tabindex="-1"` в
+ * наборе пишет коллекция: фокус остаётся на поле Select, опцию объявляет его
+ * `aria-activedescendant`.
  */
 
 import type { ISelectItem, TListIndicator, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
 import { registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
+/** `span` — тег экземпляра строки: под него ядро пишет опции ARIA (`TSelectItem._ariaTag`). */
 const TButtonSpanElement = registerButtonTag('span')
 
 type TOptionParts = {
@@ -42,10 +45,7 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(ownerDocument, TButtonSpanElement, {
-			embedded: 'select.row',
-			attributes: { tabindex: '-1' },
-		})
+		const row = createDetail(ownerDocument, TButtonSpanElement, { embedded: 'select.row' })
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-select-item__indicator'
@@ -79,15 +79,19 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 	},
 
 	bindings: [
-		bind(['disabled', 'size', 'variant'], ({ root, state }) => {
-			const own = parts.get(root)
+		// На каждое подключение: в построении инстанса ещё нет, а строка собирается
+		// после опции и берёт свой экземпляр при подключении
+		bind([], ({ root, ctrl }) => {
+			const row = parts.get(root)?.row
 
-			if (!own) return
+			if (row && ctrl && row.ctrl !== ctrl.row) row.ctrl = ctrl.row
+		}),
 
-			const { row, icon } = own
-			const disabled = state.disabled === true
+		// Иконке — явно, от опции она не наследует. Строке размер пишет сама
+		// опция — в её экземпляр
+		bind('size', ({ root, state }) => {
+			const icon = parts.get(root)?.icon
 
-			patch(row, { disabled, size: state.size, variant: state.variant })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

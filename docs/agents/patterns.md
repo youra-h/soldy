@@ -25,10 +25,10 @@ ListBox, список Select, Popover и Menu выглядят одинаков�
 сам `TListBox` в свой `aria`, `role="option"` — `TListBoxItem`. Что выбрать
 можно несколько, знает коллекция: `aria-multiselectable="true"` в `multiple`
 пишет `TListBoxExtension`, рядом с `aria-selected` элементов. Набор элемента
-ложится на строку верхним слоем и перекрывает `role="button"`, который
-`Button` на `div` пишет себе сам, — узел с ролью у пункта один. Сторожат
-`core/__tests__/list-box.spec.ts` и спеки ListBox адаптеров — у Vue
-`item-control-attrs.spec.ts` и `list-box-tabindex.spec.ts`.
+ложится на строку — `TItemRow`, которая своих роли и `tabindex` не пишет, — и
+узел с ролью у пункта один. Сторожат `core/__tests__/list-box.spec.ts` и спеки
+ListBox адаптеров — у Vue `item-control-attrs.spec.ts` и
+`list-box-tabindex.spec.ts`.
 
 **Listbox — узел внутри корня, шапка и подвал — его соседи.** В `listbox`
 ARIA пускает только `option` и `group` (axe — `aria-required-children`), а
@@ -169,9 +169,18 @@ ListBox одним нажатием — Shift+Tab не останавливае�
 `ctrl` — кнопка по устройству (блок `so-button`, слоты, `press`), которая
 `role` и `tabindex` себе не пишет: их кладёт набор `aria` элемента на тот же
 узел. Создаёт и ведёт её элемент, как Select — своё поле: строку тега — тег
-(`TTagsItem.row`). У ListBox, Select и меню набор элемента пока перекрывает
-`role="button"` и `tabindex="0"`, которые `Button` на `div` и `span` пишет
-себе сам, — временно, до 869fmb13f.
+(`TTagsItem.row`), элемента ListBox — элемент (`TListBoxItem.row`), опции
+Select — опция (`TSelectItem.row`, на `span`), пункта меню любого вида — база
+всех пунктов (`TMenuItem.row`). Строка создаётся при первом чтении — элемент,
+которого никто не рисует (вне окна `Virtual`, в закрытой панели Select), её
+не держит, — а свои `size`, `disabled` и, что у элемента есть, `variant`,
+`view` и `direction` ей пишут подписки элемента из его конструктора: читает
+строку монтирование, а элемент живёт дольше него. Остановку Tab строке пишет
+коллекция: `-1` у ListBox, Select и меню, у Tags — по режиму выбора. Сторожат
+`core/__tests__/item-row.spec.ts` (чтение строки подписок на элементе не
+заводит), группы «строка элемента», «строка опции», «строка пункта» и «строка
+тега» в `core/__tests__/list-box.spec.ts`, `select.spec.ts`, `menu.spec.ts` и
+`tags.spec.ts` и `setup/__tests__/embedded-markup.spec.ts` (`ROW_DETAILS`).
 
 Выпадающего компонента со своим списком (`DropDown`) не заводим. Произвольное
 содержимое у триггера — `Popover`: оверлей (Frame с якорем и закрытием) плюс

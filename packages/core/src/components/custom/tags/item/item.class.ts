@@ -35,13 +35,14 @@ const ROW_TAG = 'div'
  * набора, а не по значению на теге.
  *
  * **Строка** (`row`) — кнопка, которой владеет тег, как Select — своим полем:
- * тег создаёт её один раз и пишет ей свои `size`, `variant`, `disabled` и
- * `direction`, а разметка отдаёт её кнопке целиком (`<Button :ctrl="row">`).
- * Это `TItemRow`: роль и остановку Tab она себе не пишет — их пишет набор
- * `aria` тега, который разметка кладёт на неё же: роль — тег, `tabindex` —
- * `TTagsExtension` по режиму выбора. Без выбора `tabindex` у строки нет вовсе,
- * и фокус от клика она не принимает: действия у `listitem` нет. Тег строки
- * задаёт тег (`ROW_TAG`), а не разметка.
+ * тег создаёт её при первом чтении, со своими `size`, `variant`, `disabled` и
+ * `direction`, и дальше пишет ей их смены, а разметка отдаёт её кнопке
+ * целиком (`<Button :ctrl="row">`). Тег, которого никто не рисует, строки не
+ * держит. Это `TItemRow`: роль и остановку Tab она себе не пишет — их пишет
+ * набор `aria` тега, который разметка кладёт на неё же: роль — тег,
+ * `tabindex` — `TTagsExtension` по режиму выбора. Без выбора `tabindex` у
+ * строки нет вовсе, и фокус от клика она не принимает: действия у `listitem`
+ * нет. Тег строки задаёт тег (`ROW_TAG`), а не разметка.
  *
  * Кнопка закрытия, в отличие от таба, — живой набор `closeAria`, а не
  * вычисляемый снимок: её `tabindex` зависит от режима выбора коллекции, о
@@ -68,7 +69,9 @@ export default class TTagsItem<
 	}
 
 	protected _closeAria: TAria
-	protected readonly _row: TItemRow
+
+	/** Строка — с первого чтения `row`; до него её нет. */
+	protected _row: TItemRow | undefined
 
 	protected _text: string
 	protected _closable: boolean | undefined
@@ -96,27 +99,24 @@ export default class TTagsItem<
 		// знает `TTagsExtension`, не элемент.
 		this._aria.add('role', 'listitem')
 
-		// Строка — со значениями тега, и дальше их пишет он: от корня тега
-		// узел строки их не наследует, а разметка рядом с `ctrl` их не задаёт
-		this._row = new TItemRow({
-			tag: ROW_TAG,
-			size: this.size,
-			variant: this.variant,
-			disabled: this.disabled,
-			direction: this.direction,
-		})
-
+		// Смены — строке, если её уже прочли. Подписки — с тега, а не с первого
+		// чтения строки: читает её монтирование, а тег из данных и `ctrl` живут
+		// дольше него, и снятое монтирование оставляло бы их на теге
 		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			this._row.size = payload.newValue
+			if (this._row) this._row.size = payload.newValue
 		})
 		this.events.on(
 			'change:variant',
 			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				this._row.variant = payload.newValue
+				if (this._row) this._row.variant = payload.newValue
 			},
 		)
-		this.events.on('change:disabled', (value: boolean) => (this._row.disabled = value))
-		this.events.on('change:direction', (value: TDirection) => (this._row.direction = value))
+		this.events.on('change:disabled', (value: boolean) => {
+			if (this._row) this._row.disabled = value
+		})
+		this.events.on('change:direction', (value: TDirection) => {
+			if (this._row) this._row.direction = value
+		})
 	}
 
 	/**
@@ -140,11 +140,11 @@ export default class TTagsItem<
 	/**
 	 * Строка тега — кнопка, которой владеет тег (`TItemRow`): роль и
 	 * остановку Tab ей пишет набор `aria` тега, а `size`, `variant`, `disabled`
-	 * и `direction` — сам тег. Не меняется за время жизни тега, поэтому
-	 * `change:`-события у геттера нет, как у поля Select.
+	 * и `direction` — сам тег. Создаётся при первом чтении и дальше не
+	 * меняется, поэтому `change:`-события у геттера нет, как у поля Select.
 	 */
 	get row(): IButton {
-		return this._row
+		return (this._row ??= this._createRow())
 	}
 
 	get text(): string {
@@ -209,5 +209,20 @@ export default class TTagsItem<
 			text: this.text,
 			closable: this.closable,
 		} as TProps
+	}
+
+	/**
+	 * Строка — со значениями тега на момент первого чтения, а дальше их смены
+	 * ей пишут подписки тега: от корня тега узел строки их не наследует, а
+	 * разметка рядом с `ctrl` их не задаёт.
+	 */
+	private _createRow(): TItemRow {
+		return new TItemRow({
+			tag: ROW_TAG,
+			size: this.size,
+			variant: this.variant,
+			disabled: this.disabled,
+			direction: this.direction,
+		})
 	}
 }

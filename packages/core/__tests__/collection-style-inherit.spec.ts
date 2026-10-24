@@ -18,6 +18,9 @@
  * пунктов вариант меню получает отдельным входом своей панели (`menuVariant`),
  * а не своим `variant` — сценарий в конце файла.
  *
+ * Вид строк ListBox (`view`) — тем же правилом, что размер и вариант: элементу
+ * его пишет список, строке — элемент. Сценарий тоже в конце файла.
+ *
  * Сценарий один на все коллекции: забытая коллекция иначе прошла бы мимо.
  * Каждая сборка — замыкание на своей фабрике, как в `engine-create.spec.ts`:
  * общая сигнатура движков стёрла бы их типы.
@@ -50,6 +53,7 @@ import type {
 	TClasses,
 	TComponentSize,
 	TComponentVariant,
+	TListBoxView,
 	TTableRecord,
 	TValuePayload,
 } from '@soldy-ui/core'
@@ -584,5 +588,90 @@ describe('Menu · подменю: вариант меню — входом па�
 		expect(submenu('b').menuVariant).toBeUndefined()
 		expect(variants(submenu('b').panelClasses)).toEqual([])
 		expect(handler).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * ListBox: вид строк — тоже владельца. Элементу его пишет то же расширение,
+ * что размер и вариант, теми же путями — при добавлении, поверх патча и на
+ * смену у списка, — а строке элемента его пишет сам элемент. Своего
+ * модификатора у корня элемента нет: вид рисует строка.
+ */
+describe('ListBox · вид элемента диктует владелец', () => {
+	type TViewSource = { value: string; view?: TListBoxView }
+
+	function build(view: TListBoxView | undefined, items: TViewSource[]) {
+		const owner = new TListBox({ view })
+		const { batch, plain } = createEngineListBox({ owner, items }).extensions
+
+		batch.trackBy = (item) => item.value
+
+		return {
+			owner,
+			/** Элемент по `value`. */
+			item: (value: string) => found(batch.items, value),
+			/** Сверить состав по `value` — `batch.patch`. */
+			patch: (sources: TViewSource[]) => batch.patch(sources),
+			/** Вставить элемент в конец. */
+			push: (source: TViewSource) => plain.push(source),
+		}
+	}
+
+	it('свой view из items не действует — и у строки тоже', () => {
+		const { item } = build('solid', [{ value: 'a', view: 'ghost' }, { value: 'b' }])
+
+		expect(item('a').view).toBe('solid')
+		expect(item('a').row.view).toBe('solid')
+		expect(item('b').view).toBe('solid')
+		// Модификатор вида — у строки, а не у корня элемента
+		expect(
+			item('a')
+				.classes.toArray()
+				.some((cls) => cls.includes('--view-')),
+		).toBe(false)
+	})
+
+	it('batch.patch с видом из данных его не меняет', () => {
+		const { item, patch } = build('solid', [{ value: 'a' }])
+		const a = item('a')
+
+		patch([{ value: 'a', view: 'ghost' }])
+
+		// Патч обновил тот же элемент, а не заменил его
+		expect(item('a')).toBe(a)
+		expect(a.view).toBe('solid')
+		expect(a.row.view).toBe('solid')
+	})
+
+	it('вставленный элемент получает вид владельца', () => {
+		const { push } = build('solid', [])
+		const pushed = push({ value: 'b', view: 'ghost' })
+
+		expect(pushed.view).toBe('solid')
+		expect(pushed.row.view).toBe('solid')
+	})
+
+	it('смена у владельца доезжает до элемента и строки, change:view — одно на смену', () => {
+		const { owner, item } = build('solid', [{ value: 'a', view: 'ghost' }, { value: 'b' }])
+		const handler = vi.fn()
+
+		item('a').events.on('change:view', handler)
+
+		owner.view = 'ghost'
+
+		for (const value of ['a', 'b']) {
+			expect(item(value).view).toBe('ghost')
+			expect(item(value).row.view).toBe('ghost')
+		}
+
+		expect(handler).toHaveBeenCalledOnce()
+		expect(handler).toHaveBeenLastCalledWith('ghost')
+
+		// Снятый вид владельца снимает и вид строки
+		owner.view = undefined
+
+		expect(item('a').view).toBeUndefined()
+		expect(item('a').row.view).toBeUndefined()
+		expect(handler).toHaveBeenCalledTimes(2)
 	})
 })

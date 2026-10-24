@@ -1896,6 +1896,39 @@ describe('группы разметки', () => {
  */
 describe('React', () => {
 	/**
+	 * Строка опции — экземпляр, которым владеет опция (`row`, `TItemRow`).
+	 * StrictMode пересобирает опцию без `ctrl` новым экземпляром — с новой
+	 * строкой, — и кнопка с ключом-экземпляром встаёт над ней. Без ключа она
+	 * осталась бы над строкой выброшенной сборки, и размер и вариант, которые
+	 * Select пишет опции, до видимой строки не дошли бы.
+	 */
+	it('StrictMode: строка опции — над строкой текущей сборки, размер и вариант доходят', async () => {
+		const tree = (size: 'sm' | 'lg', variant: 'brand' | 'danger') => (
+			<StrictMode>
+				<Select size={size} variant={variant}>
+					<Select.Item value="msk" text="Москва" />
+				</Select>
+			</StrictMode>
+		)
+		const mounted = mount(tree('sm', 'brand'))
+
+		await nextFrame()
+		mounted.render(tree('lg', 'danger'))
+		await open()
+
+		expect(options()).toHaveLength(1)
+
+		const row = optionAt(0)
+
+		expect(row.classList.contains('so-button--size-lg')).toBe(true)
+		expect(row.classList.contains('so-button--size-sm')).toBe(false)
+		expect(row.classList.contains('so-button--variant-danger')).toBe(true)
+		expect(row.classList.contains('so-button--variant-brand')).toBe(false)
+		// Своей остановки у строки нет: `-1` — из набора опции, от коллекции
+		expect(row.getAttribute('tabindex')).toBe('-1')
+	})
+
+	/**
 	 * StrictMode пересобирает Select без `ctrl`: у новой сборки новый TSelect,
 	 * а с ним поле и движок с тегами. Поле и ряд тегов встают над экземплярами
 	 * новой сборки — выбор пишет текст в видимый `<input>` и тег в видимый ряд,

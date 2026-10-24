@@ -5,16 +5,17 @@ import SetupSelectItem from './setup.component'
 
 /**
  * Вся ARIA опции — на вложенном `Button`, строке опции: `role="option"` от
- * ядра, `id` и `aria-selected` от расширения коллекции. Один набор, шаблону не
- * нужно знать, кто в него писал. Узел с ролью один, как у Tabs, Accordion,
- * ListBox и Tags: набор опции ложится поверх того, что `Button` пишет себе
- * сам, — `role="option"` перекрывает `role="button"`, `tabindex="-1"` выводит
- * строку из обхода (фокус остаётся на поле), а `aria-disabled` у них один и
- * тот же.
+ * ядра, `id` от плагина связок, `aria-selected` и `tabindex="-1"` от
+ * расширения коллекции. Один набор, шаблону не нужно знать, кто в него писал.
+ * Узел с ролью один, как у Tabs, Accordion, ListBox и Tags: строка — экземпляр,
+ * которым владеет опция (`row`, `TItemRow` на `span`), и своих роли и
+ * `tabindex` она не пишет — их несёт набор опции; `tabindex="-1"` выводит
+ * строку из обхода (фокус остаётся на поле), а `aria-disabled` у строки и
+ * опции один и тот же.
  *
- * Тег строки фиксирован (`tag="span"`), а не берётся из `tag` элемента:
- * `tag` — тег корня (`TComponentView`), и рисует по нему корень
- * `<component :is>`. Под фиксированный тег строки написан и
+ * Шаблон отдаёт строку кнопке целиком (`:ctrl="row"`), как Select — своё
+ * поле: тег строки, её `size`, `variant` и `disabled` пишет ей сама опция,
+ * поэтому пропсов рядом с `ctrl` нет. Под тег строки написан и
  * `TSelectItem._ariaTag` — он решает, писать ли `aria-disabled`.
  *
  * `dataset` — то же состояние для темы (`data-selected`, `data-highlighted`),
@@ -56,11 +57,7 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 	>
 		<Button
 			embedded="select.row"
-			tag="span"
-			:size="size"
-			:variant="variant"
-			:disabled="disabled"
-			tabindex="-1"
+			:ctrl="row"
 			@click="context?.adapters.select.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>

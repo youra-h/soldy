@@ -25,5 +25,10 @@ export function setupMenuItem(props: MenuItemProps) {
 
 	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
 
-	return { ...joinBindings(owner, itemBinding), context: item.instance.context }
+	return {
+		...joinBindings(owner, itemBinding),
+		context: item.instance.context,
+		/** Строка — экземпляр, которым владеет пункт: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
+	}
 }

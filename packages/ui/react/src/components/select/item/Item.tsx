@@ -16,31 +16,22 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CheckIcon = roleIcon('check')
 
 /**
- * SelectItem — опция списка панели: корень по `tag` и строка-опция — `Button` на `span`
- * (под этот тег написан `TSelectItem._ariaTag`).
+ * SelectItem — опция списка панели: корень по `tag` и строка-опция — `Button` над экземпляром
+ * опции (`row`, `TItemRow` на `span`; под этот тег написан `TSelectItem._ariaTag`): тег,
+ * размер, вариант и выключенность ей пишет опция, а роль и `tabindex="-1"` — её набор `aria`.
+ * Ключ — экземпляр: пересобранная опция без `ctrl` — новая строка, и кнопка над ней
+ * монтируется заново (AGENTS.md (React), «Пересобранный инстанс и `key`»).
  */
 export function SelectItem(props: SelectItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context } = useSetupSelectItem(props)
+	const { ref, forwardProps, state, context, row } = useSetupSelectItem(props)
 
-	const {
-		rendered,
-		tag,
-		text,
-		disabled,
-		size,
-		variant,
-		selected,
-		indicator,
-		aria,
-		dataset,
-		attrs,
-	} = state
+	const { rendered, tag, text, size, selected, indicator, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	const chosen = selected ?? false
-	const { onClick, ...row } = toControlAttrs<SelectItemAttributes>(forwardProps)
+	const { onClick, ...rowAttrs } = toControlAttrs<SelectItemAttributes>(forwardProps)
 
 	const mark = (
 		<span className="so-select-item__indicator" aria-hidden="true">
@@ -52,15 +43,12 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="select.row"
-				tag="span"
-				size={size}
-				variant={variant}
-				disabled={disabled}
-				tabIndex={-1}
+				ctrl={row}
 				{...toAriaProps(aria)}
 				{...toAriaProps(dataset)}
-				{...row}
+				{...rowAttrs}
 				onClick={(event) => {
 					context?.adapters.select.choose()
 					onClick?.(event)
