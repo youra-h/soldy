@@ -172,6 +172,31 @@ describe('окно списка панели', () => {
 		expect(row.getAttribute('aria-posinset')).toBe('301')
 	})
 
+	it('закрыта после прокрутки — окно стоит; открыта снова — опции на месте, без распорок', async () => {
+		await mount()
+
+		await userEvent.click(field())
+		await frames()
+
+		list().scrollTop = 100 * step()
+		await frames()
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(() => getComputedStyle(panel()).display, { timeout: 3000 }).toBe('none')
+
+		const texts = () => drawn().map((option) => option.textContent?.trim())
+		const closed = texts()
+
+		// Скрытый список не меряется: окно не сползает к началу кадр за кадром
+		await frames()
+		expect(texts()).toEqual(closed)
+
+		await userEvent.click(field())
+		await frames(1)
+
+		// Chromium показывает список на прежней прокрутке — там же и окно
+		expect(drawn().some(inView)).toBe(true)
+	})
+
 	it('`maxRows` — высота списка по числу строк, а прокручивается он во всю высоту опций', async () => {
 		const MAX_ROWS = 6
 

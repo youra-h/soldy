@@ -17,6 +17,13 @@ type TBand = { top: number; bottom: number }
 /** Нарисованный элемент в документе: место среди показанных и его узел. */
 type TDrawnNode = { place: number; node: Element }
 
+/** У узла есть коробка: скрытый список (`display: none` у предка) её не даёт. */
+function hasBox(node: Element): boolean {
+	const rect = node.getBoundingClientRect()
+
+	return rect.width > 0 || rect.height > 0
+}
+
 /**
  * TVirtualPlugin — окно коллекции в документе: замер видимой полосы и шага
  * элементов и элемент с DOM-фокусом.
@@ -43,7 +50,10 @@ type TDrawnNode = { place: number; node: Element }
  * таблицы), а элементы стоят от верха через шаг. Шаг — наименьшее расстояние
  * между верхами соседних нарисованных элементов: элемента ниже шага не
  * бывает, тема держит его высоту. Нарисован один — шаг прежний, а первым
- * замером — его высота; элементов в документе нет — замера нет.
+ * замером — его высота; элементов в документе нет — замера нет. Нет и у
+ * нарисованного коробки (список скрыт) — замера тоже нет: верх списка от
+ * нулевых коробок съехал бы к началу, и окно, пока список скрыт, кадр за
+ * кадром шло бы туда же, — а так стоит, где стояло.
  *
  * **Высокий элемент.** Высота элементов в окне одна на все: элемент выше
  * шага сдвинет распорки, и прокрутка поедет. Такой элемент плагин находит при
@@ -255,11 +265,11 @@ export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 		this._watchList(first?.node ?? null, this._containerStale)
 		this._containerStale = false
 
+		if (!first || !hasBox(first.node)) return
+
 		const step = this._measureStep()
 
 		if (step > 0) this._step = step
-
-		if (!first) return
 
 		const top = first.node.getBoundingClientRect().top - first.place * this._step
 
