@@ -39,7 +39,7 @@ Select — самый сложный компонент в проекте: в н
     оверлея, см. AGENTS.md → «Слой оверлея»);
   - `SelectPointerPluginDescriptor` — указатель на поле: клик — тумблер
     всего поля в select-only, только клик по стрелке в `editable`; нажатие
-    мимо контролов поля в обоих режимах гасится, и фокус остаётся в поле;
+    мимо остановок Tab поля в обоих режимах гасится, и фокус остаётся в поле;
   - `SelectKeyboardPluginDescriptor` — клавиатура APG Combobox, пишет
     `aria-activedescendant`;
   - `SelectEditablePluginDescriptor` — реакция на ввод текста (`search`/
