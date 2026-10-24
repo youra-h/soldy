@@ -5,21 +5,18 @@ import type {
 	TListBoxItemCollectionFacadeEvents,
 } from '../../collection/types'
 import type { IListBoxItem } from '../types'
+import type { TListBoxView } from '../../types'
 import { LIST_DEFAULTS } from '../../../list'
 import type { TListIndicator } from '../../../list'
 
 /**
  * Фасад элемента списка.
  *
- * `selected` и `order` — из базы; своё — `indicator`.
+ * `selected` и `order` — из базы; своё — `view` и `indicator`.
  *
- * `view` отсюда ушёл: вид списка расширение коллекции пишет самому элементу,
- * как `size` и `variant`, и разметка читает его у элемента, а элемент — пишет
- * своей строке. Фасад отдавал то же значение вторым путём.
- *
- * `wordWrap` отсюда ушёл раньше: шаблону этот проп был нужен только ради
- * атрибута `data-word-wrap`, а его преемника `data-content-fit` элементам
- * ставит `TListBoxExtension`.
+ * `wordWrap` отсюда ушёл: шаблону этот проп был нужен только ради атрибута
+ * `data-word-wrap`, а его преемника `data-content-fit` элементам ставит
+ * `TListBoxExtension`.
  */
 export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 	IListBoxItem,
@@ -34,9 +31,14 @@ export class TListBoxItemCollectionFacade extends TSelectionItemFacade<
 		this.events.relayAll(this._context.adapters.list.events)
 	}
 
+	get view(): TListBoxView | undefined {
+		return this._context?.adapters.list.view
+	}
+
 	/**
 	 * Сторона отметки выбранного. Значение одно на весь список и читается у
-	 * него: элемент своей стороны не имеет. Меняется только на инстансе списка.
+	 * него: элемент своей стороны не имеет. Меняется только на инстансе списка —
+	 * как `view`.
 	 */
 	get indicator(): TListIndicator {
 		return this._context?.adapters.list.indicator ?? LIST_DEFAULTS.indicator

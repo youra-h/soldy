@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Icon } from '../../icon'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupMenuCheckboxItem from './setup.component'
 
 /**
@@ -9,7 +9,7 @@ import SetupMenuCheckboxItem from './setup.component'
  * Вокруг слотов значка и подсказки нет пробелов: пустую обёртку тема прячет
  * по `:empty`, и пробельный текст сделал бы её непустой.
  */
-export default { ...SetupMenuCheckboxItem, components: { Icon, Button } }
+export default { ...SetupMenuCheckboxItem, components: { Icon, ItemRow } }
 </script>
 
 <template>
@@ -28,19 +28,20 @@ export default { ...SetupMenuCheckboxItem, components: { Icon, Button } }
 		-->
 
 		<!--
-			Строка — `Button` над экземпляром флажка (`row`, `TItemRow` на
-			`div`), как у пункта: на ней ARIA флажка (роль `menuitemcheckbox`,
-			`aria-checked` и `tabindex="-1"` от меню) и DOM-фокус, когда флажок
-			подсвечен. Размер и `disabled` ей пишет флажок.
+			Строка — `ItemRow` на `div`, как у пункта: на ней ARIA флажка (роль
+			`menuitemcheckbox`, `aria-checked` и `tabindex="-1"` от меню) и
+			DOM-фокус, когда флажок подсвечен.
 
 			Нажатие — клик строки, из Enter и пробела его делает сама строка.
 			Решает меню (`adapters.menu.toggle()`): выключенному отказывает, а
 			доступному переключает отметку — выбор коллекции — и остаётся
 			открытым.
 		-->
-		<Button
+		<ItemRow
 			embedded="menu.row"
-			:ctrl="row"
+			tag="div"
+			:size="size"
+			:disabled="disabled"
 			@click="context?.adapters.menu.toggle()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>
@@ -69,6 +70,6 @@ export default { ...SetupMenuCheckboxItem, components: { Icon, Button } }
 			<template #trailing>
 				<span class="so-menu-item__shortcut"><slot name="trailing" /></span>
 			</template>
-		</Button>
+		</ItemRow>
 	</component>
 </template>

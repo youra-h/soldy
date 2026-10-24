@@ -7,7 +7,7 @@
  *
  * Своё у Web Components — разметка. Корень списка и элемента — элемент
  * потребителя (`<div is="so-list-box">`, `<div is="so-list-box-item">`), а
- * строка элемента — Button на `div`, `<div is="so-button-div">`: одно имя
+ * строка элемента — ItemRow на `div`, `<div is="so-item-row-div">`: одно имя
  * элемента расширяет один тег, и кнопку на `div` регистрирует фабрика кнопки.
  * На `div` у выключенного пункта остаются фокус и клик, а ядро пишет строке
  * ARIA, рассчитанную на `div`. Атрибуты потребителя у элемента делятся между
@@ -33,7 +33,7 @@ import {
 	TListBoxGroupElement,
 	TListBoxItemElement,
 	defineElement,
-	registerButtonTag,
+	registerItemRowTag,
 	type ITemplate,
 	type TButtonElementProps,
 	type TListBoxElementProps,
@@ -62,8 +62,8 @@ const ITEMS: TItem[] = [
 	{ value: 'c', text: 'Третий' },
 ]
 
-/** Строка элемента — Button на `div`. */
-const TButtonDivElement = registerButtonTag('div')
+/** Строка элемента — ItemRow на `div`. */
+const TItemRowDivElement = registerItemRowTag('div')
 
 function isList(node: Element | null): node is TListBoxElementProps {
 	return node instanceof TListBoxElement
@@ -74,7 +74,7 @@ function isItem(node: Element | null): node is TListBoxItemElementProps {
 }
 
 function isRow(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
+	return node instanceof TItemRowDivElement
 }
 
 /** Строки элементов — на них обработчик выбора, `aria-selected` и `tabindex`. */
@@ -461,11 +461,11 @@ describe('атрибуты потребителя — узлу списка', ()
 })
 
 /**
- * Строка — Button на `div`: на `<button>` выключенный пункт терял бы фокус и
+ * Строка — ItemRow на `div`: на `<button>` выключенный пункт терял бы фокус и
  * клик, а ядро пишет строке ARIA под `div` (`TListBoxItem._ariaTag`).
  */
 describe('строка — кнопка на div', () => {
-	it('строка — <div is="so-button-div"> с именем места, своего type у неё нет', async () => {
+	it('строка — <div is="so-item-row-div"> с именем места, своего type у неё нет', async () => {
 		await mount(HARNESS)
 
 		const row = rowOf('A')
@@ -477,9 +477,9 @@ describe('строка — кнопка на div', () => {
 	})
 
 	/**
-	 * Своих роли и остановки Tab строка не пишет (`TItemRow`): набор элемента —
-	 * `role="option"` элемента, `tabindex` и `aria-selected` списка — на ней
-	 * единственный. Строка и есть опция, и кнопкой себя не объявляет.
+	 * Роль и остановку Tab кнопка на `div` пишет себе сама, а набор элемента —
+	 * `role="option"` элемента, `tabindex` и `aria-selected` списка — ложится
+	 * поверх: строка и есть опция, и кнопкой себя не объявляет.
 	 */
 	it('роль, tabindex и aria-selected — элемента: строка — опция', async () => {
 		await mount(HARNESS)
@@ -490,36 +490,6 @@ describe('строка — кнопка на div', () => {
 		expect(row.getAttribute('tabindex')).toBe('-1')
 		expect(row.getAttribute('aria-selected')).toBe('false')
 		expect(document.querySelectorAll('.so-list-box-item [role="button"]')).toHaveLength(0)
-	})
-
-	/**
-	 * Строка — деталь над экземпляром элемента (`row`, `TItemRow`): вид и
-	 * размер списка и выключенность элемента ей пишет элемент, а не шаблон.
-	 */
-	it('строка — над экземпляром элемента: вид, размер и выключенность доходят до неё', async () => {
-		const host = await mount(`<div is="so-list-box" size="sm" view="ghost">
-			<div is="so-list-box-item" value="a" text="A"></div>
-		</div>`)
-		const item = itemOf('A')
-		const row = rowOf('A')
-
-		expect(row.ctrl).toBe(item.ctrl?.row)
-		expect(row.classList.contains('so-button--size-sm')).toBe(true)
-		expect(row.classList.contains('so-button--view-ghost')).toBe(true)
-
-		const list = listIn(host)
-
-		list.size = 'lg'
-		list.view = 'solid'
-		item.disabled = true
-		await flush()
-
-		expect(row.classList.contains('so-button--size-lg')).toBe(true)
-		expect(row.classList.contains('so-button--view-solid')).toBe(true)
-		expect(row.classList.contains('so-button--view-ghost')).toBe(false)
-		expect(row.dataset['disabled']).toBe('true')
-		expect(row.getAttribute('role')).toBe('option')
-		expect(row.getAttribute('tabindex')).toBe('-1')
 	})
 
 	it('выключенный пункт: aria-disabled без disabled, фокус на нём остаётся', async () => {
@@ -565,9 +535,9 @@ describe('строка — кнопка на div', () => {
 		expect(submits).toBe(1)
 	})
 
-	it('кнопка на div — один класс на тег, под именем so-button-div', () => {
-		expect(registerButtonTag('div')).toBe(TButtonDivElement)
-		expect(customElements.get('so-button-div')).toBe(TButtonDivElement)
+	it('строка на div — один класс на тег, под именем so-item-row-div', () => {
+		expect(registerItemRowTag('div')).toBe(TItemRowDivElement)
+		expect(customElements.get('so-item-row-div')).toBe(TItemRowDivElement)
 	})
 })
 

@@ -56,17 +56,20 @@ export const ListBoxCollectionItemDescriptor = defineDescriptor(() =>
 		 *
 		 * `list_wordWrap` отсюда ушёл: разрешение «значение элемента поверх значения
 		 * списка» больше не проходит через фасад — `data-content-fit` элементам ставит
-		 * `TListBoxExtension`, у которого на руках и элемент, и владелец. `view`
-		 * тоже: вид — свойство самого элемента (`ListBoxItemDescriptor`), его пишет
-		 * список.
+		 * `TListBoxExtension`, у которого на руках и элемент, и владелец.
 		 */
 		contribution: {
 			props: {
 				selected: { type: Boolean, triggers: ['change:selected'] },
 				order: { type: Number, protected: true, triggers: ['change:order'] },
+				view: {
+					type: String,
+					protected: true,
+					triggers: ['change:view'],
+				},
 				/**
-				 * Сторона отметки выбранного. Только на чтение: значение одно на весь
-				 * список и меняется на его инстансе.
+				 * Сторона отметки выбранного. Только на чтение, как `view`: значение
+				 * одно на весь список и меняется на его инстансе.
 				 */
 				indicator: {
 					type: String,

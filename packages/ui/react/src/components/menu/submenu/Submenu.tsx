@@ -12,7 +12,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { MenuGroup } from '../group'
@@ -106,18 +106,17 @@ export function drawItems(state: TItemsState, slots: TItemSlots): ReactElement[]
 
 /**
  * MenuSubmenu — пункт с подменю: строка в меню над ним и своя панель с пунктами; панель —
- * в слое лифта подменю, и её пункты входят в его коллекцию, а не в коллекцию меню. Строка —
- * `Button` над экземпляром пункта (`row`, `TItemRow` на `div`), ключ — экземпляр, как у пункта.
+ * в слое лифта подменю, и её пункты входят в его коллекцию, а не в коллекцию меню.
  */
 export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
-	const { ref, forwardProps, state, context, rootElement, layer, row } =
-		useSetupMenuSubmenu(props)
+	const { ref, forwardProps, state, context, rootElement, layer } = useSetupMenuSubmenu(props)
 
 	const {
 		rendered,
 		tag,
 		text,
 		size,
+		disabled,
 		open,
 		aria,
 		dataset,
@@ -130,16 +129,17 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...rowAttrs } = toControlAttrs<MenuSubmenuAttributes>(forwardProps)
+	const { onClick, ...row } = toControlAttrs<MenuSubmenuAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
-				key={row.uid}
+			<ItemRow
 				embedded="menu.row"
-				ctrl={row}
+				tag="div"
+				size={size}
+				disabled={disabled}
 				{...toAriaProps(aria)}
-				{...rowAttrs}
+				{...row}
 				onClick={(event) => {
 					context?.adapters.menu.open()
 					onClick?.(event)
@@ -154,7 +154,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.header, { text: text ?? '', open: open ?? false }) ?? text}
-			</Button>
+			</ItemRow>
 			<Elevate layer={layer}>
 				<Frame
 					embedded="menu.submenu-frame"

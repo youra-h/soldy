@@ -2,18 +2,17 @@ import { TBaseItemExtension } from '../../../../../../base/collection'
 import type { IListBoxItemExtension, TListBoxItemEventsExtension } from './types'
 import type { IListBoxItem } from '../../../../item/types'
 import type { IListBoxExtension } from '../types'
+import type { TListBoxView } from '../../../../types'
 import type { TListIndicator } from '../../../../../list'
 
 /**
  * TListBoxItemExtension — stateless-делегат элемента ListBox.
  *
- * Отдаёт `indicator` владельца, выбор своего элемента передаёт родительскому
- * расширению (`choose`). Вида (`view`) здесь нет: его родительское расширение
- * пишет самому элементу, как `size` и `variant`, — и разметка читает его у
- * элемента. Раньше между ним и базой стоял `TListItemExtension`, резолвивший
- * `wordWrap` как «значение элемента поверх значения списка»; теперь такую
- * пару — `contentFit` — разрешает родительский `TListBoxExtension`, записывая
- * элементу `data-content-fit`.
+ * Отдаёт `view` и `indicator` владельца, выбор своего элемента передаёт
+ * родительскому расширению (`choose`). Раньше между ним и базой стоял
+ * `TListItemExtension`, резолвивший `wordWrap` как «значение элемента поверх
+ * значения списка»; теперь такую пару — `contentFit` — разрешает родительский
+ * `TListBoxExtension`, записывая элементу `data-content-fit`.
  *
  * @template TItem   — тип элемента (IListBoxItem или наследник)
  * @template TParent — тип родительского расширения (IListBoxExtension или наследник)
@@ -29,10 +28,15 @@ export class TListBoxItemExtension<
 	constructor(item: TItem, parent: TParent) {
 		super(item, parent)
 
-		this.events.relay(parent.events, ['change:indicator'])
+		this.events.relay(parent.events, ['change:view', 'change:indicator'])
 	}
 
-	/** Сторона отметки — целиком со списка: у элемента своей нет. */
+	/** Внешний вид элемента — берётся у владельца целиком. */
+	get view(): TListBoxView | undefined {
+		return this._parent.view
+	}
+
+	/** Сторона отметки — тоже целиком со списка: у элемента своей нет. */
 	get indicator(): TListIndicator {
 		return this._parent.indicator
 	}

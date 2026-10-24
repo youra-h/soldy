@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupMenuCheckboxItem } from './setup.component'
 	import type { MenuCheckboxItemAttributes, MenuCheckboxItemProps } from './base.component'
@@ -11,9 +11,6 @@
 	const binding = setupMenuCheckboxItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет пункт (`TItemRow` на `div`): размер и выключенность ей
-	// пишет пункт, а роль и `tabindex` — его набор `aria`
-	const row = binding.ctrl.row
 
 	const CHECK = roleIcon('check')
 </script>
@@ -40,9 +37,11 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="menu.row"
-			ctrl={row}
+			tag="div"
+			size={state.size}
+			disabled={state.disabled}
 			{...state.aria}
 			{...toControlAttrs<MenuCheckboxItemAttributes>(binding.forwardProps)}
 			onclick={chainHandler(() => context?.adapters.menu.toggle(), binding.forwardProps.onclick)}
@@ -63,6 +62,6 @@
 			{#snippet trailing()}
 				<span class="so-menu-item__shortcut">{@render props.trailing?.()}</span>
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

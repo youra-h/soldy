@@ -388,7 +388,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TListBoxItemComponent,
 			probe: ListBoxItemProbe,
 			root: '[so-list-box-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -424,7 +424,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TSelectItemComponent,
 			probe: SelectItemProbe,
 			root: '[so-select-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -433,7 +433,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TTagsItemComponent,
 			probe: TagsItemProbe,
 			root: '[so-tags-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -442,7 +442,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TMenuItemComponent,
 			probe: MenuItemProbe,
 			root: '[so-menu-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -451,7 +451,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TMenuCheckboxItemComponent,
 			probe: MenuCheckboxItemProbe,
 			root: '[so-menu-checkbox-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -460,7 +460,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TMenuRadioItemComponent,
 			probe: MenuRadioItemProbe,
 			root: '[so-menu-radio-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -469,7 +469,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TMenuSubmenuComponent,
 			probe: MenuSubmenuProbe,
 			root: '[so-menu-submenu]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 	[
@@ -478,7 +478,7 @@ const CASES: ReadonlyArray<readonly [string, TForwardCase]> = [
 			component: TMenuPopoverItemComponent,
 			probe: MenuPopoverItemProbe,
 			root: '[so-menu-popover-item]',
-			node: '[so-button]',
+			node: '[so-item-row]',
 		},
 	],
 ]

@@ -353,34 +353,6 @@ describe('радио: вид и имя в форме задаёт группа',
 	})
 })
 
-/**
- * Вид строк ListBox диктует список, как вид радио — группа: значение элементу
- * пишет его коллекция, и вход у разметки обещал бы то, чего нет. Своё
- * объявление защищённое сразу, а значение и событие остаются: вид читает
- * разметка, а строке его пишет сам элемент.
- */
-describe('элемент ListBox: вид задаёт список', () => {
-	it('в разметке его нет, а значение и событие остаются', () => {
-		const descriptor = ListBoxItemDescriptor()
-		const surface = TSurface.of(descriptor, RawProfile)
-
-		expect(inputs(descriptor)).not.toContain('view')
-		expect(surface.props.map((prop) => prop.exportName)).toContain('view')
-		expect(surface.exportEvents).toContain('change:view')
-	})
-
-	it('в типах пропсов его нет, в интерфейсе ядра есть', () => {
-		type TItemProps = DescriptorProps<typeof ListBoxItemDescriptor>
-
-		// @ts-expect-error — вид элемента задаёт список
-		const view: keyof TItemProps = 'view'
-		const text: keyof TItemProps = 'text'
-
-		expect([view, text]).toEqual(['view', 'text'])
-		expectTypeOf<IListBoxItemProps>().toHaveProperty('view')
-	})
-})
-
 describe('общий фрагмент объявлен литералом', () => {
 	/**
 	 * `protected` у фрагмента обязан выводиться литералом `true`: с `boolean`

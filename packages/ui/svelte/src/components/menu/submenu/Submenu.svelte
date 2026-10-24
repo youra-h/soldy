@@ -24,7 +24,7 @@
 
 <script lang="ts">
 	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Frame } from '../../frame'
 	import { Icon } from '../../icon'
 	import { setupMenuSubmenu } from './setup.component'
@@ -36,9 +36,6 @@
 	const binding = setupMenuSubmenu(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет пункт (`TItemRow` на `div`): размер и выключенность ей
-	// пишет пункт, а роль и `tabindex` — его набор `aria`
-	const row = binding.ctrl.row
 
 	const ARROW = roleIcon('arrowRight')
 </script>
@@ -137,9 +134,11 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="menu.row"
-			ctrl={row}
+			tag="div"
+			size={state.size}
+			disabled={state.disabled}
 			{...state.aria}
 			{...toControlAttrs<MenuSubmenuAttributes>(binding.forwardProps)}
 			onclick={chainHandler(() => context?.adapters.menu.open(), binding.forwardProps.onclick)}
@@ -155,7 +154,7 @@
 			{#snippet trailing()}
 				<span class="so-menu-item__arrow" aria-hidden="true">{@render arrowIcon()}</span>
 			{/snippet}
-		</Button><Frame
+		</ItemRow><Frame
 			embedded="menu.submenu-frame"
 			class={state.panelClasses}
 			tabindex={-1}

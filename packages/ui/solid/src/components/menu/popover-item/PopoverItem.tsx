@@ -11,7 +11,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { setupMenuPopoverItem } from './setup.component'
@@ -22,14 +22,12 @@ const ARROW = roleIcon('arrowRight')
 
 /**
  * Пункт с панелью: строка пункта и своя панель сбоку с любым содержимым. Текст
- * строки — слот `header`: `default` — содержимое панели. Строка — `Button` над
- * экземпляром пункта (`row`, `TItemRow` на `div`), как у пункта-действия.
+ * строки — слот `header`: `default` — содержимое панели.
  */
 export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 	const binding = setupMenuPopoverItem(props)
 	const state = binding.state
 	const context = binding.context
-	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -45,7 +43,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала открытие. */
-	const rowAttrs = () => {
+	const row = () => {
 		const { onClick, ...attributes } = toControlAttrs<MenuPopoverItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -59,11 +57,13 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="menu.row"
-					ctrl={row}
+					tag="div"
+					size={state.size}
+					disabled={state.disabled}
 					{...state.aria}
-					{...rowAttrs()}
+					{...row()}
 					leading={<span class="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 					trailing={
 						<span class="so-menu-item__arrow" aria-hidden="true">
@@ -74,7 +74,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 					}
 				>
 					{header() ?? state.text}
-				</Button>
+				</ItemRow>
 				<Frame
 					embedded="menu.popover-item-frame"
 					class="so-menu-item__panel"

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupListBoxItem } from './setup.component'
 	import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
@@ -11,16 +11,13 @@
 	const binding = setupListBoxItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет элемент (`TItemRow` на `div`): размер, вариант,
-	// выключенность и вид ей пишет элемент, а роль и `tabindex` — его набор `aria`
-	const row = binding.ctrl.row
 
 	const CHECK = roleIcon('check')
 </script>
 
 <!--
-	Тег строки задаёт её экземпляр (`div`): под него написан `TListBoxItem._ariaTag`. Своих роли
-	и `tabindex` у строки нет — `tabindex="-1"` пишет ей список набором элемента.
+	Тег строки фиксирован (`div`): под него написан `TListBoxItem._ariaTag`. Своих роли и
+	`tabindex` строка (`ItemRow`) не пишет: их несёт набор элемента.
 	Отметка рисуется и у невыбранных: она держит место. `aria-hidden`: выбор скринридеру
 	объявляет `aria-selected`.
 -->
@@ -44,9 +41,13 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="list-box.row"
-			ctrl={row}
+			tag="div"
+			view={state.view}
+			disabled={state.disabled}
+			size={state.size}
+			variant={state.variant}
 			{...state.aria}
 			{...state.dataset}
 			{...toControlAttrs<ListBoxItemAttributes>(binding.forwardProps)}
@@ -66,6 +67,6 @@
 			{#snippet trailing()}
 				{@render props.trailing?.()}{#if state.indicator === 'end'}{@render mark()}{/if}
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

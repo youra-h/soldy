@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Icon } from '../../icon'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupListBoxItem from './setup.component'
 
 /**
@@ -14,7 +14,7 @@ import SetupListBoxItem from './setup.component'
  * `aria-hidden`: отметка декоративна, состояние скринридеру объявляет
  * `aria-selected`. Два источника одного факта дали бы двойное объявление.
  */
-export default { ...SetupListBoxItem, components: { Icon, Button } }
+export default { ...SetupListBoxItem, components: { Icon, ItemRow } }
 </script>
 
 <template>
@@ -37,17 +37,15 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			`.so-button` подсветка и выбор раскрашены по вариантам, а у элемента
 			списка своих таких правил нет.
 
-			`aria` — только на строке: строка и есть опция. Строка — экземпляр,
-			которым владеет элемент (`row`, `TItemRow` на `div`): своих роли и
-			`tabindex` она не пишет, их несёт набор элемента — `role="option"` от
-			элемента, `tabindex="-1"` и `aria-selected` от `TListBoxExtension`,
-			как у Select и Tags.
+			`aria` — только на строке: строка и есть опция. Своих роли и
+			`tabindex` строка (`ItemRow`, `TItemRow`) не пишет, их несёт набор
+			элемента: `role="option"` — элемент, `tabindex="-1"` и
+			`aria-selected` — `TListBoxExtension`, как у Select и Tags.
 
-			Шаблон отдаёт строку кнопке целиком (`:ctrl="row"`), как Select — своё
-			поле: тег строки, её `size`, `variant`, `disabled` и `view` пишет ей
-			сам элемент, поэтому пропсов рядом с `ctrl` нет. Под тег строки
-			написан и `TListBoxItem._ariaTag` — он решает, писать ли
-			`aria-disabled`.
+			Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
+			`tag` — тег корня (`TComponentView`), и рисует по нему корень
+			`<component :is>` выше. Под фиксированный тег строки написан и
+			`TListBoxItem._ariaTag` — он решает, писать ли `aria-disabled`.
 
 			Клик выбирает через `adapters.list.choose()`, а не
 			`selection.toggle()`: выключенному элементу отказывает список, тем же
@@ -56,9 +54,13 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			на ней, и Enter дал бы два переключения — `press` строки и клавиатура
 			корня.
 		-->
-		<Button
+		<ItemRow
 			embedded="list-box.row"
-			:ctrl="row"
+			tag="div"
+			:view="view"
+			:disabled="disabled"
+			:size="size"
+			:variant="variant"
 			@click="context?.adapters.list.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
@@ -101,6 +103,6 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 					</slot>
 				</span>
 			</template>
-		</Button>
+		</ItemRow>
 	</component>
 </template>

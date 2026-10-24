@@ -1,12 +1,10 @@
-<!--
-	Строка — Button над экземпляром опции (`row`, `TItemRow` на `span`): размер, вариант и
-	выключенность ей пишет опция, а роль и `tabindex="-1"` — её набор `aria`.
--->
 <span
-	so-button
+	so-item-row
 	#control
 	embedded="select.row"
-	[ctrl]="instance()?.row"
+	[size]="state()['size']"
+	[variant]="state()['variant']"
+	[disabled]="state()['disabled']"
 	[so-attributes]="{ ...state()['aria'], ...state()['dataset'] }"
 	(click)="facade()?.context?.adapters.select.choose()"
 >

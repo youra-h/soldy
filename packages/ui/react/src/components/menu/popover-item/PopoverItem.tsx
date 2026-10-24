@@ -7,7 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { useSetupMenuPopoverItem } from './setup.component'
@@ -18,17 +18,17 @@ const ArrowIcon = roleIcon('arrowRight')
 
 /**
  * MenuPopoverItem — пункт со своей панелью сбоку с любым содержимым. Текст строки — слот
- * `header`: `default` — содержимое панели, как у `Accordion.Item` и `Popover`. Строка —
- * `Button` над экземпляром пункта (`row`, `TItemRow` на `div`), ключ — экземпляр, как у пункта.
+ * `header`: `default` — содержимое панели, как у `Accordion.Item` и `Popover`.
  */
 export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context, rootElement, row } = useSetupMenuPopoverItem(props)
+	const { ref, forwardProps, state, context, rootElement } = useSetupMenuPopoverItem(props)
 
 	const {
 		rendered,
 		tag,
 		text,
 		size,
+		disabled,
 		open,
 		aria,
 		dataset,
@@ -41,16 +41,17 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...rowAttrs } = toControlAttrs<MenuPopoverItemAttributes>(forwardProps)
+	const { onClick, ...row } = toControlAttrs<MenuPopoverItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
-				key={row.uid}
+			<ItemRow
 				embedded="menu.row"
-				ctrl={row}
+				tag="div"
+				size={size}
+				disabled={disabled}
 				{...toAriaProps(aria)}
-				{...rowAttrs}
+				{...row}
 				onClick={(event) => {
 					context?.adapters.menu.open()
 					onClick?.(event)
@@ -65,7 +66,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 				}
 			>
 				{renderSlot(props.header, { text: text ?? '', open: open ?? false }) ?? text}
-			</Button>
+			</ItemRow>
 			<Frame
 				embedded="menu.popover-item-frame"
 				className="so-menu-item__panel"

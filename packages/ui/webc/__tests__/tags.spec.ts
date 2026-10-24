@@ -9,7 +9,7 @@
  *
  * Своё у Web Components — разметка. Корень набора и тега — элемент
  * потребителя (`<div is="so-tags">`, `<div is="so-tags-item">`), а строка тега
- * — Button на `div`, `<div is="so-button-div">`: одно имя элемента расширяет
+ * — ItemRow на `div`, `<div is="so-item-row-div">`: одно имя элемента расширяет
  * один тег. Атрибуты потребителя у тега делятся между корнем и строкой. Тег
  * входит в коллекцию, когда собирается: движок набора он находит лифтом вверх
  * по документу. Слоты тега — свет строки (свет детали). Scope у слотов нет:
@@ -23,6 +23,7 @@
 
 import { describe, it, expect, expectTypeOf, afterEach, vi } from 'vitest'
 import {
+	TItemRow,
 	TTags,
 	createEngineTags,
 	type TSelectionMode,
@@ -34,7 +35,7 @@ import {
 	TTagsElement,
 	TTagsItemElement,
 	defineElement,
-	registerButtonTag,
+	registerItemRowTag,
 	type ITemplate,
 	type TButtonElementProps,
 	type TTagsElementProps,
@@ -54,8 +55,8 @@ afterEach(() => {
 	document.body.innerHTML = ''
 })
 
-/** Строка тега — Button на `div`. */
-const TButtonDivElement = registerButtonTag('div')
+/** Строка тега — ItemRow на `div`. */
+const TItemRowDivElement = registerItemRowTag('div')
 
 function isTags(node: Element | null): node is TTagsElementProps {
 	return node instanceof TTagsElement
@@ -66,7 +67,7 @@ function isTag(node: Element | null): node is TTagsItemElementProps {
 }
 
 function isRow(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
+	return node instanceof TItemRowDivElement
 }
 
 /** Узел по селектору; нет его или он не того вида — тест падает здесь. */
@@ -752,7 +753,7 @@ describe('вариант', () => {
 })
 
 describe('строка — кнопка на div', () => {
-	it('строка — <div is="so-button-div"> с именем места, своего type у неё нет', async () => {
+	it('строка — <div is="so-item-row-div"> с именем места, своего type у неё нет', async () => {
 		await mount(CLOSABLE.none)
 
 		const row = rowOf('Почта')
@@ -765,18 +766,18 @@ describe('строка — кнопка на div', () => {
 	})
 
 	/**
-	 * Строка — деталь над экземпляром тега (`row`, `TItemRow`): размер и
-	 * выключенность ей пишет тег, а не шаблон, — а роли и `tabindex` своих у неё
-	 * нет, их кладёт набор тега.
+	 * Строка — своё монтирование ItemRow (`TItemRow`): размер и выключенность
+	 * ей отдаёт шаблон тега, — а роли и `tabindex` своих у неё нет, их кладёт
+	 * набор тега.
 	 */
-	it('строка — над экземпляром тега: размер набора и выключенность тега доходят до неё', async () => {
+	it('строка — ItemRow: размер набора и выключенность тега доходят до неё', async () => {
 		const host = await mount(`<div is="so-tags" size="sm">
 			<div is="so-tags-item" value="a" text="A"></div>
 		</div>`)
 		const tag = item('A')
 		const row = rowOf('A')
 
-		expect(row.ctrl).toBe(tag.ctrl?.row)
+		expect(row.ctrl).toBeInstanceOf(TItemRow)
 		expect(row.classList.contains('so-button--size-sm')).toBe(true)
 
 		tagsIn(host).size = 'lg'

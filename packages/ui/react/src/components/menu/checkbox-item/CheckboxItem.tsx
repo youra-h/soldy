@@ -7,7 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { useSetupMenuCheckboxItem } from './setup.component'
 import type { MenuCheckboxItemAttributes, MenuCheckboxItemProps } from './base.component'
@@ -17,28 +17,28 @@ const CheckIcon = roleIcon('check')
 
 /**
  * MenuCheckboxItem — флажок меню: строка пункта с отметкой в начале. Обёртка отметки — прямой
- * ребёнок строки и у неотмеченного: по ней тема узнаёт колонку отметок. Строка — `Button` над
- * экземпляром флажка (`row`, `TItemRow` на `div`), ключ — экземпляр, как у пункта.
+ * ребёнок строки и у неотмеченного: по ней тема узнаёт колонку отметок.
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context, row } = useSetupMenuCheckboxItem(props)
+	const { ref, forwardProps, state, context } = useSetupMenuCheckboxItem(props)
 
-	const { rendered, tag, text, size, selected, aria, dataset, attrs } = state
+	const { rendered, tag, text, size, disabled, selected, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	const checked = selected ?? false
-	const { onClick, ...rowAttrs } = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
+	const { onClick, ...row } = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
-				key={row.uid}
+			<ItemRow
 				embedded="menu.row"
-				ctrl={row}
+				tag="div"
+				size={size}
+				disabled={disabled}
 				{...toAriaProps(aria)}
-				{...rowAttrs}
+				{...row}
 				onClick={(event) => {
 					context?.adapters.menu.toggle()
 					onClick?.(event)
@@ -59,7 +59,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '', selected: checked }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }

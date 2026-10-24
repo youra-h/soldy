@@ -11,14 +11,12 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
-	TItemRow,
 	TSelect,
 	TSelectItem,
 	TSelectCollectionFacade,
 	TSelectItemCollectionFacade,
 	TItemContextRegistry,
 	TInput,
-	createEngine,
 	isSwipeable,
 } from '@soldy-ui/core'
 import type {
@@ -185,100 +183,6 @@ describe('TSelectItem', () => {
 
 		expect(item.aria.has('id')).toBe(false)
 		expect(item.aria.has('aria-selected')).toBe(false)
-		// Модель фокуса комбобокса — тоже знание коллекции
-		expect(item.aria.has('tabindex')).toBe(false)
-	})
-})
-
-/**
- * Строка опции — кнопка, которой владеет опция (`TItemRow`), как Select —
- * полем: разметка отдаёт её кнопке через `ctrl`, а `size`, `variant` и
- * `disabled` пишет ей опция. Роль и остановку Tab строка себе не пишет: их
- * несёт набор `aria` опции, который разметка кладёт на неё же, — роль от
- * опции, `tabindex="-1"` от `TSelectExtension`. Раньше `-1` писала разметка
- * каждого из шести адаптеров поверх остановки кнопки на `span`.
- */
-describe('строка опции', () => {
-	/** Три пропа, которые опция пишет строке. */
-	const ownProps = (target: { size: unknown; variant: unknown; disabled: unknown }) => ({
-		size: target.size,
-		variant: target.variant,
-		disabled: target.disabled,
-	})
-
-	it('TItemRow на span — один экземпляр на всё время жизни опции', () => {
-		const item = new TSelectItem({ value: 'a', text: 'A' })
-		const row = item.row
-
-		expect(row).toBeInstanceOf(TItemRow)
-		expect(row.tag).toBe('span')
-		expect(row.classes.toArray()).toContain('so-button')
-
-		item.size = 'lg'
-		item.disabled = true
-
-		expect(item.row).toBe(row)
-	})
-
-	/**
-	 * Строку создаёт первое чтение: опция закрытой панели, которую никто не
-	 * рисует, её не держит, а прочитанная позже — со значениями, сменёнными до
-	 * неё.
-	 */
-	it('строка, прочитанная после смен, стартует с текущих значений опции', () => {
-		const item = new TSelectItem({ value: 'a', size: 'sm' })
-
-		item.size = 'lg'
-		item.variant = 'danger'
-		item.disabled = true
-
-		expect(ownProps(item.row)).toEqual({ size: 'lg', variant: 'danger', disabled: true })
-	})
-
-	it('смена у опции доходит до строки', () => {
-		const item = new TSelectItem({ value: 'a' })
-		const row = item.row
-
-		item.size = 'lg'
-		item.variant = 'brand'
-		item.disabled = true
-
-		expect(ownProps(row)).toEqual({ size: 'lg', variant: 'brand', disabled: true })
-
-		item.variant = undefined
-		item.disabled = false
-
-		expect(ownProps(row)).toEqual(ownProps(item))
-	})
-
-	it('размер, вид и выключение поля — через опцию и до строки', () => {
-		const { owner, items } = createSelect(['a'], { size: 'sm' })
-		const row = items[0].row
-
-		expect(row.size).toBe('sm')
-
-		owner.size = 'lg'
-		owner.variant = 'brand'
-		owner.disabled = true
-
-		expect(ownProps(row)).toEqual({ size: 'lg', variant: 'brand', disabled: true })
-	})
-
-	it('роли и tabindex у строки нет — их несёт набор опции', () => {
-		const { items } = createSelect(['a'])
-		const row = items[0].row
-
-		expect(row.aria.has('role')).toBe(false)
-		expect(row.aria.has('tabindex')).toBe(false)
-		expect(items[0].aria.get('role')).toBe('option')
-		expect(items[0].aria.get('tabindex')).toBe('-1')
-	})
-
-	it('aria-disabled строки — то же, что у опции: одно состояние одного узла', () => {
-		const item = new TSelectItem({ value: 'a', disabled: true })
-
-		expect(item.row.aria.get('aria-disabled')).toBe('true')
-		expect(item.aria.get('aria-disabled')).toBe('true')
 	})
 })
 
@@ -494,39 +398,6 @@ describe('ARIA поля, списка и опций', () => {
 		expect(items[0].aria.get('aria-selected')).toBe('false')
 		expect(items[1].aria.get('aria-selected')).toBe('true')
 		expect(items[2].aria.get('aria-selected')).toBe('false')
-	})
-
-	/**
-	 * Остановка Tab у комбобокса одна — поле: опции в обход не входят. Пишет
-	 * это коллекция, а не разметка, — и опции, добавленной позже, и лежавшей в
-	 * движке до установки расширения (догон).
-	 */
-	describe('tabindex="-1" опций — от коллекции', () => {
-		it('у опций при добавлении и у добавленной позже', () => {
-			const { facade, items } = createSelect(['a', 'b'])
-			const late = new TSelectItem({ value: 'z', text: 'Z' })
-
-			facade.items = [...items, late] as ISelectItem[]
-
-			expect([...items, late].map((item) => item.aria.get('tabindex'))).toEqual([
-				'-1',
-				'-1',
-				'-1',
-			])
-		})
-
-		it('у опций движка, собранного раньше, — догоном при установке', () => {
-			const engine = createEngine({
-				items: [
-					{ value: 'a', text: 'A' },
-					{ value: 'b', text: 'B' },
-				],
-			})
-
-			const facade = new TSelectCollectionFacade({}, { owner: new TSelect(), engine })
-
-			expect(facade.items.map((item) => item.aria.get('tabindex'))).toEqual(['-1', '-1'])
-		})
 	})
 
 	it('список объявлен как listbox', () => {

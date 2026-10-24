@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IMenuCheckboxItem } from '@soldy-ui/core'
 import { AttributesDirective, RoleIconDirective } from '../../../adapter'
-import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TIconComponent } from '../../icon'
 import { TMenuCheckboxItemSurface } from '../../../generated/menu-checkbox-item.metadata'
 import { setupMenuCheckboxItem } from './setup.component'
@@ -14,7 +14,7 @@ import { setupMenuCheckboxItem } from './setup.component'
 		NgTemplateOutlet,
 		AttributesDirective,
 		RoleIconDirective,
-		TButtonComponent,
+		TItemRowComponent,
 		TIconComponent,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

@@ -2957,11 +2957,16 @@ defineElement('so-button', TButtonElement, 'button')
 глобальном пространстве имён»). У Button его регистрирует фабрика
 `registerButtonTag(tag)` — тем же описанием элемента, что у
 `<button is="so-button">`, на нативном классе тега — и отдаёт класс; второй
-вызов отдаёт тот же. Зовёт её разметка там, где тег впервые нужен: шаблон
-элемента ListBox — `registerButtonTag('div')`, строка `<div is="so-button-div">`,
-шаблон опции Select — `registerButtonTag('span')`, строка
-`<span is="so-button-span">`. Теги фабрики с их нативными классами — карта
-регистраций в её модуле, и её тип сверяет класс с тегом. Так же у Popover —
+вызов отдаёт тот же: `<div is="so-button-div">`, `<span is="so-button-span">`.
+Теги фабрики с их нативными классами — карта регистраций в её модуле, и её
+тип сверяет класс с тегом. Строку элемента коллекции (`ItemRow`, `TItemRow`)
+регистрирует так же своя фабрика `registerItemRowTag(tag)` — описанием с
+шаблоном кнопки и `ItemRowDescriptor`, — и зовёт её разметка там, где тег
+впервые нужен: шаблон элемента ListBox, тега и пунктов меню —
+`registerItemRowTag('div')`, строка `<div is="so-item-row-div">`, шаблон
+опции Select — `registerItemRowTag('span')`, строка
+`<span is="so-item-row-span">`. Элемента на теге по умолчанию у строки нет.
+Так же у Popover —
 фабрика `registerPopoverTag(tag)`: заголовок месяца Calendar —
 `registerPopoverTag('div')`, `<div is="so-popover-div">`: панель выбора с
 `contained` лежит в корне поповера, а в строчном `span` блочной разметке не
@@ -3504,10 +3509,8 @@ WebKit:
   `<div is="so-menu-item">`, `so-menu-checkbox-item`, `so-menu-radio-item`,
   `so-menu-submenu`, `so-menu-popover-item`, `so-menu-group`,
   `so-menu-radio-group`, `so-menu-separator`: у пунктов всех видов строка —
-  Button на `div` (`menu.row`, `row.ts`) над экземпляром пункта (`row`,
-  `TItemRow`: `ctrl` ей отдаёт каждая связка пункта, размер и выключенность
-  пишет пункт, а роль и `tabindex="-1"` — его набор), поле корня, а края
-  строки — обёртки значка, подсказки, отметки и стрелки, светом детали. Пункт с подменю — часть
+  Button на `div` (`menu.row`, `row.ts`), поле корня, а края строки — обёртки
+  значка, подсказки, отметки и стрелки, светом детали. Пункт с подменю — часть
   с тремя контекстами: фасад элемента (`facade` описания) — его место в меню
   над ним, и через его контекст строка открывает панель; фасад владельца
   (`ownerFacade` описания) — коллекция своих пунктов, а его пропсы (`items`,
@@ -3574,14 +3577,12 @@ WebKit:
   (`<button is="so-button" embedded="tabs.row" type="button">`) и поле корня
   (`control`): статические атрибуты разметки элемента, `id` тоже, переезжают
   на них, а `aria` элемента ложится верхним слоем их раскладчика — главнее
-  того, что кнопка пишет себе сама. Строка элемента ListBox — кнопка на
-  `div`, `<div is="so-button-div" embedded="list-box.row">`, без `type`: на
+  того, что кнопка пишет себе сама. Строка элемента ListBox — строка на
+  `div`, `<div is="so-item-row-div" embedded="list-box.row">`, без `type`: на
   `<button>` выключенный пункт терял бы фокус и клик, а ядро пишет строке ARIA
-  под `div` (`TListBoxItem._ariaTag`). Это деталь над экземпляром элемента
-  (`row`, `TItemRow`: `ctrl` ей отдаёт каждая связка элемента, вид, размер,
-  вариант и выключенность пишет элемент): своих роли и остановки у неё нет, и
-  на неё ложатся `aria` и `dataset` элемента — роль элемента, `tabindex="-1"`
-  и `aria-selected` списка. Отметка выбранного — край строки
+  под `div` (`TListBoxItem._ariaTag`). На неё ложатся `aria` и `dataset`
+  элемента: роль — элемента, `tabindex="-1"` и `aria-selected` — списка;
+  своих роли и остановки у строки (`TItemRow`) нет. Отметка выбранного — край строки
   (`span.so-list-box-item__indicator`), иконка роли `check` в ней — у
   выбранного. Остановка Tab списка — узел списка в корне
   (`div.so-list-box__list`): `tabindex="0"` и набор `aria` списка ставит ему
@@ -3621,9 +3622,9 @@ WebKit:
   `<div is="so-select-item">` и `<div is="so-select-group">`): коллекции по
   тому же устройству. У набора тегов все три набора ядра на корне, теги —
   разметкой или петлёй по `shown` с копиями образцов `item-*`. Корень тега —
-  пилюля с `attrs`, `dataset` и местом в коллекции, строка — кнопка на `div`
-  (`tags.row`) над экземпляром тега (`row`, `TItemRow`: `ctrl` ей отдаёт
-  каждая связка тега, как полю Select) и поле корня, а крестик
+  пилюля с `attrs`, `dataset` и местом в коллекции, строка — строка на `div`
+  (`<div is="so-item-row-div" embedded="tags.row">`, `TItemRow`) и поле
+  корня, а крестик
   (`tags.close`) — сосед строки,
   вставляется и снимается по `tag_closable`; его клик не всплывает. Выбор —
   по `so:action:press` строки, а не по клику. У Select корень — рамка с
@@ -3642,10 +3643,10 @@ WebKit:
   не встаёт. Панель — деталь Frame (`select.frame`) с якорем-корнем, как у
   меню; в ней полоса жеста и список `div.so-select__list` — как узел списка
   ListBox (петля по `drawnSections`, распорки окна, `empty`), но без остановки
-  Tab: фокус держит поле. Опция — как элемент ListBox, но строка — кнопка на
-  `span` (`<span is="so-button-span" embedded="select.row">` над экземпляром
-  опции, `TSelectItem._ariaTag`; `tabindex="-1"` — из набора опции, его пишет
-  коллекция), а выбор — клик корня. Сторожат
+  Tab: фокус держит поле. Опция — как элемент ListBox, но строка — на `span`
+  (`<span is="so-item-row-span" embedded="select.row">`,
+  `TSelectItem._ariaTag`; `tabindex="-1"` ей пишет набор опции —
+  `TSelectExtension`), а выбор — клик корня. Сторожат
   `ui/webc/__tests__/tags.spec.ts`, `select.spec.ts`, `field.spec.ts`,
   `focus-target.spec.ts`, `item-slots.spec.ts`, `root-attributes.spec.ts`,
   `collection-item-lifetime.spec.ts`, `external-engine-lifetime.spec.ts`,
@@ -3710,7 +3711,9 @@ Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропс�
 со своим тегом: `TButtonElementProps<HTMLDivElement>` у
 `<div is="so-button-div">`, `TButtonElementProps<HTMLSpanElement>` у
 `<span is="so-button-span">`, и `disabled` там — свойство пропа, а у
-`<button>` — нативное; поповер на `div` — `TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
+`<button>` — нативное; строка элемента коллекции —
+`TItemRowElementProps<HTMLDivElement>` у `<div is="so-item-row-div">`;
+поповер на `div` — `TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
 `ui/webc/__tests__/button.spec.ts`, `frame.spec.ts`, `tabs.spec.ts`,
 `accordion.spec.ts`, `list-box.spec.ts`, `tags.spec.ts`, `select.spec.ts`,
 `menu.spec.ts` и `popover.spec.ts`.
@@ -3786,7 +3789,8 @@ Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропс�
   `<div is="so-button-div">` и `<span is="so-button-span">`
   (`registerButtonTag`), других тегов у неё пока нет — кнопке-ссылке
   понадобится `<a is="so-button-a">`, тем же вызовом фабрики, с `a` в её
-  карте регистраций. У Popover — `<div is="so-popover-div">`
+  карте регистраций. У строки элемента коллекции — `<div is="so-item-row-div">`
+  и `<span is="so-item-row-span">` (`registerItemRowTag`). У Popover — `<div is="so-popover-div">`
   (`registerPopoverTag`). Иконка — только `<span is="so-icon">`:
   `<i is="so-icon">` под тем же именем не оживёт, а `<svg>` атрибут `is` не
   расширяет вовсе.
@@ -4055,9 +4059,9 @@ Accordion is now a 1:1 mirror of Tabs. Only differences: component props (`view`
 наследник у него был один, а второй потребитель раскладки — `TSelect` — растёт
 от `TInputControl` и наследоваться от списка не мог в принципе.
 
-- Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка», + `view`, который пишет список, и строка `row` — `TItemRow`, которой элемент пишет размер, вариант, выключенность и вид). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
+- Core: `TListBox extends TValueControl` (+ `view` и списочные свойства), `TListBoxItem extends TValueControl` (`text` + свой `contentFit` без `expand`, где `undefined` = «взять у списка»). `value` списка — проекция выбора, её держит `TValueSelectionExtension`.
 - Списочные свойства (`maxRows`, `contentFit`, `scrollBehavior`, `indicator`) — у самого компонента, по общему контракту `IList` (`packages/core/src/components/custom/list/types.ts`: только контракт, класса там нет) и общей декларации `LIST_PROPS` (`packages/setup/content/descriptors/components/list.ts`). Реализация у ListBox и Select своя — общего предка у них нет; расхождение копий стережёт `packages/core/__tests__/list-contract.spec.ts`. Раньше свойства лежали в плагине `TListLayoutPlugin` с `flatProps`; почему вернулись в ядро — комментарий в `list/types.ts`.
-- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам; `tabindex="-1"` и `aria-selected` — в набор элемента) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`indicator`, `choose`) ← `TBaseItemExtension`.
+- Collections: `ListBoxFactory`. `TListBoxExtension` (`size`/`variant`/`view` элемента — списка; `disabled` элемента — своё или списка; `data-content-fit` и `data-indicator` элементам) ← `TBaseOwnerItemExtension`; item-адаптер `TListBoxItemExtension` (`view`, `indicator`) ← `TBaseItemExtension`.
 - List-плагины живут в `packages/plugins/src/custom/list/` и типизированы по `IControl`, а не по элементу конкретного списка: навигации нужны только `uid`, `disabled`, `rendered`, `visible`, а опции Select и элементы ListBox общего предка ниже не имеют.
 - Плагины: `TListItemPlugin` (только `highlighted`), `TListHeightPlugin` (высота по `maxRows`), `TListNavigationPlugin` (общая база навигации) → `TListKeyboardPlugin`, `TListScrollPlugin` (читает `scrollBehavior` у инстанса).
 - Дескрипторы: `ListItemPluginDescriptor` (namespace `listItem` → `listItem_highlighted`), `ListHeight/Keyboard/ScrollPluginDescriptor`. ListBoxDescriptor подключает CollectionBundles + CollectionElements + ListHeight + ListKeyboard + ListScroll + Drag.

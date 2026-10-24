@@ -475,12 +475,11 @@ describe('опции', () => {
 	})
 
 	/**
-	 * Строка Select — сама опция: строка — экземпляр, которым владеет опция
-	 * (`TItemRow`), своих роли и `tabindex` у неё нет, их несёт набор опции.
-	 * Узел с ролью один — корень ничего не объявляет, строка не объявляет себя
-	 * кнопкой; строка — `span` без нативного `disabled`, и `aria-disabled` у
-	 * неё единственный способ сказать о выключенности, а `tabindex="-1"` от
-	 * коллекции выводит её из обхода.
+	 * Строка Select — сама опция: набор опции ложится поверх того, что кнопка
+	 * пишет себе сама. Узел с ролью один — корень ничего не объявляет, строка не
+	 * объявляет себя кнопкой; строка — `span` без нативного `disabled`, и
+	 * `aria-disabled` у неё единственный способ сказать о выключенности, а
+	 * `tabindex="-1"` выводит её из обхода.
 	 */
 	it('строка и есть опция: роль, id и aria-selected — на ней, корень без ARIA', async () => {
 		await render(Page, (page) => page.options.set([{ value: 'a', text: 'A', disabled: true }]))
@@ -521,40 +520,6 @@ describe('опции', () => {
 		expect(option.hasAttribute('disabled')).toBe(true)
 		expect(row.tagName).toBe('SPAN')
 		expect(row.getAttribute('aria-disabled')).toBe('true')
-	})
-
-	/**
-	 * Строка — кнопка над экземпляром опции (`row`, `TItemRow`): размер и
-	 * вариант поля ей пишет опция, а не шаблон, — а роли и `tabindex` своих у
-	 * неё нет, их кладёт набор опции.
-	 */
-	it('строка — над экземпляром опции: размер и вариант поля доходят до неё', () => {
-		@Component({
-			selector: 'probe-select-item-row',
-			imports: [TSelectComponent, TSelectItemComponent],
-			template: `<div so-select [size]="size()" [variant]="variant()">
-				<div so-select-item value="a" text="A"></div>
-			</div>`,
-		})
-		class RowPage {
-			readonly size = signal<'sm' | 'lg'>('sm')
-			readonly variant = signal<'brand' | 'danger'>('brand')
-		}
-
-		const fixture = draw(RowPage)
-		const row = find(document, '.so-select-item .so-button', HTMLElement)
-
-		expect(row.classList.contains('so-button--size-sm')).toBe(true)
-		expect(row.classList.contains('so-button--variant-brand')).toBe(true)
-
-		fixture.componentInstance.size.set('lg')
-		fixture.componentInstance.variant.set('danger')
-		fixture.detectChanges()
-
-		expect(row.classList.contains('so-button--size-lg')).toBe(true)
-		expect(row.classList.contains('so-button--variant-danger')).toBe(true)
-		expect(row.getAttribute('role')).toBe('option')
-		expect(row.getAttribute('tabindex')).toBe('-1')
 	})
 
 	it('класс и стиль потребителя — корню опции, остальное — строке; клик потребителя выбора не отменяет', async () => {

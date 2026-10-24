@@ -6,34 +6,31 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { useSetupMenuRadioItem } from './setup.component'
 import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
 
-/**
- * MenuRadioItem — переключатель меню: строка пункта с точкой-отметкой в начале, как у флажка.
- * Строка — `Button` над экземпляром переключателя (`row`, `TItemRow` на `div`), ключ —
- * экземпляр, как у пункта.
- */
+/** MenuRadioItem — переключатель меню: строка пункта с точкой-отметкой в начале, как у флажка. */
 export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context, row } = useSetupMenuRadioItem(props)
+	const { ref, forwardProps, state, context } = useSetupMenuRadioItem(props)
 
-	const { rendered, tag, text, selected, aria, dataset, attrs } = state
+	const { rendered, tag, text, size, disabled, selected, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	const checked = selected ?? false
-	const { onClick, ...rowAttrs } = toControlAttrs<MenuRadioItemAttributes>(forwardProps)
+	const { onClick, ...row } = toControlAttrs<MenuRadioItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
-				key={row.uid}
+			<ItemRow
 				embedded="menu.row"
-				ctrl={row}
+				tag="div"
+				size={size}
+				disabled={disabled}
 				{...toAriaProps(aria)}
-				{...rowAttrs}
+				{...row}
 				onClick={(event) => {
 					context?.adapters.menu.check()
 					onClick?.(event)
@@ -52,7 +49,7 @@ export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '', selected: checked }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }

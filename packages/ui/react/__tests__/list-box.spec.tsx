@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
-import { StrictMode, act, useState, type ReactNode } from 'react'
+import { act, useState, type ReactNode } from 'react'
 import {
 	createEngine,
 	createEngineListBox,
@@ -862,40 +862,6 @@ describe('группы', () => {
 		render(<Markup engine={engine} label="Ягоды" />)
 
 		expect(brief(engine)[1]).toEqual(['Ягоды', ['apple', 'pear']])
-	})
-})
-
-/**
- * Строка — экземпляр, которым владеет элемент (`row`, `TItemRow`). StrictMode
- * пересобирает элемент без `ctrl` новым экземпляром — с новой строкой, — и
- * кнопка с ключом-экземпляром встаёт над ней. Без ключа она осталась бы над
- * строкой выброшенной сборки, и вид и размер, которые список пишет элементу, до
- * видимой строки не дошли бы.
- */
-describe('строка — над экземпляром элемента', () => {
-	it('StrictMode: строка — над строкой текущей сборки, вид и размер списка доходят до неё', () => {
-		const tree = (size: 'sm' | 'lg', view: 'ghost' | 'solid') => (
-			<StrictMode>
-				<ListBox size={size} view={view}>
-					<ListBox.Item value="a" text="A" />
-				</ListBox>
-			</StrictMode>
-		)
-		const { render } = mount(tree('sm', 'ghost'))
-
-		render(tree('lg', 'solid'))
-
-		expect(rows()).toHaveLength(1)
-
-		const row = rowOf('A')
-
-		expect(row.classList.contains('so-button--size-lg')).toBe(true)
-		expect(row.classList.contains('so-button--size-sm')).toBe(false)
-		expect(row.classList.contains('so-button--view-solid')).toBe(true)
-		expect(row.classList.contains('so-button--view-ghost')).toBe(false)
-		// Своих роли и остановки у строки нет — на ней набор элемента
-		expect(row.getAttribute('role')).toBe('option')
-		expect(row.getAttribute('tabindex')).toBe('-1')
 	})
 })
 

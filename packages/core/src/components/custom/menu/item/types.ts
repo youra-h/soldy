@@ -4,7 +4,6 @@ import type {
 	TValueControlEvents,
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload } from '../../../../common'
-import type { IButton } from '../../button/types'
 
 export type TMenuItemEvents = TValueControlEvents<string | number> & {
 	/** change:text */
@@ -47,11 +46,4 @@ export interface IMenuItem<
 	 * пишет `aria-checked` и решает, что делает нажатие
 	 */
 	readonly checkable: boolean
-	/**
-	 * Строка пункта — кнопка, которой владеет пункт (`TItemRow`): роль и
-	 * остановку Tab ей пишет набор `aria` пункта, а `size` и `disabled` —
-	 * пункт. Создаётся при первом чтении и дальше не меняется, событий
-	 * `change:` у геттера нет.
-	 */
-	readonly row: IButton
 }

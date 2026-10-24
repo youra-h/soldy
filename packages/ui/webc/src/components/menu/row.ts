@@ -1,23 +1,18 @@
 /**
- * Строка пункта меню — Button на `div` (`menu.row`), одна у пунктов всех видов.
+ * Строка пункта меню — ItemRow на `div` (`menu.row`), одна у пунктов всех видов.
  * Тег `div`, а не `button`: у выключенного пункта остаются фокус и подсветка.
  * DOM-фокус подсвеченного пункта — на строке: клавиатура меню находит её по
  * `tabindex` (`rowIn`). docs/architecture.md, Layer 8d, «Меню».
- *
- * Строка — деталь над экземпляром пункта (`row`, `TItemRow`): размер и
- * выключенность ей пишет пункт, а роль и `tabindex="-1"` — его набор `aria`,
- * слоем владельца.
  */
 
 import type { IMenuItem, TComponentSize } from '@soldy-ui/core'
-import { bind, createDetail, ownerAttributes, type ITemplateBinding } from '../../adapter'
-import { registerButtonTag, type TButtonElementProps } from '../button'
+import { bind, createDetail, ownerAttributes, type ITemplateBinding, patch } from '../../adapter'
+import { registerItemRowTag, type TItemRowElementProps } from '../item-row'
 import { TIconElement, type TIconElementProps } from '../icon'
 
-/** `div` — тег экземпляра строки: под него ядро пишет пункту ARIA (`TMenuItem._ariaTag`). */
-const TButtonDivElement = registerButtonTag('div')
+const TItemRowDivElement = registerItemRowTag('div')
 
-export type TMenuRow = TButtonElementProps<HTMLDivElement>
+export type TMenuRow = TItemRowElementProps<HTMLDivElement>
 
 /** Строка каждого пункта — одна на всё время жизни элемента. */
 const rows = new WeakMap<HTMLElement, TMenuRow>()
@@ -27,7 +22,7 @@ const rows = new WeakMap<HTMLElement, TMenuRow>()
  * сама строка (`TActionPlugin`), и путь у мыши и клавиатуры один.
  */
 export function createRow(root: HTMLElement, press: () => void): TMenuRow {
-	const row = createDetail(root.ownerDocument, TButtonDivElement, { embedded: 'menu.row' })
+	const row = createDetail(root.ownerDocument, TItemRowDivElement, { embedded: 'menu.row' })
 
 	row.addEventListener('click', press)
 	root.appendChild(row)
@@ -61,14 +56,16 @@ export function roleIconOf(owner: Document, embedded: string, role: string): TIc
 /** `textSlot` — `default`, а у пунктов со своей панелью `header`: `default` у них — панель. */
 export function rowBindings(textSlot: string): readonly ITemplateBinding<IMenuItem>[] {
 	return [
-		// На каждое подключение: в построении инстанса ещё нет, а строка собирается
-		// после пункта и берёт свой экземпляр при подключении. Размер и
-		// выключенность строке пишет сам пункт — в её экземпляр; вида и варианта
-		// она не получает — их даёт тема по контексту
-		bind<IMenuItem>([], ({ root, ctrl }) => {
+		// Только сменившиеся: каждая запись дошла бы до ядра строки. Вида и
+		// варианта строка не получает — их даёт тема по контексту
+		bind<IMenuItem>(['size', 'disabled'], ({ root, state }) => {
 			const row = rows.get(root)
 
-			if (row && ctrl && row.ctrl !== ctrl.row) row.ctrl = ctrl.row
+			if (!row) return
+
+			const disabled = state.disabled === true
+
+			patch(row, { size: state.size, disabled })
 		}),
 
 		bind<IMenuItem>('aria', ({ root, state }) => {

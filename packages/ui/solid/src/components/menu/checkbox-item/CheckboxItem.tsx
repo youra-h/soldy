@@ -11,7 +11,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { setupMenuCheckboxItem } from './setup.component'
 import type { MenuCheckboxItemAttributes, MenuCheckboxItemProps } from './base.component'
@@ -21,14 +21,12 @@ const CHECK = roleIcon('check')
 
 /**
  * Флажок меню: строка пункта с отметкой в начале. Обёртка отметки — и у
- * неотмеченного: по ней тема видит у меню колонку отметок. Строка — `Button` над
- * экземпляром флажка (`row`, `TItemRow` на `div`), как у пункта.
+ * неотмеченного: по ней тема видит у меню колонку отметок.
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 	const binding = setupMenuCheckboxItem(props)
 	const state = binding.state
 	const context = binding.context
-	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -44,7 +42,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала отметка. */
-	const rowAttrs = () => {
+	const row = () => {
 		const { onClick, ...attributes } = toControlAttrs<MenuCheckboxItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -58,11 +56,13 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="menu.row"
-					ctrl={row}
+					tag="div"
+					size={state.size}
+					disabled={state.disabled}
 					{...state.aria}
-					{...rowAttrs()}
+					{...row()}
 					leading={
 						<>
 							<span class="so-menu-item__indicator" aria-hidden="true">
@@ -83,7 +83,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 					}
 				>
 					{content() ?? state.text}
-				</Button>
+				</ItemRow>
 			</Dynamic>
 		</Show>
 	)

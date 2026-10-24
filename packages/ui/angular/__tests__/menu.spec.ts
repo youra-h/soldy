@@ -285,25 +285,6 @@ describe('разметка', () => {
 		expect(rows().some((row) => row.hasAttribute('aria-checked'))).toBe(false)
 	})
 
-	/**
-	 * Строка — кнопка над экземпляром пункта (`row`, `TItemRow`): размер меню
-	 * ей пишет пункт, а не шаблон, — а роли и `tabindex` своих у неё нет, их
-	 * кладёт набор пункта.
-	 */
-	it('строка — над экземпляром пункта: размер меню доходит до неё', async () => {
-		const fixture = await render(ItemsPage, (page) => page.size.set('sm'))
-
-		expect(rows().every((row) => row.classList.contains('so-button--size-sm'))).toBe(true)
-
-		fixture.componentInstance.size.set('lg')
-		fixture.detectChanges()
-
-		expect(rows().every((row) => row.classList.contains('so-button--size-lg'))).toBe(true)
-		expect(rows().some((row) => row.classList.contains('so-button--size-sm'))).toBe(false)
-		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
-		expect(document.querySelectorAll('.so-menu-item [role="button"]')).toHaveLength(0)
-	})
-
 	it('размер и вариант меню — модификаторами панели, свой вариант — у пункта', async () => {
 		await render(ItemsPage, (page) => {
 			page.size.set('lg')

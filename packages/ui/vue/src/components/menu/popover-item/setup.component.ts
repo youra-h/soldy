@@ -55,8 +55,6 @@ export default {
 			...itemBinding,
 			...ownerBinding,
 			context: itemAdapter.instance.context,
-			/** Строка — экземпляр `TItemRow`, которым владеет пункт: кнопка берёт его целиком. */
-			row: adapter.instance.row,
 			arrowIconTag: roleIcon('arrowRight'),
 			...useSplitAttrs(),
 		}

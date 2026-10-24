@@ -17,7 +17,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { For, Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { MenuGroup } from '../group'
@@ -113,15 +113,11 @@ export function drawItems(state: TItemsState, slots: TItemSlots): JSX.Element {
 	)
 }
 
-/**
- * Пункт с подменю: строка пункта в меню над ним и своя панель с пунктами. Строка —
- * `Button` над экземпляром пункта (`row`, `TItemRow` на `div`), как у пункта-действия.
- */
+/** Пункт с подменю: строка пункта в меню над ним и своя панель с пунктами. */
 export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 	const binding = setupMenuSubmenu(props)
 	const state = binding.state
 	const context = binding.context
-	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -137,7 +133,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала открытие. */
-	const rowAttrs = () => {
+	const row = () => {
 		const { onClick, ...attributes } = toControlAttrs<MenuSubmenuAttributes>(
 			binding.forwardProps(),
 		)
@@ -151,11 +147,13 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="menu.row"
-					ctrl={row}
+					tag="div"
+					size={state.size}
+					disabled={state.disabled}
 					{...state.aria}
-					{...rowAttrs()}
+					{...row()}
 					leading={<span class="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 					trailing={
 						<span class="so-menu-item__arrow" aria-hidden="true">
@@ -166,7 +164,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 					}
 				>
 					{header() ?? state.text}
-				</Button>
+				</ItemRow>
 				<Elevate layer={binding.layer}>
 					<Frame
 						embedded="menu.submenu-frame"

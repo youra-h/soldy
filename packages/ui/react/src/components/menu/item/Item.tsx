@@ -6,36 +6,31 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { useSetupMenuItem } from './setup.component'
 import type { MenuItemAttributes, MenuItemProps } from './base.component'
 
-/**
- * MenuItem — пункт-действие: корень по `tag` и строка — `Button` над экземпляром пункта
- * (`row`, `TItemRow` на `div`) с ARIA пункта: тег, размер и выключенность ей пишет пункт, а
- * роль и `tabindex` — его набор `aria`. Ключ — экземпляр: пересобранный пункт без `ctrl` —
- * новая строка, и кнопка над ней монтируется заново (AGENTS.md (React), «Пересобранный
- * инстанс и `key`»).
- */
+/** MenuItem — пункт-действие: корень по `tag` и строка — `ItemRow` на `div` с ARIA пункта. */
 export function MenuItem(props: MenuItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context, row } = useSetupMenuItem(props)
+	const { ref, forwardProps, state, context } = useSetupMenuItem(props)
 
-	const { rendered, tag, text, aria, dataset, attrs } = state
+	const { rendered, tag, text, size, disabled, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
 	// Клик потребителя — после выбора меню, как у Vue, где слушатели складываются
-	const { onClick, ...rowAttrs } = toControlAttrs<MenuItemAttributes>(forwardProps)
+	const { onClick, ...row } = toControlAttrs<MenuItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
-				key={row.uid}
+			<ItemRow
 				embedded="menu.row"
-				ctrl={row}
+				tag="div"
+				size={size}
+				disabled={disabled}
 				{...toAriaProps(aria)}
-				{...rowAttrs}
+				{...row}
 				onClick={(event) => {
 					context?.adapters.menu.choose()
 					onClick?.(event)
@@ -46,7 +41,7 @@ export function MenuItem(props: MenuItemProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '' }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }

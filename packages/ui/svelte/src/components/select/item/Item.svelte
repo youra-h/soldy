@@ -7,7 +7,7 @@
 		toRootForward,
 		toRootProps,
 	} from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupSelectItem } from './setup.component'
 	import type { SelectItemAttributes, SelectItemProps } from './base.component'
@@ -18,16 +18,13 @@
 	const binding = setupSelectItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет опция (`TItemRow` на `span`): размер, вариант и
-	// выключенность ей пишет опция, а роль и `tabindex="-1"` — её набор `aria`
-	const row = binding.ctrl.row
 
 	const CHECK = roleIcon('check')
 </script>
 
 <!--
-	Тег строки задаёт её экземпляр (`span`): под него написан `TSelectItem._ariaTag`. `dataset` —
-	и на строке: фон выбора и подсветки тема рисует на кнопке.
+	Тег строки фиксирован (`span`): под него написан `TSelectItem._ariaTag`. `dataset` — и на
+	строке: фон выбора и подсветки тема рисует на кнопке.
 	Отметка рисуется и у невыбранных: она держит место, и строка не прыгает при выборе.
 	`aria-hidden`: выбор скринридеру объявляет `aria-selected`.
 -->
@@ -47,9 +44,12 @@
 		attributes={toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps))}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="select.row"
-			ctrl={row}
+			tag="span"
+			size={state.size}
+			variant={state.variant}
+			disabled={state.disabled}
 			{...state.aria}
 			{...state.dataset}
 			{...toControlAttrs<SelectItemAttributes>(binding.forwardProps)}
@@ -69,6 +69,6 @@
 			{#snippet trailing()}
 				{@render props.trailing?.()}{#if state.indicator === 'end'}{@render mark()}{/if}
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

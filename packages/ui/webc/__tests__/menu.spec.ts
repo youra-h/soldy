@@ -13,7 +13,7 @@
  *
  * Своё у Web Components — разметка и слоты без scope. Корень меню и каждой
  * части — элемент потребителя (`<span is="so-menu">`, `<div is="so-menu-item">`
- * и соседи), строка пункта — Button на `div`, `<div is="so-button-div">`.
+ * и соседи), строка пункта — ItemRow на `div`, `<div is="so-item-row-div">`.
  * Связку с панелью триггер получает на первом элементе слота `trigger`, как у
  * Popover. Слоты пунктов из данных — образцы (`<template slot="item-leading">`),
  * копию которых получает каждый пункт, а подменю из данных — ещё и образцы
@@ -55,7 +55,6 @@ import {
 	TMenuRadioItemElement,
 	TMenuSubmenuElement,
 	defineElement,
-	registerButtonTag,
 	type ITemplate,
 	type TMenuCheckboxItemElementProps,
 	type TMenuElementProps,
@@ -355,35 +354,6 @@ describe('разметка', () => {
 		const sizes = [...panel().classList].filter((cls) => cls.includes('--size-'))
 
 		expect(sizes).toEqual(['so-menu__panel--size-sm'])
-	})
-
-	/**
-	 * Строка — деталь над экземпляром пункта (`row`, `TItemRow`), у пунктов
-	 * всех видов: размер меню ей пишет пункт, а не шаблон, — а роли и
-	 * `tabindex` своих у неё нет, их кладёт набор пункта.
-	 */
-	it('строка — над экземпляром пункта: размер меню доходит до неё', async () => {
-		const menu = await render({
-			attrs: 'size="sm"',
-			content: `<div is="so-menu-item" value="edit" text="Изменить"></div>
-				<div is="so-menu-checkbox-item" value="grid" text="Сетка"></div>`,
-		})
-		const edit = part('.so-menu-item', isItem, panel())
-		const editRow = rowOf('Изменить')
-
-		if (!(editRow instanceof registerButtonTag('div')))
-			throw new Error('строка — не кнопка на div')
-
-		expect(editRow.ctrl).toBe(edit.ctrl?.row)
-		expect(rows().every((row) => row.classList.contains('so-button--size-sm'))).toBe(true)
-
-		menu.size = 'lg'
-		await flush()
-
-		expect(rows().every((row) => row.classList.contains('so-button--size-lg'))).toBe(true)
-		expect(rows().some((row) => row.classList.contains('so-button--size-sm'))).toBe(false)
-		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
-		expect(document.querySelectorAll('.so-menu-item [role="button"]')).toHaveLength(0)
 	})
 
 	/**

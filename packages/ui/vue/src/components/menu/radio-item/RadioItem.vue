@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupMenuRadioItem from './setup.component'
 
 /**
@@ -8,7 +8,7 @@ import SetupMenuRadioItem from './setup.component'
  * Вокруг слотов значка и подсказки нет пробелов: пустую обёртку тема прячет
  * по `:empty`, и пробельный текст сделал бы её непустой.
  */
-export default { ...SetupMenuRadioItem, components: { Button } }
+export default { ...SetupMenuRadioItem, components: { ItemRow } }
 </script>
 
 <template>
@@ -27,20 +27,20 @@ export default { ...SetupMenuRadioItem, components: { Button } }
 		-->
 
 		<!--
-			Строка — `Button` над экземпляром переключателя (`row`, `TItemRow` на
-			`div`), как у флажка: на ней ARIA переключателя (роль
-			`menuitemradio`, `aria-checked` и `tabindex="-1"` от меню) и
-			DOM-фокус, когда переключатель подсвечен. Размер и `disabled` ей
-			пишет переключатель.
+			Строка — `ItemRow` на `div`, как у флажка: на ней ARIA переключателя
+			(роль `menuitemradio`, `aria-checked` и `tabindex="-1"` от меню) и
+			DOM-фокус, когда переключатель подсвечен.
 
 			Нажатие — клик строки, из Enter и пробела его делает сама строка.
 			Решает меню (`adapters.menu.check()`): выключенному отказывает, а
 			доступный отмечает — с остальных переключателей группы отметка
 			снимается — и остаётся открытым. Отмеченный нажатием не снимается.
 		-->
-		<Button
+		<ItemRow
 			embedded="menu.row"
-			:ctrl="row"
+			tag="div"
+			:size="size"
+			:disabled="disabled"
 			@click="context?.adapters.menu.check()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>
@@ -65,6 +65,6 @@ export default { ...SetupMenuRadioItem, components: { Button } }
 			<template #trailing>
 				<span class="so-menu-item__shortcut"><slot name="trailing" /></span>
 			</template>
-		</Button>
+		</ItemRow>
 	</component>
 </template>

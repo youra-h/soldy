@@ -24,7 +24,5 @@ export function useSetupListBoxItem(props: ListBoxItemProps) {
 	return {
 		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
-		/** Строка — экземпляр, которым владеет элемент: кнопка берёт его целиком (`ctrl`). */
-		row: adapter.instance.row,
 	}
 }

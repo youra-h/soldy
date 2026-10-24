@@ -1,8 +1,9 @@
 <div
-	so-button
+	so-item-row
 	#control
 	embedded="menu.row"
-	[ctrl]="instance()?.row"
+	[size]="state()['size']"
+	[disabled]="state()['disabled']"
 	[so-attributes]="state()['aria']"
 	(click)="facade()?.context?.adapters.menu.open()"
 >

@@ -447,7 +447,7 @@ describe('сторож: элемент коллекции освобождает
 			expect.arrayContaining([
 				'selection: change:selection',
 				'order: change:order',
-				'list: change:indicator',
+				'list: change:view',
 			]),
 		)
 	})

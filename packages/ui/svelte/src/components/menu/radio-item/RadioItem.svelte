@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chainHandler, Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { setupMenuRadioItem } from './setup.component'
 	import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
 
@@ -10,9 +10,6 @@
 	const binding = setupMenuRadioItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет пункт (`TItemRow` на `div`): размер и выключенность ей
-	// пишет пункт, а роль и `tabindex` — его набор `aria`
-	const row = binding.ctrl.row
 </script>
 
 <!--
@@ -37,9 +34,11 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="menu.row"
-			ctrl={row}
+			tag="div"
+			size={state.size}
+			disabled={state.disabled}
 			{...state.aria}
 			{...toControlAttrs<MenuRadioItemAttributes>(binding.forwardProps)}
 			onclick={chainHandler(() => context?.adapters.menu.check(), binding.forwardProps.onclick)}
@@ -60,6 +59,6 @@
 			{#snippet trailing()}
 				<span class="so-menu-item__shortcut">{@render props.trailing?.()}</span>
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

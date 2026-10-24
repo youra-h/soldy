@@ -1,19 +1,17 @@
 /**
- * ListBox: свойства списка на элементах, выбор, роли и строка элемента.
+ * ListBox: проброс `view` со списка на элементы.
  *
- * Тестов на ListBox не было вовсе, а место непростое: item-адаптер списка
- * **добавляет** к карте родителя своё событие — `change:indicator`, сторону
- * отметки. На таком событии (тогда это был `change:view`) сломалась типизация
- * цепочки расширений, и оно же оказалось местом, где регрессия типов вообще
- * видна компилятору.
+ * Тестов на ListBox не было вовсе, а место непростое: `change:view` —
+ * единственное во всём проекте событие, которое item-адаптер **добавляет** к
+ * карте родителя. На нём сломалась типизация цепочки расширений, и он же
+ * оказался единственным местом, где регрессия типов вообще видна компилятору.
  *
  * Поэтому здесь два разных страховочных слоя:
  *
  * - тип — `vue-tsc` в CI проходит по исходникам ядра транзитивно; сузь
- *   констрейнт обратно, и релей `['change:indicator']` перестанет
- *   компилироваться; опечатка в имени события — тоже;
- * - поведение — этот файл: событие действительно доходит до фасада элемента и
- *   значение меняется.
+ *   констрейнт обратно, и релей `['change:view']` перестанет компилироваться;
+ *   опечатка в имени события — тоже;
+ * - поведение — этот файл: событие действительно доходит и значение меняется.
  *
  * Одного типа мало: приведение к `any` глушит проверку молча, и до этих тестов
  * так и было.
@@ -21,7 +19,6 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-	TItemRow,
 	TListBox,
 	TListBoxItem,
 	TListBoxCollectionFacade,
@@ -57,54 +54,43 @@ function createListBox(texts: string[], props: Partial<IListBoxProps> = {}) {
 	return { owner, facade, items, facadeFor, registry }
 }
 
-/**
- * Вид строк — свойство элемента, как `size` и `variant`: его диктует список, и
- * пишет его элементу расширение коллекции, а элемент — своей строке. Раньше
- * элемент своего вида не имел, а фасад элемента читал вид у списка, и
- * разметка отдавала его строке пропом рядом с `ctrl` — вторым путём к тем же
- * данным.
- */
-describe('view: список пишет элементу, элемент — строке', () => {
-	it('элемент и его строка берут вид владельца', () => {
-		const { items } = createListBox(['a'], { view: 'solid' })
-
-		expect(items[0].view).toBe('solid')
-		expect(items[0].row.view).toBe('solid')
+describe('view пробрасывается со списка на элемент', () => {
+	it('элемент берёт вид владельца', () => {
+		expect(createListBox(['a'], { view: 'solid' }).facadeFor(0).view).toBe('solid')
 	})
 
 	/**
-	 * Запасного значения нет: вид строки по умолчанию рисует тема, и имени для
-	 * него у библиотеки нет. Раньше фасад подставлял `'plain'`.
+	 * Запасного значения у фасада нет: вид строки по умолчанию рисует тема, и
+	 * имени для него у библиотеки нет. Раньше фасад подставлял `'plain'`.
 	 */
 	it('у списка без вида нет вида и у элемента', () => {
-		const { items } = createListBox(['a'])
-
-		expect(items[0].view).toBeUndefined()
-		expect(items[0].row.view).toBeUndefined()
+		expect(createListBox(['a']).facadeFor(0).view).toBeUndefined()
 	})
 
-	it('смена вида у списка доходит до элементов событием и до их строк', () => {
-		const { owner, items } = createListBox(['a', 'b', 'c'], { view: 'ghost' })
+	/**
+	 * Тот самый релей. Без него элемент узнавал бы о смене вида только при
+	 * пересоздании — то есть в живом интерфейсе не узнавал бы вовсе.
+	 */
+	it('смена вида у списка доходит до элемента событием', () => {
+		const { owner, facadeFor } = createListBox(['a', 'b'], { view: 'ghost' })
+		const facade = facadeFor(0)
 		const seen: unknown[] = []
 
-		items[0].events.on('change:view', (value: unknown) => seen.push(value))
+		facade.events.on('change:view', (value: unknown) => seen.push(value))
 
 		owner.view = 'solid'
 
 		expect(seen).toEqual(['solid'])
-		expect(items.map((item) => item.view)).toEqual(['solid', 'solid', 'solid'])
-		expect(items.map((item) => item.row.view)).toEqual(['solid', 'solid', 'solid'])
-
-		owner.view = undefined
-
-		expect(items.map((item) => item.row.view)).toEqual([undefined, undefined, undefined])
+		expect(facade.view).toBe('solid')
 	})
 
-	/** Второго пути к виду нет: фасад элемента его не отдаёт. */
-	it('у фасада элемента вида нет', () => {
-		const { facadeFor } = createListBox(['a'], { view: 'solid' })
+	it('вид доходит до всех элементов, а не только до первого', () => {
+		const { owner, facadeFor } = createListBox(['a', 'b', 'c'], { view: 'ghost' })
+		const facades = [facadeFor(0), facadeFor(1), facadeFor(2)]
 
-		expect('view' in facadeFor(0)).toBe(false)
+		owner.view = 'solid'
+
+		expect(facades.map((facade) => facade.view)).toEqual(['solid', 'solid', 'solid'])
 	})
 })
 
@@ -301,9 +287,8 @@ describe('выбор пользователя: выключенный элеме
  * `indicator` — отметка выбранного элемента.
  *
  * Свойство списка, не элемента: у элемента своей стороны нет, иначе отметки в
- * одном списке разъехались бы. Вниз доезжает через item-адаптер — фасад
- * элемента читает её у списка, и `change:indicator` расширения доходит до
- * фасада пробросом, — а в тему — как `data-indicator` на каждом элементе.
+ * одном списке разъехались бы. Вниз доезжает тем же путём, что `view`, а в
+ * тему — как `data-indicator` на каждом элементе.
  */
 describe('indicator пробрасывается со списка на элемент', () => {
 	it('по умолчанию отметки нет', () => {
@@ -573,126 +558,6 @@ describe('роли списка и элемента', () => {
 			expect(owner.aria.get('role')).toBe('listbox')
 			expect(items.map((item) => item.aria.get('role'))).toEqual(['option', 'option'])
 		}
-	})
-})
-
-/**
- * Строка элемента — кнопка, которой владеет элемент (`TItemRow`), как Select —
- * полем: разметка отдаёт её кнопке через `ctrl`, а `size`, `variant`,
- * `disabled` и `view` пишет ей элемент. Роль и остановку Tab строка себе не
- * пишет: их несёт набор `aria` элемента, который разметка кладёт на неё же, —
- * роль от элемента, `tabindex="-1"` от списка.
- */
-describe('строка элемента', () => {
-	/** Четыре пропа, которые элемент пишет строке. */
-	const ownProps = (target: {
-		size: unknown
-		variant: unknown
-		disabled: unknown
-		view: unknown
-	}) => ({
-		size: target.size,
-		variant: target.variant,
-		disabled: target.disabled,
-		view: target.view,
-	})
-
-	it('TItemRow на div — один экземпляр на всё время жизни элемента', () => {
-		const item = new TListBoxItem({ value: 'a', text: 'A' })
-		const row = item.row
-
-		expect(row).toBeInstanceOf(TItemRow)
-		expect(row.tag).toBe('div')
-		expect(row.classes.toArray()).toContain('so-button')
-
-		item.size = 'lg'
-		item.disabled = true
-
-		expect(item.row).toBe(row)
-	})
-
-	/**
-	 * Строку создаёт первое чтение: элемент, которого никто не рисует, её не
-	 * держит, а прочитанная позже — со значениями, сменёнными до неё.
-	 */
-	it('строка, прочитанная после смен, стартует с текущих значений элемента', () => {
-		const item = new TListBoxItem({ value: 'a', size: 'sm' })
-
-		item.size = 'lg'
-		item.variant = 'danger'
-		item.disabled = true
-		item.view = 'ghost'
-
-		expect(ownProps(item.row)).toEqual({
-			size: 'lg',
-			variant: 'danger',
-			disabled: true,
-			view: 'ghost',
-		})
-	})
-
-	it('смена у элемента доходит до строки', () => {
-		const item = new TListBoxItem({ value: 'a' })
-		const row = item.row
-
-		item.size = 'lg'
-		item.variant = 'brand'
-		item.disabled = true
-		item.view = 'solid'
-
-		expect(ownProps(row)).toEqual({
-			size: 'lg',
-			variant: 'brand',
-			disabled: true,
-			view: 'solid',
-		})
-
-		item.variant = undefined
-		item.disabled = false
-		item.view = undefined
-
-		expect(ownProps(row)).toEqual(ownProps(item))
-	})
-
-	it('размер, вид и выключение списка — через элемент и до строки', () => {
-		const { owner, items } = createListBox(['a'], { size: 'sm', view: 'ghost' })
-		const row = items[0].row
-
-		expect(ownProps(row)).toEqual({
-			size: 'sm',
-			variant: undefined,
-			disabled: false,
-			view: 'ghost',
-		})
-
-		owner.size = 'lg'
-		owner.variant = 'brand'
-		owner.view = 'solid'
-		owner.disabled = true
-
-		expect(ownProps(row)).toEqual({
-			size: 'lg',
-			variant: 'brand',
-			disabled: true,
-			view: 'solid',
-		})
-	})
-
-	it('роли и tabindex у строки нет — их несёт набор элемента', () => {
-		const { items } = createListBox(['a'])
-		const row = items[0].row
-
-		expect(row.aria.has('role')).toBe(false)
-		expect(row.aria.has('tabindex')).toBe(false)
-		expect(items[0].aria.get('role')).toBe('option')
-		expect(items[0].aria.get('tabindex')).toBe('-1')
-	})
-
-	it('aria-disabled строки — то же, что у элемента: одно состояние одного узла', () => {
-		const item = new TListBoxItem({ value: 'a', disabled: true })
-
-		expect(item.row.aria.get('aria-disabled')).toBe('true')
-		expect(item.aria.get('aria-disabled')).toBe('true')
 	})
 })
 

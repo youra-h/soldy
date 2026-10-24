@@ -47,7 +47,5 @@ export function useSetupMenuSubmenu(props: MenuSubmenuProps) {
 		context: item.instance.context,
 		rootElement: useRootElement(binding.root),
 		layer,
-		/** Строка — экземпляр, которым владеет пункт: кнопка берёт его целиком (`ctrl`). */
-		row: adapter.instance.row,
 	}
 }

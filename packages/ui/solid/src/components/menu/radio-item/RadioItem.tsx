@@ -10,19 +10,15 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { setupMenuRadioItem } from './setup.component'
 import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
 
-/**
- * Переключатель меню: строка пункта с отметкой в начале; точку отмеченного рисует тема.
- * Строка — `Button` над экземпляром переключателя (`row`, `TItemRow` на `div`), как у пункта.
- */
+/** Переключатель меню: строка пункта с отметкой в начале; точку отмеченного рисует тема. */
 export function MenuRadioItem(props: MenuRadioItemProps): JSX.Element {
 	const binding = setupMenuRadioItem(props)
 	const state = binding.state
 	const context = binding.context
-	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -38,7 +34,7 @@ export function MenuRadioItem(props: MenuRadioItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала отметка. */
-	const rowAttrs = () => {
+	const row = () => {
 		const { onClick, ...attributes } = toControlAttrs<MenuRadioItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -52,11 +48,13 @@ export function MenuRadioItem(props: MenuRadioItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="menu.row"
-					ctrl={row}
+					tag="div"
+					size={state.size}
+					disabled={state.disabled}
 					{...state.aria}
-					{...rowAttrs()}
+					{...row()}
 					leading={
 						<>
 							<span class="so-menu-item__indicator" aria-hidden="true">
@@ -71,7 +69,7 @@ export function MenuRadioItem(props: MenuRadioItemProps): JSX.Element {
 					}
 				>
 					{content() ?? state.text}
-				</Button>
+				</ItemRow>
 			</Dynamic>
 		</Show>
 	)

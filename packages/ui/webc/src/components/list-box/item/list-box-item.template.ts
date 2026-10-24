@@ -1,27 +1,20 @@
 /**
- * Шаблон элемента ListBox: строка — деталь Button на `div`, на ней `aria` и
+ * Шаблон элемента ListBox: строка — деталь ItemRow на `div`, на ней `aria` и
  * `dataset` элемента (тема красит выбор на `.so-button`); отметка выбранного —
  * край строки. docs/architecture.md, Layer 8d, «Коллекция».
- *
- * Строка — деталь над экземпляром элемента (`row`, `TItemRow`): размер,
- * вариант, выключенность и вид ей пишет элемент, а роль и `tabindex="-1"` —
- * его набор `aria`, слоем владельца.
  */
 
 import type { IListBoxItem, TListBoxItemCollectionFacade, TListIndicator } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
-import { bind, createDetail, lend, ownerAttributes, type ITemplate } from '../../../adapter'
-import { registerButtonTag, type TButtonElementProps } from '../../button'
+import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
+import { registerItemRowTag, type TItemRowElementProps } from '../../item-row'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/**
- * На `<button>` выключенный пункт терял бы фокус и клик. `div` — тег экземпляра
- * строки: под него ядро пишет элементу ARIA (`TListBoxItem._ariaTag`).
- */
-const TButtonDivElement = registerButtonTag('div')
+/** На `<button>` выключенный пункт терял бы фокус и клик. */
+const TItemRowDivElement = registerItemRowTag('div')
 
 type TItemParts = {
-	readonly row: TButtonElementProps<HTMLDivElement>
+	readonly row: TItemRowElementProps<HTMLDivElement>
 	/** Стоит и у невыбранных: резервирует место, иначе строка прыгала бы при выборе. */
 	readonly indicator: HTMLElement
 	readonly icon: TIconElementProps | null
@@ -49,7 +42,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(ownerDocument, TButtonDivElement, { embedded: 'list-box.row' })
+		const row = createDetail(ownerDocument, TItemRowDivElement, { embedded: 'list-box.row' })
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-list-box-item__indicator'
@@ -83,19 +76,15 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 	},
 
 	bindings: [
-		// На каждое подключение: в построении инстанса ещё нет, а строка собирается
-		// после элемента и берёт свой экземпляр при подключении
-		bind([], ({ root, ctrl }) => {
-			const row = parts.get(root)?.row
+		bind(['view', 'disabled', 'size', 'variant'], ({ root, state }) => {
+			const own = parts.get(root)
 
-			if (row && ctrl && row.ctrl !== ctrl.row) row.ctrl = ctrl.row
-		}),
+			if (!own) return
 
-		// Иконке — явно, от элемента она не наследует. Строке размер пишет сам
-		// элемент — в её экземпляр
-		bind('size', ({ root, state }) => {
-			const icon = parts.get(root)?.icon
+			const { row, icon } = own
+			const disabled = state.disabled === true
 
+			patch(row, { view: state.view, disabled, size: state.size, variant: state.variant })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

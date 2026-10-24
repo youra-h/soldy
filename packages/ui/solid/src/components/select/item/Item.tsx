@@ -11,7 +11,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { setupSelectItem } from './setup.component'
 import type { SelectItemAttributes, SelectItemProps } from './base.component'
@@ -20,17 +20,15 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CHECK = roleIcon('check')
 
 /**
- * Опция: строка — `Button` над экземпляром опции (`row`, `TItemRow` на `span`) с наборами
- * `aria` и `dataset` опции: тег, размер, вариант и выключенность строке пишет опция, а роль и
- * `tabindex="-1"` — её набор (фокус остаётся на поле). Выбор — клик по строке, как у ListBox:
- * сначала выбор, затем клик потребителя. Обёртка отметки — и у невыбранной: держит место, и
- * строка не прыгает при выборе.
+ * Опция: строка — `ItemRow` на `span` с наборами `aria` и `dataset` опции
+ * (`tabindex="-1"` от `TSelectExtension` — фокус остаётся на поле), выбор — клик по строке, как у
+ * ListBox: сначала выбор, затем клик потребителя. Обёртка
+ * отметки — и у невыбранной: держит место, и строка не прыгает при выборе.
  */
 export function SelectItem(props: SelectItemProps): JSX.Element {
 	const binding = setupSelectItem(props)
 	const state = binding.state
 	const context = binding.context
-	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -46,7 +44,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 	)
 
 	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала выбор. */
-	const rowAttrs = () => {
+	const row = () => {
 		const { onClick, ...attributes } = toControlAttrs<SelectItemAttributes>(
 			binding.forwardProps(),
 		)
@@ -69,12 +67,15 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="select.row"
-					ctrl={row}
+					tag="span"
+					size={state.size}
+					variant={state.variant}
+					disabled={state.disabled}
 					{...state.aria}
 					{...state.dataset}
-					{...rowAttrs()}
+					{...row()}
 					leading={
 						<>
 							{state.indicator === 'start' ? mark() : null}
@@ -89,7 +90,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 					}
 				>
 					{content() ?? state.text}
-				</Button>
+				</ItemRow>
 			</Dynamic>
 		</Show>
 	)

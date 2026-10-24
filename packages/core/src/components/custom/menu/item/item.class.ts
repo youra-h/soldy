@@ -1,19 +1,8 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
 import { TChangeEvent } from '../../../../common'
-import type { TComponentSize, TEventSink, TValuePayload } from '../../../../common'
-import TItemRow from '../../button/item-row.class'
-import type { IButton } from '../../button/types'
+import type { TEventSink } from '../../../../common'
 import type { IMenuItem, IMenuItemProps, TMenuItemEvents } from './types'
-
-/**
- * Тег строки. Один на строку и на `_ariaTag`: `aria` пункта лежит на строке,
- * и ARIA-половину правила «нативный атрибут вместо ARIA-дубля» решает её тег.
- * Константа модуля, а не поле: `_ariaTag` зовёт уже конструктор базы, когда
- * полей класса ещё нет. `div`, а не `button`: у выключенного пункта остаются
- * фокус и подсветка.
- */
-const ROW_TAG = 'div'
 
 /**
  * Пункт меню — действие (`Menu.Item`): «Изменить», «Удалить».
@@ -31,17 +20,8 @@ const ROW_TAG = 'div'
  *
  * `TListBoxItem` не наследуем, хотя он тоже несёт `text`: вместе с ним пришли
  * бы `contentFit` и связь со списком, которых у меню нет (`docs/agents/patterns.md`,
- * «Граница переиспользования»). Общее у них не класс, а строка — `TItemRow` —
- * и подсветка `TListItemPlugin`.
- *
- * **Строка** (`row`) — кнопка, которой владеет пункт любого вида, как Select —
- * своим полем: это `TItemRow` на `div` (`ROW_TAG`), и роль и остановку Tab она
- * себе не пишет — их пишет набор `aria` пункта, который разметка кладёт на неё
- * же: роль — пункт, `tabindex="-1"` — `TMenuExtension`. Создаёт её пункт при
- * первом чтении, со своими `size` и `disabled`, и дальше пишет ей их смены, а
- * разметка отдаёт её кнопке целиком (`<Button :ctrl="row">`). Вида и варианта
- * строка не получает: вид ей даёт тема по контексту, а цвет она берёт с пункта
- * и панели. Пункты, которых никто не рисует, строки не держат.
+ * «Граница переиспользования»). Общее у них не класс, а `Button` в строке и
+ * подсветка `TListItemPlugin`.
  */
 export default class TMenuItem<
 	TProps extends IMenuItemProps = IMenuItemProps,
@@ -62,9 +42,6 @@ export default class TMenuItem<
 
 	protected _text: string
 
-	/** Строка — с первого чтения `row`; до него её нет. */
-	protected _row: TItemRow | undefined
-
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
 
@@ -74,16 +51,6 @@ export default class TMenuItem<
 		this._text = own.text ?? ctor.defaultValues.text
 
 		this._aria.add('role', this._role)
-
-		// Смены — строке, если её уже прочли. Подписки — с пункта, а не с первого
-		// чтения строки: читает её монтирование, а пункт из данных и `ctrl` живут
-		// дольше него, и снятое монтирование оставляло бы их на пункте
-		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			if (this._row) this._row.size = payload.newValue
-		})
-		this.events.on('change:disabled', (value: boolean) => {
-			if (this._row) this._row.disabled = value
-		})
 	}
 
 	/**
@@ -100,23 +67,13 @@ export default class TMenuItem<
 	}
 
 	/**
-	 * `aria` пункта стоит на строке (`row`). Её тег задаёт пункт (`ROW_TAG`), а
-	 * не разметка, поэтому от `tag` корня ARIA-половина правила «нативный
-	 * атрибут вместо ARIA-дубля» не зависит: у `div` своего `disabled` нет, и
-	 * состояние остаётся `aria-disabled`.
+	 * `aria` пункта стоит на вложенном `ItemRow` — строке пункта. Тег у неё
+	 * фиксированный (`div`), разметка задаёт его сама, поэтому от `tag` корня
+	 * ARIA-половина правила «нативный атрибут вместо ARIA-дубля» не зависит:
+	 * у `div` своего `disabled` нет, и состояние остаётся `aria-disabled`.
 	 */
 	protected override get _ariaTag(): string {
-		return ROW_TAG
-	}
-
-	/**
-	 * Строка пункта — кнопка, которой владеет пункт (`TItemRow`): роль и
-	 * остановку Tab ей пишет набор `aria` пункта, а `size` и `disabled` — сам
-	 * пункт. Создаётся при первом чтении и дальше не меняется, поэтому
-	 * `change:`-события у геттера нет, как у поля Select.
-	 */
-	get row(): IButton {
-		return (this._row ??= this._createRow())
+		return 'div'
 	}
 
 	/** Действие не отмечается: нажатие выполняет его и закрывает меню. */
@@ -146,14 +103,5 @@ export default class TMenuItem<
 			...super.getProps(),
 			text: this.text,
 		} as TProps
-	}
-
-	/**
-	 * Строка — со значениями пункта на момент первого чтения, а дальше их
-	 * смены ей пишут подписки пункта: от корня пункта узел строки их не
-	 * наследует, а разметка рядом с `ctrl` их не задаёт.
-	 */
-	private _createRow(): TItemRow {
-		return new TItemRow({ tag: ROW_TAG, size: this.size, disabled: this.disabled })
 	}
 }

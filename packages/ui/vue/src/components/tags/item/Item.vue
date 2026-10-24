@@ -1,11 +1,12 @@
 <script lang="ts">
 import { Icon } from '../../icon'
 import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupTagsItem from './setup.component'
 
 /**
  * Разметка — по образцу Tabs.Item: в корне два соседа — строка тега
- * (внутренний Button) и кнопка закрытия со своим `aria-label` (`closeAria`).
+ * (`ItemRow`) и кнопка закрытия со своим `aria-label` (`closeAria`).
  *
  * ARIA тега (`role`, `aria-selected`) приходит одним набором `aria` — пишет
  * его `TTagsExtension` в зависимости от режима выбора коллекции (`list`/
@@ -22,17 +23,17 @@ import SetupTagsItem from './setup.component'
  * передаётся — значения вида объявляет тема, и части тега она красит по
  * контексту (`.so-tags-item`).
  *
+ * `direction` — своё направление письма тега; на корне уже стоит `dir`, но
+ * строка — интерактивный элемент со своим DOM-узлом, и для него направление
+ * передаётся явно, а не только через наследование `dir` от родителя.
+ *
  * `embedded` — имя места у строки, крестика и иконки: это детали тега, и
  * плагины приложения на Button (`usePlugins`) их по умолчанию не трогают.
  *
- * Строка — экземпляр, которым владеет тег (`row`, `TItemRow`), и шаблон
- * отдаёт его кнопке целиком (`:ctrl="row"`), как Select — своё поле. Тег
- * строки (`div`), её `size`, `variant`, `disabled` и `direction` пишет ей сам
- * тег, поэтому пропсов рядом с `ctrl` нет: с внешним `ctrl` проп — только
- * начальное значение, и второй путь к тем же данным разошёлся бы с ним.
- * `direction` строке нужен свой: на корне уже стоит `dir`, но у строки свой
- * DOM-узел. Под тег строки написан и `TTagsItem._ariaTag` — он решает,
- * писать ли `aria-disabled`.
+ * Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
+ * `tag` — тег корня (`TComponentView`), и рисует по нему корень
+ * `<component :is>`. Под фиксированный тег строки написан и
+ * `TTagsItem._ariaTag` — он решает, писать ли `aria-disabled`.
  *
  * Выбор — по `action:press` строки, а не по `click`. Строка — `div`, и клик
  * из Enter и пробела на ней, пока она держит фокус, делает её
@@ -43,12 +44,13 @@ import SetupTagsItem from './setup.component'
  * выключенный тег выбирался.
  *
  * Роль и `tabindex` строки приходят в том же наборе `aria`, а сама строка их
- * себе не пишет (`TItemRow`): с выбором весь набор — одна остановка Tab
- * (`tabindex="0"` у одного тега, у остальных `-1`, между тегами — стрелки),
- * без выбора `tabindex` у строк нет, и фокус от клика строка не берёт. Пишет
- * его `TTagsExtension`, шаблон ничего не вычисляет.
+ * себе не пишет (`ItemRow`, `TItemRow`): с выбором весь набор — одна
+ * остановка Tab (`tabindex="0"` у одного тега, у остальных `-1`, между тегами
+ * — стрелки), без выбора `tabindex` у строк нет, и фокус от клика строка не
+ * берёт. Пишет его `TTagsExtension`, шаблон ничего не вычисляет. Экземпляр
+ * строки создаёт её монтирование, а не тег.
  */
-export default { ...SetupTagsItem, components: { Icon, Button } }
+export default { ...SetupTagsItem, components: { Icon, Button, ItemRow } }
 </script>
 
 <template>
@@ -61,9 +63,13 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 		:style="{ order: order }"
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
-		<Button
+		<ItemRow
 			embedded="tags.row"
-			:ctrl="row"
+			tag="div"
+			:direction="direction"
+			:disabled="disabled"
+			:size="size"
+			:variant="variant"
 			@action:press="context?.adapters.selection.toggle()"
 			v-bind="{ ...aria, ...controlAttrs }"
 		>
@@ -78,7 +84,7 @@ export default { ...SetupTagsItem, components: { Icon, Button } }
 			<template #trailing>
 				<slot name="trailing" />
 			</template>
-		</Button>
+		</ItemRow>
 
 		<!--
 			Кнопка закрытия — сосед строки, а не её часть. В режиме выбора
