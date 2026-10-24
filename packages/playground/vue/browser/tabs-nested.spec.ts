@@ -3,10 +3,11 @@
  * как такие же табы вне них, — вид, ориентация, выравнивание и вариант
  * внешних табов им не достаются.
  *
- * Тема рисует набор от его корня дочерними комбинаторами: свой список
- * (`> .so-tabs__list`), его табы (`> .so-tabs__list > .so-tabs-item`) и свою
- * панель (`> .so-tabs__panel`) — `themes/oren/AGENTS.md`, «Tabs: вид — от
- * своего списка». Пока правила вида были написаны для потомков, внутренние
+ * Тема рисует набор от его корня дочерними комбинаторами: свой ряд
+ * (`> .so-tabs__bar`), табы его списка
+ * (`> .so-tabs__bar > .so-tabs__list > .so-tabs-item`) и свою панель
+ * (`> .so-tabs__panel`) — `themes/oren/AGENTS.md`, «Tabs: вид — от своего
+ * ряда». Пока правила вида были написаны для потомков, внутренние
  * табы получали стили внешних: горизонтальные под вертикальными
  * выстраивались столбиком, `contained` под `line` — с линией и полосой,
  * `line` под `outline` — папочными вкладками, а цвет текста и фон контейнера
@@ -88,10 +89,9 @@ const RADIUS = ['top-left', 'top-right', 'bottom-right', 'bottom-left'].map(
 	(corner) => `border-${corner}-radius`,
 )
 
-/** Список: направление, выравнивание, рамка линии, контейнер `contained`. */
-const LIST = [
+/** Ряд: направление, рамка линии, контейнер `contained`. */
+const BAR = [
 	'flex-direction',
-	'justify-content',
 	...BORDER,
 	...SIDES.map((side) => `padding-${side}`),
 	'background-color',
@@ -99,10 +99,13 @@ const LIST = [
 ]
 
 /**
- * Псевдоэлементы списка: полоса `line`, карточка `contained` и части линии
+ * Псевдоэлементы ряда: полоса `line`, карточка `contained` и части линии
  * `outline` — есть ли они, видны ли и какого цвета.
  */
-const LIST_MARK = ['content', 'visibility', 'background-color']
+const BAR_MARK = ['content', 'visibility', 'background-color']
+
+/** Список: направление и выравнивание табов. */
+const LIST = ['flex-direction', 'justify-content']
 
 /** Обёртка таба: рамка и скругление `outline`, фон карточки, растяжка `stretch`. */
 const TAB = [...BORDER, ...RADIUS, 'background-color', 'flex-grow', 'justify-content']
@@ -127,15 +130,17 @@ const read = (place: string, element: Element, properties: readonly string[], ps
 
 /** Вид набора табов — всё, что тема рисует от его корня. */
 function stylesOf(root: HTMLElement): Map<string, string> {
-	const list = find(':scope > .so-tabs__list', root)
+	const bar = find(':scope > .so-tabs__bar', root)
+	const list = find(':scope > .so-tabs__list', bar)
 	const items = [...list.querySelectorAll(':scope > .so-tabs-item')]
 	const row = find(':scope > .so-tabs-item[data-selected="true"] > [role="tab"]', list)
 	const panel = find(':scope > .so-tabs__panel', root)
 
 	return new Map([
+		...read('ряд', bar, BAR),
+		...read('ряд ::before', bar, BAR_MARK, '::before'),
+		...read('ряд ::after', bar, BAR_MARK, '::after'),
 		...read('список', list, LIST),
-		...read('список ::before', list, LIST_MARK, '::before'),
-		...read('список ::after', list, LIST_MARK, '::after'),
 		...items.flatMap((item, index) => [
 			...read(`таб ${index + 1}`, item, TAB),
 			...read(`таб ${index + 1} ::before`, item, TAB_VEIL, '::before'),
@@ -157,7 +162,7 @@ function misses(): string[] {
 
 /**
  * Переходы доиграли: фон выбранной обёртки `contained` гаснет переходом,
- * когда карточку начинает рисовать список, цвет строки — когда указатель
+ * когда карточку начинает рисовать ряд, цвет строки — когда указатель
  * ушёл. Перебитый переход отменяется, и его `finished` отклонён: для ожидания
  * это тоже конец.
  */
@@ -169,7 +174,7 @@ const quiet = (): Promise<unknown> =>
 /**
  * Сцена отрисована и устоялась: плагин раскладки записал геометрию на всех трёх
  * корнях (`--ready-animation`) — карточка `contained` уже псевдоэлемент
- * списка, — указатель уведён с табов, переходы доиграли.
+ * ряда, — указатель уведён с табов, переходы доиграли.
  */
 async function show(outerLook: TTabsLook, innerLook: TTabsLook): Promise<void> {
 	render(scene(outerLook, innerLook))

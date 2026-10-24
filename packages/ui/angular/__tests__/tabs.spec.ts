@@ -96,9 +96,16 @@ function panel(): HTMLElement {
 /** Корень набора в разметке хоста. */
 const rootOf = (fixture: ComponentFixture<unknown>) => findIn(fixture, '[so-tabs]', HTMLElement)
 
-/** Список табов в корне: на нём набор `aria` набора и атрибуты потребителя. */
+/** Ряд набора — ребёнок корня: список табов и слоты по его краям. */
+const barIn = (root: HTMLElement) => find(root, ':scope > .so-tabs__bar', HTMLElement)
+
+/** Список табов в ряду: на нём набор `aria` набора и атрибуты потребителя. */
 const listOf = (fixture: ComponentFixture<unknown>) =>
-	findIn(fixture, '[so-tabs] > .so-tabs__list', HTMLDivElement)
+	findIn(fixture, '[so-tabs] > .so-tabs__bar > .so-tabs__list', HTMLDivElement)
+
+/** Первый класс каждого ребёнка узла — по нему видно, какие части стоят и в каком порядке. */
+const partsOf = (element: Element): string[] =>
+	[...element.children].map((child) => child.className.split(' ')[0])
 
 function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 	element.click()
@@ -377,15 +384,15 @@ describe('поповер в панели таба', () => {
 })
 
 /**
- * Тема рисует вид набора от его корня дочерними комбинаторами — свой список,
- * его табы и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от своего
- * списка»). Держится это на разметке: список и панели — дети корня, табы —
- * дети списка.
+ * Тема рисует вид набора от его корня дочерними комбинаторами — свой ряд,
+ * табы его списка и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от
+ * своего ряда»). Держится это на разметке: ряд и панели — дети корня, список —
+ * ребёнок ряда, табы — дети списка.
  */
 describe('разметка, на которую опирается тема', () => {
-	/** Табы набора — дети списка, список и показанная панель — дети корня. */
+	/** Табы набора — дети списка, список — ребёнок ряда, ряд и показанная панель — дети корня. */
 	function expectOwnParts(root: HTMLElement, count: number): void {
-		const list = find(root, ':scope > .so-tabs__list', HTMLElement)
+		const list = find(barIn(root), ':scope > .so-tabs__list', HTMLElement)
 		const tabItems = [...document.querySelectorAll('.so-tabs-item')]
 
 		expect(panel().parentElement).toBe(root)
@@ -394,13 +401,13 @@ describe('разметка, на которую опирается тема', ()
 		for (const tabItem of tabItems) expect(tabItem.parentElement).toBe(list)
 	}
 
-	it('табы разметки — дети списка, список и панель — дети корня', () => {
+	it('табы разметки — дети списка, список — ребёнок ряда, ряд и панель — дети корня', () => {
 		const fixture = mountHost(Harness)
 
 		expectOwnParts(rootOf(fixture), 2)
 	})
 
-	it('табы из items — дети списка, список и панель — дети корня', () => {
+	it('табы из items — дети списка, список — ребёнок ряда, ряд и панель — дети корня', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent, TTabsContentComponent],
@@ -668,8 +675,35 @@ describe('таб из разметки', () => {
 			'a',
 			'b',
 		])
-		expect(document.querySelector('.so-tabs__list--leading .head')?.textContent).toBe('до')
-		expect(document.querySelector('.so-tabs__list--trailing .tail')?.textContent).toBe('после')
+		expect(document.querySelector('.so-tabs__leading .head')?.textContent).toBe('до')
+		expect(document.querySelector('.so-tabs__trailing .tail')?.textContent).toBe('после')
+	})
+
+	/**
+	 * Слоты стоят в ряду по краям списка, а не в нём: в `[role=tablist]` ARIA
+	 * пускает только `tab`, и кнопка в слоте была бы недопустимым потомком.
+	 */
+	it('leading и trailing — в ряду по краям списка, в [role=tablist] только табы', () => {
+		@Component({
+			standalone: true,
+			imports: [TTabsComponent, SlotDirective],
+			template: `<div so-tabs [items]="items">
+				<ng-template slot="leading"><i class="head">до</i></ng-template>
+				<ng-template slot="trailing"><i class="tail">после</i></ng-template>
+			</div>`,
+		})
+		class EdgesHost {
+			readonly items = ITEMS
+		}
+
+		const fixture = mountHost(EdgesHost)
+		const bar = barIn(rootOf(fixture))
+		const list = listOf(fixture)
+
+		expect(partsOf(bar)).toEqual(['so-tabs__leading', 'so-tabs__list', 'so-tabs__trailing'])
+		expect(bar.hasAttribute('role'), 'ряд — разметка без роли').toBe(false)
+		expect(list.getAttribute('role')).toBe('tablist')
+		expect(partsOf(list)).toEqual(ITEMS.map(() => 'so-tabs-item'))
 	})
 
 	/**
@@ -732,7 +766,7 @@ describe('таб из разметки', () => {
 		).toEqual(['slot', 'empty'])
 	})
 
-	it('без leading и trailing обёрток краёв списка нет', () => {
+	it('без leading и trailing в ряду только список', () => {
 		@Component({
 			standalone: true,
 			imports: [TTabsComponent],
@@ -742,10 +776,9 @@ describe('таб из разметки', () => {
 			readonly items = ITEMS
 		}
 
-		mountHost(BareHost)
+		const fixture = mountHost(BareHost)
 
-		expect(document.querySelector('.so-tabs__list--leading')).toBeNull()
-		expect(document.querySelector('.so-tabs__list--trailing')).toBeNull()
+		expect(partsOf(barIn(rootOf(fixture)))).toEqual(['so-tabs__list'])
 	})
 
 	/** Атрибуты потребителя набора — на списке табов, а не на корне. */
@@ -765,6 +798,7 @@ describe('таб из разметки', () => {
 		expect(root.hasAttribute('items')).toBe(false)
 		expect(listOf(fixture).hasAttribute('items')).toBe(false)
 		expect(root.hasAttribute('title')).toBe(false)
+		expect(barIn(root).hasAttribute('title')).toBe(false)
 		expect(listOf(fixture).getAttribute('title')).toBe('Разделы')
 	})
 

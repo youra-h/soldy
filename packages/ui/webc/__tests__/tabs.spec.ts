@@ -95,6 +95,16 @@ function find<T extends Element>(root: ParentNode, selector: string, type: new (
 	return node
 }
 
+/** Ряд набора — ребёнок корня: список табов и слоты по его краям. */
+const barIn = (root: HTMLElement) => find(root, ':scope > .so-tabs__bar', HTMLDivElement)
+
+/** Список табов набора — ребёнок ряда: на нём `aria` набора и атрибуты потребителя. */
+const listIn = (root: HTMLElement) => find(barIn(root), ':scope > .so-tabs__list', HTMLDivElement)
+
+/** Первый класс каждого ребёнка узла — по нему видно, какие части стоят и в каком порядке. */
+const partsOf = (element: Element): string[] =>
+	[...element.children].map((child) => child.className.split(' ')[0])
+
 /**
  * Строки показанных табов. Таб разметки, закрытый крестиком, уходит из
  * коллекции, и его корень прячется (`rendered = false`): элемент написал
@@ -444,15 +454,15 @@ describe('поповер в панели таба', () => {
 })
 
 /**
- * Тема рисует вид набора от его корня дочерними комбинаторами — свой список,
- * его табы и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от своего
- * списка»). Держится это на разметке: список и панели — дети корня, табы —
- * дети списка.
+ * Тема рисует вид набора от его корня дочерними комбинаторами — свой ряд,
+ * табы его списка и свою панель (`themes/oren/AGENTS.md`, «Tabs: вид — от
+ * своего ряда»). Держится это на разметке: ряд и панели — дети корня, список —
+ * ребёнок ряда, табы — дети списка.
  */
 describe('разметка, на которую опирается тема', () => {
-	/** Табы набора — дети списка, список и показанная панель — дети корня. */
+	/** Табы набора — дети списка, список — ребёнок ряда, ряд и показанная панель — дети корня. */
 	function expectOwnParts(root: HTMLElement, count: number): void {
-		const list = find(root, ':scope > .so-tabs__list', HTMLElement)
+		const list = listIn(root)
 		const tabItems = [...document.querySelectorAll('.so-tabs-item')]
 
 		expect(panel().parentElement).toBe(root)
@@ -461,11 +471,11 @@ describe('разметка, на которую опирается тема', ()
 		for (const tabItem of tabItems) expect(tabItem.parentElement).toBe(list)
 	}
 
-	it('табы разметки — дети списка, список и панель — дети корня', async () => {
+	it('табы разметки — дети списка, список — ребёнок ряда, ряд и панель — дети корня', async () => {
 		expectOwnParts(tabsIn(await mount(HARNESS)), 2)
 	})
 
-	it('табы из items — дети списка, список и панель — дети корня', async () => {
+	it('табы из items — дети списка, список — ребёнок ряда, ряд и панель — дети корня', async () => {
 		const el = await mountTabs(
 			{ items: ITEMS },
 			'<div is="so-tabs-content" slot="content" value="a">Панель A</div>',
@@ -490,7 +500,7 @@ describe('разметка, на которую опирается тема', ()
 		const el = await mountTabs({ items: ITEMS, disabled: true })
 
 		expect(el.dataset['disabled']).toBe('true')
-		expect(find(el, ':scope > .so-tabs__list', HTMLElement).dataset['disabled']).toBeUndefined()
+		expect(listIn(el).dataset['disabled']).toBeUndefined()
 
 		el.disabled = false
 		await flush()
@@ -691,37 +701,41 @@ describe('таб из разметки', () => {
 		expect(tab('Свой').textContent?.trim()).toBe('Свой')
 	})
 
-	it('без leading и trailing обёрток краёв списка нет', async () => {
-		await mountTabs({ items: ITEMS })
+	it('без leading и trailing в ряду только список', async () => {
+		const el = await mountTabs({ items: ITEMS })
 
-		expect(document.querySelector('.so-tabs__list--leading')).toBeNull()
-		expect(document.querySelector('.so-tabs__list--trailing')).toBeNull()
+		expect(partsOf(barIn(el))).toEqual(['so-tabs__list'])
 	})
 
-	it('leading и trailing — в обёртках по краям списка, табы между ними', async () => {
+	/**
+	 * Слоты стоят в ряду по краям списка, а не в нём: в `[role=tablist]` ARIA
+	 * пускает только `tab`, и кнопка в слоте была бы недопустимым потомком.
+	 * Табы из данных петля держит в конце списка.
+	 */
+	it('leading и trailing — в ряду по краям списка, в [role=tablist] только табы', async () => {
 		const el = await mountTabs(
 			{ items: ITEMS.slice(0, 2) },
 			'<i slot="trailing" class="tail">после</i><i slot="leading" class="head">до</i>',
 		)
-		const list = find(el, '.so-tabs__list', HTMLElement)
+		const bar = barIn(el)
+		const list = listIn(el)
 
-		expect([...list.children].map((node) => node.className.split(' ')[0])).toEqual([
-			'so-tabs__list--leading',
-			'so-tabs-item',
-			'so-tabs-item',
-			'so-tabs__list--trailing',
-		])
-		expect(find(list, '.so-tabs__list--leading .head', HTMLElement).textContent).toBe('до')
-		expect(find(list, '.so-tabs__list--trailing .tail', HTMLElement).textContent).toBe('после')
+		expect(partsOf(bar)).toEqual(['so-tabs__leading', 'so-tabs__list', 'so-tabs__trailing'])
+		expect(bar.hasAttribute('role'), 'ряд — разметка без роли').toBe(false)
+		expect(list.getAttribute('role')).toBe('tablist')
+		expect(partsOf(list)).toEqual(['so-tabs-item', 'so-tabs-item'])
+		expect(find(bar, '.so-tabs__leading .head', HTMLElement).textContent).toBe('до')
+		expect(find(bar, '.so-tabs__trailing .tail', HTMLElement).textContent).toBe('после')
 	})
 
 	/** Атрибуты потребителя набора — на списке табов, а не на корне. */
 	it('пропсы фасада — свойства, не атрибуты; атрибуты потребителя — атрибуты', async () => {
 		const el = await mountTabs({ items: ITEMS, title: 'Разделы' })
-		const list = find(el, ':scope > .so-tabs__list', HTMLDivElement)
+		const list = listIn(el)
 
 		expect(el.hasAttribute('items')).toBe(false)
 		expect(el.hasAttribute('title')).toBe(false)
+		expect(barIn(el).hasAttribute('title')).toBe(false)
 		expect(list.getAttribute('title')).toBe('Разделы')
 		expect(el.items).toEqual(el.state.items)
 		expect(el.state.items?.map((each) => each.value)).toEqual(['a', 'b', 'c'])
@@ -749,7 +763,7 @@ describe('таб из разметки', () => {
 		)
 		const list = find(el, '[role="tablist"]', HTMLDivElement)
 
-		expect(list.parentElement).toBe(el)
+		expect(list).toBe(listIn(el))
 		expect(list.getAttribute('aria-label')).toBe('Разделы')
 		expect(list.id).toBe('sections')
 		expect(list.dataset['testid']).toBe('tabs')

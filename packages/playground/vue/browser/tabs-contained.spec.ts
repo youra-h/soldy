@@ -4,10 +4,10 @@
  * ставят её на место сразу.
  *
  * Карточку рисует тема (`themes/oren/src/components/tabs/_tabs.scss`): до
- * замера — фоном выбранной обёртки, после — псевдоэлементом `::before` списка
+ * замера — фоном выбранной обёртки, после — псевдоэлементом `::before` ряда
  * по переменным `--so-tabs-active-*`. Пишет их плагин раскладки общего слоя
  * тем `TTabsViewPlugin` (`themes/base/setup/plugins/tabs-view.plugin.ts`,
- * ставит его `useTheme(oren)`), он же ставит на список
+ * ставит его `useTheme(oren)`), он же ставит на ряд
  * признак переезда `--so-tabs-active-moving` при смене активного таба и снимает
  * его, когда переход доиграл; без признака переход нулевой. jsdom не считает
  * ни стилей, ни раскладки и переходов не заводит: там проверяется только
@@ -21,9 +21,9 @@
  *
  * Переходы ловит слушатель `transitionrun`, повешенный до действия, а не
  * снимок после него: переход короткий, — и признак переезда так же, наблюдатель
- * стиля списка (`styleValues`): признак снимается, когда переход доиграл.
+ * стиля ряда (`styleValues`): признак снимается, когда переход доиграл.
  * Переходы самих табов — цвет строки под указателем — тоже всплывают до
- * списка, поэтому в счёт идут только переходы его `::before`. Карточку тест
+ * ряда, поэтому в счёт идут только переходы его `::before`. Карточку тест
  * меряет коробкой псевдоэлемента и сверяет с коробкой обёртки таба: так видно
  * и то, что карточка покрывает таб целиком.
  */
@@ -103,7 +103,8 @@ const harness = ({ tabs = {}, active = 'a', dir = 'ltr', style }: THarness = {})
 	})
 
 const root = () => find('.so-tabs')
-const list = () => find('.so-tabs__list')
+/** Ряд набора — контейнер вида: карточку и признак переезда несёт он. */
+const bar = () => find('.so-tabs__bar')
 const scene = () => find('.so-test-scene')
 
 /** Обёртка таба; её коробку и покрывает карточка. */
@@ -120,8 +121,8 @@ const tabOf = (value: TValue): HTMLElement => {
 const rowOf = (value: TValue) => find('[role="tab"]', tabOf(value))
 const closeOf = (value: TValue) => find('.so-tabs-item__close', tabOf(value))
 
-/** Признак переезда на списке; пустая строка — его нет. */
-const moving = () => list().style.getPropertyValue('--so-tabs-active-moving')
+/** Признак переезда на ряду; пустая строка — его нет. */
+const moving = () => bar().style.getPropertyValue('--so-tabs-active-moving')
 
 /**
  * Видна ли карточка-псевдоэлемент. После замера он есть всегда, а виден —
@@ -129,15 +130,15 @@ const moving = () => list().style.getPropertyValue('--so-tabs-active-moving')
  * вместе с переходом.
  */
 const hasCard = () => {
-	const card = getComputedStyle(list(), '::before')
+	const card = getComputedStyle(bar(), '::before')
 
 	return card.content !== 'none' && card.visibility === 'visible'
 }
 
-/** Карточка переходов списка: только его `::before`. */
-const cardRuns = () => pseudoTransitionRuns(list(), '::before')
+/** Карточка переходов ряда: только его `::before`. */
+const cardRuns = () => pseudoTransitionRuns(bar(), '::before')
 
-const cardSettled = () => pseudoSettled(list(), '::before')
+const cardSettled = () => pseudoSettled(bar(), '::before')
 
 /**
  * Плагин темы записал геометрию и включил скользящую карточку: модификатор
@@ -149,7 +150,7 @@ const measured = async () => {
 
 /** Края карточки — края обёртки таба, по обеим осям. */
 const cardMisses = (value: TValue): string[] => {
-	const card = pseudoBox(list(), '::before')
+	const card = pseudoBox(bar(), '::before')
 	const tab = tabOf(value).getBoundingClientRect()
 	const edges = ['left', 'right', 'top', 'bottom'] as const
 
@@ -197,7 +198,7 @@ describe('переезд к новому табу', () => {
 			await expectCardOn('a')
 
 			const runs = cardRuns()
-			const flags = styleValues(list(), '--so-tabs-active-moving')
+			const flags = styleValues(bar(), '--so-tabs-active-moving')
 
 			await userEvent.click(rowOf('b'))
 			await transitionEvents()
@@ -362,9 +363,9 @@ describe('карточка до замера и без выбранного та
 	 * До первого кадра переменных геометрии нет: так выглядят серверная
 	 * разметка и приложение без `useTheme`. Карточку рисует фон выбранной
 	 * обёртки, а псевдоэлемента нет вовсе. После замера фон обёртки уходит, и
-	 * та же карточка — псевдоэлемент списка.
+	 * та же карточка — псевдоэлемент ряда.
 	 */
-	it('до замера — фон выбранной обёртки, после — псевдоэлемент списка того же вида', async () => {
+	it('до замера — фон выбранной обёртки, после — псевдоэлемент ряда того же вида', async () => {
 		render(harness())
 
 		// Микрозадача, а не кадр: адаптер отрисовал, плагин ещё не мерил
@@ -380,7 +381,7 @@ describe('карточка до замера и без выбранного та
 		await settled(tabOf('a'))
 
 		expect(style(tabOf('a')).backgroundColor).toBe(TRANSPARENT)
-		expect(style(list(), '::before').backgroundColor).toBe(card)
+		expect(style(bar(), '::before').backgroundColor).toBe(card)
 		await expectCardOn('a')
 	})
 

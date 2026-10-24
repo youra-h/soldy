@@ -507,9 +507,10 @@ describe('элемент коллекции: атрибуты снаружи —
 type TListProbeProps = ListBoxProps & TabsProps
 
 /**
- * Список, как его рисовать, класс его корня и узел списка — ребёнок корня с
- * ролью, которому уходят атрибуты потребителя: на нём `aria` компонента, а
- * корень — рамка (шапка и подвал ListBox, панели Tabs).
+ * Список, как его рисовать, класс его корня и узел списка с ролью, которому
+ * уходят атрибуты потребителя: на нём `aria` компонента, а корень — рамка
+ * (шапка и подвал ListBox, панели Tabs). У ListBox узел списка — ребёнок
+ * корня, у Tabs — ребёнок ряда, где рядом со списком стоят слоты.
  */
 const LISTS: ReadonlyArray<
 	readonly [string, (props: TListProbeProps) => TMounted, string, string]
@@ -520,7 +521,12 @@ const LISTS: ReadonlyArray<
 		'.so-list-box',
 		'.so-list-box > [role="listbox"]',
 	],
-	['Tabs', (props) => mount(Tabs, props), '.so-tabs', '.so-tabs > [role="tablist"]'],
+	[
+		'Tabs',
+		(props) => mount(Tabs, props),
+		'.so-tabs',
+		'.so-tabs > .so-tabs__bar > [role="tablist"]',
+	],
 ]
 
 describe('ListBox, Tabs: атрибуты снаружи — узлу списка, поверх его aria', () => {

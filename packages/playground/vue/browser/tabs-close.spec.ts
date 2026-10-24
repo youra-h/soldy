@@ -142,17 +142,17 @@ describe('таб покрывает крестик', () => {
 	it('подчёркивание view="line" идёт и под крестиком', async () => {
 		render(harness({ view: 'line' }))
 
-		const list = find('.so-tabs__list')
+		const bar = find('.so-tabs__bar')
 		const { item, close } = tab('a')
 
 		// Полосу `TTabsActiveTabPlugin` считает в целых `offsetLeft`/`offsetWidth`:
 		// сверяется в тех же единицах — полоса лежит под всем табом, а не под
 		// строкой. Что крестик внутри таба — по боксам, дробные с дробными.
 		await expect
-			.poll(() => px(list.style.getPropertyValue('--so-tabs-active-size')))
+			.poll(() => px(bar.style.getPropertyValue('--so-tabs-active-size')))
 			.toBe(item.offsetWidth)
 
-		expect(px(list.style.getPropertyValue('--so-tabs-active-pos'))).toBe(item.offsetLeft)
+		expect(px(bar.style.getPropertyValue('--so-tabs-active-pos'))).toBe(item.offsetLeft)
 
 		const itemBox = box(item)
 		const closeBox = box(close)
@@ -162,7 +162,7 @@ describe('таб покрывает крестик', () => {
 	})
 
 	/**
-	 * Карточка — `::before` списка по месту и длине обёртки таба (до замера —
+	 * Карточка — `::before` ряда по месту и длине обёртки таба (до замера —
 	 * фон самой обёртки, `tabs-contained.spec.ts`). Она обязана быть табом
 	 * целиком: не одной строкой — крестик остался бы за краем. Место и длину
 	 * плагин берёт в целых `offset*`, поэтому край карточки сверяется с
@@ -171,12 +171,12 @@ describe('таб покрывает крестик', () => {
 	it('карточка активного таба view="contained" — весь таб вместе с крестиком', async () => {
 		render(harness({ view: 'contained' }))
 
-		const list = find('.so-tabs__list')
+		const bar = find('.so-tabs__bar')
 		const { item, close } = tab('a')
 
-		await expect.poll(() => getComputedStyle(list, '::before').content).not.toBe('none')
+		await expect.poll(() => getComputedStyle(bar, '::before').content).not.toBe('none')
 
-		const cardBox = pseudoBox(list, '::before')
+		const cardBox = pseudoBox(bar, '::before')
 		const closeBox = box(close)
 
 		expect(Math.abs(cardBox.width - box(item).width)).toBeLessThanOrEqual(1)

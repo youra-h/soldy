@@ -37,8 +37,9 @@ const find = (selector: string): HTMLElement => {
 type TDraw = (attrs: Record<string, unknown>) => void
 
 /**
- * Список, как его рисовать, класс его корня и узел списка — ребёнок корня с
- * ролью, которому уходят атрибуты потребителя.
+ * Список, как его рисовать, класс его корня и узел списка с ролью, которому
+ * уходят атрибуты потребителя: у ListBox — ребёнок корня, у Tabs — ребёнок
+ * ряда, где рядом со списком стоят слоты.
  */
 const LISTS: ReadonlyArray<readonly [string, TDraw, string, string]> = [
 	[
@@ -63,7 +64,7 @@ const LISTS: ReadonlyArray<readonly [string, TDraw, string, string]> = [
 			})
 		},
 		'.so-tabs',
-		'.so-tabs > [role="tablist"]',
+		'.so-tabs > .so-tabs__bar > [role="tablist"]',
 	],
 ]
 

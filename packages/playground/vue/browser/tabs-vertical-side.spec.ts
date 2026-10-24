@@ -65,6 +65,8 @@ function mount(look: TLook, direction?: TLine, ancestor?: TLine): void {
 }
 
 const root = () => find('.so-tabs')
+/** Ряд набора — список и слоты по его краям: линию и полосу вид рисует на нём. */
+const bar = () => find('.so-tabs__bar')
 const list = () => find('.so-tabs__list')
 const panel = () => find('.so-tabs__panel')
 const items = () => [...list().querySelectorAll<HTMLElement>(':scope > .so-tabs-item')]
@@ -72,17 +74,17 @@ const items = () => [...list().querySelectorAll<HTMLElement>(':scope > .so-tabs-
 /** Середина коробки по горизонтали. */
 const middle = (box: DOMRect): number => box.left + box.width / 2
 
-/** Сторона списка, у которой стоит панель. */
+/** Сторона ряда, у которой стоит панель. */
 const panelSide = (): TSide =>
-	middle(panel().getBoundingClientRect()) > middle(list().getBoundingClientRect())
+	middle(panel().getBoundingClientRect()) > middle(bar().getBoundingClientRect())
 		? 'right'
 		: 'left'
 
 const opposite = (side: TSide): TSide => (side === 'left' ? 'right' : 'left')
 
-/** Псевдоэлемент списка лежит на его крае `side`: середина — на линии края. */
+/** Псевдоэлемент ряда лежит на его крае `side`: середина — на линии края. */
 const onEdge = (pseudo: '::before' | '::after', side: TSide): number =>
-	Math.abs(middle(pseudoBox(list(), pseudo)) - list().getBoundingClientRect()[side])
+	Math.abs(middle(pseudoBox(bar(), pseudo)) - bar().getBoundingClientRect()[side])
 
 const borderWidth = (element: HTMLElement, side: TSide): string =>
 	getComputedStyle(element).getPropertyValue(`border-${side}-width`)
@@ -118,8 +120,8 @@ describe.each(DIRECTION_CASES)('вертикальные табы по ближ�
 		expect(side, 'панель — у конца строки, у табов в конце ряда — у начала').toBe(
 			position === 'start' ? sides.end : sides.start,
 		)
-		expect(borderWidth(list(), side), 'линия — к панели').toBe('1px')
-		expect(borderWidth(list(), opposite(side)), 'с внешнего края линии нет').toBe('0px')
+		expect(borderWidth(bar(), side), 'линия — к панели').toBe('1px')
+		expect(borderWidth(bar(), opposite(side)), 'с внешнего края линии нет').toBe('0px')
 		expect(onEdge('::after', side), 'полоса — на линии').toBeLessThanOrEqual(EPSILON)
 	})
 

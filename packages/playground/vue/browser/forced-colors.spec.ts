@@ -23,7 +23,7 @@
  * Выбор у Button — «нажато» у кнопки, открывшей панель, выбранная строка
  * списка и выбранный тег — тема рисует фоном, и в этом режиме он пропал бы
  * вместе с фоном. Его красит системная подсветка (см. ниже). Ею же отмечен
- * активный таб: полосу, карточку и линии списка Tabs тема тоже рисует фонами
+ * активный таб: полосу, карточку и линии ряда Tabs тема тоже рисует фонами
  * (см. конец файла). Строку под стрелками — тоже фоном, и её в этом режиме
  * обводит контур (см. ниже). Дорожку и ручку Switch тема тоже рисует фонами,
  * и переключатель пропадал целиком — его рисуют системные цвета (см. ниже).
@@ -1132,12 +1132,12 @@ describe.each(LISTS)('$name: строка под стрелками', ({ rows, f
 
 /**
  * Активный таб тема отмечает фонами: у вида по умолчанию — полоса, фон
- * `::after` списка, у `contained` — карточка поверхности с тенью, у
- * `outline` — разрыв в линиях списка, фонах `::before` и `::after`. В этом
+ * `::after` ряда, у `contained` — карточка поверхности с тенью, у
+ * `outline` — разрыв в линиях ряда, фонах `::before` и `::after`. В этом
  * режиме браузер заменяет фоны цветом страницы, и активный таб отличался бы от
  * соседей одной непрозрачностью текста. Отметка — системная подсветка, как
  * выбор у Button (`themes/oren/src/components/tabs/_mixins.scss`): полоса —
- * фоном, у `outline` — рамка активного таба, а линии списка — цветом рамок,
+ * фоном, у `outline` — рамка активного таба, а линии ряда — цветом рамок,
  * которые браузер красит сам, карточка — контуром.
  */
 describe('Tabs: активный таб', () => {
@@ -1151,13 +1151,14 @@ describe('Tabs: активный таб', () => {
 			),
 		)
 
-	const list = () => find('.so-tabs__list')
+	/** Ряд набора — список и слоты по его краям: отметку и линии вид рисует на нём. */
+	const bar = () => find('.so-tabs__bar')
 	const active = () => find('.so-tabs-item[data-selected="true"]')
 	const idle = () => find('.so-tabs-item:not([data-selected="true"])')
 	const highlight = () => pixel([systemColor('Highlight')])
 
 	/**
-	 * Полоса лежит на линии под списком, а линию — рамку списка — браузер
+	 * Полоса лежит на линии под рядом, а линию — рамку ряда — браузер
 	 * красит системным текстом сам. Пока полоса была цвета страницы, на её месте
 	 * в линии был разрыв.
 	 */
@@ -1165,14 +1166,14 @@ describe('Tabs: активный таб', () => {
 		await forcedColors('active')
 		await show(scheme, () => tabs())
 
-		const strip = pixel([style(list(), '::after').backgroundColor])
+		const strip = pixel([style(bar(), '::after').backgroundColor])
 
 		expect(strip).toEqual(highlight())
-		expect(strip).not.toEqual(pixel([style(list()).borderBottomColor]))
+		expect(strip).not.toEqual(pixel([style(bar()).borderBottomColor]))
 	})
 
 	/**
-	 * Линии списка продолжают рамки табов по краю списка, как в проверке «той
+	 * Линии ряда продолжают рамки табов по краю ряда, как в проверке «той
 	 * же ступени» у `tabs-view.spec.ts`, и под активным табом в них разрыв.
 	 */
 	it.each(SCHEMES)(
@@ -1184,7 +1185,7 @@ describe('Tabs: активный таб', () => {
 			const frame = pixel([style(idle()).borderTopColor])
 
 			for (const pseudo of ['::before', '::after']) {
-				const line = pixel([style(list(), pseudo).backgroundColor])
+				const line = pixel([style(bar(), pseudo).backgroundColor])
 
 				expect(line, pseudo).toEqual(frame)
 				expect(line, pseudo).not.toEqual(pixel([systemColor('Canvas')]))
@@ -1196,7 +1197,7 @@ describe('Tabs: активный таб', () => {
 	)
 
 	/**
-	 * Карточку до замера рисует выбранная обёртка, после — `::before` списка
+	 * Карточку до замера рисует выбранная обёртка, после — `::before` ряда
 	 * (`tabs-contained.spec.ts`), и контур есть у обеих: правило одно на обе.
 	 */
 	it.each(SCHEMES)(
@@ -1217,8 +1218,8 @@ describe('Tabs: активный таб', () => {
 				.poll(() => find('.so-tabs').classList.contains('so-tabs--ready-animation'))
 				.toBe(true)
 
-			expect(outlined(list(), '::before'), 'после замера, карточка').toBe(true)
-			expect(pixel([style(list(), '::before').outlineColor])).toEqual(highlight())
+			expect(outlined(bar(), '::before'), 'после замера, карточка').toBe(true)
+			expect(pixel([style(bar(), '::before').outlineColor])).toEqual(highlight())
 
 			for (const item of document.querySelectorAll('.so-tabs-item')) {
 				expect(outlined(item), 'после замера, обёртка').toBe(false)

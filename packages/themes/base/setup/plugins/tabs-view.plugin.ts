@@ -8,19 +8,22 @@ import {
 import type { IPluginContext, TActiveTabOffset } from '@soldy-ui/plugins'
 import { afterPseudoTransitions } from './transitions'
 
-/** Признак переезда на списке: пока он стоит, тема ведёт геометрию переходом. */
+/** Признак переезда на ряду: пока он стоит, тема ведёт геометрию переходом. */
 const MOVING = '--so-tabs-active-moving'
 
 /**
  * TTabsViewPlugin — геометрия активного таба для темы.
  *
- * Слушает TTabsActiveTabPlugin (change:active-tab) и пишет на список табов
- * CSS-переменные: `--so-tabs-active-pos`/`--so-tabs-active-size` — место и
- * длина активного таба по главной оси (по ним тема рисует отметку активного
- * таба — у oren полосу `line` и карточку `contained`),
- * `--so-tabs-gap-pos`/`--so-tabs-gap-size` — разрыв линии списка под ним.
- * Имена — схемы `--so-*`: до первого замера список наследует переменную
- * предка, и имя без префикса взяло бы одноимённую переменную приложения.
+ * Слушает TTabsActiveTabPlugin (change:active-tab) и пишет на ряд набора
+ * (`__bar` — список табов и слоты по его краям) CSS-переменные:
+ * `--so-tabs-active-pos`/`--so-tabs-active-size` — место и длина активного
+ * таба по главной оси (по ним тема рисует отметку активного таба — у oren
+ * полосу `line` и карточку `contained`), `--so-tabs-gap-pos`/`--so-tabs-gap-size`
+ * — разрыв линии ряда под ним. Место — от ряда: он ближайший позиционированный
+ * предок таба (общий слой тем, `components/tabs.css`), и отметку тема рисует
+ * от его же края. Имена — схемы `--so-*`: до первого замера ряд наследует
+ * переменную предка, и имя без префикса взяло бы одноимённую переменную
+ * приложения.
  * Когда узел готов, ставит модификатор `--ready-animation` — знак теме, что
  * геометрия меряется: замер монтирования к этому времени уже записан. До
  * модификатора переменных ещё нет, и отметку тема рисует без них — oren,
@@ -30,12 +33,12 @@ const MOVING = '--so-tabs-active-moving'
  * угла не выезжает.
  *
  * **Признак переезда.** Сменился активный таб между двумя записанными —
- * плагин ставит на список `--so-tabs-active-moving: 1` в той же записи, что и
+ * плагин ставит на ряд `--so-tabs-active-moving: 1` в той же записи, что и
  * новое место, и тема ведёт его переходом. Без признака идут первая запись,
  * нули при отсутствии активного таба и пересчёт того же таба — ресайз, сдвиг
  * от закрытия соседа, смена вида: геометрия встаёт на место сразу и не
  * отстаёт от текста таба. Признак снимается, когда доиграли переходы
- * псевдоэлементов списка — ими тема рисует геометрию (`transitions.ts`), — а
+ * псевдоэлементов ряда — ими тема рисует геометрию (`transitions.ts`), — а
  * пока он стоит, каждая запись ждёт их заново: так переходом доезжает и сдвиг
  * посреди переезда — сосед встал на место закрытого таба. Каких именно
  * псевдоэлементов, плагин не выбирает: вида он не читает. Признак —
@@ -58,7 +61,7 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs> {
 	 * записал нули: активного таба не было.
 	 */
 	private _drawn: ITabsItem | null = null
-	/** Список, на котором стоит признак переезда; `null` — признака нет. */
+	/** Ряд, на котором стоит признак переезда; `null` — признака нет. */
 	private _moving: HTMLElement | null = null
 	/** Отмена ожидания конца переезда; `null` — плагин не ждёт. */
 	private _stopWaiting: (() => void) | null = null
@@ -108,50 +111,50 @@ export class TTabsViewPlugin extends TBasePlugin<ITabs> {
 		// таб остаётся прежним
 		if (!active && engine.extensions.tabs.hasEnabledTabs()) return
 
-		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
+		const { barEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 
-		if (this._drawn && active && active !== this._drawn) this._startMoving(listEl)
+		if (this._drawn && active && active !== this._drawn) this._startMoving(barEl)
 
 		this._drawn = active
 
 		if (tabs.orientation === 'vertical') {
-			listEl.style.setProperty('--so-tabs-active-pos', `${offsetTop}px`)
-			listEl.style.setProperty('--so-tabs-active-size', `${offsetHeight}px`)
+			barEl.style.setProperty('--so-tabs-active-pos', `${offsetTop}px`)
+			barEl.style.setProperty('--so-tabs-active-size', `${offsetHeight}px`)
 		} else {
-			listEl.style.setProperty('--so-tabs-active-pos', `${offsetLeft}px`)
-			listEl.style.setProperty('--so-tabs-active-size', `${offsetWidth}px`)
+			barEl.style.setProperty('--so-tabs-active-pos', `${offsetLeft}px`)
+			barEl.style.setProperty('--so-tabs-active-size', `${offsetWidth}px`)
 		}
 
 		// Пока признак стоит, конец переезда ждётся от последней записи
-		if (this._moving === listEl) {
+		if (this._moving === barEl) {
 			this._stopWaiting?.()
-			this._stopWaiting = afterPseudoTransitions(listEl, () => this._stopMoving())
+			this._stopWaiting = afterPseudoTransitions(barEl, () => this._stopMoving())
 		}
 	}
 
-	/** Разрыв линии списка под активным табом. */
+	/** Разрыв линии ряда под активным табом. */
 	private _updateGap(offset: TActiveTabOffset | null): void {
 		const tabs = this._tabs
 
 		if (!offset || !this._engine || !tabs) return
 
-		const { listEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
+		const { barEl, offsetLeft, offsetWidth, offsetTop, offsetHeight } = offset
 
 		if (tabs.orientation === 'vertical') {
-			listEl.style.setProperty('--so-tabs-gap-pos', `${offsetTop + 1}px`)
-			listEl.style.setProperty('--so-tabs-gap-size', `${offsetHeight - 1}px`)
+			barEl.style.setProperty('--so-tabs-gap-pos', `${offsetTop + 1}px`)
+			barEl.style.setProperty('--so-tabs-gap-size', `${offsetHeight - 1}px`)
 		} else {
-			listEl.style.setProperty('--so-tabs-gap-pos', `${offsetLeft + 1}px`)
-			listEl.style.setProperty('--so-tabs-gap-size', `${offsetWidth - 1}px`)
+			barEl.style.setProperty('--so-tabs-gap-pos', `${offsetLeft + 1}px`)
+			barEl.style.setProperty('--so-tabs-gap-size', `${offsetWidth - 1}px`)
 		}
 	}
 
-	/** Признак переезда на список — до записи нового места. */
-	private _startMoving(list: HTMLElement): void {
-		if (this._moving !== list) this._stopMoving()
+	/** Признак переезда на ряд — до записи нового места. */
+	private _startMoving(bar: HTMLElement): void {
+		if (this._moving !== bar) this._stopMoving()
 
-		list.style.setProperty(MOVING, '1')
-		this._moving = list
+		bar.style.setProperty(MOVING, '1')
+		this._moving = bar
 	}
 
 	/** Снять признак переезда и ожидание его конца. */
