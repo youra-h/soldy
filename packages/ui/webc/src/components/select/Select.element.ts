@@ -31,5 +31,5 @@ defineElement('so-select', TSelectElement, 'div')
 defineElement('so-select-group', TSelectGroupElement, 'div')
 defineElement('so-select-item', TSelectItemElement, 'div')
 
-/** `id` — собственный `id` корня; `id` поля — `ctrl.id`. */
+/** `id` — проп `TIdPlugin`: атрибут и `el.id` уходят на поле, у корня своего `id` нет. */
 export type TSelectElementProps = TElementType<typeof TSelectElement>

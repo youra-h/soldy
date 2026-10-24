@@ -366,10 +366,10 @@ describe('выбор', () => {
 	 * сборки и снимает с корня, и на строку `id` встаёт из набора элемента —
 	 * ссылка ведёт на него, узел с ним один. Раньше атрибут ехал на строку
 	 * статикой, а значение потребителя на узле главнее набора, и ссылка вела на
-	 * `id` от монтирования, которого в документе нет. Из кода — `ctrl.id`:
-	 * строка и ссылка идут за ним.
+	 * `id` от монтирования, которого в документе нет. Из кода — `el.id`:
+	 * свойство элемента — тот же проп, и строка и ссылка идут за ним.
 	 */
-	it('свой id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
+	it('id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
 		const list = listIn(
 			await mount(`<div is="so-list-box">
 				<div is="so-list-box-item" value="a" text="Первый" id="row-first"></div>
@@ -385,17 +385,14 @@ describe('выбор', () => {
 		expect(document.querySelectorAll('[id="row-first"]')).toHaveLength(1)
 		expect(itemOf('Первый').hasAttribute('id')).toBe(false)
 
-		const ctrl = itemOf('Первый').ctrl
-
-		if (!ctrl) throw new Error('у элемента нет ctrl')
-
-		ctrl.id = 'row-one'
+		itemOf('Первый').id = 'row-one'
 		await flush()
 
 		expect(rowOf('Первый').id).toBe('row-one')
+		expect(itemOf('Первый').hasAttribute('id')).toBe(false)
 		expect(nodeOf(list).getAttribute('aria-activedescendant')).toBe('row-one')
 
-		ctrl.id = undefined
+		itemOf('Первый').id = ''
 		await flush()
 
 		const fallback = rowOf('Первый').id

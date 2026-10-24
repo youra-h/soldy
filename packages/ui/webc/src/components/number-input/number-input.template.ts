@@ -5,6 +5,7 @@
  */
 
 import type { INumberInput } from '@soldy-ui/core'
+import type { TNumberInputOutputs } from './setup.component'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
 import {
@@ -48,7 +49,7 @@ const INCREMENT: TStepSpec = {
 
 const parts = new WeakMap<HTMLElement, TNumberInputParts>()
 
-export const numberInputTemplate: ITemplate<INumberInput> = {
+export const numberInputTemplate: ITemplate<INumberInput, unknown, TNumberInputOutputs> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')

@@ -108,8 +108,8 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<
 	}
 
 	/**
-	 * Набор подсвеченного сменился — с ним мог смениться его `id` (свой `id`
-	 * элемента задали, сменили или сняли): ссылка за ним.
+	 * Набор подсвеченного сменился — с ним мог смениться его `id` (`id` элемента
+	 * в `TIdPlugin` задали, сменили или сняли): ссылка за ним.
 	 */
 	protected override onHighlightedAriaChanged(_uid: string | number): void {
 		this._refer()

@@ -11,7 +11,11 @@ import { TAccordionItem } from '@soldy-ui/core'
 import { headerIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { AccordionItemIdsPluginDescriptor, ActionPluginDescriptor } from '../../plugins'
+import {
+	AccordionItemIdsPluginDescriptor,
+	ActionPluginDescriptor,
+	IdPluginDescriptor,
+} from '../../plugins'
 
 export const AccordionItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -62,12 +66,6 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 				 * секции и экземпляра у неё нет.
 				 */
 				contentAria: { type: Object, protected: true, triggers: ['change:contentAria'] },
-				/**
-				 * Свой `id` заголовка — вход, а не атрибут, который едет на
-				 * заголовок: на него ссылается панель, и обе стороны ведёт плагин
-				 * связок секции. Не задан — `id` от монтирования.
-				 */
-				id: { type: String, triggers: ['change:id'] },
 			},
 		},
 
@@ -76,7 +74,8 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 			// `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: headerIn }),
 			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними; `id`
-			// заголовка — свой или от монтирования
+			// заголовка — проп `id` или от монтирования
+			IdPluginDescriptor,
 			AccordionItemIdsPluginDescriptor,
 		],
 	}),

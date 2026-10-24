@@ -48,6 +48,7 @@ import {
 	TDialogIdsPlugin,
 	TDismissPlugin,
 	TFieldIdsPlugin,
+	TIdPlugin,
 	TItemGroupIdsPlugin,
 	TMenuIdsPlugin,
 	TMenuPopupIdsPlugin,
@@ -63,6 +64,7 @@ import {
 	TTextareaIdsPlugin,
 	TTooltipIdsPlugin,
 } from '../src'
+import type { IPluginConstructor } from '../src'
 
 describe('id монтирования', () => {
 	it('id части — <mountId>-<часть>', () => {
@@ -683,77 +685,68 @@ describe('общий name радио', () => {
 		expect(names()).toEqual(['city', 'city', 'city'])
 	})
 })
-
 /**
- * Свой `id` элемента — его вход, значение потребителя — главнее `id` от
- * монтирования, как у поля: плагин связок пишет его в набор строки и в ссылки
- * на неё, на смену переписывает обе стороны, а снятый возвращает формулу.
- * `id` второй стороны — панели — своего входа не имеет и остаётся формулой.
- * Атрибутом мимо набора `id` на строку не попадает: его забирает вход.
+ * `id`, заданный приложением, держит `TIdPlugin` набора — проп `id`, — и он
+ * главнее `id` от монтирования, как у поля: плагин связок пишет его в набор
+ * строки и в ссылки на неё, на смену переписывает обе стороны, а снятый
+ * возвращает формулу. `id` второй стороны — панели — приложение не задаёт, он
+ * остаётся формулой.
  */
-describe('свой id элемента', () => {
+describe('id приложения у элемента', () => {
+	/** Набор с `TIdPlugin` и плагином связок — как у дескриптора: `TIdPlugin` раньше. */
+	function mount(instance: object, linker: IPluginConstructor): TIdPlugin {
+		const idPlugin = new TPluginBundle(instance, 'm1').use(TIdPlugin).use(linker).get(TIdPlugin)
+
+		if (!idPlugin) throw new Error('TIdPlugin не встал')
+
+		return idPlugin
+	}
+
 	it.each([
-		['Select.Item', (id?: string) => new TSelectItem({ value: 'a', id })],
-		['ListBox.Item', (id?: string) => new TListBoxItem({ value: 'a', id })],
+		['Select.Item', () => new TSelectItem({ value: 'a' })],
+		['ListBox.Item', () => new TListBoxItem({ value: 'a' })],
 	] as const)(
-		'%s: свой id — на строке, сменили — следом, сняли — от монтирования',
+		'%s: id — на строке, сменили — следом, сняли — от монтирования',
 		(_name, create) => {
-			const item = create('row-a')
-
-			new TPluginBundle(item, 'm1').use(TOptionIdsPlugin)
-
-			expect(item.aria.get('id')).toBe('row-a')
-
-			item.id = 'row-b'
-
-			expect(item.aria.get('id')).toBe('row-b')
-
-			item.id = undefined
+			const item = create()
+			const idPlugin = mount(item, TOptionIdsPlugin)
 
 			expect(item.aria.get('id')).toBe('m1-option')
 
-			item.id = 'row-c'
+			idPlugin.id = 'row-a'
 
-			expect(item.aria.get('id')).toBe('row-c')
+			expect(item.aria.get('id')).toBe('row-a')
+
+			idPlugin.id = 'row-b'
+
+			expect(item.aria.get('id')).toBe('row-b')
+
+			idPlugin.id = undefined
+
+			expect(item.aria.get('id')).toBe('m1-option')
 		},
 	)
 
-	it('свой id — у экземпляра: новое монтирование пишет тот же, а без него — свой', () => {
-		const item = new TListBoxItem({ value: 'a', id: 'row-a' })
+	it('Tabs.Item: id — у таба, а id панели по-прежнему от монтирования', () => {
+		const tab = new TTabsItem({ value: 'a' })
+		const idPlugin = mount(tab, TTabsItemIdsPlugin)
 
-		new TPluginBundle(item, 'm1').use(TOptionIdsPlugin)
-		new TPluginBundle(item, 'm2').use(TOptionIdsPlugin)
-
-		expect(item.aria.get('id')).toBe('row-a')
-
-		item.id = undefined
-
-		// Оба монтирования слушают элемент, и последним пишет новое
-		expect(item.aria.get('id')).toBe('m2-option')
-	})
-
-	it('Tabs.Item: свой id — у таба, а id панели по-прежнему от монтирования', () => {
-		const tab = new TTabsItem({ value: 'a', id: 'tab-a' })
-
-		new TPluginBundle(tab, 'm1').use(TTabsItemIdsPlugin)
+		idPlugin.id = 'tab-a'
 
 		expect(tab.aria.get('id')).toBe('tab-a')
 		expect(tab.aria.get('aria-controls')).toBe('m1-panel')
 
-		tab.id = 'tab-b'
-
-		expect(tab.aria.get('id')).toBe('tab-b')
-
-		tab.id = undefined
+		idPlugin.id = undefined
 
 		expect(tab.aria.get('id')).toBe('m1-tab')
 		expect(tab.aria.get('aria-controls')).toBe('m1-panel')
 	})
 
-	it('Accordion.Item: свой id — у заголовка и в ссылке панели на него', () => {
-		const section = new TAccordionItem({ value: 'a', id: 'faq-a' })
+	it('Accordion.Item: id — у заголовка и в ссылке панели на него', () => {
+		const section = new TAccordionItem({ value: 'a' })
+		const idPlugin = mount(section, TAccordionItemIdsPlugin)
 
-		new TPluginBundle(section, 'm1').use(TAccordionItemIdsPlugin)
+		idPlugin.id = 'faq-a'
 
 		expect(section.aria.get('id')).toBe('faq-a')
 		expect(section.aria.get('aria-controls')).toBe('m1-content')
@@ -763,12 +756,7 @@ describe('свой id элемента', () => {
 			'aria-labelledby': 'faq-a',
 		})
 
-		section.id = 'faq-b'
-
-		expect(section.aria.get('id')).toBe('faq-b')
-		expect(section.contentAria.get('aria-labelledby')).toBe('faq-b')
-
-		section.id = undefined
+		idPlugin.id = undefined
 
 		expect(section.aria.get('id')).toBe('m1-header')
 		expect(section.contentAria.get('aria-labelledby')).toBe('m1-header')
@@ -776,52 +764,34 @@ describe('свой id элемента', () => {
 	})
 
 	it.each([
-		['Menu.Submenu', (id?: string) => new TMenuSubmenu({ text: 'Поделиться', id })],
-		['Menu.PopoverItem', (id?: string) => new TMenuPopoverItem({ text: 'Срок', id })],
-	] as const)('%s: свой id — у строки и в ссылке панели на неё', (_name, create) => {
-		const item = create('share')
+		['Menu.Submenu', () => new TMenuSubmenu({ text: 'Поделиться' })],
+		['Menu.PopoverItem', () => new TMenuPopoverItem({ text: 'Срок' })],
+	] as const)('%s: id — у строки и в ссылке панели на неё', (_name, create) => {
+		const item = create()
+		const idPlugin = mount(item, TMenuPopupIdsPlugin)
 
-		new TPluginBundle(item, 'm1').use(TMenuPopupIdsPlugin)
+		idPlugin.id = 'share'
 
 		expect(item.aria.get('id')).toBe('share')
 		expect(item.aria.get('aria-controls')).toBe('m1-panel')
 		expect(item.panelAria.get('id')).toBe('m1-panel')
 		expect(item.panelAria.get('aria-labelledby')).toBe('share')
 
-		item.id = 'send'
-
-		expect(item.aria.get('id')).toBe('send')
-		expect(item.panelAria.get('aria-labelledby')).toBe('send')
-
-		item.id = undefined
+		idPlugin.id = undefined
 
 		expect(item.aria.get('id')).toBe('m1-row')
 		expect(item.panelAria.get('aria-labelledby')).toBe('m1-row')
 	})
 
 	/**
-	 * Шина элемента живёт дольше набора: свой `ctrl` приложения и элемент из
-	 * данных переживают монтирование. Уничтоженный набор смену `id` не слушает.
+	 * Плагин связок без `TIdPlugin` в наборе работает от монтирования: так его
+	 * ставит компонент, которому `id` приложения не нужен.
 	 */
-	it('после destroy набора смену своего id плагины не слушают', () => {
-		const option = new TListBoxItem({ value: 'a' })
-		const tab = new TTabsItem({ value: 'a' })
-		const section = new TAccordionItem({ value: 'a' })
-		const submenu = new TMenuSubmenu({ text: 'Поделиться' })
+	it('без TIdPlugin в наборе — id от монтирования', () => {
+		const item = new TListBoxItem({ value: 'a' })
 
-		new TPluginBundle(option, 'm1').use(TOptionIdsPlugin).destroy()
-		new TPluginBundle(tab, 'm1').use(TTabsItemIdsPlugin).destroy()
-		new TPluginBundle(section, 'm1').use(TAccordionItemIdsPlugin).destroy()
-		new TPluginBundle(submenu, 'm1').use(TMenuPopupIdsPlugin).destroy()
+		new TPluginBundle(item, 'm1').use(TOptionIdsPlugin)
 
-		option.id = 'own'
-		tab.id = 'own'
-		section.id = 'own'
-		submenu.id = 'own'
-
-		expect(option.aria.get('id')).toBe('m1-option')
-		expect(tab.aria.get('id')).toBe('m1-tab')
-		expect(section.contentAria.get('aria-labelledby')).toBe('m1-header')
-		expect(submenu.panelAria.get('aria-labelledby')).toBe('m1-row')
+		expect(item.aria.get('id')).toBe('m1-option')
 	})
 })

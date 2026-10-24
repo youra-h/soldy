@@ -5,7 +5,7 @@
 	 * только в `.svelte`.
 	 *
 	 * - `controls` — контролы поля по порядку, ключ — вид контрола;
-	 * - `input` и `id` — экземпляр и свой `id` поля ввода;
+	 * - `id` — свой `id` поля ввода;
 	 * - `nested` — флажок в слоте `trailing` поля ввода: контрол в слоте
 	 *   контрола, а не контрол поля формы;
 	 * - `groupLabel` — своё имя группы радио и поля даты;
@@ -15,7 +15,7 @@
 	 * - `date-input` — поле даты, `date-picker` и `date-picker-range` —
 	 *   DatePicker одной даты и диапазона: его поля — детали его разметки.
 	 */
-	import type { TField, TInput, TSlider } from '@soldy-ui/core'
+	import type { TField, TSlider } from '@soldy-ui/core'
 	import {
 		CheckBox,
 		DateInput,
@@ -55,8 +55,6 @@
 		invalid?: boolean
 		/** Контролы поля по порядку. */
 		controls: TControl[]
-		/** Экземпляр поля ввода. */
-		input?: TInput
 		/** Свой `id` поля ввода. */
 		id?: string
 		/** Флажок в слоте `trailing` поля ввода. */
@@ -80,7 +78,7 @@
 	{#each props.controls as control (control)}
 		{#if control === 'input'}
 			{#snippet trailing()}<CheckBox />{/snippet}
-			<Input ctrl={props.input} id={props.id} trailing={props.nested ? trailing : undefined} />
+			<Input id={props.id} trailing={props.nested ? trailing : undefined} />
 		{:else if control === 'number-input'}
 			<NumberInput />
 		{:else if control === 'check-box'}

@@ -305,7 +305,7 @@ describe('разметка', () => {
  * `id` — проп поля, хотя атрибуты разметки остаются корню: два узла с одним
  * `id` сломали бы `<label for>`, и он нашёл бы корень, а тот подпись не
  * принимает. Атрибут разметки база берёт пропом первой сборки и снимает с
- * корня; из кода — `ctrl.id`, а `el.id` — собственный `id` корня.
+ * корня; из кода — `el.id`: свойство элемента с полем — тот же проп.
  */
 describe('id — только на поле', () => {
 	it('id разметки — на поле, с корня снят', async () => {
@@ -313,20 +313,19 @@ describe('id — только на поле', () => {
 
 		expect(field().id).toBe('score')
 		expect(root.hasAttribute('id')).toBe(false)
-		expect(root.ctrl?.id).toBe('score')
+		expect(root.state).toMatchObject({ id: 'score' })
 	})
 
-	it('ctrl.id из кода — на поле, el.id — у корня и до поля не доходит', async () => {
+	it('el.id из кода — на поле, на корень не встаёт', async () => {
 		const root = await mountRating('<span is="so-rating"></span>')
 
 		expect(field().hasAttribute('id')).toBe(false)
 
-		if (root.ctrl) root.ctrl.id = 'score'
-		root.id = 'own'
+		root.id = 'score'
 		await flush()
 
 		expect(field().id).toBe('score')
-		expect(root.id).toBe('own')
+		expect(root.hasAttribute('id')).toBe(false)
 	})
 
 	it('подпись for находит поле, а не корень', async () => {

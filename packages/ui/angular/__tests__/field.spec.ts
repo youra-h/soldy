@@ -24,7 +24,7 @@
 import { describe, it, expect } from 'vitest'
 import { Component, signal } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { TField, TInput, TSlider, type TFieldPosition, type TSliderMarks } from '@soldy-ui/core'
+import { TField, TSlider, type TFieldPosition, type TSliderMarks } from '@soldy-ui/core'
 import {
 	SlotDirective,
 	TCheckBoxComponent,
@@ -539,13 +539,13 @@ class OwnIdHost {}
 	imports: [TFieldComponent, TInputComponent],
 	template: `<div so-field label="Почта">
 		@if (shown()) {
-			<div so-input [ctrl]="input"></div>
+			<div so-input [id]="id()"></div>
 		}
 	</div>`,
 })
 class ShownHost {
 	readonly shown = signal(true)
-	readonly input = new TInput()
+	readonly id = signal<string | undefined>(undefined)
 }
 
 describe('Field · id поля', () => {
@@ -559,21 +559,20 @@ describe('Field · id поля', () => {
 	it('свой id задали позже — for идёт за ним', () => {
 		const fixture = mountHost(ShownHost)
 
-		fixture.componentInstance.input.id = 'email'
+		fixture.componentInstance.id.set('email')
 		fixture.detectChanges()
 
 		expect(input(fixture, '[so-input] input').id).toBe('email')
 		expect(labelOf(fixture).htmlFor).toBe('email')
 	})
 
-	it('контрол сняли — его id от поля снят, for — снова на id поля', () => {
+	it('контрол сняли — for снова на id поля', () => {
 		const fixture = mountHost(ShownHost)
 		const id = input(fixture, '[so-input] input').id
 
 		fixture.componentInstance.shown.set(false)
 		fixture.detectChanges()
 
-		expect(fixture.componentInstance.input.id).toBeUndefined()
 		expect(labelOf(fixture).htmlFor).toBe(id)
 	})
 })

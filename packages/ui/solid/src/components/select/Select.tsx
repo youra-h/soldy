@@ -142,6 +142,7 @@ export function Select(props: SelectProps): JSX.Element {
 								embedded="select.field"
 								class="so-select__field"
 								ctrl={field}
+								id={state.id}
 								clear={props.clear}
 								leading={
 									<>

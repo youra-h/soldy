@@ -14,11 +14,6 @@ import type { IListBoxItem, IListBoxItemProps, TListBoxItemEvents } from './type
  * `contentFit` здесь трёхзначен: `undefined` означает «взять у списка», и это
  * не то же самое, что `truncate`. Разрешение делает расширение коллекции — оно
  * же пишет элементу `data-content-fit`.
- *
- * `id` — значение потребителя, как у поля (`TInputControl.id`): в `aria` ядро
- * его не пишет. На `id` строки ссылается `aria-activedescendant` списка, и
- * строке его пишет плагин `id` элемента (`TOptionIdsPlugin`): свой `id`
- * главнее, без него — `id` от монтирования.
  */
 export default class TListBoxItem<
 	TProps extends IListBoxItemProps = IListBoxItemProps,
@@ -30,20 +25,17 @@ export default class TListBoxItem<
 	static override baseClass = 'so-list-box-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<IListBoxItemProps, 'text', 'contentFit' | 'id'> = {
+		TDefaultValues<IListBoxItemProps, 'text', 'contentFit'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		contentFit: undefined,
-		id: undefined,
 		tag: 'div',
 	}
 
 	protected _contentFit: TListItemContentFit | undefined
 
 	protected _text: string
-
-	protected _id: string | undefined
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -54,8 +46,6 @@ export default class TListBoxItem<
 		this._text = customProps.text ?? ctor.defaultValues.text
 
 		this._contentFit = customProps.contentFit ?? ctor.defaultValues.contentFit
-
-		this._id = customProps.id ?? ctor.defaultValues.id
 
 		// Только то, что элемент знает о себе сам: он — опция.
 		//
@@ -116,28 +106,11 @@ export default class TListBoxItem<
 		this._sink.emit('change:contentFit', value)
 	}
 
-	/**
-	 * Свой `id` строки — значение потребителя: задают его там, где на элемент
-	 * ссылается его разметка. Не задан — `undefined`, и у строки `id` от
-	 * монтирования.
-	 */
-	get id(): string | undefined {
-		return this._id
-	}
-
-	set id(value: string | undefined) {
-		if (this._id === value) return
-
-		this._id = value
-		this._sink.emit('change:id', value)
-	}
-
 	override getProps(): TProps {
 		return {
 			...super.getProps(),
 			text: this.text,
 			contentFit: this.contentFit,
-			id: this._id,
 		} as TProps
 	}
 }

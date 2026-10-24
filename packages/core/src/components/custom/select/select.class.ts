@@ -51,9 +51,11 @@ import type {
  * состояние самого Select, не то, что пользователь видит внутри поля и что
  * объявляет скринридеру. Этим владеет отдельный инстанс `TInput` (`field`):
  * Select создаёт его один раз и синхронизирует с ним общие свойства
- * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`, `id`,
+ * (`disabled`, `size`, `variant`, `readonly`, `required`, `name`,
  * `clearable`). Второго значения поля рядом с этим не заводим — единственный
- * держатель текста, плейсхолдера и ARIA поля это и есть `field`.
+ * держатель текста, плейсхолдера и ARIA поля это и есть `field`. `id` поля —
+ * не свойство ядра: его держит `TIdPlugin`, и Select отдаёт свой вложенному
+ * Input в разметке.
  *
  * **Кнопку очистки рисует поле**, а не Select: `clearable` — вход Select,
  * который уходит полю, а имя кнопки (`clearAria`) и команда (`clear`) — у
@@ -161,7 +163,6 @@ export class TSelect<
 			readonly: !(own.editable ?? ctor.defaultValues.editable),
 			required: this.required,
 			name: this.name,
-			id: this.id,
 			clearable: this._clearable,
 		})
 
@@ -220,7 +221,6 @@ export class TSelect<
 		this.events.on('change:readonly', (value: boolean) => (this._field.readonly = value))
 		this.events.on('change:required', (value: boolean) => (this._field.required = value))
 		this.events.on('change:name', (value: string) => (this._field.name = value))
-		this.events.on('change:id', (value: string | undefined) => (this._field.id = value))
 		this.events.on('change:clearable', (value: boolean) => (this._field.clearable = value))
 		// Ошибка — и полю, как `required`: его рамку красит тема Input, и
 		// `aria-invalid` стоит на том же `<input>`, что и набор Select

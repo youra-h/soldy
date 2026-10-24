@@ -1,20 +1,20 @@
 import {
 	DatePickerDescriptor,
 	TFieldControlExtension,
-	type DescriptorAllProps,
 	type DescriptorPluginOutputs,
+	type DescriptorPluginProps,
 } from '@soldy-ui/setup'
 import type { IDatePicker } from '@soldy-ui/core'
 import { createWebcAdapterContext, useAdapter } from '../../adapter'
 import type { TBinding, TUpdateListener } from '../../adapter'
 import { createWebcElevator } from '../../adapter/elevator'
 
-/** Сверх инстанса шаблон читает выходы плагинов и пропсы имени: у одной даты их получает поле. */
-export type TDatePickerOutputs = DescriptorPluginOutputs<typeof DatePickerDescriptor> &
-	Pick<
-		DescriptorAllProps<typeof DatePickerDescriptor>,
-		'aria_label' | 'aria_labelledBy' | 'aria_describedBy'
-	>
+/**
+ * Сверх инстанса шаблон читает входы и выходы плагинов: пропсы имени — у одной
+ * даты их получает поле — и `id` корня, проп `TIdPlugin`.
+ */
+export type TDatePickerOutputs = DescriptorPluginProps<typeof DatePickerDescriptor> &
+	DescriptorPluginOutputs<typeof DatePickerDescriptor>
 
 export function setupDatePicker(
 	host: HTMLElement,

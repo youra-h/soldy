@@ -370,13 +370,13 @@ describe('NumberInput · атрибуты разметки', () => {
 		expect(node.getAttribute('aria-label')).toBe('Количество')
 	})
 
-	it('id и placeholder — у ввода; ctrl.id совпадает с id, на корне его нет', () => {
+	it('id и placeholder — у ввода; el.id совпадает с id, на корне его нет', () => {
 		const el = mount('<div is="so-number-input" id="qty" placeholder="Сколько"></div>')
 
 		expect(el.hasAttribute('id')).toBe(false)
 		expect(field(el).id).toBe('qty')
 		expect(field(el).placeholder).toBe('Сколько')
-		expect(el.ctrl?.id).toBe('qty')
+		expect(el.state).toMatchObject({ id: 'qty' })
 		expect(document.querySelectorAll('#qty')).toHaveLength(1)
 	})
 

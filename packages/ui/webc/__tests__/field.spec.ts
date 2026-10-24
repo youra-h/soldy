@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TField, TInput, TSlider } from '@soldy-ui/core'
+import { TField, TSlider } from '@soldy-ui/core'
 import { FieldDescriptor } from '@soldy-ui/setup'
 import {
 	TFieldElement,
@@ -29,6 +29,7 @@ import {
 	TInputElement,
 	TSliderElement,
 	type TFieldElementProps,
+	type TInputElementProps,
 	type TSliderElementProps,
 } from '@soldy-ui/webc'
 import { fieldTemplate } from '../src/components/field/field.template'
@@ -481,7 +482,7 @@ function isSlider(node: Element | null): node is TSliderElementProps {
 	return node instanceof TSliderElement
 }
 
-function isInput(node: Element | null): node is HTMLElement & { ctrl: TInput | undefined } {
+function isInput(node: Element | null): node is TInputElementProps {
 	return node instanceof TInputElement
 }
 
@@ -499,9 +500,9 @@ describe('Field · id поля', () => {
 
 		const control = document.querySelector('[is="so-input"]')
 
-		if (!isInput(control) || !control.ctrl) throw new Error('поля ввода нет')
+		if (!isInput(control)) throw new Error('поля ввода нет')
 
-		control.ctrl.id = 'email'
+		control.id = 'email'
 		await flush()
 
 		expect(input('.so-input input').id).toBe('email')
@@ -513,14 +514,14 @@ describe('Field · id поля', () => {
 
 		const control = document.querySelector('[is="so-input"]')
 
-		if (!isInput(control) || !control.ctrl) throw new Error('поля ввода нет')
+		if (!isInput(control)) throw new Error('поля ввода нет')
 
-		const ctrl = control.ctrl
 		const id = input('.so-input input').id
+
+		expect(control.state).toMatchObject({ id })
 
 		control.remove()
 
-		expect(ctrl.id).toBeUndefined()
 		expect(label().htmlFor).toBe(id)
 	})
 })

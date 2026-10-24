@@ -1,6 +1,7 @@
-import type { IMenuPopupItem, IMenuPopupItemProps, TMenuPopupItemEvents } from '@soldy-ui/core'
+import type { IMenuPopupItem } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
+import { TIdPlugin } from '../../id'
 
 /**
  * TMenuPopupIdsPlugin — связка «пункт ↔ его панель» в документе: у пункта с
@@ -13,38 +14,32 @@ import type { IPluginContext } from '../../../base'
  * диалог». Пишутся обе стороны здесь: формула одна на обе — и на оба вида
  * пункта, чья панель меню или диалог.
  *
- * **Свой `id` пункта главнее** (`id` — вход пункта, значение потребителя): он
- * и встаёт на строку, и на него ссылается панель. Атрибутом мимо набора `id`
- * на строку не попадает — адаптеры отдают его входу, — поэтому на строке он
- * один. Сменили — плагин переписывает обе стороны ссылки на строку, сняли —
- * снова `id` от монтирования. `id` панели своего входа не имеет и остаётся
- * формулой.
+ * `id` строки, заданный приложением (`TIdPlugin` пункта), главнее: он и
+ * встаёт на строку, и на него ссылается панель. Сменили — плагин
+ * переписывает обе стороны ссылки на строку, сняли — снова `id` от
+ * монтирования. У панели `id` приложения нет, её `id` — формула.
  *
- * Без своего — `id` от монтирования (`createId`), а не от экземпляра: он нужен
+ * Без него — `id` от монтирования (`createId`), а не от экземпляра: он нужен
  * только документу, и на сервере и в браузере обязан совпасть. Пишется при
  * установке, синхронно, — связка есть уже в первой (и серверной) отрисовке.
  * Ссылки стоят и у закрытой панели: панель всегда в документе, закрытие её
  * только прячет.
- *
- * Шина пункта бывает долговечнее плагина — приложение передаёт свой `ctrl`, а
- * подменю из данных переживает своё монтирование, — поэтому подписка через
- * `_listenTo`. Карта событий пункта названа точно: у интерфейса пункта она по
- * умолчанию стёрта (`any`).
  */
 export class TMenuPopupIdsPlugin extends TBasePlugin {
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
-		const item = ctx.getInstance<IMenuPopupItem<IMenuPopupItemProps, TMenuPopupItemEvents>>()
+		const item = ctx.getInstance<IMenuPopupItem>()
 
 		if (!item) return
 
+		const idPlugin = ctx.get(TIdPlugin)
 		const mountId = ctx.createId('row')
 		const panelId = ctx.createId('panel')
 
 		/** Обе стороны ссылки на строку: её `id` и `aria-labelledby` панели. */
 		const linkRow = (): void => {
-			const rowId = item.id ?? mountId
+			const rowId = idPlugin?.id ?? mountId
 
 			item.aria.add('id', rowId)
 			item.panelAria.add('aria-labelledby', rowId)
@@ -54,6 +49,6 @@ export class TMenuPopupIdsPlugin extends TBasePlugin {
 		linkRow()
 		item.aria.add('aria-controls', panelId)
 
-		this._listenTo(item.events, 'change:id', linkRow)
+		idPlugin?.events.on('change:id', linkRow)
 	}
 }

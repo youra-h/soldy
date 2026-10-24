@@ -308,12 +308,12 @@ describe('опции', () => {
 	})
 
 	/**
-	 * Свой `id` опции — её вход: атрибут разметки база берёт пропом первой
+	 * `id` опции — проп `TIdPlugin`: атрибут разметки база берёт пропом первой
 	 * сборки и снимает с корня опции, и на строку `id` встаёт из набора опции —
-	 * ссылка поля ведёт на него, узел с ним один. Из кода — `ctrl.id`: строка и
-	 * ссылка идут за ним.
+	 * ссылка поля ведёт на него, узел с ним один. Из кода — `el.id`: свойство
+	 * элемента — тот же проп, и строка и ссылка идут за ним.
 	 */
-	it('свой id опции — на строке, ссылка поля ведёт на него и идёт за его сменой', async () => {
+	it('id опции — на строке, ссылка поля ведёт на него и идёт за его сменой', async () => {
 		const el = await render(
 			'',
 			`<div is="so-select-item" value="msk" text="Москва" id="city-msk"></div>
@@ -328,11 +328,11 @@ describe('опции', () => {
 		expect(fieldOf(el).getAttribute('aria-activedescendant')).toBe('city-msk')
 		expect(document.querySelectorAll('[id="city-msk"]')).toHaveLength(1)
 
-		if (!isOption(option) || !option.ctrl) throw new Error('у опции нет ctrl')
+		if (!isOption(option)) throw new Error('опции нет')
 
 		expect(option.hasAttribute('id')).toBe(false)
 
-		option.ctrl.id = 'city-moscow'
+		option.id = 'city-moscow'
 		await settle()
 
 		expect(optionOf('Москва').id).toBe('city-moscow')

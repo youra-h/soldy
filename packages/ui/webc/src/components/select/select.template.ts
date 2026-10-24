@@ -166,6 +166,16 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 			if (field && ctrl && field.ctrl !== ctrl.field) field.ctrl = ctrl.field
 		}),
 
+		// `id` Select (приложения или поля формы) — `id` его поля: атрибут `id`
+		// детали с полем база берёт её пропом, и Input кладёт его на `<input>`.
+		// Пустой — снят. Пишется на каждую смену: с корня детали атрибут снят, и
+		// сверять не с чем
+		bind('id', ({ root, state }) => {
+			const field = parts.get(root)?.field
+
+			if (field) field.id = state.id ?? ''
+		}),
+
 		// У детали с полем набор уходит на `<input>`, поверх набора комбобокса
 		bind('aria', ({ root, state }) => {
 			const field = parts.get(root)?.field

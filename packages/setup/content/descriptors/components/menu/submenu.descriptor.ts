@@ -24,6 +24,7 @@ import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
+	IdPluginDescriptor,
 	MenuHoverPluginDescriptor,
 	MenuPopupIdsPluginDescriptor,
 	MenuSubmenuFocusPluginDescriptor,
@@ -113,12 +114,6 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:panelClasses'],
 				},
-				/**
-				 * Свой `id` строки — вход, а не атрибут, который едет на строку: на
-				 * него ссылается панель подменю, и обе стороны ведёт плагин связок.
-				 * Не задан — `id` от монтирования.
-				 */
-				id: { type: String, triggers: ['change:id'] },
 			},
 		},
 
@@ -138,7 +133,9 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 			// Фокус при открытии и закрытии уровня, Escape и Tab. После dismiss и
 			// клавиатуры: берёт у них панель, `dismiss` и строку подсвеченного
 			MenuSubmenuFocusPluginDescriptor,
-			// `id` и ссылки «пункт ↔ подменю»
+			// `id` и ссылки «пункт ↔ подменю»; `id` строки — проп `id` или от
+			// монтирования
+			IdPluginDescriptor,
 			MenuPopupIdsPluginDescriptor,
 		],
 	}),

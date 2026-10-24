@@ -5,12 +5,13 @@
  */
 
 import type { ISwitch } from '@soldy-ui/core'
+import type { TSwitchOutputs } from './setup.component'
 import { bind, ownerAttributes, type ITemplate } from '../../adapter'
 
 /** Поле каждого переключателя — одно на всё время жизни элемента. */
 const fields = new WeakMap<HTMLElement, HTMLInputElement>()
 
-export const switchTemplate: ITemplate<ISwitch> = {
+export const switchTemplate: ITemplate<ISwitch, unknown, TSwitchOutputs> = {
 	create: (root) => {
 		const { ownerDocument } = root
 		const field = ownerDocument.createElement('input')

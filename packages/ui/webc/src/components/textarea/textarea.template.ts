@@ -5,6 +5,7 @@
  */
 
 import type { ITextarea } from '@soldy-ui/core'
+import type { TTextareaOutputs } from './setup.component'
 import type { TStateSnapshot } from '@soldy-ui/setup'
 import { bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
 
@@ -23,7 +24,7 @@ function counterText(state: TStateSnapshot): string {
 	return typeof text === 'string' ? text : ''
 }
 
-export const textareaTemplate: ITemplate<ITextarea> = {
+export const textareaTemplate: ITemplate<ITextarea, unknown, TTextareaOutputs> = {
 	create: (root) => {
 		const { ownerDocument } = root
 		const field = ownerDocument.createElement('textarea')
