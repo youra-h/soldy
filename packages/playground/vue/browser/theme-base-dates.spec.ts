@@ -25,7 +25,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { createEngineToasts, TDatePicker } from '@soldy-ui/core'

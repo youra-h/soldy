@@ -41,7 +41,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { createEngineToasts } from '@soldy-ui/core'

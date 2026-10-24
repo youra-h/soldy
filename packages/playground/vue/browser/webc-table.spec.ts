@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h, nextTick } from 'vue'
 import { createEngineTable } from '@soldy-ui/core'
 import type { TTableCollection, TTableColumnSource, TTableRecord } from '@soldy-ui/core'

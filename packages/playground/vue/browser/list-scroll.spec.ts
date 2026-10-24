@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { Button, ListBox, Menu, Select } from '@soldy-ui/vue'

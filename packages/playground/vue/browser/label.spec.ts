@@ -24,7 +24,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type Component, type VNode } from 'vue'
 import type { TComponentSize, TDirection, TLabelPosition } from '@soldy-ui/core'

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { createEngineTable } from '@soldy-ui/core'

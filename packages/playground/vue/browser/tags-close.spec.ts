@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { BUTTON_VIEWS, COMPONENT_SIZES, COMPONENT_VARIANTS } from '@soldy-ui/playground-shared'

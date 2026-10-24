@@ -24,7 +24,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import type { TComponentSize } from '@soldy-ui/core'
@@ -202,7 +202,7 @@ function contentBottom(list: HTMLElement): number {
 
 /** Подсказка Field размера `size` — своей сценой на той же странице. */
 async function fieldHelper(size: TComponentSize = 'normal'): Promise<HTMLElement> {
-	const { container } = await render(
+	const container = render(
 		defineComponent({
 			render: () => h(Field, { size, helper: 'Не покажем никому' }, () => h(Input)),
 		}),

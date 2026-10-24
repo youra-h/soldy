@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { render } from 'vitest-browser-vue'
+import { render } from './render'
 import { router } from '../src/router'
 import TestsSidebar from '../src/components/TestsSidebar.vue'
 
@@ -22,7 +22,7 @@ describe('меню страницы тестов', () => {
 		await router.push('/vue/tests')
 		await router.isReady()
 
-		render(TestsSidebar, { global: { plugins: [router] } })
+		render(TestsSidebar, { plugins: [router] })
 		await nextFrame()
 
 		const columns = [...document.querySelectorAll('.pg__sidebar-column')]

@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { ListBox } from '@soldy-ui/vue'
@@ -51,7 +51,7 @@ beforeEach(async () => {
 	await router.push('/vue/button')
 	await router.isReady()
 
-	render(AppSidebar, { global: { plugins: [router] } })
+	render(AppSidebar, { plugins: [router] })
 	await nextFrame()
 })
 

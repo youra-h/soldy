@@ -29,7 +29,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h, nextTick } from 'vue'
 import { useIcons } from '@soldy-ui/setup'
 import * as lucide from '@soldy-ui/icons-lucide'

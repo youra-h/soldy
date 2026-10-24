@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h, nextTick, type VNodeChild } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import {
