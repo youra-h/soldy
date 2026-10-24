@@ -26,19 +26,21 @@ this package — the theme already carries it.
   it — `:dir()` does not survive minification, and a `[dir]` selector on an ancestor does not see
   the nearest `dir`.
 - **The structure of the components** — layout and mechanics: where a part stands, what catches a
-  click, cursors, how a disabled component fades. So far for Label, Field, Icon, Switch, CheckBox,
-  RadioGroup, Button, Input, Textarea, NumberInput, Tabs, Tags, Accordion, ListBox, Menu, Select,
-  Popover, Tooltip, Dialog, Drawer, Scroller, Slider, Rating, ProgressLinear, ProgressSpinner,
-  Skeleton, Pagination, Calendar, DateInput, DatePicker, Toasts and DragAndDrop; the rest of the
-  components follow. Without a theme they are bare but working: a switch toggles by a click on its
-  track, a label toggles its control, the slots of a button and of a field stay at its edges, a tabs
-  list stands on its side of the panel, a row of tags scrolls, a collapsed accordion section takes
-  no room, a closed panel lets clicks through, the body of a dialog scrolls under a header and a
-  footer that stay in place, a drawer stands at its edge, the thumbs of a slider sit at the ends of
-  the travel and a click sets the value under the pointer, a click on a star sets its number, a
-  scroller pages to the start of an item, the cells of a pagination are as tall as a button, a
-  calendar lays its days out in seven columns, a date picker opens its panel at the field, and
-  toasts stand in their corner of the window, stacked behind the front one when they cascade.
+  click, cursors, how a disabled component fades. For every component: Label, Field, Icon, Switch,
+  CheckBox, RadioGroup, Button, Input, Textarea, NumberInput, Tabs, Tags, Accordion, ListBox, Menu,
+  Select, Popover, Tooltip, Dialog, Drawer, Scroller, Slider, Rating, ProgressLinear,
+  ProgressSpinner, Skeleton, Pagination, Calendar, DateInput, DatePicker, Toasts, DragAndDrop and
+  Table. Without a theme they are bare but working: a switch toggles by a click on its track, a
+  label toggles its control, the slots of a button and of a field stay at its edges, a tabs list
+  stands on its side of the panel, a row of tags scrolls, a collapsed accordion section takes no
+  room, a closed panel lets clicks through, the body of a dialog scrolls under a header and a footer
+  that stay in place, a drawer stands at its edge, the thumbs of a slider sit at the ends of the
+  travel and a click sets the value under the pointer, a click on a star sets its number, a scroller
+  pages to the start of an item, the cells of a pagination are as tall as a button, a calendar lays
+  its days out in seven columns, a date picker opens its panel at the field, toasts stand in their
+  corner of the window, stacked behind the front one when they cascade, and a table with known
+  column widths is as wide as their sum, scrolls sideways in its window when wider than its place,
+  and keeps a sticky head at the top of the scroll with the rows passing under it unseen.
 - **The size scales** — heights, paddings, gaps and font sizes per size — as variables on the
   document root with defaults, such as `--so-button-height-sm` or `--so-caption-gap-lg`. A theme
   sets its own numbers there, an application on an ancestor of its area.
@@ -49,9 +51,12 @@ width of the fade at the edge of a scrolling row of tags or of a scroller, the t
 separator, the edge of a slider thumb — the theme sets it in a variable, and without a theme it is
 zero. The surface of an overlay panel is the
 theme's too: the theme paints the panel with `--so-panel-surface`, and this package announces it
-as the surface of the place inside the panel. Every variable a theme may set is listed with its
-meaning in `theme-variables.json`, and so are those the library writes itself, such as the size of
-a dialog, and the one the theme's behavior writes — the height of the front toast in a stack.
+as the surface of the place inside the panel. The surface of the page is announced by the theme and
+that of a card by the application, in `--so-place-surface`: the sticky head of a table takes it as
+its opaque underlay. Every variable a theme may set is listed with its meaning in
+`theme-variables.json`, and so are those the library writes itself, such as the size of a dialog,
+and those the theme's behavior writes — the height of the front toast in a stack and of the sticky
+head of a table.
 
 ## Usage in a theme
 

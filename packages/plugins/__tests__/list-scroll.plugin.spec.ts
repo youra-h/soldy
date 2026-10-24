@@ -253,3 +253,99 @@ describe('элементы в группах', () => {
 		expect(groupScrollTo).not.toHaveBeenCalled()
 	})
 })
+
+/**
+ * Прокрутка за выбором — к элементу, который стал выбранным. В `multiple`
+ * выбранных несколько, и первый из них — не тот, что выбрали сейчас: список
+ * уезжал к первому выбранному, а при `smooth` — проходом через всё между ними.
+ * Снятие выбора не крутит. Окна нет — все элементы в документе, а за краем
+ * окна списка — элементы ниже `ROWS` шагов.
+ */
+describe('прокрутка за выбором в multiple', () => {
+	/** Список из 40 элементов с выбранными `value`; начальная прокрутка уже прошла. */
+	async function mountMultiple(value: string[]) {
+		const owner = new TListBox({ value, scrollBehavior: 'smooth' })
+		const facade = new TListBoxCollectionFacade(
+			{
+				mode: 'multiple',
+				items: Array.from({ length: 40 }, (_, index) => ({ value: `v${index + 1}` })),
+			},
+			{ owner },
+		)
+		const engine = facade.engine
+		const root = document.body.appendChild(document.createElement('div'))
+		const list = root.appendChild(document.createElement('div'))
+		const scrollTo = vi.fn()
+
+		list.setAttribute('role', 'listbox')
+		list.getBoundingClientRect = () =>
+			DOMRect.fromRect({ x: 0, y: 0, width: 200, height: ROWS * STEP })
+		Object.defineProperty(list, 'clientHeight', { value: ROWS * STEP })
+		Object.defineProperty(list, 'scrollTo', { value: scrollTo })
+
+		const bundle = new TPluginBundle(owner)
+			.use(TElementPlugin)
+			.use(TCollectionBundlesPlugin)
+			.use(TCollectionElements)
+			.use(TListScrollPlugin)
+
+		bundles.push(bundle)
+
+		const registry = pluginOf(bundle, TCollectionBundlesPlugin)
+
+		registry.bindEngine(engine)
+
+		engine.extensions.batch.items.forEach((item, place) => {
+			const itemBundle = new TPluginBundle(item).use(TElementPlugin)
+			const node = list.appendChild(document.createElement('div'))
+
+			node.getBoundingClientRect = () =>
+				DOMRect.fromRect({ x: 0, y: place * STEP, width: 200, height: STEP })
+			bundles.push(itemBundle)
+			registry.register(itemBundle, item)
+			pluginOf(itemBundle, TElementPlugin).element = node
+		})
+
+		pluginOf(bundle, TElementPlugin).element = root
+		await nextFrame()
+		scrollTo.mockClear()
+
+		return {
+			selection: engine.extensions.selection,
+			items: engine.extensions.batch.items,
+			scrollTo,
+		}
+	}
+
+	it('выбор крутит к новому выбранному, а не к первому', async () => {
+		const { selection, items, scrollTo } = await mountMultiple(['v1'])
+
+		selection.select(items[30])
+		await nextFrame()
+
+		expect(scrollTo).toHaveBeenCalledOnce()
+		expect(scrollTo).toHaveBeenCalledWith(
+			expect.objectContaining({ top: 30 * STEP - (ROWS * STEP) / 2 }),
+		)
+	})
+
+	it('выбор видимого элемента не уводит список к первому выбранному', async () => {
+		// Коробки за прокруткой не едут: первый выбранный остаётся за краем окна
+		// списка, как после того, как список листнули к началу
+		const { selection, items, scrollTo } = await mountMultiple(['v31'])
+
+		selection.select(items[1])
+		await nextFrame()
+
+		expect(scrollTo).not.toHaveBeenCalled()
+	})
+
+	it('снятие выбора не крутит', async () => {
+		const { selection, items, scrollTo } = await mountMultiple(['v1', 'v31'])
+
+		selection.deselect(items[0])
+		await nextFrame()
+
+		expect(scrollTo).not.toHaveBeenCalled()
+	})
+})

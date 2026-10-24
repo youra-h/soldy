@@ -6,6 +6,7 @@ import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { TListKeyboardPlugin } from '../keyboard'
+import { newlySelected } from '../newly-selected'
 import { closestList } from '../row'
 import type { TListScrollPluginEvents } from './types'
 
@@ -110,12 +111,23 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		super.destroy()
 	}
 
+	/**
+	 * Прокрутка за выбором — к элементу, который стал выбранным
+	 * (`newlySelected`), тем же правилом, что позиция клавиатуры. Не к первому
+	 * выбранному: в `multiple` выбор видимого элемента уводил бы список к
+	 * первому выбранному, а при `smooth` — проходом через всё между ними.
+	 * Снятие выбора не крутит.
+	 */
 	private _subscribeToEngine(engine: TCollectionEngine<any, any>): void {
-		this._listenTo(selectionOf<IControl>(engine)?.events, 'change:selection', (items) => {
+		const selection = selectionOf<IControl>(engine)
+
+		this._listenTo(selection?.events, 'change:selection', (items, changed) => {
 			this._awaitedUid = null
 
-			if (items.length > 0) {
-				const { uid } = items[0]
+			const item = newlySelected(items, changed)
+
+			if (item) {
+				const { uid } = item
 
 				this._schedule(() => this._follow(uid, 'center'))
 			}

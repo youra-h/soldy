@@ -8,7 +8,8 @@ declare const __SOLDY_VERSION__: string
  * типов у него нет. Подключают его только спеки «база без темы»
  * (`browser/theme-base-controls.spec.ts`, `browser/theme-base-fields.spec.ts`,
  * `browser/theme-base-layers.spec.ts`, `browser/theme-base-scales.spec.ts`,
- * `browser/theme-base-dates.spec.ts`), побочным импортом, как лист темы.
+ * `browser/theme-base-dates.spec.ts`, `browser/theme-base-table.spec.ts`),
+ * побочным импортом, как лист темы.
  */
 declare module '@soldy-ui/theme-base' {}
 

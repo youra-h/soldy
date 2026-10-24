@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 
 /**
- * Клик по полю Select — `TSelectPointerPlugin`.
+ * Указатель на поле Select — `TSelectPointerPlugin`.
  *
- * Два режима, два обработчика: select-only тумблит панель кликом по всему
- * полю, `editable` — только кликом по `.so-select__arrow`. Выбор между ними —
- * подписка на `change:editable`, поэтому проверяется и переключение на лету.
+ * Клик: select-only тумблит панель кликом по всему полю, `editable` — только
+ * кликом по `.so-select__arrow`. Режим плагин узнаёт по `change:editable`,
+ * поэтому проверяется и переключение на лету.
+ *
+ * Нажатие — одно правило в обоих режимах: мимо контролов поля (стрелка,
+ * коробка) оно гасится, и фокус встаёт в поле; нажатие по самому полю и по
+ * кнопке в корне плагин не трогает. Что погашенное нажатие не уносит фокус на
+ * `body`, jsdom не покажет — действия `mousedown` он не выполняет; это
+ * сторожит «нажатие по стрелке» в `playground/vue/browser/select.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -22,11 +28,14 @@ async function setup(props: Partial<ISelectProps> = {}) {
 	const root = document.createElement('div')
 	const field = document.createElement('input')
 	const arrow = document.createElement('span')
+	// Контрол в корне со своим нажатием — заглушка кнопки очистки
+	const clear = document.createElement('button')
+	// Контрол снаружи Select: на нём фокус до нажатия
+	const outside = document.createElement('button')
 
 	arrow.className = 'so-select__arrow'
-	root.appendChild(field)
-	root.appendChild(arrow)
-	document.body.appendChild(root)
+	root.append(field, clear, arrow)
+	document.body.append(outside, root)
 
 	const rootElement = new TElementPlugin()
 	const pointer = new TSelectPointerPlugin()
@@ -38,7 +47,16 @@ async function setup(props: Partial<ISelectProps> = {}) {
 	rootElement.element = root
 	await nextFrame()
 
-	return { owner, root, field, arrow }
+	return { owner, root, field, arrow, clear, outside, rootElement }
+}
+
+/** `mousedown`, которое можно погасить; `button` — 0 основная, 2 правая. */
+function mousedown(target: Element, button = 0): MouseEvent {
+	const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button })
+
+	target.dispatchEvent(event)
+
+	return event
 }
 
 afterEach(() => {
@@ -83,25 +101,93 @@ describe('editable', () => {
 		arrow.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		expect(owner.open).toBe(false)
 	})
+})
 
-	it('mousedown по стрелке гасится — не уводит фокус с input', async () => {
-		const { arrow } = await setup({ editable: true })
+/**
+ * DOM-фокус комбобокса — на поле, и части поля без своего контрола его не
+ * забирают: иначе клавиши с `body` до корня не дошли бы, и стрелки после
+ * открытия кликом по стрелке прокручивали бы страницу.
+ */
+describe.each<[string, Partial<ISelectProps>]>([
+	['select-only', {}],
+	['editable', { editable: true }],
+])('нажатие · %s', (_, props) => {
+	it('по стрелке гасится, и фокус встаёт в поле', async () => {
+		const { field, arrow, outside } = await setup(props)
 
-		const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+		outside.focus()
 
-		arrow.dispatchEvent(event)
-
-		expect(event.defaultPrevented).toBe(true)
+		expect(mousedown(arrow).defaultPrevented).toBe(true)
+		expect(document.activeElement).toBe(field)
 	})
 
-	it('mousedown по тексту поля не гасится', async () => {
-		const { field } = await setup({ editable: true })
+	it('по коробке поля гасится, и фокус встаёт в поле', async () => {
+		const { root, field, outside } = await setup(props)
 
-		const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+		outside.focus()
 
-		field.dispatchEvent(event)
+		expect(mousedown(root).defaultPrevented).toBe(true)
+		expect(document.activeElement).toBe(field)
+	})
 
-		expect(event.defaultPrevented).toBe(false)
+	it('по самому полю не гасится', async () => {
+		const { field } = await setup(props)
+
+		expect(mousedown(field).defaultPrevented).toBe(false)
+	})
+
+	it('по кнопке в корне не гасится, и фокус остаётся, где был', async () => {
+		const { clear, outside } = await setup(props)
+
+		outside.focus()
+
+		expect(mousedown(clear).defaultPrevented).toBe(false)
+		expect(document.activeElement).toBe(outside)
+	})
+
+	it('правой кнопкой не гасится, и фокус остаётся, где был', async () => {
+		const { arrow, outside } = await setup(props)
+
+		outside.focus()
+
+		expect(mousedown(arrow, 2).defaultPrevented).toBe(false)
+		expect(document.activeElement).toBe(outside)
+	})
+})
+
+describe('корень', () => {
+	it('снятый корень плагин не слушает', async () => {
+		const { owner, arrow, rootElement } = await setup()
+
+		rootElement.element = null
+
+		arrow.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+		expect(mousedown(arrow).defaultPrevented).toBe(false)
+		expect(owner.open).toBe(false)
+	})
+
+	it('новый корень — слушатели на нём, прежний отпущен', async () => {
+		const { owner, root, arrow, rootElement } = await setup()
+		const next = root.cloneNode(true)
+
+		if (!(next instanceof Element)) throw new Error('копия корня — не элемент')
+
+		document.body.append(next)
+		rootElement.element = next
+		await nextFrame()
+
+		expect(mousedown(arrow).defaultPrevented, 'стрелка прежнего корня').toBe(false)
+
+		const nextArrow = next.querySelector('.so-select__arrow')
+
+		if (!nextArrow) throw new Error('стрелки в новом корне нет')
+
+		expect(mousedown(nextArrow).defaultPrevented, 'стрелка нового корня').toBe(true)
+		expect(document.activeElement).toBe(next.querySelector('input'))
+
+		nextArrow.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		expect(owner.open).toBe(true)
 	})
 })
 
