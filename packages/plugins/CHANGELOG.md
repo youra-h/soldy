@@ -1,5 +1,36 @@
 # @soldy-ui/plugins
 
+## 0.3.0-alpha.3
+
+### Minor Changes
+
+- 11e25c7: Tabs: слоты `leading` и `trailing` стоят не в списке табов, а рядом с ним, в новом ряду `.so-tabs__bar`, — выравнивание `center`, `end` и `stretch` работает со слотами, а в `[role=tablist]` остались только табы. Обновление: классы слотов — `.so-tabs__leading` и `.so-tabs__trailing` вместо `.so-tabs__list--leading` и `.so-tabs__list--trailing`; `.so-tabs > .so-tabs__list` пишите через ряд: `.so-tabs > .so-tabs__bar > .so-tabs__list`. Своя тема: `--so-tabs-active-*` и `--so-tabs-gap-*` плагин раскладки пишет на ряд, место таба отсчитывается от него — линию и отметку рисуйте на ряду; поле `listEl` у `TActiveTabOffset` переименовано в `barEl`.
+- fc30695: ListBox объявляет скринридеру элемент под стрелками: у элементов `id`, узел списка ссылается на подсвеченный через `aria-activedescendant`. `TSelectItemIdsPlugin` → `TOptionIdsPlugin`, `SelectItemIdsPluginDescriptor` → `OptionIdsPluginDescriptor`: замените импорт. `onHighlightChanged(null)` наследника `TListNavigationPlugin` приходит и от `trackHighlight`, гасящего отметку. `bundle:unregistered` реестра наборов (`TCollectionBundlesPlugin`) приходит и тогда, когда элемент ушёл из коллекции, а не только когда снято его монтирование.
+- 64be9ca: Прокрутка списков одна на ListBox, Select и Menu: за установкой value и за подсветкой, откуда бы они ни пришли. Подсветка докручивает элемент ближайшим краем; value двигает только сам список — частично видный элемент ближайшим краем, невидимый в центр. `change:highlight` навигации списка сообщает о видимой подсветке, позиция без отметки его не шлёт. `TMenuNavigationPlugin.highlightItem` и `unhighlight` больше не принимают `FocusOptions`: фокус меню не прокручивает. `TListScrollPlugin` слушает подсветку навигации, которую называет опция `navigation` (`ListScrollPluginDescriptor.with({ navigation: TListKeyboardPlugin })`); без опции он идёт только за значением.
+- 7a86466: `id`, который задаёт приложение, держит новый `TIdPlugin` (проп `id`) — у полей и у элементов ListBox, Select, Tabs, Accordion и пунктов меню со своей панелью: ссылки ARIA ведут на этот `id`, а в Angular он больше не теряется. Сломалось: свойства `id` и события `change:id` у `TInputControl` (Input, NumberInput, Textarea, CheckBox, Switch, Rating, Select, DateInput, DatePicker) больше нет — задавайте `id` пропом компонента, читайте из состояния; `id` в данных `items` не поддерживается — ссылайтесь на элемент по `value`. `IFieldInputControl` и `TFieldControl` удалены — связка поля видит контрол как `IFieldControl`. В Web Components `el.ctrl.id` больше нет: `el.id = …` и `setAttribute('id', …)` у элемента с полем уходят на поле (пустой — снят), прочесть — `el.state.id`. Тип состояния адаптера (`TAdapterState`) называет и входы плагинов; новый тип `DescriptorPluginProps`.
+
+### Patch Changes
+
+- a14dfe5: Select: нажатие по стрелке и другим немым частям поля оставляет фокус в поле, как у нативного `<select>`, — стрелки после открытия кликом по стрелке больше не прокручивают страницу
+- 0ab715a: Tabs: таб, закрытый крестиком, отдаёт фокус табу-остановке — соседу, который стал активным, или активному табу; после последнего таба фокус уходит к следующему контролу за списком — так же и при `Delete`
+- 28470f6: Tags без выбора: строка тега больше не берёт фокус от клика (у неё нет `tabindex`), а `focused = true` тега ставит фокус на его крестик; строку рисует новый `TItemRow` — кнопка, чью роль и остановку Tab пишет владелец
+- 0471962: Tabs: свой `id` на `Tabs.Content` — проп `id` (`TIdPlugin`): он стоит на панели вместо формулы таба, и `aria-controls` таба ведёт на него, а в Angular `id` панели больше не теряется. Ссылку таб получает со входа панели: в разметке сервера Vue, React, Svelte и Solid таб до гидратации ведёт на формулу, а `id` панели уже свой. `TTabsItemIdsPlugin` получил `bindPanel` и `unbindPanel`, `TCollectionExtension` опускает детям реестр наборов коллекции. В Web Components пустой `id` у панели, поля даты и DatePicker снимает проп, как у полей.
+- fcd14b4: ListBox в `multiple`: выбор больше не уводит подсветку и прокрутку к первому выбранному
+- a09886b: ListBox: стрелка подсвечивает единственный доступный элемент, даже выбранный или после клика по нему, и скринридер его называет
+- 241082a: Tags: тег, закрытый крестиком, отдаёт фокус соседнему тегу, последний — следующему контролу; в поле Select фокус после последнего тега остаётся в поле
+- 734ff59: Select, снятый при подсвеченной опции, убирает с поля `aria-activedescendant`: смонтированный заново со своим `ctrl`, он не ссылается на опцию, которой нет
+- b6d9450: Select: нажатие по тегу в поле оставляет фокус в поле — стрелки после этого ходят по опциям, а не прокручивают страницу
+- b5a5d78: Окно Virtual не сползает к началу списка, пока список скрыт: нарисованные элементы без коробок плагин не мерит
+- ad1de00: Список, показанный после скрытия (панель Select, ListBox в закрытом поповере или вкладке), открывается на первом выбранном — с `Virtual` и без, при каждом показе. Новое у `TListHeightPlugin`: `measured` и `change:measured`.
+- 53a3fe6: ListBox: клавиша со строки, на которой стоит фокус после клика, возвращает фокус узлу списка и действует от этой строки — кольцо фокуса не застревает на строке, Shift+Tab выводит из списка одним нажатием
+- Updated dependencies [8110fc3]
+- Updated dependencies [582d3a6]
+- Updated dependencies [28470f6]
+- Updated dependencies [0471962]
+- Updated dependencies [fc30695]
+- Updated dependencies [7a86466]
+  - @soldy-ui/core@0.3.0-alpha.3
+
 ## 0.3.0-alpha.2
 
 ### Patch Changes

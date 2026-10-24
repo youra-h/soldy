@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/react",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.3",
   "description": "Адаптер React: компоненты на headless-моделях ядра",
   "keywords": [
     "soldy",
@@ -40,17 +40,17 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.2",
-    "@soldy-ui/plugins": "0.3.0-alpha.2",
-    "@soldy-ui/setup": "0.3.0-alpha.2"
+    "@soldy-ui/core": "0.3.0-alpha.3",
+    "@soldy-ui/plugins": "0.3.0-alpha.3",
+    "@soldy-ui/setup": "0.3.0-alpha.3"
   },
   "peerDependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@soldy-ui/icons-material": "0.3.0-alpha.2",
-    "@soldy-ui/theme-oren": "0.3.0-alpha.2",
+    "@soldy-ui/icons-material": "0.3.0-alpha.3",
+    "@soldy-ui/theme-oren": "0.3.0-alpha.3",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
