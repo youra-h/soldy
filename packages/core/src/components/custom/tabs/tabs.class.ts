@@ -72,6 +72,7 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents> implements ITabs {
 		// ходить по списку, — у вертикального это ↑/↓ (`TTabsKeyboardPlugin`)
 		this._aria.add('aria-orientation', newValue)
 		this._orientation = newValue
+		this._syncPositionClass()
 	}
 
 	/**
@@ -109,17 +110,27 @@ export class TTabs extends TControl<ITabsProps, TTabsEvents> implements ITabs {
 
 	set position(value: TTabsPosition) {
 		if (this._position !== value) {
-			this._applyPosition(value, this._position)
+			this._applyPosition(value)
 			this.events.emit('change:position', value)
 		}
 	}
 
-	protected _applyPosition(newValue: TTabsPosition, oldValue?: TTabsPosition) {
-		this._classes.remove(`--position-${oldValue}`)
-		if (this._orientation === 'vertical' && newValue !== 'start') {
-			this._classes.add(`--position-${newValue}`)
-		}
+	protected _applyPosition(newValue: TTabsPosition) {
 		this._position = newValue
+		this._syncPositionClass()
+	}
+
+	/**
+	 * Модификатор стороны выводится из пары «ориентация, сторона», поэтому его
+	 * пересчитывает смена любой из двух: сторона бывает только у вертикального
+	 * списка, и `--position-end` стоит у вертикальных с `end`. У `start`
+	 * модификатора нет — это сторона по умолчанию.
+	 */
+	protected _syncPositionClass(): void {
+		this._classes.toggle(
+			'--position-end',
+			this._orientation === 'vertical' && this._position === 'end',
+		)
 	}
 
 	get view(): TTabsView | undefined {
