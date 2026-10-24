@@ -15,7 +15,7 @@ import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from
 import { TButtonElement, registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** Строка — на `div`: это тег экземпляра строки, под него ядро пишет тегу ARIA (`TTagsItem._ariaTag`). */
+/** Строка — на `div`, теге её экземпляра: под него ядро пишет тегу ARIA (`TTagsItem._ariaTag`). */
 const TButtonDivElement = registerButtonTag('div')
 
 type TTagParts = {

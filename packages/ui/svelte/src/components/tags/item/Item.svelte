@@ -11,7 +11,7 @@
 	const binding = setupTagsItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет тег (`TOwnedButton` на `div`): тег, размер, вариант,
+	// Строка — экземпляр, которым владеет тег (`TOwnedButton` на `div`): размер, вариант,
 	// выключенность и направление ей пишет тег, а роль и `tabindex` — его набор `aria`
 	const row = binding.ctrl.row
 
