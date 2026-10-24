@@ -28,8 +28,9 @@
  * правила разных блоков с одной специфичностью спорят порядком. Модальный
  * слой стоит перед окном, а не с общими шкалами: его кнопки шапки снимают поле
  * размера Button той же специфичностью, и он обязан быть ниже `button.css`.
- * Так же снимают шкалу Button кнопки листания Scroller и стрелки Pagination —
- * их файлы ниже него по порядку темы. */
+ * Так же снимают шкалу Button кнопки листания Calendar и Scroller, кнопки
+ * DateInput и DatePicker, стрелки Pagination и крестик тоста — их файлы ниже
+ * него по порядку темы. */
 
 @layer so.reset;
 
@@ -46,8 +47,12 @@
 @import './components/button.css' layer(so);
 @import './components/check-box.css' layer(so);
 @import './components/accordion.css' layer(so);
+@import './components/calendar.css' layer(so);
+@import './components/date-input.css' layer(so);
+@import './components/date-picker.css' layer(so);
 @import './modal.css' layer(so);
 @import './components/dialog.css' layer(so);
+@import './components/drag-and-drop.css' layer(so);
 @import './components/drawer.css' layer(so);
 @import './components/icon.css' layer(so);
 @import './components/input.css' layer(so);
@@ -70,4 +75,5 @@
 @import './components/tabs.css' layer(so);
 @import './components/tags.css' layer(so);
 @import './components/textarea.css' layer(so);
+@import './components/toasts.css' layer(so);
 @import './components/tooltip.css' layer(so);

@@ -1,6 +1,10 @@
+// DragAndDrop — взятый элемент коллекции (`.so-drag-and-drop__item`, класс
+// ставит плагин жеста, пока жест идёт). Что взятый текст не выделяет — общий
+// слой тем (`components/drag-and-drop.css` в `@soldy-ui/theme-base`). Здесь —
+// облик: взятый приглушён, приподнят тенью и покрыт узором. Узор рисует только
+// тема, и он здесь весь, с местом.
 .so-drag-and-drop {
 	&__item {
-		@apply select-none;
 		@apply relative rounded-lg;
 		@apply isolate;
 		@apply shadow-sm;

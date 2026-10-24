@@ -7,10 +7,8 @@
 // проявление и исчезание (`fade-look`) и жест — смахнуть, чтобы закрыть.
 //
 // Структура — закрытая панель не ловит нажатий, полоса жеста у края со
-// стороны якоря и её штрих, курсоры жеста — у Popover и Select в общем слое
-// тем (`anchored.css` и `swipe.css` в `@soldy-ui/theme-base`). У DatePicker,
-// чья структура ещё здесь, её ставит `panel` вместе с обликом, теми же
-// числами: с переносом его структуры `panel` уйдёт.
+// стороны якоря и её штрих, курсоры жеста — в общем слое тем (`anchored.css`
+// и `swipe.css` в `@soldy-ui/theme-base`).
 
 // Появление и исчезание панели — переход темы по `data-open`, как у Dialog:
 // хуков под анимацию у кода нет. Атрибут пишет слой панели (Frame), поэтому он
@@ -27,8 +25,8 @@
 // этого движется — это надстройка `panel-look` (смахнутая уходит от якоря) и
 // Popover (в контейнере — к своему краю).
 //
-// Закрытая панель, пока гаснет, нажатий не ловит — это структура: у панелей
-// в общем слое тем её ставит он, у DatePicker — `panel`.
+// Закрытая панель, пока гаснет, нажатий не ловит — это структура, её ставит
+// общий слой тем.
 @mixin fade-look {
 	transition-property: opacity, display;
 	transition-behavior: allow-discrete;
@@ -134,46 +132,4 @@
 			}
 		}
 	}
-}
-
-// Панель у якоря целиком — структура и облик (`panel-look`) — у DatePicker,
-// чья структура ещё здесь.
-//
-// Закрытая панель нажатий не ловит: она уже не открыта, и нажатие сквозь неё
-// — нажатие по тому, что под ней.
-//
-// Полоса стоит там, откуда панель тянут, — у края со стороны якоря. Зона
-// захвата — поле панели с этой стороны, поэтому содержимое полоса не
-// накрывает, а раскладка содержимого остаётся прежней. Тянут — курсор
-// «держу», и по всей панели, куда бы он ни ушёл.
-@mixin panel($handle) {
-	&[data-open='false'] {
-		@apply pointer-events-none;
-	}
-
-	&:has(> #{$handle}) {
-		padding-block-start: swipe.$handle;
-
-		&[data-placement^='top'] {
-			padding-block-start: 0;
-			padding-block-end: swipe.$handle;
-		}
-
-		&[data-swiping='true'] {
-			@apply cursor-grabbing;
-		}
-	}
-
-	> #{$handle} {
-		@apply absolute inset-x-0 top-0;
-		block-size: swipe.$handle;
-		@include swipe.handle;
-		@include swipe.grip;
-	}
-
-	&[data-placement^='top'] > #{$handle} {
-		@apply top-auto bottom-0;
-	}
-
-	@include panel-look($handle);
 }

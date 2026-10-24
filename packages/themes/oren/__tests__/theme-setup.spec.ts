@@ -8,8 +8,9 @@ import oren, { TTableHeadPlugin, TTabsViewPlugin, TToastsFrontPlugin } from '../
  * читает её CSS. Полосу под активным табом рисует `_tabs.scss` по переменным
  * `TTabsViewPlugin` — без регистрации её нет. Отступ прокрутки к фокусу под
  * закреплённой шапкой Table `_table.scss` берёт из высоты шапки, которую пишет
- * `TTableHeadPlugin`, а высоту задних тостов стопки `_toasts.scss` — из высоты
- * переднего от `TToastsFrontPlugin`.
+ * `TTableHeadPlugin`, а высоту задних тостов стопки общий слой тем
+ * (`components/toasts.css`) — из высоты переднего от `TToastsFrontPlugin`, и
+ * `_toasts.scss` ведёт её переходом.
  */
 
 let dispose: (() => void) | null = null
