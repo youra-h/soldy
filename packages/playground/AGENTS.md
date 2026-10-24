@@ -38,6 +38,16 @@ Playwright (конфиг `vitest.browser.config.ts`).
   её вместе с журналом ядра (OOM killer) и `/dev/shm` — шаг «Память и журнал
   ядра при падении»; вывод самого Chromium и код его выхода даёт
   `DEBUG=pw:browser`.
+- Спек зелёный локально и красный в CI — прогнать его на Linux, в образе
+  Playwright той версии, что в `package-lock.json`
+  (`mcr.microsoft.com/playwright:v<версия>-noble`): копия репозитория
+  (`git archive HEAD`) в контейнере, `npm ci`, `build:css` темы и
+  `vitest run --config vitest.browser.config.ts <спек>`. `node_modules`
+  с Windows в контейнер не годятся — нативные пакеты другие. Расходится,
+  например, плавная прокрутка: Chromium на Windows прокручивал `smooth`
+  мгновенно, на Linux — полсекунды и дольше, и замер через фиксированные кадры
+  застал список на полпути (`browser/list-scroll.spec.ts`). Отсюда правило
+  спеков: ждать состояния (`expect.poll`), а не времени.
 - Кнопку мыши `userEvent` жмёт только вместе с движением (`click`,
   `dragAndDrop`). Жесту с паузой при зажатой кнопке — команды `mouseDown` и
   `mouseUp` из `commands` (`vitest.browser.config.ts`, типы —

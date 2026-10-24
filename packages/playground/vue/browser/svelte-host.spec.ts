@@ -61,13 +61,36 @@ async function boxesOf(framework: string, component: string, selector: string, r
 	await router.push(`/${framework}/${component}`)
 	await settle()
 
+	return boxesIn(selector, row)
+}
+
+/**
+ * Рамки компонента Svelte ждут рамок Vue: раскладку превью хост досчитывает
+ * своими тактами — окно Virtual урезает ряд до видимых строк, когда измерит
+ * себя, — и под нагрузкой CI паузы `settle` не хватало: Svelte отдавал все 105
+ * строк ряда вместо 40. Ждётся совпадение, а не время; не сошлось за
+ * `timeout` — тест падает с последним замером.
+ */
+async function expectSvelteLikeVue(component: string, selector: string, row = 'visible') {
+	const vue = await boxesOf('vue', component, selector, row)
+
+	expect(vue[0].width).toBeGreaterThan(0)
+
+	await router.push(`/svelte/${component}`)
+	await expect.poll(() => boxesIn(selector, row), { timeout: 5000 }).toEqual(vue)
+
+	return vue
+}
+
+/** Рамки частей в сцене строки `row` текущей страницы — как у `boxesOf`. */
+function boxesIn(selector: string, row: string) {
 	const stage = propRow(row).querySelector('.pg-col__stage')
 	const parts = [...(stage?.querySelectorAll(selector) ?? [])].filter(
 		(part) => part.getClientRects().length > 0,
 	)
 
 	if (!stage || parts.length === 0) {
-		throw new Error(`${framework}/${component}: в сцене нет ${selector}`)
+		throw new Error(`${router.currentRoute.value.fullPath}: в сцене нет ${selector}`)
 	}
 
 	const outer = stage.getBoundingClientRect()
@@ -229,11 +252,7 @@ describe('хост Svelte', () => {
 		['drawer', '.so-button'],
 		['toasts', '.so-button'],
 	])('%s стоит в ячейке так же, как у Vue', async (component, selector) => {
-		const vue = await boxesOf('vue', component, selector)
-		const svelte = await boxesOf('svelte', component, selector)
-
-		expect(svelte[0].width).toBeGreaterThan(0)
-		expect(svelte).toEqual(vue)
+		await expectSvelteLikeVue(component, selector)
 	})
 
 	/**
@@ -244,12 +263,9 @@ describe('хост Svelte', () => {
 	it('virtual: ряд окна стоит в ячейке так же, как у Vue', async () => {
 		const selector =
 			'.so-list-box, .so-list-box-item, .so-select, .so-select__field, .so-table__viewport, .so-table, .so-table-row'
-		const vue = await boxesOf('vue', 'virtual', selector, 'enabled')
-		const svelte = await boxesOf('svelte', 'virtual', selector, 'enabled')
+		const vue = await expectSvelteLikeVue('virtual', selector, 'enabled')
 
-		expect(svelte.length).toBeGreaterThan(3)
-		expect(svelte[0].width).toBeGreaterThan(0)
-		expect(svelte).toEqual(vue)
+		expect(vue.length).toBeGreaterThan(3)
 	})
 
 	// Что открывает оверлей, его части и их число: панель, подложка,
