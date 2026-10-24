@@ -1,5 +1,4 @@
 @use './mixins' as mixines;
-@use '../../mixins/fade';
 @use '../../mixins/motion';
 @use '../../mixins/required' as required;
 
@@ -11,8 +10,6 @@
 // для чтения.
 .so-switch {
 	$this: &;
-
-	@include fade.fade-transition();
 
 	input {
 		&:focus-visible {
