@@ -812,6 +812,64 @@ describe('ссылка на элемент под стрелками', () => {
 	})
 
 	/**
+	 * Доступный элемент один — он один в списке или остальные выключены, — и
+	 * позиция уже стоит на нём без отметки: за выбором или на строке, с которой
+	 * пришла клавиша. Шаг по кругу приводит к нему же, и стрелка ставит отметку
+	 * на месте. Раньше навигация считала, что подсвечивать нечего — позиция та
+	 * же, — и стрелка не показывала ничего, а скринридер элемент не называл.
+	 */
+	describe('доступный элемент один — стрелка отмечает его', () => {
+		it.each(ARROWS)('один выбранный — %s ставит отметку и ссылку', async (_name, key) => {
+			const listBox = await setup(['Один'])
+			const { facade, keyboard, press } = listBox
+			const { batch, selection } = facade.engine.extensions
+
+			selection.select(batch.items[0])
+
+			// Позиция — на выбранном, без отметки
+			expect(keyboard.highlightedUid).toBe(batch.items[0].uid)
+			expect(marks(listBox)).toEqual([false])
+			expect(activeDescendant(listBox)).toBeNull()
+
+			press(key)
+
+			expect(marks(listBox)).toEqual([true])
+			expect(activeDescendant(listBox)).toBe(idOf(listBox, 0))
+		})
+
+		it.each(ARROWS)('выключенный и выбранный — %s отмечает выбранный', async (_name, key) => {
+			const listBox = await setup(['Один', 'Два'])
+			const { facade, items, press } = listBox
+			const { batch, selection } = facade.engine.extensions
+
+			items[0].disabled = true
+			selection.select(batch.items[1])
+			press(key)
+
+			expect(marks(listBox)).toEqual([false, true])
+			expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+		})
+
+		it.each(ARROWS)('клик по его строке, затем %s — отметка на нём', async (_name, key) => {
+			const listBox = await setup(['Один', 'Два', 'Три'])
+			const { facade, items, list, rows } = listBox
+			const { batch } = facade.engine.extensions
+
+			items[0].disabled = true
+			items[2].disabled = true
+
+			// Клик выбирает через расширение списка, фокус остаётся на строке
+			facade.engine.extensions.list.chooseItem(batch.items[1])
+			pressOnRow(rows[1], key)
+
+			expect(facade.selected).toEqual([items[1]])
+			expect(marks(listBox)).toEqual([false, true, false])
+			expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+			expect(document.activeElement).toBe(list)
+		})
+	})
+
+	/**
 	 * Клавиша со строки ставит позицию на её элемент без отметки, и отметка
 	 * прежнего элемента гаснет. Tab шага не делает — позиция без отметки, и
 	 * ссылки нет.
