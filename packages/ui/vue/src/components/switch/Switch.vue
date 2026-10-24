@@ -36,10 +36,8 @@ export default { ...SetupSwitch }
 		-->
 		<span class="so-switch__track" aria-hidden="true">
 			<span class="so-switch__track--thumb">
-				<transition name="fade" mode="out-in">
-					<slot v-if="!value" name="off" :value="value" :ctrl="ctrl"> </slot>
-					<slot v-else name="on" :value="value" :ctrl="ctrl"> </slot>
-				</transition>
+				<slot v-if="!value" name="off" :value="value" :ctrl="ctrl"> </slot>
+				<slot v-else name="on" :value="value" :ctrl="ctrl"> </slot>
 			</span>
 		</span>
 	</component>
