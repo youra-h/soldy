@@ -267,6 +267,21 @@ describe('замер', () => {
 		expect(warn).toHaveBeenCalledTimes(1)
 	})
 
+	it('список скрыт — коробок нет, замера нет, и окно стоит', async () => {
+		const { list, viewport } = await mountTable()
+
+		// Скрытый список: коробки всех элементов нулевые, как у `display: none`
+		for (const node of list.children) {
+			node.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: 0, width: 0, height: 0 })
+		}
+
+		viewport.mockClear()
+		window.dispatchEvent(new Event('scroll'))
+		await nextFrame()
+
+		expect(viewport).not.toHaveBeenCalled()
+	})
+
 	it('окно сняли — документ не слушается', async () => {
 		const { engine, viewport } = await mountTable()
 
