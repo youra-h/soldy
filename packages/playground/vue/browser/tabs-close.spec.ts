@@ -6,13 +6,15 @@
  * строкой, без зазора, и кончается вместе с табом; высота и кегль у него от
  * строки. Таб покрывает его целиком: подчёркивание, карточка активного таба,
  * наведение и прозрачность. Проверки сверяют крестик со строкой и табом, а не
- * с числами темы. В jsdom раскладки нет.
+ * с числами темы. В jsdom раскладки нет. Фокус от клика по крестику ставит
+ * браузер — jsdom его не ставит, — поэтому здесь же и то, куда фокус уходит,
+ * когда таб закрыт.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { Tabs, TabsItem } from '@soldy-ui/vue'
 
@@ -64,6 +66,8 @@ const tab = (value: 'a' | 'b' | 'c') => {
 const box = (element: Element) => element.getBoundingClientRect()
 
 const px = (value: string) => parseFloat(value)
+
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
  * Прозрачность, с которой узел виден на странице: своя, умноженная на
@@ -218,5 +222,76 @@ describe('прозрачность крестика — прозрачность
 
 		expect(visibleOpacity(row, item)).toBeGreaterThan(before)
 		expect(visibleOpacity(close, item)).toBeCloseTo(visibleOpacity(row, item), 2)
+	})
+})
+
+/**
+ * Крестик фокус от клика принимает (Chrome ставит его на `mousedown` и при
+ * `tabindex="-1"`), и узел закрытого таба уходит из документа вместе с ним:
+ * фокус уходил на страницу, и следующий Tab начинал обход с начала документа.
+ * Закрытый таб отдаёт фокус табу-остановке — соседу, который стал активным,
+ * или активному.
+ */
+describe('закрытый крестиком таб отдаёт фокус табу-остановке', () => {
+	/** Три таба, которые можно закрыть; активен первый. */
+	const show = async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h(Tabs, { closable: true }, () => [
+						h(TabsItem, { key: 'a', value: 'a', text: 'Настройки', active: true }),
+						h(TabsItem, { key: 'b', value: 'b', text: 'Почта' }),
+						h(TabsItem, { key: 'c', value: 'c', text: 'Архив' }),
+					]),
+			}),
+		)
+
+		// Клавиатура набора узнаёт узел корня кадром после привязки, а табы
+		// привязываются позже владельца
+		await nextTick()
+		await nextFrame()
+		await nextFrame()
+	}
+
+	/** Элемент таба по тексту строки — места табов сдвигаются, когда один закрыт. */
+	const itemOf = (text: string): HTMLElement => {
+		const found = [...document.querySelectorAll('.so-tabs-item')].find(
+			(item) => item.querySelector('[role="tab"]')?.textContent?.trim() === text,
+		)
+
+		if (!(found instanceof HTMLElement)) throw new Error(`таба «${text}» нет`)
+
+		return found
+	}
+
+	const rowOf = (text: string) => find('[role="tab"]', itemOf(text))
+
+	const closeOf = (text: string) => find('.so-tabs-item__close', itemOf(text))
+
+	const texts = () =>
+		[...document.querySelectorAll('.so-tabs-item [role="tab"]')].map((row) =>
+			row.textContent?.trim(),
+		)
+
+	it('активного — строке соседа, и он стал активным', async () => {
+		await show()
+
+		await userEvent.click(closeOf('Настройки'))
+		await expect.poll(texts).toEqual(['Почта', 'Архив'])
+
+		expect(document.activeElement, 'фокус после закрытия').not.toBe(document.body)
+		expect(document.activeElement).toBe(rowOf('Почта'))
+		expect(rowOf('Почта').getAttribute('aria-selected')).toBe('true')
+	})
+
+	it('неактивного — строке активного, и активный тот же', async () => {
+		await show()
+
+		await userEvent.click(closeOf('Архив'))
+		await expect.poll(texts).toEqual(['Настройки', 'Почта'])
+
+		expect(document.activeElement, 'фокус после закрытия').not.toBe(document.body)
+		expect(document.activeElement).toBe(rowOf('Настройки'))
+		expect(rowOf('Настройки').getAttribute('aria-selected')).toBe('true')
 	})
 })

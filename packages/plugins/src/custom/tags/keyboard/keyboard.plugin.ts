@@ -1,15 +1,9 @@
-import type {
-	ITags,
-	ITagsItem,
-	TActionEvent,
-	TClearEvent,
-	TRemoveEvent,
-	TTagsCollection,
-} from '@soldy-ui/core'
+import type { ITags, ITagsItem, TTagsCollection } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
+import { TLeavingFocus } from '../../collection/leaving-focus'
 import { focusFirst, isFocusableElement, tabStopsAfter } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import { tagOf, tagStopIn } from '../tag'
@@ -17,29 +11,6 @@ import type { TTagsKeyboardPluginEvents } from './types'
 
 /** Клавиши, которые закрывают тег. */
 const CLOSE_KEYS = new Set(['Delete', 'Backspace'])
-
-/**
- * Тег с фокусом, который уходит из набора, — и то, что о нём известно только
- * до его удаления: узел и соседи. Фокус уходит к соседу, когда сошлись оба
- * факта — тег закрыли (`item:close`) и он ушёл из набора (`item:removed`).
- */
-type TPendingFocus = {
-	/** Тег, в узле которого фокус. */
-	tag: ITagsItem
-	/** Узел тега: фокус, который отсюда успели увести, плагин не трогает. */
-	node: Element
-	/** Кому отдать фокус — соседи в порядке набора: следующие, затем предыдущие. */
-	neighbours: readonly ITagsItem[]
-	/**
-	 * Удаление, с которым тег уходит. Отменённое узнаётся по нему, а не по
-	 * тегу: удаление того же тега позже придёт с другим событием.
-	 */
-	removal?: TActionEvent
-	/** Тег закрыли — `item:close`. */
-	closed: boolean
-	/** Тег ушёл из набора — `item:removed`. */
-	removed: boolean
-}
 
 /**
  * TTagsKeyboardPlugin — клавиатура Tags с выбором по паттерну APG Listbox и
@@ -74,22 +45,23 @@ type TPendingFocus = {
  * фокус не трогается.
  *
  * Где фокус и кто соседи, видно только до удаления: после него узла тега нет
- * в реестре, а места — в наборе. Поэтому их снимает и закрытие, и хук
- * удаления (`item:remove:before`, `items:clear:before`), а переносит фокус
- * тот из фактов «закрыли» и «ушёл», что пришёл вторым. Порядок у них разный:
- * набор удаляет тег сам, следом за `item:close`, а поле Select снимает выбор
- * с опции ещё в своём обработчике `item:close`, раньше плагина, — и её тег
- * уходит до того, как закрытие дойдёт сюда. Удаление, отменённое в
- * `item:remove:before`, фокус не трогает. Тег, ушедший без закрытия, —
- * снятый из данных или размонтированный, — фокус не переносит: иначе ряд,
- * который снимают целиком, гонял бы фокус по своим уходящим тегам.
+ * в реестре, а места — в наборе. Когда переносить фокус, решает помощник
+ * коллекции (`TLeavingFocus`), общий с Tabs: он снимает фокус и соседей и на
+ * закрытии, и в хуке удаления, а переносит тем из фактов «закрыли» и «ушёл»,
+ * что пришёл вторым. Порядок у них разный: набор удаляет тег сам, следом за
+ * `item:close`, а поле Select снимает выбор с опции ещё в своём обработчике
+ * `item:close`, раньше плагина, — и её тег уходит до того, как закрытие
+ * дойдёт сюда. Удаление, отменённое в `item:remove:before`, фокус не трогает.
+ * Тег, ушедший без закрытия, — снятый из данных или размонтированный, — фокус
+ * не переносит: иначе ряд, который снимают целиком, гонял бы фокус по своим
+ * уходящим тегам. Здесь — только кто соседи и куда идёт фокус.
  *
  * Сами `tabindex` плагин не пишет: их ставит `TTagsExtension`, потому что
  * атрибут обязан стоять с первой отрисовки, включая серверную. Здесь только
  * то, что требует DOM: слушатели и перенос фокуса. Тег, на который ушёл
  * фокус, в окно ряда `scroll` доводит `TTagsScrollPlugin` по `focusin`,
  * который даёт и `focus()` этого плагина. Закрыть тег из кода можно и на
- * сервере, поэтому фокус плагин читает только при узле корня.
+ * сервере, поэтому фокус читается только при узле корня.
  *
  * От `TListNavigationPlugin` не наследуется: там фокус на контейнере и
  * подсветка через `aria-activedescendant`, а здесь фокус ходит по самим
@@ -103,17 +75,18 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 	private _listening: IDomEventTarget | null = null
 	private _elements: TCollectionElements | null = null
 	private _engine: TTagsCollection | null = null
-	/**
-	 * Фокус уходящего тега — ждёт второго из фактов: закрытия и ухода. Тег,
-	 * ушедший без закрытия, ждёт до следующего ухода или закрытия тега с
-	 * фокусом, смены движка или снятия корня: ожидание одно на ряд.
-	 */
-	private _pendingFocus: TPendingFocus | undefined
+	/** Фокус закрываемого тега — ждёт, пока тег закроют и он уйдёт из набора. */
+	private _leaving: TLeavingFocus<ITagsItem, readonly ITagsItem[]> | null = null
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
 		this._elements = ctx.get(TCollectionElements) ?? null
+		this._leaving = new TLeavingFocus(this._elements, {
+			root: () => this._element,
+			place: (tag) => this._neighbours(tag),
+			pass: (root, neighbours) => this._pass(root, neighbours),
+		})
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -124,7 +97,7 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 
 		elementPlugin?.events.on('removed', () => {
 			this._element = null
-			this._pendingFocus = undefined
+			this._leaving?.reset()
 			this._syncListeners()
 		})
 
@@ -139,6 +112,7 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 		this._bindEngine(null)
 
 		this._elements = null
+		this._leaving = null
 
 		super.destroy()
 	}
@@ -153,20 +127,14 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 
 		previous?.selection.events.off('change:mode', this._onModeChange)
 		previous?.tags.events.off('item:close', this._onClose)
-		previous?.plain.events.off('item:remove:before', this._onRemoveBefore)
-		previous?.plain.events.off('items:clear:before', this._onClearBefore)
-		previous?.plain.events.off('item:removed', this._onRemoved)
 
 		this._engine = engine
-		this._pendingFocus = undefined
 
 		const extensions = engine?.extensions
 
 		extensions?.selection.events.on('change:mode', this._onModeChange)
 		extensions?.tags.events.on('item:close', this._onClose)
-		extensions?.plain.events.on('item:remove:before', this._onRemoveBefore)
-		extensions?.plain.events.on('items:clear:before', this._onClearBefore)
-		extensions?.plain.events.on('item:removed', this._onRemoved)
+		this._leaving?.bind(extensions?.plain ?? null)
 
 		this._syncListeners()
 	}
@@ -323,91 +291,16 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 	}
 
 	/**
-	 * Тег закрывают. Обычно он ещё в наборе — `closeTag` удалит его следом за
-	 * событием, и фокус перейдёт на его уходе. Но подписчик закрытия, стоящий
-	 * раньше плагина, мог уже снять его — так поле Select снимает выбор с
-	 * опции, — и тогда тег ушёл, а фокус переходит сейчас.
+	 * Тег закрывают — любым путём: клавишей, крестиком, из кода. Переносить
+	 * ли фокус, решает помощник: фокус мог стоять и не в этом теге.
 	 */
-	private readonly _onClose = (tag: ITagsItem): void => {
-		this._dropCancelled()
-
-		const pending = this._pendingFocus
-
-		if (pending?.tag === tag) {
-			pending.closed = true
-			this._settle(pending)
-
-			return
-		}
-
-		this._capture(tag, { closed: true })
-	}
-
-	private readonly _onRemoveBefore = (event: TRemoveEvent<ITagsItem>): void =>
-		this._prepare([event.item], event)
-
-	private readonly _onClearBefore = (event: TClearEvent<ITagsItem>): void =>
-		this._prepare(event.items, event)
-
-	/**
-	 * Теги вот-вот уйдут — пока их узлы в реестре, а места в наборе, снять,
-	 * не в них ли фокус и кто его соседи. Уходит закрываемый тег — его
-	 * удаление запоминается: отменят — фокус останется на месте.
-	 */
-	private _prepare(leaving: readonly ITagsItem[], removal: TActionEvent): void {
-		this._dropCancelled()
-
-		const pending = this._pendingFocus
-
-		if (pending && leaving.includes(pending.tag)) {
-			pending.removal = removal
-
-			return
-		}
-
-		for (const tag of leaving) {
-			if (this._capture(tag, { closed: false, removal })) return
-		}
-	}
-
-	private readonly _onRemoved = (event: TRemoveEvent<ITagsItem>): void => {
-		const pending = this._pendingFocus
-
-		if (pending?.tag !== event.item) return
-
-		pending.removed = true
-		this._settle(pending)
-	}
-
-	/**
-	 * Запомнить фокус тега, если он в его узле. Чтение фокуса — только при
-	 * узле корня: на сервере документа нет.
-	 *
-	 * @returns запомнил ли — был ли фокус в узле тега.
-	 */
-	private _capture(tag: ITagsItem, state: Pick<TPendingFocus, 'closed' | 'removal'>): boolean {
-		const root = this._element
-		const node = root ? (this._elements?.getElementByItem(tag) ?? null) : null
-		const active = root?.ownerDocument.activeElement
-
-		if (!node || !active || !node.contains(active)) return false
-
-		this._pendingFocus = {
-			tag,
-			node,
-			neighbours: this._neighbours(tag),
-			removed: false,
-			...state,
-		}
-
-		return true
-	}
+	private readonly _onClose = (tag: ITagsItem): void => this._leaving?.close(tag)
 
 	/**
 	 * Соседи тега в порядке, в котором им отдаётся фокус: следующие за ним в
 	 * наборе от ближнего, затем предыдущие от ближнего.
 	 */
-	private _neighbours(tag: ITagsItem): ITagsItem[] {
+	private _neighbours(tag: ITagsItem): readonly ITagsItem[] {
 		const shown = this._engine?.extensions.batch.shown ?? []
 		const index = shown.indexOf(tag)
 
@@ -415,45 +308,19 @@ export class TTagsKeyboardPlugin extends TBasePlugin<ITags, TTagsKeyboardPluginE
 	}
 
 	/**
-	 * Удаление отменили (`item:remove:before`, `items:clear:before`) — тег на
-	 * месте, и фокус остаётся с ним. Видно это только после хука, поэтому
-	 * ожидание сбрасывает следующее событие закрытия или удаления.
-	 */
-	private _dropCancelled(): void {
-		if (this._pendingFocus?.removal?.defaultPrevented) this._pendingFocus = undefined
-	}
-
-	/** Тег закрыли, и он ушёл — фокус переходит к соседу. */
-	private _settle(pending: TPendingFocus): void {
-		if (!pending.closed || !pending.removed) return
-
-		this._pendingFocus = undefined
-		this._pass(pending)
-	}
-
-	/**
 	 * Фокус — на остановку ближайшего соседа, на которого можно перейти, а
 	 * нет такого — на первую остановку Tab после ряда.
-	 *
-	 * Фокус, который увели из узла тега, пока тот уходил, остаётся, где его
-	 * поставили. Потерянный — ушедший на страницу вместе с узлом, который
-	 * разметка сняла синхронно, — переносится, как стоявший в узле.
 	 */
-	private _pass(pending: TPendingFocus): void {
-		const root = this._element
+	private _pass(root: Element, neighbours: readonly ITagsItem[]): void {
 		const engine = this._engine
 
-		if (!root || !engine) return
-
-		const { activeElement, body } = root.ownerDocument
-
-		if (activeElement && activeElement !== body && !pending.node.contains(activeElement)) return
+		if (!engine) return
 
 		const { batch, tags } = engine.extensions
 		const present = new Set(batch.items)
 		const stops: Element[] = []
 
-		for (const neighbour of pending.neighbours) {
+		for (const neighbour of neighbours) {
 			if (!present.has(neighbour) || !tags.isEnabledTag(neighbour)) continue
 
 			const stop = tagStopIn(this._elements?.getElementByItem(neighbour) ?? null)
