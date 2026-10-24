@@ -87,6 +87,58 @@ describe('TTabs (чистый класс)', () => {
 		expect(tabs.classes.toArray()).toContain('so-tabs--view-cards')
 	})
 
+	describe('модификатор стороны — от ориентации и стороны вместе', () => {
+		const sides = (tabs: TTabs): string[] =>
+			tabs.classes.toArray().filter((cls) => cls.startsWith('so-tabs--position-'))
+
+		it('по умолчанию модификатора стороны нет', () => {
+			expect(sides(new TTabs())).toEqual([])
+		})
+
+		it('у горизонтальных с end модификатора нет', () => {
+			expect(sides(new TTabs({ position: 'end' }))).toEqual([])
+		})
+
+		it('созданные вертикальными с end — с модификатором', () => {
+			expect(sides(new TTabs({ orientation: 'vertical', position: 'end' }))).toEqual([
+				'so-tabs--position-end',
+			])
+		})
+
+		it('horizontal + end, затем vertical — модификатор появляется', () => {
+			const tabs = new TTabs({ orientation: 'horizontal', position: 'end' })
+
+			tabs.orientation = 'vertical'
+
+			expect(sides(tabs)).toEqual(['so-tabs--position-end'])
+		})
+
+		it('vertical, затем end — модификатор появляется', () => {
+			const tabs = new TTabs({ orientation: 'vertical' })
+
+			tabs.position = 'end'
+
+			expect(sides(tabs)).toEqual(['so-tabs--position-end'])
+		})
+
+		it('vertical + end, затем horizontal — модификатор снят', () => {
+			const tabs = new TTabs({ orientation: 'vertical', position: 'end' })
+
+			tabs.orientation = 'horizontal'
+
+			expect(sides(tabs)).toEqual([])
+			expect(tabs.position).toBe('end')
+		})
+
+		it('vertical + end, затем start — модификатор снят', () => {
+			const tabs = new TTabs({ orientation: 'vertical', position: 'end' })
+
+			tabs.position = 'start'
+
+			expect(sides(tabs)).toEqual([])
+		})
+	})
+
 	it('getProps возвращает актуальные значения', () => {
 		const tabs = new TTabs({ orientation: 'vertical', closable: true, view: 'pills' })
 
