@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupTagsItem } from './setup.component'
 	import type { TagsItemAttributes, TagsItemProps } from './base.component'
@@ -11,9 +12,6 @@
 	const binding = setupTagsItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
-	// Строка — экземпляр, которым владеет тег (`TItemRow` на `div`): размер, вариант,
-	// выключенность и направление ей пишет тег, а роль и `tabindex` — его набор `aria`
-	const row = binding.ctrl.row
 
 	const CLOSE = roleIcon('close')
 
@@ -45,9 +43,13 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="tags.row"
-			ctrl={row}
+			tag="div"
+			direction={state.direction}
+			disabled={state.disabled}
+			size={state.size}
+			variant={state.variant}
 			leading={props.leading}
 			trailing={props.trailing}
 			onActionPress={toggle}
@@ -62,7 +64,7 @@
 			{:else}
 				{state.text}
 			{/if}
-		</Button><Button
+		</ItemRow><Button
 			embedded="tags.close"
 			type="button"
 			rendered={state.tag_closable === true}

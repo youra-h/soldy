@@ -7,7 +7,7 @@ import {
 	SlotDirective,
 	provideElevator,
 } from '../../../adapter'
-import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TFrameComponent } from '../../frame'
 import { TIconComponent } from '../../icon'
 import { TMenuItemComponent } from '../item'
@@ -28,7 +28,7 @@ import { setupMenuSubmenu } from './setup.component'
 		AttributesDirective,
 		RoleIconDirective,
 		SlotDirective,
-		TButtonComponent,
+		TItemRowComponent,
 		TFrameComponent,
 		TIconComponent,
 		TMenuItemComponent,

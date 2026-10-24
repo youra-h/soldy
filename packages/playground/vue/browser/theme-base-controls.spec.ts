@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type Component, type VNode } from 'vue'
 import type { TFieldPosition } from '@soldy-ui/core'

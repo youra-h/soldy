@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h } from 'vue'
 import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { CheckBox, Icon, roleIcon } from '@soldy-ui/vue'

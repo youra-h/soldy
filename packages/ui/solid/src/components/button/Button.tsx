@@ -7,7 +7,17 @@ import type { ButtonProps } from './base.component'
 
 /** Кнопка: на месте незаданного `children` — текст из ядра. */
 export function Button(props: ButtonProps): JSX.Element {
-	const binding = setupButton(props)
+	return renderButton(setupButton(props), props)
+}
+
+/** Что разметке кнопки нужно от её связки. */
+export type TButtonBinding = Pick<ReturnType<typeof setupButton>, 'ref' | 'forwardProps' | 'state'>
+
+/**
+ * Разметка кнопки по её связке. Одна на Button и строку элемента коллекции
+ * (`ItemRow`): у них разная сборка, а разметка та же.
+ */
+export function renderButton(binding: TButtonBinding, props: ButtonProps): JSX.Element {
 	const state = binding.state
 	const root = createRootProps(() => ({
 		state,

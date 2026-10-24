@@ -78,10 +78,11 @@ import {
 	TTagsItemElement,
 	TTextareaElement,
 	TTooltipElement,
-	registerButtonTag,
+	registerItemRowTag,
 	type TAccordionElementProps,
 	type TAccordionItemElementProps,
 	type TButtonElementProps,
+	type TItemRowElementProps,
 	type TCalendarElementProps,
 	type TCheckBoxElementProps,
 	type TComponentViewElementProps,
@@ -147,11 +148,11 @@ function isButton(node: Element | null): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
-/** Button на `div` — строка элемента списка: тот же класс, что регистрирует фабрика кнопки. */
-const TButtonDivElement = registerButtonTag('div')
+/** Строка элемента коллекции — ItemRow на `div`. */
+const TItemRowDivElement = registerItemRowTag('div')
 
-function isButtonDiv(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
+function isItemRowDiv(node: Element | null): node is TItemRowElementProps<HTMLDivElement> {
+	return node instanceof TItemRowDivElement
 }
 
 function isView(node: Element | null): node is TComponentViewElementProps {
@@ -367,7 +368,7 @@ const COMPONENTS: ReadonlyArray<
 	readonly [string, string, string, TElementGuard<HTMLElement>, string, string | null]
 > = [
 	['Button', 'button', 'so-button', isButton, 'so-button', null],
-	['Button на div', 'div', 'so-button-div', isButtonDiv, 'so-button', null],
+	['ItemRow на div', 'div', 'so-item-row-div', isItemRowDiv, 'so-button', null],
 	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', null],
 	['Icon', 'span', 'so-icon', isIcon, 'so-icon', null],
 	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', null],
@@ -549,15 +550,15 @@ describe('атрибут потребителя перекрывает набо�
 		expect(row.getAttribute('aria-label')).toBe('Строка')
 	})
 
-	/** Строка элемента списка — корень кнопки на `div`: то же правило слоёв. */
-	it('слой элемента списка на строке главнее наборов самой кнопки на div', async () => {
+	/** Строка элемента списка — корень ItemRow на `div`: то же правило слоёв. */
+	it('слой элемента списка на строке главнее наборов самой строки', async () => {
 		const item = mount(
 			'<div is="so-list-box-item" text="A" aria_label="Пункт"></div>',
 			isListBoxItem,
 		)
 		const row = item.querySelector('[embedded="list-box.row"]')
 
-		if (!isButtonDiv(row)) throw new Error('строки нет')
+		if (!isItemRowDiv(row)) throw new Error('строки нет')
 
 		expect(row.getAttribute('aria-label')).toBe('Пункт')
 

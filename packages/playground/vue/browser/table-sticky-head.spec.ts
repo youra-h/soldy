@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, afterAll, afterEach, beforeAll } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { commands, page, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref, type VNode } from 'vue'
 import { TTable, createEngineTable } from '@soldy-ui/core'

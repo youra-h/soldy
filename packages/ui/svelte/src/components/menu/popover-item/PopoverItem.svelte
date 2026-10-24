@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Frame } from '../../frame'
 	import { Icon } from '../../icon'
 	import { setupMenuPopoverItem } from './setup.component'
@@ -40,7 +40,7 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="menu.row"
 			tag="div"
 			size={state.size}
@@ -60,7 +60,7 @@
 			{#snippet trailing()}
 				<span class="so-menu-item__arrow" aria-hidden="true">{@render arrowIcon()}</span>
 			{/snippet}
-		</Button><Frame
+		</ItemRow><Frame
 			embedded="menu.popover-item-frame"
 			class="so-menu-item__panel"
 			tabindex={-1}

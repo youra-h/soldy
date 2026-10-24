@@ -50,7 +50,7 @@ function drawing(component: string, fixture: string | undefined): TPreview {
  * (`data-owner`). Плагины слоя находят панель по пометке первой в документе, и
  * жест, фокус и немой фон уходили бы на чужую скрытую панель. Несколько корней
  * на странице React и просит различать префиксом. Сторожит «пометки панелей
- * владельцами не повторяются» в `__tests__/smoke.spec.ts`.
+ * владельцами не повторяются» в `__tests__/smoke/suite.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),

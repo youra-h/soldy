@@ -9,6 +9,22 @@ import { defineComponent, defineDescriptor, defineType } from '../../../protecte
 import { TButton } from '@soldy-ui/core'
 import { TextableDescriptor } from './textable.descriptor'
 
+/**
+ * Слоты разметки кнопки. Одни на Button и строку элемента (`ItemRowDescriptor`):
+ * разметка у них одна, а слоты дескриптор объявляет по своей разметке, не
+ * наследует.
+ */
+export const BUTTON_SLOTS = {
+	leading: { description: 'Перед текстом' },
+	default: {
+		// Компонент отдаёт наружу свой text, чтобы содержимое могло его
+		// использовать. Содержимое при этом любое — хоть таблица.
+		scope: { text: defineType<string>(String) },
+		description: 'Содержимое кнопки. Задано — переопределяет проп text',
+	},
+	trailing: { description: 'После текста' },
+}
+
 export const ButtonDescriptor = defineDescriptor(() =>
 	defineComponent({
 		ctor: TButton,
@@ -19,16 +35,7 @@ export const ButtonDescriptor = defineDescriptor(() =>
 			props: {
 				view: { type: String, triggers: ['change:view'] },
 			},
-			slots: {
-				leading: { description: 'Перед текстом' },
-				default: {
-					// Компонент отдаёт наружу свой text, чтобы содержимое могло его
-					// использовать. Содержимое при этом любое — хоть таблица.
-					scope: { text: defineType<string>(String) },
-					description: 'Содержимое кнопки. Задано — переопределяет проп text',
-				},
-				trailing: { description: 'После текста' },
-			},
+			slots: BUTTON_SLOTS,
 		},
 	}),
 )

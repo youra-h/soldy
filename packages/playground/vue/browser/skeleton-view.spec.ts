@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h } from 'vue'
 import type { TComponentVariant } from '@soldy-ui/core'
 import { Button, Skeleton } from '@soldy-ui/vue'

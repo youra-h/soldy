@@ -101,7 +101,7 @@ const CASES: ReadonlyArray<readonly [string, string, string]> = [
 	['Switch', '.probe[so-switch]', 'input'],
 	['RadioGroup.Item', '.probe[so-radio-group-item]', 'input'],
 	['ListBox', '.probe[so-list-box]', '.so-list-box__list'],
-	['ListBox.Item', '.probe[so-list-box-item]', '[so-button]'],
+	['ListBox.Item', '.probe[so-list-box-item]', '[so-item-row]'],
 	['Tabs', '.probe[so-tabs]', '.so-tabs__list'],
 	['Tabs.Item', '.probe[so-tabs-item]', '[so-button]'],
 	['Accordion.Item', '.probe[so-accordion-item]', '.so-accordion-item__header'],

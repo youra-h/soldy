@@ -11,6 +11,7 @@ import {
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { setupTagsItem } from './setup.component'
 import type { TagsItemAttributes, TagsItemProps } from './base.component'
@@ -19,18 +20,15 @@ import type { TagsItemAttributes, TagsItemProps } from './base.component'
 const CLOSE = roleIcon('close')
 
 /**
- * Тег: строка — `Button` над экземпляром тега (`row`, `TItemRow` на `div`) с набором
- * `aria`, кнопка закрытия — её сосед: потомки опции скринридеру презентационны. Размер,
- * вариант, выключенность и направление строке пишет тег, а роль и `tabindex` — его набор
- * `aria`. Выбор — по `press` строки: на клик выключенный тег выбирался бы.
- * Крестик — `Show`, а не `rendered` кнопки: скрытая кнопка собирала бы у каждого тега
- * свой контекст.
+ * Тег: строка — `ItemRow` на `div` с набором `aria`, кнопка закрытия — её сосед:
+ * потомки опции скринридеру презентационны. Выбор — по `press` строки: на клик
+ * выключенный тег выбирался бы. Крестик — `Show`, а не `rendered` кнопки: скрытая
+ * кнопка собирала бы у каждого тега свой контекст.
  */
 export function TagsItem(props: TagsItemProps): JSX.Element {
 	const binding = setupTagsItem(props)
 	const state = binding.state
 	const context = binding.context
-	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -45,7 +43,7 @@ export function TagsItem(props: TagsItemProps): JSX.Element {
 		() => ({}),
 	)
 
-	const rowAttrs = () => toControlAttrs<TagsItemAttributes>(binding.forwardProps())
+	const row = () => toControlAttrs<TagsItemAttributes>(binding.forwardProps())
 
 	function toggle(): void {
 		context?.adapters.selection.toggle()
@@ -60,17 +58,21 @@ export function TagsItem(props: TagsItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="tags.row"
-					ctrl={row}
+					tag="div"
+					direction={state.direction}
+					disabled={state.disabled}
+					size={state.size}
+					variant={state.variant}
 					leading={renderSlot(props.leading)}
 					trailing={renderSlot(props.trailing)}
 					onActionPress={toggle}
 					{...state.aria}
-					{...rowAttrs()}
+					{...row()}
 				>
 					{content() ?? state.text}
-				</Button>
+				</ItemRow>
 				<Show when={state.tag_closable === true}>
 					<Button
 						embedded="tags.close"

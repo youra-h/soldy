@@ -11,7 +11,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { setupMenuPopoverItem } from './setup.component'
@@ -57,7 +57,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="menu.row"
 					tag="div"
 					size={state.size}
@@ -74,7 +74,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 					}
 				>
 					{header() ?? state.text}
-				</Button>
+				</ItemRow>
 				<Frame
 					embedded="menu.popover-item-frame"
 					class="so-menu-item__panel"

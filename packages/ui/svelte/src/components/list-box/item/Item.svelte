@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupListBoxItem } from './setup.component'
 	import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
@@ -16,8 +16,8 @@
 </script>
 
 <!--
-	Тег строки фиксирован (`div`): под него написан `TListBoxItem._ariaTag`. `tabindex="-1"`
-	элемента перекрывает `tabindex="0"`, который кнопка на `div` ставит себе сама.
+	Тег строки фиксирован (`div`): под него написан `TListBoxItem._ariaTag`. Своих роли и
+	`tabindex` строка (`ItemRow`) не пишет: их несёт набор элемента.
 	Отметка рисуется и у невыбранных: она держит место. `aria-hidden`: выбор скринридеру
 	объявляет `aria-selected`.
 -->
@@ -41,7 +41,7 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="list-box.row"
 			tag="div"
 			view={state.view}
@@ -67,6 +67,6 @@
 			{#snippet trailing()}
 				{@render props.trailing?.()}{#if state.indicator === 'end'}{@render mark()}{/if}
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

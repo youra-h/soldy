@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IListBoxItem } from '@soldy-ui/core'
 import { AttributesDirective, RoleIconDirective } from '../../../adapter'
-import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TIconComponent } from '../../icon'
 import { TListBoxItemSurface } from '../../../generated/list-box-item.metadata'
 import { setupListBoxItem } from './setup.component'
@@ -17,7 +17,7 @@ import { setupListBoxItem } from './setup.component'
 		NgTemplateOutlet,
 		AttributesDirective,
 		RoleIconDirective,
-		TButtonComponent,
+		TItemRowComponent,
 		TIconComponent,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

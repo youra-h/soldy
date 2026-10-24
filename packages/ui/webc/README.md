@@ -372,8 +372,8 @@ element is a frame around it, next to the header and footer of a list box or the
 so `aria-label` names the list and `tabindex="-1"` takes a list box out of the Tab order.
 
 A list box is a single Tab stop: the arrows move through its options, Enter and Space choose. An
-option's row is a button on a `<div>` — `<div is="so-button-div">`, the same Button under a name of
-its own, since one element name extends one tag: a disabled option stays focusable and is announced
+option's row is a button on a `<div>` — `<div is="so-item-row-div">`, a row element with Button's
+markup under a name of its own, since one element name extends one tag: a disabled option stays focusable and is announced
 as unavailable (`aria-disabled`), which a disabled `<button>` would not allow. Its selected mark
 (`indicator`) is the `indicator-icon` slot or a check icon, and it shows on selected options only —
 slot content has no scope to tell selected from not.
@@ -411,7 +411,7 @@ through the tags; without one, the close buttons are the stops.
 A select is a field with a list in a panel, and the panel follows the select as a menu's does.
 Options are markup (`<div is="so-select-item">`, groups `<div is="so-select-group">`) or data.
 Focus stays on the field's `<input>`, and the arrows highlight options through
-`aria-activedescendant`; an option's row is a button on a `<span>` — `<span is="so-button-span">`.
+`aria-activedescendant`; an option's row is a button on a `<span>` — `<span is="so-item-row-span">`.
 Attributes you write on the select (`aria-label`, `id`, `autocomplete`, `data-*`) go to that
 `<input>`, and so do the select's own accessible name and the links of a form field around it. With
 `mode="multiple"` the chosen options are tags in the field. The field's slots have no scope either:

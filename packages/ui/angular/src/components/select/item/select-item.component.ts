@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { ISelectItem } from '@soldy-ui/core'
 import { AttributesDirective, RoleIconDirective } from '../../../adapter'
-import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TIconComponent } from '../../icon'
 import { TSelectItemSurface } from '../../../generated/select-item.metadata'
 import { setupSelectItem } from './setup.component'
@@ -17,7 +17,7 @@ import { setupSelectItem } from './setup.component'
 		NgTemplateOutlet,
 		AttributesDirective,
 		RoleIconDirective,
-		TButtonComponent,
+		TItemRowComponent,
 		TIconComponent,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

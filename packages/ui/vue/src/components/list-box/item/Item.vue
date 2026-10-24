@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Icon } from '../../icon'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupListBoxItem from './setup.component'
 
 /**
@@ -14,7 +14,7 @@ import SetupListBoxItem from './setup.component'
  * `aria-hidden`: отметка декоративна, состояние скринридеру объявляет
  * `aria-selected`. Два источника одного факта дали бы двойное объявление.
  */
-export default { ...SetupListBoxItem, components: { Icon, Button } }
+export default { ...SetupListBoxItem, components: { Icon, ItemRow } }
 </script>
 
 <template>
@@ -37,10 +37,10 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			`.so-button` подсветка и выбор раскрашены по вариантам, а у элемента
 			списка своих таких правил нет.
 
-			`aria` — только на строке: строка и есть опция. Набор ложится поверх
-			того, что `Button` пишет себе сам, и `role="option"` элемента
-			перекрывает его `role="button"`. `aria-selected` всем элементам пишет
-			`TListBoxExtension`, как у Select и Tags.
+			`aria` — только на строке: строка и есть опция. Своих роли и
+			`tabindex` строка (`ItemRow`, `TItemRow`) не пишет, их несёт набор
+			элемента: `role="option"` — элемент, `tabindex="-1"` и
+			`aria-selected` — `TListBoxExtension`, как у Select и Tags.
 
 			Тег строки фиксирован (`tag="div"`), а не берётся из `tag` элемента:
 			`tag` — тег корня (`TComponentView`), и рисует по нему корень
@@ -54,7 +54,7 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 			на ней, и Enter дал бы два переключения — `press` строки и клавиатура
 			корня.
 		-->
-		<Button
+		<ItemRow
 			embedded="list-box.row"
 			tag="div"
 			:view="view"
@@ -103,6 +103,6 @@ export default { ...SetupListBoxItem, components: { Icon, Button } }
 					</slot>
 				</span>
 			</template>
-		</Button>
+		</ItemRow>
 	</component>
 </template>

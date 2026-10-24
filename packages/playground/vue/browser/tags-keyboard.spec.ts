@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import type { VNode } from 'vue'
@@ -205,6 +205,53 @@ describe('без выбора строка фокус не берёт, Tab ид�
 		await shiftTab()
 
 		expect(document.activeElement).toBe(closeOf('Архив'))
+	})
+})
+
+/**
+ * Крестик пропадает вместе с тегом, и фокус, стоявший на нём, уходил на
+ * страницу: следующий Tab начинал обход с начала документа. Закрытый тег
+ * отдаёт фокус крестику соседа — следующего, у последнего предыдущего, — а
+ * единственный — тому, что стоит за набором.
+ */
+describe('без выбора закрытый тег отдаёт фокус соседу', () => {
+	it('Tab до крестика, Enter — фокус на крестике следующего, и Tab идёт дальше', async () => {
+		await show(plain)
+
+		find('.so-test-before').focus()
+		await tab()
+		await tab()
+
+		expect(document.activeElement).toBe(closeOf('Почта'))
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(texts).toEqual(['Настройки', 'Архив'])
+		expect(document.activeElement).toBe(closeOf('Архив'))
+
+		await tab()
+
+		expect(document.activeElement).toBe(find('.so-test-after'))
+	})
+
+	it('последний — фокус на крестике предыдущего, единственный — на кнопке за набором', async () => {
+		await show(plain)
+
+		closeOf('Архив').focus()
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(texts).toEqual(['Настройки', 'Почта'])
+		expect(document.activeElement).toBe(closeOf('Почта'))
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(texts).toEqual(['Настройки'])
+		expect(document.activeElement).toBe(closeOf('Настройки'))
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(texts).toEqual([])
+		expect(document.activeElement).toBe(find('.so-test-after'))
 	})
 })
 

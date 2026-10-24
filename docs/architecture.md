@@ -2959,14 +2959,17 @@ defineElement('so-button', TButtonElement, 'button')
 
 Одно имя расширяет один тег, поэтому компонент на другом теге — второе имя:
 имя компонента и тег через дефис (корневой `AGENTS.md`, «Префикс — только в
-глобальном пространстве имён»). У Button его регистрирует фабрика
-`registerButtonTag(tag)` — тем же описанием элемента, что у
-`<button is="so-button">`, на нативном классе тега — и отдаёт класс; второй
-вызов отдаёт тот же. Зовёт её разметка там, где тег впервые нужен: шаблон
-элемента ListBox — `registerButtonTag('div')`, строка `<div is="so-button-div">`,
-шаблон опции Select — `registerButtonTag('span')`, строка
-`<span is="so-button-span">`. Теги фабрики с их нативными классами — карта
-регистраций в её модуле, и её тип сверяет класс с тегом. Так же у Popover —
+глобальном пространстве имён»). Строку элемента коллекции (`ItemRow`,
+`TItemRow`) его регистрирует фабрика `registerItemRowTag(tag)` — описанием с
+шаблоном кнопки и `ItemRowDescriptor`, на нативном классе тега — и отдаёт
+класс; второй вызов отдаёт тот же. Зовёт её разметка там, где тег впервые
+нужен: шаблон элемента ListBox, тега и пунктов меню —
+`registerItemRowTag('div')`, строка `<div is="so-item-row-div">`, шаблон
+опции Select — `registerItemRowTag('span')`, строка
+`<span is="so-item-row-span">`. Теги фабрики с их нативными классами — карта
+регистраций в её модуле, и её тип сверяет класс с тегом. Элемента на теге по
+умолчанию у строки нет, а у Button нет второго имени: кнопка на другом теге
+разметке библиотеки не нужна. Так же у Popover —
 фабрика `registerPopoverTag(tag)`: заголовок месяца Calendar —
 `registerPopoverTag('div')`, `<div is="so-popover-div">`: панель выбора с
 `contained` лежит в корне поповера, а в строчном `span` блочной разметке не
@@ -3152,10 +3155,11 @@ WebKit:
   пропом `tag` при каждой сборке; атрибута и свойства `tag` нет
   (`HOST_PROPS`): тег задан разметкой. Для ядра это нативный тег, как у
   `<Button>` во Vue: `role` и `tabindex` оно кнопке не пишет, а `disabled`
-  пишет нативным атрибутом. Кнопка на `div` (`<div is="so-button-div">`)
-  отдаёт ядру `div`, и ядро пишет ей `role="button"`, `tabindex` и
-  `aria-disabled`, как `<Button tag="div">` во Vue; `disabled` у неё —
-  свойство пропа, своего у `div` нет.
+  пишет нативным атрибутом. Строка на `div` (`<div is="so-item-row-div">`)
+  отдаёт ядру `div`, и ядро пишет ей `aria-disabled`, как
+  `<ItemRow tag="div">` во Vue, а роль и `tabindex` — нет: их кладёт набор
+  элемента (`TItemRow`); `disabled` у неё — свойство пропа, своего у `div`
+  нет.
 - **Классы и наборы** раскладывает база (`paint.ts`), и атрибуты
   потребителя главнее наборов ядра, как во Vue и React: по каждому имени база
   помнит, что поставила сама, своё пишет и снимает, а чужое значение не трогает
@@ -3577,12 +3581,12 @@ WebKit:
   (`<button is="so-button" embedded="tabs.row" type="button">`) и поле корня
   (`control`): статические атрибуты разметки элемента, `id` тоже, переезжают
   на них, а `aria` элемента ложится верхним слоем их раскладчика — главнее
-  того, что кнопка пишет себе сама. Строка элемента ListBox — кнопка на
-  `div`, `<div is="so-button-div" embedded="list-box.row">`, без `type`: на
+  того, что кнопка пишет себе сама. Строка элемента ListBox — строка на
+  `div`, `<div is="so-item-row-div" embedded="list-box.row">`, без `type`: на
   `<button>` выключенный пункт терял бы фокус и клик, а ядро пишет строке ARIA
   под `div` (`TListBoxItem._ariaTag`). На неё ложатся `aria` и `dataset`
-  элемента: `tabindex="-1"` и `aria-selected` списка поверх `role="button"`
-  и остановки Tab кнопки. Отметка выбранного — край строки
+  элемента: роль — элемента, `tabindex="-1"` и `aria-selected` — списка;
+  своих роли и остановки у строки (`TItemRow`) нет. Отметка выбранного — край строки
   (`span.so-list-box-item__indicator`), иконка роли `check` в ней — у
   выбранного. Остановка Tab списка — узел списка в корне
   (`div.so-list-box__list`): `tabindex="0"` и набор `aria` списка ставит ему
@@ -3622,9 +3626,9 @@ WebKit:
   `<div is="so-select-item">` и `<div is="so-select-group">`): коллекции по
   тому же устройству. У набора тегов все три набора ядра на корне, теги —
   разметкой или петлёй по `shown` с копиями образцов `item-*`. Корень тега —
-  пилюля с `attrs`, `dataset` и местом в коллекции, строка — кнопка на `div`
-  (`tags.row`) над экземпляром тега (`row`, `TItemRow`: `ctrl` ей отдаёт
-  каждая связка тега, как полю Select) и поле корня, а крестик
+  пилюля с `attrs`, `dataset` и местом в коллекции, строка — строка на `div`
+  (`<div is="so-item-row-div" embedded="tags.row">`, `TItemRow`) и поле
+  корня, а крестик
   (`tags.close`) — сосед строки,
   вставляется и снимается по `tag_closable`; его клик не всплывает. Выбор —
   по `so:action:press` строки, а не по клику. У Select корень — рамка с
@@ -3643,9 +3647,10 @@ WebKit:
   не встаёт. Панель — деталь Frame (`select.frame`) с якорем-корнем, как у
   меню; в ней полоса жеста и список `div.so-select__list` — как узел списка
   ListBox (петля по `drawnSections`, распорки окна, `empty`), но без остановки
-  Tab: фокус держит поле. Опция — как элемент ListBox, но строка — кнопка на
-  `span` (`<span is="so-button-span" embedded="select.row" tabindex="-1">`,
-  `TSelectItem._ariaTag`), а выбор — клик корня. Сторожат
+  Tab: фокус держит поле. Опция — как элемент ListBox, но строка — на `span`
+  (`<span is="so-item-row-span" embedded="select.row">`,
+  `TSelectItem._ariaTag`; `tabindex="-1"` ей пишет набор опции —
+  `TSelectExtension`), а выбор — клик корня. Сторожат
   `ui/webc/__tests__/tags.spec.ts`, `select.spec.ts`, `field.spec.ts`,
   `focus-target.spec.ts`, `item-slots.spec.ts`, `root-attributes.spec.ts`,
   `collection-item-lifetime.spec.ts`, `external-engine-lifetime.spec.ts`,
@@ -3706,11 +3711,12 @@ Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропс�
 этом контракте уже есть: их типы несёт интерфейс пропсов ядра компонента
 (`ITabsProps`), а состояние элемента коллекции (`IElementBase` со вторым
 параметром) — вместе со свойствами фасада, у пункта с подменю — и фасада
-владельца (третий параметр). Кнопка на другом теге — тот же тип
-со своим тегом: `TButtonElementProps<HTMLDivElement>` у
-`<div is="so-button-div">`, `TButtonElementProps<HTMLSpanElement>` у
-`<span is="so-button-span">`, и `disabled` там — свойство пропа, а у
-`<button>` — нативное; поповер на `div` — `TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
+владельца (третий параметр). Элемент на теге не по умолчанию — тип со своим
+тегом: строка элемента коллекции — `TItemRowElementProps<HTMLDivElement>` у
+`<div is="so-item-row-div">`, `TItemRowElementProps<HTMLSpanElement>` у
+`<span is="so-item-row-span">`, и `disabled` там — свойство пропа, а у
+`<button is="so-button">` — нативное; поповер на `div` —
+`TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
 `ui/webc/__tests__/button.spec.ts`, `frame.spec.ts`, `tabs.spec.ts`,
 `accordion.spec.ts`, `list-box.spec.ts`, `tags.spec.ts`, `select.spec.ts`,
 `menu.spec.ts` и `popover.spec.ts`.
@@ -3782,11 +3788,11 @@ Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропс�
 ### Известные ограничения
 
 - Тег корня задан регистрацией: одно имя расширяет один тег. Компонент на
-  другом теге — своё имя, имя компонента и тег через дефис: у Button это
-  `<div is="so-button-div">` и `<span is="so-button-span">`
-  (`registerButtonTag`), других тегов у неё пока нет — кнопке-ссылке
-  понадобится `<a is="so-button-a">`, тем же вызовом фабрики, с `a` в её
-  карте регистраций. У Popover — `<div is="so-popover-div">`
+  другом теге — своё имя, имя компонента и тег через дефис: у строки
+  элемента коллекции это `<div is="so-item-row-div">` и
+  `<span is="so-item-row-span">` (`registerItemRowTag`). У Button других
+  тегов нет — кнопке-ссылке понадобится `<a is="so-button-a">` и фабрика
+  регистраций, как у строки. У Popover — `<div is="so-popover-div">`
   (`registerPopoverTag`). Иконка — только `<span is="so-icon">`:
   `<i is="so-icon">` под тем же именем не оживёт, а `<svg>` атрибут `is` не
   расширяет вовсе.

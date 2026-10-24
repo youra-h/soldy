@@ -8,6 +8,7 @@ import {
 	toRootProps,
 } from '../../../adapter'
 import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { useSetupTagsItem } from './setup.component'
 import type { TagsItemAttributes, TagsItemProps } from './base.component'
@@ -16,22 +17,20 @@ import type { TagsItemAttributes, TagsItemProps } from './base.component'
 const CloseIcon = roleIcon('close')
 
 /**
- * TagsItem — тег: корень-пилюля по `tag`, в нём строка и крестик рядом со строкой, а не в ней:
- * потомки опции для скринридера презентационны. Строка — `Button` над экземпляром тега
- * (`row`, `TItemRow` на `div`): размер, вариант, выключенность и направление ей пишет
- * тег, а роль и `tabindex` — его набор `aria`. Ключ — экземпляр: пересобранный тег без `ctrl`
- * — новая строка, и кнопка над ней монтируется заново (AGENTS.md (React), «Пересобранный
- * инстанс и `key`»).
+ * TagsItem — тег: корень-пилюля по `tag`, в нём строка — `ItemRow` на `div` — и крестик рядом
+ * со строкой, а не в ней: потомки опции для скринридера презентационны.
  */
 export function TagsItem(props: TagsItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context, row } = useSetupTagsItem(props)
+	const { ref, forwardProps, state, context } = useSetupTagsItem(props)
 
 	const {
 		rendered,
 		tag,
 		text,
+		direction,
 		disabled,
 		size,
+		variant,
 		selected,
 		tag_closable,
 		closeAria,
@@ -46,10 +45,13 @@ export function TagsItem(props: TagsItemProps): ReactElement | null {
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
-				key={row.uid}
+			<ItemRow
 				embedded="tags.row"
-				ctrl={row}
+				tag="div"
+				direction={direction}
+				disabled={disabled}
+				size={size}
+				variant={variant}
 				{...toAriaProps(aria)}
 				{...toControlAttrs<TagsItemAttributes>(forwardProps)}
 				// `press`, а не клик: на выключенный тег он не приходит, `toggle` это не проверяет
@@ -59,7 +61,7 @@ export function TagsItem(props: TagsItemProps): ReactElement | null {
 			>
 				{renderSlot(props.children, { text: text ?? '', selected: selected ?? false }) ??
 					text}
-			</Button>
+			</ItemRow>
 			<Button
 				embedded="tags.close"
 				type="button"

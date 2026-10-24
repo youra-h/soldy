@@ -7,7 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { useSetupSelectItem } from './setup.component'
 import type { SelectItemAttributes, SelectItemProps } from './base.component'
@@ -16,7 +16,7 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CheckIcon = roleIcon('check')
 
 /**
- * SelectItem — опция списка панели: корень по `tag` и строка-опция — `Button` на `span`
+ * SelectItem — опция списка панели: корень по `tag` и строка-опция — `ItemRow` на `span`
  * (под этот тег написан `TSelectItem._ariaTag`).
  */
 export function SelectItem(props: SelectItemProps): ReactElement | null {
@@ -51,13 +51,12 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
+			<ItemRow
 				embedded="select.row"
 				tag="span"
 				size={size}
 				variant={variant}
 				disabled={disabled}
-				tabIndex={-1}
 				{...toAriaProps(aria)}
 				{...toAriaProps(dataset)}
 				{...row}
@@ -79,7 +78,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '', selected: chosen }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }

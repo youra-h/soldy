@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chainHandler, Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { setupMenuRadioItem } from './setup.component'
 	import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
 
@@ -34,7 +34,7 @@
 		)}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="menu.row"
 			tag="div"
 			size={state.size}
@@ -59,6 +59,6 @@
 			{#snippet trailing()}
 				<span class="so-menu-item__shortcut">{@render props.trailing?.()}</span>
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

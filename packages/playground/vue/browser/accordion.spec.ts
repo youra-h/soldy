@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h, nextTick, type VNodeChild } from 'vue'
 import { Accordion, AccordionItem } from '@soldy-ui/vue'
 

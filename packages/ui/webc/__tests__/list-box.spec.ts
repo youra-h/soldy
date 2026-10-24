@@ -7,7 +7,7 @@
  *
  * Своё у Web Components — разметка. Корень списка и элемента — элемент
  * потребителя (`<div is="so-list-box">`, `<div is="so-list-box-item">`), а
- * строка элемента — Button на `div`, `<div is="so-button-div">`: одно имя
+ * строка элемента — ItemRow на `div`, `<div is="so-item-row-div">`: одно имя
  * элемента расширяет один тег, и кнопку на `div` регистрирует фабрика кнопки.
  * На `div` у выключенного пункта остаются фокус и клик, а ядро пишет строке
  * ARIA, рассчитанную на `div`. Атрибуты потребителя у элемента делятся между
@@ -33,9 +33,10 @@ import {
 	TListBoxGroupElement,
 	TListBoxItemElement,
 	defineElement,
-	registerButtonTag,
+	registerItemRowTag,
 	type ITemplate,
 	type TButtonElementProps,
+	type TItemRowElementProps,
 	type TListBoxElementProps,
 	type TListBoxItemElementProps,
 } from '@soldy-ui/webc'
@@ -62,8 +63,8 @@ const ITEMS: TItem[] = [
 	{ value: 'c', text: 'Третий' },
 ]
 
-/** Строка элемента — Button на `div`. */
-const TButtonDivElement = registerButtonTag('div')
+/** Строка элемента — ItemRow на `div`. */
+const TItemRowDivElement = registerItemRowTag('div')
 
 function isList(node: Element | null): node is TListBoxElementProps {
 	return node instanceof TListBoxElement
@@ -73,16 +74,16 @@ function isItem(node: Element | null): node is TListBoxItemElementProps {
 	return node instanceof TListBoxItemElement
 }
 
-function isRow(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
+function isRow(node: Element | null): node is TItemRowElementProps<HTMLDivElement> {
+	return node instanceof TItemRowDivElement
 }
 
 /** Строки элементов — на них обработчик выбора, `aria-selected` и `tabindex`. */
-const rows = (): TButtonElementProps<HTMLDivElement>[] =>
+const rows = (): TItemRowElementProps<HTMLDivElement>[] =>
 	[...document.querySelectorAll('.so-list-box-item .so-button')].filter(isRow)
 
 /** Строка элемента по тексту; нет её — тест падает здесь. */
-function rowOf(text: string): TButtonElementProps<HTMLDivElement> {
+function rowOf(text: string): TItemRowElementProps<HTMLDivElement> {
 	const row = rows().find((candidate) => candidate.textContent?.trim() === text)
 
 	if (!row) throw new Error(`строки элемента «${text}» нет`)
@@ -502,11 +503,11 @@ describe('атрибуты потребителя — узлу списка', ()
 })
 
 /**
- * Строка — Button на `div`: на `<button>` выключенный пункт терял бы фокус и
+ * Строка — ItemRow на `div`: на `<button>` выключенный пункт терял бы фокус и
  * клик, а ядро пишет строке ARIA под `div` (`TListBoxItem._ariaTag`).
  */
 describe('строка — кнопка на div', () => {
-	it('строка — <div is="so-button-div"> с именем места, своего type у неё нет', async () => {
+	it('строка — <div is="so-item-row-div"> с именем места, своего type у неё нет', async () => {
 		await mount(HARNESS)
 
 		const row = rowOf('A')
@@ -576,9 +577,9 @@ describe('строка — кнопка на div', () => {
 		expect(submits).toBe(1)
 	})
 
-	it('кнопка на div — один класс на тег, под именем so-button-div', () => {
-		expect(registerButtonTag('div')).toBe(TButtonDivElement)
-		expect(customElements.get('so-button-div')).toBe(TButtonDivElement)
+	it('строка на div — один класс на тег, под именем so-item-row-div', () => {
+		expect(registerItemRowTag('div')).toBe(TItemRowDivElement)
+		expect(customElements.get('so-item-row-div')).toBe(TItemRowDivElement)
 	})
 })
 
@@ -1426,9 +1427,9 @@ describe('типы', () => {
 	})
 
 	/** У `div` своего `disabled` нет: там это свойство пропа, а у `<button>` — нативное. */
-	it('кнопка на div — тип своего тега', () => {
-		expectTypeOf<TButtonElementProps<HTMLDivElement>>().toExtend<HTMLDivElement>()
-		expectTypeOf<TButtonElementProps<HTMLDivElement>['disabled']>().toEqualTypeOf<
+	it('строка на div — тип своего тега', () => {
+		expectTypeOf<TItemRowElementProps<HTMLDivElement>>().toExtend<HTMLDivElement>()
+		expectTypeOf<TItemRowElementProps<HTMLDivElement>['disabled']>().toEqualTypeOf<
 			boolean | undefined
 		>()
 		expectTypeOf<TButtonElementProps['disabled']>().toEqualTypeOf<boolean>()

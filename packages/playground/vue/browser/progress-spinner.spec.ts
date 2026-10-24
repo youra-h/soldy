@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h } from 'vue'
 import { TProgressSpinner } from '@soldy-ui/core'
 import type { IProgressProps } from '@soldy-ui/core'

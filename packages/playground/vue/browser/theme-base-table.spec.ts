@@ -30,7 +30,7 @@
  */
 
 import { describe, it, expect, afterAll, afterEach, beforeAll } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { createEngineTable } from '@soldy-ui/core'

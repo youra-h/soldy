@@ -25,10 +25,5 @@ export function setupTagsItem(props: TagsItemProps) {
 
 	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
 
-	return {
-		...joinBindings(owner, itemBinding),
-		context: item.instance.context,
-		/** Строка — экземпляр, которым владеет тег: кнопка берёт его целиком (`ctrl`). */
-		row: adapter.instance.row,
-	}
+	return { ...joinBindings(owner, itemBinding), context: item.instance.context }
 }

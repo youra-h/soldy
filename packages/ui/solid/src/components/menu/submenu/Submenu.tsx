@@ -17,7 +17,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { For, Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { MenuGroup } from '../group'
@@ -147,7 +147,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="menu.row"
 					tag="div"
 					size={state.size}
@@ -164,7 +164,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 					}
 				>
 					{header() ?? state.text}
-				</Button>
+				</ItemRow>
 				<Elevate layer={binding.layer}>
 					<Frame
 						embedded="menu.submenu-frame"

@@ -6,11 +6,11 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { useSetupMenuItem } from './setup.component'
 import type { MenuItemAttributes, MenuItemProps } from './base.component'
 
-/** MenuItem — пункт-действие: корень по `tag` и строка — `Button` на `div` с ARIA пункта. */
+/** MenuItem — пункт-действие: корень по `tag` и строка — `ItemRow` на `div` с ARIA пункта. */
 export function MenuItem(props: MenuItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuItem(props)
 
@@ -24,7 +24,7 @@ export function MenuItem(props: MenuItemProps): ReactElement | null {
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
+			<ItemRow
 				embedded="menu.row"
 				tag="div"
 				size={size}
@@ -41,7 +41,7 @@ export function MenuItem(props: MenuItemProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '' }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }

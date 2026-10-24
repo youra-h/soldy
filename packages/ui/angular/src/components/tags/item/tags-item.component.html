@@ -1,14 +1,15 @@
 <!--
-	Строка — Button над экземпляром тега (`row`, `TItemRow` на `div`): размер, вариант,
-	выключенность и направление ей пишет тег, а роль и `tabindex` — его набор `aria`.
 	Выбор — по `press` строки, а не по клику: на клик выключенный тег выбирался бы.
 	Крестик — `@if`, а не `rendered` кнопки: скрытая кнопка с плагинами стояла бы у каждого тега.
 -->
 <div
-	so-button
+	so-item-row
 	#control
 	embedded="tags.row"
-	[ctrl]="instance()?.row"
+	[direction]="state()['direction']"
+	[disabled]="state()['disabled']"
+	[size]="state()['size']"
+	[variant]="state()['variant']"
 	[so-attributes]="state()['aria']"
 	(soActionPress)="facade()?.context?.adapters.selection.toggle()"
 >

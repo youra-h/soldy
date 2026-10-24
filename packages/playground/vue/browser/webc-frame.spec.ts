@@ -28,7 +28,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { cleanup, render } from 'vitest-browser-vue'
+import { cleanup, render } from './render'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { TButton, TComponentView, TFrame, createEngineToasts } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, zhCN, type IPluginContext, type TLocale } from '@soldy-ui/plugins'

@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { TTextarea } from '@soldy-ui/core'

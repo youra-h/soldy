@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { MenuGroup } from '../group'
@@ -8,7 +8,7 @@ import { MenuSeparator } from '../separator'
 import Submenu from './Submenu.vue'
 import SetupMenuSubmenu from './setup.component'
 
-const components = { Button, Frame, Icon, MenuGroup, MenuItem, MenuSeparator }
+const components = { Frame, Icon, ItemRow, MenuGroup, MenuItem, MenuSeparator }
 
 /**
  * Подменю из данных в подменю — третий уровень и ниже — рисует оно само:
@@ -51,7 +51,7 @@ export default { ...SetupMenuSubmenu, components }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у пункта: на ней ARIA пункта (роль
+			Строка — `ItemRow` на `div`, как у пункта: на ней ARIA пункта (роль
 			`menuitem`, `aria-haspopup="menu"`, `aria-expanded`, `id` и
 			`aria-controls` на панель, `tabindex="-1"` от меню) и DOM-фокус,
 			когда пункт подсвечен.
@@ -62,7 +62,7 @@ export default { ...SetupMenuSubmenu, components }
 			строки, Enter и пробел клавиатура пункта гасит сама и открывает
 			подменю на первом пункте — клика из них нет.
 		-->
-		<Button
+		<ItemRow
 			embedded="menu.row"
 			tag="div"
 			:size="size"
@@ -88,7 +88,7 @@ export default { ...SetupMenuSubmenu, components }
 					</slot>
 				</span>
 			</template>
-		</Button>
+		</ItemRow>
 
 		<!--
 			Панель — Frame, как у меню: телепорт, слой выше панели меню над ним

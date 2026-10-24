@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h, nextTick } from 'vue'
 import { Button, DatePicker, Menu, Popover, Select } from '@soldy-ui/vue'
 

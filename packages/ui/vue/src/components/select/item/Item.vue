@@ -1,16 +1,16 @@
 <script lang="ts">
 import { Icon } from '../../icon'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupSelectItem from './setup.component'
 
 /**
- * Вся ARIA опции — на вложенном `Button`, строке опции: `role="option"` от
- * ядра, `id` и `aria-selected` от расширения коллекции. Один набор, шаблону не
- * нужно знать, кто в него писал. Узел с ролью один, как у Tabs, Accordion,
- * ListBox и Tags: набор опции ложится поверх того, что `Button` пишет себе
- * сам, — `role="option"` перекрывает `role="button"`, `tabindex="-1"` выводит
- * строку из обхода (фокус остаётся на поле), а `aria-disabled` у них один и
- * тот же.
+ * Вся ARIA опции — на вложенном `ItemRow`, строке опции: `role="option"` от
+ * ядра, `id` от плагина связок, `aria-selected` и `tabindex="-1"` от
+ * расширения коллекции. Один набор, шаблону не нужно знать, кто в него писал.
+ * Узел с ролью один, как у Tabs, Accordion, ListBox и Tags: своих роли и
+ * `tabindex` строка (`TItemRow`) не пишет, их несёт набор опции;
+ * `tabindex="-1"` выводит строку из обхода (фокус остаётся на поле), а
+ * `aria-disabled` у строки и опции один и тот же.
  *
  * Тег строки фиксирован (`tag="span"`), а не берётся из `tag` элемента:
  * `tag` — тег корня (`TComponentView`), и рисует по нему корень
@@ -22,7 +22,7 @@ import SetupSelectItem from './setup.component'
  * `TListItemPlugin`. ARIA для скринридера, `data-*` для стилей; смешивать
  * нельзя, иначе правка доступности ломает вид.
  *
- * `dataset` биндится дважды — на обёртку и на `Button`: фон при hover/
+ * `dataset` биндится дважды — на обёртку и на строку: фон при hover/
  * подсветке/выборе тема рисует на самой кнопке и читает `data-highlighted` /
  * `data-selected` с неё. То же устройство, что у `ListBoxItem`.
  *
@@ -41,7 +41,7 @@ import SetupSelectItem from './setup.component'
  * при выборе; иконка внутри появляется только у выбранной опции. Обёртка
  * `aria-hidden`: состояние скринридеру объявляет `aria-selected`.
  */
-export default { ...SetupSelectItem, components: { Icon, Button } }
+export default { ...SetupSelectItem, components: { Icon, ItemRow } }
 </script>
 
 <template>
@@ -54,13 +54,12 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 		:style="{ order: order }"
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
-		<Button
+		<ItemRow
 			embedded="select.row"
 			tag="span"
 			:size="size"
 			:variant="variant"
 			:disabled="disabled"
-			tabindex="-1"
 			@click="context?.adapters.select.choose()"
 			v-bind="{ ...aria, ...dataset, ...controlAttrs }"
 		>
@@ -103,6 +102,6 @@ export default { ...SetupSelectItem, components: { Icon, Button } }
 					</slot>
 				</span>
 			</template>
-		</Button>
+		</ItemRow>
 	</component>
 </template>

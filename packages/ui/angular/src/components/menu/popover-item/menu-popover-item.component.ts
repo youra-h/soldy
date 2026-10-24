@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IMenuPopoverItem } from '@soldy-ui/core'
 import { AttributesDirective, RoleIconDirective } from '../../../adapter'
-import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TFrameComponent } from '../../frame'
 import { TIconComponent } from '../../icon'
 import { TMenuPopoverItemSurface } from '../../../generated/menu-popover-item.metadata'
@@ -18,7 +18,7 @@ import { setupMenuPopoverItem } from './setup.component'
 		NgTemplateOutlet,
 		AttributesDirective,
 		RoleIconDirective,
-		TButtonComponent,
+		TItemRowComponent,
 		TFrameComponent,
 		TIconComponent,
 	],

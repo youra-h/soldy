@@ -1,24 +1,8 @@
 import { TValueControl } from '../../../base/value-control'
 import type { TDefaultValues } from '../../../base/component'
-import type { TDirection } from '../../../base/component-view'
 import { TAria, TChangeEvent } from '../../../../common'
-import type {
-	TComponentSize,
-	TComponentVariant,
-	TEventSink,
-	TValuePayload,
-} from '../../../../common'
-import TItemRow from '../../button/item-row.class'
-import type { IButton } from '../../button/types'
+import type { TEventSink } from '../../../../common'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
-
-/**
- * Тег строки. Один на строку и на `_ariaTag`: `aria` тега лежит на строке, и
- * ARIA-половину правила «нативный атрибут вместо ARIA-дубля» решает её тег.
- * Константа модуля, а не поле: `_ariaTag` зовёт уже конструктор базы, когда
- * полей класса ещё нет.
- */
-const ROW_TAG = 'div'
 
 /**
  * Элемент Tags — тег.
@@ -34,14 +18,13 @@ const ROW_TAG = 'div'
  * пишет. Тег без своего варианта тема красит вариантом набора — по классу
  * набора, а не по значению на теге.
  *
- * **Строка** (`row`) — кнопка, которой владеет тег, как Select — своим полем:
- * тег создаёт её один раз и пишет ей свои `size`, `variant`, `disabled` и
- * `direction`, а разметка отдаёт её кнопке целиком (`<Button :ctrl="row">`).
- * Это `TItemRow`: роль и остановку Tab она себе не пишет — их пишет набор
- * `aria` тега, который разметка кладёт на неё же: роль — тег, `tabindex` —
- * `TTagsExtension` по режиму выбора. Без выбора `tabindex` у строки нет вовсе,
- * и фокус от клика она не принимает: действия у `listitem` нет. Тег строки
- * задаёт тег (`ROW_TAG`), а не разметка.
+ * **Строка** — деталь разметки тега, `ItemRow` на `div` (`TItemRow`): кнопка,
+ * которая роль и остановку Tab себе не пишет. Их пишет набор `aria` тега,
+ * который разметка кладёт на неё же: роль — тег, `tabindex` — `TTagsExtension`
+ * по режиму выбора. Без выбора `tabindex` у строки нет вовсе, и фокус от клика
+ * она не принимает: действия у `listitem` нет. Экземпляр строки создаёт её
+ * монтирование и отпускает размонтирование — у тега ни строки, ни подписок
+ * для неё нет.
  *
  * Кнопка закрытия, в отличие от таба, — живой набор `closeAria`, а не
  * вычисляемый снимок: её `tabindex` зависит от режима выбора коллекции, о
@@ -68,7 +51,6 @@ export default class TTagsItem<
 	}
 
 	protected _closeAria: TAria
-	protected readonly _row: TItemRow
 
 	protected _text: string
 	protected _closable: boolean | undefined
@@ -95,28 +77,6 @@ export default class TTagsItem<
 		// меняется на `option`, когда у коллекции включён выбор — об этом
 		// знает `TTagsExtension`, не элемент.
 		this._aria.add('role', 'listitem')
-
-		// Строка — со значениями тега, и дальше их пишет он: от корня тега
-		// узел строки их не наследует, а разметка рядом с `ctrl` их не задаёт
-		this._row = new TItemRow({
-			tag: ROW_TAG,
-			size: this.size,
-			variant: this.variant,
-			disabled: this.disabled,
-			direction: this.direction,
-		})
-
-		this.events.on('change:size', (payload: TValuePayload<TComponentSize>) => {
-			this._row.size = payload.newValue
-		})
-		this.events.on(
-			'change:variant',
-			(payload: TValuePayload<TComponentVariant | undefined>) => {
-				this._row.variant = payload.newValue
-			},
-		)
-		this.events.on('change:disabled', (value: boolean) => (this._row.disabled = value))
-		this.events.on('change:direction', (value: TDirection) => (this._row.direction = value))
 	}
 
 	/**
@@ -128,23 +88,14 @@ export default class TTagsItem<
 	}
 
 	/**
-	 * `aria` тега стоит на строке (`row`). Её тег задаёт тег (`ROW_TAG`), а не
-	 * разметка, поэтому от `tag` корня ARIA-половина правила «нативный атрибут
-	 * вместо ARIA-дубля» не зависит: у `div` своего `disabled` нет, и состояние
-	 * остаётся `aria-disabled`, каким бы ни был корень.
+	 * `aria` тега стоит на вложенном `ItemRow` — строке тега. Тег у неё
+	 * фиксированный (`div`), разметка задаёт его сама, поэтому от `tag` корня
+	 * ARIA-половина правила «нативный атрибут вместо ARIA-дубля» не зависит:
+	 * у `div` своего `disabled` нет, и состояние остаётся `aria-disabled`,
+	 * каким бы ни был корень.
 	 */
 	protected override get _ariaTag(): string {
-		return ROW_TAG
-	}
-
-	/**
-	 * Строка тега — кнопка, которой владеет тег (`TItemRow`): роль и
-	 * остановку Tab ей пишет набор `aria` тега, а `size`, `variant`, `disabled`
-	 * и `direction` — сам тег. Не меняется за время жизни тега, поэтому
-	 * `change:`-события у геттера нет, как у поля Select.
-	 */
-	get row(): IButton {
-		return this._row
+		return 'div'
 	}
 
 	get text(): string {

@@ -30,6 +30,7 @@ import { createRoot } from 'react-dom/client'
 import {
 	TAccordion,
 	TButton,
+	TItemRow,
 	TCalendar,
 	TCheckBox,
 	TComponentView,
@@ -121,6 +122,7 @@ import {
 	Tooltip,
 	Virtual,
 } from '@soldy-ui/react'
+import { ItemRow } from '../src/components/item-row'
 import { nextFrame, track } from './mount'
 
 /**
@@ -382,6 +384,13 @@ const COMPONENTS: Readonly<Record<string, Readonly<Record<string, TCase>>>> = {
 		ctrl: overCtrl(
 			() => new TButton(),
 			(ctrl) => <Button ctrl={ctrl} />,
+		),
+	},
+	/** Строка элемента коллекции — деталь разметки, но над `ctrl` монтируется так же. */
+	ItemRow: {
+		ctrl: overCtrl(
+			() => new TItemRow({ tag: 'div' }),
+			(ctrl) => <ItemRow tag="div" ctrl={ctrl} />,
 		),
 	},
 	/**

@@ -27,7 +27,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { TRating, TSlider } from '@soldy-ui/core'
