@@ -524,14 +524,16 @@ describe('с выбором — одна остановка Tab на весь н
 })
 
 /**
- * Без выбора у строки нет действия: остановка ей не нужна, а крестик —
- * единственный путь закрыть тег с клавиатуры.
+ * Без выбора у строки нет действия: ни остановка, ни фокус от клика ей не
+ * нужны, — `tabindex` у неё нет вовсе, а крестик — единственный путь закрыть
+ * тег с клавиатуры.
  */
 describe('без выбора строки Tab не ловят, крестик ловит', () => {
-	it('у строк -1, у крестика tabindex нет — он нативная остановка', () => {
+	it('у строк и у крестика tabindex нет — крестик нативная остановка', () => {
 		mountWith(AbcHost, (page) => page.closable.set(true))
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
 		expect(['A', 'B', 'C'].map((text) => closeOf(text).hasAttribute('tabindex'))).toEqual([
 			false,
 			false,
@@ -551,10 +553,12 @@ describe('без выбора строки Tab не ловят, крестик �
 		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['0', '-1', '-1'])
 		expect(closeOf('A').getAttribute('tabindex')).toBe('-1')
 
+		// Атрибут уходит из разметки: у строки его больше никто не пишет
 		fixture.componentInstance.mode.set('none')
 		fixture.detectChanges()
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
 		expect(closeOf('A').hasAttribute('tabindex')).toBe(false)
 	})
 })
@@ -1186,6 +1190,38 @@ describe('Tags.Item · корень и строка', () => {
 		expect(rowOf('A').tagName).toBe('DIV')
 		expect(rowOf('A').getAttribute('aria-disabled')).toBe('true')
 		expect(rowOf('A').hasAttribute('disabled')).toBe(false)
+	})
+
+	/**
+	 * Строка — кнопка над экземпляром тега (`row`, `TItemRow`): размер
+	 * набора и выключенность тега ей пишет тег, а не шаблон, — а роли и
+	 * `tabindex` своих у неё нет, их кладёт набор тега.
+	 */
+	it('строка — над экземпляром тега: размер набора и выключенность тега доходят до неё', () => {
+		@Component({
+			selector: 'probe-tags-item-row',
+			imports: [TTagsComponent, TTagsItemComponent],
+			template: `<div so-tags [size]="size()">
+				<div so-tags-item value="a" text="A" [disabled]="off()"></div>
+			</div>`,
+		})
+		class RowHost {
+			readonly size = signal<'sm' | 'lg'>('sm')
+			readonly off = signal(false)
+		}
+
+		const fixture = mountHost(RowHost)
+
+		expect(rowOf('A').classList.contains('so-button--size-sm')).toBe(true)
+
+		fixture.componentInstance.size.set('lg')
+		fixture.componentInstance.off.set(true)
+		fixture.detectChanges()
+
+		expect(rowOf('A').classList.contains('so-button--size-lg')).toBe(true)
+		expect(rowOf('A').getAttribute('data-disabled')).toBe('true')
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
+		expect(rowOf('A').hasAttribute('tabindex')).toBe(false)
 	})
 
 	/**

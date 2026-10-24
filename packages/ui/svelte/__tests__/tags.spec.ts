@@ -434,14 +434,16 @@ describe('с выбором — одна остановка Tab на весь н
 })
 
 /**
- * Без выбора у строки нет действия: остановка ей не нужна, а крестик —
- * единственный путь закрыть тег с клавиатуры.
+ * Без выбора у строки нет действия: ни остановка, ни фокус от клика ей не
+ * нужны, — `tabindex` у неё нет вовсе, а крестик — единственный путь закрыть
+ * тег с клавиатуры.
  */
 describe('без выбора строки Tab не ловят, крестик ловит', () => {
-	it('у строк -1, у крестика tabindex нет — он нативная остановка', () => {
+	it('у строк и у крестика tabindex нет — крестик нативная остановка', () => {
 		mount(Harness, { tags: { closable: true }, items: ABC })
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
 		expect(['A', 'B', 'C'].map((text) => closeOf(text).hasAttribute('tabindex'))).toEqual([
 			false,
 			false,
@@ -463,10 +465,12 @@ describe('без выбора строки Tab не ловят, крестик �
 		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['0', '-1', '-1'])
 		expect(closeOf('A').getAttribute('tabindex')).toBe('-1')
 
+		// Атрибут уходит из разметки: у строки его больше никто не пишет
 		props.tags = { closable: true, mode: 'none' }
 		flushSync()
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
 		expect(closeOf('A').hasAttribute('tabindex')).toBe(false)
 	})
 })

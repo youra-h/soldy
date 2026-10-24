@@ -4,8 +4,8 @@
  * Ядро пишет `tabindex` строк и крестика в наборы, `TTagsKeyboardPlugin`
  * ловит клавиши и `focusin` на корне; по отдельности это проверяют
  * `core/__tests__/tags.spec.ts` и `plugins/__tests__/tags-keyboard.plugin.spec.ts`.
- * Здесь — что наборы доехали до своих элементов и перекрыли собственную
- * остановку строки-`Button` на `div`, а плагин ходит по настоящей разметке:
+ * Здесь — что наборы доехали до своих элементов, а строка своих роли и
+ * остановки не ставит (`TItemRow`), и плагин ходит по настоящей разметке:
  * фокус уходит на строку с `role="option"`, а не на пилюлю.
  *
  * Что Tab и в самом деле входит в набор один раз, проверяет браузерный прогон
@@ -126,20 +126,38 @@ describe('с выбором — одна остановка Tab на весь н
 })
 
 /**
- * Без выбора у строки нет действия: остановка ей не нужна, а крестик —
- * единственный путь закрыть тег с клавиатуры.
+ * Без выбора у строки нет действия: ни остановка, ни фокус от клика ей не
+ * нужны, — `tabindex` у неё нет вовсе, а крестик — единственный путь закрыть
+ * тег с клавиатуры.
  */
 describe('без выбора строки Tab не ловят, крестик ловит', () => {
-	it('у строк -1, у крестика tabindex нет — он нативная остановка', async () => {
+	it('у строк и у крестика tabindex нет — крестик нативная остановка', async () => {
 		await render(`<Tags closable>${ABC}</Tags>`)
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(['A', 'B', 'C'].map((text) => row(text).getAttribute('role'))).toEqual([
+			'listitem',
+			'listitem',
+			'listitem',
+		])
 		expect(['A', 'B', 'C'].map((text) => close(text).hasAttribute('tabindex'))).toEqual([
 			false,
 			false,
 			false,
 		])
 		expect(document.querySelector('.so-tags')?.hasAttribute('aria-orientation')).toBe(false)
+	})
+
+	/**
+	 * Строка — `div` без `tabindex`: фокус от клика браузер ей не даёт. В jsdom
+	 * это видно по `focus()` — узел без `tabindex` фокус не принимает.
+	 */
+	it('строка фокус не принимает: focus() её фокус не ставит', async () => {
+		await render(`<Tags closable>${ABC}</Tags>`)
+
+		row('A').focus()
+
+		expect(document.activeElement).not.toBe(row('A'))
 	})
 
 	it('теги в поле Select — так же', async () => {
@@ -159,7 +177,7 @@ describe('без выбора строки Tab не ловят, крестик �
 
 		if (!field) throw new Error('тегов в поле нет')
 
-		expect(rowTabindex(['Москва', 'Тверь'], field)).toEqual(['-1', '-1'])
+		expect(rowTabindex(['Москва', 'Тверь'], field)).toEqual([null, null])
 		expect(close('Москва', field).hasAttribute('tabindex')).toBe(false)
 		expect(row('Москва', field).getAttribute('role')).toBe('listitem')
 	})
@@ -183,9 +201,11 @@ describe('без выбора строки Tab не ловят, крестик �
 		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['0', '-1', '-1'])
 		expect(close('A').getAttribute('tabindex')).toBe('-1')
 
+		// Атрибут уходит из разметки: у строки его больше никто не пишет
 		await mounted.setProps({ mode: 'none' })
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(row('A').getAttribute('role')).toBe('listitem')
 		expect(close('A').hasAttribute('tabindex')).toBe(false)
 	})
 })

@@ -54,6 +54,7 @@ import {
 	radioStopOf,
 	rowIn,
 	tabIn,
+	tagStopIn,
 	tagStopOf,
 	viewportStopOf,
 } from '../src'
@@ -552,12 +553,77 @@ describe('firstHeaderOf — заголовок первой доступной �
 	})
 })
 
-describe('tagStopOf — остановка набора тегов', () => {
+/**
+ * Узел тега, как его рисует разметка: строка — набор `aria` тега (роль и
+ * `tabindex`; своих строка не пишет, она `TItemRow`), — и крестик, пока
+ * тег закрывается (`tabindex` — из `closeAria`). Наборы тест кладёт на узлы
+ * сам — один раз, при отрисовке: дальше разметка не перерисовывается.
+ */
+function drawTag(item: ITagsItem, closable = true): HTMLElement {
+	const node = document.createElement('div')
+	const row = document.createElement('div')
+
+	for (const [name, value] of Object.entries(item.aria.valueOf())) {
+		if (value !== null && value !== undefined) row.setAttribute(name, String(value))
+	}
+
+	row.dataset.value = String(item.value)
+	node.append(row)
+
+	if (!closable) return node
+
+	const close = button()
+
+	for (const [name, value] of Object.entries(item.closeAria.valueOf())) {
+		if (value !== null && value !== undefined) close.setAttribute(name, String(value))
+	}
+
+	close.dataset.close = String(item.value)
+	close.disabled = item.disabled
+	node.append(close)
+
+	return node
+}
+
+/** Тег в наборе с режимом выбора — модель, по которой рисуется его узел. */
+function tagInMode(mode: 'none' | 'single'): ITagsItem {
+	const engine = createEngineTags({ owner: new TTags({ closable: true }) })
+	const tag = engine.extensions.plain.push(new TTagsItem({ value: 'a', text: 'a' }))
+
+	engine.extensions.selection.mode = mode
+
+	return tag
+}
+
+describe('tagStopIn — остановка в узле тега', () => {
+	it('с выбором — строка с ролью опции, а не крестик и не обёртка', () => {
+		const node = drawTag(tagInMode('single'))
+
+		expect(tagStopIn(node)).toBe(find(node, '[data-value="a"]'))
+	})
+
 	/**
-	 * Набор тегов: у тега строка (роль и `tabindex` — из его набора `aria`) и
-	 * крестик (`tabindex` — из `closeAria`). Наборы тест кладёт на узлы сам —
-	 * один раз, при отрисовке: дальше разметка не перерисовывается.
+	 * Строка без выбора — `listitem` без `tabindex`: фокус она не принимает, и
+	 * `focused = true` ставит его туда же, куда ведёт Tab, — на крестик.
 	 */
+	it('без выбора — крестик: у строки ни роли опции, ни tabindex', () => {
+		const node = drawTag(tagInMode('none'))
+		const row = find(node, '[data-value="a"]')
+
+		expect(row.hasAttribute('tabindex')).toBe(false)
+		expect(tagStopIn(node)).toBe(find(node, '[data-close="a"]'))
+	})
+
+	it('без выбора и без крестика — null: остановок в теге нет', () => {
+		expect(tagStopIn(drawTag(tagInMode('none'), false))).toBeNull()
+	})
+
+	it('узла нет — null', () => {
+		expect(tagStopIn(null)).toBeNull()
+	})
+})
+
+describe('tagStopOf — остановка набора тегов', () => {
 	function tags(values: string[], mode: 'none' | 'single') {
 		const owner = new TTags({ closable: true })
 		const engine = createEngineTags({ owner })
@@ -567,28 +633,7 @@ describe('tagStopOf — остановка набора тегов', () => {
 
 		engine.extensions.selection.mode = mode
 
-		const draw = (item: ITagsItem) => {
-			const node = document.createElement('div')
-			const row = document.createElement('div')
-			const close = button()
-
-			for (const [name, value] of Object.entries(item.aria.valueOf())) {
-				if (value !== null && value !== undefined) row.setAttribute(name, String(value))
-			}
-
-			for (const [name, value] of Object.entries(item.closeAria.valueOf())) {
-				if (value !== null && value !== undefined) close.setAttribute(name, String(value))
-			}
-
-			row.dataset.value = String(item.value)
-			close.dataset.close = String(item.value)
-			close.disabled = item.disabled
-			node.append(row, close)
-
-			return node
-		}
-
-		const set = collectionOf(owner, engine, items, draw)
+		const set = collectionOf(owner, engine, items, (item) => drawTag(item))
 		const rowOf = (value: string) => find(set.root, `[data-value="${value}"]`)
 		const closeOf = (value: string) => find(set.root, `[data-close="${value}"]`)
 		const tagOf = (value: string) => {
@@ -627,7 +672,7 @@ describe('tagStopOf — остановка набора тегов', () => {
 	it('без выбора — крестик первого тега: у строк остановки нет', () => {
 		const { root, ctx, closeOf, rowOf } = tags(['a', 'b'], 'none')
 
-		expect(rowOf('a').getAttribute('tabindex')).toBe('-1')
+		expect(rowOf('a').hasAttribute('tabindex')).toBe(false)
 		expect(tagStopOf(root, ctx)).toBe(closeOf('a'))
 	})
 

@@ -19,15 +19,18 @@ import type { TagsItemAttributes, TagsItemProps } from './base.component'
 const CLOSE = roleIcon('close')
 
 /**
- * Тег: строка — `Button` на `div` с набором `aria`, кнопка закрытия — её сосед:
- * потомки опции скринридеру презентационны. Выбор — по `press` строки: на клик
- * выключенный тег выбирался бы. Крестик — `Show`, а не `rendered` кнопки: скрытая
- * кнопка собирала бы у каждого тега свой контекст.
+ * Тег: строка — `Button` над экземпляром тега (`row`, `TItemRow` на `div`) с набором
+ * `aria`, кнопка закрытия — её сосед: потомки опции скринридеру презентационны. Размер,
+ * вариант, выключенность и направление строке пишет тег, а роль и `tabindex` — его набор
+ * `aria`. Выбор — по `press` строки: на клик выключенный тег выбирался бы.
+ * Крестик — `Show`, а не `rendered` кнопки: скрытая кнопка собирала бы у каждого тега
+ * свой контекст.
  */
 export function TagsItem(props: TagsItemProps): JSX.Element {
 	const binding = setupTagsItem(props)
 	const state = binding.state
 	const context = binding.context
+	const row = binding.row
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.dataset, state.attrs],
@@ -42,7 +45,7 @@ export function TagsItem(props: TagsItemProps): JSX.Element {
 		() => ({}),
 	)
 
-	const row = () => toControlAttrs<TagsItemAttributes>(binding.forwardProps())
+	const rowAttrs = () => toControlAttrs<TagsItemAttributes>(binding.forwardProps())
 
 	function toggle(): void {
 		context?.adapters.selection.toggle()
@@ -59,16 +62,12 @@ export function TagsItem(props: TagsItemProps): JSX.Element {
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
 				<Button
 					embedded="tags.row"
-					tag="div"
-					direction={state.direction}
-					disabled={state.disabled}
-					size={state.size}
-					variant={state.variant}
+					ctrl={row}
 					leading={renderSlot(props.leading)}
 					trailing={renderSlot(props.trailing)}
 					onActionPress={toggle}
 					{...state.aria}
-					{...row()}
+					{...rowAttrs()}
 				>
 					{content() ?? state.text}
 				</Button>

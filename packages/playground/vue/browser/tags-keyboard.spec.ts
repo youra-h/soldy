@@ -4,12 +4,13 @@
  * С выбором весь набор — одна остановка Tab: Tab входит в него один раз, на
  * выбранный тег, и следующим Tab уходит дальше. По тегам ходят стрелки,
  * пробел выбирает тег под фокусом, Delete закрывает его и оставляет фокус в
- * наборе. Без выбора у строки нет действия — Tab её пропускает, а крестик
- * остаётся остановкой: так устроены теги в поле Select.
+ * наборе. Без выбора у строки нет действия — `tabindex` у неё нет, и ни Tab,
+ * ни клик фокус на неё не ставят, а крестик остаётся остановкой: так устроены
+ * и теги в поле Select.
  *
- * Спек браузерный, потому что порядок Tab ведёт браузер: jsdom его не
- * считает, и `tabindex` в разметке (`ui/vue/__tests__/tags-keyboard.spec.ts`)
- * ещё не значит, что остановка одна.
+ * Спек браузерный, потому что порядок Tab и фокус от нажатия ведёт браузер:
+ * jsdom их не считает, и `tabindex` в разметке
+ * (`ui/vue/__tests__/tags-keyboard.spec.ts`) ещё не значит, что остановка одна.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -153,6 +154,57 @@ describe('с выбором набор — одна остановка Tab', () 
 		await shiftTab()
 
 		expect(document.activeElement).toBe(row('Архив'))
+	})
+})
+
+/** Набор без выбора: строки — `listitem` без действия, закрыть можно любой тег. */
+const plain = () =>
+	around(
+		h(Tags, { closable: true }, () => [
+			h(TagsItem, { key: 'a', value: 'a', text: 'Настройки' }),
+			h(TagsItem, { key: 'b', value: 'b', text: 'Почта' }),
+			h(TagsItem, { key: 'c', value: 'c', text: 'Архив' }),
+		]),
+	)
+
+/** Крестик тега по тексту — по его имени от локали. */
+const closeOf = (text: string): HTMLElement =>
+	find(`.so-tags-item__close[aria-label="Close ${text}"]`)
+
+/**
+ * Без выбора строка — `listitem` без действия, и `tabindex` у неё нет: строка
+ * — кнопка, чью роль и остановку пишет тег (`TItemRow`), а не `Button` на
+ * `div`, чья остановка, погашенная `-1`, всё равно принимала фокус от клика.
+ */
+describe('без выбора строка фокус не берёт, Tab идёт по крестикам', () => {
+	it('клик по строке фокус на неё не ставит', async () => {
+		await show(plain)
+
+		find('.so-test-before').focus()
+		await userEvent.click(row('Почта'))
+
+		expect(document.activeElement).not.toBe(row('Почта'))
+		expect(document.activeElement).toBe(document.body)
+	})
+
+	it('Tab — «До», крестики по порядку, «После»; Shift+Tab — обратно на крестик', async () => {
+		await show(plain)
+
+		find('.so-test-before').focus()
+
+		for (const text of ['Настройки', 'Почта', 'Архив']) {
+			await tab()
+
+			expect(document.activeElement).toBe(closeOf(text))
+		}
+
+		await tab()
+
+		expect(document.activeElement).toBe(find('.so-test-after'))
+
+		await shiftTab()
+
+		expect(document.activeElement).toBe(closeOf('Архив'))
 	})
 })
 

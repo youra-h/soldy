@@ -3,6 +3,10 @@
  * часть: потомки опции для скринридера презентационны, и его подпись
  * приклеилась бы к названию тега. Вид набора рисует корень: фон и выбор
  * покрывают и крестик.
+ *
+ * Строка — деталь над экземпляром тега (`row`, `TItemRow`): размер,
+ * вариант, выключенность и направление ей пишет тег, а роль и `tabindex` —
+ * его набор `aria`, слоем владельца.
  */
 
 import type { ITagsItem, TTagsItemCollectionFacade } from '@soldy-ui/core'
@@ -11,7 +15,7 @@ import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from
 import { TButtonElement, registerButtonTag, type TButtonElementProps } from '../../button'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-/** Строка — на `div`: под него ядро пишет тегу ARIA (`TTagsItem._ariaTag`). */
+/** Строка — на `div`, теге её экземпляра: под него ядро пишет тегу ARIA (`TTagsItem._ariaTag`). */
 const TButtonDivElement = registerButtonTag('div')
 
 type TTagParts = {
@@ -70,23 +74,25 @@ export const tagsItemTemplate: ITemplate<ITagsItem, TTagsItemCollectionFacade> =
 	},
 
 	bindings: [
-		// Строке и крестику — явно, от тега они не наследуют; только сменившиеся:
-		// `disabled` кнопки нативный, и запись прошла бы через атрибут
-		bind(['direction', 'disabled', 'size', 'variant'], ({ root, state }) => {
+		// На каждое подключение: в построении инстанса ещё нет, а строка собирается
+		// после тега и берёт свой экземпляр при подключении
+		bind([], ({ root, ctrl }) => {
+			const row = parts.get(root)?.row
+
+			if (row && ctrl && row.ctrl !== ctrl.row) row.ctrl = ctrl.row
+		}),
+
+		// Крестику и иконке — явно, от тега они не наследуют; только сменившиеся:
+		// `disabled` кнопки нативный, и запись прошла бы через атрибут. Строке
+		// их пишет сам тег — в её экземпляр
+		bind(['disabled', 'size'], ({ root, state }) => {
 			const own = parts.get(root)
 
 			if (!own) return
 
-			const { row, close, icon } = own
-			const disabled = state.disabled === true
+			const { close, icon } = own
 
-			patch(row, {
-				direction: state.direction,
-				disabled,
-				size: state.size,
-				variant: state.variant,
-			})
-			patch(close, { disabled, size: state.size })
+			patch(close, { disabled: state.disabled === true, size: state.size })
 			if (icon && icon.size !== state.size) icon.size = state.size
 		}),
 

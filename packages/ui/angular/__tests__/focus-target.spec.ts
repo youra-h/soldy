@@ -570,6 +570,7 @@ class TagsPlainHost {
 	readonly ctrl = new TTags()
 }
 
+/** Тег без выбора: строка — `listitem` без `tabindex`, остановка тега — крестик. */
 @Component({
 	selector: 'probe-tags-item-focus',
 	standalone: true,
@@ -580,6 +581,20 @@ class TagsPlainHost {
 	</div>`,
 })
 class TagsItemHost {
+	readonly ctrl = new TTagsItem({ value: 'b', text: 'B' })
+}
+
+/** Тег с выбором: строка-опция, хотя остановка набора у первого тега. */
+@Component({
+	selector: 'probe-tags-item-single-focus',
+	standalone: true,
+	imports: [TTagsComponent, TTagsItemComponent],
+	template: `<div so-tags mode="single" closable>
+		<div so-tags-item value="a" text="A"></div>
+		<div so-tags-item class="target" [ctrl]="ctrl"></div>
+	</div>`,
+})
+class TagsItemSelectingHost {
 	readonly ctrl = new TTagsItem({ value: 'b', text: 'B' })
 }
 
@@ -669,7 +684,8 @@ const CASES: Record<string, TCase> = {
 	},
 	'Tags с выбором': { host: TagsSelectingHost, target: '.target [role="option"]' },
 	'Tags без выбора': { host: TagsPlainHost, target: '.target .so-tags-item__close' },
-	'Tags.Item': { host: TagsItemHost, target: '.target [role="listitem"]' },
+	'Tags.Item': { host: TagsItemHost, target: '.target .so-tags-item__close' },
+	'Tags.Item с выбором': { host: TagsItemSelectingHost, target: '.target [role="option"]' },
 	'Tabs.Item': { host: TabsItemHost, target: '.target [role="tab"]' },
 	'Accordion.Item': { host: AccordionItemHost, target: '.target .so-accordion-item__header' },
 	'ListBox.Item': { host: ListBoxItemHost, target: '.target [role="option"]' },

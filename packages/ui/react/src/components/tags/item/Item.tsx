@@ -16,20 +16,22 @@ import type { TagsItemAttributes, TagsItemProps } from './base.component'
 const CloseIcon = roleIcon('close')
 
 /**
- * TagsItem — тег: корень-пилюля по `tag`, в нём строка — `Button` на `div` — и крестик рядом
- * со строкой, а не в ней: потомки опции для скринридера презентационны.
+ * TagsItem — тег: корень-пилюля по `tag`, в нём строка и крестик рядом со строкой, а не в ней:
+ * потомки опции для скринридера презентационны. Строка — `Button` над экземпляром тега
+ * (`row`, `TItemRow` на `div`): размер, вариант, выключенность и направление ей пишет
+ * тег, а роль и `tabindex` — его набор `aria`. Ключ — экземпляр: пересобранный тег без `ctrl`
+ * — новая строка, и кнопка над ней монтируется заново (AGENTS.md (React), «Пересобранный
+ * инстанс и `key`»).
  */
 export function TagsItem(props: TagsItemProps): ReactElement | null {
-	const { ref, forwardProps, state, context } = useSetupTagsItem(props)
+	const { ref, forwardProps, state, context, row } = useSetupTagsItem(props)
 
 	const {
 		rendered,
 		tag,
 		text,
-		direction,
 		disabled,
 		size,
-		variant,
 		selected,
 		tag_closable,
 		closeAria,
@@ -45,12 +47,9 @@ export function TagsItem(props: TagsItemProps): ReactElement | null {
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
 			<Button
+				key={row.uid}
 				embedded="tags.row"
-				tag="div"
-				direction={direction}
-				disabled={disabled}
-				size={size}
-				variant={variant}
+				ctrl={row}
 				{...toAriaProps(aria)}
 				{...toControlAttrs<TagsItemAttributes>(forwardProps)}
 				// `press`, а не клик: на выключенный тег он не приходит, `toggle` это не проверяет

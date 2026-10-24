@@ -24,5 +24,7 @@ export function useSetupTagsItem(props: TagsItemProps) {
 	return {
 		...useCollectionAdapter(useAdapter(adapter, props), item, props),
 		context: item.instance.context,
+		/** Строка — экземпляр, которым владеет тег: кнопка берёт его целиком (`ctrl`). */
+		row: adapter.instance.row,
 	}
 }

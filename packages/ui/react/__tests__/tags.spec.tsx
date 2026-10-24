@@ -443,14 +443,16 @@ describe('с выбором — одна остановка Tab на весь н
 })
 
 /**
- * Без выбора у строки нет действия: остановка ей не нужна, а крестик —
- * единственный путь закрыть тег с клавиатуры.
+ * Без выбора у строки нет действия: ни остановка, ни фокус от клика ей не
+ * нужны, — `tabindex` у неё нет вовсе, а крестик — единственный путь закрыть
+ * тег с клавиатуры.
  */
 describe('без выбора строки Tab не ловят, крестик ловит', () => {
-	it('у строк -1, у крестика tabindex нет — он нативная остановка', () => {
+	it('у строк и у крестика tabindex нет — крестик нативная остановка', () => {
 		draw({ tags: { closable: true }, items: ABC })
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
 		expect(['A', 'B', 'C'].map((text) => closeOf(text).hasAttribute('tabindex'))).toEqual([
 			false,
 			false,
@@ -469,9 +471,11 @@ describe('без выбора строки Tab не ловят, крестик �
 		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['0', '-1', '-1'])
 		expect(closeOf('A').getAttribute('tabindex')).toBe('-1')
 
+		// Атрибут уходит из разметки: у строки его больше никто не пишет
 		update({ tags: { closable: true, mode: 'none' }, items: ABC })
 
-		expect(rowTabindex(['A', 'B', 'C'])).toEqual(['-1', '-1', '-1'])
+		expect(rowTabindex(['A', 'B', 'C'])).toEqual([null, null, null])
+		expect(rowOf('A').getAttribute('role')).toBe('listitem')
 		expect(closeOf('A').hasAttribute('tabindex')).toBe(false)
 	})
 })
@@ -1034,6 +1038,29 @@ describe('React', () => {
 
 		expect(values(engine)).toEqual(['b', 'c'])
 		expect(rows().map((row) => row.textContent?.trim())).toEqual(['B', 'C'])
+	})
+
+	/**
+	 * Строка — экземпляр, которым владеет тег. StrictMode пересобирает тег без
+	 * `ctrl` новым экземпляром — с новой строкой, — и кнопка с ключом-экземпляром
+	 * встаёт над ней. Без ключа она осталась бы над строкой выброшенной сборки, и
+	 * размер, который набор пишет тегу, до видимой строки не дошёл бы.
+	 */
+	it('StrictMode: строка — над строкой текущей сборки тега, размер набора доходит до неё', () => {
+		const tree = (size: 'sm' | 'lg') => (
+			<StrictMode>
+				<Tags size={size}>
+					<Tags.Item value="a" text="A" />
+				</Tags>
+			</StrictMode>
+		)
+		const { render } = mount(tree('sm'))
+
+		render(tree('lg'))
+
+		expect(rows()).toHaveLength(1)
+		expect(rowOf('A').classList.contains('so-button--size-lg')).toBe(true)
+		expect(rowOf('A').classList.contains('so-button--size-sm')).toBe(false)
 	})
 
 	it('серверная разметка набора из данных — полная: роли, выбор и остановка Tab', () => {
