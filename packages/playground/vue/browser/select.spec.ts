@@ -473,6 +473,82 @@ describe('нажатие по тегу', () => {
 })
 
 /**
+ * Крестик тега — остановка Tab поля, и нажатие по нему правило поля не трогает:
+ * фокус встаёт на крестик. Тег уходит вместе с ним, и фокус уходил на страницу:
+ * ↓ с `body` до клавиатуры Select не доходил и прокручивал страницу. Закрытый
+ * тег отдаёт фокус крестику соседа, а последний — полю: ряд тегов стоит перед
+ * ним, и своего правила у Select для этого нет.
+ */
+describe('закрытие тега крестиком', () => {
+	const tagCount = () => document.querySelectorAll('.so-select__tags .so-tags-item').length
+
+	/** Крестик тега по тексту — по его имени от локали. */
+	const closeOf = (text: string) =>
+		find(`.so-select__tags .so-tags-item__close[aria-label="Close ${text}"]`)
+
+	it.each<[string, Record<string, unknown>]>([
+		['select-only', {}],
+		['editable', { editable: true }],
+	])(
+		'%s: у единственного тега — фокус в поле, и ↓ ходит по опциям, а страница стоит',
+		async (_, props) => {
+			await show({ mode: 'multiple', value: ['0'], ...props }, '300vh')
+			await expect.poll(tagCount).toBe(1)
+
+			// Страница выше окна — иначе ↓ прокручивать нечего, и сторож прошёл
+			// бы сам
+			expect(
+				document.documentElement.scrollHeight,
+				'высота страницы против окна',
+			).toBeGreaterThan(window.innerHeight)
+
+			await userEvent.click(closeOf('Москва'))
+			await expect.poll(tagCount).toBe(0)
+
+			expect(document.activeElement, 'фокус после закрытия тега').toBe(field())
+
+			// Окно — после клика: перед кликом Playwright сам докручивает цель в окно
+			const scrollY = window.scrollY
+			const scrolls: number[] = []
+			const record = () => scrolls.push(window.scrollY)
+
+			window.addEventListener('scroll', record)
+
+			try {
+				// Первая ↓ открывает панель и подсвечивает первую опцию —
+				// выбранных больше нет, — следующие сдвигают подсветку
+				await userEvent.keyboard('{ArrowDown}')
+				await expect.poll(highlighted).toBe('Москва')
+
+				await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+				await expect.poll(highlighted).toBe('Тула')
+
+				// Событие `scroll` браузер шлёт в шаге кадра: прокрутку от клавиш
+				// видно не сразу
+				await nextFrame()
+				await nextFrame()
+				await nextFrame()
+			} finally {
+				window.removeEventListener('scroll', record)
+			}
+
+			expect(scrolls, 'прокрутка окна от ↓').toEqual([])
+			expect(window.scrollY, 'окно после ↓').toBe(scrollY)
+		},
+	)
+
+	it('у тега с соседом — фокус на крестике соседа, а не в поле', async () => {
+		await show({ mode: 'multiple', value: ['0', '1'] })
+		await expect.poll(tagCount).toBe(2)
+
+		await userEvent.click(closeOf('Москва'))
+		await expect.poll(tagCount).toBe(1)
+
+		expect(document.activeElement).toBe(closeOf('Тверь'))
+	})
+})
+
+/**
  * Прозрачность, с которой узел виден на странице: своя, умноженная на
  * прозрачность всех предков. Панель телепортирована в `body`, и предки опции —
  * панель и её список, а не поле.
