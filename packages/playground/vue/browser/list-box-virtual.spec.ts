@@ -4,12 +4,15 @@
  *
  * Что попадает в окно, считает ядро (`core/__tests__/collection.draw.spec.ts`),
  * замер — плагин (`plugins/__tests__/virtual.plugin.spec.ts`), закрепление
- * подсветки — навигация (`plugins/__tests__/list-navigation-window.plugin.spec.ts`).
- * Здесь то, чего jsdom не считает: список с пределом строк прокручивается сам,
- * шаг — элемент и зазор темы, стрелки уводят подсветку к элементу, которого не
- * было в документе, и он оказывается в нём подсвеченным и прокрученным к
- * глазу, колесо не уносит фокус со строки, а выбранный в середине списка виден
- * сразу после монтирования — в окне и без него.
+ * подсветки — навигация (`plugins/__tests__/list-navigation-window.plugin.spec.ts`),
+ * ссылка на подсвеченный — клавиатура списка
+ * (`plugins/__tests__/list-keyboard-window.plugin.spec.ts`). Здесь то, чего
+ * jsdom не считает: список с пределом строк прокручивается сам, шаг — элемент
+ * и зазор темы, стрелки уводят подсветку к элементу, которого не было в
+ * документе, и он оказывается в нём подсвеченным и прокрученным к глазу, а
+ * `aria-activedescendant` списка — на его строке; колесо не уносит фокус со
+ * строки, а выбранный в середине списка виден сразу после монтирования — в
+ * окне и без него.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -91,6 +94,13 @@ function rowOf(text: string): HTMLElement {
 	return row
 }
 
+/** Узел, на который ссылается список: `aria-activedescendant` — `id` в документе. */
+function activeDescendant(): HTMLElement | null {
+	const id = list().getAttribute('aria-activedescendant')
+
+	return id ? document.getElementById(id) : null
+}
+
 /** Текст элемента, который стоит у верха окна списка — сразу под рамкой и полем. */
 function itemAtTop(): string | null {
 	const box = list().getBoundingClientRect()
@@ -163,8 +173,13 @@ describe('окно', () => {
 	})
 })
 
+/**
+ * Фокус — на узле списка, и элемент под стрелками скринридеру называет
+ * `aria-activedescendant` узла: ссылка ведёт ровно на строку подсвеченного
+ * элемента в документе, в том числе дорисованного окном.
+ */
 describe('клавиатура', () => {
-	it('↓ за окно — подсвеченный элемент в документе и прокручен к глазу', async () => {
+	it('↓ за окно — подсвеченный элемент в документе, прокручен к глазу, на его строку ссылка', async () => {
 		const root = await mount()
 
 		root.focus()
@@ -178,9 +193,10 @@ describe('клавиатура', () => {
 
 		expect(item.dataset.highlighted).toBe('true')
 		expect(inView(item)).toBe(true)
+		expect(activeDescendant()).toBe(rowOf('Пункт 30'))
 	})
 
-	it('↑ с первого — на последний: нарисован, подсвечен, прокручен', async () => {
+	it('↑ с первого — на последний: нарисован, подсвечен, прокручен, на его строку ссылка', async () => {
 		const root = await mount()
 
 		root.focus()
@@ -194,6 +210,7 @@ describe('клавиатура', () => {
 
 		expect(last.dataset.highlighted).toBe('true')
 		expect(inView(last)).toBe(true)
+		expect(activeDescendant()).toBe(rowOf(`Пункт ${COUNT}`))
 	})
 
 	it('Enter выбирает подсвеченный элемент вне прежнего окна', async () => {

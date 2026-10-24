@@ -52,6 +52,7 @@ export const ListBoxItemOutputNames = [
 	'soActionBlur',
 	'soAriaCreate',
 	'soListItemCreate',
+	'soIdsCreate',
 	'soChangeRendered',
 	'soChangeVisible',
 	'soChangeTag',
@@ -193,6 +194,9 @@ export abstract class TListBoxItemSurface<TInstance extends IEntity> extends TCo
 	}
 	get soListItemCreate(): TOutputEmitter<typeof descriptor, 'listItem:create'> {
 		return this.createOutput('soListItemCreate')
+	}
+	get soIdsCreate(): TOutputEmitter<typeof descriptor, 'ids:create'> {
+		return this.createOutput('soIdsCreate')
 	}
 	get soChangeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
 		return this.createOutput('soChangeRendered')

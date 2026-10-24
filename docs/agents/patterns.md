@@ -12,14 +12,14 @@ ListBox, список Select, Popover и Menu выглядят одинаков�
 
 **Списки одинаковы на вид и различны по семантике:**
 
-|                 | ListBox         | список Select            | Menu                       |
-| --------------- | --------------- | ------------------------ | -------------------------- |
-| роль контейнера | `listbox`       | `listbox`                | `menu`                     |
-| роль элемента   | `option`        | `option`                 | `menuitem`                 |
-| где DOM-фокус   | на узле списка  | **на поле, не в списке** | на элементе                |
-| навигация       | roving tabindex | `aria-activedescendant`  | `focus()` строки подсветки |
-| элемент         | выбирается      | выбирается               | выполняет действие         |
-| `aria-selected` | есть            | есть                     | нет                        |
+|                 | ListBox                 | список Select            | Menu                       |
+| --------------- | ----------------------- | ------------------------ | -------------------------- |
+| роль контейнера | `listbox`               | `listbox`                | `menu`                     |
+| роль элемента   | `option`                | `option`                 | `menuitem`                 |
+| где DOM-фокус   | на узле списка          | **на поле, не в списке** | на элементе                |
+| навигация       | `aria-activedescendant` | `aria-activedescendant`  | `focus()` строки подсветки |
+| элемент         | выбирается              | выбирается               | выполняет действие         |
+| `aria-selected` | есть                    | есть                     | нет                        |
 
 Роли ListBox пишет ядро, и от режима выбора они не зависят: `role="listbox"` —
 сам `TListBox` в свой `aria`, `role="option"` — `TListBoxItem`. Что выбрать
@@ -113,12 +113,30 @@ ARIA пускает только `option` и `group` (axe — `aria-required-chi
 `playground/vue/browser/keyboard-activation.spec.ts` (кольцо у узла после
 клика и стрелки, Shift+Tab со строки — на поле шапки),
 `ui/webc/__tests__/list-box.spec.ts` и
-`playground/vue/browser/webc-collections.spec.ts`. В combobox фокус не
-имеет права уходить с поля. Вложить готовый ListBox внутрь Select значит
-снимать ему `tabindex`, глушить его клавиатурный плагин и перенаправлять
-подсветку наружу. Это не переиспользование, а борьба, и она добавляет ListBox
-режимы ради чужого компонента — после чего его тесты начинают охранять два
-поведения сразу.
+`playground/vue/browser/webc-collections.spec.ts`.
+
+Скринридеру элемент под стрелками называет **`aria-activedescendant` узла
+списка** (APG Listbox): фокус по строкам не ходит, и без ссылки стрелки были бы
+немыми. `id` элементу пишет `TOptionIdsPlugin` — общий с опциями Select, — а
+ссылку `TListKeyboardPlugin` пишет в набор `aria` списка; шаблоны её не
+раскладывают. Ссылка повторяет экран: она есть, пока у элемента видна отметка
+и он в документе (`highlightedId` навигации). Позиция без отметки — за выбором
+или на строке, с которой пришла клавиша, — ссылкой не становится, а элемент,
+ушедший из документа — из коллекции или со снятым монтированием, — ссылку
+снимает: о любом из этих путей реестр наборов объявляет `bundle:unregistered`.
+Сторожат группа «ссылка на элемент под стрелками» в
+`setup/__tests__/list-keyboard.spec.ts`,
+`plugins/__tests__/list-navigation.plugin.spec.ts` (хук о видимой подсветке),
+`plugins/__tests__/collection-bundles.plugin.spec.ts`, спеки ListBox адаптеров
+(`list-box-tabindex.spec.ts` у Vue, `list-box.spec.*` у остальных), а в окне —
+`plugins/__tests__/list-keyboard-window.plugin.spec.ts` и
+`playground/vue/browser/list-box-virtual.spec.ts`.
+
+В combobox фокус не имеет права уходить с поля. Вложить готовый ListBox
+внутрь Select значит снимать ему `tabindex`, глушить его клавиатурный плагин и
+перенаправлять подсветку наружу. Это не переиспользование, а борьба, и она
+добавляет ListBox режимы ради чужого компонента — после чего его тесты
+начинают охранять два поведения сразу.
 
 **Делим по слоям, а не по компонентам:**
 
@@ -2572,7 +2590,10 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   ListBox открывается прокрученным к выбранному и тогда, когда тот дальше
   первых 50: окно дорисует его после первого замера — навигация закрепила его
   подсветкой, — и начальная прокрутка (`TListScrollPlugin`) ждёт регистрации
-  его набора.
+  его набора. У элемента, которого окно ещё не нарисовало, нет ни `id`, ни
+  узла: ссылку `aria-activedescendant` узла списка `TListKeyboardPlugin`
+  ставит, когда подсвеченный элемент входит в документ
+  (`onHighlightedMounted`), — до того ссылки нет вовсе, как у Select ниже.
   **Select в окне**: `<Virtual><Select :items /></Virtual>`, окно — у списка
   панели, он и прокручивается. Панель до первого открытия скрыта, замерить
   её нечем, и окно в ней — первые 50 опций, без закреплений: на чьём месте
@@ -2632,6 +2653,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `core/__tests__/select-virtual.spec.ts`,
   `plugins/__tests__/virtual.plugin.spec.ts`,
   `plugins/__tests__/list-navigation-window.plugin.spec.ts`,
+  `plugins/__tests__/list-keyboard-window.plugin.spec.ts`,
   `plugins/__tests__/list-scroll.plugin.spec.ts`,
   `plugins/__tests__/select-keyboard-window.plugin.spec.ts`,
   `setup/__tests__/virtual.spec.ts` (и фазы: подписка на обёртку — только у

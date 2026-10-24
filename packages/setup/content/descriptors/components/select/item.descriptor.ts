@@ -13,7 +13,7 @@ import { defineComponent, defineDescriptor, defineType } from '../../../../prote
 import { TSelectItem } from '@soldy-ui/core'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { ListItemPluginDescriptor, SelectItemIdsPluginDescriptor } from '../../plugins'
+import { ListItemPluginDescriptor, OptionIdsPluginDescriptor } from '../../plugins'
 
 export const SelectItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -50,7 +50,7 @@ export const SelectItemDescriptor = defineDescriptor(() =>
 		plugins: [
 			ListItemPluginDescriptor,
 			// `id` опции — на него ссылается `aria-activedescendant` поля
-			SelectItemIdsPluginDescriptor,
+			OptionIdsPluginDescriptor,
 		],
 	}),
 )

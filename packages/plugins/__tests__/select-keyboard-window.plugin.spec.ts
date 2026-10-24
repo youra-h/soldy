@@ -23,8 +23,8 @@ import {
 	TCollectionElements,
 	TElementPlugin,
 	TListItemPlugin,
+	TOptionIdsPlugin,
 	TPluginBundle,
-	TSelectItemIdsPlugin,
 	TSelectKeyboardPlugin,
 } from '../src'
 import type { IPlugin, IPluginConstructor } from '../src'
@@ -120,7 +120,7 @@ async function setup() {
 		const itemBundle = new TPluginBundle(item, `m${++mounts}`)
 			.use(TElementPlugin)
 			.use(TListItemPlugin)
-			.use(TSelectItemIdsPlugin)
+			.use(TOptionIdsPlugin)
 
 		bundles.push(itemBundle)
 		pluginOf(itemBundle, TElementPlugin).element = node

@@ -153,7 +153,7 @@ export class TSelectKeyboardPlugin
 	 * обработчика, и узла опции или его места на экране сейчас ещё нет.
 	 */
 	protected override onHighlightChanged(uid: string | number | null): void {
-		this._referTo(uid)
+		this._refer()
 
 		if (uid == null) this._cancelScroll()
 		else this._scheduleScroll(uid)
@@ -165,26 +165,19 @@ export class TSelectKeyboardPlugin
 	 * и узел, к которому прокрутить: до этого прокручивать было не к чему.
 	 */
 	protected override onHighlightedMounted(uid: string | number): void {
-		this._referTo(uid)
+		this._refer()
 		this._scheduleScroll(uid)
 	}
 
 	/**
 	 * `aria-activedescendant` поля — на `id` подсвеченной опции, пока она в
-	 * документе: её набор зарегистрирован. Опция вне окна своего `id` не имеет,
-	 * а оставшийся от прошлого монтирования указывал бы в пустоту — тогда
-	 * ссылки нет, пока окно опцию не нарисует (`onHighlightedMounted`).
-	 *
-	 * `id` опции — из её набора `aria`, а не с DOM-узла: узел, который знает
-	 * плагин, — корень элемента, а `id` вместе со всей ARIA опции стоит на её
-	 * строке. В набор его пишет `TSelectItemIdsPlugin` опции, и ссылка берёт
-	 * ровно то, что окажется в разметке.
+	 * документе (`highlightedId` базы): фокус у комбобокса на поле. Опция вне
+	 * окна своего `id` не имеет, а оставшийся от прошлого монтирования указывал
+	 * бы в пустоту — тогда ссылки нет, пока окно опцию не нарисует
+	 * (`onHighlightedMounted`). `id` опции пишет `TOptionIdsPlugin`.
 	 */
-	private _referTo(uid: string | number | null): void {
-		const mounted = uid != null && this._bundles?.getByUid(uid) !== undefined
-		const id = mounted ? (this.itemByUid(uid)?.aria.get('id') ?? null) : null
-
-		this._owner?.field.aria.add('aria-activedescendant', id)
+	private _refer(): void {
+		this._owner?.field.aria.add('aria-activedescendant', this.highlightedId())
 	}
 
 	/** Прокрутить к опции в следующем кадре; прежняя отложенная прокрутка отменяется. */

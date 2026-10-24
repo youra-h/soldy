@@ -9,6 +9,12 @@
  * возобновляет прежнюю ветку без новой сборки и снимает новую: привязка
  * возвращается к прежней. Как `ui/vue/__tests__/external-engine-lifetime.spec.ts`
  * у Vue — на ListBox, и после снятия на шинах движка ничего.
+ *
+ * Элементы из движка — те же экземпляры в обеих ветках, и сборка нового
+ * монтирования пишет им своё — `id` элемента от монтирования. Пока она идёт,
+ * прежнее монтирование копит их состояние и получает его одной микрозадачей
+ * после сборки (`TAssembling`, docs/agents/setup.md), — поэтому после
+ * переноса тест отдаёт эту микрозадачу (`flush`), как Vue — `nextTick`.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
@@ -25,6 +31,16 @@ afterEach(() => {
 	vi.restoreAllMocks()
 	Reflect.deleteProperty(Element.prototype, 'animate')
 })
+
+/**
+ * Выпуск после чужой сборки — микрозадачей — и отрисовка того, что он
+ * принёс: состояние, накопленное прежним монтированием, пока над элементами
+ * шла сборка нового.
+ */
+async function flush(): Promise<void> {
+	await Promise.resolve()
+	flushSync()
+}
 
 const ITEMS = [
 	{ value: 'a', text: 'Первый' },
@@ -181,7 +197,7 @@ describe('ListBox над движком снаружи без ctrl, перене
 	 * снимает новую. Снятие нового монтирования отдаёт привязку прежнему — оно
 	 * живо и снова на экране.
 	 */
-	it('прерванный уход: прежняя ветка возобновлена, привязка вернулась к её владельцу', () => {
+	it('прерванный уход: прежняя ветка возобновлена, привязка вернулась к её владельцу', async () => {
 		holdAnimations()
 
 		const engine = createEngineListBox({ items: ITEMS })
@@ -192,6 +208,8 @@ describe('ListBox над движком снаружи без ctrl, перене
 
 		props.swapped = true
 		flushSync()
+		// Прежняя ветка жива: накопленное за сборку новой она получает после неё
+		await flush()
 
 		// Прежняя ветка уходит и жива, движок — у новой
 		expect(document.querySelectorAll('.so-test-first .so-list-box-item')).toHaveLength(
