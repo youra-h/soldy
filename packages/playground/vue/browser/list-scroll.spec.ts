@@ -285,10 +285,18 @@ describe('подсветка — ближайшим краем', () => {
 		// Меню длиннее панели: список прокручивается сам
 		expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
 		expect(document.activeElement && last.contains(document.activeElement)).toBe(true)
+
+		// Движение разрешено, и к подсветке список едет плавно (`scrollIntoView`
+		// со `smooth`). Плавно ли он едет на деле, решает браузер по системе:
+		// Chromium на Windows прокручивал мгновенно, на Linux CI — за полсекунды и
+		// дольше, и замер через фиксированные кадры застал список на полпути.
+		// Ждётся конец пути — пункт у нижнего края окна, а не время
+		await expect
+			.poll(() => Math.abs(last.getBoundingClientRect().bottom - windowOf(list).bottom), {
+				timeout: 3000,
+			})
+			.toBeLessThan(EPSILON)
 		expect(inView(last, list)).toBe(true)
-		expect(Math.abs(last.getBoundingClientRect().bottom - windowOf(list).bottom)).toBeLessThan(
-			EPSILON,
-		)
 		expect(window.scrollY).toBe(scrollY)
 	})
 })
