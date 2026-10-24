@@ -22,6 +22,7 @@ import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
 	TListItemPlugin,
+	TListScrollPlugin,
 	TPluginBundle,
 	TOptionIdsPlugin,
 	useMotion,
@@ -49,8 +50,10 @@ const keydown = (target: Element, key: string, init: KeyboardEventInit = {}) => 
  * `<input>` поля — первый потомок корня, как в разметке: плагин находит его
  * по `ready` корня (`querySelector('input')`), и `press` шлёт клавишу с него.
  *
- * `layoutProps` — списочные свойства поля: клавиатура читает `scrollBehavior`
- * прямо у инстанса. `keyboardOptions` — опции установки клавиатуры.
+ * За клавиатурой — прокрутка списка с её подсветкой (`TListScrollPlugin`), как
+ * их ставит дескриптор Select. `layoutProps` — списочные свойства поля:
+ * прокрутка читает `scrollBehavior` прямо у инстанса. `keyboardOptions` —
+ * опции установки клавиатуры.
  */
 async function setup(
 	texts: string[],
@@ -74,12 +77,14 @@ async function setup(
 	const bundles = new TCollectionBundlesPlugin()
 	const elements = new TCollectionElements()
 	const keyboard = new TSelectKeyboardPlugin()
+	const scroll = new TListScrollPlugin()
 
-	const ctx = createPluginContext(owner, [rootElement, bundles, elements])
+	const ctx = createPluginContext(owner, [rootElement, bundles, elements, keyboard])
 
 	bundles.install(ctx)
 	elements.install(ctx)
 	keyboard.install(ctx, keyboardOptions)
+	scroll.install(ctx, { navigation: TSelectKeyboardPlugin })
 
 	/** jsdom не умеет `scrollIntoView` — подменяем, чтобы видеть вызовы. */
 	const scrolls: Array<Record<string, unknown> | undefined> = []
@@ -666,16 +671,14 @@ describe('highlightByText — подстрока для ввода в поле',
 })
 
 /**
- * `scrollBehavior` — свойство поля, а прокручивает опцию клавиатура.
+ * `scrollBehavior` — свойство поля, а к подсвеченной опции прокручивает общий
+ * плагин списков — тот же, что у ListBox и меню (`TListScrollPlugin`), по
+ * событию подсветки клавиатуры: ближайшим краем, как фокус. Своей прокрутки у
+ * клавиатуры Select больше нет — три механизма на одно правило расходились.
  *
- * У ListBox то же свойство читает `TListScrollPlugin`, и это не дублирование:
- * там прокрутка идёт за выбором, здесь — за подсветкой, которая живёт только
- * пока панель открыта. Общим сделано свойство, а не реализация — иначе Select
- * тащил бы плагин, половина которого ему не нужна.
- *
- * Прокручивает клавиатура в следующем кадре: панель, открытую той же клавишей,
- * и опцию, которую окно дорисовывает к подсветке, адаптер рисует уже после
- * обработчика (`plugins/__tests__/select-keyboard-window.plugin.spec.ts`).
+ * Прокрутка — в следующем кадре: панель, открытую той же клавишей, и опцию,
+ * которую окно дорисовывает к подсветке, адаптер рисует уже после обработчика
+ * (`plugins/__tests__/select-keyboard-window.plugin.spec.ts`).
  */
 describe('прокрутка к подсвеченной опции', () => {
 	it('по умолчанию прокручивает плавно и по ближайшему краю', async () => {

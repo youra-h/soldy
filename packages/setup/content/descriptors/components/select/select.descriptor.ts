@@ -9,7 +9,7 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TSelect } from '@soldy-ui/core'
 import type { IInput, ISelectItem, ITags, TTagsCollection } from '@soldy-ui/core'
-import { fieldOf } from '@soldy-ui/plugins'
+import { TSelectKeyboardPlugin, fieldOf } from '@soldy-ui/plugins'
 import { InputControlDescriptor } from '../input-control.descriptor'
 import {
 	ActionPluginDescriptor,
@@ -17,6 +17,7 @@ import {
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	ListHeightPluginDescriptor,
+	ListScrollPluginDescriptor,
 	SelectBackspacePluginDescriptor,
 	SelectEditablePluginDescriptor,
 	SelectIdsPluginDescriptor,
@@ -206,6 +207,9 @@ export const SelectDescriptor = defineDescriptor(() =>
 			SelectPointerPluginDescriptor,
 			// Клавиатура APG Combobox: открытие, навигация, Escape, набор по буквам
 			SelectKeyboardPluginDescriptor,
+			// Прокрутка списка панели за значением и подсветкой клавиатуры — тот же
+			// плагин, что у ListBox. После клавиатуры: слушает её подсветку
+			ListScrollPluginDescriptor.with({ navigation: TSelectKeyboardPlugin }),
 			// Ввод текста при editable: search/filter подсвечивают совпадение
 			// через клавиатурный плагин выше — подключается после него
 			SelectEditablePluginDescriptor,

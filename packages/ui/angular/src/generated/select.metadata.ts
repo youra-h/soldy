@@ -85,6 +85,7 @@ export const SelectOutputNames = [
 	'soPointerCreate',
 	'soKeyboardCreate',
 	'soKeyboardChangeHighlight',
+	'soScrollCreate',
 	'soEditableCreate',
 	'soEditableChangeQuery',
 	'soBackspaceCreate',
@@ -346,6 +347,9 @@ export abstract class TSelectSurface<TInstance extends IEntity> extends TCompone
 		'keyboard:change:highlight'
 	> {
 		return this.createOutput('soKeyboardChangeHighlight')
+	}
+	get soScrollCreate(): TOutputEmitter<typeof descriptor, 'scroll:create'> {
+		return this.createOutput('soScrollCreate')
 	}
 	get soEditableCreate(): TOutputEmitter<typeof descriptor, 'editable:create'> {
 		return this.createOutput('soEditableCreate')

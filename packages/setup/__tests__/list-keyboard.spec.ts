@@ -497,8 +497,14 @@ describe('подсветка следует за выбором', () => {
 	})
 })
 
+/**
+ * `change:highlight` — о видимой подсветке: по нему список докручивает к
+ * подсвеченному (`TListScrollPlugin`). Позиция без отметки — за выбором и на
+ * строке, с которой пришла клавиша, — его не шлёт: на экране подсветки нет, и
+ * прокручивать не к чему. Отметка, вставшая на месте такой позиции, — шлёт.
+ */
 describe('событие change:highlight', () => {
-	it('несёт соседей — по ним плагин прокрутки решает, куда скроллить', async () => {
+	it('несёт подсвеченный и его соседей', async () => {
 		const { keyboard, press, items } = await setup(['Один', 'Два', 'Три'])
 		const seen: unknown[] = []
 
@@ -513,6 +519,33 @@ describe('событие change:highlight', () => {
 			prevItem: items[0],
 			nextItem: items[2],
 		})
+	})
+
+	it('позиция за выбором и со строки — без события', async () => {
+		const { keyboard, facade, rows } = await setup(['Один', 'Два', 'Три'])
+		const { batch, selection } = facade.engine.extensions
+		const seen: unknown[] = []
+
+		keyboard.events.on('change:highlight', (payload) => seen.push(payload))
+
+		selection.select(batch.items[1])
+		pressOnRow(rows[2], 'Tab')
+
+		expect(keyboard.highlightedUid).toBe(batch.items[2].uid)
+		expect(seen).toEqual([])
+	})
+
+	it('отметка на месте позиции без неё — событие с элементом', async () => {
+		const { keyboard, facade, items, press } = await setup(['Один', 'Два'])
+		const { batch, selection } = facade.engine.extensions
+		const seen: unknown[] = []
+
+		items[0].disabled = true
+		selection.select(batch.items[1])
+		keyboard.events.on('change:highlight', (payload) => seen.push(payload))
+		press('ArrowDown')
+
+		expect(seen).toEqual([{ item: items[1], prevItem: null, nextItem: null }])
 	})
 })
 

@@ -9,9 +9,9 @@
  * тест задаёт заглушкой у окна документа.
  *
  * Плавная прокрутка — движение: листание Scroller и прокрутка ListBox за
- * выбором идут плавно, только пока режим движение не убрал. Начальная
- * прокрутка ListBox к выбранному — сразу при любом режиме: показывать на
- * монтировании нечего. Как тема исполняет режим в CSS, сторожат
+ * выбором и за подсветкой идут плавно, только пока режим движение не убрал.
+ * Начальная прокрутка ListBox к выбранному — сразу при любом режиме:
+ * показывать на монтировании нечего. Как тема исполняет режим в CSS, сторожат
  * `themes/oren/__tests__/motion.spec.ts` и
  * `playground/vue/browser/motion-mode.spec.ts`.
  */
@@ -23,6 +23,7 @@ import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
 	TElementPlugin,
+	TListKeyboardPlugin,
 	TListScrollPlugin,
 	TPluginBundle,
 	TScrollerViewportPlugin,
@@ -204,10 +205,13 @@ describe('листание Scroller', () => {
 type TBindOrder = 'engine-first' | 'root-first'
 
 /**
- * ListBox с выбранным элементом за краем видимой части. Раскладки в jsdom нет
- * — коробки задаёт тест: список высотой 100 px, выбранный `b` и соседний `c`
- * ниже. Движок и узел корня плагин получает в порядке `order`: в жизни движок
- * привязывают при сборке, а узел корня объявляют кадром после монтирования.
+ * ListBox, как его ставит дескриптор: клавиатура и прокрутка за значением и её
+ * подсветкой. Раскладки в jsdom нет — коробки задаёт тест: узел списка в корне
+ * прокручивается, окно высотой 100 px, выбранный `b` и соседний `c` — ниже
+ * края. Прокрутку к подсвеченному (`scrollIntoView`) узел элемента пишет в
+ * `intoView`. Движок и узел корня плагин получает в порядке `order`: в жизни
+ * движок привязывают при сборке, а узел корня объявляют кадром после
+ * монтирования.
  */
 async function mountListBox(scrollBehavior: TScrollBehavior, order: TBindOrder = 'engine-first') {
 	const owner = new TListBox({ value: 'b', scrollBehavior })
@@ -217,27 +221,39 @@ async function mountListBox(scrollBehavior: TScrollBehavior, order: TBindOrder =
 	})
 
 	const root = document.body.appendChild(document.createElement('div'))
+	const list = root.appendChild(document.createElement('div'))
 	const scrollTo = vi.fn()
+	const intoView: Array<boolean | ScrollIntoViewOptions | undefined> = []
 
-	// Список — узел с ролью `listbox`: его прокрутка ищет элемент (`closestList`)
-	root.setAttribute('role', 'listbox')
-	root.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 100 })
-	Object.defineProperty(root, 'scrollTo', { value: scrollTo })
+	// Узел списка с ролью `listbox` прокручивается сам: до него прокрутка
+	// значения ищет окно элемента (`scrollContainerOf`), и с него идут клавиши
+	list.setAttribute('role', 'listbox')
+	list.style.overflowY = 'auto'
+	list.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 100 })
+	Object.defineProperties(list, {
+		clientHeight: { value: 100 },
+		scrollHeight: { value: 900 },
+		scrollTo: { value: scrollTo },
+	})
 
 	const bundle = new TPluginBundle(owner)
 		.use(TElementPlugin)
 		.use(TCollectionBundlesPlugin)
 		.use(TCollectionElements)
-		.use(TListScrollPlugin)
+		.use(TListKeyboardPlugin)
+		.use(TListScrollPlugin, { navigation: TListKeyboardPlugin })
 
 	const bundles = pluginOf(bundle, TCollectionBundlesPlugin)
 
 	engine.extensions.batch.items.forEach((item, index) => {
-		const node = root.appendChild(document.createElement('div'))
+		const node = list.appendChild(document.createElement('div'))
 		const itemBundle = new TPluginBundle(item).use(TElementPlugin)
 
 		node.getBoundingClientRect = () =>
 			DOMRect.fromRect({ x: 0, y: 300 * index, width: 200, height: 32 })
+		node.scrollIntoView = (options) => {
+			intoView.push(options)
+		}
 		bundles.register(itemBundle, item)
 		pluginOf(itemBundle, TElementPlugin).element = node
 	})
@@ -255,7 +271,10 @@ async function mountListBox(scrollBehavior: TScrollBehavior, order: TBindOrder =
 		bundles.bindEngine(engine)
 	}
 
-	return { owner, scrollTo }
+	const press = (key: string) =>
+		list.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+
+	return { owner, scrollTo, intoView, press }
 }
 
 /**
@@ -315,5 +334,37 @@ describe('прокрутка ListBox за выбором', () => {
 
 		expect(scrollTo).toHaveBeenCalledOnce()
 		expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'instant' }))
+	})
+})
+
+/**
+ * Подсветка — второй факт прокрутки: стрелка уводит её с выбранного `b` на
+ * `c`, и список докручивает к нему ближайшим краем — тем же режимом.
+ */
+describe('прокрутка ListBox за подсветкой', () => {
+	it.each<[string, TMotionMode, boolean, ScrollBehavior]>([
+		['по умолчанию — плавно', 'system', false, 'smooth'],
+		['система просит меньше движения — сразу', 'system', true, 'instant'],
+		['full поверх просьбы системы — плавно', 'full', true, 'smooth'],
+		['reduce — сразу', 'reduce', false, 'instant'],
+	])('smooth: %s', async (_name, mode, reduce, behavior) => {
+		const { press, intoView } = await mountListBox('smooth')
+
+		systemReduces(reduce)
+		useMotion(mode)
+		press('ArrowDown')
+		await nextFrame()
+
+		expect(intoView).toEqual([{ block: 'nearest', behavior }])
+	})
+
+	it('instant — сразу при любом режиме', async () => {
+		const { press, intoView } = await mountListBox('instant')
+
+		useMotion('full')
+		press('ArrowDown')
+		await nextFrame()
+
+		expect(intoView).toEqual([{ block: 'nearest', behavior: 'instant' }])
 	})
 })
