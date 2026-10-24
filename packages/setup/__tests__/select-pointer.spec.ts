@@ -7,11 +7,13 @@
  * кликом по `.so-select__arrow`. Режим плагин узнаёт по `change:editable`,
  * поэтому проверяется и переключение на лету.
  *
- * Нажатие — одно правило в обоих режимах: мимо контролов поля (стрелка,
- * коробка) оно гасится, и фокус встаёт в поле; нажатие по самому полю и по
- * кнопке в корне плагин не трогает. Что погашенное нажатие не уносит фокус на
- * `body`, jsdom не покажет — действия `mousedown` он не выполняет; это
- * сторожит «нажатие по стрелке» в `playground/vue/browser/select.spec.ts`.
+ * Нажатие — одно правило в обоих режимах: мимо остановок Tab поля (стрелка,
+ * коробка, строка тега с `tabindex="-1"`) оно гасится, и фокус встаёт в поле;
+ * нажатие по остановке — самому полю, кнопке в корне, крестику тега — плагин
+ * не трогает. Что погашенное нажатие не уносит фокус на `body` или на строку
+ * тега, jsdom не покажет — действия `mousedown` он не выполняет; это сторожат
+ * «нажатие по стрелке» и «нажатие по тегу» в
+ * `playground/vue/browser/select.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -28,13 +30,25 @@ async function setup(props: Partial<ISelectProps> = {}) {
 	const root = document.createElement('div')
 	const field = document.createElement('input')
 	const arrow = document.createElement('span')
-	// Контрол в корне со своим нажатием — заглушка кнопки очистки
+	// Остановка в корне со своим нажатием — заглушка кнопки очистки
 	const clear = document.createElement('button')
-	// Контрол снаружи Select: на нём фокус до нажатия
+	// Остановка снаружи Select: на ней фокус до нажатия
 	const outside = document.createElement('button')
 
+	// Заглушка тега в поле: строка без действия — `tabindex="-1"` гасит её
+	// остановку, как у `Button` на `div`, — и рядом крестик, нативная остановка
+	const tag = document.createElement('div')
+	const tagRow = document.createElement('div')
+	const tagText = document.createElement('span')
+	const tagClose = document.createElement('button')
+
+	tagRow.tabIndex = -1
+	tagText.textContent = 'Москва'
+	tagRow.append(tagText)
+	tag.append(tagRow, tagClose)
+
 	arrow.className = 'so-select__arrow'
-	root.append(field, clear, arrow)
+	root.append(tag, field, clear, arrow)
 	document.body.append(outside, root)
 
 	const rootElement = new TElementPlugin()
@@ -47,7 +61,7 @@ async function setup(props: Partial<ISelectProps> = {}) {
 	rootElement.element = root
 	await nextFrame()
 
-	return { owner, root, field, arrow, clear, outside, rootElement }
+	return { owner, root, field, arrow, clear, tagText, tagClose, outside, rootElement }
 }
 
 /** `mousedown`, которое можно погасить; `button` — 0 основная, 2 правая. */
@@ -104,9 +118,10 @@ describe('editable', () => {
 })
 
 /**
- * DOM-фокус комбобокса — на поле, и части поля без своего контрола его не
- * забирают: иначе клавиши с `body` до корня не дошли бы, и стрелки после
- * открытия кликом по стрелке прокручивали бы страницу.
+ * DOM-фокус комбобокса — на поле, и части поля без своей остановки Tab его не
+ * забирают: иначе клавиши с `body` или со строки тега до поля не дошли бы, и
+ * стрелки после открытия кликом по стрелке или по тегу прокручивали бы
+ * страницу.
  */
 describe.each<[string, Partial<ISelectProps>]>([
 	['select-only', {}],
@@ -142,6 +157,24 @@ describe.each<[string, Partial<ISelectProps>]>([
 		outside.focus()
 
 		expect(mousedown(clear).defaultPrevented).toBe(false)
+		expect(document.activeElement).toBe(outside)
+	})
+
+	it('по тексту строки тега гасится, и фокус встаёт в поле', async () => {
+		const { field, tagText, outside } = await setup(props)
+
+		outside.focus()
+
+		expect(mousedown(tagText).defaultPrevented).toBe(true)
+		expect(document.activeElement).toBe(field)
+	})
+
+	it('по крестику тега не гасится, и фокус остаётся, где был', async () => {
+		const { tagClose, outside } = await setup(props)
+
+		outside.focus()
+
+		expect(mousedown(tagClose).defaultPrevented).toBe(false)
 		expect(document.activeElement).toBe(outside)
 	})
 

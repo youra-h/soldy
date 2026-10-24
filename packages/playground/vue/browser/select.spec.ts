@@ -1,7 +1,7 @@
 /**
  * Select в настоящем браузере: появление и исчезание панели, форма кнопки
- * очистки и области стрелки, фокус после нажатия по стрелке, прозрачность
- * выключенной опции.
+ * очистки и области стрелки, фокус после нажатия по стрелке и по тегу,
+ * прозрачность выключенной опции.
  *
  * Панель — Frame, телепортированный в `body`, и открытость для темы ей пишет
  * её слой: `data-open` корня Select до телепортированной панели не доходит.
@@ -289,8 +289,9 @@ const highlighted = (): string | null => {
  * DOM-фокус комбобокса всегда на поле, и клавиши Select берёт только с него.
  * Стрелка — немой узел, и `mousedown` по ней уносил фокус на `body`: панель
  * открывалась, а ↓ с `body` до корня Select не доходил — подсветка стояла, и
- * прокручивалась страница. Нажатие мимо контролов поля `TSelectPointerPlugin`
- * гасит в обоих режимах и ставит фокус в поле, как у нативного `<select>`.
+ * прокручивалась страница. Нажатие мимо остановок Tab поля
+ * `TSelectPointerPlugin` гасит в обоих режимах и ставит фокус в поле, как у
+ * нативного `<select>`.
  */
 describe('нажатие по стрелке', () => {
 	it.each<[string, Record<string, unknown>]>([
@@ -354,6 +355,114 @@ describe('нажатие по стрелке', () => {
 		try {
 			await userEvent.click(find('.so-select__arrow'))
 			await expect.poll(() => panel().dataset.open).toBe('true')
+		} finally {
+			field().removeEventListener('focusout', record)
+		}
+
+		expect(lost, 'уход фокуса с поля').toEqual([])
+		expect(document.activeElement).toBe(field())
+	})
+})
+
+/**
+ * Строка тега в поле — `Button` на `div`, чей `tabindex="-1"` только гасит её
+ * собственную остановку Tab: действия у строки нет, а фокус от нажатия она
+ * принимала. `TSelectPointerPlugin` нажатие по ней не гасил — строка считалась
+ * контролом, — и фокус уходил с поля на неё: в select-only клик по тегу
+ * открывал панель, но ↓ со строки до клавиатуры Select не доходил, и
+ * прокручивалась страница. Правило поля спрашивает об остановке Tab, а строка
+ * тега — не остановка, а часть поля: нажатие по ней гасится, и фокус встаёт в
+ * поле. Крестик тега — остановка, его нажатие правило не трогает.
+ */
+describe('нажатие по тегу', () => {
+	/** Выбор в два тега; `below` — пустое место под полем, как у `show`. */
+	const showTags = async (props: Record<string, unknown>, below?: string) => {
+		await show({ mode: 'multiple', value: ['0', '1'], ...props }, below)
+
+		// Значение становится тегами, когда опции вошли в коллекцию
+		await expect
+			.poll(() => document.querySelectorAll('.so-select__tags .so-tags-item').length)
+			.toBe(2)
+	}
+
+	/** Текст строки первого тега — не крестик. */
+	const tagText = () =>
+		find(
+			'.so-select__tags .so-tags-item > .so-button:not(.so-tags-item__close) .so-button__text',
+		)
+
+	it.each<[string, Record<string, unknown>, boolean]>([
+		['select-only', {}, true],
+		['editable', { editable: true }, false],
+	])('%s: фокус — в поле, и ↓ ходит по опциям, а страница стоит', async (_, props, opens) => {
+		await showTags(props, '300vh')
+
+		// Страница выше окна — иначе ↓ прокручивать нечего, и сторож прошёл
+		// бы сам
+		expect(
+			document.documentElement.scrollHeight,
+			'высота страницы против окна',
+		).toBeGreaterThan(window.innerHeight)
+
+		await userEvent.click(tagText())
+
+		// Клик по полю тумблит панель только в select-only: в `editable` её
+		// открывает стрелка. Кадры — чтобы панель, открытая зря, успела
+		// объявить себя
+		await nextFrame()
+		await nextFrame()
+
+		expect(field().getAttribute('aria-expanded'), 'панель после нажатия по тегу').toBe(
+			String(opens),
+		)
+		expect(document.activeElement, 'фокус после нажатия по тегу').toBe(field())
+
+		// Окно — после клика: перед кликом Playwright сам докручивает цель в окно
+		const scrollY = window.scrollY
+		const scrolls: number[] = []
+		const record = () => scrolls.push(window.scrollY)
+
+		window.addEventListener('scroll', record)
+
+		try {
+			// Первая ↓ подсвечивает первую выбранную опцию, в `editable` — и
+			// открывает панель; следующие сдвигают подсветку
+			await userEvent.keyboard('{ArrowDown}')
+			await expect.poll(highlighted).toBe('Москва')
+
+			await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+			await expect.poll(highlighted).toBe('Тула')
+
+			// Событие `scroll` браузер шлёт в шаге кадра: прокрутку от клавиш
+			// видно не сразу
+			await nextFrame()
+			await nextFrame()
+			await nextFrame()
+		} finally {
+			window.removeEventListener('scroll', record)
+		}
+
+		expect(scrolls, 'прокрутка окна от ↓').toEqual([])
+		expect(window.scrollY, 'окно после ↓').toBe(scrollY)
+	})
+
+	it.each<[string, Record<string, unknown>]>([
+		['select-only', {}],
+		['editable', { editable: true }],
+	])('%s: фокус уже в поле — нажатие по тегу его не уводит', async (_, props) => {
+		await showTags(props)
+
+		field().focus()
+
+		const lost: string[] = []
+		const record = (event: FocusEvent) => lost.push(event.type)
+
+		field().addEventListener('focusout', record)
+
+		try {
+			await userEvent.click(tagText())
+			await nextFrame()
+			await nextFrame()
 		} finally {
 			field().removeEventListener('focusout', record)
 		}

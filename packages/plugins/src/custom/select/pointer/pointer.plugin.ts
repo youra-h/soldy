@@ -3,7 +3,7 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { fieldOf } from '../../input/field'
-import { closestControl, isFocusableElement } from '../../../utils'
+import { closestTabStop, isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import type { TSelectPointerPluginEvents } from './types'
 
@@ -15,24 +15,30 @@ const ARROW_SELECTOR = '.so-select__arrow'
  *
  * **Нажатие оставляет фокус в поле.** DOM-фокус комбобокса всегда на
  * `<input>` поля (APG Combobox): стрелки, Enter и Escape клавиатура берёт
- * только с него (`TSelectKeyboardPlugin`). Части поля без своего контрола —
- * стрелка, коробка, ряд тегов, немое содержимое слотов — фокус не принимают,
- * и `mousedown` по ним по умолчанию уносил его на `body`: панель открывалась
- * кликом по стрелке, а стрелки после этого прокручивали страницу — клавиши с
- * `body` до корня Select не доходят. Поэтому нажатие основной кнопкой по
- * такой части гасится (`preventDefault`) в обоих режимах, и фокус встаёт в
- * поле, если его там нет, — как у нативного `<select>` и у кнопок шага
- * NumberInput (`TNumberInputStepperPlugin`). Фокус уже в поле — он там и
- * остаётся, без `focusout`. Ставится он без прокрутки (`preventScroll`):
- * поле, по которому нажали, и так на экране, а страница не должна прыгать.
+ * только с него (`TSelectKeyboardPlugin`). Части поля без своей остановки Tab
+ * — стрелка, коробка, ряд тегов, строка тега, немое содержимое слотов — по
+ * умолчанию уводят фокус из поля: `mousedown` по немой части уносит его на
+ * `body`, а по строке тега — на саму строку. Клавиши с них до поля не доходят:
+ * панель открывалась кликом по стрелке или по тегу, а стрелки после этого
+ * прокручивали страницу. Поэтому нажатие основной кнопкой по такой части
+ * гасится (`preventDefault`) в обоих режимах, и фокус встаёт в поле, если его
+ * там нет, — как у нативного `<select>` и у кнопок шага NumberInput
+ * (`TNumberInputStepperPlugin`). Фокус уже в поле — он там и остаётся, без
+ * `focusout`. Ставится он без прокрутки (`preventScroll`): поле, по которому
+ * нажали, и так на экране, а страница не должна прыгать.
  *
- * Нажатие по контролу внутри корня — по `<input>`, кнопке очистки, тегу и
- * его крестику, кнопке потребителя в слоте — не трогается: что с ним делать,
- * контрол знает сам. Контрол под нажатием — общее правило `closestControl`
- * (`utils/tabStops.ts`), поле — `fieldOf`, как у клавиатуры. Правило одно для
- * мыши, пера и пальца: в select-only поле только для чтения, и экранной
- * клавиатуры у него нет, а в `editable` касание стрелки ставит фокус туда же,
- * куда касание поля.
+ * Нажатие по остановке Tab внутри корня — по `<input>`, кнопке очистки,
+ * крестику тега, кнопке потребителя в слоте — не трогается: что с ним делать,
+ * остановка знает сама. Вопрос — остановка ли под нажатием, а не принимает ли
+ * узел фокус вообще (`closestControl`): кроме поля, фокус в корне держат
+ * только отдельные остановки. Узел, который фокус лишь принимает
+ * (`tabindex="-1"`), — элемент составного виджета с roving tabindex, а таких в
+ * поле нет: здесь это часть поля — строка тега, у которой `-1` только гасит
+ * остановку `Button` на `div`, или `-1` в слоте. Остановка под нажатием —
+ * общее правило `closestTabStop` (`utils/tabStops.ts`), поле — `fieldOf`, как
+ * у клавиатуры. Правило одно для мыши, пера и пальца: в select-only поле
+ * только для чтения, и экранной клавиатуры у него нет, а в `editable` касание
+ * стрелки ставит фокус туда же, куда касание поля.
  *
  * **Клик тумблит панель** (`ISelect.toggleOpen()`): в select-only — клик по
  * всему полю, в `editable` — только по стрелке (`.so-select__arrow`), а клик
@@ -46,7 +52,7 @@ const ARROW_SELECTOR = '.so-select__arrow'
  */
 export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginEvents> {
 	private _owner: ISelect | null = null
-	/** Корень Select: на нём слушатели, в нём ищутся контрол под нажатием и поле. */
+	/** Корень Select: на нём слушатели, в нём ищутся остановка под нажатием и поле. */
 	private _root: Element | null = null
 	private _editable = false
 
@@ -103,13 +109,13 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 		this._owner?.toggleOpen()
 	}
 
-	/** Нажатие мимо контролов поля фокус из поля не уводит, а снаружи — ставит в него. */
+	/** Нажатие мимо остановок Tab поля фокус из поля не уводит, а снаружи — ставит в него. */
 	private readonly _onMouseDown = (event: MouseEvent): void => {
 		const root = this._root
 		const target = event.target
 
 		if (!root || event.button !== 0 || !(target instanceof Element)) return
-		if (closestControl(target, root)) return
+		if (closestTabStop(target, root)) return
 
 		event.preventDefault()
 

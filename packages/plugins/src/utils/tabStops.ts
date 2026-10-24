@@ -11,9 +11,10 @@
  *
  * Живёт в общих утилитах, а не у модели фокуса Popover: спрашивают об этом
  * поповер (куда уводить фокус), лента (становиться ли ей самой остановкой
- * Tab), а не контрол ли под указателем (`closestControl`), — жест выезжающей
- * панели, сетка таблицы и поле Select. Свой список селекторов у любого из них
- * был бы вторым путём к тому же знанию.
+ * Tab), поле Select (не остановка ли под указателем, `closestTabStop`), а не
+ * контрол ли под указателем (`closestControl`), — жест выезжающей панели и
+ * сетка таблицы. Свой список селекторов у любого из них был бы вторым путём к
+ * тому же знанию.
  */
 
 /** Элементы, которые встают в порядок Tab сами, без `tabindex`. */
@@ -46,15 +47,36 @@ export function tabStops(scope: ParentNode): Element[] {
  * Кандидат, а не остановка: выключенное поле, радио не первое в группе и
  * строка с `tabindex="-1"` в roving tabindex остановками не бывают, но с ними
  * работают указателем. Об этом спрашивают жест выезжающей панели — тянуть её
- * можно за любое место, кроме контролов, — сетка таблицы — нажатие по
- * контролу ячейки строку не выбирает, — и поле Select: нажатие мимо его
- * контролов гасится, и фокус остаётся в поле (`TSelectPointerPlugin`). Список
- * тот же, что у остановок: свой набор селекторов разошёлся бы с ним.
+ * можно за любое место, кроме контролов, — и сетка таблицы — нажатие по
+ * контролу ячейки строку не выбирает. Список тот же, что у остановок: свой
+ * набор селекторов разошёлся бы с ним.
  */
 export function closestControl(node: Element, scope: Element): Element | null {
 	const control = node.closest(CANDIDATES)
 
 	return control && control !== scope && scope.contains(control) ? control : null
+}
+
+/**
+ * Остановка Tab, в которой лежит узел, — ближайший к нему кандидат между узлом
+ * и `scope` (сам `scope` не в счёт), который и есть остановка. Кандидаты по
+ * дороге, которые остановками не бывают — `tabindex="-1"`, выключенное поле, —
+ * пропускаются. `null` — остановки нет ни на узле, ни над ним до `scope`.
+ *
+ * Об этом спрашивает поле Select (`TSelectPointerPlugin`): нажатие мимо его
+ * остановок гасится, и фокус остаётся в поле. Кандидаты и правило остановки —
+ * те же, что у `tabStops`.
+ */
+export function closestTabStop(node: Element, scope: Element): Element | null {
+	let candidate = node.closest(CANDIDATES)
+
+	while (candidate && candidate !== scope && scope.contains(candidate)) {
+		if (isTabStop(candidate)) return candidate
+
+		candidate = candidate.parentElement?.closest(CANDIDATES) ?? null
+	}
+
+	return null
 }
 
 function isTabStop(element: Element): boolean {
