@@ -69,12 +69,21 @@ Install the adapter for your framework, a theme and an icon pack. The adapter br
 | Solid          | `npm install @soldy-ui/solid`   | Solid 1.9.10+   |
 | Web Components | `npm install @soldy-ui/webc`    | —               |
 
-The theme and the icon pack are the same for every adapter:
+The theme and the icon pack are the same for every adapter.
 
-| Package | Install                                                                        |
-| ------- | ------------------------------------------------------------------------------ |
-| Theme   | `npm install @soldy-ui/theme-oren`                                             |
-| Icons   | `npm install @soldy-ui/icons-material` or `npm install @soldy-ui/icons-lucide` |
+**Themes**
+
+| Package                | What it does                                                                                                                                                                                        | Install                            |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `@soldy-ui/theme-base` | The shared layer of every theme: a reset of the library's own nodes, the structure and layout of the components, the layout plugins. No look of its own. Install it directly only to write a theme. | comes with a theme                 |
+| `@soldy-ui/theme-oren` | Styles the components on top of the shared layer: colors, light and dark schemes, borders, focus ring, states, motion.                                                                              | `npm install @soldy-ui/theme-oren` |
+
+**Icons** — one pack is enough; each draws the same icon roles.
+
+| Package                    | Icons                                                        | License                       | Install                                |
+| -------------------------- | ------------------------------------------------------------ | ----------------------------- | -------------------------------------- |
+| `@soldy-ui/icons-material` | [Material Symbols](https://fonts.google.com/icons) by Google | package MIT, icons Apache-2.0 | `npm install @soldy-ui/icons-material` |
+| `@soldy-ui/icons-lucide`   | [Lucide](https://lucide.dev)                                 | package MIT, icons ISC        | `npm install @soldy-ui/icons-lucide`   |
 
 All `@soldy-ui/*` packages share one version; keep them on the same one. Then plug in the theme and
 the icons at the application entry point, as shown below.
