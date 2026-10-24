@@ -183,6 +183,14 @@ jobs:
       - name: Типы — Plugins
         run: npx tsc --noEmit -p packages/plugins/tsconfig.json
 
+      # Программа на пакет темы: тесты — сторожа CSS и спеки плагинов
+      # раскладки, — поведение `setup/` и конфиги сборки (у oren — и шаг
+      # Tailwind). Соседей и своё поведение они читают исходниками.
+      - name: Типы — Themes
+        run: |
+          npx tsc --noEmit -p packages/themes/base/tsconfig.json
+          npx tsc --noEmit -p packages/themes/oren/tsconfig.json
+
       # Стенд — единственное место, где компоненты рисуются всеми пропами разом
       # и в двух режимах (проп и экземпляр ядра). Молча сломавшаяся страница
       # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.

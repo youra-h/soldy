@@ -57,6 +57,8 @@ import * as ts from 'typescript'
  * и без ссылки пакета на себя в `paths` имя уходило через `node_modules` в
  * манифест, то есть в `dist`: без сборки «Типы — Vue» падали на «модуль не
  * найден», а со старой сборкой молча сверяли тесты с устаревшими типами.
+ * Ссылка нужна каждому входу с типами — корню и подпутям, как `./setup` тем, —
+ * а входу без типов, CSS корня общего слоя тем, не нужна.
  *
  * Список пакетов не хардкодится: это очередь корневого `build`, а каталог
  * пакета берётся по его ссылке воркспейса в `node_modules` — второго
@@ -253,23 +255,85 @@ function testFileOf(parsed: ts.ParsedCommandLine, dir: string): string | undefin
 }
 
 /**
+ * Имена входов пакета с типами — те, по которым его тесты импортируют пакет:
+ * корень — с условием `types` в `exports["."]` или с полем `types` манифеста
+ * (у адаптера Angular `exports` нет), подпуть (`./setup`) — с условием `types`
+ * в `exports`. Вход без типов TypeScript по имени не разрешает, и ссылки на
+ * себя ему не нужно: корень общего слоя тем — CSS, и типы у пакета — только у
+ * поведения, `./setup`.
+ */
+function typedEntriesOf({ name, manifest }: Pick<TBuiltPackage, 'name' | 'manifest'>): string[] {
+	const { exports, types } = manifest
+	const root = typeof types === 'string' || Object.hasOwn(rootExportOf(manifest), 'types')
+	const subpaths = Object.entries(isRecord(exports) ? exports : {})
+		.filter(
+			([key, conditions]) =>
+				key.startsWith('./') && isRecord(conditions) && Object.hasOwn(conditions, 'types'),
+		)
+		.map(([key]) => posix.join(name, key))
+
+	return root ? [name, ...subpaths] : subpaths
+}
+
+/**
+ * Нарушение ссылки на себя у одного входа: `entry` — его имя, `test` — файл
+ * тестов, от которого имя разрешается, `dir` — каталог пакета.
+ */
+function checkEntryReference(
+	entry: string,
+	test: string,
+	dir: string,
+	options: ts.CompilerOptions,
+	host: TTsHost,
+): string[] {
+	const targets = options.paths?.[entry]
+
+	if (targets === undefined) {
+		return [
+			`paths не знает свой вход ${entry} — тесты найдут его через node_modules, по манифесту`,
+		]
+	}
+
+	const { resolvedModule } = ts.resolveModuleName(entry, test, options, host)
+	const target = `paths ведёт ${entry} в ${JSON.stringify(targets)}`
+
+	if (resolvedModule === undefined) {
+		return [`${target} — имя ни во что не разрешается`]
+	}
+
+	if (resolvedModule.packageId !== undefined) {
+		return [`${target} — имя разрешается через манифест, а он ведёт в dist`]
+	}
+
+	if (topDirOf(dir, resolvedModule.resolvedFileName) === 'dist') {
+		return [`${target} — имя разрешается в выход сборки`]
+	}
+
+	return []
+}
+
+/**
  * Нарушения `tsconfig.json`, конфига проверки типов; пустой список — конфиг в
  * порядке.
  *
- * Тесты импортируют пакет по имени, и программа, в которую они входят, находит
- * его ссылкой пакета на себя в `paths` — в исходниках. Судится не запись, а то,
- * во что имя разрешает сам TypeScript, — с учётом `extends` и каталога, от
- * которого он считает `paths`. Одного итога мало: каталог с манифестом (`"."`)
- * ведёт по его `types` в `dist`, а без сборки TypeScript откатывается на
- * `index.ts` рядом, и сторож, запущенный до сборки, как в CI, ошибки не увидел
- * бы. Поэтому манифест узнаётся отдельно: разрешение, прочитавшее
- * `package.json`, несёт `packageId` — имя и версию оттуда, — а путь в исходники
- * манифеста не читает.
+ * Тесты импортируют пакет по имени — корень и подпути, — и программа, в
+ * которую они входят, находит каждый вход с типами ссылкой пакета на себя в
+ * `paths` — в исходниках. Судится не запись, а то, во что имя разрешает сам
+ * TypeScript, — с учётом `extends` и каталога, от которого он считает `paths`.
+ * Одного итога мало: каталог с манифестом (`"."`) ведёт по его `types` в
+ * `dist`, а без сборки TypeScript откатывается на `index.ts` рядом, и сторож,
+ * запущенный до сборки, как в CI, ошибки не увидел бы. Поэтому манифест
+ * узнаётся отдельно: разрешение, прочитавшее `package.json`, несёт `packageId`
+ * — имя и версию оттуда, — а путь в исходники манифеста не читает.
  *
  * Программу без тестов сторож пропускает: свои модули пакет зовёт
  * относительными путями, и по имени его там импортировать некому.
  */
-function checkSelfReference(name: string, file: string, host: TTsHost): string[] {
+function checkSelfReference(
+	pkg: Pick<TBuiltPackage, 'name' | 'manifest'>,
+	file: string,
+	host: TTsHost,
+): string[] {
 	const { parsed, violations } = parseTsconfig(file, host)
 
 	if (parsed === undefined) {
@@ -283,28 +347,14 @@ function checkSelfReference(name: string, file: string, host: TTsHost): string[]
 		return violations
 	}
 
-	const targets = parsed.options.paths?.[name]
+	const { options } = parsed
 
-	if (targets === undefined) {
-		violations.push(
-			`paths не знает сам пакет ${name} — тесты найдут его через node_modules, в dist`,
-		)
-
-		return violations
-	}
-
-	const { resolvedModule } = ts.resolveModuleName(name, test, parsed.options, host)
-	const target = `paths ведёт ${name} в ${JSON.stringify(targets)}`
-
-	if (resolvedModule === undefined) {
-		violations.push(`${target} — имя ни во что не разрешается`)
-	} else if (resolvedModule.packageId !== undefined) {
-		violations.push(`${target} — имя разрешается через манифест, а он ведёт в dist`)
-	} else if (topDirOf(dir, resolvedModule.resolvedFileName) === 'dist') {
-		violations.push(`${target} — имя разрешается в выход сборки`)
-	}
-
-	return violations
+	return [
+		...violations,
+		...typedEntriesOf(pkg).flatMap((entry) =>
+			checkEntryReference(entry, test, dir, options, host),
+		),
+	]
 }
 
 /**
@@ -648,8 +698,32 @@ describe('сборка пакетов', () => {
 		})
 
 		expect(tested.map(({ name }) => name)).toEqual(
-			expect.arrayContaining(['@soldy-ui/setup', '@soldy-ui/vue', '@soldy-ui/webc']),
+			expect.arrayContaining([
+				'@soldy-ui/setup',
+				'@soldy-ui/vue',
+				'@soldy-ui/webc',
+				'@soldy-ui/theme-base',
+				'@soldy-ui/theme-oren',
+			]),
 		)
+	})
+
+	// Входы — тоже: корень с условием types и полем types, подпуть с types, а
+	// корень без типов — нет. Иначе подпути молча не проверялись бы, а корень
+	// общего слоя тем требовал бы ссылки на CSS
+	it('входы с типами разобраны — корень и подпути', () => {
+		const entries = TYPECHECKED.flatMap(typedEntriesOf)
+
+		expect(entries).toEqual(
+			expect.arrayContaining([
+				'@soldy-ui/vue',
+				'@soldy-ui/angular',
+				'@soldy-ui/theme-oren',
+				'@soldy-ui/theme-oren/setup',
+				'@soldy-ui/theme-base/setup',
+			]),
+		)
+		expect(entries).not.toContain('@soldy-ui/theme-base')
 	})
 
 	it('каждый пакет очереди собирается ровно одним рецептом', () => {
@@ -684,7 +758,7 @@ describe('сборка пакетов', () => {
 	describe.each(TYPECHECKED)('проверка типов · $name', (pkg) => {
 		it('тесты видят сам пакет исходниками, собран он или нет', () => {
 			const file = join(pkg.dir, 'tsconfig.json')
-			const violations = checkSelfReference(pkg.name, file, ts.sys)
+			const violations = checkSelfReference(pkg, file, ts.sys)
 
 			expect(
 				violations,
@@ -889,39 +963,70 @@ describe('сторож рецептов', () => {
 	describe('tsconfig.json', () => {
 		const CONFIG = '/example/tsconfig.json'
 
+		/** Подпуть с типами — поведение, как у тем. */
+		const SETUP = `${NAME}/setup`
+
 		/** Разрешение модулей — как в общем базовом конфиге. */
 		const RESOLUTION = { module: 'esnext', moduleResolution: 'bundler' }
 
-		/**
-		 * Пакет без сборки: манифест ведёт в `dist`, рядом исходники — файл входа в
-		 * `src` и `index.ts` в корне, как у setup, — и тест, который импортирует
-		 * пакет по имени.
-		 */
-		const CLEAN = {
-			'/tsconfig.base.json': text({ compilerOptions: RESOLUTION }),
-			'/example/package.json': text({
-				name: NAME,
-				version: '0.1.0',
-				types: './dist/index.d.ts',
-			}),
-			'/example/index.ts': '',
-			'/example/src/index.ts': '',
-			'/example/__tests__/example.spec.ts': `import '${NAME}'`,
+		/** Условия входа, собранного в `dist`. */
+		const BUILT_ENTRY = { types: './dist/index.d.ts', default: './dist/index.js' }
+
+		/** Условия поведения, собранного в `dist/setup`, — как у тем. */
+		const BUILT_SETUP = { types: './dist/setup/index.d.ts', default: './dist/setup/index.js' }
+
+		/** Корень с типами в `dist` — полем `types`, без `exports`, как у адаптера Angular. */
+		const TYPED_ROOT: TManifest = { name: NAME, version: '0.1.0', types: './dist/index.d.ts' }
+
+		/** Корень — CSS, а типы — у поведения `./setup`, как у общего слоя тем. */
+		const CSS_ROOT: TManifest = {
+			name: NAME,
+			version: '0.1.0',
+			exports: { '.': './src/index.css', './setup': BUILT_SETUP },
 		}
 
+		/** Типы и у корня, и у поведения `./setup`. */
+		const BOTH: TManifest = {
+			name: NAME,
+			version: '0.1.0',
+			exports: { '.': BUILT_ENTRY, './setup': BUILT_SETUP },
+		}
+
+		/** Каталог пакета с данным манифестом: путь → текст файла. */
+		type TFiles = (manifest: TManifest) => Record<string, string>
+
+		/**
+		 * Пакет без сборки: манифест ведёт в `dist`, рядом исходники — файл входа в
+		 * `src`, `index.ts` в корне, как у setup, и вход поведения в `setup`, как у
+		 * тем, — и тест, который импортирует пакет по имени.
+		 */
+		const clean: TFiles = (manifest) => ({
+			'/tsconfig.base.json': text({ compilerOptions: RESOLUTION }),
+			'/example/package.json': text(manifest),
+			'/example/index.ts': '',
+			'/example/src/index.ts': '',
+			'/example/setup/index.ts': '',
+			'/example/__tests__/example.spec.ts': `import '${NAME}'`,
+		})
+
 		/** Тот же пакет после сборки. */
-		const BUILT = { ...CLEAN, '/example/dist/index.d.ts': '' }
+		const built: TFiles = (manifest) => ({
+			...clean(manifest),
+			'/example/dist/index.d.ts': '',
+			'/example/dist/setup/index.d.ts': '',
+		})
 
 		/** Конфиг проверки типов поверх общего базового — с данными `paths`. */
 		const check = (
 			paths: Readonly<Record<string, string[]>>,
-			files: Readonly<Record<string, string>> = CLEAN,
+			manifest: TManifest = TYPED_ROOT,
+			files: TFiles = clean,
 		): string[] =>
 			checkSelfReference(
-				NAME,
+				{ name: NAME, manifest },
 				CONFIG,
 				memoryHost({
-					...files,
+					...files(manifest),
 					[CONFIG]: text({
 						extends: '../tsconfig.base.json',
 						compilerOptions: { paths },
@@ -929,17 +1034,62 @@ describe('сторож рецептов', () => {
 				}),
 			)
 
+		/** Нарушение «paths не знает вход». */
+		const unknown = (entry: string): string =>
+			`paths не знает свой вход ${entry} — тесты найдут его через node_modules, по манифесту`
+
+		it('входы с типами — корень по условию или полю types, подпуть по условию', () => {
+			const entries = (manifest: TManifest): string[] =>
+				typedEntriesOf({ name: NAME, manifest })
+			// Как у темы oren: типы корня — значения оформления, а сам корень — CSS
+			const theme = { '.': { types: './index.d.ts', default: './dist/index.css' } }
+			// Вход без условия types — CSS, JSON — TypeScript по имени не разрешает
+			const untyped = {
+				'.': './src/index.css',
+				'./theme-variables.json': './theme-variables.json',
+			}
+
+			expect(entries(TYPED_ROOT)).toEqual([NAME])
+			expect(entries({ exports: { '.': BUILT_ENTRY } })).toEqual([NAME])
+			expect(entries(CSS_ROOT)).toEqual([SETUP])
+			expect(entries(BOTH)).toEqual([NAME, SETUP])
+			expect(entries({ exports: { ...theme, './setup': BUILT_SETUP } })).toEqual([
+				NAME,
+				SETUP,
+			])
+			expect(entries({ exports: untyped })).toEqual([])
+		})
+
 		it('ссылка на себя в исходники — без нарушений, собран пакет или нет', () => {
 			for (const target of ['./src/index.ts', './src']) {
 				expect(check({ [NAME]: [target] }), target).toEqual([])
-				expect(check({ [NAME]: [target] }, BUILT), target).toEqual([])
+				expect(check({ [NAME]: [target] }, TYPED_ROOT, built), target).toEqual([])
 			}
 		})
 
 		it('нет ссылки на себя — нарушение', () => {
-			expect(check({ '@soldy-ui/core': ['../core/src'] })).toEqual([
-				`paths не знает сам пакет ${NAME} — тесты найдут его через node_modules, в dist`,
-			])
+			expect(check({ '@soldy-ui/core': ['../core/src'] })).toEqual([unknown(NAME)])
+		})
+
+		// Корень общего слоя тем — CSS: по имени корня TypeScript ничего не
+		// разрешает, а поведение тесты импортируют
+		it('корень без типов ссылки не требует, подпуть с типами — требует', () => {
+			const setup = { [SETUP]: ['./setup/index.ts'] }
+
+			expect(check(setup, CSS_ROOT)).toEqual([])
+			expect(check(setup, CSS_ROOT, built)).toEqual([])
+			expect(check({}, CSS_ROOT)).toEqual([unknown(SETUP)])
+			expect(check({}, CSS_ROOT, built)).toEqual([unknown(SETUP)])
+		})
+
+		it('у каждого входа — своя ссылка: корень не отвечает за подпуть', () => {
+			const root = { [NAME]: ['./src/index.ts'] }
+			const setup = { [SETUP]: ['./setup/index.ts'] }
+
+			expect(check({ ...root, ...setup }, BOTH)).toEqual([])
+			expect(check({ ...root, ...setup }, BOTH, built)).toEqual([])
+			expect(check(root, BOTH)).toEqual([unknown(SETUP)])
+			expect(check(setup, BOTH)).toEqual([unknown(NAME)])
 		})
 
 		// Без сборки TypeScript откатывается с манифеста на index.ts рядом, и по
@@ -948,13 +1098,13 @@ describe('сторож рецептов', () => {
 			const violation = `paths ведёт ${NAME} в ["."] — имя разрешается через манифест, а он ведёт в dist`
 
 			expect(check({ [NAME]: ['.'] })).toEqual([violation])
-			expect(check({ [NAME]: ['.'] }, BUILT)).toEqual([violation])
+			expect(check({ [NAME]: ['.'] }, TYPED_ROOT, built)).toEqual([violation])
 		})
 
 		it('ссылка в dist — нарушение, собран пакет или нет', () => {
 			const target = `paths ведёт ${NAME} в ["./dist/index.d.ts"]`
 
-			expect(check({ [NAME]: ['./dist/index.d.ts'] }, BUILT)).toEqual([
+			expect(check({ [NAME]: ['./dist/index.d.ts'] }, TYPED_ROOT, built)).toEqual([
 				`${target} — имя разрешается в выход сборки`,
 			])
 			expect(check({ [NAME]: ['./dist/index.d.ts'] })).toEqual([
@@ -962,14 +1112,24 @@ describe('сторож рецептов', () => {
 			])
 		})
 
+		it('подпуть в dist — нарушение, собран пакет или нет', () => {
+			const paths = { [SETUP]: ['./dist/setup/index.d.ts'] }
+			const target = `paths ведёт ${SETUP} в ["./dist/setup/index.d.ts"]`
+
+			expect(check(paths, CSS_ROOT, built)).toEqual([
+				`${target} — имя разрешается в выход сборки`,
+			])
+			expect(check(paths, CSS_ROOT)).toEqual([`${target} — имя ни во что не разрешается`])
+		})
+
 		// paths считаются от конфига, который их записал, а не от пакетного
 		it('ссылка на себя из extends — от каталога своего звена', () => {
 			const inherited = (target: string): string[] =>
 				checkSelfReference(
-					NAME,
+					{ name: NAME, manifest: TYPED_ROOT },
 					CONFIG,
 					memoryHost({
-						...CLEAN,
+						...clean(TYPED_ROOT),
 						'/tsconfig.base.json': text({
 							compilerOptions: { ...RESOLUTION, paths: { [NAME]: [target] } },
 						}),
@@ -984,13 +1144,19 @@ describe('сторож рецептов', () => {
 		})
 
 		it('программа без тестов — без нарушений, даже без ссылки на себя', () => {
-			const { '/example/__tests__/example.spec.ts': _test, ...untested } = CLEAN
+			const untested: TFiles = (manifest) => {
+				const { '/example/__tests__/example.spec.ts': _test, ...files } = clean(manifest)
 
-			expect(check({}, untested)).toEqual([])
+				return files
+			}
+
+			expect(check({}, BOTH, untested)).toEqual([])
 		})
 
 		it('конфиг, который TypeScript не разобрал, — нарушение', () => {
-			expect(checkSelfReference(NAME, CONFIG, memoryHost(CLEAN))).toEqual([
+			const host = memoryHost(clean(TYPED_ROOT))
+
+			expect(checkSelfReference({ name: NAME, manifest: TYPED_ROOT }, CONFIG, host)).toEqual([
 				expect.stringMatching(/^не разобран: .*\/example\/tsconfig\.json/),
 			])
 		})

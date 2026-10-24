@@ -33,6 +33,7 @@ soldy в любой теме, а не облику одной: сброс узл
 | `setup/plugins/`                                              | `TTabsViewPlugin`, `TTableHeadPlugin`, `TToastsFrontPlugin` и ожидание переходов псевдоэлементов (`transitions.ts`)   |
 | `vite.setup.config.ts`                                        | сборка поведения: `setup/index.ts` → `dist/setup` (общая фабрика `tools/vite`)                                        |
 | `tsconfig.build.json`                                         | `.d.ts` поведения: прогон `tsc` вторым шагом, в тот же `dist/setup`                                                   |
+| `tsconfig.json`                                               | проверка типов — шаг CI «Типы — Themes»: тесты, поведение и конфиги сборки; соседи — исходниками                      |
 | `README.md`                                                   | что в пакете и как сделать свою тему — по шагам, для людей и ИИ-ассистентов                                           |
 | `__tests__/base-css.spec.ts`                                  | свои сторожа базы — по её CSS (см. «Сторожа»)                                                                         |
 | `__tests__/package-build.spec.ts`                             | поставка: CSS — исходником, поведение — собранным в `dist/setup`                                                      |

@@ -48,7 +48,12 @@ export function tailwind(): Plugin {
 					})
 				},
 				// `Polyfills` в типах Tailwind — `const enum`, а в рантайме
-				// `tailwindcss` отдаёт объект: значение — из него
+				// `tailwindcss` отдаёт объект: значение — из него. При
+				// `isolatedModules` TypeScript чужой `const enum` не встраивает и
+				// обращение к нему запрещает, хотя объект в рантайме есть. Число
+				// вместо имени разошлось бы с Tailwind молча, а директива упадёт
+				// сама, когда типы Tailwind станут обычным `enum`
+				// @ts-expect-error — TS2748: чужой `const enum` под isolatedModules, значение берётся из объекта рантайма
 				polyfills: Polyfills.AtProperty,
 			})
 
