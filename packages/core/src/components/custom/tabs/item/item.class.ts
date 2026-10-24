@@ -8,6 +8,11 @@ import type { ITabsItem, ITabsItemProps, TTabsItemEvents } from './types'
  * Кастомная логика элемента таба (без коллекционной части).
  * Наследуется от TValueControl, где value — это ключ таба.
  * Generic TProps позволяет передавать расширенные Props (например, ITabsItemProps с active).
+ *
+ * `id` — значение потребителя, как у поля (`TInputControl.id`): в `aria` ядро
+ * его не пишет. На `id` таба ссылается его панель (`aria-labelledby`), и табу
+ * его пишет плагин таба (`TTabsItemIdsPlugin`): свой `id` главнее, без него —
+ * `id` от монтирования.
  */
 export default class TTabsItem<
 	TProps extends ITabsItemProps = ITabsItemProps,
@@ -19,11 +24,12 @@ export default class TTabsItem<
 	static override baseClass = 'so-tabs-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ITabsItemProps, 'text', 'closable'> = {
+		TDefaultValues<ITabsItemProps, 'text', 'closable' | 'id'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		closable: undefined,
+		id: undefined,
 		tag: 'div',
 	}
 
@@ -31,6 +37,7 @@ export default class TTabsItem<
 
 	protected _text: string
 	protected _closable: boolean | undefined
+	protected _id: string | undefined
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -43,6 +50,8 @@ export default class TTabsItem<
 		this._text = customProps.text ?? ctor.defaultValues.text
 
 		this._closable = customProps.closable ?? ctor.defaultValues.closable
+
+		this._id = customProps.id ?? ctor.defaultValues.id
 
 		this._classes.toggle(`--closable`, !!this._closable)
 
@@ -130,6 +139,22 @@ export default class TTabsItem<
 	}
 
 	/**
+	 * Свой `id` таба — значение потребителя: задают его там, где на таб
+	 * ссылается его разметка. Не задан — `undefined`, и у таба `id` от
+	 * монтирования.
+	 */
+	get id(): string | undefined {
+		return this._id
+	}
+
+	set id(value: string | undefined) {
+		if (this._id === value) return
+
+		this._id = value
+		this._sink.emit('change:id', value)
+	}
+
+	/**
 	 * Набор кнопки закрытия. Имя в нём — вместе с текстом таба: «Close
 	 * Настройки».
 	 *
@@ -151,6 +176,7 @@ export default class TTabsItem<
 			...super.getProps(),
 			text: this.text,
 			closable: this.closable,
+			id: this._id,
 		} as TProps
 	}
 }

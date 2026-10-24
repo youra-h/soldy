@@ -14,6 +14,8 @@ export type TListBoxItemEvents = TValueControlEvents<string | number> & {
 	'change:text:before': (e: TChangeEvent<string>) => void
 	/** change:contentFit */
 	'change:contentFit': (value: TListItemContentFit | undefined) => void
+	/** change:id — свой `id` строки */
+	'change:id': (value: string | undefined) => void
 }
 
 export interface IListBoxItemProps
@@ -28,6 +30,13 @@ export interface IListBoxItemProps
 	 * всех, и раздвинуть контейнер ради одной строки нельзя.
 	 */
 	contentFit?: TListItemContentFit
+	/**
+	 * Свой `id` строки элемента. Не задан — у строки `id` от монтирования.
+	 *
+	 * Свой главнее: на `id` строки ссылается `aria-activedescendant` списка, и
+	 * ссылка ведёт на тот `id`, что стоит в разметке.
+	 */
+	id?: string
 }
 
 export interface IListBoxItem<
@@ -38,4 +47,6 @@ export interface IListBoxItem<
 	text: string
 	/** Что делать с не помещающимся текстом (`undefined` — как у списка) */
 	contentFit: TListItemContentFit | undefined
+	/** Свой `id` строки; не задан — `undefined`, и у строки `id` от монтирования */
+	id: string | undefined
 }

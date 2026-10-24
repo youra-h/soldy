@@ -13,12 +13,21 @@ export type TMenuPopupItemEvents = TMenuItemEvents & {
 	'change:open': (value: boolean) => void
 	/** change:panelAria — набор атрибутов панели пункта изменился */
 	'change:panelAria': (value: TAriaAttributes) => void
+	/** change:id — свой `id` строки пункта */
+	'change:id': (value: string | undefined) => void
 }
 
 /** Пропсы пункта со своей панелью. */
 export interface IMenuPopupItemProps extends IMenuItemProps {
 	/** Открыта ли панель пункта */
 	open?: boolean
+	/**
+	 * Свой `id` строки пункта. Не задан — у строки `id` от монтирования.
+	 *
+	 * Свой главнее: на `id` строки ссылается панель (`aria-labelledby`), и
+	 * ссылка ведёт на тот `id`, что стоит в разметке.
+	 */
+	id?: string
 }
 
 /**
@@ -40,4 +49,6 @@ export interface IMenuPopupItem<
 	 * `id` и `aria-labelledby` на строку пункта пишет плагин связок
 	 */
 	readonly panelAria: TAria
+	/** Свой `id` строки; не задан — `undefined`, и у строки `id` от монтирования */
+	id: string | undefined
 }

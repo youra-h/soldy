@@ -13,6 +13,12 @@ import type {
  * Логика элемента Accordion (без коллекционной части).
  * Наследуется от TValueControl, где value — это ключ элемента.
  * Generic TProps позволяет передавать расширенные Props (например, IAccordionItemProps с selected).
+ *
+ * `id` — значение потребителя, как у поля (`TInputControl.id`): в `aria` ядро
+ * его не пишет. Это `id` заголовка, на него ссылается панель
+ * (`aria-labelledby`), и обе стороны пишет плагин секции
+ * (`TAccordionItemIdsPlugin`): свой `id` главнее, без него — `id` от
+ * монтирования.
  */
 export default class TAccordionItem<
 	TProps extends IAccordionItemProps = IAccordionItemProps,
@@ -24,17 +30,20 @@ export default class TAccordionItem<
 	static override baseClass = 'so-accordion-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<IAccordionItemProps, 'text' | 'arrowPlacement'> = {
+		TDefaultValues<IAccordionItemProps, 'text' | 'arrowPlacement', 'id'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
 		arrowPlacement: 'start',
+		id: undefined,
 		tag: 'div',
 	}
 
 	protected _arrowPlacement!: TAccordionArrowPlacement
 
 	protected _text: string
+
+	protected _id: string | undefined
 
 	protected _contentAria: TAria
 
@@ -50,6 +59,8 @@ export default class TAccordionItem<
 		this._text = customProps.text ?? ctor.defaultValues.text
 
 		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement
+
+		this._id = customProps.id ?? ctor.defaultValues.id
 
 		this._contentAria = new TAria()
 
@@ -121,11 +132,28 @@ export default class TAccordionItem<
 		}
 	}
 
+	/**
+	 * Свой `id` заголовка секции — значение потребителя: задают его там, где
+	 * на секцию ссылается его разметка. Не задан — `undefined`, и у заголовка
+	 * `id` от монтирования.
+	 */
+	get id(): string | undefined {
+		return this._id
+	}
+
+	set id(value: string | undefined) {
+		if (this._id === value) return
+
+		this._id = value
+		this._sink.emit('change:id', value)
+	}
+
 	override getProps(): TProps {
 		return {
 			...super.getProps(),
 			text: this.text,
 			arrowPlacement: this._arrowPlacement,
+			id: this._id,
 		} as TProps
 	}
 }

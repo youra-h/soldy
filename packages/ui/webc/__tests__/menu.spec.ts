@@ -1382,6 +1382,32 @@ describe('подменю', () => {
 		expect(share().contains(subPanel())).toBe(false)
 	})
 
+	/**
+	 * Свой `id` пункта с подменю — его вход: атрибут разметки база берёт пропом
+	 * первой сборки и снимает с корня пункта, и на строку `id` встаёт из набора
+	 * пункта — панель подменю ссылается на него, узел с ним один. `id` панели
+	 * своего входа не имеет и остаётся формулой. Из кода — `ctrl.id`: строка и
+	 * панель идут за ним.
+	 */
+	it('свой id подменю — на строке, панель ссылается на него и идёт за его сменой', async () => {
+		await render({ content: MARKUP('id="menu-share"') })
+
+		expect(shareRow().id).toBe('menu-share')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-share')
+		expect(document.querySelectorAll('[id="menu-share"]')).toHaveLength(1)
+		expect(share().hasAttribute('id')).toBe(false)
+
+		const ctrl = share().ctrl
+
+		if (!ctrl) throw new Error('у подменю нет ctrl')
+
+		ctrl.id = 'menu-send'
+		await flush()
+
+		expect(shareRow().id).toBe('menu-send')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-send')
+	})
+
 	it('пункт входит в меню над ним, его пункты — в его собственное меню', async () => {
 		const menu = await render({ content: MARKUP() })
 

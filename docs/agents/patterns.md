@@ -133,9 +133,14 @@ ListBox одним нажатием — Shift+Tab не останавливае�
 или на строке, с которой пришла клавиша, — ссылкой не становится, а элемент,
 ушедший из документа — из коллекции или со снятым монтированием, — ссылку
 снимает: о любом из этих путей реестр наборов объявляет `bundle:unregistered`.
-Сторожат группа «ссылка на элемент под стрелками» в
+Свой `id` элемента (его вход) главнее `id` от монтирования, и ссылка идёт за
+его сменой: навигация слушает набор `aria` подсвеченного, пока подсветка на
+нём, и зовёт хук `onHighlightedAriaChanged` — без прокрутки и переноса фокуса
+повторного `onHighlightChanged` (a11y.md, «`id` в разметке — от монтирования,
+в плагинах»). Сторожат группа «ссылка на элемент под стрелками» в
 `setup/__tests__/list-keyboard.spec.ts`,
-`plugins/__tests__/list-navigation.plugin.spec.ts` (хук о видимой подсветке),
+`plugins/__tests__/list-navigation.plugin.spec.ts` (хуки о видимой подсветке и
+о наборе подсвеченного),
 `plugins/__tests__/collection-bundles.plugin.spec.ts`, спеки ListBox адаптеров
 (`list-box-tabindex.spec.ts` у Vue, `list-box.spec.*` у остальных), а в окне —
 `plugins/__tests__/list-keyboard-window.plugin.spec.ts` и

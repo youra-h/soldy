@@ -533,6 +533,43 @@ describe('связка ARIA в разметке', () => {
 
 		expect(panel().getAttribute('role')).toBe('tabpanel')
 	})
+
+	/**
+	 * Свой `id` таба — его вход: статический атрибут и привязка `[id]` пишут
+	 * вход, статику база снимает с корня, и на строку таба `id` встаёт из
+	 * набора таба — панель ссылается на него, узел с ним один. `id` панели
+	 * своего входа не имеет и остаётся формулой.
+	 */
+	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', () => {
+		@Component({
+			standalone: true,
+			imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
+			template: `<div so-tabs>
+				<div so-tabs-item value="a" text="First" active [id]="own()"></div>
+				<div so-tabs-item value="b" text="Second" id="tab-second"></div>
+				<div so-tabs-content slot="content" value="a">Панель A</div>
+			</div>`,
+		})
+		class OwnIdHost {
+			readonly own = signal<string | undefined>('settings')
+		}
+
+		const fixture = mountHost(OwnIdHost)
+
+		expect(tab('First').id).toBe('settings')
+		expect(tab('Second').id).toBe('tab-second')
+		expect(panel().getAttribute('aria-labelledby')).toBe('settings')
+		expect(document.querySelectorAll('[id="settings"]')).toHaveLength(1)
+		expect(item('First').hasAttribute('id')).toBe(false)
+		expect(item('Second').hasAttribute('id')).toBe(false)
+
+		fixture.componentInstance.own.set('general')
+		fixture.detectChanges()
+
+		expect(tab('First').id).toBe('general')
+		expect(panel().getAttribute('aria-labelledby')).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
 })
 
 describe('aria-selected', () => {

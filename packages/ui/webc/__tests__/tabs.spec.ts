@@ -582,6 +582,36 @@ describe('связка ARIA в разметке', () => {
 
 		expect(panel().getAttribute('role')).toBe('tabpanel')
 	})
+
+	/**
+	 * Свой `id` таба — его вход: атрибут разметки база берёт пропом первой
+	 * сборки и снимает с корня, и на строку таба `id` встаёт из набора таба —
+	 * панель ссылается на него, узел с ним один. `id` панели своего входа не
+	 * имеет и остаётся формулой. Из кода — `ctrl.id`: таб и панель идут за ним.
+	 */
+	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', async () => {
+		await mount(`<div is="so-tabs">
+			<div is="so-tabs-item" value="a" text="First" active id="settings"></div>
+			<div is="so-tabs-item" value="b" text="Second"></div>
+			<div is="so-tabs-content" slot="content" value="a">Панель A</div>
+		</div>`)
+
+		expect(tab('First').id).toBe('settings')
+		expect(panel().getAttribute('aria-labelledby')).toBe('settings')
+		expect(document.querySelectorAll('[id="settings"]')).toHaveLength(1)
+		expect(item('First').hasAttribute('id')).toBe(false)
+
+		const ctrl = item('First').ctrl
+
+		if (!ctrl) throw new Error('у таба нет ctrl')
+
+		ctrl.id = 'general'
+		await flush()
+
+		expect(tab('First').id).toBe('general')
+		expect(panel().getAttribute('aria-labelledby')).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
 })
 
 describe('aria-selected', () => {

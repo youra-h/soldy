@@ -113,6 +113,12 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:panelClasses'],
 				},
+				/**
+				 * Свой `id` строки — вход, а не атрибут, который едет на строку: на
+				 * него ссылается панель подменю, и обе стороны ведёт плагин связок.
+				 * Не задан — `id` от монтирования.
+				 */
+				id: { type: String, triggers: ['change:id'] },
 			},
 		},
 

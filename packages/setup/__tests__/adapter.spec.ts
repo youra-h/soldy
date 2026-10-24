@@ -480,7 +480,9 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		new TPluginBundle(tab, mountId).use(TTabsItemIdsPlugin)
 
 	/** Движок Tabs под лифтом и панель `a`, собранная под ним. */
-	function assemblePanel(items: ReadonlyArray<{ value: string; text: string }> = []) {
+	function assemblePanel(
+		items: ReadonlyArray<{ value: string; text: string; id?: string }> = [],
+	) {
 		const { factory, store } = createElevatorFactory()
 		const engine = createEngineTabs({ owner: new TTabs(), items: [...items] })
 
@@ -562,6 +564,49 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		mountTab(tab, 'again')
 
 		expect(panelSide(content)).toEqual({ id: 'again-panel', labelledBy: 'again-tab' })
+	})
+
+	/**
+	 * Свой `id` таба главнее `id` от монтирования: его пишет в набор таба плагин
+	 * таба, и панель ссылается на него. `id` панели своего входа не имеет и
+	 * остаётся формулой таба.
+	 */
+	it('таб со своим id из данных — панель ссылается на него с первой сборки', () => {
+		const { content } = assemblePanel([{ value: 'a', text: 'A', id: 'settings' }])
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'settings' })
+	})
+
+	it('свой id таба сменили — панель идёт за ним, сняли — снова id от монтирования', () => {
+		const { engine, content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
+
+		context.attach()
+		tab.id = 'settings'
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'settings' })
+
+		tab.id = undefined
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'tab-a-tab' })
+	})
+
+	/**
+	 * Подписка на таб ждёт входа, а таб пишет свой набор и между сборкой панели
+	 * и её входом: у React сборка — на рендере, а `id` таба приходит его эффектом,
+	 * раньше входа панели. Вход берёт то, что таб записал с тех пор.
+	 */
+	it('таб сменил id между сборкой панели и её входом — вход берёт новый', () => {
+		const { engine, content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
+
+		tab.id = 'settings'
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'tab-a-tab' })
+
+		context.attach()
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'settings' })
 	})
 
 	it('destroy снимает подписки и связку панели', () => {

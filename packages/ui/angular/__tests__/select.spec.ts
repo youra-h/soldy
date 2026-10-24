@@ -418,6 +418,45 @@ describe('опции', () => {
 		expect(document.getElementById(id ?? '')?.getAttribute('role')).toBe('option')
 	})
 
+	/**
+	 * Свой `id` опции — её вход: статический атрибут и привязка `[id]` пишут
+	 * вход, статику база снимает с корня опции, и на строку `id` встаёт из
+	 * набора опции — ссылка поля ведёт на него, узел с ним один. Раньше `id`
+	 * потребителя ехал на строку статикой, и набор, который база считает своим,
+	 * его стирал. Сменили у подсвеченной — строка и ссылка идут за ним.
+	 */
+	it('свой id опции — на строке, ссылка поля ведёт на него и идёт за его сменой', async () => {
+		@Component({
+			selector: 'probe-select-option-id',
+			imports: [TSelectComponent, TSelectItemComponent],
+			template: `<div so-select>
+				<div so-select-item value="msk" text="Москва" [id]="own()"></div>
+				<div so-select-item value="tver" text="Тверь" id="city-tver"></div>
+			</div>`,
+		})
+		class OptionIdPage {
+			readonly own = signal<string | undefined>('city-msk')
+		}
+
+		const fixture = await render(OptionIdPage)
+
+		press('ArrowDown')
+		await nextFrame()
+		check()
+
+		expect(optionAt(0).id).toBe('city-msk')
+		expect(optionAt(1).id).toBe('city-tver')
+		expect(field().getAttribute('aria-activedescendant')).toBe('city-msk')
+		expect(document.querySelectorAll('[id="city-msk"]')).toHaveLength(1)
+		expect(optionRoots().some((option) => option.hasAttribute('id'))).toBe(false)
+
+		fixture.componentInstance.own.set('city-moscow')
+		check()
+
+		expect(optionAt(0).id).toBe('city-moscow')
+		expect(field().getAttribute('aria-activedescendant')).toBe('city-moscow')
+	})
+
 	it('aria-selected стоит на всех, а не только на выбранной', async () => {
 		await render(Page)
 		await open()

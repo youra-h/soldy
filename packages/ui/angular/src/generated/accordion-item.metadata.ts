@@ -24,6 +24,7 @@ export const AccordionItemInputNames = [
 	'name',
 	'text',
 	'arrowPlacement',
+	'id',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -69,6 +70,7 @@ export const AccordionItemOutputNames = [
 	'soChangeText',
 	'soChangeArrowPlacement',
 	'soChangeContentAria',
+	'soChangeId',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -90,6 +92,7 @@ export const AccordionItemOutputNames = [
 		'name',
 		'text',
 		'arrowPlacement',
+		'id',
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -123,6 +126,7 @@ export abstract class TAccordionItemSurface<TInstance extends IEntity> extends T
 	declare name: TInputValue<typeof descriptor, 'name'>
 	declare text: TInputValue<typeof descriptor, 'text'>
 	declare arrowPlacement: TInputValue<typeof descriptor, 'arrowPlacement'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -243,6 +247,9 @@ export abstract class TAccordionItemSurface<TInstance extends IEntity> extends T
 	}
 	get soChangeContentAria(): TOutputEmitter<typeof descriptor, 'change:contentAria'> {
 		return this.createOutput('soChangeContentAria')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

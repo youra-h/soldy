@@ -261,6 +261,59 @@ describe('выбор', () => {
 	})
 
 	/**
+	 * Свой `id` элемента — его вход: статический атрибут и привязка `[id]`
+	 * пишут вход, статику база снимает с корня, и на строку `id` встаёт из
+	 * набора элемента — ссылка ведёт на него, узел с ним один. Раньше `id`
+	 * потребителя ехал на строку статикой, и набор, который база считает своим,
+	 * его стирал. Сменили у подсвеченного — строка и ссылка идут за ним.
+	 */
+	it('свой id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
+		@Component({
+			standalone: true,
+			imports: [TListBoxComponent, TListBoxItemComponent],
+			template: `<div so-list-box>
+				<div so-list-box-item value="a" text="Первый" [id]="own()"></div>
+				<div so-list-box-item value="b" text="Второй" id="row-second"></div>
+			</div>`,
+		})
+		class OwnIdHost {
+			readonly own = signal<string | undefined>('row-first')
+		}
+
+		const fixture = mountHost(OwnIdHost)
+		const list = listOf(fixture)
+
+		await nextFrame()
+		press(fixture, list, 'ArrowDown')
+
+		expect(rowOf('Первый').id).toBe('row-first')
+		expect(rowOf('Второй').id).toBe('row-second')
+		expect(list.getAttribute('aria-activedescendant')).toBe('row-first')
+		expect(document.querySelectorAll('[id="row-first"]')).toHaveLength(1)
+		expect(document.querySelectorAll('[id="row-second"]')).toHaveLength(1)
+		expect(listItems().some((item) => item.hasAttribute('id'))).toBe(false)
+
+		fixture.componentInstance.own.set('row-one')
+		fixture.detectChanges()
+
+		expect(rowOf('Первый').id).toBe('row-one')
+		expect(list.getAttribute('aria-activedescendant')).toBe('row-one')
+
+		fixture.componentInstance.own.set(undefined)
+		fixture.detectChanges()
+
+		const fallback = rowOf('Первый').id
+
+		expect(fallback).not.toBe('')
+		expect(fallback).not.toBe('row-one')
+		expect(list.getAttribute('aria-activedescendant')).toBe(fallback)
+
+		press(fixture, list, 'ArrowDown')
+
+		expect(list.getAttribute('aria-activedescendant')).toBe('row-second')
+	})
+
+	/**
 	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
 	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
 	 * кнопка нажимается.
@@ -527,9 +580,10 @@ describe('состав', () => {
 	})
 
 	/**
-	 * Атрибут — не из тех, что называет ядро: `id` строки пишет плагин `id`
-	 * элемента в его набор (на него ссылается `aria-activedescendant` списка), а
-	 * имя из набора база Angular считает своим всегда.
+	 * `id` — вход элемента, а не статика, которая едет на строку: строке его
+	 * пишет плагин `id` элемента в её набор, и тот же `id` берёт ссылка
+	 * `aria-activedescendant` списка. `title` ядро не называет — его база
+	 * переносит на строку статикой.
 	 */
 	it('класс и стиль потребителя — корню элемента, остальное — строке', () => {
 		@Component({
@@ -542,7 +596,8 @@ describe('состав', () => {
 					text="A"
 					class="mine"
 					style="color: red"
-					title="row-a"
+					id="row-a"
+					title="Строка"
 				></div>
 			</div>`,
 		})
@@ -554,8 +609,10 @@ describe('состав', () => {
 
 		expect(item.classList.contains('mine')).toBe(true)
 		expect(item.style.color).toBe('red')
+		expect(item.hasAttribute('id')).toBe(false)
 		expect(item.hasAttribute('title')).toBe(false)
-		expect(rowOf('A').getAttribute('title')).toBe('row-a')
+		expect(rowOf('A').id).toBe('row-a')
+		expect(rowOf('A').getAttribute('title')).toBe('Строка')
 		expect(rowOf('A').classList.contains('mine')).toBe(false)
 	})
 

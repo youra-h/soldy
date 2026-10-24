@@ -1,7 +1,7 @@
 import { batchOf, drawOf } from '@soldy-ui/core'
-import type { IControl, TCollectionEngine, TEventSink } from '@soldy-ui/core'
+import type { IControl, TCollectionEngine, TComponentViewEvents, TEventSink } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
-import type { IPluginContext } from '../../../base'
+import type { IListenable, IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
 import type { IDomEventTarget } from '../../../utils'
@@ -42,7 +42,11 @@ const HIGHLIGHT = 'highlight'
  * наследник узнаёт не о каждом переезде позиции, а о смене видимой подсветки
  * (`onHighlightChanged`), и `null` приходит ему и тогда, когда позиция ушла
  * без отметки (`trackHighlight`). `id` для ссылки отдаёт `highlightedId()`, а
- * куда её писать, решает наследник: туда, где фокус.
+ * куда её писать, решает наследник: туда, где фокус. `id` подсвеченного
+ * бывает и новым при той же подсветке — свой `id` элемента задали, сменили
+ * или сняли, — и об этом наследник узнаёт своим хуком
+ * (`onHighlightedAriaChanged`): база следит за набором `aria` элемента на
+ * позиции, пока она на нём.
  *
  * **В окне** (обёртка `Virtual`) в документе только видимые элементы, и у
  * ненарисованного нет ни узла, ни `TListItemPlugin`. Поэтому подсвеченный
@@ -72,6 +76,13 @@ export abstract class TListNavigationPlugin<
 	protected _highlightedUid: string | number | null = null
 	/** Подсветка видна: у подсвеченного элемента стоит отметка, а не одна позиция. */
 	private _marked = false
+	/**
+	 * Шина элемента на позиции — за его набором `aria` база следит, пока
+	 * позиция на нём: в наборе `id`, на который ведёт ссылка наследника.
+	 * Подписка своя, а не `_listenTo`: элемент сменяется с позицией, и прежнего
+	 * база отпускает сразу, а не при уничтожении.
+	 */
+	private _watched: IListenable<Pick<TComponentViewEvents, 'change:aria'>> | null = null
 
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
@@ -134,6 +145,7 @@ export abstract class TListNavigationPlugin<
 	override destroy(): void {
 		this._element?.removeEventListener('keydown', this._onKeyDown)
 		this.clearHighlight()
+		this._watch(undefined)
 
 		this._element = null
 		this._bundles = null
@@ -177,6 +189,20 @@ export abstract class TListNavigationPlugin<
 	 * смонтированного элемента: `id` для ссылки на него и узел для прокрутки.
 	 */
 	protected onHighlightedMounted(_uid: string | number): void {}
+
+	/**
+	 * Набор `aria` подсвеченного элемента сменился, пока отметка видна, — и
+	 * вместе с ним мог смениться `id`, на который ведёт ссылка: свой `id`
+	 * элемента задали, сменили или сняли. Здесь наследник, который ссылается на
+	 * подсвеченный (`aria-activedescendant`), переписывает ссылку.
+	 *
+	 * Отдельный хук, а не повтор `onHighlightChanged`: подсветка не сменилась,
+	 * и наследник не должен снова прокручивать к элементу или переносить фокус.
+	 * База следит за набором, а не за `change:id` элемента: `id` в набор пишет
+	 * плагин `id` элемента своим подписчиком того же события, и подписчик,
+	 * пришедший раньше него, прочёл бы прежний.
+	 */
+	protected onHighlightedAriaChanged(_uid: string | number): void {}
 
 	/**
 	 * Показанные элементы — `batch.shown`, а не `batch.items`: ходить
@@ -329,7 +355,7 @@ export abstract class TListNavigationPlugin<
 		this.unmarkCurrent()
 
 		this._highlightedUid = null
-		this._pinHighlighted()
+		this._followPosition()
 
 		this.emitHighlight(null, null, null)
 		this.onHighlightChanged(null)
@@ -340,20 +366,34 @@ export abstract class TListNavigationPlugin<
 	}
 
 	/**
-	 * Позиция — на элемент: прежняя отметка снята, элемент закреплён в окне,
-	 * `change:highlight` — с соседями. Ставить ли отметку и что сказать
-	 * наследнику, решает тот, кто позицию перенёс: `highlight` или
-	 * `trackHighlight`.
+	 * Позиция — на элемент: прежняя отметка снята, элемент закреплён в окне и
+	 * база следит за его набором, `change:highlight` — с соседями. Ставить ли
+	 * отметку и что сказать наследнику, решает тот, кто позицию перенёс:
+	 * `highlight` или `trackHighlight`.
 	 */
 	private _moveTo(uid: string | number): void {
 		this.unmarkCurrent()
 
 		this._highlightedUid = uid
-		this._pinHighlighted()
+		this._followPosition()
 
 		const index = this.indexOf(uid)
 
 		this.emitHighlight(this.itemAt(index), this.itemAt(index - 1), this.itemAt(index + 1))
+	}
+
+	/**
+	 * За позицией — её элемент среди показанных: он закреплён в окне, и база
+	 * следит за его набором `aria`. Позиции нет — закрепление снято, следить
+	 * не за чем.
+	 */
+	private _followPosition(): void {
+		const uid = this._highlightedUid
+		const item =
+			uid === null ? undefined : this.shown().find((candidate) => candidate.uid === uid)
+
+		this._pin(item)
+		this._watch(item)
 	}
 
 	/** Снимает визуальную отметку с текущего элемента. */
@@ -372,12 +412,29 @@ export abstract class TListNavigationPlugin<
 	 * рисует его на месте, и подсветка, уведённая стрелкой за видимую полосу,
 	 * не теряет узел. Подсветки нет — закрепление снять.
 	 */
-	private _pinHighlighted(): void {
-		const uid = this._highlightedUid
-		const item =
-			uid === null ? undefined : this.shown().find((candidate) => candidate.uid === uid)
-
+	private _pin(item: TItem | undefined): void {
 		drawOf<TItem>(this._engine)?.pin(HIGHLIGHT, item)
+	}
+
+	/**
+	 * Следить за набором `aria` элемента на позиции, а прежнего — отпустить.
+	 * Элемента нет — не следить ни за чьим.
+	 */
+	private _watch(item: TItem | undefined): void {
+		const bus = item?.events ?? null
+
+		if (bus === this._watched) return
+
+		this._watched?.off('change:aria', this._onHighlightedAria)
+		this._watched = bus
+		bus?.on('change:aria', this._onHighlightedAria)
+	}
+
+	/** Набор элемента на позиции сменился: ссылке он важен, только пока отметка видна. */
+	private readonly _onHighlightedAria = (): void => {
+		if (this._marked && this._highlightedUid !== null) {
+			this.onHighlightedAriaChanged(this._highlightedUid)
+		}
 	}
 
 	private emitHighlight(

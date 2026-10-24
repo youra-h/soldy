@@ -264,6 +264,45 @@ describe('выбор', () => {
 	})
 
 	/**
+	 * Свой `id` элемента — его вход: он встаёт на строку вместо `id` от
+	 * монтирования, и ссылка ведёт на него. Атрибутом снаружи он не идёт —
+	 * его съедает связка, — поэтому узел с ним один, строка. Сменили у
+	 * подсвеченного — строка и ссылка идут за ним.
+	 */
+	it('свой id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
+		const items = (id?: string): ListBoxItemProps[] => [
+			{ value: 'a', text: 'Первый', id },
+			{ value: 'b', text: 'Второй' },
+		]
+		const props = reactiveProps<THarnessProps>({ items: items('row-first') })
+
+		mount(Harness, props)
+
+		await nextFrame()
+		press(list(), 'ArrowDown')
+
+		expect(rowOf('Первый').id).toBe('row-first')
+		expect(list().getAttribute('aria-activedescendant')).toBe('row-first')
+		expect(document.querySelectorAll('[id="row-first"]')).toHaveLength(1)
+		expect(listItems()[0].hasAttribute('id')).toBe(false)
+
+		props.items = items('row-one')
+		flushSync()
+
+		expect(rowOf('Первый').id).toBe('row-one')
+		expect(list().getAttribute('aria-activedescendant')).toBe('row-one')
+
+		props.items = items()
+		flushSync()
+
+		const fallback = rowOf('Первый').id
+
+		expect(fallback).not.toBe('')
+		expect(fallback).not.toBe('row-one')
+		expect(list().getAttribute('aria-activedescendant')).toBe(fallback)
+	})
+
+	/**
 	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
 	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
 	 * кнопка нажимается. Части стоят вплотную — пробелов текстом ни в корне, ни

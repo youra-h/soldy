@@ -26,6 +26,7 @@ export const MenuPopoverItemInputNames = [
 	'text',
 	'open',
 	'lazyMount',
+	'id',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -77,6 +78,7 @@ export const MenuPopoverItemOutputNames = [
 	'soChangeOpen',
 	'soChangeLazyMount',
 	'soChangePanelAria',
+	'soChangeId',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -99,6 +101,7 @@ export const MenuPopoverItemOutputNames = [
 		'text',
 		{ name: 'open', transform: booleanInput },
 		{ name: 'lazyMount', transform: booleanInput },
+		'id',
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -134,6 +137,7 @@ export abstract class TMenuPopoverItemSurface<TInstance extends IEntity> extends
 	declare text: TInputValue<typeof descriptor, 'text'>
 	declare open: TInputValue<typeof descriptor, 'open'>
 	declare lazyMount: TInputValue<typeof descriptor, 'lazyMount'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -272,6 +276,9 @@ export abstract class TMenuPopoverItemSurface<TInstance extends IEntity> extends
 	}
 	get soChangePanelAria(): TOutputEmitter<typeof descriptor, 'change:panelAria'> {
 		return this.createOutput('soChangePanelAria')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

@@ -869,4 +869,57 @@ describe('ссылка на элемент под стрелками', () => {
 		expect(marks(listBox)).toEqual([false, false, false])
 		expect(activeDescendant(listBox)).toBeNull()
 	})
+
+	/**
+	 * Свой `id` элемента главнее `id` от монтирования: его пишет на строку
+	 * плагин `id` элемента, и ссылка ведёт на него. Сменили или сняли у
+	 * подсвеченного — ссылка идёт за набором элемента, подсветка та же.
+	 */
+	it('свой id подсвеченного — ссылка на него и за его сменой', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const [first] = listBox.items
+
+		first.id = 'row-one'
+		listBox.press('ArrowDown')
+
+		expect(idOf(listBox, 0)).toBe('row-one')
+		expect(activeDescendant(listBox)).toBe('row-one')
+
+		first.id = 'row-first'
+
+		expect(activeDescendant(listBox)).toBe('row-first')
+		expect(marks(listBox)).toEqual([true, false, false])
+
+		first.id = undefined
+
+		expect(activeDescendant(listBox)).toBe('m1-option')
+	})
+
+	it('свой id другого элемента или прежнего подсвеченного ссылку не трогает', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const [first, second, third] = listBox.items
+
+		listBox.press('ArrowDown')
+		listBox.press('ArrowDown')
+		first.id = 'row-one'
+		third.id = 'row-three'
+
+		expect(activeDescendant(listBox)).toBe('m2-option')
+
+		second.id = 'row-two'
+
+		expect(activeDescendant(listBox)).toBe('row-two')
+	})
+
+	it('позиция без отметки — смена своего id ссылку не ставит', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { facade } = listBox
+		const second = listBox.items[1]
+
+		facade.engine.extensions.selection.select(second)
+		second.id = 'row-two'
+
+		expect(listBox.keyboard.highlightedUid).toBe(second.uid)
+		expect(activeDescendant(listBox)).toBeNull()
+	})
 })

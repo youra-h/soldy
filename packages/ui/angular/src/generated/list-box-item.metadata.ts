@@ -24,6 +24,7 @@ export const ListBoxItemInputNames = [
 	'name',
 	'text',
 	'contentFit',
+	'id',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -69,6 +70,7 @@ export const ListBoxItemOutputNames = [
 	'soChangeName',
 	'soChangeText',
 	'soChangeContentFit',
+	'soChangeId',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -92,6 +94,7 @@ export const ListBoxItemOutputNames = [
 		'name',
 		'text',
 		'contentFit',
+		'id',
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -125,6 +128,7 @@ export abstract class TListBoxItemSurface<TInstance extends IEntity> extends TCo
 	declare name: TInputValue<typeof descriptor, 'name'>
 	declare text: TInputValue<typeof descriptor, 'text'>
 	declare contentFit: TInputValue<typeof descriptor, 'contentFit'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -245,6 +249,9 @@ export abstract class TListBoxItemSurface<TInstance extends IEntity> extends TCo
 	}
 	get soChangeContentFit(): TOutputEmitter<typeof descriptor, 'change:contentFit'> {
 		return this.createOutput('soChangeContentFit')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

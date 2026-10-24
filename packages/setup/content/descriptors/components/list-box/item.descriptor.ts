@@ -50,6 +50,12 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
 				contentFit: { type: String, triggers: ['change:contentFit'] },
+				/**
+				 * Свой `id` строки — вход, а не атрибут, который едет на строку:
+				 * на него ссылается `aria-activedescendant` списка, и обе стороны
+				 * ведёт плагин `id` элемента. Не задан — `id` от монтирования.
+				 */
+				id: { type: String, triggers: ['change:id'] },
 			},
 		},
 
@@ -58,7 +64,8 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 			// обёртка вокруг неё: туда `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: rowIn }),
 			ListItemPluginDescriptor,
-			// `id` элемента — на него ссылается `aria-activedescendant` узла списка
+			// `id` элемента — свой или от монтирования: на него ссылается
+			// `aria-activedescendant` узла списка
 			OptionIdsPluginDescriptor,
 		],
 	}),

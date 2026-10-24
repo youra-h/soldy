@@ -14,10 +14,16 @@
  * меню — фокус. Поэтому переход с элемента на элемент — один вызов, без `null`
  * между ними (у меню он увёл бы фокус на панель), а позиция, ушедшая без
  * отметки (`trackHighlight`), сообщает `null`, только если отметка была видна.
+ *
+ * Хук `onHighlightedAriaChanged` — о наборе подсвеченного элемента: в нём
+ * `id`, на который ведёт ссылка, и свой `id` элемента меняется при той же
+ * подсветке. База слушает набор элемента на позиции, пока она на нём, и
+ * отпускает прежний, когда позиция ушла.
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { TListNavigationPlugin } from '../src'
+import { TListBox, TListBoxCollectionFacade } from '@soldy-ui/core'
+import { TCollectionBundlesPlugin, TListNavigationPlugin, TPluginBundle } from '../src'
 import type { TListNavigationPluginEvents, THighlightPayload } from '../src'
 
 /** Карта наследника шире базовой — как у `TSelectKeyboardPlugin`. */
@@ -32,11 +38,17 @@ type TProbeEvents = TListNavigationPluginEvents & {
 class TProbeNavigationPlugin extends TListNavigationPlugin<TProbeEvents> {
 	/** Что наследник узнал о видимой подсветке — по порядку вызовов хука. */
 	readonly changes: Array<string | number | null> = []
+	/** О чьём наборе наследник узнал — по порядку вызовов хука. */
+	readonly ariaChanges: Array<string | number> = []
 
 	protected onKeyDown(): void {}
 
 	protected override onHighlightChanged(uid: string | number | null): void {
 		this.changes.push(uid)
+	}
+
+	protected override onHighlightedAriaChanged(uid: string | number): void {
+		this.ariaChanges.push(uid)
 	}
 
 	mark(uid: string | number): void {
@@ -118,5 +130,81 @@ describe('TListNavigationPlugin — onHighlightChanged', () => {
 		plugin.clear()
 
 		expect(plugin.changes).toEqual(['b', null])
+	})
+})
+
+describe('TListNavigationPlugin — onHighlightedAriaChanged', () => {
+	/** Навигация над списком из трёх элементов; позицию двигает тест. */
+	function setup() {
+		const owner = new TListBox()
+		const facade = new TListBoxCollectionFacade(
+			{
+				items: [
+					{ value: 'a', text: 'A' },
+					{ value: 'b', text: 'B' },
+					{ value: 'c', text: 'C' },
+				],
+			},
+			{ owner },
+		)
+		const bundle = new TPluginBundle(owner)
+			.use(TCollectionBundlesPlugin)
+			.use(TProbeNavigationPlugin)
+		const plugin = bundle.get(TProbeNavigationPlugin)
+
+		if (!plugin) throw new Error('TProbeNavigationPlugin не установлен в bundle')
+
+		bundle.get(TCollectionBundlesPlugin)?.bindEngine(facade.engine)
+
+		const [a, b] = facade.engine.extensions.batch.items
+
+		return { bundle, plugin, a, b }
+	}
+
+	it('набор подсвеченного сменился — хук с ним, подсветка та же', () => {
+		const { plugin, a } = setup()
+
+		plugin.mark(a.uid)
+		a.aria.add('id', 'own')
+
+		expect(plugin.ariaChanges).toEqual([a.uid])
+		expect(plugin.changes).toEqual([a.uid])
+	})
+
+	it('позиция ушла — набор прежнего не слушается, нового — слушается', () => {
+		const { plugin, a, b } = setup()
+
+		plugin.mark(a.uid)
+		plugin.mark(b.uid)
+		a.aria.add('id', 'own-a')
+
+		expect(plugin.ariaChanges).toEqual([])
+
+		b.aria.add('id', 'own-b')
+
+		expect(plugin.ariaChanges).toEqual([b.uid])
+	})
+
+	it('без отметки ссылки нет — и хук молчит', () => {
+		const { plugin, a } = setup()
+
+		plugin.track(a.uid)
+		a.aria.add('id', 'own')
+
+		expect(plugin.ariaChanges).toEqual([])
+	})
+
+	it('подсветку сняли или навигацию уничтожили — набор не слушается', () => {
+		const { bundle, plugin, a, b } = setup()
+
+		plugin.mark(a.uid)
+		plugin.clear()
+		a.aria.add('id', 'own-a')
+
+		plugin.mark(b.uid)
+		bundle.destroy()
+		b.aria.add('id', 'own-b')
+
+		expect(plugin.ariaChanges).toEqual([])
 	})
 })

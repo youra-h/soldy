@@ -23,6 +23,7 @@ export const SelectItemInputNames = [
 	'value',
 	'name',
 	'text',
+	'id',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -67,6 +68,7 @@ export const SelectItemOutputNames = [
 	'soChangeValue',
 	'soChangeName',
 	'soChangeText',
+	'soChangeId',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -88,6 +90,7 @@ export const SelectItemOutputNames = [
 		'value',
 		'name',
 		'text',
+		'id',
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -120,6 +123,7 @@ export abstract class TSelectItemSurface<TInstance extends IEntity> extends TCom
 	declare value: TInputValue<typeof descriptor, 'value'>
 	declare name: TInputValue<typeof descriptor, 'name'>
 	declare text: TInputValue<typeof descriptor, 'text'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -237,6 +241,9 @@ export abstract class TSelectItemSurface<TInstance extends IEntity> extends TCom
 	}
 	get soChangeText(): TOutputEmitter<typeof descriptor, 'change:text'> {
 		return this.createOutput('soChangeText')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

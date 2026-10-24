@@ -18,6 +18,11 @@ import type { IMenuPopupItem, IMenuPopupItemProps, TMenuPopup, TMenuPopupItemEve
  * `contentAria` у секции Accordion. Открытость теме — `data-open` в наборе
  * пункта: открытый пункт выглядит подсвеченным, пока открыта его панель.
  *
+ * `id` — значение потребителя, как у поля (`TInputControl.id`): в `aria` ядро
+ * его не пишет. Это `id` строки, на него ссылается панель (`aria-labelledby`),
+ * и обе стороны пишет плагин связок (`TMenuPopupIdsPlugin`): свой `id`
+ * главнее, без него — `id` от монтирования.
+ *
  * Чем панель, по ARIA, — роль её и `aria-haspopup` строки одно слово, —
  * говорит наследник (`_declarePopup`): меню у подменю, диалог у пункта с
  * панелью. Модель фокуса и клавиши у видов свои — это плагины.
@@ -34,19 +39,23 @@ export default abstract class TMenuPopupItem<
 	implements IMenuPopupItem<TProps, TEvents>
 {
 	static defaultValues: typeof TMenuItem.defaultValues &
-		TDefaultValues<IMenuPopupItemProps, 'open'> = {
+		TDefaultValues<IMenuPopupItemProps, 'open', 'id'> = {
 		...TMenuItem.defaultValues,
 		open: false,
+		id: undefined,
 	}
 
 	protected _open!: boolean
 	protected _panelAria: TAria
+	protected _id: string | undefined
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
 
 		const ctor = new.target as typeof TMenuPopupItem
 		const own = props as Partial<IMenuPopupItemProps>
+
+		this._id = own.id ?? ctor.defaultValues.id
 
 		// Сторона панели связки. Роль пишет наследник, `id` и `aria-labelledby`
 		// на строку — плагин связок
@@ -80,6 +89,22 @@ export default abstract class TMenuPopupItem<
 	}
 
 	/**
+	 * Свой `id` строки пункта — значение потребителя: задают его там, где на
+	 * пункт ссылается его разметка. Не задан — `undefined`, и у строки `id` от
+	 * монтирования.
+	 */
+	get id(): string | undefined {
+		return this._id
+	}
+
+	set id(value: string | undefined) {
+		if (this._id === value) return
+
+		this._id = value
+		this._sink.emit('change:id', value)
+	}
+
+	/**
 	 * Набор панели пункта. Живой, как `aria`: роль пишет пункт, `id` и ссылку
 	 * на строку — плагин связок; за границу core → ui уходит снимок, об
 	 * изменении набор сообщает `change:panelAria`.
@@ -110,6 +135,7 @@ export default abstract class TMenuPopupItem<
 		return {
 			...super.getProps(),
 			open: this._open,
+			id: this._id,
 		}
 	}
 }

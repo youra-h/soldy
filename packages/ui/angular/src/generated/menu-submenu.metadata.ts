@@ -26,6 +26,7 @@ export const MenuSubmenuInputNames = [
 	'text',
 	'open',
 	'groupSeparators',
+	'id',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -86,6 +87,7 @@ export const MenuSubmenuOutputNames = [
 	'soChangeGroupSeparators',
 	'soChangePanelAria',
 	'soChangePanelClasses',
+	'soChangeId',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -130,6 +132,7 @@ export const MenuSubmenuOutputNames = [
 		'text',
 		{ name: 'open', transform: booleanInput },
 		{ name: 'groupSeparators', transform: booleanInput },
+		'id',
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -172,6 +175,7 @@ export abstract class TMenuSubmenuSurface<TInstance extends IEntity> extends TCo
 	declare text: TInputValue<typeof descriptor, 'text'>
 	declare open: TInputValue<typeof descriptor, 'open'>
 	declare groupSeparators: TInputValue<typeof descriptor, 'groupSeparators'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -327,6 +331,9 @@ export abstract class TMenuSubmenuSurface<TInstance extends IEntity> extends TCo
 	}
 	get soChangePanelClasses(): TOutputEmitter<typeof descriptor, 'change:panelClasses'> {
 		return this.createOutput('soChangePanelClasses')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

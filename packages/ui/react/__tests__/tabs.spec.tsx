@@ -329,6 +329,33 @@ describe('связка ARIA в разметке', () => {
 
 		expect(panel().getAttribute('role')).toBe('tabpanel')
 	})
+
+	/**
+	 * Свой `id` таба — его вход: он встаёт на таб вместо `id` от монтирования,
+	 * и панель ссылается на него. Атрибутом снаружи он не идёт — его съедает
+	 * связка, — поэтому узел с ним один, таб. `id` панели своего входа не имеет
+	 * и остаётся формулой.
+	 */
+	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', () => {
+		const view = (id?: string) => (
+			<Tabs content={<Tabs.Content value="a">Панель A</Tabs.Content>}>
+				<Tabs.Item value="a" text="First" active id={id} />
+				<Tabs.Item value="b" text="Second" />
+			</Tabs>
+		)
+		const { render } = mount(view('settings'))
+
+		expect(tab('First').id).toBe('settings')
+		expect(panel().getAttribute('aria-labelledby')).toBe('settings')
+		expect(document.querySelectorAll('[id="settings"]')).toHaveLength(1)
+		expect(item('First').hasAttribute('id')).toBe(false)
+
+		render(view('general'))
+
+		expect(tab('First').id).toBe('general')
+		expect(panel().getAttribute('aria-labelledby')).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
 })
 
 describe('aria-selected', () => {

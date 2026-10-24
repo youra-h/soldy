@@ -44,12 +44,20 @@ export const SelectItemDescriptor = defineDescriptor(() =>
 				// Размер и вид опции задаёт список: входы сняты
 				...OWNER_STYLE_PROPS,
 				text: { type: String, triggers: ['change:text'] },
+				/**
+				 * Свой `id` строки опции — вход, а не атрибут, который едет на
+				 * строку: на него ссылается `aria-activedescendant` поля, и обе
+				 * стороны ведёт плагин `id` элемента. Не задан — `id` от
+				 * монтирования.
+				 */
+				id: { type: String, triggers: ['change:id'] },
 			},
 		},
 
 		plugins: [
 			ListItemPluginDescriptor,
-			// `id` опции — на него ссылается `aria-activedescendant` поля
+			// `id` опции — свой или от монтирования: на него ссылается
+			// `aria-activedescendant` поля
 			OptionIdsPluginDescriptor,
 		],
 	}),

@@ -307,6 +307,38 @@ describe('опции', () => {
 		expect(document.getElementById(id ?? '')?.getAttribute('role')).toBe('option')
 	})
 
+	/**
+	 * Свой `id` опции — её вход: атрибут разметки база берёт пропом первой
+	 * сборки и снимает с корня опции, и на строку `id` встаёт из набора опции —
+	 * ссылка поля ведёт на него, узел с ним один. Из кода — `ctrl.id`: строка и
+	 * ссылка идут за ним.
+	 */
+	it('свой id опции — на строке, ссылка поля ведёт на него и идёт за его сменой', async () => {
+		const el = await render(
+			'',
+			`<div is="so-select-item" value="msk" text="Москва" id="city-msk"></div>
+			<div is="so-select-item" value="tver" text="Тверь"></div>`,
+		)
+
+		await press(fieldOf(el), 'ArrowDown')
+
+		const option = document.querySelector('.so-select-item')
+
+		expect(optionOf('Москва').id).toBe('city-msk')
+		expect(fieldOf(el).getAttribute('aria-activedescendant')).toBe('city-msk')
+		expect(document.querySelectorAll('[id="city-msk"]')).toHaveLength(1)
+
+		if (!isOption(option) || !option.ctrl) throw new Error('у опции нет ctrl')
+
+		expect(option.hasAttribute('id')).toBe(false)
+
+		option.ctrl.id = 'city-moscow'
+		await settle()
+
+		expect(optionOf('Москва').id).toBe('city-moscow')
+		expect(fieldOf(el).getAttribute('aria-activedescendant')).toBe('city-moscow')
+	})
+
 	it('aria-selected стоит на всех, а не только на выбранной', async () => {
 		await render()
 

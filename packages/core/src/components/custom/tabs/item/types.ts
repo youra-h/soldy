@@ -19,6 +19,8 @@ export type TTabsItemEvents<TTab = any> = TValueControlEvents<string | number> &
 	'change:closable:before': (e: TChangeEvent<boolean | undefined>) => void
 	/** change:closeAria — набор атрибутов кнопки закрытия изменился */
 	'change:closeAria': (value: TAriaAttributes) => void
+	/** change:id — свой `id` таба */
+	'change:id': (value: string | undefined) => void
 }
 
 export interface ITabsItemProps
@@ -27,6 +29,13 @@ export interface ITabsItemProps
 	text?: string
 	/** Можно ли закрыть таб (undefined = наследовать от родителя TTabs) */
 	closable?: boolean
+	/**
+	 * Свой `id` таба. Не задан — у таба `id` от монтирования.
+	 *
+	 * Свой главнее: на `id` таба ссылается его панель (`aria-labelledby`), и
+	 * ссылка ведёт на тот `id`, что стоит в разметке.
+	 */
+	id?: string
 }
 
 export interface ITabsItem<
@@ -39,4 +48,6 @@ export interface ITabsItem<
 	closable?: boolean | undefined
 	/** Атрибуты кнопки закрытия: `tabindex` пишет таб, имя с текстом от локали — плагин имён */
 	readonly closeAria: TAria
+	/** Свой `id` таба; не задан — `undefined`, и у таба `id` от монтирования */
+	id: string | undefined
 }

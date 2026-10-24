@@ -14,6 +14,11 @@ import type { ISelectItem, ISelectItemProps, TSelectItemEvents } from './types'
  * ним пришёл бы свой `contentFit` и связь со списком, а Select к нему
  * отношения не имеет — они лишь похожи внешне. Общее у них не класс, а
  * `Button` внутри строки, плагины подсветки и стили.
+ *
+ * `id` — значение потребителя, как у поля (`TInputControl.id`): в `aria` ядро
+ * его не пишет. На `id` строки ссылается `aria-activedescendant` поля, и
+ * строке его пишет плагин `id` элемента (`TOptionIdsPlugin`): свой `id`
+ * главнее, без него — `id` от монтирования.
  */
 export default class TSelectItem<
 	TProps extends ISelectItemProps = ISelectItemProps,
@@ -25,14 +30,17 @@ export default class TSelectItem<
 	static override baseClass = 'so-select-item'
 
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<ISelectItemProps, 'text'> = {
+		TDefaultValues<ISelectItemProps, 'text', 'id'> = {
 		...TValueControl.defaultValues,
 		text: '',
 		value: '',
+		id: undefined,
 		tag: 'div',
 	}
 
 	protected _text: string
+
+	protected _id: string | undefined
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -42,11 +50,14 @@ export default class TSelectItem<
 
 		this._text = own.text ?? ctor.defaultValues.text
 
+		this._id = own.id ?? ctor.defaultValues.id
+
 		// Только то, что опция знает о себе сама: она — опция.
 		//
-		// `id` и `aria-selected` — не отсюда: первый нужен, чтобы на опцию
-		// сослалось поле через `aria-activedescendant`, второй выражает выбор.
-		// И то и другое знает коллекция, а не элемент; пишет `TSelectExtension`.
+		// `id` и `aria-selected` — не отсюда. Первый нужен документу: на опцию
+		// ссылается поле через `aria-activedescendant`, и пишет его плагин `id`
+		// элемента (`TOptionIdsPlugin`). Второй выражает выбор, его знает
+		// коллекция, а не элемент; пишет `TSelectExtension`.
 		this._aria.add('role', 'option')
 	}
 
@@ -86,10 +97,27 @@ export default class TSelectItem<
 		this._sink.emit('change:text', { newValue: e.value, oldValue: e.oldValue })
 	}
 
+	/**
+	 * Свой `id` строки опции — значение потребителя: задают его там, где на
+	 * опцию ссылается его разметка. Не задан — `undefined`, и у строки `id` от
+	 * монтирования.
+	 */
+	get id(): string | undefined {
+		return this._id
+	}
+
+	set id(value: string | undefined) {
+		if (this._id === value) return
+
+		this._id = value
+		this._sink.emit('change:id', value)
+	}
+
 	override getProps(): TProps {
 		return {
 			...super.getProps(),
 			text: this.text,
+			id: this._id,
 		} as TProps
 	}
 }

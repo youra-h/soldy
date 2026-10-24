@@ -62,6 +62,12 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 				 * секции и экземпляра у неё нет.
 				 */
 				contentAria: { type: Object, protected: true, triggers: ['change:contentAria'] },
+				/**
+				 * Свой `id` заголовка — вход, а не атрибут, который едет на
+				 * заголовок: на него ссылается панель, и обе стороны ведёт плагин
+				 * связок секции. Не задан — `id` от монтирования.
+				 */
+				id: { type: String, triggers: ['change:id'] },
 			},
 		},
 
@@ -69,7 +75,8 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 			// Фокус держит заголовок, а корень — обёртка заголовка и панели: туда
 			// `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: headerIn }),
-			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними
+			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними; `id`
+			// заголовка — свой или от монтирования
 			AccordionItemIdsPluginDescriptor,
 		],
 	}),

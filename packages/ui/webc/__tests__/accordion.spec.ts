@@ -162,6 +162,37 @@ describe('связка ARIA заголовок ↔ панель', () => {
 			'Содержимое B',
 		])
 	})
+
+	/**
+	 * Свой `id` секции — её вход: атрибут разметки база берёт пропом первой
+	 * сборки и снимает с корня, и на заголовок `id` встаёт из набора секции —
+	 * панель ссылается на него, узел с ним один. `id` панели своего входа не
+	 * имеет и остаётся формулой. Из кода — `ctrl.id`: обе стороны идут за ним.
+	 */
+	it('свой id секции — на заголовке, панель ссылается на него и идёт за его сменой', async () => {
+		await mount(`<div is="so-accordion">
+			<div is="so-accordion-item" text="Первый" value="a" id="faq-first"><p>A</p></div>
+			<div is="so-accordion-item" text="Второй" value="b"><p>B</p></div>
+		</div>`)
+
+		const [first] = contents()
+
+		expect(header('Первый').id).toBe('faq-first')
+		expect(first.getAttribute('aria-labelledby')).toBe('faq-first')
+		expect(header('Первый').getAttribute('aria-controls')).toBe(first.id)
+		expect(document.querySelectorAll('[id="faq-first"]')).toHaveLength(1)
+		expect(section('Первый').hasAttribute('id')).toBe(false)
+
+		const ctrl = section('Первый').ctrl
+
+		if (!ctrl) throw new Error('у секции нет ctrl')
+
+		ctrl.id = 'faq-one'
+		await flush()
+
+		expect(header('Первый').id).toBe('faq-one')
+		expect(first.getAttribute('aria-labelledby')).toBe('faq-one')
+	})
 })
 
 describe('aria-expanded', () => {

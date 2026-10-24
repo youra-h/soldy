@@ -24,6 +24,7 @@ export const TabsItemInputNames = [
 	'name',
 	'text',
 	'closable',
+	'id',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -70,6 +71,7 @@ export const TabsItemOutputNames = [
 	'soChangeText',
 	'soChangeClosable',
 	'soChangeCloseAria',
+	'soChangeId',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -90,6 +92,7 @@ export const TabsItemOutputNames = [
 		'name',
 		'text',
 		{ name: 'closable', transform: booleanInput },
+		'id',
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -123,6 +126,7 @@ export abstract class TTabsItemSurface<TInstance extends IEntity> extends TCompo
 	declare name: TInputValue<typeof descriptor, 'name'>
 	declare text: TInputValue<typeof descriptor, 'text'>
 	declare closable: TInputValue<typeof descriptor, 'closable'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -246,6 +250,9 @@ export abstract class TTabsItemSurface<TInstance extends IEntity> extends TCompo
 	}
 	get soChangeCloseAria(): TOutputEmitter<typeof descriptor, 'change:closeAria'> {
 		return this.createOutput('soChangeCloseAria')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')
