@@ -2,6 +2,8 @@ import type { ISelect } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
+import { fieldOf } from '../../input/field'
+import { closestControl, isFocusableElement } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
 import type { TSelectPointerPluginEvents } from './types'
 
@@ -9,17 +11,33 @@ import type { TSelectPointerPluginEvents } from './types'
 const ARROW_SELECTOR = '.so-select__arrow'
 
 /**
- * TSelectPointerPlugin — клик по полю Select.
+ * TSelectPointerPlugin — указатель на поле Select: нажатие и клик.
  *
- * Два режима, два обработчика, выбор между ними — по подписке на
- * `change:editable`, не по проверке внутри общего обработчика:
+ * **Нажатие оставляет фокус в поле.** DOM-фокус комбобокса всегда на
+ * `<input>` поля (APG Combobox): стрелки, Enter и Escape клавиатура берёт
+ * только с него (`TSelectKeyboardPlugin`). Части поля без своего контрола —
+ * стрелка, коробка, ряд тегов, немое содержимое слотов — фокус не принимают,
+ * и `mousedown` по ним по умолчанию уносил его на `body`: панель открывалась
+ * кликом по стрелке, а стрелки после этого прокручивали страницу — клавиши с
+ * `body` до корня Select не доходят. Поэтому нажатие основной кнопкой по
+ * такой части гасится (`preventDefault`) в обоих режимах, и фокус встаёт в
+ * поле, если его там нет, — как у нативного `<select>` и у кнопок шага
+ * NumberInput (`TNumberInputStepperPlugin`). Фокус уже в поле — он там и
+ * остаётся, без `focusout`. Ставится он без прокрутки (`preventScroll`):
+ * поле, по которому нажали, и так на экране, а страница не должна прыгать.
  *
- * - **select-only** — клик по всему полю тумблит панель
- *   (`ISelect.toggleOpen()`), как и было в разметке раньше.
- * - **editable** — клик по тексту поля ставит курсор и ничего не открывает;
- *   тумблит панель только клик по стрелке (`.so-select__arrow`). `mousedown`
- *   по стрелке гасится (`preventDefault`), чтобы не увести фокус с `<input>`,
- *   куда его в этом режиме печатает пользователь.
+ * Нажатие по контролу внутри корня — по `<input>`, кнопке очистки, тегу и
+ * его крестику, кнопке потребителя в слоте — не трогается: что с ним делать,
+ * контрол знает сам. Контрол под нажатием — общее правило `closestControl`
+ * (`utils/tabStops.ts`), поле — `fieldOf`, как у клавиатуры. Правило одно для
+ * мыши, пера и пальца: в select-only поле только для чтения, и экранной
+ * клавиатуры у него нет, а в `editable` касание стрелки ставит фокус туда же,
+ * куда касание поля.
+ *
+ * **Клик тумблит панель** (`ISelect.toggleOpen()`): в select-only — клик по
+ * всему полю, в `editable` — только по стрелке (`.so-select__arrow`), а клик
+ * по тексту поля ставит курсор и ничего не открывает. Режим плагин знает по
+ * `change:editable`.
  *
  * Слушает сам корень (тот же элемент, что у `TDismissPlugin`/клавиатуры),
  * поэтому клик по вложенному `<input>` и по кнопке очистки (она сама
@@ -28,8 +46,8 @@ const ARROW_SELECTOR = '.so-select__arrow'
  */
 export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginEvents> {
 	private _owner: ISelect | null = null
-	/** Узел нужен только под слушатели указателя — отсюда и тип. */
-	private _element: IDomEventTarget | null = null
+	/** Корень Select: на нём слушатели, в нём ищутся контрол под нажатием и поле. */
+	private _root: Element | null = null
 	private _editable = false
 
 	override install(ctx: IPluginContext): void {
@@ -40,15 +58,8 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
-		elementPlugin?.events.on('ready', (element) => {
-			this._element = element
-			this._listen()
-		})
-
-		elementPlugin?.events.on('removed', () => {
-			this._unlisten()
-			this._element = null
-		})
+		elementPlugin?.events.on('ready', (element) => this._bind(element))
+		elementPlugin?.events.on('removed', () => this._bind(null))
 
 		this._listenTo(this._owner?.events, 'change:editable', (value: boolean) => {
 			this._editable = value
@@ -56,22 +67,25 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 	}
 
 	override destroy(): void {
-		this._unlisten()
-
-		this._element = null
+		this._bind(null)
 		this._owner = null
 
 		super.destroy()
 	}
 
-	private _listen(): void {
-		this._element?.addEventListener('click', this._onClick)
-		this._element?.addEventListener('mousedown', this._onMouseDown)
-	}
+	/** Корень сменился — слушатели переезжают на новый. */
+	private _bind(root: Element | null): void {
+		const previous: IDomEventTarget | null = this._root
 
-	private _unlisten(): void {
-		this._element?.removeEventListener('click', this._onClick)
-		this._element?.removeEventListener('mousedown', this._onMouseDown)
+		previous?.removeEventListener('click', this._onClick)
+		previous?.removeEventListener('mousedown', this._onMouseDown)
+
+		this._root = root
+
+		const target: IDomEventTarget | null = root
+
+		target?.addEventListener('click', this._onClick)
+		target?.addEventListener('mousedown', this._onMouseDown)
 	}
 
 	private _isArrow(target: EventTarget | null): boolean {
@@ -89,8 +103,20 @@ export class TSelectPointerPlugin extends TBasePlugin<any, TSelectPointerPluginE
 		this._owner?.toggleOpen()
 	}
 
-	/** Стрелка не забирает фокус у поля, в которое сейчас печатают. */
+	/** Нажатие мимо контролов поля фокус из поля не уводит, а снаружи — ставит в него. */
 	private readonly _onMouseDown = (event: MouseEvent): void => {
-		if (this._editable && this._isArrow(event.target)) event.preventDefault()
+		const root = this._root
+		const target = event.target
+
+		if (!root || event.button !== 0 || !(target instanceof Element)) return
+		if (closestControl(target, root)) return
+
+		event.preventDefault()
+
+		const field = fieldOf(root)
+
+		if (isFocusableElement(field) && root.ownerDocument.activeElement !== field) {
+			field.focus({ preventScroll: true })
+		}
 	}
 }
