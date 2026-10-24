@@ -6,6 +6,7 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isMeasurableElement } from '../../../utils'
 import { closestList } from '../row'
+import type { TListHeightPluginEvents } from './types'
 
 /**
  * Что плагину нужно от компонента: число строк и канал о его смене.
@@ -21,6 +22,15 @@ interface IListHeightOwner extends Pick<IList, 'maxRows'> {
 function release(container: HTMLElement): void {
 	container.style.maxHeight = ''
 	container.style.overflowY = ''
+}
+
+/**
+ * Строка измерена: у её узла есть высота. У строки скрытого списка — закрытой
+ * панели, ListBox в скрытой обёртке — высоты нет, как и у строки без
+ * layout-бокса.
+ */
+function hasHeight(row: Element | null): boolean {
+	return isMeasurableElement(row) && row.offsetHeight > 0
 }
 
 /**
@@ -73,14 +83,26 @@ function boxExtra(style: CSSStyleDeclaration): number {
  * между строками. Окна у списка с группами нет — нарисованы все строки, и
  * место есть у каждой.
  *
+ * **Строки измерены** (`measured`) — у нарисованной строки есть высота. У
+ * скрытого списка — закрытой панели Select, ListBox в скрытой вкладке или
+ * поповере — её нет: предел из нулевых высот — не предел строк, и плагин не
+ * пишет ничего, а прежний предел остаётся до замера. Показ списка плагин
+ * узнаёт от наблюдателя строк и мерит их кадром позже, тогда же пишет предел.
+ * Признак считается на каждом пересчёте, при любом `maxRows`, и о смене плагин
+ * сообщает `change:measured` — после записи предела. Слушает его прокрутка
+ * списка (`TListScrollPlugin`): к элементу скрытого списка она крутит, когда
+ * строки измерятся, — уже в пределе строк. Событие — соседу по набору, в
+ * дескриптор оно не публикуется. Без узла корня строки не мерятся, и признак —
+ * по последнему замеру: следующий `ready` мерит заново.
+ *
  * **Пересчёт на кадр — только при узле корня**: между `ready` и `removed`
  * своего `TElementPlugin`. Сборка вместе с подписками плагина идёт и на
  * сервере, и состав, `maxRows` и строки меняются уже тогда, а узла там нет,
  * как нет и `requestAnimationFrame`. Без узла мерить нечего, и повод кадра не
  * планирует: всё, что сменилось до узла, применяет `ready` — предел он ставит
- * сразу.
+ * сразу. Кадр, запланированный до `removed`, без узла ничего не мерит.
  */
-export class TListHeightPlugin extends TBasePlugin<any> {
+export class TListHeightPlugin extends TBasePlugin<any, TListHeightPluginEvents> {
 	private _element: Element | null = null
 	private _list: IListHeightOwner | null = null
 	private _engine: TCollectionEngine<any, any> | null = null
@@ -93,6 +115,8 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	 * иначе узел списка ListBox, опустев, остался бы в пределе прежних строк.
 	 */
 	private _container: HTMLElement | null = null
+	/** Строки измерены — у нарисованной строки есть высота (`measured`). */
+	private _measured = false
 	/** Пересчёт в следующем кадре; прежний отложенный отменяется. */
 	private readonly _updateNextFrame: () => void
 
@@ -116,9 +140,9 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 			this._rootObserver?.disconnect()
 			this._rootObserver = new ResizeObserver(() => this._scheduleUpdate())
 			this._rootObserver.observe(element, { box: 'border-box' })
-			// Предел — сразу, а не кадром позже: прокрутка списка к выбранному
-			// (`TListScrollPlugin`) идёт на том же `ready` и видит список уже в
-			// пределе строк
+			// Предел и признак строк — сразу, а не кадром позже: прокрутка списка к
+			// выбранному (`TListScrollPlugin`) идёт на том же `ready` и видит список
+			// уже в пределе строк, а скрытый — неизмеренным
 			this._update()
 		})
 
@@ -169,6 +193,15 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		super.destroy()
 	}
 
+	/**
+	 * Строки измерены: у нарисованной строки есть высота. Скрытый список, пустой
+	 * и ещё не нарисованный — `false`: предел строк плагину считать не из чего
+	 * (см. описание класса). Смена — `change:measured`.
+	 */
+	get measured(): boolean {
+		return this._measured
+	}
+
 	private _observeItem(uid: string | number, element: Element): void {
 		this._itemObservers.get(uid)?.disconnect()
 
@@ -196,7 +229,30 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	}
 
 	/**
-	 * Ограничивает высоту прокручиваемого контейнера по `maxRows`.
+	 * Пересчёт: предел строк и признак «строки измерены» (`measured`). О смене
+	 * признака — `change:measured`, после записи предела: подписчик видит список
+	 * уже в пределе строк. Кадр, пришедший без узла корня (запланирован до
+	 * `removed`), ничего не мерит.
+	 */
+	private _update(): void {
+		if (!this._element) return
+
+		const shown: readonly object[] = batchOf<object>(this._engine)?.shown ?? []
+		// Узлы показанных по порядку; не нарисованный окном — `null`
+		const rows = shown.map((item) => this._collectionElements?.getElementByItem(item) ?? null)
+		const measured = rows.some(hasHeight)
+
+		this._limit(rows, measured)
+
+		if (this._measured === measured) return
+
+		this._measured = measured
+		this.events.emit('change:measured', measured)
+	}
+
+	/**
+	 * Ограничивает высоту прокручиваемого контейнера по `maxRows`. `rows` — узлы
+	 * показанных элементов по порядку, `null` — не нарисованный окном.
 	 *
 	 * Контейнер — **список, в котором стоят элементы** (`closestList`), а не
 	 * корень компонента. У Select его корень — поле, а список лежит в
@@ -206,10 +262,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 	 * Не родитель элемента: у элемента группы родитель — группа, и предел
 	 * получила бы она.
 	 */
-	private _update(): void {
-		const shown: readonly object[] = batchOf<object>(this._engine)?.shown ?? []
-		// Узлы показанных по порядку; не нарисованный окном — `null`
-		const rows = shown.map((item) => this._collectionElements?.getElementByItem(item) ?? null)
+	private _limit(rows: ReadonlyArray<Element | null>, measured: boolean): void {
 		const row = rows.find((candidate) => candidate !== null)
 		const container = (row ? closestList(row) : null) ?? this._element
 
@@ -228,9 +281,19 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		// `0` — «предела нет»: плагин не пишет ничего и отдаёт потолок теме.
 		// Не то же самое, что «предел по содержимому»: инлайновый стиль перебил
 		// бы `.so-select__list { max-h-64 }` и заодно снял прокрутку.
-		//
-		// Список пуст или строки ещё не измерены — тот же случай: писать нечего.
-		const visibleCount = maxRows === 0 ? 0 : Math.min(maxRows, shown.length)
+		if (maxRows === 0) {
+			release(container)
+
+			return
+		}
+
+		// Строки нарисованы, но без высоты — список скрыт. Предел из нулевых
+		// высот — не предел строк: плагин не пишет ничего, и прежний предел
+		// держится до замера — показанный снова список не мигнёт полосой
+		if (row && !measured) return
+
+		// Список пуст или окно не нарисовало ни одной строки — писать нечего
+		const visibleCount = Math.min(maxRows, rows.length)
 		const totalHeight = this._measure(container, rows, visibleCount)
 
 		if (totalHeight === 0) {
@@ -240,7 +303,7 @@ export class TListHeightPlugin extends TBasePlugin<any> {
 		}
 
 		container.style.maxHeight = `${totalHeight}px`
-		container.style.overflowY = visibleCount >= shown.length ? 'hidden' : 'auto'
+		container.style.overflowY = visibleCount >= rows.length ? 'hidden' : 'auto'
 	}
 
 	/**

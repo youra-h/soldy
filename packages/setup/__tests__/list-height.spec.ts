@@ -12,7 +12,13 @@
  */
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest'
-import { createPluginContext, installResizeObserverStub, observerCount, required } from './helpers'
+import {
+	createPluginContext,
+	installResizeObserverStub,
+	observerCount,
+	required,
+	triggerResize,
+} from './helpers'
 import { TListBox, TListBoxItem, TListBoxCollectionFacade } from '@soldy-ui/core'
 import type { IListBoxItem } from '@soldy-ui/core'
 import {
@@ -37,9 +43,15 @@ afterEach(() => {
  *
  * Корень компонента и панель со списком — **разные узлы и не вложены**: так
  * устроен Select, у которого корень это поле, а список (`role="listbox"`)
- * лежит в телепортированной панели.
+ * лежит в телепортированной панели. Высоту строки отдаёт `rowHeight`: у
+ * скрытого списка она нулевая.
  */
-function assemble(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDeclaration>) {
+function assemble(
+	rows: number,
+	maxRows: number,
+	panelStyle?: Partial<CSSStyleDeclaration>,
+	rowHeight: () => number = () => ROW_HEIGHT,
+) {
 	const owner = new TListBox({ maxRows })
 	const facade = new TListBoxCollectionFacade({}, { owner })
 	const items = Array.from(
@@ -71,7 +83,7 @@ function assemble(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDe
 	elements.install(ctx)
 	height.install(ctx)
 
-	for (const item of items) {
+	const nodes = items.map((item) => {
 		const bundle = new TPluginBundle(item)
 
 		bundle.use(TElementPlugin)
@@ -80,14 +92,16 @@ function assemble(rows: number, maxRows: number, panelStyle?: Partial<CSSStyleDe
 		const element = document.createElement('div')
 
 		// jsdom не считает раскладку — высоту строки задаём сами
-		Object.defineProperty(element, 'offsetHeight', { value: ROW_HEIGHT })
+		Object.defineProperty(element, 'offsetHeight', { get: rowHeight })
 		panel.appendChild(element)
 		required(bundle.get(TElementPlugin), 'TElementPlugin').element = element
-	}
+
+		return element
+	})
 
 	bundles.bindEngine(facade.engine)
 
-	return { root, panel, owner, rootElement }
+	return { root, panel, owner, rootElement, height, nodes }
 }
 
 /** Собранный список с объявленным корнем: плагин успел и пересчитать. */
@@ -449,5 +463,96 @@ describe('окно: строки — по показанным, высота —
 		const { root } = await setupWindow(100, 3, [])
 
 		expect(root.style.maxHeight).toBe('')
+	})
+})
+
+/**
+ * Скрытый список — закрытая панель Select, ListBox в скрытой вкладке — не
+ * меряется: строки нарисованы, но без высоты. Предел из нулевых высот — не
+ * предел строк, и плагин не пишет ничего. Измерены ли строки, он отдаёт
+ * признаком `measured`, о смене — `change:measured` после записи предела: по
+ * нему прокрутка списка встаёт на выбранном уже в пределе строк.
+ */
+describe('скрытый список: строки не измерены', () => {
+	/**
+	 * Список, строки которого тест показывает и прячет: высота строки — `0` или
+	 * `ROW_HEIGHT`. Наблюдатель строки сообщает о смене, пересчёт — кадром
+	 * позже. Событие записывает признак и предел, который стоял в этот момент.
+	 */
+	async function setupHidden(rows: number, maxRows: number) {
+		const layout = { shown: false }
+		const list = assemble(rows, maxRows, undefined, () => (layout.shown ? ROW_HEIGHT : 0))
+		const changes: Array<[boolean, string]> = []
+
+		list.height.events.on('change:measured', (measured) => {
+			changes.push([measured, list.panel.style.maxHeight])
+		})
+		list.rootElement.element = list.root
+		await nextFrame()
+		await nextFrame()
+
+		const relayout = async (shown: boolean) => {
+			layout.shown = shown
+
+			for (const node of list.nodes) triggerResize(node)
+
+			await nextFrame()
+		}
+
+		return { ...list, changes, show: () => relayout(true), hide: () => relayout(false) }
+	}
+
+	it('строки нулевой высоты — предела нет, строки не измерены, событий нет', async () => {
+		const { panel, height, changes } = await setupHidden(4, 2)
+
+		expect(panel.style.maxHeight).toBe('')
+		expect(panel.style.overflowY).toBe('')
+		expect(height.measured).toBe(false)
+		expect(changes).toEqual([])
+	})
+
+	it('строки получили высоту — предел и признак тем же кадром, одно событие после предела', async () => {
+		const { panel, height, changes, show } = await setupHidden(4, 2)
+
+		await show()
+
+		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT}px`)
+		expect(height.measured).toBe(true)
+		expect(changes).toEqual([[true, `${2 * ROW_HEIGHT}px`]])
+
+		// Пересчёт без смены признака о нём не сообщает
+		await show()
+
+		expect(changes).toHaveLength(1)
+	})
+
+	/**
+	 * Прежний предел остаётся, а не пишется из нулевых высот: пересчёт из них
+	 * дал бы полосу в поля и зазоры, и показанный снова список кадр стоял бы
+	 * схлопнутым, пока строки не перемеряют.
+	 */
+	it('строки спрятали — одно событие, прежний предел держится', async () => {
+		const { panel, height, changes, show, hide } = await setupHidden(4, 2)
+
+		await show()
+		await hide()
+
+		expect(height.measured).toBe(false)
+		expect(changes).toEqual([
+			[true, `${2 * ROW_HEIGHT}px`],
+			[false, `${2 * ROW_HEIGHT}px`],
+		])
+		expect(panel.style.maxHeight).toBe(`${2 * ROW_HEIGHT}px`)
+		expect(panel.style.overflowY).toBe('auto')
+	})
+
+	it('maxRows = 0 — предела нет, а признак считается', async () => {
+		const { panel, height, changes, show } = await setupHidden(4, 0)
+
+		await show()
+
+		expect(panel.style.maxHeight).toBe('')
+		expect(height.measured).toBe(true)
+		expect(changes).toEqual([[true, '']])
 	})
 })

@@ -17,6 +17,8 @@
  * строк от верха документа, элемент — на своём месте с поправкой на прокрутку
  * списка, а `scrollTo` списка двигает её. Окно (`Virtual`) рисует только
  * первые элементы до замера: цель вне его плагин закрепляет и ждёт её набор.
+ * Скрытый список — без коробок и без своей прокрутки: цель ждёт, пока плагин
+ * высоты не измерит строки.
  *
  * Режимы движения — `motion.spec.ts`, в браузере —
  * `playground/vue/browser/list-scroll.spec.ts`,
@@ -24,7 +26,7 @@
  * `playground/vue/browser/select-virtual.spec.ts`.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterAll, afterEach, beforeAll, vi } from 'vitest'
 import {
 	TListBox,
 	TListBoxCollectionFacade,
@@ -44,6 +46,7 @@ import {
 	TCollectionElements,
 	TDismissPlugin,
 	TElementPlugin,
+	TListHeightPlugin,
 	TListItemPlugin,
 	TListKeyboardPlugin,
 	TListScrollPlugin,
@@ -83,12 +86,18 @@ afterEach(() => {
 /** Прокрутка к подсвеченному — `scrollIntoView` узла элемента: чей узел и с чем. */
 type TIntoView = { value: unknown; options: boolean | ScrollIntoViewOptions | undefined }
 
+/** Список в раскладке; скрытый — без коробок и без своей прокрутки, как в браузере. */
+type TShown = () => boolean
+
+const always: TShown = () => true
+
 /**
  * Прокрутка списка без раскладки: окно — `ROWS` строк от верха документа,
  * содержимое — `count` строк. `scrollTop` — своё поле, и `scrollTo` его
- * двигает, как браузер, — коробки элементов едут вслед.
+ * двигает, как браузер, — коробки элементов едут вслед. Скрытый список
+ * (`shown`) — без коробки: окна у него нет, и прокручивать нечего.
  */
-function scrollable(list: HTMLElement, count: number) {
+function scrollable(list: HTMLElement, count: number, shown: TShown = always) {
 	let scrollTop = 0
 	const scrollTo = vi.fn((options: ScrollToOptions) => {
 		scrollTop = options.top ?? scrollTop
@@ -96,10 +105,10 @@ function scrollable(list: HTMLElement, count: number) {
 
 	list.style.overflowY = 'auto'
 	list.getBoundingClientRect = () =>
-		DOMRect.fromRect({ x: 0, y: 0, width: 200, height: ROWS * STEP })
+		shown() ? DOMRect.fromRect({ x: 0, y: 0, width: 200, height: ROWS * STEP }) : new DOMRect()
 	Object.defineProperties(list, {
-		clientHeight: { value: ROWS * STEP },
-		scrollHeight: { value: count * STEP },
+		clientHeight: { get: () => (shown() ? ROWS * STEP : 0) },
+		scrollHeight: { get: () => (shown() ? count * STEP : 0) },
 		scrollTop: {
 			get: () => scrollTop,
 			set: (value: number) => {
@@ -118,8 +127,9 @@ const scrolls = (scrollTo: ReturnType<typeof scrollable>) =>
 
 /**
  * Узел элемента на месте `place` списка — со строкой внутри, как в разметке:
- * коробка от верха окна с поправкой на прокрутку списка. `scrollIntoView`
- * узла пишет вызов в `intoView`.
+ * коробка от верха окна с поправкой на прокрутку списка, высота строки — шаг.
+ * У скрытого списка (`shown`) коробки и высоты нет. `scrollIntoView` узла
+ * пишет вызов в `intoView`.
  */
 function itemNode(
 	list: HTMLElement,
@@ -127,13 +137,17 @@ function itemNode(
 	place: number,
 	intoView: TIntoView[],
 	value: unknown,
+	shown: TShown = always,
 ): HTMLElement {
 	const node = parent.appendChild(document.createElement('div'))
 	const row = node.appendChild(document.createElement('div'))
 
 	row.tabIndex = -1
 	node.getBoundingClientRect = () =>
-		DOMRect.fromRect({ x: 0, y: place * STEP - list.scrollTop, width: 200, height: STEP })
+		shown()
+			? DOMRect.fromRect({ x: 0, y: place * STEP - list.scrollTop, width: 200, height: STEP })
+			: new DOMRect()
+	Object.defineProperty(node, 'offsetHeight', { get: () => (shown() ? STEP : 0) })
 	node.scrollIntoView = (options) => {
 		intoView.push({ value, options })
 	}
@@ -977,5 +991,229 @@ describe('цели нет в документе — окно её не нари�
 
 		expect(scrollTo).not.toHaveBeenCalled()
 		expect(drawn(items[150])).toBe(false)
+	})
+})
+
+/** Наблюдатели размера, которые завёл плагин высоты и ещё не отключил. */
+const observers = new Set<ResizeObserverStub>()
+
+/**
+ * Заглушка `ResizeObserver`: в jsdom его нет. Строки наблюдает плагин высоты,
+ * а показ и скрытие списка тест сообщает наблюдателям сам.
+ */
+class ResizeObserverStub implements ResizeObserver {
+	constructor(private readonly _callback: ResizeObserverCallback) {
+		observers.add(this)
+	}
+
+	observe(): void {}
+
+	unobserve(): void {}
+
+	disconnect(): void {
+		observers.delete(this)
+	}
+
+	/** Узлы под наблюдением сменили размер. */
+	notify(): void {
+		this._callback([], this)
+	}
+}
+
+/**
+ * Select с закрытой панелью, как в браузере: у строк нет ни коробок, ни
+ * высоты, у списка — своей прокрутки. Перед прокруткой в наборе — плагин
+ * высоты с пределом в `ROWS` строк, как в дескрипторе: строки он мерит на
+ * `ready`, а показ узнаёт от наблюдателя строк и мерит их кадром позже.
+ * Клавиши — с поля.
+ */
+async function mountHidden({
+	value,
+	scrollBehavior = 'instant',
+}: { value?: string; scrollBehavior?: TScrollBehavior } = {}) {
+	const count = 40
+	const layout = { shown: false }
+	const shown = () => layout.shown
+	const owner = new TSelect({ value, scrollBehavior, maxRows: ROWS, closeOnSelect: false })
+	const facade = new TSelectCollectionFacade(
+		{ items: Array.from({ length: count }, (_, place) => ({ value: `v${place + 1}` })) },
+		{ owner },
+	)
+	const engine = facade.engine
+	const items = engine.extensions.batch.items
+	const root = document.body.appendChild(document.createElement('div'))
+	const input = root.appendChild(document.createElement('input'))
+	const list = document.body.appendChild(document.createElement('div'))
+	const scrollTo = scrollable(list, count, shown)
+	const intoView: TIntoView[] = []
+
+	list.setAttribute('role', 'listbox')
+
+	const bundle = new TPluginBundle(owner)
+		.use(TElementPlugin)
+		.use(TCollectionBundlesPlugin)
+		.use(TCollectionElements)
+		.use(TListHeightPlugin)
+		.use(TSelectKeyboardPlugin)
+		.use(TListScrollPlugin, { navigation: TSelectKeyboardPlugin })
+
+	bundles.push(bundle)
+
+	const registry = pluginOf(bundle, TCollectionBundlesPlugin)
+
+	items.forEach((item, place) => {
+		mountItem(registry, item, itemNode(list, list, place, intoView, item.value, shown))
+	})
+
+	registry.bindEngine(engine)
+	pluginOf(bundle, TElementPlugin).element = root
+	await nextFrame()
+
+	/** Список показали или спрятали: строки сменили размер, и их мерят кадром позже. */
+	const relayout = async (next: boolean) => {
+		layout.shown = next
+
+		for (const observer of observers) observer.notify()
+
+		await nextFrame()
+	}
+
+	return {
+		owner,
+		list,
+		scrollTo,
+		intoView,
+		press: (key: string) => keydown(input, key),
+		show: () => relayout(true),
+		hide: () => relayout(false),
+	}
+}
+
+/**
+ * Скрытый список не меряется — у строк нет высоты, у списка своей прокрутки,
+ * — и цель прокрутки ждёт, пока плагин высоты не измерит строки
+ * (`change:measured`). Дождавшаяся идёт сразу и мгновенно, уже в пределе
+ * строк. Список спрятали, а цели нет, — её место занимает первый выбранный:
+ * при каждом показе список открывается на нём.
+ */
+describe('скрытый список — при каждом показе на первом выбранном', () => {
+	beforeAll(() => {
+		vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+	})
+
+	afterAll(() => {
+		vi.unstubAllGlobals()
+	})
+
+	afterEach(() => {
+		observers.clear()
+	})
+
+	/** Прокрутка, которая ставит строку на месте `place` в середину окна списка. */
+	const middle = (place: number) => ({
+		top: place * STEP + STEP / 2 - (ROWS * STEP) / 2,
+		behavior: 'instant',
+	})
+
+	it('скрыт при монтировании — прокрутки нет', async () => {
+		const { scrollTo, intoView } = await mountHidden({ value: 'v31' })
+
+		await nextFrame()
+
+		expect(scrollTo).not.toHaveBeenCalled()
+		expect(intoView).toEqual([])
+	})
+
+	it.each<TScrollBehavior>(['instant', 'smooth'])(
+		'показан — выбранный в середине тем же кадром, что предел строк, и сразу при %s',
+		async (scrollBehavior) => {
+			const { list, scrollTo, show } = await mountHidden({ value: 'v31', scrollBehavior })
+
+			await show()
+
+			expect(list.style.maxHeight).toBe(`${ROWS * STEP}px`)
+			expect(scrolls(scrollTo)).toEqual([middle(30)])
+		},
+	)
+
+	it('спрятан и показан снова с начала — опять в середине', async () => {
+		const { list, scrollTo, show, hide } = await mountHidden({ value: 'v31' })
+
+		await show()
+		await hide()
+		// Список листали к началу — или браузер не помнит прокрутку скрытого
+		list.scrollTop = 0
+		scrollTo.mockClear()
+		await show()
+
+		expect(scrolls(scrollTo)).toEqual([middle(30)])
+	})
+
+	it('значение снаружи, пока список скрыт, — прокрутка только после замера строк', async () => {
+		const { owner, scrollTo, show } = await mountHidden()
+
+		owner.value = 'v31'
+		await nextFrame()
+
+		expect(scrollTo).not.toHaveBeenCalled()
+
+		await show()
+
+		expect(scrolls(scrollTo)).toEqual([middle(30)])
+	})
+
+	it('↓, пока список скрыт, — к подсвеченному только после замера строк, ближайшим краем', async () => {
+		const { press, scrollTo, intoView, show } = await mountHidden({ value: 'v31' })
+
+		press('ArrowDown')
+		await nextFrame()
+
+		expect(intoView).toEqual([])
+
+		await show()
+
+		// Подсветка новее выбора, а цель одна — последняя
+		expect(intoView).toEqual([
+			{ value: 'v31', options: { block: 'nearest', behavior: 'instant' } },
+		])
+		expect(scrollTo).not.toHaveBeenCalled()
+	})
+
+	it('новая цель до показа заменяет ждущую', async () => {
+		const { owner, scrollTo, show } = await mountHidden({ value: 'v31' })
+
+		owner.value = 'v21'
+		await nextFrame()
+		await show()
+
+		expect(scrolls(scrollTo)).toEqual([middle(20)])
+	})
+
+	it('цель, ждавшую показа, сняли — при показе список на первом выбранном', async () => {
+		const { press, scrollTo, intoView, show } = await mountHidden({ value: 'v31' })
+
+		// Панель открыли стрелкой и закрыли раньше, чем её показали: подсветка снята
+		press('ArrowDown')
+		press('Escape')
+		await nextFrame()
+		await show()
+
+		expect(intoView).toEqual([])
+		expect(scrolls(scrollTo)).toEqual([middle(30)])
+	})
+
+	it('none — ни при показе, ни при повторном показе', async () => {
+		const { list, scrollTo, intoView, show, hide } = await mountHidden({
+			value: 'v31',
+			scrollBehavior: 'none',
+		})
+
+		await show()
+		await hide()
+		list.scrollTop = 0
+		await show()
+
+		expect(scrollTo).not.toHaveBeenCalled()
+		expect(intoView).toEqual([])
 	})
 })
