@@ -17,7 +17,8 @@
 // движение: поверхность, кромка, тень и скругление плашки, цвет вида
 // сообщения, кегль и начертание текста, кольцо фокуса, вид крестика и кнопок
 // на заливке, закрытое содержимое заднего, проявление и исчезание, въезд,
-// уход, сдвиг жеста и переход ступени.
+// уход, возврат после жеста и переход ступени. Сдвиг жеста и ступень стопки
+// ставит общий слой тем.
 //
 // Код отдаёт теме модификаторами (`--placement-*` и `--layout-*` у региона,
 // `--type-*` у тоста — вид сообщения), набором `dataset` тоста (`data-open`,
@@ -96,26 +97,6 @@ $cascade-easing: cubic-bezier(0.21, 1.02, 0.73, 1);
 // контур места обвёл бы её вместе с зазором.
 .so-toasts-item {
 	@apply outline-none;
-}
-
-// Жест: у боковых мест — к своему краю строки, у мест по центру — к краю окна,
-// вверх или вниз. Сдвиг во время жеста пишет плагин (`--so-swipe-offset`, px со
-// знаком оси окна), а тема кладёт его в `translate` места: место уезжает целиком,
-// вместе с обрезкой, и плашку она не режет. Переменная не наследуется
-// (`mixins/_swipe.scss`), поэтому сдвиг читает сам корень тоста.
-:is(
-		.so-toasts--placement-top-start,
-		.so-toasts--placement-top-end,
-		.so-toasts--placement-bottom-start,
-		.so-toasts--placement-bottom-end
-	)
-	> .so-toasts__list
-	> .so-toasts-item {
-	translate: var(--so-swipe-offset, 0px) 0;
-}
-
-:is(.so-toasts--placement-top, .so-toasts--placement-bottom) > .so-toasts__list > .so-toasts-item {
-	translate: 0 var(--so-swipe-offset, 0px);
 }
 
 // Закрытый тост гаснет; нажатий он уже не ловит (общий слой тем).
@@ -434,17 +415,6 @@ $cascade-front: '#{$cascade-list} > .so-toasts-item:focus-within, #{$cascade-lis
 // передний уходит поверх» в `playground/vue/browser/toasts.spec.ts`.
 #{$cascade-item} {
 	grid-template-rows: minmax(0, 1fr);
-}
-
-// Сдвиг жеста — по своей оси, как у столбца, а ступень (`--so-toasts-lift`,
-// общий слой тем) — к дальней стороне. Оба — один `translate`, поэтому
-// ступень тема пишет вместе со сдвигом.
-#{$cascade}:is(#{$starts}, #{$ends}) > .so-toasts__list > .so-toasts-item {
-	translate: var(--so-swipe-offset, 0px) var(--so-toasts-lift);
-}
-
-#{$cascade}:is(#{$centers}) > .so-toasts__list > .so-toasts-item {
-	translate: 0 calc(var(--so-swipe-offset, 0px) + var(--so-toasts-lift));
 }
 
 // Содержимое заднего закрыто его же поверхностью: выглядывает пустая плашка.

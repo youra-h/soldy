@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import postcss from 'postcss'
 import type { Container, Rule } from 'postcss'
 
+import { behaviourVariables } from './behaviour'
+import type { TVariable } from './behaviour'
 import { OREN, inspectThemes, reportOf } from './themes'
 import type { TTheme } from './themes'
 
@@ -28,10 +29,8 @@ import type { TTheme } from './themes'
  * модификатор класса стоит в селекторе и сюда не попадает.
  *
  * Поведение темы (`setup/` её пакета, если есть) пишет переменные строкой —
- * константой имени или аргументом `setProperty`. Модификатор класса пишется
- * так же, но его место — аргумент метода `TClasses`
- * (`classes.add('--ready-animation')`), так же его различает сторож
- * библиотеки (`packages/setup/__tests__/css-variable-prefix.spec.ts`). Так же
+ * константой имени или аргументом `setProperty`, а модификатор класса
+ * сторож отличает по месту (`behaviour.ts`). Так же
  * пишут переменные плагины раскладки общего слоя тем (`setup/` базы), которые
  * ставит тема: геометрию Tabs, высоту закреплённой шапки Table и переднего
  * тоста стопки. Их сторож читает отдельно и тем же способом: в списке тем базы
@@ -51,51 +50,7 @@ const inScheme = (name: string): boolean => name.startsWith('--so-') || TOOL_NAM
 /** Имя переменной в значении: `var(--x)`, `transition-property: --x`. */
 const IN_VALUE = /(?<![\w-])--[a-zA-Z][\w-]*/g
 
-/** Строка, которая начинается с `--` и буквы: переменная или модификатор класса. */
-const QUOTED = /['"`](--[a-zA-Z][\w-]*)/g
-
-/**
- * Место модификатора класса — сразу перед строкой: первый аргумент метода
- * `TClasses` или значение ключа его `swap` и `swapClass`.
- */
-const CLASS_MODIFIER_PLACE =
-	/(?:\b_?classes\.(?:add|remove|toggle|has|get|resolve)\(|\b(?:prefix|oldClass|newClass)\s*:)\s*$/
-
-type TVariable = { readonly place: string; readonly name: string }
-
 const isRule = (node: Container | undefined): node is Rule => node?.type === 'rule'
-
-/** Файлы поведения темы — `.ts`, рекурсивно. */
-function behaviourFiles(dir: string): string[] {
-	return readdirSync(dir).flatMap((entry) => {
-		const path = join(dir, entry)
-
-		if (statSync(path).isDirectory()) return behaviourFiles(path)
-
-		return path.endsWith('.ts') ? [path] : []
-	})
-}
-
-/** Код без комментариев; `//` после `:` — адрес в строке, а не комментарий. */
-function stripComments(source: string): string {
-	return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')
-}
-
-/** Имена, которые поведение темы пишет строкой, — без модификаторов классов. */
-function behaviourVariables({ dir }: TTheme): TVariable[] {
-	const setup = join(dir, 'setup')
-
-	if (!existsSync(setup)) return []
-
-	return behaviourFiles(setup).flatMap((file) => {
-		const code = stripComments(readFileSync(file, 'utf8'))
-		const place = `setup/${relative(setup, file).split('\\').join('/')}`
-
-		return [...code.matchAll(QUOTED)]
-			.filter((match) => !CLASS_MODIFIER_PLACE.test(code.slice(0, match.index)))
-			.map((match) => ({ place, name: match[1] }))
-	})
-}
 
 /** Имена переменных в стилях темы и в её поведении. */
 function inspect(source: string, theme: TTheme) {

@@ -5,6 +5,8 @@ import postcss from 'postcss'
 import type { AtRule, ChildNode, Container, Root, Rule } from 'postcss'
 import { build as viteBuild } from 'vite'
 
+import { BASE_READS, CODE_WRITES, CONTRACT, THEME_READS } from './contract'
+
 /**
  * Свои сторожа общего слоя тем — по его CSS (`packages/themes/base/AGENTS.md`,
  * «Сторожа»).
@@ -20,13 +22,14 @@ import { build as viteBuild } from 'vite'
  *   модификатора значения темы (`--view-`, `--variant-`, `--shape-`,
  *   `--animation-`): палитру и наборы значений объявляет тема. `currentcolor`
  *   и `transparent` — не цвет темы, а цвет места и его отсутствие;
- * - **переменные — по контракту**: каждую переменную, которую база читает, она
- *   объявляет сама, с умолчанием, или называет в списке переменных темы
- *   (`theme-variables.json` — контракт базы, одно место, которое читает
- *   сторож). Умолчание для темы — переменная правила корня документа
- *   (`:root`): шкалы и геометрия частей, — и каждое такое тоже названо в
- *   контракте, чтобы тема знала, что ей можно задать. Лишнего в списке нет:
- *   каждую названную переменную база читает;
+ * - **переменные — по контракту** (`theme-variables.json`, `contract.ts`):
+ *   каждую переменную, которую база читает, она объявляет сама, с умолчанием,
+ *   или называет в разделе `base-reads`. Умолчание для темы — переменная
+ *   правила корня документа (`:root`): шкалы и геометрия частей, — и каждое
+ *   такое тоже названо там, чтобы тема знала, что ей можно задать. Лишнего в
+ *   разделе нет: каждую названную переменную база читает. Раздел `theme-reads`
+ *   — что тема вправе читать сверх этого, — с ним не пересекается, и каждую
+ *   его переменную пишут база (объявляет) или код (строкой);
  * - **в слое `so`**: каждое правило базы — в нём или в его подслое, иначе
  *   правило базы встало бы над правилами темы и утилитами приложения;
  * - **выключенное гаснет парой правил**: у каждого правила с прозрачностью из
@@ -159,6 +162,20 @@ function unlistedReads(root: Root, contract: readonly string[]): string[] {
 	const { declared, read } = variablesOf(root)
 
 	return [...read].filter((name) => !declared.has(name) && !contract.includes(name))
+}
+
+/**
+ * Раздел чтения, которого никто не пишет: переменная раздела `theme-reads`,
+ * которую база не объявляет и код не пишет строкой.
+ */
+function unwrittenThemeReads(
+	root: Root,
+	themeReads: readonly string[],
+	written: ReadonlySet<string>,
+): string[] {
+	const { declared } = variablesOf(root)
+
+	return themeReads.filter((name) => !declared.has(name) && !written.has(name))
 }
 
 /** Названия контракта, которых база не читает. */
@@ -318,21 +335,6 @@ async function buildBase(): Promise<string> {
 
 const css = postcss.parse(await buildBase())
 
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
-	typeof value === 'object' && value !== null && !Array.isArray(value)
-
-/** Контракт базы: переменная, которую задаёт тема, — и что она значит. */
-function readContract(): Readonly<Record<string, unknown>> {
-	const parsed: unknown = JSON.parse(readFileSync(join(BASE, 'theme-variables.json'), 'utf8'))
-
-	if (!isRecord(parsed)) throw new Error('theme-variables.json: ожидается объект JSON')
-
-	return parsed
-}
-
-const contract = readContract()
-const contractNames = Object.keys(contract)
-
 describe('исходники базы — чистый CSS', () => {
 	it('в src только .css', () => {
 		expect(files.map(({ name }) => name).filter((name) => !name.endsWith('.css'))).toEqual([])
@@ -405,8 +407,15 @@ describe('CSS базы — без облика темы', () => {
 })
 
 describe('переменные базы — объявлены или в контракте', () => {
-	it('контракт — переменная --so-* и что она значит', () => {
-		const entries = Object.entries(contract)
+	it('контракт — два раздела: что читает база и что читает тема', () => {
+		expect(CONTRACT.sections).toEqual(['base-reads', 'theme-reads'])
+	})
+
+	it('в каждом разделе — переменная --so-* и что она значит', () => {
+		const entries = [
+			...Object.entries(CONTRACT.baseReads),
+			...Object.entries(CONTRACT.themeReads),
+		]
 
 		expect(entries.filter(([name]) => !/^--so-[a-z][\w-]*$/.test(name))).toEqual([])
 		expect(
@@ -415,15 +424,30 @@ describe('переменные базы — объявлены или в кон�
 	})
 
 	it('каждую переменную, которую база читает, она объявляет или называет в контракте', () => {
-		expect(unlistedReads(css, contractNames)).toEqual([])
+		expect(unlistedReads(css, BASE_READS)).toEqual([])
 	})
 
-	it('каждую переменную контракта база читает', () => {
-		expect(unreadContract(css, contractNames)).toEqual([])
+	it('каждую переменную раздела base-reads база читает', () => {
+		expect(unreadContract(css, BASE_READS)).toEqual([])
 	})
 
 	it('каждое умолчание для темы — переменная корня документа — названо в контракте', () => {
-		expect(unlistedDefaults(css, contractNames)).toEqual([])
+		expect(unlistedDefaults(css, BASE_READS)).toEqual([])
+	})
+
+	it('разделы не пересекаются', () => {
+		expect(THEME_READS.filter((name) => BASE_READS.includes(name))).toEqual([])
+	})
+
+	it('каждую переменную раздела theme-reads пишут база или код', () => {
+		expect(unwrittenThemeReads(css, THEME_READS, CODE_WRITES)).toEqual([])
+	})
+
+	it('код, который пишет переменные, сторож видит', () => {
+		// Пустой список пропустил бы только то, что объявляет CSS базы: имя
+		// плагина библиотеки и имя плагина раскладки базы
+		expect(CODE_WRITES).toContain('--so-table-column-ghost')
+		expect(CODE_WRITES).toContain('--so-tabs-active-pos')
 	})
 })
 
@@ -548,6 +572,14 @@ describe('что видят сторожа базы', () => {
 			[],
 		)
 		expect(unreadContract(postcss.parse(reads), ['--so-x-width', '--so-y'])).toEqual(['--so-y'])
+	})
+
+	it('переменная раздела чтения без записи — нарушение; объявление базы и код — запись', () => {
+		const block = postcss.parse('.so-x--size-sm { --so-x-height: 1rem }')
+		const written = new Set(['--so-x-shift'])
+
+		expect(unwrittenThemeReads(block, ['--so-x-height', '--so-x-shift'], written)).toEqual([])
+		expect(unwrittenThemeReads(block, ['--so-x-gap'], written)).toEqual(['--so-x-gap'])
 	})
 
 	it('правило вне слоя so — нарушение', () => {
