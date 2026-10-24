@@ -370,6 +370,32 @@ describe('выключенный элемент не выбирается', () =
 	})
 })
 
+/** Стрелки: у списка они двигают подсветку. */
+const ARROWS = [
+	['стрелка вниз', 'ArrowDown'],
+	['стрелка вверх', 'ArrowUp'],
+] as const
+
+/** Enter и пробел: у списка они переключают выбор подсвеченного. */
+const ACTIVATION_KEYS = [
+	['Enter', 'Enter'],
+	['пробел', ' '],
+] as const
+
+/** Стрелка и то, куда она ведёт со строки второго из трёх элементов. */
+const ARROWS_FROM_SECOND = [
+	['стрелка вниз', 'ArrowDown', 2],
+	['стрелка вверх', 'ArrowUp', 0],
+] as const
+
+/** Отметки подсветки всех элементов по порядку — их пишет `TListItemPlugin`. */
+const marks = ({ items, itemPlugins }: TListBoxSetup) =>
+	items.map((item) => required(itemPlugins.get(item.uid), 'плагин элемента').highlighted)
+
+/**
+ * Позиция следует за выбором — встаёт на элемент, который стал выбранным:
+ * кликом, клавишей или значением снаружи. Снятие выбора её не трогает.
+ */
 describe('подсветка следует за выбором', () => {
 	it('встаёт на выбранный элемент при появлении коллекции', async () => {
 		// Позиция запоминается без визуальной отметки: навигация ещё не началась
@@ -401,6 +427,71 @@ describe('подсветка следует за выбором', () => {
 
 		expect(keyboard.highlightedUid).toBe(items[1].uid)
 	})
+
+	/** В `multiple` выбранных несколько, и первый из них — не тот, что выбрали. */
+	it('в multiple встаёт на элемент, который стал выбранным, а не на первый выбранный', async () => {
+		const { facade, keyboard, items } = await setup(['Один', 'Два', 'Три'])
+		const selection = facade.engine.extensions.selection
+
+		facade.mode = 'multiple'
+		selection.select(items[0] as IListBoxItem)
+		selection.select(items[2] as IListBoxItem)
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+	})
+
+	/**
+	 * Своя клавиша выбирает подсвеченный элемент — он и стал выбранным, и
+	 * позиция с отметкой остаются на нём. Раньше позиция шла за первым
+	 * выбранным: Enter снимал отметку и уводил позицию к нему, и следующая
+	 * стрелка вела к соседу первого выбранного.
+	 */
+	it.each(ACTIVATION_KEYS)(
+		'в multiple %s оставляет позицию и отметку на подсвеченном, стрелка ведёт к его соседу',
+		async (_name, key) => {
+			const listBox = await setup(['Один', 'Два', 'Три', 'Четыре'])
+			const { facade, keyboard, press, items } = listBox
+
+			facade.mode = 'multiple'
+			facade.engine.extensions.selection.select(items[0] as IListBoxItem)
+			press('ArrowDown')
+			press(key)
+
+			expect(facade.selected).toEqual([items[0], items[1]])
+			expect(keyboard.highlightedUid).toBe(items[1].uid)
+			expect(marks(listBox)).toEqual([false, true, false, false])
+
+			press('ArrowDown')
+
+			expect(keyboard.highlightedUid).toBe(items[2].uid)
+		},
+	)
+
+	/**
+	 * Снятый элемент выбранным не стал, и следовать не за чем — ни своей
+	 * клавишей, ни снаружи. Раньше позиция уходила к первому из оставшихся.
+	 */
+	it('снятие выбора позицию не трогает', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три', 'Четыре'])
+		const { facade, keyboard, press, items } = listBox
+		const selection = facade.engine.extensions.selection
+
+		facade.mode = 'multiple'
+		selection.selectMany([items[0], items[1], items[2]] as IListBoxItem[])
+
+		// Позиция — на первом из выбранных пачкой; стрелка — на второй, Enter
+		// снимает с него выбор
+		press('ArrowDown')
+		press('Enter')
+
+		expect(facade.selected).toEqual([items[0], items[2]])
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+
+		selection.deselect(items[0] as IListBoxItem)
+
+		expect(keyboard.highlightedUid).toBe(items[1].uid)
+		expect(marks(listBox)).toEqual([false, true, false, false])
+	})
 })
 
 describe('событие change:highlight', () => {
@@ -421,28 +512,6 @@ describe('событие change:highlight', () => {
 		})
 	})
 })
-
-/** Стрелки: у списка они двигают подсветку. */
-const ARROWS = [
-	['стрелка вниз', 'ArrowDown'],
-	['стрелка вверх', 'ArrowUp'],
-] as const
-
-/** Enter и пробел: у списка они переключают выбор подсвеченного. */
-const ACTIVATION_KEYS = [
-	['Enter', 'Enter'],
-	['пробел', ' '],
-] as const
-
-/** Стрелка и то, куда она ведёт со строки второго из трёх элементов. */
-const ARROWS_FROM_SECOND = [
-	['стрелка вниз', 'ArrowDown', 2],
-	['стрелка вверх', 'ArrowUp', 0],
-] as const
-
-/** Отметки подсветки всех элементов по порядку — их пишет `TListItemPlugin`. */
-const marks = ({ items, itemPlugins }: TListBoxSetup) =>
-	items.map((item) => required(itemPlugins.get(item.uid), 'плагин элемента').highlighted)
 
 /**
  * Слушатель висит на корне, и до него всплывают клавиши всего, что лежит под
@@ -543,11 +612,12 @@ describe('клавиша со строки элемента — списка, с
 	})
 
 	/**
-	 * Позиция следует за выбором и в `multiple` стоит на первом выбранном, а
-	 * клик по строке оставляет фокус на этой строке: стрелка с неё шла от
-	 * первого выбранного.
+	 * Фокус на строке не значит, что позиция на ней: запись `focused = true`
+	 * позицию не двигает, а в `multiple` — и клик, снявший выбор со строки, и
+	 * позиция остаётся на элементе, выбранном раньше. Стрелка со строки шла от
+	 * него.
 	 */
-	it('в multiple стрелка шагает от строки, а не от первого выбранного', async () => {
+	it('в multiple стрелка шагает от строки, а не от позиции на выбранном', async () => {
 		const { facade, keyboard, items, rows } = await setup(['Один', 'Два', 'Три', 'Четыре'])
 
 		facade.mode = 'multiple'

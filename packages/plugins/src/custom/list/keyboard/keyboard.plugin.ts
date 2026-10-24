@@ -4,6 +4,7 @@ import type { IPluginContext } from '../../../base'
 import { isFocusableElement } from '../../../utils'
 import { TCollectionElements } from '../../collection'
 import { TListNavigationPlugin } from '../navigation'
+import { newlySelected } from '../newly-selected'
 // Одноимённый узел списка: `listOf` в этом файле — охранник расширения
 // списка, и различает их алиас в импорте
 import { listOf as listNodeOf, rowOf } from '../row'
@@ -72,9 +73,17 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<
 	}
 
 	/**
-	 * Подсветка встаёт на выбранный элемент — и следует за ним, если выбор
-	 * поменяли снаружи. Позиция запоминается без визуальной отметки: список
-	 * ещё не в навигации.
+	 * Позиция встаёт на выбранный элемент, когда появилась коллекция, а дальше
+	 * следует за выбором — на элемент, который стал выбранным (`newlySelected`):
+	 * кликом, клавишей или значением снаружи. Снятие выбора её не трогает.
+	 *
+	 * Enter и пробел выбирают подсвеченный элемент, и позиция с отметкой
+	 * остаются на нём: следующая стрелка ведёт к его соседу. Раньше позиция шла
+	 * за первым выбранным, и в `multiple` выбор клавишей снимал отметку и уводил
+	 * позицию к нему.
+	 *
+	 * Позиция, которую выбор перенёс на другой элемент, запоминается без
+	 * визуальной отметки: список ещё не в навигации.
 	 */
 	protected override onEngineBound(engine: TCollectionEngine<any, any>): void {
 		const selection = selectionOf<IListBoxItem>(engine)
@@ -82,8 +91,10 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<
 
 		if (selected.length > 0) this.trackHighlight(selected[0].uid)
 
-		this._listenTo(selection?.events, 'change:selection', (items) => {
-			if (items.length > 0) this.trackHighlight(items[0].uid)
+		this._listenTo(selection?.events, 'change:selection', (items, changed) => {
+			const item = newlySelected(items, changed)
+
+			if (item) this.trackHighlight(item.uid)
 		})
 	}
 
@@ -144,9 +155,9 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<
 	/**
 	 * Клавиша со строки: позиция — на элемент строки, без отметки, как за
 	 * выбором, фокус — узлу списка. Дальше клавиша идёт так же, как с узла:
-	 * стрелка шагает от строки, а не от прежней позиции (в `multiple` та стоит
-	 * на первом выбранном), Enter и пробел переключают элемент строки, Tab
-	 * уходит от узла.
+	 * стрелка шагает от строки, а не от прежней позиции (клик, снявший выбор со
+	 * строки, и запись `focused = true` позицию не двигают), Enter и пробел
+	 * переключают элемент строки, Tab уходит от узла.
 	 *
 	 * Позиция — раньше фокуса: окно (`Virtual`) держит строку под фокусом
 	 * нарисованной, и уход фокуса это закрепление снимает, а позиция к тому
