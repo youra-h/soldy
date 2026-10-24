@@ -21,8 +21,14 @@
  * (`components/popover.css`). Пока панель тянут (`data-swiping`), курсор
  * «держу» — по всей панели, куда бы он ни ушёл.
  *
+ * Во время жеста панель идёт за указателем: сдвиг плагина жеста
+ * (`--so-swipe-offset`, `swipe.css`) — её `translate`, вдоль оси якоря. Только
+ * у панели с жестом: `translate`, даже нулевой, делает панель контейнером для
+ * `position: fixed` внутри неё. У панели Popover в контейнере ось — её край
+ * (`components/popover.css`).
+ *
  * Облик — поверхность, кромка, тень, скругление, проявление и исчезание,
- * сдвиг за указателем, возврат и уход смахнутой панели — рисует тема. */
+ * возврат отпущенной и уход смахнутой панели — рисует тема. */
 
 .so-popover__panel[data-open='false'],
 .so-select__panel[data-open='false'],
@@ -36,6 +42,7 @@
 .so-select__panel:has(> .so-select__handle),
 .so-date-picker__panel:has(> .so-date-picker__handle) {
 	padding-block-start: var(--so-target-size);
+	translate: 0 var(--so-swipe-offset);
 }
 
 .so-popover__panel:has(> .so-popover__handle)[data-placement^='top'],
