@@ -226,6 +226,15 @@ export class TElementAttributes {
 		this._applied = applyAttributes(this._element, this._sum(), this._applied)
 	}
 
+	/**
+	 * Значение атрибута, которое ставит раскладка, — сумма слоёв; `undefined` —
+	 * имени она не называет. Слои новые ещё до записи в узел, поэтому колбэк
+	 * атрибута, пришедший посреди раскладки, видит уже то, что она пишет.
+	 */
+	wanted(name: string): string | undefined {
+		return this._sum().get(name)?.value
+	}
+
 	/** У узла есть поле: слой владельца ждёт его построения. */
 	awaitField(): void {
 		if (this._field === undefined) this._field = null

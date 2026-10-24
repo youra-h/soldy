@@ -237,6 +237,60 @@ describe('Tabs · серверный рендер', () => {
 	})
 })
 
+/**
+ * Свой `id` панели — её вход: статику база снимает с корня, и на панель `id`
+ * встаёт из её набора. Вход панели — в её `ngOnInit`, и на сервере тоже, а
+ * разметку сервер отдаёт, когда приложение стабильно: таб к этому времени
+ * ведёт на `id` панели, и цены Vue, Svelte и Solid — таб на формуле до
+ * гидратации — у Angular нет. Гидратация собирает в том же порядке.
+ */
+describe('Tabs со своим id панели · сервер и гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	@Component({
+		selector: 'app-root',
+		standalone: true,
+		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="A" active></div>
+			<div so-tabs-item value="b" text="B"></div>
+			<div so-tabs-content slot="content" value="a" id="general">Панель A</div>
+			<div so-tabs-content slot="content" value="b">Панель B</div>
+		</div>`,
+	})
+	class PanelIdPage {}
+
+	it('у сервера свой id — на панели, и таб ведёт на него', async () => {
+		const page = await serverPage(PanelIdPage)
+
+		expect(shownPanels(page).map((panel) => panel.id)).toEqual(['general'])
+		expect(all(page, '[role="tab"]')[0].getAttribute('aria-controls')).toBe('general')
+		expect(all(page, '[id="general"]')).toHaveLength(1)
+	})
+
+	it('гидратация берёт узлы сервера, ссылка таба — на id панели, ошибок нет', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(PanelIdPage))
+
+		const tab = all(document, '[role="tab"]')[0]
+		const app = await hydrate(PanelIdPage)
+
+		await app.whenStable()
+
+		expect(all(document, '[role="tab"]')[0]).toBe(tab)
+		expect(tab.getAttribute('aria-controls')).toBe('general')
+		expect(shownPanels(document).map((panel) => panel.id)).toEqual(['general'])
+		expect(all(document, '[id="general"]')).toHaveLength(1)
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
 describe('Accordion · серверный рендер', () => {
 	@Component({
 		selector: 'app-root',

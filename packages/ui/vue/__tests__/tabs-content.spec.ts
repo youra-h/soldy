@@ -314,8 +314,8 @@ describe('связка ARIA в разметке', () => {
 	/**
 	 * Свой `id` таба — его вход: он встаёт на таб вместо `id` от монтирования,
 	 * и панель ссылается на него. В `$attrs` он не попадает и мимо набора на
-	 * строку таба не едет, поэтому узел с ним один — таб. `id` панели своего
-	 * входа не имеет и остаётся формулой.
+	 * строку таба не едет, поэтому узел с ним один — таб. Своего `id` у панели
+	 * здесь нет, и её `id` — формула таба.
 	 */
 	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', async () => {
 		const own = ref<string | undefined>('settings')
@@ -354,6 +354,59 @@ describe('связка ARIA в разметке', () => {
 
 		expect(tab().attributes('id')).toBe('general')
 		expect(panel().attributes('aria-labelledby')).toBe('general')
+		expect(tab().attributes('aria-controls')).toBe(panel().attributes('id'))
+
+		wrapper.unmount()
+	})
+
+	/**
+	 * Свой `id` панели — её вход (`TIdPlugin`): он встаёт на панель вместо
+	 * формулы таба, и `aria-controls` таба ведёт на него. В `$attrs` он не
+	 * попадает, поэтому узел с ним один — панель. Ссылку таб получает, когда
+	 * панель принята, — следующим кадром Vue после её сборки: таб нарисован
+	 * раньше панели. Смена ведёт за собой и панель, и ссылку, снятый `id`
+	 * возвращает обе к формуле таба.
+	 */
+	it('свой id панели — на панели, таб ссылается на него и идёт за его сменой', async () => {
+		const own = ref<string | undefined>('general')
+		const wrapper = mount(
+			defineComponent({
+				render: () =>
+					h(
+						Tabs,
+						{},
+						{
+							default: () => [
+								h(TabsItem, { value: 'a', text: 'First', active: true }),
+								h(TabsItem, { value: 'b', text: 'Second' }),
+							],
+							content: () =>
+								h(TabsContent, { value: 'a', id: own.value }, () => 'Панель A'),
+						},
+					),
+			}),
+			{ attachTo: document.body },
+		)
+		const tab = () => wrapper.findAll('[role="tab"]')[0]
+		const panel = () => wrapper.find('.so-tabs__panel')
+
+		await nextTick()
+
+		expect(panel().attributes('id')).toBe('general')
+		expect(tab().attributes('aria-controls')).toBe('general')
+		expect(panel().attributes('aria-labelledby')).toBe(tab().attributes('id'))
+		expect(document.querySelectorAll('[id="general"]')).toHaveLength(1)
+
+		own.value = 'common'
+		await nextTick()
+
+		expect(panel().attributes('id')).toBe('common')
+		expect(tab().attributes('aria-controls')).toBe('common')
+
+		own.value = undefined
+		await nextTick()
+
+		expect(panel().attributes('id')).not.toBe('common')
 		expect(tab().attributes('aria-controls')).toBe(panel().attributes('id'))
 
 		wrapper.unmount()

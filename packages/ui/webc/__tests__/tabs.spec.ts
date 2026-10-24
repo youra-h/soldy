@@ -596,8 +596,8 @@ describe('связка ARIA в разметке', () => {
 	/**
 	 * `id` таба — проп `TIdPlugin`: атрибут разметки база берёт пропом первой
 	 * сборки и снимает с корня, и на строку таба `id` встаёт из набора таба —
-	 * панель ссылается на него, узел с ним один. `id` панели приложение не
-	 * задаёт, он остаётся формулой. Из кода — `el.id`: свойство элемента — тот
+	 * панель ссылается на него, узел с ним один. Своего `id` у панели здесь
+	 * нет, и её `id` — формула таба. Из кода — `el.id`: свойство элемента — тот
 	 * же проп, и таб и панель идут за ним.
 	 */
 	it('id таба — на табе, панель ссылается на него и идёт за его сменой', async () => {
@@ -618,6 +618,85 @@ describe('связка ARIA в разметке', () => {
 		expect(tab('First').id).toBe('general')
 		expect(panel().getAttribute('aria-labelledby')).toBe('general')
 		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
+
+	/** Панель разметки по `value`; нет её — тест падает здесь. */
+	function panelOf(value: string): TTabsContentElementProps {
+		const node = document.querySelector(`[is="so-tabs-content"][value="${value}"]`)
+
+		if (!isPanel(node)) throw new Error(`панели «${value}» нет`)
+
+		return node
+	}
+
+	/**
+	 * `id` панели — проп `TIdPlugin`, и корень панели — её узел: атрибут `id`
+	 * — и вход, и место, где `id` стоит. Задали — разметкой или из кода
+	 * (`el.id`), — и он на панели, а `aria-controls` таба ведёт на него, узел с
+	 * ним один. Сняли — на панели формула таба, которую ставит база, и своим
+	 * `id` панели база её не считает (`el.state.id`).
+	 */
+	it('id панели — на панели, таб ссылается на него и идёт за его сменой', async () => {
+		await mount(`<div is="so-tabs">
+			<div is="so-tabs-item" value="a" text="First" active></div>
+			<div is="so-tabs-item" value="b" text="Second"></div>
+			<div is="so-tabs-content" slot="content" value="a" id="general">Панель A</div>
+		</div>`)
+
+		const content = panelOf('a')
+
+		expect(content.id).toBe('general')
+		expect(content.state).toMatchObject({ id: 'general' })
+		expect(tab('First').getAttribute('aria-controls')).toBe('general')
+		expect(content.getAttribute('aria-labelledby')).toBe(tab('First').id)
+		expect(document.querySelectorAll('[id="general"]')).toHaveLength(1)
+
+		content.id = 'common'
+		await flush()
+
+		expect(content.id).toBe('common')
+		expect(tab('First').getAttribute('aria-controls')).toBe('common')
+
+		content.removeAttribute('id')
+		await flush()
+
+		expect(content.state).toMatchObject({ id: undefined })
+		expect(content.id).not.toBe('')
+		expect(tab('First').getAttribute('aria-controls')).toBe(content.id)
+
+		// Пустой снимает свой `id`, как у нативного: `el.id = undefined` записал бы "undefined"
+		content.id = 'general'
+		await flush()
+		content.id = ''
+		await flush()
+
+		expect(content.state).toMatchObject({ id: undefined })
+		expect(content.id).not.toBe('')
+		expect(tab('First').getAttribute('aria-controls')).toBe(content.id)
+	})
+
+	/**
+	 * Формула таба, которую база поставила на корень панели, — не `id`
+	 * приложения: панель, ушедшая к другому табу, берёт формулу нового, а
+	 * прежний таб ведёт на свою.
+	 */
+	it('панель без своего id, ушедшая к другому табу, — с формулой нового', async () => {
+		await mount(`<div is="so-tabs">
+			<div is="so-tabs-item" value="a" text="First" active></div>
+			<div is="so-tabs-item" value="b" text="Second"></div>
+			<div is="so-tabs-content" slot="content" value="a">Панель</div>
+		</div>`)
+
+		const content = panelOf('a')
+		const first = content.id
+
+		content.value = 'b'
+		await flush()
+
+		expect(content.state).toMatchObject({ id: undefined })
+		expect(content.id).not.toBe(first)
+		expect(tab('Second').getAttribute('aria-controls')).toBe(content.id)
+		expect(tab('First').getAttribute('aria-controls')).toBe(first)
 	})
 })
 

@@ -388,6 +388,26 @@ describe('Tabs · серверный рендер', () => {
 		expect(attributeOf(rows, 'aria-selected')).toEqual(['true', 'false'])
 		expect(attributeOf(rows, 'tabindex')).toEqual(['0', '-1'])
 	})
+
+	/**
+	 * Свой `id` панели — на ней в разметке сервера: узел его с первой
+	 * отрисовки. Таб отдан раньше, чем инициализировалась панель, и ведёт на
+	 * формулу — цена сервера, как вторая остановка Tab; ссылку на `id` панели
+	 * он получает с гидратацией (`hydration/collections.hydration.spec.ts`).
+	 */
+	it('свой id панели — на панели; таб, отданный раньше неё, ведёт на формулу', () => {
+		const { body } = render(TabsHarness, {
+			props: {
+				items: [{ value: 'a', text: 'A', active: true }],
+				panels: [{ value: 'a', text: 'Панель A', id: 'general' }],
+			},
+		})
+		const { rows, panels } = partsOf(body)
+
+		expect(panels[0]?.attributes.id).toBe('general')
+		expect(rows[0]?.attributes['aria-controls']).not.toBe('general')
+		expect(tagsWith(body, 'id', 'general')).toHaveLength(1)
+	})
 })
 
 describe('Accordion · серверный рендер', () => {

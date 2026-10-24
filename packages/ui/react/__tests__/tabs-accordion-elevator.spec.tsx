@@ -160,6 +160,41 @@ describe('пересборка набора табов', () => {
 		expect(selection()).toEqual(['false', 'false', 'true'])
 		expect(panels()).toEqual(['Панель C'])
 	})
+
+	/**
+	 * Пересборка — новые наборы и таба, и панели: прежняя панель отдаёт табу
+	 * свой `id` назад, новая — снова, и плагину таба нового его монтирования.
+	 */
+	it('StrictMode и <Activity>: ссылка таба — на свой id панели и после пересборки', async () => {
+		const view = (mode: 'visible' | 'hidden') => (
+			<StrictMode>
+				<Activity mode={mode}>
+					<Tabs
+						content={
+							<Tabs.Content value="a" id="general">
+								Панель A
+							</Tabs.Content>
+						}
+					>
+						<Tabs.Item value="a" text="A" active />
+						<Tabs.Item value="b" text="B" />
+					</Tabs>
+				</Activity>
+			</StrictMode>
+		)
+		const { render } = mount(view('visible'))
+
+		await flush()
+
+		expect(tab('A').getAttribute('aria-controls')).toBe('general')
+
+		render(view('hidden'))
+		render(view('visible'))
+		await flush()
+
+		expect(tab('A').getAttribute('aria-controls')).toBe('general')
+		expect(document.querySelectorAll('[id="general"]')).toHaveLength(1)
+	})
 })
 
 describe('пересборка аккордеона', () => {
@@ -256,6 +291,42 @@ describe('сервер', () => {
 		expect(rows[1].getAttribute('aria-controls')).toBe(shown[0].id)
 		expect(shown[0].getAttribute('aria-labelledby')).toBe(rows[1].id)
 		expect(shown[0].getAttribute('role')).toBe('tabpanel')
+	})
+
+	/**
+	 * Свой `id` панели — на ней с первой отрисовки, и у сервера тоже. Таб
+	 * нарисован раньше, чем собралась панель, и у сервера ведёт на формулу:
+	 * ссылку на `id` панели он получает со входа панели — после гидратации, и
+	 * гидратация с разметкой сервера сходится.
+	 */
+	it('свой id панели: у сервера — на панели, ссылка таба на него — после гидратации', () => {
+		const element = (
+			<Tabs
+				items={[
+					{ value: 'a', text: 'A', _: { active: true } },
+					{ value: 'b', text: 'B' },
+				]}
+				content={
+					<Tabs.Content value="a" id="general">
+						Панель A
+					</Tabs.Content>
+				}
+			/>
+		)
+		const server = serverMarkup(element)
+
+		expect(server.querySelector('.so-tabs__panel')?.id).toBe('general')
+		expect(server.querySelector('[role="tab"]')?.getAttribute('aria-controls')).not.toBe(
+			'general',
+		)
+
+		const { container, onRecoverableError } = hydrate(element)
+
+		expect(onRecoverableError).not.toHaveBeenCalled()
+		expect(container.querySelector('[role="tab"]')?.getAttribute('aria-controls')).toBe(
+			'general',
+		)
+		expect(container.querySelectorAll('[id="general"]')).toHaveLength(1)
 	})
 
 	it('секции из items: aria-expanded и связка заголовка с панелью', () => {

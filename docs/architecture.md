@@ -341,10 +341,10 @@ Owns the `pluginProps` prop and emits `plugin:event`. It has no write, reset or 
 
 #### Extensions (`packages/setup/content/extensions/`)
 
-- `TCollectionExtension` - Provides child registration via elevator
+- `TCollectionExtension` - Provides child registration via elevator and lowers, next to the engine, the registry of item bundles (`COLLECTION_BUNDLES_ELEVATOR`, `content/extensions/collection/keys.ts`; empty when the owner has none) — for children that are linked to items without being items themselves: `Tabs.Content` finds there the bundle of its tab's current mount
 - `TCollectionItemExtension` - Child assembles itself under the parent (engine and register via elevator, `TItemContext`, `meta` from props) and joins the collection on the context's `attach`, which the adapter runtime fires at its framework's mount: Vue in `setup()`, React at commit (AGENTS.md, «Элемент входит в коллекцию при монтировании, а не при сборке»)
 - `TDragAndDropExtension` / `TDragAndDropCollectionExtension` - The wrapper lowers its instance by the content key (`DRAG_AND_DROP_ELEVATOR`, `content/extensions/drag-and-drop/keys.ts`); the collection picks it up at assembly, activates its `TDragPlugin` with its engine and the wrapper and lowers an empty value to its subtree — lists inside its items don't inherit reordering. No context phases: nobody listens to the wrapper bus
-- `TTabsContentBindingExtension` - Binds `Tabs.Content` to its tab by `value`, split by the same phases: at assembly it binds only what is the panel's own — its facade and `aria` — so a tab from `items`, already in the collection, gets its panel into the server markup; the second lookup, which finds the tabs of the markup, and the subscriptions to the engine and to `value` wait for the context's `attach`
+- `TTabsContentBindingExtension` - Binds `Tabs.Content` to its tab by `value`, split by the same phases: at assembly it binds only what is the panel's own — its facade and `aria`, with the panel's own `id` (`TIdPlugin`) over the tab's formula — so a tab from `items`, already in the collection, gets its panel into the server markup; the second lookup, which finds the tabs of the markup, the subscriptions to the engine, the bundles registry and `value`, and handing the panel's `TIdPlugin` to the tab's `TTabsItemIdsPlugin` (`bindPanel`, the only writer of `aria-controls`) wait for the context's `attach`
 
 #### Elevator (`packages/setup/protected/adapter/elevator/`)
 
@@ -792,7 +792,9 @@ ARIA-связка при этом нужна обеим. У Tabs её потре
 (вход элемента, как `id` поля), иначе от id монтирования (AGENTS.md, «`id` в
 разметке — от монтирования, в плагинах»). `TTabsItemIdsPlugin` пишет `id` таба
 и `aria-controls` его панели, а `Tabs.Content` своей формулы не держит: её
-проводка (`TTabsContentBindingExtension`) берёт оба значения у таба.
+проводка (`TTabsContentBindingExtension`) берёт оба значения у таба. Свой `id`
+панели (её `TIdPlugin`) главнее формулы: он на панели, а `aria-controls` на
+него ведёт плагин таба — принятая панель отдаёт ему свой `TIdPlugin`.
 `TAccordionItemIdsPlugin` пишет обе стороны: заголовку — в `aria` секции,
 панели — в её набор `contentAria` (экземпляра у панели нет).
 
@@ -983,7 +985,8 @@ adapter-контекстов сливаются в один объект, и о�
 `TTabsItem` пишет в свой `aria` только `role: 'tab'` — единственное, что таб
 знает о себе. `id` и `aria-controls` нужны документу: их пишет плагин таба
 `TTabsItemIdsPlugin` — `id` таба свой, если его задали, иначе от id
-монтирования. `aria-selected` пишет `TTabsExtension`
+монтирования, а `aria-controls` — на свой `id` панели, если его задали, иначе
+на формулу. `aria-selected` пишет `TTabsExtension`
 по событию активации — у
 неактивных `"false"`, а не отсутствует: скринридер объявляет «1 из 5, не
 выбрана», и для этого атрибут нужен на всех табах набора.
@@ -992,9 +995,9 @@ adapter-контекстов сливаются в один объект, и о�
 «выбранность» выражается по-разному — у таба `aria-selected`, у заголовка
 Accordion `aria-expanded`. Атрибут знает паттерн, а не механизм активации.
 
-Сторона панели (`role="tabpanel"`, `id`, `aria-labelledby`) пишется
+Сторона панели (`id`, `aria-labelledby`) пишется
 `TTabsContentBindingExtension` в adapter-слое: это единственное место, где
-известно, что панель нашла свой таб.
+известно, что панель нашла свой таб. `role="tabpanel"` панель пишет себе сама.
 
 ### Слоты — третья категория контракта
 

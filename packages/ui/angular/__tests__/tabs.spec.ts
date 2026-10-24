@@ -544,8 +544,8 @@ describe('связка ARIA в разметке', () => {
 	/**
 	 * Свой `id` таба — его вход: статический атрибут и привязка `[id]` пишут
 	 * вход, статику база снимает с корня, и на строку таба `id` встаёт из
-	 * набора таба — панель ссылается на него, узел с ним один. `id` панели
-	 * своего входа не имеет и остаётся формулой.
+	 * набора таба — панель ссылается на него, узел с ним один. Своего `id` у
+	 * панели здесь нет, и её `id` — формула таба.
 	 */
 	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', () => {
 		@Component({
@@ -575,6 +575,51 @@ describe('связка ARIA в разметке', () => {
 
 		expect(tab('First').id).toBe('general')
 		expect(panel().getAttribute('aria-labelledby')).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
+
+	/**
+	 * Свой `id` панели — её вход (`TIdPlugin`): статический атрибут и привязка
+	 * `[id]` пишут вход, статику база снимает с корня, и на панель `id` встаёт
+	 * из её набора — тот, что задали, а не формула таба. Раньше набор панели
+	 * затирал его формулой. `aria-controls` таба ведёт на него со входа панели,
+	 * узел с ним один — панель. Смена ведёт за собой и панель, и ссылку,
+	 * снятый `id` возвращает обе к формуле таба.
+	 */
+	it('свой id панели — на панели, таб ссылается на него и идёт за его сменой', () => {
+		@Component({
+			standalone: true,
+			imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent],
+			template: `<div so-tabs>
+				<div so-tabs-item value="a" text="First" active></div>
+				<div so-tabs-item value="b" text="Second"></div>
+				<div so-tabs-content slot="content" value="a" [id]="own()">Панель A</div>
+				<div so-tabs-content slot="content" value="b" id="panel-second">Панель B</div>
+			</div>`,
+		})
+		class OwnPanelIdHost {
+			readonly own = signal<string | undefined>('general')
+		}
+
+		const fixture = mountHost(OwnPanelIdHost)
+
+		expect(panel().id).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe('general')
+		expect(tab('Second').getAttribute('aria-controls')).toBe('panel-second')
+		expect(panel().getAttribute('aria-labelledby')).toBe(tab('First').id)
+		expect(document.querySelectorAll('[id="general"]')).toHaveLength(1)
+		expect(document.querySelectorAll('[id="panel-second"]')).toHaveLength(1)
+
+		fixture.componentInstance.own.set('common')
+		fixture.detectChanges()
+
+		expect(panel().id).toBe('common')
+		expect(tab('First').getAttribute('aria-controls')).toBe('common')
+
+		fixture.componentInstance.own.set(undefined)
+		fixture.detectChanges()
+
+		expect(panel().id).not.toBe('common')
 		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
 	})
 })

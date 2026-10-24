@@ -44,8 +44,17 @@ import { TTeleport } from './teleport'
 import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
 import { connecting, isConnecting, wait } from './waiting'
 
-/** `id` поля — проп поля, а не вход корня: два узла с одним `id` сломали бы `<label for>`. */
-const CONTROL_ID = 'id'
+/**
+ * Атрибут `id` — проп `TIdPlugin`. У корня с полем это проп поля, а не вход
+ * корня: два узла с одним `id` сломали бы `<label for>`. Корень без поля несёт
+ * `id` сам (панель таба), и атрибут у него — вход.
+ */
+const ID = 'id'
+
+/** `id` из атрибута: пустой снимает проп, как у нативного `id`. */
+function idOf(raw: string | null): string | undefined {
+	return raw === null || raw === '' ? undefined : raw
+}
 
 /** Свой проп главнее одноимённого пропа фасада: дельту получают обе связки. */
 function attributesOf(
@@ -193,16 +202,16 @@ export function ElementBase<
 	const plan = planOf(spec.root)
 	const attributes = attributesOf(descriptors)
 
-	if (plan.fieldId && !attributes.has(CONTROL_ID)) {
+	if (plan.fieldId && !attributes.has(ID)) {
 		throw new Error('[soldy] Описание корня объявляет id поля, а у дескриптора пропа id нет')
 	}
 
 	// `id` поля — не вход корня, и в карте пропов его нет: атрибут база берёт
 	// пропом и снимает с корня — при построении и на каждую запись из кода.
 	// Входом снятие вернуло бы проп к умолчанию
-	const fieldId = (plan.control || plan.fieldId) && attributes.has(CONTROL_ID)
+	const fieldId = (plan.control || plan.fieldId) && attributes.has(ID)
 
-	if (fieldId) attributes.delete(CONTROL_ID)
+	if (fieldId) attributes.delete(ID)
 
 	/** Входы пропов на корне: их значение в наборе ядра верно всегда. У обёртки их нет. */
 	const inputs: ReadonlySet<string> = new Set(plan.wrapped ? [] : attributes.keys())
@@ -213,7 +222,7 @@ export function ElementBase<
 
 	class TElementBase extends Native implements IElementBase<TInstance, TFacade, TOwnerFacade> {
 		static get observedAttributes(): string[] {
-			return [...attributes.keys(), ...own.keys(), ...(fieldId ? [CONTROL_ID] : [])]
+			return [...attributes.keys(), ...own.keys(), ...(fieldId ? [ID] : [])]
 		}
 
 		static is(
@@ -321,8 +330,21 @@ export function ElementBase<
 		attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
 			// `id` поля, записанный из кода (`el.id`, `setAttribute`), — на поле, как
 			// атрибут разметки. Снятие с корня — своё же, его база пропускает
-			if (fieldId && name === CONTROL_ID) {
+			if (fieldId && name === ID) {
 				if (value !== null) this._takeFieldId()
+
+				return
+			}
+
+			// Корень без поля несёт `id` сам: атрибут — и вход `TIdPlugin`, и место,
+			// куда `id` кладёт база из набора ядра (у панели таба без своего —
+			// формула таба) или шаблон (поле даты — свой). Свою раскладку база
+			// входом не считает — по значению: колбэк приходит и посреди неё, а с
+			// полифилом — после. Пустой снимает проп, как у поля
+			if (name === ID && attributes.has(ID)) {
+				if (value === null || TElementAttributes.of(this).wanted(name) !== value) {
+					this._write(ID, idOf(value))
+				}
 
 				return
 			}
@@ -390,7 +412,12 @@ export function ElementBase<
 			for (const [name, attribute] of attributes) {
 				if (this._props.isGiven(attribute.prop) || !this.hasAttribute(name)) continue
 
-				this._write(attribute.prop, coerceAttribute(this.getAttribute(name), attribute))
+				const raw = this.getAttribute(name)
+
+				this._write(
+					attribute.prop,
+					name === ID ? idOf(raw) : coerceAttribute(raw, attribute),
+				)
 			}
 		}
 
@@ -439,12 +466,12 @@ export function ElementBase<
 
 		/** `id` поля — с корня в проп; пустой снимает его, как у нативного `id`. */
 		private _takeFieldId(): void {
-			const id = this.getAttribute(CONTROL_ID)
+			const id = this.getAttribute(ID)
 
 			if (id === null) return
 
-			this._write(CONTROL_ID, id === '' ? undefined : id)
-			this.removeAttribute(CONTROL_ID)
+			this._write(ID, idOf(id))
+			this.removeAttribute(ID)
 		}
 
 		/** Колбэков снятие не вызывает: ни один из этих атрибутов элемент не наблюдает. */

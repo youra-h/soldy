@@ -351,6 +351,24 @@ describe('DateInput · атрибуты разметки', () => {
 		expect(el.hasAttribute('id')).toBe(false)
 		expect(el.state).toMatchObject({ id: undefined })
 	})
+
+	/**
+	 * Пустой `id` снимает проп, как у поля: `el.id = undefined` записал бы
+	 * строку "undefined", и снять `id` из кода иначе, чем пустым, нельзя.
+	 */
+	it('пустой id — снят: из кода и из разметки', async () => {
+		const el = await mount('<div is="so-date-input" id="meeting"></div>')
+
+		el.id = ''
+		await flush()
+
+		expect(el.state).toMatchObject({ id: undefined })
+		expect(el.hasAttribute('id')).toBe(false)
+
+		const empty = await mount('<div is="so-date-input" id=""></div>')
+
+		expect(empty.state).toMatchObject({ id: undefined })
+	})
 })
 
 describe('DateInput · скрытое поле формы', () => {
