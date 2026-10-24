@@ -230,9 +230,11 @@ export default defineConfig({
 	test: {
 		name: 'layout',
 		include: ['browser/**/*.spec.ts'],
-		// `__tests__/setup.ts` — общий с jsdom (заглушки и иконки),
-		// `browser/setup.ts` — сторож ошибок окна, только для браузера.
-		setupFiles: ['./__tests__/setup.ts', './browser/setup.ts'],
+		// `browser/devtools.ts` — пустой хук devtools Vue, первым: Vue читает
+		// его с первым приложением. `__tests__/setup.ts` — общий с jsdom
+		// (заглушки и иконки), `browser/setup.ts` — сторож ошибок окна, только
+		// для браузера.
+		setupFiles: ['./browser/devtools.ts', './__tests__/setup.ts', './browser/setup.ts'],
 		// Консоль страницы в прогон не пересылается. Журнал сценариев стенда
 		// (`shared/src/scenarios/journal.ts`) печатает каждое событие вместе с
 		// аргументами — экземплярами ядра и плагинов, — а перехват Vitest

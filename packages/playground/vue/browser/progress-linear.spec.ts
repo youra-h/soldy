@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { defineComponent, h } from 'vue'
 import { TProgressLinear } from '@soldy-ui/core'
 import type { IProgressLinearProps } from '@soldy-ui/core'

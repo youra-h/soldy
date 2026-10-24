@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref, type Ref, type VNode } from 'vue'
 import { DatePicker, Select, SelectItem } from '@soldy-ui/vue'

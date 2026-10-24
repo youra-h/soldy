@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { useIcons } from '@soldy-ui/setup'

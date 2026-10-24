@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, cleanup } from 'vitest-browser-vue'
+import { render, cleanup } from './render'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { createEngineRadioGroup } from '@soldy-ui/core'
