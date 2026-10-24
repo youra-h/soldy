@@ -8,8 +8,13 @@ on:
   pull_request:
 
 jobs:
-  check:
-    name: Тесты, типы, сборка
+  # Тесты — четырьмя задачами параллельно, а сборка и типы — пятой. Одной
+  # очередью на раннере в 4 ядра шаг тестов дорос до 24 минут: наборы шли друг
+  # за другом, хотя друг от друга не зависят. Задачи тестов ничего не собирают
+  # (браузерный прогон — только CSS темы): тесты и стенд ходят в соседей
+  # исходниками, и этим доказано, что сборка им не нужна.
+  unit:
+    name: Тесты — ядро, setup, плагины, тема
     runs-on: ubuntu-latest
 
     steps:
@@ -22,15 +27,69 @@ jobs:
 
       - run: npm ci
 
-      # Тема отдаёт dist/index.css (dist в .gitignore). До «Сборки пакетов» его
-      # читает только браузерный прогон, а test:layout собирает CSS перед собой
-      # сам, — здесь сборка лишь раньше ловит сломанный SCSS.
-      #
-      # build:css, а не build: полный build темы собирает ещё и её `./setup`, а
-      # прогон деклараций читает соседей по их `dist` — их здесь пока нет.
-      # Поведение темы собирается ниже, на шаге «Сборка пакетов».
-      - name: Сборка темы
-        run: npm run build:css --workspace=@soldy-ui/theme-oren
+      - name: Тесты
+        run: |
+          npm run test:core
+          npm run test:eslint
+          npm run test:min-peers
+          npm run test:setup
+          npm run test:plugins
+          npm run test:theme
+
+  # Ключ матрицы — не `adapter`: под этим именем матрицу нижних границ читает
+  # сторож tools/min-peers (`workspace.spec.ts`).
+  adapters:
+    name: Тесты — ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Красный адаптер не снимает прогон остальных.
+      fail-fast: false
+      matrix:
+        suite: [vue, react, svelte, solid, webc, angular]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Тесты
+        run: npm run test:${{ matrix.suite }}
+
+  playground:
+    name: Тесты — стенд
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Тесты
+        run: npm run test:playground
+
+  layout:
+    name: Тесты — браузер
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
 
       # Браузер для test:layout закреплён ревизией Playwright из package-lock,
       # поэтому кэш привязан к lock-файлу: апгрейд Playwright честно перекачает
@@ -49,29 +108,57 @@ jobs:
       - name: Системные зависимости Chromium
         run: npx playwright install-deps chromium
 
+      # Обрыв связи с вкладкой (`VITEST_BROWSER_CONNECTION_CLOSED`) причины не
+      # называет: убил ли процесс OOM killer, упал ли рендерер, вышел ли
+      # Chromium целиком. Поэтому память машины и процессов браузера пишется в
+      # файл каждые 5 с, а при падении её печатает шаг ниже вместе с журналом
+      # ядра. `DEBUG=pw:browser` — вывод самого Chromium и код его выхода.
+      #
+      # test:layout сам собирает CSS темы — браузерный прогон проверяет его.
       - name: Тесты
+        env:
+          DEBUG: pw:browser
         run: |
-          npm run test:core
-          npm run test:eslint
-          npm run test:min-peers
-          npm run test:setup
-          npm run test:plugins
-          npm run test:vue
-          npm run test:react
-          npm run test:svelte
-          npm run test:solid
-          npm run test:webc
-          npm run test:angular
-          npm run test:theme
-          npm run test:playground
+          (
+            while sleep 5; do
+              echo "== $(date +%T)"
+              free -m | sed -n 2p
+              ps -eo pid=,rss=,args= --sort=-rss | awk '
+                /headless_shell|chrom|node/ && !/awk/ {
+                  name = $3; sub(/.*\//, "", name)
+                  kind = name == "node" ? $4 : "browser"
+                  if (match($0, /--type=[a-z-]+/)) kind = substr($0, RSTART + 7, RLENGTH - 7)
+                  printf "%7d %6d МБ  %s %s\n", $1, $2 / 1024, name, kind
+                }' | head -12
+            done
+          ) > "$RUNNER_TEMP/memory.log" 2>&1 &
           npm run test:layout
 
-      # После тестов: тесты и стенд ходят в соседей исходниками, и здесь это
-      # доказано — до этого шага в клоне нет ни одного `dist`. Декларации
-      # выпускает второй шаг `build` каждого пакета (у адаптеров Svelte и
-      # Angular — тот же проход `svelte-package` и ng-packagr), и соседей он
-      # резолвит как пакеты, то есть по их собранным `.d.ts`, — отсюда порядок
-      # очереди.
+      - name: Память и журнал ядра при падении
+        if: failure()
+        run: |
+          cat "$RUNNER_TEMP/memory.log"
+          df -h /dev/shm
+          sudo dmesg -T | grep -iE 'oom|killed process|out of memory|segfault|chrom|headless' || echo 'в журнале ядра — ничего о памяти и браузере'
+
+  build:
+    name: Сборка и типы
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Декларации выпускает второй шаг `build` каждого пакета (у адаптеров
+      # Svelte и Angular — тот же проход `svelte-package` и ng-packagr), и
+      # соседей он резолвит как пакеты, то есть по их собранным `.d.ts`, —
+      # отсюда порядок очереди.
       - name: Сборка пакетов
         run: npm run build
 
@@ -161,9 +248,9 @@ jobs:
         run: npm run build --workspace=@soldy-ui/playground-vue
 
   # Нижние границы peer адаптеров (см. docs/agents/build.md, «Версии пакетов»):
-  # `check` гоняет спеки на версиях из lock, и обещание в peerDependencies без
-  # этой задачи ничем не проверялось — так пакет Angular обещал 21.1, а меню в
-  # нём работало верно только с 22.1.6.
+  # «Тесты — <адаптер>» гоняют спеки на версиях из lock, и обещание в
+  # peerDependencies без этой задачи ничем не проверялось — так пакет Angular
+  # обещал 21.1, а меню в нём работало верно только с 22.1.6.
   min-peers:
     name: Минимальные версии
     runs-on: ubuntu-latest
@@ -198,7 +285,7 @@ jobs:
       - name: Проверка дерева
         run: node tools/min-peers/cli.ts verify @soldy-ui/${{ matrix.adapter }}
 
-      # Только спеки: сборка, типы и браузерный прогон идут в `check`.
+      # Только спеки: сборка, типы и браузерный прогон идут в своих задачах.
       - name: Спеки
         run: npm run test:${{ matrix.adapter }}
 

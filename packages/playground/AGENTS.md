@@ -32,6 +32,12 @@ Playwright (конфиг `vitest.browser.config.ts`).
   идёт через headless-shell.
 - CI ставит Chromium сам: кэш `~/.cache/ms-playwright` по `package-lock.json`,
   `playwright install chromium` при промахе, `install-deps` всегда.
+- Прогон в CI — своя задача «Тесты — браузер». Обрыв связи с вкладкой
+  (`VITEST_BROWSER_CONNECTION_CLOSED`) причины не называет, поэтому задача
+  каждые 5 с пишет память машины и процессов Chromium, а при падении печатает
+  её вместе с журналом ядра (OOM killer) и `/dev/shm` — шаг «Память и журнал
+  ядра при падении»; вывод самого Chromium и код его выхода даёт
+  `DEBUG=pw:browser`.
 - Кнопку мыши `userEvent` жмёт только вместе с движением (`click`,
   `dragAndDrop`). Жесту с паузой при зажатой кнопке — команды `mouseDown` и
   `mouseUp` из `commands` (`vitest.browser.config.ts`, типы —
