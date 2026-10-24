@@ -5,6 +5,7 @@ import type { IPluginContext } from '../../../base'
 import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
+import { TListHeightPlugin } from '../height'
 import type { THighlightPayload } from '../navigation'
 import { newlySelected } from '../newly-selected'
 import { scrollContainerOf } from '../row'
@@ -37,7 +38,10 @@ interface IListScrollOwner {
  */
 type TScrollFact = 'value' | 'highlight'
 
-/** Куда прокрутить: элемент и факт. `instant` — монтирование: сразу и при `smooth`. */
+/**
+ * Куда прокрутить: элемент и факт. `instant` — монтирование и цель, которая
+ * дождалась замера строк скрытого списка: сразу и при `smooth`.
+ */
 type TScrollTarget = {
 	readonly item: IControl
 	readonly fact: TScrollFact
@@ -114,11 +118,27 @@ function revealValue(node: Element, behavior: ScrollBehavior): void {
  * сборке, узел корня плагин получает кадром после монтирования (`ready`).
  * Поэтому её зовут оба события, а срабатывает то, что пришло вторым, — в
  * жизни это `ready`. Попытка — сразу, без кадра: к `ready` узлы элементов уже
- * привязаны, а предел строк поставлен (`TListHeightPlugin` ставит его на том
- * же `ready` и стоит в наборе раньше). Она мгновенная и при `smooth`:
- * анимировать не от чего, а плавный проход перерисовывал бы окно на каждом
- * кадре. Скрытый список — закрытая панель Select и меню — не крутится: своей
- * прокрутки у него нет.
+ * привязаны, а строки измерены и предел строк поставлен (`TListHeightPlugin`
+ * мерит их на том же `ready` и стоит в наборе раньше). Она мгновенная и при
+ * `smooth`: анимировать не от чего, а плавный проход перерисовывал бы окно на
+ * каждом кадре. Список скрыт — попытка ждёт его показа (ниже, «Скрытый
+ * список»).
+ *
+ * **Скрытый список** — закрытая панель Select, ListBox в скрытой вкладке или
+ * поповере — не меряется: у строк нет высоты, а у списка своей прокрутки.
+ * Поэтому, пока строки не измерены (`measured` плагина высоты), любая цель
+ * закреплена в окне и ждёт, а дождавшаяся идёт мгновенно, как начальная:
+ * анимировать не от чего. Строки измерились — ждущая цель сразу, в том же
+ * колбэке (`change:measured`): плагин высоты сообщает о замере после записи
+ * предела, и список встаёт уже в пределе строк. Список спрятали, а цели нет —
+ * её место занимает первый выбранный: при каждом показе список открывается на
+ * нём, как нативный `<select>`, с окном и без. Так же при показе, если цель,
+ * ждавшую его, сняли: с элемента сняли выбор или подсветку. Панель, открытую с
+ * клавиатуры, ведёт подсветка — она новее, а цель одна, последняя. Показ — факт
+ * раскладки, а не открытия панели: он общий у Select и ListBox в скрытой
+ * вкладке, и ни подписки на `open`, ни веток «клик или клавиша» здесь нет. Без
+ * плагина высоты (меню) строки считаются измеренными, и закрытое меню
+ * открывается сверху.
  *
  * **Цели нет в документе** — окно (обёртка `Virtual`) её не нарисовало. Тогда
  * плагин закрепляет её своей причиной в рисовании коллекции (`draw.pin`), и
@@ -127,8 +147,8 @@ function revealValue(node: Element, behavior: ScrollBehavior): void {
  * регистрации. Закрепление снимает следующая цель или отмена, а не сама
  * прокрутка: окно перемеряется кадром позже, и без закрепления оно на этот
  * кадр убрало бы цель, к которой только что прокрутили, — список мигнул бы
- * распорками. Скрытый список окно не мерит, и цель в нём ждёт, пока список не
- * покажут.
+ * распорками. Скрытый список окно не мерит, и цель в нём ждёт и замера строк,
+ * и своего набора — в каком порядке они ни придут.
  *
  * Как прокручивать, решает `scrollBehavior` владельца (`IList`): свойством
  * владеет ядро, плагин его только читает, в момент прокрутки. У меню свойства
@@ -142,6 +162,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	private _owner: IListScrollOwner | null = null
 	private _bundles: TCollectionBundlesPlugin | null = null
 	private _elements: TCollectionElements | null = null
+	/** Плагин высоты: измерены ли строки. У меню его нет. */
+	private _height: TListHeightPlugin | null = null
 	/** Куда прокрутить — одна цель, последняя; `null` — некуда. */
 	private _target: TScrollTarget | null = null
 	/** Кадр с прокруткой к цели; `null` — кадр не запланирован. */
@@ -153,6 +175,9 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		this._owner = ctx.getInstance<IListScrollOwner>()
 		this._bundles = ctx.get(TCollectionBundlesPlugin) ?? null
 		this._elements = ctx.get(TCollectionElements) ?? null
+		// У ListBox и Select плагин высоты стоит в наборе раньше: на `ready` он
+		// мерит строки первым
+		this._height = ctx.get(TListHeightPlugin) ?? null
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
@@ -177,6 +202,14 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 			if (uid === this._target?.item.uid) this._schedule()
 		})
 
+		// Строки измерились — ждущая цель сразу: предел строк уже записан. Цели
+		// нет — её место занимает первый выбранный: и когда список спрятали, и
+		// когда его показали, а цель, ждавшую показа, сняли
+		this._height?.events.on('change:measured', (measured) => {
+			if (!this._target) this._revealSelected()
+			else if (measured) this._attempt()
+		})
+
 		const navigation = options?.navigation ? ctx.get(options.navigation) : undefined
 
 		navigation?.events.on('change:highlight', ({ item }: THighlightPayload) => {
@@ -194,6 +227,7 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 		this._owner = null
 		this._bundles = null
 		this._elements = null
+		this._height = null
 
 		super.destroy()
 	}
@@ -219,8 +253,8 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 	/**
 	 * Начальная прокрутка к первому выбранному — когда есть и узел корня, и
-	 * движок. Попытка сразу и мгновенно; выбранного нет — прежняя цель
-	 * отменена: она от прежнего движка.
+	 * движок, и когда список спрятали или показали, а цели нет. Попытка сразу и
+	 * мгновенно; выбранного нет — прежняя цель отменена: она от прежнего движка.
 	 */
 	private _revealSelected(): void {
 		const engine = this._bundles?.engine
@@ -281,7 +315,9 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 	}
 
 	/**
-	 * Прокрутить к цели — по правилу её факта. Узла у неё нет — окно её не
+	 * Прокрутить к цели — по правилу её факта. Строки не измерены — список
+	 * скрыт или только что показан: закрепить цель, сделать её мгновенной и
+	 * ждать замера (`change:measured`). Узла у цели нет — окно её не
 	 * нарисовало: закрепить и ждать, когда зарегистрируют её набор.
 	 * Прокрутили — цель исполнена, а закрепление остаётся до следующей цели
 	 * (см. описание класса).
@@ -298,6 +334,14 @@ export class TListScrollPlugin extends TBasePlugin<any, TListScrollPluginEvents>
 
 		if (behavior === 'none') {
 			this._drop()
+
+			return
+		}
+
+		// Без плагина высоты (меню) строки считаются измеренными
+		if (!(this._height?.measured ?? true)) {
+			this._target = { ...target, instant: true }
+			this._draw()?.pin(SCROLL, target.item)
 
 			return
 		}

@@ -193,6 +193,35 @@ describe('окно списка панели', () => {
 	})
 })
 
+/**
+ * Открытие кликом — не подсветка: список встаёт на выбранной опции, как без
+ * окна (`list-scroll.spec.ts`), и при каждом показе — заново. Перед закрытием
+ * список листают к началу: Chromium помнит прокрутку скрытого узла и
+ * показывает его на ней, — повторное открытие встаёт на выбранной прокруткой,
+ * а не памятью браузера.
+ */
+describe('открытие кликом', () => {
+	it('открыта кликом и открыта снова — выбранная опция видна', async () => {
+		await mount({ value: 'v500' })
+
+		await userEvent.click(field())
+		await frames()
+
+		expect(inView(rowOf('Пункт 500'))).toBe(true)
+
+		list().scrollTop = 0
+		await frames()
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(() => getComputedStyle(panel()).display, { timeout: 3000 }).toBe('none')
+		await frames()
+
+		await userEvent.click(field())
+		await frames()
+
+		expect(inView(rowOf('Пункт 500'))).toBe(true)
+	})
+})
+
 describe('клавиатура', () => {
 	it('Enter открывает панель на выбранной опции в середине списка — она видна', async () => {
 		await mount({ value: 'v500' })

@@ -203,8 +203,8 @@ describe('значение — двигается только сам списо
 	})
 
 	/**
-	 * Панель Select открыта кликом — прокрутки нет: открытие кликом не факт.
-	 * Значение снаружи двигает список панели, а страница стоит.
+	 * Выбранного нет — панель, открытая кликом, стоит в начале. Значение снаружи
+	 * двигает список панели, а страница стоит.
 	 */
 	it('Select: значение снаружи при открытой панели — список к нему, страница стоит', async () => {
 		const value = ref<string | undefined>(undefined)
@@ -241,6 +241,112 @@ describe('значение — двигается только сам списо
 		expect(inView(option, list)).toBe(true)
 		expect(centered(option, list)).toBe(true)
 		expect(window.scrollY).toBe(scrollY)
+	})
+})
+
+/**
+ * Скрытый список — закрытая панель Select, ListBox в скрытой обёртке — не
+ * меряется: строки без высоты, своей прокрутки у списка нет. Прокрутка к
+ * первому выбранному ждёт, пока строки не измерятся, и при каждом показе
+ * список встаёт на нём — как в окне `Virtual` (`select-virtual.spec.ts`).
+ */
+describe('скрытый список — при показе на первом выбранном', () => {
+	const select = () => find('.so-select__list')
+	const panel = () => find('.so-select__panel')
+
+	/** Select без окна в странице: выбранная опция — дальняя. */
+	function renderSelect(props: Record<string, unknown>): void {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'padding: 40px; width: 320px' }, [
+						h(Select, { items: ITEMS, scrollBehavior: 'instant', ...props }),
+					]),
+			}),
+		)
+	}
+
+	/**
+	 * Закрыть панель Escape и дождаться, что её спрятали: закрытую тема гасит
+	 * переходом, и до его конца список ещё в раскладке. Строки скрытого списка
+	 * перемеряют кадром позже.
+	 */
+	async function close(): Promise<void> {
+		await userEvent.keyboard('{Escape}')
+		await expect.poll(() => getComputedStyle(panel()).display, { timeout: 3000 }).toBe('none')
+		await frames()
+	}
+
+	/**
+	 * Перед закрытием список листают к началу: Chromium помнит прокрутку
+	 * скрытого узла и показывает его на ней, — повторное открытие встаёт на
+	 * выбранной прокруткой, а не памятью браузера.
+	 */
+	it('Select: открыт кликом — выбранная в середине, и после повторного открытия тоже', async () => {
+		renderSelect({ maxRows: MAX_ROWS, value: 'v30' })
+		await frames()
+
+		await userEvent.click(find('.so-select__field input'))
+		await frames()
+
+		const option = itemOf('.so-select__list .so-select-item', 'Пункт 30')
+
+		expect(centered(option, select())).toBe(true)
+
+		select().scrollTop = 0
+		await frames()
+		await close()
+
+		await userEvent.click(find('.so-select__field input'))
+		await frames()
+
+		expect(centered(option, select())).toBe(true)
+	})
+
+	/**
+	 * Открытие с клавиатуры — подсветка, она новее выбора: список встаёт на
+	 * подсвеченной ближайшим краем, и в пределе строк она видна целиком.
+	 */
+	it('Select: Enter при maxRows 3 открывает на выбранной — она видна целиком', async () => {
+		renderSelect({ maxRows: 3, value: 'v30' })
+		await frames()
+
+		find('.so-select__field input').focus()
+		await userEvent.keyboard('{Enter}')
+		await frames()
+
+		const option = itemOf('.so-select__list .so-select-item', 'Пункт 30')
+
+		expect(option.dataset.highlighted).toBe('true')
+		expect(inView(option, select())).toBe(true)
+	})
+
+	it('ListBox в скрытой обёртке: показан — выбранный в середине', async () => {
+		const shown = ref(false)
+
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: shown.value ? undefined : 'display: none' }, [
+						h(ListBox, {
+							items: ITEMS,
+							maxRows: MAX_ROWS,
+							scrollBehavior: 'instant',
+							value: 'v30',
+							aria_label: 'Пункты',
+						}),
+					]),
+			}),
+		)
+		await frames()
+
+		shown.value = true
+		await frames()
+
+		const list = find('.so-list-box > .so-list-box__list')
+		const row = itemOf('.so-list-box-item', 'Пункт 30')
+
+		expect(centered(row, list)).toBe(true)
 	})
 })
 
