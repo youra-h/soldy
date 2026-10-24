@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import postcss from 'postcss'
-import type { ChildNode, Container, Root } from 'postcss'
+import type { AtRule, ChildNode, Container, Rule } from 'postcss'
 
 import { behaviourVariables } from './behaviour'
 import { BASE_READS, THEME_READS } from './contract'
@@ -26,13 +26,17 @@ import type { TTheme } from './themes'
 /** Чтение переменной: `var(--x)` и `var(--x, запас)`. */
 const READ = /var\(\s*(--so-[\w-]+)/g
 
-const isNested = (node: Container | undefined): node is Exclude<Container, Root> =>
-	node !== undefined && node.type !== 'root' && node.type !== 'document'
+const isAtRule = (node: Container): node is AtRule => node.type === 'atrule'
+const isRule = (node: Container): node is Rule => node.type === 'rule'
+
+/** Предок, который сам вложен: правило или директива, а не корень. */
+const isNested = (node: Container | undefined): node is AtRule | Rule =>
+	node !== undefined && (isAtRule(node) || isRule(node))
 
 /** Узел из слоя базы: среди имён `@layer` предков есть `so`. */
 function inBase(node: ChildNode): boolean {
 	for (let parent = node.parent; isNested(parent); parent = parent.parent) {
-		if (parent.type === 'atrule' && parent.name === 'layer') {
+		if (isAtRule(parent) && parent.name === 'layer') {
 			if (parent.params.split('.').some((name) => name.trim() === 'so')) return true
 		}
 	}

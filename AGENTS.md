@@ -67,8 +67,8 @@ CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов 
 `test:plugins`) четырьмя параллельными задачами — «Тесты — ядро, setup,
 плагины, тема», «Тесты — <адаптер>» матрицей по адаптерам, «Тесты — стенд»
 и «Тесты — браузер», — а задачей «Сборка и типы» — типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
-«Типы — Plugins», «Типы — Playground», «Типы — React», «Типы — Svelte», «Типы —
-Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
+«Типы — Plugins», «Типы — Themes», «Типы — Playground», «Типы — React», «Типы —
+Svelte», «Типы — Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
 сгенерированных файлов — `packages/ui/angular/src/generated`,
 `packages/icons/material/src/index.ts` и `packages/icons/lucide/src/index.ts`, —
 импорты собранных пакетов шагом
@@ -101,19 +101,23 @@ Solid», «Типы — Web Components», «Типы — Angular», провер
 `.prettierrc.json` их не дублировать.
 
 Тесты `packages/core/__tests__`, `packages/plugins/__tests__`,
-`packages/ui/vue/__tests__`, `packages/ui/react/__tests__` и
-`packages/ui/solid/__tests__` тоже проверяются типами: «Типы — Core» гоняет
-`tsc --noEmit` по `packages/core/tsconfig.json` (include `src` + `__tests__`),
-«Типы — Plugins» — `tsc --noEmit` по `packages/plugins/tsconfig.json`
-(include `src` + `__tests__`), «Типы — Vue» гоняет `vue-tsc` по
-`packages/ui/vue/tsconfig.json` (включает `__tests__/**/*`), а не только по
-`tsconfig.build.json`, как раньше, «Типы — React» и «Типы — Solid» —
-`tsc --noEmit` по `packages/ui/react/tsconfig.json` и
-`packages/ui/solid/tsconfig.json` (include `src` + `__tests__`). Свой пакет,
-который тесты импортируют по имени, проверка типов находит в исходниках, как
-соседей (см. «Сборка пакетов», «Локальная разработка сборки не требует»).
-Приведение вроде `as never` там больше не спрячет несовпавший контракт
-компонента или плагина.
+`packages/ui/vue/__tests__`, `packages/ui/react/__tests__`,
+`packages/ui/solid/__tests__` и пакетов тем — `packages/themes/base/__tests__`
+и `packages/themes/oren/__tests__` — тоже проверяются типами: «Типы — Core»
+гоняет `tsc --noEmit` по `packages/core/tsconfig.json` (include `src` +
+`__tests__`), «Типы — Plugins» — `tsc --noEmit` по
+`packages/plugins/tsconfig.json` (include `src` + `__tests__`), «Типы — Vue»
+гоняет `vue-tsc` по `packages/ui/vue/tsconfig.json` (включает
+`__tests__/**/*`), а не только по `tsconfig.build.json`, как раньше, «Типы —
+React» и «Типы — Solid» — `tsc --noEmit` по `packages/ui/react/tsconfig.json`
+и `packages/ui/solid/tsconfig.json` (include `src` + `__tests__`), «Типы —
+Themes» — `tsc --noEmit` по `tsconfig.json` общего слоя тем и oren (тесты,
+поведение `setup/` и конфиги сборки — у oren и шаг Tailwind,
+`tailwind-postcss.ts`). Свой пакет, который тесты импортируют по имени,
+проверка типов находит в исходниках, как соседей, — у каждого входа с
+типами, корня и подпутей вроде `./setup` тем (см. «Сборка пакетов»,
+«Локальная разработка сборки не требует»). Приведение вроде `as never` там
+больше не спрячет несовпавший контракт компонента или плагина.
 
 **Ошибка или предупреждение в консоли роняет тест адаптеров React и
 Angular.** Общий файл настройки прогона (`packages/ui/react/__tests__/setup.ts`,
