@@ -11,6 +11,9 @@
 	const binding = setupTagsItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	// Строка — экземпляр, которым владеет тег (`TOwnedButton` на `div`): тег, размер, вариант,
+	// выключенность и направление ей пишет тег, а роль и `tabindex` — его набор `aria`
+	const row = binding.ctrl.row
 
 	const CLOSE = roleIcon('close')
 
@@ -44,11 +47,7 @@
 	>
 		<Button
 			embedded="tags.row"
-			tag="div"
-			direction={state.direction}
-			disabled={state.disabled}
-			size={state.size}
-			variant={state.variant}
+			ctrl={row}
 			leading={props.leading}
 			trailing={props.trailing}
 			onActionPress={toggle}

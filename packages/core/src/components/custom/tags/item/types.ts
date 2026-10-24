@@ -4,6 +4,7 @@ import type {
 	TValueControlEvents,
 } from '../../../base/value-control'
 import type { TChangeEvent, TValuePayload, TAria, TAriaAttributes } from '../../../../common'
+import type { IButton } from '../../button/types'
 import type { ITagsCollectionItemProps } from '../collection/types'
 
 export type TTagsItemEvents = TValueControlEvents<string | number> & {
@@ -40,4 +41,11 @@ export interface ITagsItem<
 	 * тега от локали пишет плагин имён, `tabindex` — коллекция
 	 */
 	readonly closeAria: TAria
+	/**
+	 * Строка тега — кнопка, которой владеет тег (`TOwnedButton`): роль и
+	 * остановку Tab ей пишет набор `aria` тега, а `size`, `variant`, `disabled`
+	 * и `direction` — тег. Не меняется за время жизни тега, событий `change:`
+	 * у геттера нет.
+	 */
+	readonly row: IButton
 }

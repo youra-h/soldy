@@ -40,10 +40,11 @@ export function rowOf(elements: TCollectionElements | null, uid: string | number
  * Строка внутри узла элемента — тем же правилом, что `rowOf`, когда узел уже
  * на руках: свой корень у пункта с подменю — узел пункта в меню над ним.
  *
- * Она же узел фокуса элемента — ListBox.Item, Tags.Item и пунктов меню
- * (`focusTarget` плагина действия в дескрипторе): запись `focused = true`
- * ставит фокус на строку, а не на обёртку элемента. Опции Select её не дают:
- * у комбобокса фокус остаётся на поле.
+ * Она же узел фокуса элемента — ListBox.Item и пунктов меню (`focusTarget`
+ * плагина действия в дескрипторе): запись `focused = true` ставит фокус на
+ * строку, а не на обёртку элемента. Опции Select её не дают: у комбобокса
+ * фокус остаётся на поле. Tags.Item — тоже: у строки тега без выбора
+ * `tabindex` нет, и узел фокуса тега — его остановка (`tagStopIn`).
  */
 export function rowIn(node: Element | null): Element | null {
 	return node?.querySelector(ROW_SELECTOR) ?? null

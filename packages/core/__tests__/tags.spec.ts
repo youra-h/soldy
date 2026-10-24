@@ -10,11 +10,13 @@
  * `mode === 'none'`, иначе `listbox`/`option` с `aria-selected` — знание
  * коллекции (`TTagsExtension`), не элемента. От режима же — модель Tab: с
  * выбором весь набор — одна остановка, крестик из порядка Tab выведен; в
- * `none` строки остановок не держат, а крестик держит.
+ * `none` у строк нет `tabindex` — ни остановки, ни фокуса от клика, — а
+ * крестик — нативная остановка.
  */
 
 import { describe, it, expect, vi } from 'vitest'
 import {
+	TOwnedButton,
 	TTags,
 	TTagsItem,
 	TTagsCollectionFacade,
@@ -515,11 +517,15 @@ describe('остановка Tab — один тег с tabindex="0"', () => {
 		}
 	}
 
-	it('в none остановки нет: у всех строк -1', () => {
+	/**
+	 * Строка — `TOwnedButton`: своей остановки она не ставит, и гасить её `-1`
+	 * незачем. С `-1` строка без действия принимала фокус от клика.
+	 */
+	it('в none остановки нет: tabindex у строк нет вовсе', () => {
 		const { tags, tabindex } = setup()
 
 		expect(tags.tabStop).toBeUndefined()
-		expect(tabindex()).toEqual(['-1', '-1', '-1'])
+		expect(tabindex()).toEqual([undefined, undefined, undefined])
 	})
 
 	it('без выбранного — у первого тега', () => {
@@ -708,7 +714,7 @@ describe('остановка Tab — один тег с tabindex="0"', () => {
 		expect(tail.aria.get('tabindex')).toBe('-1')
 	})
 
-	it('смена режима: в none остановка уходит, в выборе — возвращается к тегу под фокусом', () => {
+	it('смена режима: в none tabindex снят, в выборе — остановка у тега под фокусом', () => {
 		const { selection, tags, tabindex, b } = setup()
 
 		selection.mode = 'multiple'
@@ -716,11 +722,30 @@ describe('остановка Tab — один тег с tabindex="0"', () => {
 		selection.mode = 'none'
 
 		expect(tags.tabStop).toBeUndefined()
-		expect(tabindex()).toEqual(['-1', '-1', '-1'])
+		expect(tabindex()).toEqual([undefined, undefined, undefined])
 
 		selection.mode = 'single'
 
 		expect(tabindex()).toEqual(['-1', '0', '-1'])
+	})
+
+	it('снятый tabindex — событие набора тега: разметка его снимает', () => {
+		const { selection, a } = setup()
+		const seen: unknown[] = []
+
+		selection.mode = 'single'
+		a.events.on('change:aria', (value) => seen.push(value))
+		selection.mode = 'none'
+
+		expect(seen.at(-1)).toEqual({ role: 'listitem' })
+	})
+
+	it('добавленный в none — без tabindex', () => {
+		const { engine } = setup()
+
+		const added = engine.extensions.plain.insert(createTag('Z'), 0)
+
+		expect(added.aria.has('tabindex')).toBe(false)
 	})
 
 	it('выключили набор — остановки нет ни у кого, включили — вернулась', () => {
@@ -759,5 +784,117 @@ describe('остановка Tab — один тег с tabindex="0"', () => {
 		c.rendered = false
 
 		expect([a, b, c].map((item) => tags.isEnabledTag(item))).toEqual([true, false, false])
+	})
+})
+
+/**
+ * Строка тега — кнопка, которой владеет тег, как Select — полем: разметка
+ * отдаёт её кнопке через `ctrl`, а `size`, `variant`, `disabled` и `direction`
+ * пишет ей тег. Роль и остановку Tab строка себе не пишет (`TOwnedButton`):
+ * их пишет набор `aria` тега, который разметка кладёт на неё же.
+ */
+describe('строка тега', () => {
+	const createTag = (text: string, props: Partial<ITagsItemProps> = {}) =>
+		new TTagsItem({ text, value: text.toLowerCase(), ...props })
+
+	/** Четыре пропа, которые тег пишет строке. */
+	const ownProps = (tag: {
+		size: unknown
+		variant: unknown
+		disabled: unknown
+		direction: unknown
+	}) => ({
+		size: tag.size,
+		variant: tag.variant,
+		disabled: tag.disabled,
+		direction: tag.direction,
+	})
+
+	it('TOwnedButton на div — один экземпляр на всё время жизни тега', () => {
+		const tag = createTag('Настройки')
+		const row = tag.row
+
+		expect(row).toBeInstanceOf(TOwnedButton)
+		expect(row.tag).toBe('div')
+		expect(row.classes.toArray()).toContain('so-button')
+
+		tag.size = 'lg'
+		tag.disabled = true
+
+		expect(tag.row).toBe(row)
+	})
+
+	it('стартует со значениями тега', () => {
+		const tag = createTag('Настройки', {
+			size: 'sm',
+			variant: 'danger',
+			disabled: true,
+			direction: 'rtl',
+		})
+
+		expect(ownProps(tag.row)).toEqual(ownProps(tag))
+	})
+
+	it('смена у тега доходит до строки', () => {
+		const tag = createTag('Настройки')
+
+		tag.size = 'lg'
+		tag.variant = 'brand'
+		tag.disabled = true
+		tag.direction = 'ltr'
+
+		expect(ownProps(tag.row)).toEqual({
+			size: 'lg',
+			variant: 'brand',
+			disabled: true,
+			direction: 'ltr',
+		})
+
+		tag.variant = undefined
+		tag.disabled = false
+
+		expect(ownProps(tag.row)).toEqual(ownProps(tag))
+	})
+
+	it('размер и выключение набора — через тег и до строки', () => {
+		const owner = new TTags({ size: 'sm' })
+		const engine = createEngineTags({ owner })
+		const tag = engine.extensions.plain.push(createTag('Почта'))
+
+		expect(tag.row.size).toBe('sm')
+
+		owner.size = 'lg'
+		owner.disabled = true
+
+		expect(tag.row.size).toBe('lg')
+		expect(tag.row.disabled).toBe(true)
+	})
+
+	it('роли и tabindex у строки нет ни в одном режиме — их несёт набор тега', () => {
+		const owner = new TTags()
+		const engine = createEngineTags({ owner })
+		const tag = engine.extensions.plain.push(createTag('Почта'))
+		const own = () => ({
+			role: tag.row.aria.get('role'),
+			tabindex: tag.row.aria.get('tabindex'),
+		})
+
+		expect(own()).toEqual({ role: undefined, tabindex: undefined })
+		expect(tag.aria.get('role')).toBe('listitem')
+
+		engine.extensions.selection.mode = 'single'
+
+		expect(own()).toEqual({ role: undefined, tabindex: undefined })
+		expect(tag.aria.get('role')).toBe('option')
+		expect(tag.aria.get('tabindex')).toBe('0')
+	})
+
+	it('aria-disabled строки — то же, что у тега: одно состояние одного узла', () => {
+		const tag = createTag('Архив')
+
+		tag.disabled = true
+
+		expect(tag.row.aria.get('aria-disabled')).toBe('true')
+		expect(tag.aria.get('aria-disabled')).toBe('true')
 	})
 })

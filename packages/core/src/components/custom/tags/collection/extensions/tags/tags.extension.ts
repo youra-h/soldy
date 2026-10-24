@@ -43,9 +43,9 @@ import { TTagsItemExtension, type ITagsItemExtension } from './item'
  * 4. **Остановка Tab** — roving tabindex по паттерну APG Listbox, пока выбор
  *    включён: весь набор — одна остановка, между тегами ходят стрелки
  *    (`TTagsKeyboardPlugin`). Кнопка закрытия из порядка Tab выведена — тег
- *    закрывает `Delete`. В `none` у строки нет действия, и остановок у строк
- *    нет вовсе, а крестик остаётся нативной остановкой: иначе тег с
- *    клавиатуры не закрыть.
+ *    закрывает `Delete`. В `none` у строки нет действия, и `tabindex` у строк
+ *    нет вовсе — ни остановки, ни фокуса от клика, а крестик остаётся
+ *    нативной остановкой: иначе тег с клавиатуры не закрыть.
  *
  * Вид набора (`TTags.view`) тегам, в отличие от ListBox, не доставляется:
  * пилюлю тега тема рисует по модификатору набора, и копия значения на
@@ -314,20 +314,27 @@ export class TTagsExtension<TOwner extends ITags = ITags, TItem extends ITagsIte
 	}
 
 	/**
-	 * Roving tabindex по паттерну APG Listbox: `tabindex="0"` только у
-	 * `tabStop`, у остальных строк `-1`. В `none` остановки нет, и `-1` у всех:
-	 * строка — `Button` на `div`, и без `-1` осталась бы её собственная
-	 * остановка, пустая у `listitem`. Так Tab не ловят и строки тегов в поле
-	 * Select.
+	 * Roving tabindex по паттерну APG Listbox, пока выбор включён: `tabindex="0"`
+	 * только у `tabStop`, у остальных строк `-1` — на них ходят стрелки. Нет
+	 * тега, на который можно перейти, — `-1` у всех.
+	 *
+	 * В `none` атрибута у строк нет вовсе: у `listitem` нет действия, и строка
+	 * не принимает ни Tab, ни фокус от клика. Своей остановки у строки нет —
+	 * это `TOwnedButton`, чью роль и `tabindex` пишет набор тега, — и гасить
+	 * нечего. Раньше строка была `TButton` на `div`, `-1` гасил её остановку, но
+	 * фокус от клика она всё равно принимала. Так строки тегов не держат фокус
+	 * и в поле Select.
 	 *
 	 * Пишет родительское расширение, а не плагин: атрибут обязан стоять с
 	 * первой отрисовки, включая серверную.
 	 */
 	private _syncTabStop(): void {
+		const selection = this._selection
+		const selecting = !!selection && selection.mode !== 'none'
 		const stop = this.tabStop
 
 		this._ctx.driver.valueOf().forEach((item) => {
-			item.aria.add('tabindex', item === stop ? '0' : '-1')
+			item.aria.add('tabindex', selecting ? (item === stop ? '0' : '-1') : null)
 		})
 	}
 

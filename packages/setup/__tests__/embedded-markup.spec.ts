@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative, sep } from 'node:path'
-import { TButton } from '@soldy-ui/core'
+import { TButton, TTagsItem } from '@soldy-ui/core'
 
 /**
  * Сторож признака `embedded`: компонент soldy, который разметка библиотеки
@@ -22,12 +22,15 @@ import { TButton } from '@soldy-ui/core'
  * поле — неявная отправка — нажимал первую такую кнопку, и поле очищалось
  * вместо отправки. Корень детали — `tag` разметки, без него — тег Button по
  * умолчанию (`TButton.defaultValues`), в Angular — сам элемент с атрибутом
- * `so-button`. Деталь другого тега (`tag="div"` у строки тега,
- * `<div so-button>`) `type` не несёт: у её тега такого атрибута нет. Сторож
- * читает только статические `tag` и `type`, поэтому тег, заданный выражением,
- * — тоже нарушение: нужен ли `type`, по нему не узнать. Button потребителя не
- * деталь и остаётся кнопкой отправки, как нативная `<button>`. Шаблон Web
- * Components — код, и `type` своей детали он ставит помощником `createDetail`
+ * `so-button`. У детали над экземпляром владельца (`ctrl` без `tag`) тег
+ * задаёт экземпляр, а не разметка: строку тега создаёт тег (`TTagsItem.row`),
+ * и сторож берёт тег у экземпляра (`OWNED_DETAILS`). Деталь другого тега
+ * (`tag="div"` у строки элемента списка, строка тега, `<div so-button>`)
+ * `type` не несёт: у её тега такого атрибута нет. Сторож читает только
+ * статические `tag` и `type`, поэтому тег, заданный выражением, — тоже
+ * нарушение: нужен ли `type`, по нему не узнать. Button потребителя не деталь
+ * и остаётся кнопкой отправки, как нативная `<button>`. Шаблон Web Components
+ * — код, и `type` своей детали он ставит помощником `createDetail`
  * (`attributes`).
  *
  * Компонентом soldy считается тег с именем папки компонента (`Button`,
@@ -227,14 +230,35 @@ function attributeOf(opening: string, attribute: string): string | true | null {
 	return new RegExp(`[\\s:[](?:attr\\.)?${attribute}\\]?\\s*=`).test(opening) ? true : null
 }
 
+/**
+ * Детали над экземпляром владельца — по имени места: экземпляр, как его
+ * создаёт владелец. Тег корня у такой детали задаёт он, а не разметка
+ * (`ctrl` без `tag`), и сменись он на `button` — деталь обязана нести
+ * `type="button"`.
+ */
+const OWNED_DETAILS: Readonly<Record<string, () => { readonly tag: string | object }>> = {
+	// Строка тега — `TOwnedButton`, которым владеет тег
+	'tags.row': () => new TTagsItem().row,
+}
+
 /** Деталь-кнопка разметки. */
 type TButtonDetail = {
 	/** Имя места (`input.clear`), без него — как деталь назвала разметка. */
 	readonly label: string
-	/** Тег корня; `true` — задан выражением. */
-	readonly tag: string | object | true
+	/**
+	 * Тег корня; `true` — задан выражением, `null` — его задаёт экземпляр, а
+	 * места нет в `OWNED_DETAILS`.
+	 */
+	readonly tag: string | object | true | null
 	/** `type`: статический — строкой, `true` — выражение, `null` — нет. */
 	readonly type: string | true | null
+}
+
+/** Тег корня детали над экземпляром — у экземпляра места; места нет в таблице — `null`. */
+function ownedTagOf(place: string | true | null): string | object | null {
+	const create = typeof place === 'string' ? OWNED_DETAILS[place] : undefined
+
+	return create ? create().tag : null
 }
 
 /** Детали-кнопки разметки: вложенные Button. */
@@ -244,12 +268,14 @@ function* buttonDetails(source: string, owner: string): Generator<TButtonDetail>
 
 		const own = withoutExpressions(opening)
 		const place = attributeOf(own, 'embedded')
-		// Корень Angular — сам элемент разметки, у остальных — `tag` Button
+		// Корень Angular — сам элемент разметки, у остальных — `tag` Button, а без
+		// него над экземпляром (`ctrl`) — тег экземпляра
 		const tag = raw === element ? attributeOf(own, 'tag') : element
+		const owned = tag === null && attributeOf(own, 'ctrl') !== null
 
 		yield {
 			label: typeof place === 'string' ? place : `<${raw}>`,
-			tag: tag ?? TButton.defaultValues.tag,
+			tag: owned ? ownedTagOf(place) : (tag ?? TButton.defaultValues.tag),
 			type: attributeOf(own, 'type'),
 		}
 	}
@@ -258,6 +284,7 @@ function* buttonDetails(source: string, owner: string): Generator<TButtonDetail>
 /** Что не так с `type` детали — для отчёта; всё верно — `null`. */
 function problemOf({ label, tag, type }: TButtonDetail): string | null {
 	if (tag === true) return `${label}: тег задан выражением`
+	if (tag === null) return `${label}: тег задаёт экземпляр, а места нет в OWNED_DETAILS`
 	if (tag === 'button') return type === 'button' ? null : `${label}: нет type="button"`
 
 	return type === null ? null : `${label}: type у тега ${tag}`
@@ -315,6 +342,13 @@ describe('деталь-кнопка разметки — type="button", дета
 		['<Button embedded="x" data-type="button" />', ['x: нет type="button"']],
 		['<Button tag="div" embedded="tags.row" />', []],
 		['<Button tag="div" embedded="tags.row" type="button" />', ['tags.row: type у тега div']],
+		['<Button embedded="tags.row" :ctrl="row" />', []],
+		['<Button embedded="tags.row" ctrl={row} type="button" />', ['tags.row: type у тега div']],
+		[
+			'<Button embedded="x" :ctrl="part" />',
+			['x: тег задаёт экземпляр, а места нет в OWNED_DETAILS'],
+		],
+		['<Button tag="button" embedded="x" :ctrl="part" />', ['x: нет type="button"']],
 		['<Button :tag="tag" embedded="x" type="button" />', ['x: тег задан выражением']],
 		['<Button tag={tag} embedded="x" type="button" />', ['x: тег задан выражением']],
 		['<Button embedded="table.sort" type="button" trailing={<Icon tag={Sort} />} />', []],

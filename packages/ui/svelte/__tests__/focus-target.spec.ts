@@ -481,7 +481,25 @@ const CASES: Record<string, TCase> = {
 
 			return ctrl
 		},
-		target: '.target [role="listitem"]',
+		// Без выбора строка — `listitem` без `tabindex`: остановка тега — крестик
+		target: '.target .so-tags-item__close',
+	},
+	'Tags.Item с выбором': {
+		render: () => {
+			const ctrl = new TTagsItem({ value: 'b', text: 'B' })
+
+			mount(TagsHarness, {
+				tags: { mode: 'single', closable: true },
+				items: [
+					{ value: 'a', text: 'A' },
+					{ ctrl, value: 'b', class: 'target' },
+				],
+			})
+
+			return ctrl
+		},
+		// Строка-опция, хотя остановка набора у первого тега, а не крестик
+		target: '.target [role="option"]',
 	},
 	'ListBox.Item': {
 		render: () => {

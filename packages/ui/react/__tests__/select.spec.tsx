@@ -799,10 +799,11 @@ describe('множественный выбор', () => {
 	})
 
 	/**
-	 * Без выбора у строк тегов нет действия: остановки им не нужны, крестик —
-	 * нативная остановка. Так и в поле Select: набор тегов там без выбора.
+	 * Без выбора у строк тегов нет действия: ни остановки, ни фокуса от клика им
+	 * не нужно, и `tabindex` у них нет, крестик — нативная остановка. Так и в
+	 * поле Select: набор тегов там без выбора.
 	 */
-	it('теги в поле — без выбора: строки не остановки, крестик — нативная остановка', async () => {
+	it('теги в поле — без выбора: у строк tabindex нет, крестик — нативная остановка', async () => {
 		await render({
 			select: { mode: 'multiple', value: ['msk', 'tver'] },
 			items: [
@@ -815,7 +816,7 @@ describe('множественный выбор', () => {
 			...document.querySelectorAll('.so-select__tags .so-tags-item > .so-button:first-child'),
 		]
 
-		expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
+		expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual([null, null])
 		expect(rows.map((row) => row.getAttribute('role'))).toEqual(['listitem', 'listitem'])
 		expect(
 			document
