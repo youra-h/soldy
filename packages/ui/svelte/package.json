@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/svelte",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.3",
   "description": "Адаптер Svelte: компоненты на headless-моделях ядра",
   "keywords": [
     "soldy",
@@ -42,9 +42,9 @@
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.2",
-    "@soldy-ui/plugins": "0.3.0-alpha.2",
-    "@soldy-ui/setup": "0.3.0-alpha.2",
+    "@soldy-ui/core": "0.3.0-alpha.3",
+    "@soldy-ui/plugins": "0.3.0-alpha.3",
+    "@soldy-ui/setup": "0.3.0-alpha.3",
     "esm-env": "^1.2.2"
   },
   "peerDependencies": {
@@ -52,8 +52,8 @@
   },
   "devDependencies": {
     "@sinonjs/fake-timers": "^15.4.0",
-    "@soldy-ui/icons-material": "0.3.0-alpha.2",
-    "@soldy-ui/theme-oren": "0.3.0-alpha.2",
+    "@soldy-ui/icons-material": "0.3.0-alpha.3",
+    "@soldy-ui/theme-oren": "0.3.0-alpha.3",
     "@sveltejs/package": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "svelte": "^5.55.10",

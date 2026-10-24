@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/setup",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.3",
   "description": "Общее для всех адаптеров: дескрипторы компонентов, их сборка на монтирование и связывание с фреймворком",
   "keywords": [
     "soldy",
@@ -36,8 +36,8 @@
     "dist"
   ],
   "dependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.2",
-    "@soldy-ui/plugins": "0.3.0-alpha.2"
+    "@soldy-ui/core": "0.3.0-alpha.3",
+    "@soldy-ui/plugins": "0.3.0-alpha.3"
   },
   "scripts": {
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",
