@@ -1,12 +1,11 @@
-<!-- `tabindex` — в наборе, а не статикой: статичный база кнопки переписала бы. -->
 <span
-	so-button
+	so-item-row
 	#control
 	embedded="select.row"
 	[size]="state()['size']"
 	[variant]="state()['variant']"
 	[disabled]="state()['disabled']"
-	[so-attributes]="{ tabindex: '-1', ...state()['aria'], ...state()['dataset'] }"
+	[so-attributes]="{ ...state()['aria'], ...state()['dataset'] }"
 	(click)="facade()?.context?.adapters.select.choose()"
 >
 	<ng-container ngProjectAs="[slot=leading]">

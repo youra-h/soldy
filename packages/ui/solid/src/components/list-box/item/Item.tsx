@@ -11,7 +11,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { setupListBoxItem } from './setup.component'
 import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
@@ -20,7 +20,7 @@ import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
 const CHECK = roleIcon('check')
 
 /**
- * Элемент списка: строка — `Button` на `div` (под этот тег написан `TListBoxItem._ariaTag`),
+ * Элемент списка: строка — `ItemRow` на `div` (под этот тег написан `TListBoxItem._ariaTag`),
  * написанное на корне, кроме класса и стиля, получает она. Клик — `list.choose()`
  * item-адаптера, а не `selection.toggle()`: выключенному откажет список, как клавиатуре.
  */
@@ -67,7 +67,7 @@ export function ListBoxItem(props: ListBoxItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="list-box.row"
 					tag="div"
 					view={state.view}
@@ -91,7 +91,7 @@ export function ListBoxItem(props: ListBoxItemProps): JSX.Element {
 					}
 				>
 					{content() ?? state.text}
-				</Button>
+				</ItemRow>
 			</Dynamic>
 		</Show>
 	)

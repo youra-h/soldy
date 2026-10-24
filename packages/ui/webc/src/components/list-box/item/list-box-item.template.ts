@@ -1,5 +1,5 @@
 /**
- * Шаблон элемента ListBox: строка — деталь Button на `div`, на ней `aria` и
+ * Шаблон элемента ListBox: строка — деталь ItemRow на `div`, на ней `aria` и
  * `dataset` элемента (тема красит выбор на `.so-button`); отметка выбранного —
  * край строки. docs/architecture.md, Layer 8d, «Коллекция».
  */
@@ -7,14 +7,14 @@
 import type { IListBoxItem, TListBoxItemCollectionFacade, TListIndicator } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
-import { registerButtonTag, type TButtonElementProps } from '../../button'
+import { registerItemRowTag, type TItemRowElementProps } from '../../item-row'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
 /** На `<button>` выключенный пункт терял бы фокус и клик. */
-const TButtonDivElement = registerButtonTag('div')
+const TItemRowDivElement = registerItemRowTag('div')
 
 type TItemParts = {
-	readonly row: TButtonElementProps<HTMLDivElement>
+	readonly row: TItemRowElementProps<HTMLDivElement>
 	/** Стоит и у невыбранных: резервирует место, иначе строка прыгала бы при выборе. */
 	readonly indicator: HTMLElement
 	readonly icon: TIconElementProps | null
@@ -42,7 +42,7 @@ export const listBoxItemTemplate: ITemplate<IListBoxItem, TListBoxItemCollection
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(ownerDocument, TButtonDivElement, { embedded: 'list-box.row' })
+		const row = createDetail(ownerDocument, TItemRowDivElement, { embedded: 'list-box.row' })
 		const indicator = ownerDocument.createElement('span')
 
 		indicator.className = 'so-list-box-item__indicator'

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, resolve, relative, sep } from 'node:path'
-import { TButton, TTagsItem } from '@soldy-ui/core'
+import { TButton } from '@soldy-ui/core'
 
 /**
  * Сторож признака `embedded`: компонент soldy, который разметка библиотеки
@@ -16,16 +16,16 @@ import { TButton, TTagsItem } from '@soldy-ui/core'
  * `ListBox`, — это элемент списка, а не деталь. Их узнаёт префикс: имя тега
  * начинается с имени компонента, в папке которого лежит разметка.
  *
- * Второй сторож — `type` детали-кнопки. Button, которого разметка ставит
- * деталью с корнем `<button>`, несёт `type="button"`: у `<button>` без `type`
- * тип `submit`, и в форме клик по кнопке очистки отправлял форму, а Enter в
- * поле — неявная отправка — нажимал первую такую кнопку, и поле очищалось
- * вместо отправки. Корень детали — `tag` разметки, без него — тег Button по
- * умолчанию (`TButton.defaultValues`), в Angular — сам элемент с атрибутом
- * `so-button`. У детали над экземпляром владельца (`ctrl` без `tag`) тег
- * задаёт экземпляр, а не разметка: строку тега создаёт тег (`TTagsItem.row`),
- * и сторож берёт тег у экземпляра (`ROW_DETAILS`). Деталь другого тега
- * (`tag="div"` у строки элемента списка, строка тега, `<div so-button>`)
+ * Второй сторож — `type` детали-кнопки: Button и строки элемента коллекции
+ * (`ItemRow` — та же кнопка). Деталь с корнем `<button>` несёт
+ * `type="button"`: у `<button>` без `type` тип `submit`, и в форме клик по
+ * кнопке очистки отправлял форму, а Enter в поле — неявная отправка — нажимал
+ * первую такую кнопку, и поле очищалось вместо отправки. Корень детали —
+ * `tag` разметки, без него — тег кнопки по умолчанию (`TButton.defaultValues`),
+ * в Angular — сам элемент с атрибутом `so-button` или `so-item-row`. Деталь
+ * над готовым экземпляром (`ctrl` без `tag`) — нарушение: тег у неё задаёт
+ * экземпляр, и по разметке не узнать, нужен ли `type`. Деталь другого тега
+ * (`tag="div"` у строки элемента списка, строка тега, `<div so-item-row>`)
  * `type` не несёт: у её тега такого атрибута нет. Сторож читает только
  * статические `tag` и `type`, поэтому тег, заданный выражением, — тоже
  * нарушение: нужен ли `type`, по нему не узнать. Button потребителя не деталь
@@ -230,52 +230,33 @@ function attributeOf(opening: string, attribute: string): string | true | null {
 	return new RegExp(`[\\s:[](?:attr\\.)?${attribute}\\]?\\s*=`).test(opening) ? true : null
 }
 
-/**
- * Детали над экземпляром владельца — по имени места: экземпляр, как его
- * создаёт владелец. Тег корня у такой детали задаёт он, а не разметка
- * (`ctrl` без `tag`), и сменись он на `button` — деталь обязана нести
- * `type="button"`.
- */
-const ROW_DETAILS: Readonly<Record<string, () => { readonly tag: string | object }>> = {
-	// Строка тега — `TItemRow`, которым владеет тег
-	'tags.row': () => new TTagsItem().row,
-}
+/** Детали-кнопки: Button и строка элемента коллекции — та же кнопка. */
+const BUTTON_DETAILS = new Set(['Button', 'ItemRow'])
 
 /** Деталь-кнопка разметки. */
 type TButtonDetail = {
 	/** Имя места (`input.clear`), без него — как деталь назвала разметка. */
 	readonly label: string
-	/**
-	 * Тег корня; `true` — задан выражением, `null` — его задаёт экземпляр, а
-	 * места нет в `ROW_DETAILS`.
-	 */
+	/** Тег корня; `true` — задан выражением, `null` — его задаёт экземпляр (`ctrl` без `tag`). */
 	readonly tag: string | object | true | null
 	/** `type`: статический — строкой, `true` — выражение, `null` — нет. */
 	readonly type: string | true | null
 }
 
-/** Тег корня детали над экземпляром — у экземпляра места; места нет в таблице — `null`. */
-function rowTagOf(place: string | true | null): string | object | null {
-	const create = typeof place === 'string' ? ROW_DETAILS[place] : undefined
-
-	return create ? create().tag : null
-}
-
-/** Детали-кнопки разметки: вложенные Button. */
+/** Детали-кнопки разметки: вложенные Button и ItemRow. */
 function* buttonDetails(source: string, owner: string): Generator<TButtonDetail> {
 	for (const { raw, name, element, opening } of componentsOf(source)) {
-		if (name !== 'Button' || owner === 'Button') continue
+		if (!BUTTON_DETAILS.has(name) || owner === name) continue
 
 		const own = withoutExpressions(opening)
 		const place = attributeOf(own, 'embedded')
-		// Корень Angular — сам элемент разметки, у остальных — `tag` Button, а без
-		// него над экземпляром (`ctrl`) — тег экземпляра
+		// Корень Angular — сам элемент разметки, у остальных — `tag` кнопки
 		const tag = raw === element ? attributeOf(own, 'tag') : element
-		const rowDetail = tag === null && attributeOf(own, 'ctrl') !== null
+		const overCtrl = tag === null && attributeOf(own, 'ctrl') !== null
 
 		yield {
 			label: typeof place === 'string' ? place : `<${raw}>`,
-			tag: rowDetail ? rowTagOf(place) : (tag ?? TButton.defaultValues.tag),
+			tag: overCtrl ? null : (tag ?? TButton.defaultValues.tag),
 			type: attributeOf(own, 'type'),
 		}
 	}
@@ -284,7 +265,7 @@ function* buttonDetails(source: string, owner: string): Generator<TButtonDetail>
 /** Что не так с `type` детали — для отчёта; всё верно — `null`. */
 function problemOf({ label, tag, type }: TButtonDetail): string | null {
 	if (tag === true) return `${label}: тег задан выражением`
-	if (tag === null) return `${label}: тег задаёт экземпляр, а места нет в ROW_DETAILS`
+	if (tag === null) return `${label}: тег задаёт экземпляр (ctrl), а не разметка`
 	if (tag === 'button') return type === 'button' ? null : `${label}: нет type="button"`
 
 	return type === null ? null : `${label}: type у тега ${tag}`
@@ -342,12 +323,14 @@ describe('деталь-кнопка разметки — type="button", дета
 		['<Button embedded="x" data-type="button" />', ['x: нет type="button"']],
 		['<Button tag="div" embedded="tags.row" />', []],
 		['<Button tag="div" embedded="tags.row" type="button" />', ['tags.row: type у тега div']],
-		['<Button embedded="tags.row" :ctrl="row" />', []],
-		['<Button embedded="tags.row" ctrl={row} type="button" />', ['tags.row: type у тега div']],
+		['<ItemRow tag="div" embedded="tags.row" />', []],
 		[
-			'<Button embedded="x" :ctrl="part" />',
-			['x: тег задаёт экземпляр, а места нет в ROW_DETAILS'],
+			'<ItemRow tag="span" embedded="select.row" type="button" />',
+			['select.row: type у тега span'],
 		],
+		['<ItemRow embedded="x" />', ['x: нет type="button"']],
+		['<Button embedded="x" :ctrl="part" />', ['x: тег задаёт экземпляр (ctrl), а не разметка']],
+		['<ItemRow embedded="x" ctrl={row} />', ['x: тег задаёт экземпляр (ctrl), а не разметка']],
 		['<Button tag="button" embedded="x" :ctrl="part" />', ['x: нет type="button"']],
 		['<Button :tag="tag" embedded="x" type="button" />', ['x: тег задан выражением']],
 		['<Button tag={tag} embedded="x" type="button" />', ['x: тег задан выражением']],
@@ -362,6 +345,11 @@ describe('деталь-кнопка разметки — type="button", дета
 		[
 			'<div so-button embedded="list-box.row" type="button"></div>',
 			['list-box.row: type у тега div'],
+		],
+		['<div so-item-row embedded="list-box.row"></div>', []],
+		[
+			'<span so-item-row embedded="select.row" type="button"></span>',
+			['select.row: type у тега span'],
 		],
 		['<Icon embedded="input.clear-icon" />', []],
 		['<!-- <Button embedded="x" /> -->', []],

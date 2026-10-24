@@ -12,7 +12,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { MenuGroup } from '../group'
@@ -133,7 +133,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
+			<ItemRow
 				embedded="menu.row"
 				tag="div"
 				size={size}
@@ -154,7 +154,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.header, { text: text ?? '', open: open ?? false }) ?? text}
-			</Button>
+			</ItemRow>
 			<Elevate layer={layer}>
 				<Frame
 					embedded="menu.submenu-frame"

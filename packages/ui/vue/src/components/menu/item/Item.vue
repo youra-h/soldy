@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import SetupMenuItem from './setup.component'
 
 /**
@@ -9,7 +9,7 @@ import SetupMenuItem from './setup.component'
  * Вокруг слотов значка и подсказки нет пробелов: пустую обёртку тема прячет
  * по `:empty`, и пробельный текст сделал бы её непустой.
  */
-export default { ...SetupMenuItem, components: { Button } }
+export default { ...SetupMenuItem, components: { ItemRow } }
 </script>
 
 <template>
@@ -28,7 +28,7 @@ export default { ...SetupMenuItem, components: { Button } }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у ListBox: на ней ARIA пункта (роль
+			Строка — `ItemRow` на `div`, как у ListBox: на ней ARIA пункта (роль
 			`menuitem`, `tabindex="-1"` от меню) и DOM-фокус, когда пункт
 			подсвечен. Размер и `disabled` — пункта. Вида и варианта строка не
 			получает: вид ей даёт тема по контексту, а цвет она берёт с пункта и
@@ -39,7 +39,7 @@ export default { ...SetupMenuItem, components: { Button } }
 			меню (`adapters.menu.choose()`): выключенному пункту оно отказывает,
 			а доступный выполняет и закрывается.
 		-->
-		<Button
+		<ItemRow
 			embedded="menu.row"
 			tag="div"
 			:size="size"
@@ -65,6 +65,6 @@ export default { ...SetupMenuItem, components: { Button } }
 			<template #trailing>
 				<span class="so-menu-item__shortcut"><slot name="trailing" /></span>
 			</template>
-		</Button>
+		</ItemRow>
 	</component>
 </template>

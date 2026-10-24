@@ -7,13 +7,13 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { useSetupListBoxItem } from './setup.component'
 import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
 
 /**
- * ListBoxItem — элемент списка: корень по `tag` и строка-опция — `Button` на `div`
+ * ListBoxItem — элемент списка: корень по `tag` и строка-опция — `ItemRow` на `div`
  * (под этот тег написан `TListBoxItem._ariaTag`).
  */
 export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
@@ -52,7 +52,7 @@ export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
+			<ItemRow
 				embedded="list-box.row"
 				tag="div"
 				view={view}
@@ -80,7 +80,7 @@ export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '', selected: chosen }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }

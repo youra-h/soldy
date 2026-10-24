@@ -1,20 +1,20 @@
 /**
  * Шаблон опции Select: строка — `span`, под него ядро пишет ARIA опции
- * (`TSelectItem._ariaTag`), и `role="option"` перекрывает `role="button"`
- * кнопки — узел с ролью у опции один. `tabindex="-1"`: фокус остаётся на поле
+ * (`TSelectItem._ariaTag`), а своих роли и `tabindex` строка (ItemRow) не
+ * пишет — узел с ролью у опции один. `tabindex="-1"` от `TSelectExtension`: фокус остаётся на поле
  * Select, опцию объявляет его `aria-activedescendant`.
  */
 
 import type { ISelectItem, TListIndicator, TSelectItemCollectionFacade } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { bind, createDetail, lend, ownerAttributes, type ITemplate, patch } from '../../../adapter'
-import { registerButtonTag, type TButtonElementProps } from '../../button'
+import { registerItemRowTag, type TItemRowElementProps } from '../../item-row'
 import { TIconElement, type TIconElementProps } from '../../icon'
 
-const TButtonSpanElement = registerButtonTag('span')
+const TItemRowSpanElement = registerItemRowTag('span')
 
 type TOptionParts = {
-	readonly row: TButtonElementProps<HTMLSpanElement>
+	readonly row: TItemRowElementProps<HTMLSpanElement>
 	/** Стоит и у невыбранной: резервирует место, иначе строка прыгала бы при выборе. */
 	readonly indicator: HTMLElement
 	readonly icon: TIconElementProps | null
@@ -42,9 +42,8 @@ export const selectItemTemplate: ITemplate<ISelectItem, TSelectItemCollectionFac
 		const { hasSlot } = ctx
 
 		const { ownerDocument } = root
-		const row = createDetail(ownerDocument, TButtonSpanElement, {
+		const row = createDetail(ownerDocument, TItemRowSpanElement, {
 			embedded: 'select.row',
-			attributes: { tabindex: '-1' },
 		})
 		const indicator = ownerDocument.createElement('span')
 

@@ -8,8 +8,23 @@ import type { ButtonProps } from './base.component'
  * Порядок атрибутов корня — AGENTS.md (React), «Корень и `ref` потребителя».
  */
 export function Button(props: ButtonProps): ReactElement | null {
-	const { ref, forwardProps, state } = useSetupButton(props)
+	return renderButton(useSetupButton(props), props)
+}
 
+/** Что разметке кнопки нужно от её связки. */
+export type TButtonBinding = Pick<
+	ReturnType<typeof useSetupButton>,
+	'ref' | 'forwardProps' | 'state'
+>
+
+/**
+ * Разметка кнопки по её связке. Одна на Button и строку элемента коллекции
+ * (`ItemRow`): у них разная сборка, а разметка та же.
+ */
+export function renderButton(
+	{ ref, forwardProps, state }: TButtonBinding,
+	props: ButtonProps,
+): ReactElement | null {
 	const { rendered, tag, text, aria, dataset, attrs } = state
 
 	if (!rendered) return null

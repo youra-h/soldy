@@ -7,7 +7,7 @@
 		toRootForward,
 		toRootProps,
 	} from '../../../adapter'
-	import { Button } from '../../button'
+	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupSelectItem } from './setup.component'
 	import type { SelectItemAttributes, SelectItemProps } from './base.component'
@@ -44,10 +44,9 @@
 		attributes={toRootProps(state, [state.dataset, state.attrs], toRootForward(binding.forwardProps))}
 		attach={binding.attachElement}
 	>
-		<Button
+		<ItemRow
 			embedded="select.row"
 			tag="span"
-			tabindex={-1}
 			size={state.size}
 			variant={state.variant}
 			disabled={state.disabled}
@@ -70,6 +69,6 @@
 			{#snippet trailing()}
 				{@render props.trailing?.()}{#if state.indicator === 'end'}{@render mark()}{/if}
 			{/snippet}
-		</Button>
+		</ItemRow>
 	</Dynamic>
 {/if}

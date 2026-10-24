@@ -11,7 +11,7 @@ import {
 	toRootForward,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { setupSelectItem } from './setup.component'
 import type { SelectItemAttributes, SelectItemProps } from './base.component'
@@ -20,8 +20,8 @@ import type { SelectItemAttributes, SelectItemProps } from './base.component'
 const CHECK = roleIcon('check')
 
 /**
- * Опция: строка — `Button` на `span` с наборами `aria` и `dataset` опции
- * (`tabindex="-1"` — фокус остаётся на поле), выбор — клик по строке, как у
+ * Опция: строка — `ItemRow` на `span` с наборами `aria` и `dataset` опции
+ * (`tabindex="-1"` от `TSelectExtension` — фокус остаётся на поле), выбор — клик по строке, как у
  * ListBox: сначала выбор, затем клик потребителя. Обёртка
  * отметки — и у невыбранной: держит место, и строка не прыгает при выборе.
  */
@@ -67,10 +67,9 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
-				<Button
+				<ItemRow
 					embedded="select.row"
 					tag="span"
-					tabindex={-1}
 					size={state.size}
 					variant={state.variant}
 					disabled={state.disabled}
@@ -91,7 +90,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 					}
 				>
 					{content() ?? state.text}
-				</Button>
+				</ItemRow>
 			</Dynamic>
 		</Show>
 	)

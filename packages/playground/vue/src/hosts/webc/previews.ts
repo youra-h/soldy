@@ -649,7 +649,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	toasts: { tag: 'so-toasts', slots: { default: [toastsTrigger] } },
 
 	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
-	// (`<div is="so-button-div">`): её строит шаблон элемента. Пришли данными
+	// (`<div is="so-item-row-div">`): её строит шаблон элемента. Пришли данными
 	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
 	// группы список рисует из данных
 	'list-box': {
@@ -673,7 +673,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	tags: { tag: 'div', is: 'so-tags', props: { items: ITEMS }, wrapper: FULL_WIDTH },
 
 	// Опции — разметкой, как у Vue. Строка опции — кнопка на `span`
-	// (`<span is="so-button-span">`): её строит шаблон опции. Пришли данными
+	// (`<span is="so-item-row-span">`): её строит шаблон опции. Пришли данными
 	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
 	// группы Select рисует из данных
 	select: {

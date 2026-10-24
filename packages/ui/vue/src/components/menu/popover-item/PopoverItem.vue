@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import SetupMenuPopoverItem from './setup.component'
@@ -11,7 +11,7 @@ import SetupMenuPopoverItem from './setup.component'
  * Вокруг слота значка нет пробелов: пустую обёртку тема прячет по `:empty`,
  * и пробельный текст сделал бы её непустой.
  */
-export default { ...SetupMenuPopoverItem, components: { Button, Frame, Icon } }
+export default { ...SetupMenuPopoverItem, components: { Frame, Icon, ItemRow } }
 </script>
 
 <template>
@@ -36,7 +36,7 @@ export default { ...SetupMenuPopoverItem, components: { Button, Frame, Icon } }
 		-->
 
 		<!--
-			Строка — `Button` на `div`, как у пункта (`menu.row`): на ней ARIA
+			Строка — `ItemRow` на `div`, как у пункта (`menu.row`): на ней ARIA
 			пункта — роль `menuitem`, `aria-haspopup="dialog"`, `aria-expanded`,
 			`id` и `aria-controls` на панель, `tabindex="-1"` от меню — и
 			DOM-фокус, когда пункт подсвечен.
@@ -48,7 +48,7 @@ export default { ...SetupMenuPopoverItem, components: { Button, Frame, Icon } }
 			стрелку к концу строки клавиатура пункта гасит и открывает панель
 			сама — клика из неё нет.
 		-->
-		<Button
+		<ItemRow
 			embedded="menu.row"
 			tag="div"
 			:size="size"
@@ -87,7 +87,7 @@ export default { ...SetupMenuPopoverItem, components: { Button, Frame, Icon } }
 					</slot>
 				</span>
 			</template>
-		</Button>
+		</ItemRow>
 
 		<!--
 			Панель — Frame после строки: телепорт в `body`, соседка панели меню, а

@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common'
 import type { ITagsItem } from '@soldy-ui/core'
 import { AttributesDirective, RoleIconDirective } from '../../../adapter'
 import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TIconComponent } from '../../icon'
 import { TTagsItemSurface } from '../../../generated/tags-item.metadata'
 import { setupTagsItem } from './setup.component'
@@ -18,6 +19,7 @@ import { setupTagsItem } from './setup.component'
 		AttributesDirective,
 		RoleIconDirective,
 		TButtonComponent,
+		TItemRowComponent,
 		TIconComponent,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,

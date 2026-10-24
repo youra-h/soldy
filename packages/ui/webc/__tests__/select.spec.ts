@@ -12,7 +12,7 @@
  * Своё у Web Components — разметка. Корень — элемент потребителя
  * (`<div is="so-select">`), поле — деталь Input над экземпляром поля Select,
  * панель — деталь Frame, уехавшая в `body`, опции — `<div is="so-select-item">`
- * со строкой — Button на `span` (`<span is="so-button-span">`). Набор `aria`
+ * со строкой — ItemRow на `span` (`<span is="so-item-row-span">`). Набор `aria`
  * Select шаблон кладёт на деталь поля, и у детали с полем он уходит на
  * `<input>`, поверх набора комбобокса. В `leading` поля — метка: обёртка стоит
  * и в `single`, а теги в `multiple` встают перед ней — деталь Tags над
@@ -41,9 +41,9 @@ import {
 	TSelectItemElement,
 	TTagsElement,
 	defineElement,
-	registerButtonTag,
+	registerItemRowTag,
 	type ITemplate,
-	type TButtonElementProps,
+	type TItemRowElementProps,
 	type TFrameElementProps,
 	type TSelectElementProps,
 	type TSelectItemElementProps,
@@ -70,8 +70,8 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-/** Строка опции — Button на `span`. */
-const TButtonSpanElement = registerButtonTag('span')
+/** Строка опции — ItemRow на `span`. */
+const TItemRowSpanElement = registerItemRowTag('span')
 
 function isSelect(node: Element | null): node is TSelectElementProps {
 	return node instanceof TSelectElement
@@ -388,17 +388,17 @@ describe('опции', () => {
 })
 
 /**
- * Строка опции — Button на `span`, как `tag="span"` у Vue: под этот тег ядро
+ * Строка опции — ItemRow на `span`, как `tag="span"` у Vue: под этот тег ядро
  * пишет опции ARIA. Набор опции перекрывает `role="button"` строки, а
  * `tabindex="-1"` — статика детали: фокус остаётся на поле.
  */
 describe('строка опции — кнопка на span', () => {
-	it('строка — <span is="so-button-span"> с именем места, tabindex="-1", без type', async () => {
+	it('строка — <span is="so-item-row-span"> с именем места, tabindex="-1", без type', async () => {
 		await render()
 
 		const row = optionOf('Москва')
 
-		expect(row).toBeInstanceOf(TButtonSpanElement)
+		expect(row).toBeInstanceOf(TItemRowSpanElement)
 		expect(row.localName).toBe('span')
 		expect(row.getAttribute('embedded')).toBe('select.row')
 		expect(row.getAttribute('tabindex')).toBe('-1')
@@ -413,9 +413,9 @@ describe('строка опции — кнопка на span', () => {
 		expect(optionOf('Тула').hasAttribute('disabled')).toBe(false)
 	})
 
-	it('кнопка на span — один класс на тег, под именем so-button-span', () => {
-		expect(registerButtonTag('span')).toBe(TButtonSpanElement)
-		expect(customElements.get('so-button-span')).toBe(TButtonSpanElement)
+	it('строка на span — один класс на тег, под именем so-item-row-span', () => {
+		expect(registerItemRowTag('span')).toBe(TItemRowSpanElement)
+		expect(customElements.get('so-item-row-span')).toBe(TItemRowSpanElement)
 	})
 
 	it('класс и стиль потребителя — корню опции, title, aria-label и data-* — строке', async () => {
@@ -1800,9 +1800,9 @@ describe('типы', () => {
 	})
 
 	/** У `span` своего `disabled` нет: там это свойство пропа. */
-	it('кнопка на span — тип своего тега', () => {
-		expectTypeOf<TButtonElementProps<HTMLSpanElement>>().toExtend<HTMLSpanElement>()
-		expectTypeOf<TButtonElementProps<HTMLSpanElement>['disabled']>().toEqualTypeOf<
+	it('строка на span — тип своего тега', () => {
+		expectTypeOf<TItemRowElementProps<HTMLSpanElement>>().toExtend<HTMLSpanElement>()
+		expectTypeOf<TItemRowElementProps<HTMLSpanElement>['disabled']>().toEqualTypeOf<
 			boolean | undefined
 		>()
 	})

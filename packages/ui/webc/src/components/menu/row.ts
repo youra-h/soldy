@@ -1,5 +1,5 @@
 /**
- * Строка пункта меню — Button на `div` (`menu.row`), одна у пунктов всех видов.
+ * Строка пункта меню — ItemRow на `div` (`menu.row`), одна у пунктов всех видов.
  * Тег `div`, а не `button`: у выключенного пункта остаются фокус и подсветка.
  * DOM-фокус подсвеченного пункта — на строке: клавиатура меню находит её по
  * `tabindex` (`rowIn`). docs/architecture.md, Layer 8d, «Меню».
@@ -7,12 +7,12 @@
 
 import type { IMenuItem, TComponentSize } from '@soldy-ui/core'
 import { bind, createDetail, ownerAttributes, type ITemplateBinding, patch } from '../../adapter'
-import { registerButtonTag, type TButtonElementProps } from '../button'
+import { registerItemRowTag, type TItemRowElementProps } from '../item-row'
 import { TIconElement, type TIconElementProps } from '../icon'
 
-const TButtonDivElement = registerButtonTag('div')
+const TItemRowDivElement = registerItemRowTag('div')
 
-export type TMenuRow = TButtonElementProps<HTMLDivElement>
+export type TMenuRow = TItemRowElementProps<HTMLDivElement>
 
 /** Строка каждого пункта — одна на всё время жизни элемента. */
 const rows = new WeakMap<HTMLElement, TMenuRow>()
@@ -22,7 +22,7 @@ const rows = new WeakMap<HTMLElement, TMenuRow>()
  * сама строка (`TActionPlugin`), и путь у мыши и клавиатуры один.
  */
 export function createRow(root: HTMLElement, press: () => void): TMenuRow {
-	const row = createDetail(root.ownerDocument, TButtonDivElement, { embedded: 'menu.row' })
+	const row = createDetail(root.ownerDocument, TItemRowDivElement, { embedded: 'menu.row' })
 
 	row.addEventListener('click', press)
 	root.appendChild(row)

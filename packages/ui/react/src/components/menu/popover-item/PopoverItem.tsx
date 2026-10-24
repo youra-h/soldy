@@ -7,7 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
 import { Icon } from '../../icon'
 import { useSetupMenuPopoverItem } from './setup.component'
@@ -45,7 +45,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
+			<ItemRow
 				embedded="menu.row"
 				tag="div"
 				size={size}
@@ -66,7 +66,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 				}
 			>
 				{renderSlot(props.header, { text: text ?? '', open: open ?? false }) ?? text}
-			</Button>
+			</ItemRow>
 			<Frame
 				embedded="menu.popover-item-frame"
 				className="so-menu-item__panel"

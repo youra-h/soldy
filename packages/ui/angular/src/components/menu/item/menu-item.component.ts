@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core'
 import { NgTemplateOutlet } from '@angular/common'
 import type { IMenuItem } from '@soldy-ui/core'
 import { AttributesDirective } from '../../../adapter'
-import { TButtonComponent } from '../../button'
+import { TItemRowComponent } from '../../item-row'
 import { TMenuItemSurface } from '../../../generated/menu-item.metadata'
 import { setupMenuItem } from './setup.component'
 
@@ -12,7 +12,7 @@ import { setupMenuItem } from './setup.component'
  */
 @Component({
 	selector: 'div[so-menu-item], [so-menu-item]',
-	imports: [NgTemplateOutlet, AttributesDirective, TButtonComponent],
+	imports: [NgTemplateOutlet, AttributesDirective, TItemRowComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './menu-item.component.html',
 })

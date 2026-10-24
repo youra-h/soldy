@@ -7,7 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 } from '../../../adapter'
-import { Button } from '../../button'
+import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
 import { useSetupMenuCheckboxItem } from './setup.component'
 import type { MenuCheckboxItemAttributes, MenuCheckboxItemProps } from './base.component'
@@ -32,7 +32,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
-			<Button
+			<ItemRow
 				embedded="menu.row"
 				tag="div"
 				size={size}
@@ -59,7 +59,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 				}
 			>
 				{renderSlot(props.children, { text: text ?? '', selected: checked }) ?? text}
-			</Button>
+			</ItemRow>
 		</Tag>
 	)
 }
