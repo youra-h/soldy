@@ -36,6 +36,7 @@ import {
 	registerItemRowTag,
 	type ITemplate,
 	type TButtonElementProps,
+	type TItemRowElementProps,
 	type TListBoxElementProps,
 	type TListBoxItemElementProps,
 } from '@soldy-ui/webc'
@@ -73,16 +74,16 @@ function isItem(node: Element | null): node is TListBoxItemElementProps {
 	return node instanceof TListBoxItemElement
 }
 
-function isRow(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
+function isRow(node: Element | null): node is TItemRowElementProps<HTMLDivElement> {
 	return node instanceof TItemRowDivElement
 }
 
 /** Строки элементов — на них обработчик выбора, `aria-selected` и `tabindex`. */
-const rows = (): TButtonElementProps<HTMLDivElement>[] =>
+const rows = (): TItemRowElementProps<HTMLDivElement>[] =>
 	[...document.querySelectorAll('.so-list-box-item .so-button')].filter(isRow)
 
 /** Строка элемента по тексту; нет её — тест падает здесь. */
-function rowOf(text: string): TButtonElementProps<HTMLDivElement> {
+function rowOf(text: string): TItemRowElementProps<HTMLDivElement> {
 	const row = rows().find((candidate) => candidate.textContent?.trim() === text)
 
 	if (!row) throw new Error(`строки элемента «${text}» нет`)
@@ -1426,9 +1427,9 @@ describe('типы', () => {
 	})
 
 	/** У `div` своего `disabled` нет: там это свойство пропа, а у `<button>` — нативное. */
-	it('кнопка на div — тип своего тега', () => {
-		expectTypeOf<TButtonElementProps<HTMLDivElement>>().toExtend<HTMLDivElement>()
-		expectTypeOf<TButtonElementProps<HTMLDivElement>['disabled']>().toEqualTypeOf<
+	it('строка на div — тип своего тега', () => {
+		expectTypeOf<TItemRowElementProps<HTMLDivElement>>().toExtend<HTMLDivElement>()
+		expectTypeOf<TItemRowElementProps<HTMLDivElement>['disabled']>().toEqualTypeOf<
 			boolean | undefined
 		>()
 		expectTypeOf<TButtonElementProps['disabled']>().toEqualTypeOf<boolean>()

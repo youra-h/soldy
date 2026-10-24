@@ -2956,19 +2956,17 @@ defineElement('so-button', TButtonElement, 'button')
 
 Одно имя расширяет один тег, поэтому компонент на другом теге — второе имя:
 имя компонента и тег через дефис (корневой `AGENTS.md`, «Префикс — только в
-глобальном пространстве имён»). У Button его регистрирует фабрика
-`registerButtonTag(tag)` — тем же описанием элемента, что у
-`<button is="so-button">`, на нативном классе тега — и отдаёт класс; второй
-вызов отдаёт тот же: `<div is="so-button-div">`, `<span is="so-button-span">`.
-Теги фабрики с их нативными классами — карта регистраций в её модуле, и её
-тип сверяет класс с тегом. Строку элемента коллекции (`ItemRow`, `TItemRow`)
-регистрирует так же своя фабрика `registerItemRowTag(tag)` — описанием с
-шаблоном кнопки и `ItemRowDescriptor`, — и зовёт её разметка там, где тег
-впервые нужен: шаблон элемента ListBox, тега и пунктов меню —
+глобальном пространстве имён»). Строку элемента коллекции (`ItemRow`,
+`TItemRow`) его регистрирует фабрика `registerItemRowTag(tag)` — описанием с
+шаблоном кнопки и `ItemRowDescriptor`, на нативном классе тега — и отдаёт
+класс; второй вызов отдаёт тот же. Зовёт её разметка там, где тег впервые
+нужен: шаблон элемента ListBox, тега и пунктов меню —
 `registerItemRowTag('div')`, строка `<div is="so-item-row-div">`, шаблон
 опции Select — `registerItemRowTag('span')`, строка
-`<span is="so-item-row-span">`. Элемента на теге по умолчанию у строки нет.
-Так же у Popover —
+`<span is="so-item-row-span">`. Теги фабрики с их нативными классами — карта
+регистраций в её модуле, и её тип сверяет класс с тегом. Элемента на теге по
+умолчанию у строки нет, а у Button нет второго имени: кнопка на другом теге
+разметке библиотеки не нужна. Так же у Popover —
 фабрика `registerPopoverTag(tag)`: заголовок месяца Calendar —
 `registerPopoverTag('div')`, `<div is="so-popover-div">`: панель выбора с
 `contained` лежит в корне поповера, а в строчном `span` блочной разметке не
@@ -3154,10 +3152,11 @@ WebKit:
   пропом `tag` при каждой сборке; атрибута и свойства `tag` нет
   (`HOST_PROPS`): тег задан разметкой. Для ядра это нативный тег, как у
   `<Button>` во Vue: `role` и `tabindex` оно кнопке не пишет, а `disabled`
-  пишет нативным атрибутом. Кнопка на `div` (`<div is="so-button-div">`)
-  отдаёт ядру `div`, и ядро пишет ей `role="button"`, `tabindex` и
-  `aria-disabled`, как `<Button tag="div">` во Vue; `disabled` у неё —
-  свойство пропа, своего у `div` нет.
+  пишет нативным атрибутом. Строка на `div` (`<div is="so-item-row-div">`)
+  отдаёт ядру `div`, и ядро пишет ей `aria-disabled`, как
+  `<ItemRow tag="div">` во Vue, а роль и `tabindex` — нет: их кладёт набор
+  элемента (`TItemRow`); `disabled` у неё — свойство пропа, своего у `div`
+  нет.
 - **Классы и наборы** раскладывает база (`paint.ts`), и атрибуты
   потребителя главнее наборов ядра, как во Vue и React: по каждому имени база
   помнит, что поставила сама, своё пишет и снимает, а чужое значение не трогает
@@ -3709,13 +3708,12 @@ Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропс�
 этом контракте уже есть: их типы несёт интерфейс пропсов ядра компонента
 (`ITabsProps`), а состояние элемента коллекции (`IElementBase` со вторым
 параметром) — вместе со свойствами фасада, у пункта с подменю — и фасада
-владельца (третий параметр). Кнопка на другом теге — тот же тип
-со своим тегом: `TButtonElementProps<HTMLDivElement>` у
-`<div is="so-button-div">`, `TButtonElementProps<HTMLSpanElement>` у
-`<span is="so-button-span">`, и `disabled` там — свойство пропа, а у
-`<button>` — нативное; строка элемента коллекции —
-`TItemRowElementProps<HTMLDivElement>` у `<div is="so-item-row-div">`;
-поповер на `div` — `TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
+владельца (третий параметр). Элемент на теге не по умолчанию — тип со своим
+тегом: строка элемента коллекции — `TItemRowElementProps<HTMLDivElement>` у
+`<div is="so-item-row-div">`, `TItemRowElementProps<HTMLSpanElement>` у
+`<span is="so-item-row-span">`, и `disabled` там — свойство пропа, а у
+`<button is="so-button">` — нативное; поповер на `div` —
+`TPopoverElementProps<HTMLDivElement>`. Сторожат `expectTypeOf` в
 `ui/webc/__tests__/button.spec.ts`, `frame.spec.ts`, `tabs.spec.ts`,
 `accordion.spec.ts`, `list-box.spec.ts`, `tags.spec.ts`, `select.spec.ts`,
 `menu.spec.ts` и `popover.spec.ts`.
@@ -3787,12 +3785,11 @@ Svelte (`TElementProps` над `DescriptorComponentProps`): свои пропс�
 ### Известные ограничения
 
 - Тег корня задан регистрацией: одно имя расширяет один тег. Компонент на
-  другом теге — своё имя, имя компонента и тег через дефис: у Button это
-  `<div is="so-button-div">` и `<span is="so-button-span">`
-  (`registerButtonTag`), других тегов у неё пока нет — кнопке-ссылке
-  понадобится `<a is="so-button-a">`, тем же вызовом фабрики, с `a` в её
-  карте регистраций. У строки элемента коллекции — `<div is="so-item-row-div">`
-  и `<span is="so-item-row-span">` (`registerItemRowTag`). У Popover — `<div is="so-popover-div">`
+  другом теге — своё имя, имя компонента и тег через дефис: у строки
+  элемента коллекции это `<div is="so-item-row-div">` и
+  `<span is="so-item-row-span">` (`registerItemRowTag`). У Button других
+  тегов нет — кнопке-ссылке понадобится `<a is="so-button-a">` и фабрика
+  регистраций, как у строки. У Popover — `<div is="so-popover-div">`
   (`registerPopoverTag`). Иконка — только `<span is="so-icon">`:
   `<i is="so-icon">` под тем же именем не оживёт, а `<svg>` атрибут `is` не
   расширяет вовсе.

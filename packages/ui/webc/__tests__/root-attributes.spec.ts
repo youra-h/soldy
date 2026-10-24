@@ -78,7 +78,6 @@ import {
 	TTagsItemElement,
 	TTextareaElement,
 	TTooltipElement,
-	registerButtonTag,
 	registerItemRowTag,
 	type TAccordionElementProps,
 	type TAccordionItemElementProps,
@@ -149,14 +148,7 @@ function isButton(node: Element | null): node is TButtonElementProps {
 	return node instanceof TButtonElement
 }
 
-/** Button на `div`: тот же класс, что регистрирует фабрика кнопки. */
-const TButtonDivElement = registerButtonTag('div')
-
-function isButtonDiv(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
-	return node instanceof TButtonDivElement
-}
-
-/** Строка элемента списка — ItemRow на `div`. */
+/** Строка элемента коллекции — ItemRow на `div`. */
 const TItemRowDivElement = registerItemRowTag('div')
 
 function isItemRowDiv(node: Element | null): node is TItemRowElementProps<HTMLDivElement> {
@@ -376,7 +368,7 @@ const COMPONENTS: ReadonlyArray<
 	readonly [string, string, string, TElementGuard<HTMLElement>, string, string | null]
 > = [
 	['Button', 'button', 'so-button', isButton, 'so-button', null],
-	['Button на div', 'div', 'so-button-div', isButtonDiv, 'so-button', null],
+	['ItemRow на div', 'div', 'so-item-row-div', isItemRowDiv, 'so-button', null],
 	['ComponentView', 'div', 'so-component-view', isView, 'so-component-view', null],
 	['Icon', 'span', 'so-icon', isIcon, 'so-icon', null],
 	['ProgressSpinner', 'span', 'so-progress-spinner', isSpinner, 'so-progress-spinner', null],

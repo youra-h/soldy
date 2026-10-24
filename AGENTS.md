@@ -581,13 +581,12 @@ Setup — всё, что у шести адаптеров общее: описа
 есть только на тегах строк — `div` и `span`: на теге по умолчанию она не
 стоит нигде. Часть мимо своего элемента — строка, собранная логикой самого
 элемента коллекции, — отвергнута: поведение кнопки разошлось бы по каждой
-коллекции. Так же Button на `div` — `<div is="so-button-div">`
-(`registerButtonTag`), и Popover на `div` — `<div is="so-popover-div">`,
-заголовок месяца Calendar (`registerPopoverTag`,
+коллекции. Так же Popover на `div` — `<div is="so-popover-div">`, заголовок
+месяца Calendar (`registerPopoverTag`,
 `packages/ui/webc/src/components/popover/`): панель выбора с `contained`
-лежит в корне поповера, а в строчном `span` блочной разметке не место.
-Сторожат `packages/ui/webc/__tests__/button.spec.ts` («Button на div»),
-`list-box.spec.ts` и `select.spec.ts` («строка на div», «строка на span») и
+лежит в корне поповера, а в строчном `span` блочной разметке не место. У
+самого Button второго имени нет: кнопка на другом теге в разметке библиотеки
+не нужна. Сторожат `packages/ui/webc/__tests__/item-row.spec.ts` и
 `popover.spec.ts` («Popover на div»).
 
 **Имя элемента стоит на теге внешнего узла компонента.** Обычно это и его

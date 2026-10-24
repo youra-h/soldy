@@ -37,7 +37,7 @@ import {
 	defineElement,
 	registerItemRowTag,
 	type ITemplate,
-	type TButtonElementProps,
+	type TItemRowElementProps,
 	type TTagsElementProps,
 	type TTagsItemElementProps,
 } from '@soldy-ui/webc'
@@ -66,7 +66,7 @@ function isTag(node: Element | null): node is TTagsItemElementProps {
 	return node instanceof TTagsItemElement
 }
 
-function isRow(node: Element | null): node is TButtonElementProps<HTMLDivElement> {
+function isRow(node: Element | null): node is TItemRowElementProps<HTMLDivElement> {
 	return node instanceof TItemRowDivElement
 }
 
@@ -121,7 +121,7 @@ const shownTags = (root: ParentNode = document): TTagsItemElementProps[] =>
 	)
 
 /** Строка тега — первый ребёнок корня: носитель его роли и `aria-selected`. */
-function rowIn(tag: Element): TButtonElementProps<HTMLDivElement> {
+function rowIn(tag: Element): TItemRowElementProps<HTMLDivElement> {
 	const row = tag.firstElementChild
 
 	if (!isRow(row)) throw new Error('у тега нет строки')

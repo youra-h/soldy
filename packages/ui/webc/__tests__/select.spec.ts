@@ -43,7 +43,7 @@ import {
 	defineElement,
 	registerItemRowTag,
 	type ITemplate,
-	type TButtonElementProps,
+	type TItemRowElementProps,
 	type TFrameElementProps,
 	type TSelectElementProps,
 	type TSelectItemElementProps,
@@ -1800,9 +1800,9 @@ describe('типы', () => {
 	})
 
 	/** У `span` своего `disabled` нет: там это свойство пропа. */
-	it('кнопка на span — тип своего тега', () => {
-		expectTypeOf<TButtonElementProps<HTMLSpanElement>>().toExtend<HTMLSpanElement>()
-		expectTypeOf<TButtonElementProps<HTMLSpanElement>['disabled']>().toEqualTypeOf<
+	it('строка на span — тип своего тега', () => {
+		expectTypeOf<TItemRowElementProps<HTMLSpanElement>>().toExtend<HTMLSpanElement>()
+		expectTypeOf<TItemRowElementProps<HTMLSpanElement>['disabled']>().toEqualTypeOf<
 			boolean | undefined
 		>()
 	})
