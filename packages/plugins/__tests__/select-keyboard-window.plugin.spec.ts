@@ -238,6 +238,25 @@ describe('aria-activedescendant', () => {
 
 		expect(activeDescendant()).toBe(items[0].aria.get('id'))
 	})
+
+	/**
+	 * Свой `ctrl` приложения переживает набор: Select, смонтированный заново,
+	 * получает то же поле, и ссылка, оставшаяся от снятого, указывала бы на
+	 * опцию, которой в документе нет.
+	 */
+	it('плагин уничтожен при подсветке — ссылка снята с поля', async () => {
+		const { owner, bundle, items, press, activeDescendant } = await setup()
+
+		owner.open = true
+		press('ArrowDown')
+
+		expect(activeDescendant()).toBe(items[0].aria.get('id'))
+
+		bundles.splice(bundles.indexOf(bundle), 1)
+		bundle.destroy()
+
+		expect(activeDescendant()).toBeNull()
+	})
 })
 
 describe('прокрутка к подсвеченной опции', () => {
