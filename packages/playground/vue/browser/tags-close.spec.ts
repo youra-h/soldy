@@ -255,8 +255,13 @@ describe.each(['filled', 'plain', 'outlined'] as const)(
 )
 
 describe('рамка и кольцо фокуса — у пилюли', () => {
+	/**
+	 * Фокус строка держит только с выбором: без него `tabindex` у неё нет, и ни
+	 * Tab, ни клик фокус на неё не ставят (`browser/tags-keyboard.spec.ts`).
+	 * Тег «Настройки» не выбран — рамку меняет только фокус.
+	 */
 	it('outlined: фокус строки темнит рамку пилюли, как темнил рамку строки', async () => {
-		render(harness({ view: 'outlined', mode: 'none' }))
+		render(harness({ view: 'outlined' }))
 
 		const { item, row } = tag('a')
 

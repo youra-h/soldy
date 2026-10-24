@@ -405,7 +405,19 @@ const CASES: Record<string, TCase> = {
 				<TagsItem :ctrl="ctrl" class="target" />
 			</Tags>
 		`,
-		target: '.target [role="listitem"]',
+		// Без выбора строка — `listitem` без `tabindex`: остановка тега — крестик
+		target: '.target .so-tags-item__close',
+	},
+	'Tags.Item с выбором': {
+		ctrl: () => new TTagsItem({ value: 'b', text: 'B' }),
+		template: `
+			<Tags mode="single" closable>
+				<TagsItem value="a" text="A" />
+				<TagsItem :ctrl="ctrl" class="target" />
+			</Tags>
+		`,
+		// Строка-опция, хотя остановка набора у первого тега, а не крестик
+		target: '.target [role="option"]',
 	},
 	'Menu.Item': {
 		ctrl: () => new TMenuItem({ value: 'b', text: 'B' }),

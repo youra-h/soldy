@@ -57,9 +57,14 @@ zero. The surface of an overlay panel is the theme's too: the theme paints the p
 `--so-panel-surface`, and this package announces it as the surface of the place inside the panel.
 The surface of the page is announced by the theme and that of a card by the application, in
 `--so-place-surface`: the sticky head of a table takes it as its opaque underlay. Every variable a
-theme may set is listed with its meaning in `theme-variables.json`, and so are those the library
-writes itself, such as the size of a dialog, and those the layout plugins write — the height of the
-front toast in a stack and of the sticky head of a table.
+theme may set or read is listed with its meaning in `theme-variables.json`: those this package
+reads — the ones a theme sets, and those the library and the layout plugins write, such as the size
+of a dialog or the height of a sticky table head — and those a theme may only read, such as the
+current height of a field or the place of the active tab.
+
+The gestures work without a theme too: while a panel, a drawer or a toast is being swiped, or a
+table column is being dragged by its header, this package keeps it under the pointer. The theme
+only animates what comes after: the return when it is let go, the leave when it is swiped away.
 
 ## Make your own theme
 
@@ -129,7 +134,9 @@ stylesheet: your rules add the look and take no mechanics away.
 ### 3. The variables
 
 [`theme-variables.json`](https://github.com/youra-h/soldy/blob/main/packages/themes/base/theme-variables.json)
-is the contract: every variable this package reads, with what it means. Four kinds:
+is the contract, with the meaning of every variable, in two sections.
+
+`base-reads` — every variable this package reads. Four kinds:
 
 - **Scales and geometry** with a default on `:root`, such as `--so-button-height-sm` or
   `--so-switch-inset`. Set only those where your numbers differ, on `:root`.
@@ -140,8 +147,22 @@ is the contract: every variable this package reads, with what it means. Four kin
   `--so-place-surface` on `:root` to the color of your page. Without them a sticky table head has
   no underlay, and the rows show through it.
 - **Written by the library and by the layout plugins** — the size of a dialog, the positions of
-  slider thumbs, the height of a sticky table head. Do not set them; read them if your look needs
-  them.
+  slider thumbs, the swipe offset of a panel, the height of a sticky table head. Do not set them;
+  read them if your look needs them.
+
+`theme-reads` — what a theme may read on top of that, and never sets:
+
+- **The writing-direction sign** `--so-dir-sign`.
+- **The current step of a block** — the scale value of the component's own size, and what is
+  derived from it: `--so-input-height`, `--so-slider-thumb-size`, `--so-slider-halo-size`,
+  `--so-radio-control-size`, the step of a toast in a stack `--so-toasts-lift`. Draw from these
+  when your look has to match the size of the part.
+- **Written by plugins and not read by this package** — the place of the active tab
+  (`--so-tabs-active-pos` and the rest of `TTabsViewPlugin`, step 6), the ghost of a column being
+  resized and the width of a column being dragged in a table.
+
+Read nothing else of this package: a variable that is not in the contract is part of its inner
+mechanics and may change. The check `theme-reads` (step 7) fails on it.
 
 Your own variables follow the same scheme, `--so-*`, as every name in the document's global
 namespace: a variable of the application with the same name would replace yours by inheritance.
@@ -179,6 +200,12 @@ selectors as the structure in `src/components/`. The rules every theme keeps:
     transition: inset-inline-start 200ms;
   }
   ```
+
+  Following the pointer is not movement: during a swipe or a column drag this package puts the part
+  under the pointer by `translate`. Give that `translate` no transition while the part is held
+  (`[data-swiping='true']`, `[data-dragging='true']`), and write your own `translate` only for what
+  comes after — a closed layer leaving, `@starting-style` of an arrival — taking the offset from
+  the same variable.
 
 - **Keyframes named `so-*`**, like the variables.
 - **Hover through the label.** A hover rule of CheckBox, Switch and a radio item also matches when
@@ -242,8 +269,9 @@ export default defineTheme({
   `--so-tabs-active-size` — the place and the length of the active tab along the main axis;
   `--so-tabs-gap-pos` and `--so-tabs-gap-size` — a gap in a line along the list under it;
   `--so-tabs-active-moving: 1` while the mark moves to a newly active tab. Once the node is
-  measured, it adds the modifier `so-tabs--ready-animation` to the root. Only the theme reads these:
-  it draws the mark of the active tab — a bar, a card — from them. The plugin lifts the moving flag
+  measured, it adds the modifier `so-tabs--ready-animation` to the root. Only the theme reads these
+  (the `theme-reads` section of the contract): it draws the mark of the active tab — a bar, a card
+  — from them. The plugin lifts the moving flag
   when the CSS transitions of the list's own pseudo-elements have ended, so a mark that moves is a
   `::before` or `::after` of the list, with a duration that depends on the flag —
   `calc(var(--so-tabs-active-moving, 0) * 200ms)` moves it to a new tab and puts it in place at once
@@ -266,8 +294,9 @@ The checks of this package run on the built CSS of every theme in the
 [repository](https://github.com/youra-h/soldy): a package in `packages/themes/` with a
 `vite.config.ts` that builds its stylesheet into one CSS file is picked up by
 `npm run test --workspace=@soldy-ui/theme-base` by itself. Outside the repository the same rules
-hold — each check is a rule of step 4:
+hold — each check is a rule of step 3 or 4:
 
+- `theme-reads` — every `--so-*` variable your stylesheet reads is your own or in the contract;
 - `sealed` — every selector addresses a `so-*` node; outside them only custom properties and
   `color-scheme`; only wrapping at-rules, `@layer`, `@keyframes` and `@property`;
 - `motion` — movement only behind the gate, no `scroll-behavior: smooth`;

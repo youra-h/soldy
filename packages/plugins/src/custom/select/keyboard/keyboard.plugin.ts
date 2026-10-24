@@ -101,12 +101,14 @@ export class TSelectKeyboardPlugin
 		// искать его незачем
 		this._cancelScroll()
 
+		// Снятие подсветки в `destroy()` базы снимает и ссылку с поля — пока
+		// Select ещё известен: свой `ctrl` приложения переживает плагин
+		super.destroy()
+
 		this._owner = null
 		this._input = null
 		this._elements = null
 		this._list = null
-
-		super.destroy()
 	}
 
 	/** Стратегия по режиму `editable` — выбор класса, а не проверка внутри. */

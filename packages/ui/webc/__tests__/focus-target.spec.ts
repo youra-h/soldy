@@ -372,7 +372,18 @@ const CASES: Record<string, TCase> = {
 		</div>`,
 		element: TTagsItemElement,
 		owner: '.target',
-		target: '.target [role="listitem"]',
+		// Без выбора строка — `listitem` без `tabindex`: остановка тега — крестик
+		target: '.target .so-tags-item__close',
+	},
+	'Tags.Item с выбором': {
+		html: `<div is="so-tags" mode="single" closable>
+			<div is="so-tags-item" value="a" text="A"></div>
+			<div is="so-tags-item" value="b" text="B" class="target"></div>
+		</div>`,
+		element: TTagsItemElement,
+		owner: '.target',
+		// Строка-опция, хотя остановка набора у первого тега, а не крестик
+		target: '.target [role="option"]',
 	},
 }
 

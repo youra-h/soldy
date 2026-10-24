@@ -73,10 +73,16 @@
  * ступени стопки — переменные корня документа; умолчания — числа темы oren,
  * тема задаёт свои на корне документа.
  *
+ * Жест: тост идёт за указателем — сдвиг плагина жеста (`--so-swipe-offset`,
+ * `swipe.css`) — `translate` места: место уезжает целиком, вместе с обрезкой,
+ * и плашку она не режет. У боковых мест — по строке, к своему краю, у мест по
+ * центру — по оси блока, к краю окна. В стопке то же свойство несёт и
+ * ступень: сдвиг и ступень — один `translate`.
+ *
  * Облик — поверхность, кромка, тень и скругление плашки, цвет вида сообщения,
  * кегль и начертание текста, цвет значка и описания, кольцо фокуса, вид
  * крестика и кнопок на заливке, закрытое содержимое заднего, а движение —
- * проявление и исчезание, въезд, уход, сдвиг за указателем и переход ступени —
+ * проявление и исчезание, въезд, уход, возврат отпущенного и переход ступени —
  * рисует тема. */
 
 :root {
@@ -162,6 +168,21 @@
 
 .so-toasts-item[data-swiping='true'] {
 	cursor: grabbing;
+}
+
+:is(
+		.so-toasts--placement-top-start,
+		.so-toasts--placement-top-end,
+		.so-toasts--placement-bottom-start,
+		.so-toasts--placement-bottom-end
+	)
+	> .so-toasts__list
+	> .so-toasts-item {
+	translate: var(--so-swipe-offset) 0;
+}
+
+:is(.so-toasts--placement-top, .so-toasts--placement-bottom) > .so-toasts__list > .so-toasts-item {
+	translate: 0 var(--so-swipe-offset);
 }
 
 .so-toasts-item[data-open='false'] {
@@ -298,9 +319,9 @@
 	justify-items: end;
 }
 
-/* Тост стопки — задний; передний — ниже. Сдвиг ступени — `translate`, то же
- * свойство, что у сдвига жеста: тема пишет его целиком, со ступенью отсюда
- * (`--so-toasts-lift`). */
+/* Тост стопки — задний; передний — ниже. Ступень (`--so-toasts-lift`) — к
+ * дальней от края окна стороне, по оси блока, и стоит она в том же
+ * `translate`, что сдвиг жеста (ниже). */
 .so-toasts--layout-cascade > .so-toasts__list > .so-toasts-item {
 	--so-toasts-item-gap: 0px;
 	--so-toasts-place: calc(
@@ -320,7 +341,24 @@
 			var(--so-toasts-cascade-narrow)
 	);
 	opacity: clamp(0, var(--so-toasts-cascade-layers) + 1 - var(--so-toasts-place), 1);
-	translate: 0 var(--so-toasts-lift);
+}
+
+/* Сдвиг жеста — по своей оси, как у столбца, ступень — по оси блока. */
+.so-toasts--layout-cascade:is(
+		.so-toasts--placement-top-start,
+		.so-toasts--placement-top-end,
+		.so-toasts--placement-bottom-start,
+		.so-toasts--placement-bottom-end
+	)
+	> .so-toasts__list
+	> .so-toasts-item {
+	translate: var(--so-swipe-offset) var(--so-toasts-lift);
+}
+
+.so-toasts--layout-cascade:is(.so-toasts--placement-top, .so-toasts--placement-bottom)
+	> .so-toasts__list
+	> .so-toasts-item {
+	translate: 0 calc(var(--so-swipe-offset) + var(--so-toasts-lift));
 }
 
 .so-toasts--layout-cascade:is(

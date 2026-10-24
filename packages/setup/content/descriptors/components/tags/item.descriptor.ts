@@ -12,11 +12,15 @@
  * отличие от остальных элементов коллекций (`OWNER_STYLE_PROPS`): вариант у
  * тега свой, и в одном наборе бывают теги разного цвета. Набор его не пишет —
  * тег без своего варианта тема красит вариантом набора.
+ *
+ * Строка тега (`row`) — не проп, а экземпляр, которым владеет тег, как поле
+ * Select: за жизнь тега он не меняется, и разметка отдаёт его кнопке через
+ * `ctrl`.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TTagsItem } from '@soldy-ui/core'
-import { rowIn } from '@soldy-ui/plugins'
+import { tagStopIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { ActionPluginDescriptor, TagsItemNamesPluginDescriptor } from '../../plugins'
 
@@ -63,9 +67,10 @@ export const TagsItemDescriptor = defineDescriptor(() =>
 		},
 
 		plugins: [
-			// Фокус держит строка тега, а корень — пилюля вокруг строки и
-			// крестика: туда `focused = true` и ставит фокус
-			ActionPluginDescriptor.with({ focusTarget: rowIn }),
+			// Корень — пилюля вокруг строки и крестика, фокус держит остановка
+			// тега: с выбором — строка-опция, без выбора — крестик (у строки
+			// `listitem` `tabindex` нет). Туда `focused = true` и ставит фокус
+			ActionPluginDescriptor.with({ focusTarget: tagStopIn }),
 			// Имя крестика от локали — с первой отрисовки
 			TagsItemNamesPluginDescriptor,
 		],

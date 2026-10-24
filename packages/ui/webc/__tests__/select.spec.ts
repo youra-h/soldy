@@ -633,13 +633,16 @@ describe('множественный выбор', () => {
 		expect(find(document, '.so-select__tags', HTMLElement).dataset['overflow']).toBe('scroll')
 	})
 
-	/** Без выбора у строки тега нет действия, и Tab она не ловит, а крестик — ловит. */
-	it('теги в поле — без выбора: строки не ловят Tab, крестик — нативная остановка', async () => {
+	/**
+	 * Без выбора у строки тега нет действия: `tabindex` у неё нет, и ни Tab, ни
+	 * фокус от клика она не ловит, а крестик — нативная остановка.
+	 */
+	it('теги в поле — без выбора: у строк tabindex нет, крестик — нативная остановка', async () => {
 		const el = await mountSelect({ mode: 'multiple', value: ['msk', 'tver'] }, OPTIONS)
 		const tags = find(el, '.so-select__tags', HTMLElement)
 		const rows = [...tags.querySelectorAll('.so-tags-item > .so-button:first-child')]
 
-		expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
+		expect(rows.map((row) => row.getAttribute('tabindex'))).toEqual([null, null])
 		expect(rows.map((row) => row.getAttribute('role'))).toEqual(['listitem', 'listitem'])
 		expect(find(tags, '.so-tags-item__close', HTMLElement).hasAttribute('tabindex')).toBe(false)
 	})
