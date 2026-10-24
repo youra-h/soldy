@@ -19,7 +19,7 @@ import TButton from './button.class'
  * `direction`, — а разметка отдаёт её кнопке целиком (`<Button :ctrl="row">`),
  * как Select — своё поле (`<Input :ctrl="field">`).
  */
-export default class TOwnedButton extends TButton {
+export default class TItemRow extends TButton {
 	/** Роль и остановку Tab узла пишет владелец, а не кнопка. */
 	protected override _syncButtonAria(): void {}
 }

@@ -16,7 +16,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import {
-	TOwnedButton,
+	TItemRow,
 	TTags,
 	TTagsItem,
 	TTagsCollectionFacade,
@@ -518,7 +518,7 @@ describe('остановка Tab — один тег с tabindex="0"', () => {
 	}
 
 	/**
-	 * Строка — `TOwnedButton`: своей остановки она не ставит, и гасить её `-1`
+	 * Строка — `TItemRow`: своей остановки она не ставит, и гасить её `-1`
 	 * незачем. С `-1` строка без действия принимала фокус от клика.
 	 */
 	it('в none остановки нет: tabindex у строк нет вовсе', () => {
@@ -790,7 +790,7 @@ describe('остановка Tab — один тег с tabindex="0"', () => {
 /**
  * Строка тега — кнопка, которой владеет тег, как Select — полем: разметка
  * отдаёт её кнопке через `ctrl`, а `size`, `variant`, `disabled` и `direction`
- * пишет ей тег. Роль и остановку Tab строка себе не пишет (`TOwnedButton`):
+ * пишет ей тег. Роль и остановку Tab строка себе не пишет (`TItemRow`):
  * их пишет набор `aria` тега, который разметка кладёт на неё же.
  */
 describe('строка тега', () => {
@@ -810,11 +810,11 @@ describe('строка тега', () => {
 		direction: tag.direction,
 	})
 
-	it('TOwnedButton на div — один экземпляр на всё время жизни тега', () => {
+	it('TItemRow на div — один экземпляр на всё время жизни тега', () => {
 		const tag = createTag('Настройки')
 		const row = tag.row
 
-		expect(row).toBeInstanceOf(TOwnedButton)
+		expect(row).toBeInstanceOf(TItemRow)
 		expect(row.tag).toBe('div')
 		expect(row.classes.toArray()).toContain('so-button')
 

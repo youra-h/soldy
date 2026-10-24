@@ -24,7 +24,7 @@ import { TButton, TTagsItem } from '@soldy-ui/core'
  * умолчанию (`TButton.defaultValues`), в Angular — сам элемент с атрибутом
  * `so-button`. У детали над экземпляром владельца (`ctrl` без `tag`) тег
  * задаёт экземпляр, а не разметка: строку тега создаёт тег (`TTagsItem.row`),
- * и сторож берёт тег у экземпляра (`OWNED_DETAILS`). Деталь другого тега
+ * и сторож берёт тег у экземпляра (`ROW_DETAILS`). Деталь другого тега
  * (`tag="div"` у строки элемента списка, строка тега, `<div so-button>`)
  * `type` не несёт: у её тега такого атрибута нет. Сторож читает только
  * статические `tag` и `type`, поэтому тег, заданный выражением, — тоже
@@ -236,8 +236,8 @@ function attributeOf(opening: string, attribute: string): string | true | null {
  * (`ctrl` без `tag`), и сменись он на `button` — деталь обязана нести
  * `type="button"`.
  */
-const OWNED_DETAILS: Readonly<Record<string, () => { readonly tag: string | object }>> = {
-	// Строка тега — `TOwnedButton`, которым владеет тег
+const ROW_DETAILS: Readonly<Record<string, () => { readonly tag: string | object }>> = {
+	// Строка тега — `TItemRow`, которым владеет тег
 	'tags.row': () => new TTagsItem().row,
 }
 
@@ -247,7 +247,7 @@ type TButtonDetail = {
 	readonly label: string
 	/**
 	 * Тег корня; `true` — задан выражением, `null` — его задаёт экземпляр, а
-	 * места нет в `OWNED_DETAILS`.
+	 * места нет в `ROW_DETAILS`.
 	 */
 	readonly tag: string | object | true | null
 	/** `type`: статический — строкой, `true` — выражение, `null` — нет. */
@@ -255,8 +255,8 @@ type TButtonDetail = {
 }
 
 /** Тег корня детали над экземпляром — у экземпляра места; места нет в таблице — `null`. */
-function ownedTagOf(place: string | true | null): string | object | null {
-	const create = typeof place === 'string' ? OWNED_DETAILS[place] : undefined
+function rowTagOf(place: string | true | null): string | object | null {
+	const create = typeof place === 'string' ? ROW_DETAILS[place] : undefined
 
 	return create ? create().tag : null
 }
@@ -271,11 +271,11 @@ function* buttonDetails(source: string, owner: string): Generator<TButtonDetail>
 		// Корень Angular — сам элемент разметки, у остальных — `tag` Button, а без
 		// него над экземпляром (`ctrl`) — тег экземпляра
 		const tag = raw === element ? attributeOf(own, 'tag') : element
-		const owned = tag === null && attributeOf(own, 'ctrl') !== null
+		const rowDetail = tag === null && attributeOf(own, 'ctrl') !== null
 
 		yield {
 			label: typeof place === 'string' ? place : `<${raw}>`,
-			tag: owned ? ownedTagOf(place) : (tag ?? TButton.defaultValues.tag),
+			tag: rowDetail ? rowTagOf(place) : (tag ?? TButton.defaultValues.tag),
 			type: attributeOf(own, 'type'),
 		}
 	}
@@ -284,7 +284,7 @@ function* buttonDetails(source: string, owner: string): Generator<TButtonDetail>
 /** Что не так с `type` детали — для отчёта; всё верно — `null`. */
 function problemOf({ label, tag, type }: TButtonDetail): string | null {
 	if (tag === true) return `${label}: тег задан выражением`
-	if (tag === null) return `${label}: тег задаёт экземпляр, а места нет в OWNED_DETAILS`
+	if (tag === null) return `${label}: тег задаёт экземпляр, а места нет в ROW_DETAILS`
 	if (tag === 'button') return type === 'button' ? null : `${label}: нет type="button"`
 
 	return type === null ? null : `${label}: type у тега ${tag}`
@@ -346,7 +346,7 @@ describe('деталь-кнопка разметки — type="button", дета
 		['<Button embedded="tags.row" ctrl={row} type="button" />', ['tags.row: type у тега div']],
 		[
 			'<Button embedded="x" :ctrl="part" />',
-			['x: тег задаёт экземпляр, а места нет в OWNED_DETAILS'],
+			['x: тег задаёт экземпляр, а места нет в ROW_DETAILS'],
 		],
 		['<Button tag="button" embedded="x" :ctrl="part" />', ['x: нет type="button"']],
 		['<Button :tag="tag" embedded="x" type="button" />', ['x: тег задан выражением']],

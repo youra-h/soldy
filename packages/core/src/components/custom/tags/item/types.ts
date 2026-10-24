@@ -42,7 +42,7 @@ export interface ITagsItem<
 	 */
 	readonly closeAria: TAria
 	/**
-	 * Строка тега — кнопка, которой владеет тег (`TOwnedButton`): роль и
+	 * Строка тега — кнопка, которой владеет тег (`TItemRow`): роль и
 	 * остановку Tab ей пишет набор `aria` тега, а `size`, `variant`, `disabled`
 	 * и `direction` — тег. Не меняется за время жизни тега, событий `change:`
 	 * у геттера нет.

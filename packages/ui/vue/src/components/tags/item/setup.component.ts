@@ -42,7 +42,7 @@ export default {
 			...ownerBinding,
 			context: itemAdapter.instance.context,
 			/**
-			 * Строка — экземпляр `TOwnedButton`, которым владеет тег. Не проп (не
+			 * Строка — экземпляр `TItemRow`, которым владеет тег. Не проп (не
 			 * меняется за время жизни тега), поэтому отдаём инстансом —
 			 * `<Button :ctrl="row">` берёт его целиком, как поле Select.
 			 */

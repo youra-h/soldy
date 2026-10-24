@@ -19,7 +19,7 @@ import type { TagsItemAttributes, TagsItemProps } from './base.component'
 const CLOSE = roleIcon('close')
 
 /**
- * Тег: строка — `Button` над экземпляром тега (`row`, `TOwnedButton` на `div`) с набором
+ * Тег: строка — `Button` над экземпляром тега (`row`, `TItemRow` на `div`) с набором
  * `aria`, кнопка закрытия — её сосед: потомки опции скринридеру презентационны. Размер,
  * вариант, выключенность и направление строке пишет тег, а роль и `tabindex` — его набор
  * `aria`. Выбор — по `press` строки: на клик выключенный тег выбирался бы.

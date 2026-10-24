@@ -1,5 +1,5 @@
 /**
- * `TOwnedButton` — кнопка, чью роль и остановку Tab пишет владелец набором
+ * `TItemRow` — кнопка, чью роль и остановку Tab пишет владелец набором
  * `aria` на том же узле: строка тега, которую тег отдаёт кнопке через `ctrl`.
  *
  * По устройству это `TButton` — блок, слоты, `press`, — а `role` и `tabindex`
@@ -9,18 +9,18 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { TButton, TOwnedButton } from '../src'
+import { TButton, TItemRow } from '../src'
 
-describe('TOwnedButton · роль и остановка Tab — у владельца', () => {
+describe('TItemRow · роль и остановка Tab — у владельца', () => {
 	it.each(['div', 'span', 'button'])('на %s ни role, ни tabindex', (tag) => {
-		const button = new TOwnedButton({ tag })
+		const button = new TItemRow({ tag })
 
 		expect(button.aria.has('role')).toBe(false)
 		expect(button.aria.has('tabindex')).toBe(false)
 	})
 
 	it('смена тега и выключение их не возвращают', () => {
-		const button = new TOwnedButton({ tag: 'div' })
+		const button = new TItemRow({ tag: 'div' })
 
 		button.tag = 'span'
 		button.disabled = true
@@ -32,27 +32,27 @@ describe('TOwnedButton · роль и остановка Tab — у владел
 	})
 
 	it('aria-disabled — как у TButton: это состояние самой кнопки', () => {
-		const owned = new TOwnedButton({ tag: 'div', disabled: true })
+		const row = new TItemRow({ tag: 'div', disabled: true })
 		const button = new TButton({ tag: 'div', disabled: true })
 
-		expect(owned.aria.get('aria-disabled')).toBe('true')
-		expect(owned.aria.get('aria-disabled')).toBe(button.aria.get('aria-disabled'))
+		expect(row.aria.get('aria-disabled')).toBe('true')
+		expect(row.aria.get('aria-disabled')).toBe(button.aria.get('aria-disabled'))
 
-		owned.disabled = false
+		row.disabled = false
 
-		expect(owned.aria.has('aria-disabled')).toBe(false)
+		expect(row.aria.has('aria-disabled')).toBe(false)
 	})
 
 	it('на нативной кнопке — нативный disabled, как у TButton', () => {
-		const owned = new TOwnedButton({ disabled: true })
+		const row = new TItemRow({ disabled: true })
 
-		expect(owned.tag).toBe('button')
-		expect(owned.attrs.get('disabled')).toBe('disabled')
-		expect(owned.aria.has('aria-disabled')).toBe(false)
+		expect(row.tag).toBe('button')
+		expect(row.attrs.get('disabled')).toBe('disabled')
+		expect(row.aria.has('aria-disabled')).toBe(false)
 	})
 
 	it('остальное — кнопки: блок so-button, текст, вид', () => {
-		const button = new TOwnedButton({ tag: 'div', text: 'Почта', view: 'ghost' })
+		const button = new TItemRow({ tag: 'div', text: 'Почта', view: 'ghost' })
 
 		expect(button).toBeInstanceOf(TButton)
 		expect(button.classes.toArray()).toEqual(

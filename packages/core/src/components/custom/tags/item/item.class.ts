@@ -8,7 +8,7 @@ import type {
 	TEventSink,
 	TValuePayload,
 } from '../../../../common'
-import TOwnedButton from '../../button/owned-button.class'
+import TItemRow from '../../button/item-row.class'
 import type { IButton } from '../../button/types'
 import type { ITagsItem, ITagsItemProps, TTagsItemEvents } from './types'
 
@@ -37,7 +37,7 @@ const ROW_TAG = 'div'
  * **Строка** (`row`) — кнопка, которой владеет тег, как Select — своим полем:
  * тег создаёт её один раз и пишет ей свои `size`, `variant`, `disabled` и
  * `direction`, а разметка отдаёт её кнопке целиком (`<Button :ctrl="row">`).
- * Это `TOwnedButton`: роль и остановку Tab она себе не пишет — их пишет набор
+ * Это `TItemRow`: роль и остановку Tab она себе не пишет — их пишет набор
  * `aria` тега, который разметка кладёт на неё же: роль — тег, `tabindex` —
  * `TTagsExtension` по режиму выбора. Без выбора `tabindex` у строки нет вовсе,
  * и фокус от клика она не принимает: действия у `listitem` нет. Тег строки
@@ -68,7 +68,7 @@ export default class TTagsItem<
 	}
 
 	protected _closeAria: TAria
-	protected readonly _row: TOwnedButton
+	protected readonly _row: TItemRow
 
 	protected _text: string
 	protected _closable: boolean | undefined
@@ -98,7 +98,7 @@ export default class TTagsItem<
 
 		// Строка — со значениями тега, и дальше их пишет он: от корня тега
 		// узел строки их не наследует, а разметка рядом с `ctrl` их не задаёт
-		this._row = new TOwnedButton({
+		this._row = new TItemRow({
 			tag: ROW_TAG,
 			size: this.size,
 			variant: this.variant,
@@ -138,7 +138,7 @@ export default class TTagsItem<
 	}
 
 	/**
-	 * Строка тега — кнопка, которой владеет тег (`TOwnedButton`): роль и
+	 * Строка тега — кнопка, которой владеет тег (`TItemRow`): роль и
 	 * остановку Tab ей пишет набор `aria` тега, а `size`, `variant`, `disabled`
 	 * и `direction` — сам тег. Не меняется за время жизни тега, поэтому
 	 * `change:`-события у геттера нет, как у поля Select.
