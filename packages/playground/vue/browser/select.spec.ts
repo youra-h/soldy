@@ -1,6 +1,7 @@
 /**
  * Select в настоящем браузере: появление и исчезание панели, форма кнопки
- * очистки и области стрелки, прозрачность выключенной опции.
+ * очистки и области стрелки, фокус после нажатия по стрелке, прозрачность
+ * выключенной опции.
  *
  * Панель — Frame, телепортированный в `body`, и открытость для темы ей пишет
  * её слой: `data-open` корня Select до телепортированной панели не доходит.
@@ -26,18 +27,24 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 
 const CITIES = ['Москва', 'Тверь', 'Тула', 'Казань']
 
-/** Select на странице, корень объявлен плагинам: `TElementPlugin` ждёт кадр. */
-const show = async (props: Record<string, unknown> = {}) => {
+/**
+ * Select на странице, корень объявлен плагинам: `TElementPlugin` ждёт кадр.
+ * `below` — пустое место под полем, высотой CSS: с ним страница выше окна.
+ */
+const show = async (props: Record<string, unknown> = {}, below?: string) => {
 	render(
 		defineComponent({
 			render: () =>
-				h('div', { style: 'padding: 40px; width: 320px' }, [
-					h(Select, props, {
-						default: () =>
-							CITIES.map((text, index) =>
-								h(SelectItem, { key: text, value: String(index), text }),
-							),
-					}),
+				h('div', [
+					h('div', { style: 'padding: 40px; width: 320px' }, [
+						h(Select, props, {
+							default: () =>
+								CITIES.map((text, index) =>
+									h(SelectItem, { key: text, value: String(index), text }),
+								),
+						}),
+					]),
+					below ? h('div', { style: { height: below } }) : null,
 				]),
 		}),
 	)
@@ -96,6 +103,8 @@ beforeEach(() => {
 
 afterEach(() => {
 	cleanup()
+	// Окно, которое прокрутил тест, возвращается к началу
+	window.scrollTo(0, 0)
 })
 
 /**
@@ -267,6 +276,91 @@ describe('стрелка', () => {
 			await expect.poll(() => panel().dataset.open).toBe('true')
 		},
 	)
+})
+
+/** Текст опции, на которую ссылается `aria-activedescendant` поля; ссылки нет — `null`. */
+const highlighted = (): string | null => {
+	const id = field().getAttribute('aria-activedescendant')
+
+	return id ? (document.getElementById(id)?.textContent?.trim() ?? null) : null
+}
+
+/**
+ * DOM-фокус комбобокса всегда на поле, и клавиши Select берёт только с него.
+ * Стрелка — немой узел, и `mousedown` по ней уносил фокус на `body`: панель
+ * открывалась, а ↓ с `body` до корня Select не доходил — подсветка стояла, и
+ * прокручивалась страница. Нажатие мимо контролов поля `TSelectPointerPlugin`
+ * гасит в обоих режимах и ставит фокус в поле, как у нативного `<select>`.
+ */
+describe('нажатие по стрелке', () => {
+	it.each<[string, Record<string, unknown>]>([
+		['select-only', {}],
+		['editable', { editable: true }],
+	])(
+		'%s: открывает панель с фокусом в поле, и ↓ ходит по опциям, а страница стоит',
+		async (_, props) => {
+			await show(props, '300vh')
+
+			// Страница выше окна — иначе ↓ на `body` прокручивать нечего, и
+			// сторож прошёл бы сам
+			expect(
+				document.documentElement.scrollHeight,
+				'высота страницы против окна',
+			).toBeGreaterThan(window.innerHeight)
+
+			await userEvent.click(find('.so-select__arrow'))
+			await expect.poll(() => panel().dataset.open).toBe('true')
+
+			expect(document.activeElement, 'фокус после нажатия по стрелке').toBe(field())
+
+			// Окно — после клика: перед кликом Playwright сам докручивает цель в окно
+			const scrollY = window.scrollY
+			const scrolls: number[] = []
+			const record = () => scrolls.push(window.scrollY)
+
+			window.addEventListener('scroll', record)
+
+			try {
+				await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}')
+				await expect.poll(highlighted).toBe('Тула')
+
+				// Событие `scroll` браузер шлёт в шаге кадра: прокрутку от клавиш
+				// видно не сразу
+				await nextFrame()
+				await nextFrame()
+				await nextFrame()
+			} finally {
+				window.removeEventListener('scroll', record)
+			}
+
+			expect(scrolls, 'прокрутка окна от ↓').toEqual([])
+			expect(window.scrollY, 'окно после ↓').toBe(scrollY)
+		},
+	)
+
+	it.each<[string, Record<string, unknown>]>([
+		['select-only', {}],
+		['editable', { editable: true }],
+	])('%s: фокус уже в поле — нажатие по стрелке его не уводит', async (_, props) => {
+		await show(props)
+
+		field().focus()
+
+		const lost: string[] = []
+		const record = (event: FocusEvent) => lost.push(event.type)
+
+		field().addEventListener('focusout', record)
+
+		try {
+			await userEvent.click(find('.so-select__arrow'))
+			await expect.poll(() => panel().dataset.open).toBe('true')
+		} finally {
+			field().removeEventListener('focusout', record)
+		}
+
+		expect(lost, 'уход фокуса с поля').toEqual([])
+		expect(document.activeElement).toBe(field())
+	})
 })
 
 /**
