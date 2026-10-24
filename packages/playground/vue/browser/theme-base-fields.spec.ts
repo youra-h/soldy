@@ -6,7 +6,8 @@
  * (`packages/themes/base/AGENTS.md`, «Перенос структуры»). Без темы части
  * голые — без рамок, цвета и видов, — но рабочие, и здесь это проверяется тем,
  * что видит пользователь, а не числами базы: список табов стоит с заданной
- * стороны от панели, а табы в нём — по оси ориентации; ряд тегов `scroll` —
+ * стороны от панели, а табы в нём — по оси ориентации, слоты списка — у начала
+ * и у конца его строки в обоих направлениях; ряд тегов `scroll` —
  * одной строкой и прокручивается вбок, а тег под фокусом с клавиатуры встаёт
  * в окно ряда; слоты Input и NumberInput — у краёв, ввод — между ними, кнопки
  * шага — у конца поля; Textarea растёт по строкам до `maxRows` и в одну строку
@@ -18,7 +19,10 @@
  * Страница у файла спека своя (`isolate` прогона), и листа темы на ней нет —
  * это проверяет первый тест. Проверен поломкой: без направления списка
  * вертикальных Tabs в базе (`flex-direction` у `.so-tabs--vertical >
- * .so-tabs__list`) табы встают в строку, и падают все случаи вертикальных.
+ * .so-tabs__list`) табы встают в строку, и падают все случаи вертикальных, а
+ * с физическим полем слота `trailing` (`margin-left` вместо
+ * `margin-inline-start`) в RTL он встаёт вплотную к табам, и падает RTL слотов
+ * списка.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -74,6 +78,16 @@ const box = (element: Element) => element.getBoundingClientRect()
 const mark = (name: string) =>
 	h('span', { class: `so-test-${name}`, style: 'display: block; width: 16px; height: 16px' })
 
+/** Начало и конец строки на экране: в RTL начало — справа. */
+const edges = (dir: 'ltr' | 'rtl', outer: DOMRect, inner: DOMRect) =>
+	dir === 'ltr'
+		? { start: inner.left - outer.left, end: outer.right - inner.right }
+		: { start: outer.right - inner.right, end: inner.left - outer.left }
+
+/** `b` стоит после `a` по направлению строки. */
+const after = (dir: 'ltr' | 'rtl', a: DOMRect, b: DOMRect) =>
+	dir === 'ltr' ? b.left >= a.right - EPSILON : b.right <= a.left + EPSILON
+
 afterEach(() => {
 	cleanup()
 })
@@ -89,9 +103,15 @@ describe('страница — только общий слой тем', () => {
 	})
 })
 
-describe('Tabs — список с заданной стороны от панели', () => {
-	const TABS = ['Настройки', 'Почта', 'Архив']
+const TABS = ['Настройки', 'Почта', 'Архив']
 
+/** Табы набора, первый — активный. */
+const tabItems = () =>
+	TABS.map((text, index) =>
+		h(TabsItem, { key: text, value: String(index), text, active: index === 0 }),
+	)
+
+describe('Tabs — список с заданной стороны от панели', () => {
 	type TSide = 'top' | 'left' | 'right'
 
 	/**
@@ -130,15 +150,7 @@ describe('Tabs — список с заданной стороны от пане
 						Tabs,
 						{ orientation, position },
 						{
-							default: () =>
-								TABS.map((text, index) =>
-									h(TabsItem, {
-										key: text,
-										value: String(index),
-										text,
-										active: index === 0,
-									}),
-								),
+							default: tabItems,
 							content: () => h(TabsContent, { value: '0' }, () => 'Панель'),
 						},
 					),
@@ -174,6 +186,39 @@ describe('Tabs — список с заданной стороны от пане
 					).toBeGreaterThan((dir === 'ltr' ? prev.right : next.right) - EPSILON)
 				}
 			}
+		},
+	)
+})
+
+describe('Tabs — слоты списка у краёв строки', () => {
+	/**
+	 * Слоты встают в ряду первым и последним, а свободное место строки забирает
+	 * поле `trailing` со стороны начала строки: он стоит у конца списка, а не
+	 * вплотную к последнему табу. В RTL конец строки — слева.
+	 */
+	it.each(['ltr', 'rtl'] as const)(
+		'%s: leading — у начала, trailing — у конца, табы между ними',
+		async (dir) => {
+			await show(
+				() =>
+					h(Tabs, null, {
+						leading: () => mark('leading'),
+						default: tabItems,
+						trailing: () => mark('trailing'),
+					}),
+				dir,
+			)
+
+			const list = box(find('.so-tabs__list'))
+			const leading = box(find('.so-tabs__list--leading'))
+			const trailing = box(find('.so-tabs__list--trailing'))
+			const items = [...document.querySelectorAll('.so-tabs__list > .so-tabs-item')].map(box)
+
+			expect(items).toHaveLength(TABS.length)
+			expect(edges(dir, list, leading).start, 'leading у начала').toBeLessThanOrEqual(EPSILON)
+			expect(edges(dir, list, trailing).end, 'trailing у конца').toBeLessThanOrEqual(EPSILON)
+			expect(after(dir, leading, items[0]), 'табы после leading').toBe(true)
+			expect(after(dir, items[items.length - 1], trailing), 'trailing после табов').toBe(true)
 		},
 	)
 })
@@ -263,16 +308,6 @@ describe('Tags — ряд scroll', () => {
 		expect(tag.right).toBeLessThanOrEqual(view.right + EPSILON)
 	})
 })
-
-/** Начало и конец строки на экране: в RTL начало — справа. */
-const edges = (dir: 'ltr' | 'rtl', outer: DOMRect, inner: DOMRect) =>
-	dir === 'ltr'
-		? { start: inner.left - outer.left, end: outer.right - inner.right }
-		: { start: outer.right - inner.right, end: inner.left - outer.left }
-
-/** `b` стоит после `a` по направлению строки. */
-const after = (dir: 'ltr' | 'rtl', a: DOMRect, b: DOMRect) =>
-	dir === 'ltr' ? b.left >= a.right - EPSILON : b.right <= a.left + EPSILON
 
 describe('Input — слоты у краёв, ввод между ними', () => {
 	it.each(['ltr', 'rtl'] as const)('%s', async (dir) => {
