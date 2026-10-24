@@ -13,9 +13,6 @@ import { graceArea, isPointInPolygon } from '../../../utils'
 import type { IDomEventTarget, TPoint } from '../../../utils'
 import type { TMenuHoverPluginEvents } from './types'
 
-/** Фокус строке под указателем — без прокрутки: пункт под указателем и так виден. */
-const NO_SCROLL: FocusOptions = { preventScroll: true }
-
 /**
  * Сколько указатель стоит на пункте со своей панелью, пока она не откроется,
  * мс: указатель, который проходит мимо, панель не раскрывает (Radix — те же
@@ -46,8 +43,9 @@ type TPendingOpen = { readonly uid: string | number; readonly timer: ReturnType<
  * **Подсветка**, пока меню открыто: мышь и перо над доступным пунктом
  * подсвечивают его, уход с пункта — на разделитель, подпись группы, поле
  * панели или за панель — и выключенный пункт подсветку снимают. Подсветка —
- * фокус (навигация уровня), и указатель ставит его без прокрутки. Своего
- * наведения у строки нет: иначе после стрелок горели бы две строки —
+ * фокус (навигация уровня, без прокрутки), а пункт, срезанный краем списка,
+ * докручивает прокрутка списка — тем же правилом, что подсветку от клавиш.
+ * Своего наведения у строки нет: иначе после стрелок горели бы две строки —
  * подсвеченная и та, что под указателем. Касание не подсвечивает: у пальца
  * наведения нет, а нажатие пункта — его клик.
  *
@@ -190,9 +188,9 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 
 		this._scheduleOpen(uid)
 
-		if (uid !== undefined && this._navigation?.highlightItem(uid, NO_SCROLL)) return
+		if (uid !== undefined && this._navigation?.highlightItem(uid)) return
 
-		this._navigation?.unhighlight(NO_SCROLL)
+		this._navigation?.unhighlight()
 	}
 
 	/**
@@ -209,7 +207,7 @@ export class TMenuHoverPlugin extends TBasePlugin<any, TMenuHoverPluginEvents> {
 
 		if (this._opened()) return
 
-		this._navigation?.unhighlight(NO_SCROLL)
+		this._navigation?.unhighlight()
 	}
 
 	/**

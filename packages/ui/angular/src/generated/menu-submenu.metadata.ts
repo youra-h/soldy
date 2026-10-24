@@ -64,6 +64,7 @@ export const MenuSubmenuOutputNames = [
 	'soDismissCreate',
 	'soDismissDismiss',
 	'soKeyboardCreate',
+	'soScrollCreate',
 	'soHoverCreate',
 	'soFocusCreate',
 	'soIdsCreate',
@@ -261,6 +262,9 @@ export abstract class TMenuSubmenuSurface<TInstance extends IEntity> extends TCo
 	}
 	get soKeyboardCreate(): TOutputEmitter<typeof descriptor, 'keyboard:create'> {
 		return this.createOutput('soKeyboardCreate')
+	}
+	get soScrollCreate(): TOutputEmitter<typeof descriptor, 'scroll:create'> {
+		return this.createOutput('soScrollCreate')
 	}
 	get soHoverCreate(): TOutputEmitter<typeof descriptor, 'hover:create'> {
 		return this.createOutput('soHoverCreate')
