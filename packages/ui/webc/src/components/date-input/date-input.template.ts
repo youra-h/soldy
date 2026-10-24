@@ -7,6 +7,7 @@
  */
 
 import type { IDateInput, TDateInputSegment } from '@soldy-ui/core'
+import type { TDateInputOutputs } from './setup.component'
 import { TKeyedLoop, bind, ownerAttributes, type ITemplate, patch } from '../../adapter'
 import { placeClearButton } from '../common/clear'
 
@@ -44,7 +45,7 @@ function segmentOf(owner: Document, segment: TDateInputSegment): HTMLElement {
 	return node
 }
 
-export const dateInputTemplate: ITemplate<IDateInput> = {
+export const dateInputTemplate: ITemplate<IDateInput, unknown, TDateInputOutputs> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')

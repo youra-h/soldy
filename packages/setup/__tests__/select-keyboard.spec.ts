@@ -21,6 +21,7 @@ import {
 	TElementPlugin,
 	TCollectionBundlesPlugin,
 	TCollectionElements,
+	TIdPlugin,
 	TListItemPlugin,
 	TListScrollPlugin,
 	TPluginBundle,
@@ -93,6 +94,8 @@ async function setup(
 	// не ставим: в разметке он стоит на строке опции, а не на корне, и
 	// `aria-activedescendant` берёт его из набора `aria` опции, а не из DOM
 	const itemPlugins = new Map<string | number, TListItemPlugin>()
+	/** `TIdPlugin` опций: `id`, который задаёт приложение. */
+	const idPlugins = new Map<string | number, TIdPlugin>()
 
 	for (const item of items) {
 		const node = document.createElement('div')
@@ -107,6 +110,7 @@ async function setup(
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
+		bundle.use(TIdPlugin)
 		bundle.use(TOptionIdsPlugin)
 
 		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
@@ -114,6 +118,7 @@ async function setup(
 
 		registered.element = node
 		itemPlugins.set(item.uid, highlight)
+		idPlugins.set(item.uid, required(bundle.get(TIdPlugin), 'TIdPlugin'))
 
 		bundles.register(bundle, item)
 	}
@@ -128,7 +133,12 @@ async function setup(
 
 	const registry = new TItemContextRegistry(facade.engine.getCore())
 
-	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls }
+	/** `id`, заданный приложением, — в `TIdPlugin` опции. */
+	const setId = (item: ISelectItem, id?: string) => {
+		required(idPlugins.get(item.uid), 'TIdPlugin опции').id = id
+	}
+
+	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls, setId }
 }
 
 afterEach(() => {
@@ -461,6 +471,46 @@ describe('aria-activedescendant', () => {
 		press('ArrowDown')
 
 		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[0].aria.get('id'))
+	})
+
+	/**
+	 * `id` опции, заданный приложением (`TIdPlugin` опции), главнее `id` от
+	 * монтирования: его пишет на строку плагин связок, и ссылка ведёт на него.
+	 * Сменили у подсвеченной — ссылка идёт за набором опции; подсветка та же, и
+	 * к опции список не прокручивается снова. Сняли — снова `id` от
+	 * монтирования.
+	 */
+	it('id подсвеченной опции от приложения — ссылка на него и за его сменой, без новой прокрутки', async () => {
+		const { owner, press, items, scrolls, setId } = await setup(['Москва', 'Тверь'])
+		const [moscow] = items
+
+		setId(moscow, 'city-msk')
+		press('ArrowDown')
+		await nextFrame()
+
+		expect(moscow.aria.get('id')).toBe('city-msk')
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('city-msk')
+		expect(scrolls).toHaveLength(1)
+
+		setId(moscow, 'city-moscow')
+		await nextFrame()
+
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('city-moscow')
+		expect(scrolls).toHaveLength(1)
+
+		setId(moscow)
+
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('option-москва-option')
+	})
+
+	it('id от приложения у другой опции ссылку не трогает', async () => {
+		const { owner, press, items, setId } = await setup(['Москва', 'Тверь'])
+
+		press('ArrowDown')
+		setId(items[1], 'city-tver')
+
+		expect(items[1].aria.get('id')).toBe('city-tver')
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('option-москва-option')
 	})
 })
 

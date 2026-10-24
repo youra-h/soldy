@@ -78,21 +78,24 @@ describe('ValueControl', () => {
 })
 
 describe('InputControl', () => {
-	it('readonly, required и id — в инстанс, снятый проп — к умолчанию', () => {
+	/** `id` — проп `TIdPlugin`, а не инстанса: в состоянии он есть, у `ctrl` его нет. */
+	it('readonly, required — в инстанс, id — в состояние; снятый проп — к умолчанию', () => {
 		const ctrl = new TInputControl<unknown>()
 		const layer: InputControlProps = { ctrl, readonly: true, required: true, id: 'field' }
 		const props = reactiveProps({ setup: setupInputControl, layer })
 
 		mount(Layer, props)
 
-		expect([ctrl.readonly, ctrl.required, ctrl.id]).toEqual([true, true, 'field'])
+		expect([ctrl.readonly, ctrl.required]).toEqual([true, true])
+		expect('id' in ctrl).toBe(false)
 		expect(state()).toMatchObject({ readonly: true, required: true, id: 'field' })
 
 		props.layer = { ctrl, required: true }
 		flushSync()
 
-		expect([ctrl.readonly, ctrl.id]).toEqual([false, undefined])
+		expect(ctrl.readonly).toBe(false)
 		expect(state()).toMatchObject({ readonly: false, required: true })
+		expect(state()['id']).toBeUndefined()
 	})
 })
 

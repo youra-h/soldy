@@ -21,7 +21,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { flushSync } from 'svelte'
-import { TField, TInput, TSlider } from '@soldy-ui/core'
+import { TField, TSlider } from '@soldy-ui/core'
 import { Field, Select, type FieldProps } from '@soldy-ui/svelte'
 import FieldHarness from './Field.test.svelte'
 import { find, htmlOf, mount } from './mount'
@@ -338,24 +338,19 @@ describe('Field · id поля', () => {
 	})
 
 	it('свой id задали позже — for идёт за ним', () => {
-		const ctrl = new TInput()
+		const props = reactiveProps<THarnessProps>({ label: 'Почта', controls: ['input'] })
 
-		mount(FieldHarness, { label: 'Почта', controls: ['input'], input: ctrl })
+		mount(FieldHarness, props)
 
-		ctrl.id = 'email'
+		props.id = 'email'
 		flushSync()
 
 		expect(input('.so-input input').id).toBe('email')
 		expect(label().htmlFor).toBe('email')
 	})
 
-	it('контрол сняли — его id от поля снят, for — снова на id поля', () => {
-		const ctrl = new TInput()
-		const props = reactiveProps<THarnessProps>({
-			label: 'Почта',
-			controls: ['input'],
-			input: ctrl,
-		})
+	it('контрол сняли — for снова на id поля', () => {
+		const props = reactiveProps<THarnessProps>({ label: 'Почта', controls: ['input'] })
 
 		mount(FieldHarness, props)
 
@@ -364,7 +359,6 @@ describe('Field · id поля', () => {
 		props.controls = []
 		flushSync()
 
-		expect(ctrl.id).toBeUndefined()
 		expect(label().htmlFor).toBe(id)
 	})
 })

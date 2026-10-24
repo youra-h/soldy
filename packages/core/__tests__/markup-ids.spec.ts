@@ -22,6 +22,9 @@ import {
 	TDialog,
 	TDrawer,
 	TInput,
+	TListBoxItem,
+	TMenuPopoverItem,
+	TMenuSubmenu,
 	TPopover,
 	TRadioGroup,
 	TRadioGroupCollectionFacade,
@@ -66,8 +69,26 @@ describe('ядро id в разметку не пишет', () => {
 		}
 	})
 
-	it('поле: id — только заданный потребителем', () => {
-		expect(new TInput().id).toBeUndefined()
+	/**
+	 * `id`, заданный приложением, — тоже понятие документа: его держит
+	 * `TIdPlugin` компонента, а не экземпляр. Свойство `id` у класса ядра было
+	 * бы вторым путём к тому же значению — и копией на каждый класс, на чей
+	 * узел ссылаются.
+	 */
+	it('id приложения — не свойство ядра: у поля и элементов со ссылками его нет', () => {
+		for (const instance of [
+			new TInput(),
+			new TSelect(),
+			new TListBoxItem(),
+			new TSelectItem(),
+			new TTabsItem(),
+			new TAccordionItem(),
+			new TMenuSubmenu(),
+			new TMenuPopoverItem(),
+		]) {
+			expect('id' in instance).toBe(false)
+			expect(Object.prototype.hasOwnProperty.call(instance.getProps(), 'id')).toBe(false)
+		}
 	})
 
 	it('Select: поле, список и опции', () => {

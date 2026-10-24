@@ -305,44 +305,40 @@ describe.each(CHECKABLES)('%s · атрибуты разметки', (_name, { i
 
 	/**
 	 * `id` — проп поля: с двумя узлами под одним `id` `<label for>` нашёл бы
-	 * корень, а тот подпись не принимает. Атрибут разметки база берёт пропом и
-	 * снимает с корня; дальше `id` поля ведёт `ctrl.id`, а `el.id` — свой `id`
-	 * корня.
+	 * корень, а тот подпись не принимает. Атрибут база берёт пропом и снимает с
+	 * корня — и из разметки, и записанный из кода (`el.id`, `setAttribute`);
+	 * пустой снимает проп. Прочесть `id` поля — `el.state.id`.
 	 */
-	it('id — только у <input>, и ctrl.id совпадает с ним', async () => {
+	it('id — только у <input>: из разметки и из кода, пустой снят', async () => {
 		const el = mountAs(`<span is="${is}" id="agree"></span>`, isCheckable)
 
 		expect(el.hasAttribute('id')).toBe(false)
 		expect(field(el).id).toBe('agree')
-		expect(el.ctrl?.id).toBe('agree')
+		expect(el.state).toMatchObject({ id: 'agree' })
 
-		const ctrl = el.ctrl
-
-		if (!ctrl) throw new Error('инстанса нет')
-
-		ctrl.id = 'other'
+		el.id = 'other'
 		await flush()
 
 		expect(field(el).id).toBe('other')
 		expect(el.hasAttribute('id')).toBe(false)
 
-		ctrl.id = undefined
+		el.id = ''
 		await flush()
 
 		expect(field(el).hasAttribute('id')).toBe(false)
+		expect(el.state).toMatchObject({ id: undefined })
 	})
 
-	it('id — не наблюдаемый атрибут: el.id остаётся у корня', async () => {
+	it('id — наблюдаемый атрибут, но не вход: setAttribute — на поле, на корне не остаётся', async () => {
 		const el = mountAs(`<span is="${is}" id="agree"></span>`, isCheckable)
 
-		el.id = 'root'
+		el.setAttribute('id', 'other')
 		await flush()
 
-		expect(el.getAttribute('id')).toBe('root')
-		expect(field(el).id).toBe('agree')
-		expect(el.ctrl?.id).toBe('agree')
-		expect(TCheckBoxElement.observedAttributes).not.toContain('id')
-		expect(TSwitchElement.observedAttributes).not.toContain('id')
+		expect(el.hasAttribute('id')).toBe(false)
+		expect(field(el).id).toBe('other')
+		expect(TCheckBoxElement.observedAttributes).toContain('id')
+		expect(TSwitchElement.observedAttributes).toContain('id')
 	})
 
 	/** Перенос — при построении: записанное потом из кода остаётся на корне. */

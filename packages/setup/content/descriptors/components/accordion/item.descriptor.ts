@@ -11,7 +11,11 @@ import { TAccordionItem } from '@soldy-ui/core'
 import { headerIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { AccordionItemIdsPluginDescriptor, ActionPluginDescriptor } from '../../plugins'
+import {
+	AccordionItemIdsPluginDescriptor,
+	ActionPluginDescriptor,
+	IdPluginDescriptor,
+} from '../../plugins'
 
 export const AccordionItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -69,7 +73,9 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 			// Фокус держит заголовок, а корень — обёртка заголовка и панели: туда
 			// `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: headerIn }),
-			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними
+			// Связка «заголовок ↔ панель»: `id` обеих и ссылки между ними; `id`
+			// заголовка — проп `id` или от монтирования
+			IdPluginDescriptor,
 			AccordionItemIdsPluginDescriptor,
 		],
 	}),

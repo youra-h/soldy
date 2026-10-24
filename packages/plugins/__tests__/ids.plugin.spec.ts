@@ -48,6 +48,7 @@ import {
 	TDialogIdsPlugin,
 	TDismissPlugin,
 	TFieldIdsPlugin,
+	TIdPlugin,
 	TItemGroupIdsPlugin,
 	TMenuIdsPlugin,
 	TMenuPopupIdsPlugin,
@@ -63,6 +64,7 @@ import {
 	TTextareaIdsPlugin,
 	TTooltipIdsPlugin,
 } from '../src'
+import type { IPluginConstructor } from '../src'
 
 describe('id монтирования', () => {
 	it('id части — <mountId>-<часть>', () => {
@@ -681,5 +683,115 @@ describe('общий name радио', () => {
 		facade.extensions.plain.push(new TRadioGroupItem({ value: 'c' }))
 
 		expect(names()).toEqual(['city', 'city', 'city'])
+	})
+})
+/**
+ * `id`, заданный приложением, держит `TIdPlugin` набора — проп `id`, — и он
+ * главнее `id` от монтирования, как у поля: плагин связок пишет его в набор
+ * строки и в ссылки на неё, на смену переписывает обе стороны, а снятый
+ * возвращает формулу. `id` второй стороны — панели — приложение не задаёт, он
+ * остаётся формулой.
+ */
+describe('id приложения у элемента', () => {
+	/** Набор с `TIdPlugin` и плагином связок — как у дескриптора: `TIdPlugin` раньше. */
+	function mount(instance: object, linker: IPluginConstructor): TIdPlugin {
+		const idPlugin = new TPluginBundle(instance, 'm1').use(TIdPlugin).use(linker).get(TIdPlugin)
+
+		if (!idPlugin) throw new Error('TIdPlugin не встал')
+
+		return idPlugin
+	}
+
+	it.each([
+		['Select.Item', () => new TSelectItem({ value: 'a' })],
+		['ListBox.Item', () => new TListBoxItem({ value: 'a' })],
+	] as const)(
+		'%s: id — на строке, сменили — следом, сняли — от монтирования',
+		(_name, create) => {
+			const item = create()
+			const idPlugin = mount(item, TOptionIdsPlugin)
+
+			expect(item.aria.get('id')).toBe('m1-option')
+
+			idPlugin.id = 'row-a'
+
+			expect(item.aria.get('id')).toBe('row-a')
+
+			idPlugin.id = 'row-b'
+
+			expect(item.aria.get('id')).toBe('row-b')
+
+			idPlugin.id = undefined
+
+			expect(item.aria.get('id')).toBe('m1-option')
+		},
+	)
+
+	it('Tabs.Item: id — у таба, а id панели по-прежнему от монтирования', () => {
+		const tab = new TTabsItem({ value: 'a' })
+		const idPlugin = mount(tab, TTabsItemIdsPlugin)
+
+		idPlugin.id = 'tab-a'
+
+		expect(tab.aria.get('id')).toBe('tab-a')
+		expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+
+		idPlugin.id = undefined
+
+		expect(tab.aria.get('id')).toBe('m1-tab')
+		expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+	})
+
+	it('Accordion.Item: id — у заголовка и в ссылке панели на него', () => {
+		const section = new TAccordionItem({ value: 'a' })
+		const idPlugin = mount(section, TAccordionItemIdsPlugin)
+
+		idPlugin.id = 'faq-a'
+
+		expect(section.aria.get('id')).toBe('faq-a')
+		expect(section.aria.get('aria-controls')).toBe('m1-content')
+		expect(section.contentAria.toObject()).toEqual({
+			role: 'region',
+			id: 'm1-content',
+			'aria-labelledby': 'faq-a',
+		})
+
+		idPlugin.id = undefined
+
+		expect(section.aria.get('id')).toBe('m1-header')
+		expect(section.contentAria.get('aria-labelledby')).toBe('m1-header')
+		expect(section.contentAria.get('id')).toBe('m1-content')
+	})
+
+	it.each([
+		['Menu.Submenu', () => new TMenuSubmenu({ text: 'Поделиться' })],
+		['Menu.PopoverItem', () => new TMenuPopoverItem({ text: 'Срок' })],
+	] as const)('%s: id — у строки и в ссылке панели на неё', (_name, create) => {
+		const item = create()
+		const idPlugin = mount(item, TMenuPopupIdsPlugin)
+
+		idPlugin.id = 'share'
+
+		expect(item.aria.get('id')).toBe('share')
+		expect(item.aria.get('aria-controls')).toBe('m1-panel')
+		expect(item.panelAria.get('id')).toBe('m1-panel')
+		expect(item.panelAria.get('aria-labelledby')).toBe('share')
+
+		idPlugin.id = undefined
+
+		expect(item.aria.get('id')).toBe('m1-row')
+		expect(item.panelAria.get('aria-labelledby')).toBe('m1-row')
+	})
+
+	/**
+	 * Плагин связок без `TIdPlugin` в наборе работает от монтирования: так его
+	 * ставит компонент, которому `id` приложения не нужен.
+	 */
+	it('без TIdPlugin в наборе — id от монтирования', () => {
+		const item = new TListBoxItem({ value: 'a' })
+
+		new TPluginBundle(item, 'm1').use(TOptionIdsPlugin)
+
+		expect(item.aria.get('id')).toBe('m1-option')
 	})
 })

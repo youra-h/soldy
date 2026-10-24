@@ -29,6 +29,7 @@ import {
 	TElementPlugin,
 	TCollectionBundlesPlugin,
 	TCollectionElements,
+	TIdPlugin,
 	TOptionIdsPlugin,
 	TPluginBundle,
 } from '@soldy-ui/plugins'
@@ -95,6 +96,8 @@ async function setup(texts: string[]) {
 	keyboard.install(ctx)
 
 	const itemPlugins = new Map<string | number, TListItemPlugin>()
+	/** `TIdPlugin` элементов: `id`, который задаёт приложение. */
+	const idPlugins = new Map<string | number, TIdPlugin>()
 	/** Строки элементов по порядку: после клика фокус остаётся на строке. */
 	const rows: HTMLElement[] = []
 
@@ -111,10 +114,12 @@ async function setup(texts: string[]) {
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
+		bundle.use(TIdPlugin)
 		bundle.use(TOptionIdsPlugin)
 
 		required(bundle.get(TElementPlugin), 'TElementPlugin').element = node
 		itemPlugins.set(item.uid, required(bundle.get(TListItemPlugin), 'TListItemPlugin'))
+		idPlugins.set(item.uid, required(bundle.get(TIdPlugin), 'TIdPlugin'))
 		bundles.register(bundle, item)
 	}
 
@@ -126,7 +131,7 @@ async function setup(texts: string[]) {
 	/** Клавиша с узла списка — там фокус после Tab. */
 	const press = (key: string) => keydown(list, key)
 
-	return { owner, facade, items, keyboard, press, itemPlugins, root, list, rows }
+	return { owner, facade, items, keyboard, press, itemPlugins, idPlugins, root, list, rows }
 }
 
 type TListBoxSetup = Awaited<ReturnType<typeof setup>>
@@ -811,6 +816,11 @@ describe('ссылка на элемент под стрелками', () => {
 	const idOf = ({ facade }: TListBoxSetup, index: number) =>
 		facade.engine.extensions.batch.items[index]?.aria.get('id') ?? null
 
+	/** `id`, заданный приложением, — в `TIdPlugin` элемента. */
+	const setId = ({ idPlugins }: TListBoxSetup, item: { uid: string | number }, id?: string) => {
+		required(idPlugins.get(item.uid), 'TIdPlugin элемента').id = id
+	}
+
 	it('до клавиш ссылки нет — и когда позиция стоит на выбранном', async () => {
 		const listBox = await setup(['Один', 'Два', 'Три'])
 		const { facade, keyboard } = listBox
@@ -958,6 +968,60 @@ describe('ссылка на элемент под стрелками', () => {
 		listBox.keyboard.destroy()
 
 		expect(marks(listBox)).toEqual([false, false, false])
+		expect(activeDescendant(listBox)).toBeNull()
+	})
+
+	/**
+	 * `id`, заданный приложением (`TIdPlugin` элемента), главнее `id` от
+	 * монтирования: его пишет на строку плагин связок, и ссылка ведёт на него.
+	 * Сменили или сняли у подсвеченного — ссылка идёт за набором элемента,
+	 * подсветка та же.
+	 */
+	it('id подсвеченного от приложения — ссылка на него и за его сменой', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const [first] = listBox.items
+
+		setId(listBox, first, 'row-one')
+		listBox.press('ArrowDown')
+
+		expect(idOf(listBox, 0)).toBe('row-one')
+		expect(activeDescendant(listBox)).toBe('row-one')
+
+		setId(listBox, first, 'row-first')
+
+		expect(activeDescendant(listBox)).toBe('row-first')
+		expect(marks(listBox)).toEqual([true, false, false])
+
+		setId(listBox, first)
+
+		expect(activeDescendant(listBox)).toBe('m1-option')
+	})
+
+	it('id от приложения у другого элемента ссылку не трогает', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const [first, second, third] = listBox.items
+
+		listBox.press('ArrowDown')
+		listBox.press('ArrowDown')
+		setId(listBox, first, 'row-one')
+		setId(listBox, third, 'row-three')
+
+		expect(activeDescendant(listBox)).toBe('m2-option')
+
+		setId(listBox, second, 'row-two')
+
+		expect(activeDescendant(listBox)).toBe('row-two')
+	})
+
+	it('позиция без отметки — смена id ссылку не ставит', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { facade } = listBox
+		const second = listBox.items[1]
+
+		facade.engine.extensions.selection.select(second)
+		setId(listBox, second, 'row-two')
+
+		expect(listBox.keyboard.highlightedUid).toBe(second.uid)
 		expect(activeDescendant(listBox)).toBeNull()
 	})
 })

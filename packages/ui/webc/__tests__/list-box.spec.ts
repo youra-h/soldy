@@ -362,6 +362,47 @@ describe('выбор', () => {
 	})
 
 	/**
+	 * Свой `id` элемента — его вход: атрибут разметки база берёт пропом первой
+	 * сборки и снимает с корня, и на строку `id` встаёт из набора элемента —
+	 * ссылка ведёт на него, узел с ним один. Раньше атрибут ехал на строку
+	 * статикой, а значение потребителя на узле главнее набора, и ссылка вела на
+	 * `id` от монтирования, которого в документе нет. Из кода — `el.id`:
+	 * свойство элемента — тот же проп, и строка и ссылка идут за ним.
+	 */
+	it('id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
+		const list = listIn(
+			await mount(`<div is="so-list-box">
+				<div is="so-list-box-item" value="a" text="Первый" id="row-first"></div>
+				<div is="so-list-box-item" value="b" text="Второй"></div>
+			</div>`),
+		)
+
+		await nextFrame()
+		await press(nodeOf(list), 'ArrowDown')
+
+		expect(rowOf('Первый').id).toBe('row-first')
+		expect(nodeOf(list).getAttribute('aria-activedescendant')).toBe('row-first')
+		expect(document.querySelectorAll('[id="row-first"]')).toHaveLength(1)
+		expect(itemOf('Первый').hasAttribute('id')).toBe(false)
+
+		itemOf('Первый').id = 'row-one'
+		await flush()
+
+		expect(rowOf('Первый').id).toBe('row-one')
+		expect(itemOf('Первый').hasAttribute('id')).toBe(false)
+		expect(nodeOf(list).getAttribute('aria-activedescendant')).toBe('row-one')
+
+		itemOf('Первый').id = ''
+		await flush()
+
+		const fallback = rowOf('Первый').id
+
+		expect(fallback).not.toBe('')
+		expect(fallback).not.toBe('row-one')
+		expect(nodeOf(list).getAttribute('aria-activedescendant')).toBe(fallback)
+	})
+
+	/**
 	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
 	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
 	 * кнопка нажимается.

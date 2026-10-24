@@ -592,6 +592,33 @@ describe('связка ARIA в разметке', () => {
 
 		expect(panel().getAttribute('role')).toBe('tabpanel')
 	})
+
+	/**
+	 * `id` таба — проп `TIdPlugin`: атрибут разметки база берёт пропом первой
+	 * сборки и снимает с корня, и на строку таба `id` встаёт из набора таба —
+	 * панель ссылается на него, узел с ним один. `id` панели приложение не
+	 * задаёт, он остаётся формулой. Из кода — `el.id`: свойство элемента — тот
+	 * же проп, и таб и панель идут за ним.
+	 */
+	it('id таба — на табе, панель ссылается на него и идёт за его сменой', async () => {
+		await mount(`<div is="so-tabs">
+			<div is="so-tabs-item" value="a" text="First" active id="settings"></div>
+			<div is="so-tabs-item" value="b" text="Second"></div>
+			<div is="so-tabs-content" slot="content" value="a">Панель A</div>
+		</div>`)
+
+		expect(tab('First').id).toBe('settings')
+		expect(panel().getAttribute('aria-labelledby')).toBe('settings')
+		expect(document.querySelectorAll('[id="settings"]')).toHaveLength(1)
+		expect(item('First').hasAttribute('id')).toBe(false)
+
+		item('First').id = 'general'
+		await flush()
+
+		expect(tab('First').id).toBe('general')
+		expect(panel().getAttribute('aria-labelledby')).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
 })
 
 describe('aria-selected', () => {

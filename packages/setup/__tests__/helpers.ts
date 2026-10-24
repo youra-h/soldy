@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { TCollectionComponent, TCollectionItemComponent, TEvented } from '@soldy-ui/core'
-import { TPluginBundle } from '@soldy-ui/plugins'
-import type { IPlugin, IPluginConstructor, IPluginContext } from '@soldy-ui/plugins'
+import { TIdPlugin, TPluginBundle } from '@soldy-ui/plugins'
+import type { IPlugin, IPluginBundle, IPluginConstructor, IPluginContext } from '@soldy-ui/plugins'
 import * as exported from '../content/descriptors'
 import type { IElevatorKey, TElevatorFactory } from '../protected/adapter/elevator'
 import type { IComponentDescriptor } from '../protected/define'
@@ -300,6 +300,11 @@ export function required<T>(value: T | null | undefined, what: string): T {
 	}
 
 	return value
+}
+
+/** `id`, который задаёт приложение, — `TIdPlugin` набора контекста. */
+export function idPluginOf(context: { readonly bundle: IPluginBundle | null }): TIdPlugin {
+	return required(context.bundle?.get(TIdPlugin), 'TIdPlugin')
 }
 
 /**

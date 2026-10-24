@@ -307,6 +307,38 @@ describe('опции', () => {
 		expect(document.getElementById(id ?? '')?.getAttribute('role')).toBe('option')
 	})
 
+	/**
+	 * `id` опции — проп `TIdPlugin`: атрибут разметки база берёт пропом первой
+	 * сборки и снимает с корня опции, и на строку `id` встаёт из набора опции —
+	 * ссылка поля ведёт на него, узел с ним один. Из кода — `el.id`: свойство
+	 * элемента — тот же проп, и строка и ссылка идут за ним.
+	 */
+	it('id опции — на строке, ссылка поля ведёт на него и идёт за его сменой', async () => {
+		const el = await render(
+			'',
+			`<div is="so-select-item" value="msk" text="Москва" id="city-msk"></div>
+			<div is="so-select-item" value="tver" text="Тверь"></div>`,
+		)
+
+		await press(fieldOf(el), 'ArrowDown')
+
+		const option = document.querySelector('.so-select-item')
+
+		expect(optionOf('Москва').id).toBe('city-msk')
+		expect(fieldOf(el).getAttribute('aria-activedescendant')).toBe('city-msk')
+		expect(document.querySelectorAll('[id="city-msk"]')).toHaveLength(1)
+
+		if (!isOption(option)) throw new Error('опции нет')
+
+		expect(option.hasAttribute('id')).toBe(false)
+
+		option.id = 'city-moscow'
+		await settle()
+
+		expect(optionOf('Москва').id).toBe('city-moscow')
+		expect(fieldOf(el).getAttribute('aria-activedescendant')).toBe('city-moscow')
+	})
+
 	it('aria-selected стоит на всех, а не только на выбранной', async () => {
 		await render()
 

@@ -22,7 +22,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Show, createSignal, useContext, type JSX } from 'solid-js'
-import { TField, TInput, TSlider } from '@soldy-ui/core'
+import { TField, TSlider } from '@soldy-ui/core'
 import type { TFieldPosition } from '@soldy-ui/core'
 import {
 	CheckBox,
@@ -376,28 +376,27 @@ describe('Field · id поля', () => {
 	})
 
 	it('свой id задали позже — for идёт за ним', () => {
-		const ctrl = new TInput()
+		const [id, setId] = createSignal<string | undefined>()
 
 		mount(() => (
 			<Field label="Почта">
-				<Input ctrl={ctrl} />
+				<Input id={id()} />
 			</Field>
 		))
 
-		ctrl.id = 'email'
+		setId('email')
 
 		expect(input('.so-input input').id).toBe('email')
 		expect(label().htmlFor).toBe('email')
 	})
 
-	it('контрол сняли — его id от поля снят, for — снова на id поля', () => {
-		const ctrl = new TInput()
+	it('контрол сняли — for снова на id поля', () => {
 		const [shown, setShown] = createSignal(true)
 
 		mount(() => (
 			<Field label="Почта">
 				<Show when={shown()}>
-					<Input ctrl={ctrl} />
+					<Input />
 				</Show>
 			</Field>
 		))
@@ -406,7 +405,6 @@ describe('Field · id поля', () => {
 
 		setShown(false)
 
-		expect(ctrl.id).toBeUndefined()
 		expect(label().htmlFor).toBe(id)
 	})
 })

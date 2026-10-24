@@ -1382,6 +1382,28 @@ describe('подменю', () => {
 		expect(share().contains(subPanel())).toBe(false)
 	})
 
+	/**
+	 * `id` пункта с подменю — проп `TIdPlugin`: атрибут разметки база берёт
+	 * пропом первой сборки и снимает с корня пункта, и на строку `id` встаёт из
+	 * набора пункта — панель подменю ссылается на него, узел с ним один. `id`
+	 * панели приложение не задаёт, он остаётся формулой. Из кода — `el.id`:
+	 * свойство элемента — тот же проп, и строка и панель идут за ним.
+	 */
+	it('id подменю — на строке, панель ссылается на него и идёт за его сменой', async () => {
+		await render({ content: MARKUP('id="menu-share"') })
+
+		expect(shareRow().id).toBe('menu-share')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-share')
+		expect(document.querySelectorAll('[id="menu-share"]')).toHaveLength(1)
+		expect(share().hasAttribute('id')).toBe(false)
+
+		share().id = 'menu-send'
+		await flush()
+
+		expect(shareRow().id).toBe('menu-send')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-send')
+	})
+
 	it('пункт входит в меню над ним, его пункты — в его собственное меню', async () => {
 		const menu = await render({ content: MARKUP() })
 

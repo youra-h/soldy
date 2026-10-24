@@ -48,9 +48,10 @@ export type TOutputEmitter<
 > = EventEmitter<TOutputValue<DescriptorAllEvents<TDescriptorFn>[TEvent]>>
 
 /**
- * Состояние, как его читает шаблон: свойства инстанса, выходы плагинов и
- * свойства фасадов. Одноимённых у них нет — имена фасадов и плагинов
- * префиксуются.
+ * Состояние, как его читает шаблон: свойства инстанса, входы и выходы плагинов
+ * (`TOutputs`, как `TAdapterState` setup) и свойства фасадов. Одноимённых у них
+ * нет — имена фасадов и плагинов префиксуются, а проп плагина без namespace
+ * (`id` у `TIdPlugin`) с инстансом не совпадает по построению.
  */
 export type TBindingState<
 	TInstance,
@@ -125,7 +126,7 @@ function useExchange<C extends IComponentContract>(
 
 export function useAdapter<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
-): TBinding<C['instance'], unknown, C['plugins']['outputs']> {
+): TBinding<C['instance'], unknown, C['plugins']['props'] & C['plugins']['outputs']> {
 	return {
 		...useExchange(adapter),
 		ctrl: adapter.instance,

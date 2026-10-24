@@ -7,7 +7,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { createEngineTabs } from '@soldy-ui/core'
 import { RadioGroup, Tabs, TabsItem, TabsContent, Tags } from '@soldy-ui/vue'
 import Harness from './TabsContent.test.vue'
@@ -309,6 +309,54 @@ describe('связка ARIA в разметке', () => {
 
 	it('панель объявлена как tabpanel', () => {
 		expect(render().find('.so-tabs__panel').attributes('role')).toBe('tabpanel')
+	})
+
+	/**
+	 * Свой `id` таба — его вход: он встаёт на таб вместо `id` от монтирования,
+	 * и панель ссылается на него. В `$attrs` он не попадает и мимо набора на
+	 * строку таба не едет, поэтому узел с ним один — таб. `id` панели своего
+	 * входа не имеет и остаётся формулой.
+	 */
+	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', async () => {
+		const own = ref<string | undefined>('settings')
+		const wrapper = mount(
+			defineComponent({
+				render: () =>
+					h(
+						Tabs,
+						{},
+						{
+							default: () => [
+								h(TabsItem, {
+									value: 'a',
+									text: 'First',
+									active: true,
+									id: own.value,
+								}),
+								h(TabsItem, { value: 'b', text: 'Second' }),
+							],
+							content: () => h(TabsContent, { value: 'a' }, () => 'Панель A'),
+						},
+					),
+			}),
+			{ attachTo: document.body },
+		)
+		const tab = () => wrapper.findAll('[role="tab"]')[0]
+		const panel = () => wrapper.find('.so-tabs__panel')
+
+		expect(tab().attributes('id')).toBe('settings')
+		expect(panel().attributes('aria-labelledby')).toBe('settings')
+		expect(document.querySelectorAll('[id="settings"]')).toHaveLength(1)
+		expect(wrapper.find('.so-tabs-item').attributes('id')).toBeUndefined()
+
+		own.value = 'general'
+		await nextTick()
+
+		expect(tab().attributes('id')).toBe('general')
+		expect(panel().attributes('aria-labelledby')).toBe('general')
+		expect(tab().attributes('aria-controls')).toBe(panel().attributes('id'))
+
+		wrapper.unmount()
 	})
 })
 

@@ -298,7 +298,9 @@ component's own props (`name`, `disabled`, `placeholder`) stay on the element, a
 attribute in the markup — `autocomplete`, `aria-label`, `tabindex`, `data-*` — moves to the
 `<input>` when the element is built. An attribute you set from code later stays on the element.
 `id` is the input's: `id="city"` in the markup lands on the `<input>`, so `<label for="city">`
-finds it; from code the input's id is `el.ctrl.id`, while `el.id` is the element's own.
+finds it. From code it is the same: `el.id = 'city'` (or `setAttribute('id', …)`) moves the id to
+the `<input>`, and `el.id = ''` removes it; the element itself never keeps an `id`. Read the
+current one as `el.state.id`.
 
 Slot content gets no scope, so your own clear button (the `clear` slot) clears the field through
 the element: `el.ctrl.clear()`. The built-in clear button and its icon are part of the field's

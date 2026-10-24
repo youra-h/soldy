@@ -1355,6 +1355,43 @@ describe('подменю', () => {
 		expect(row.querySelector('.so-menu-item__arrow .so-icon')).not.toBeNull()
 	})
 
+	/**
+	 * Свой `id` пункта с подменю — его вход: статический атрибут и привязка
+	 * `[id]` пишут вход, статику база снимает с корня пункта, и на строку `id`
+	 * встаёт из набора пункта — панель подменю ссылается на него, узел с ним
+	 * один. `id` панели своего входа не имеет и остаётся формулой.
+	 */
+	it('свой id подменю — на строке, панель ссылается на него и идёт за его сменой', async () => {
+		@Component({
+			selector: 'probe-menu-share-id',
+			standalone: true,
+			imports: [...BASE, TMenuItemComponent, TMenuSubmenuComponent],
+			template: `<span so-menu>
+				${TRIGGER}
+				<div so-menu-submenu value="share" text="Поделиться" [id]="own()">
+					<div so-menu-item value="link" text="Ссылка"></div>
+				</div>
+			</span>`,
+		})
+		class ShareIdPage {
+			readonly own = signal<string | undefined>('menu-share')
+		}
+
+		const fixture = await render(ShareIdPage)
+
+		expect(shareRow().id).toBe('menu-share')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-share')
+		expect(shareRow().getAttribute('aria-controls')).toBe(subPanel().id)
+		expect(document.querySelectorAll('[id="menu-share"]')).toHaveLength(1)
+		expect(node('[so-menu-submenu]').hasAttribute('id')).toBe(false)
+
+		fixture.componentInstance.own.set('menu-send')
+		check()
+
+		expect(shareRow().id).toBe('menu-send')
+		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-send')
+	})
+
 	it('пункт входит в меню над ним, его пункты — в его собственное меню', async () => {
 		await render(SharePage)
 

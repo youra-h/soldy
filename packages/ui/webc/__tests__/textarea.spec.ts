@@ -246,12 +246,12 @@ describe('Textarea · атрибуты разметки', () => {
 		expect(field(el).name).toBe('about')
 	})
 
-	it('id — только у <textarea>, ctrl.id совпадает с ним', () => {
+	it('id — только у <textarea>, el.id совпадает с ним', () => {
 		const el = mount('<div is="so-textarea" id="about"></div>')
 
 		expect(el.hasAttribute('id')).toBe(false)
 		expect(field(el).id).toBe('about')
-		expect(el.ctrl?.id).toBe('about')
+		expect(el.state).toMatchObject({ id: 'about' })
 		expect(document.querySelectorAll('#about')).toHaveLength(1)
 	})
 

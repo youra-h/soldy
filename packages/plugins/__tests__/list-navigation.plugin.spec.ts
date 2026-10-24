@@ -17,6 +17,11 @@
  * бы фокус на панель), отметка на месте позиции без неё — сообщение с
  * элементом, а позиция без отметки (`trackHighlight`) переезжает и уходит
  * молча — `null` приходит, только если отметка была видна.
+ *
+ * Хук `onHighlightedAriaChanged` — о наборе подсвеченного элемента: в нём
+ * `id`, на который ведёт ссылка, и `id` элемента в `TIdPlugin` меняется при той
+ * же подсветке. База слушает набор элемента на позиции, пока она на нём, и
+ * отпускает прежний, когда позиция ушла.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -40,6 +45,8 @@ class TProbeNavigationPlugin extends TListNavigationPlugin<TProbeEvents, IListBo
 	readonly changes: Array<string | number | null> = []
 	/** Что пришло подписчику `change:highlight` — по порядку. */
 	readonly payloads: THighlightPayload[] = []
+	/** О чьём наборе наследник узнал — по порядку вызовов хука. */
+	readonly ariaChanges: Array<string | number> = []
 
 	constructor(private readonly _shown: readonly IListBoxItem[]) {
 		super()
@@ -55,6 +62,10 @@ class TProbeNavigationPlugin extends TListNavigationPlugin<TProbeEvents, IListBo
 
 	protected override onHighlightChanged(uid: string | number | null): void {
 		this.changes.push(uid)
+	}
+
+	protected override onHighlightedAriaChanged(uid: string | number): void {
+		this.ariaChanges.push(uid)
 	}
 
 	mark(uid: string | number): void {
@@ -221,5 +232,54 @@ describe('TListNavigationPlugin — onHighlightChanged', () => {
 
 		expect(plugin.payloads.map(({ item }) => item?.uid ?? null)).toEqual(plugin.changes)
 		expect(plugin.changes).toEqual([b.uid, c.uid, null, a.uid, null])
+	})
+})
+
+describe('TListNavigationPlugin — onHighlightedAriaChanged', () => {
+	it('набор подсвеченного сменился — хук с ним, подсветка та же', () => {
+		const { plugin, a } = setup()
+
+		plugin.mark(a.uid)
+		a.aria.add('id', 'row-a')
+
+		expect(plugin.ariaChanges).toEqual([a.uid])
+		expect(plugin.changes).toEqual([a.uid])
+	})
+
+	it('позиция ушла — набор прежнего не слушается, нового — слушается', () => {
+		const { plugin, a, b } = setup()
+
+		plugin.mark(a.uid)
+		plugin.mark(b.uid)
+		a.aria.add('id', 'row-a')
+
+		expect(plugin.ariaChanges).toEqual([])
+
+		b.aria.add('id', 'row-b')
+
+		expect(plugin.ariaChanges).toEqual([b.uid])
+	})
+
+	it('без отметки ссылки нет — и хук молчит', () => {
+		const { plugin, a } = setup()
+
+		plugin.track(a.uid)
+		a.aria.add('id', 'row-a')
+
+		expect(plugin.ariaChanges).toEqual([])
+	})
+
+	it('подсветку сняли или навигацию уничтожили — набор не слушается', () => {
+		const { plugin, a, b } = setup()
+
+		plugin.mark(a.uid)
+		plugin.clear()
+		a.aria.add('id', 'row-a')
+
+		plugin.mark(b.uid)
+		plugin.destroy()
+		b.aria.add('id', 'row-b')
+
+		expect(plugin.ariaChanges).toEqual([])
 	})
 })

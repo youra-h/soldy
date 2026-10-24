@@ -36,6 +36,7 @@ export type {
 	DescriptorEvents,
 	DescriptorInstance,
 	DescriptorPluginOutputs,
+	DescriptorPluginProps,
 	DescriptorProps,
 	DescriptorSlots,
 	TContractOf,

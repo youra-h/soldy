@@ -11,16 +11,16 @@
  * одной ручкой) имя даёт `for`, а не ссылка: `aria-labelledby` перекрыл бы
  * подпись `Label` у флажка в поле.
  *
- * `id` поле задаёт каналом самого контрола. У контрола с `id` поля
+ * `id` поле задаёт каналом самого контрола. У контрола с `TIdPlugin`
  * (`TInputControl`: Input, NumberInput, Select, CheckBox, Switch, Rating) —
- * значением его `id`, а не записью в `aria`: свой `id` каждый такой контрол
- * уже ведёт до своего `<input>`, и у Select — до поля внутри. Набор `aria` Select разметка
- * кладёт атрибутами на вложенный Input, а `id` там — проп Input, и снятый `id`
- * из набора вернул бы `id` поля Select к умолчанию поверх своего. Свой `id`
- * потребителя главнее: поле задаёт `id`, только пока своего нет, и снимает
- * свой, когда контрол уходит из поля. У labelable-контрола без `id` поля
- * (ползунок) канала, кроме `aria`, нет — `id` ложится туда, как `id` панели
- * Tabs.
+ * значением `id` плагина, а не записью в `aria`: этот `id` каждый такой
+ * контрол уже ведёт до своего `<input>`, и у Select — до поля внутри. Набор
+ * `aria` Select разметка кладёт атрибутами на вложенный Input, а `id` там —
+ * проп Input, и снятый `id` из набора вернул бы `id` поля Select к умолчанию
+ * поверх своего. `id` приложения главнее: поле задаёт `id`, только пока его
+ * нет, и снимает свой, когда контрол уходит из поля. У labelable-контрола без
+ * `TIdPlugin` (ползунок) канала, кроме `aria`, нет — `id` ложится туда, как
+ * `id` панели Tabs.
  *
  * Сам о себе контрол сообщает полю — `id` и labelable ли он: только он их
  * знает. По ним плагин связок поля решает `for` подписи — `id` контрола или
@@ -37,7 +37,8 @@
  * - **сборка** — ошибка, ссылки и `id`: всё это контрола, поэтому сервер и
  *   первый кадр рисуют его уже в поле;
  * - **вход** (`attach` контекста) — связка его: подписки на ошибку поля, его
- *   ссылки, свои `change:id` и `change:labelable` и сообщение полю о себе.
+ *   ссылки, `change:id` его `TIdPlugin`, свой `change:labelable` и сообщение
+ *   полю о себе.
  *   Шины поля контролу чужие, а собранный контрол фреймворк вправе выбросить,
  *   так и не приняв; связку к этому времени мог взять контрол, принятый
  *   раньше, — тогда собранное снимается;
@@ -56,13 +57,13 @@
  *   adapter.use(TFieldControlExtension, { elevator: VueElevatorFactory })
  */
 
-import { TAriaPlugin } from '@soldy-ui/plugins'
+import { TAriaPlugin, TIdPlugin } from '@soldy-ui/plugins'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { FIELD_ELEVATOR } from './keys'
-import type { IFieldControl, IFieldControlExtensionOptions, TFieldControl } from './types'
+import type { IFieldControl, IFieldControlExtensionOptions } from './types'
 
 export class TFieldControlExtension {
-	constructor(context: TInstanceContext<TFieldControl>, options: IFieldControlExtensionOptions) {
+	constructor(context: TInstanceContext<IFieldControl>, options: IFieldControlExtensionOptions) {
 		const elevator = options.elevator(FIELD_ELEVATOR)
 		const link = elevator.up()
 
@@ -76,9 +77,9 @@ export class TFieldControlExtension {
 
 		const { field, ids } = link
 		const control = context.instance
-		/** Шина контрола как у любого контрола поля: смена labelable есть у каждого. */
-		const { events: controlEvents }: IFieldControl = control
 		const aria = context.bundle?.get(TAriaPlugin)
+		/** Канал `id` контрола: у контрола без него (ползунок) `id` от поля — в `aria`. */
+		const idPlugin = context.bundle?.get(TIdPlugin)
 		/** Контрол принят: связка его, на шины поля и контрола подписаны. */
 		let attached = false
 
@@ -94,22 +95,22 @@ export class TFieldControlExtension {
 			aria.links = { labelledBy: control.labelable ? undefined : labelledBy, describedBy }
 		}
 
-		/** `id` от поля — назад; свой `id` контрола не трогается. */
+		/** `id` от поля — назад; `id` приложения не трогается. */
 		const releaseId = (): void => {
-			if (!('id' in control)) {
+			if (!idPlugin) {
 				if (control.aria.get('id') === ids.controlId) control.aria.remove('id')
 
 				return
 			}
 
-			if (control.id === ids.controlId) control.id = undefined
+			if (idPlugin.id === ids.controlId) idPlugin.id = undefined
 		}
 
 		/**
-		 * `id` поля — labelable-контролу без своего, каналом контрола: значением
-		 * `id`, а у контрола без `id` поля — в его `aria`. Группе `id` от поля
-		 * не нужен: подпись называет её ссылкой, — и снят, если контрол перестал
-		 * быть labelable.
+		 * `id` поля — labelable-контролу без `id` приложения, каналом контрола:
+		 * значением его `TIdPlugin`, а у контрола без плагина — в его `aria`.
+		 * Группе `id` от поля не нужен: подпись называет её ссылкой, — и снят,
+		 * если контрол перестал быть labelable.
 		 */
 		const syncId = (): void => {
 			if (!control.labelable) {
@@ -118,13 +119,13 @@ export class TFieldControlExtension {
 				return
 			}
 
-			if (!('id' in control)) {
+			if (!idPlugin) {
 				control.aria.add('id', ids.controlId)
 
 				return
 			}
 
-			if (control.id === undefined) control.id = ids.controlId
+			if (idPlugin.id === undefined) idPlugin.id = ids.controlId
 		}
 
 		const apply = (): void => {
@@ -135,10 +136,7 @@ export class TFieldControlExtension {
 
 		/** Сообщить полю о себе: по `id` и labelable оно решает `for` подписи. */
 		const bind = (): void => {
-			ids.bindControl({
-				id: 'id' in control ? control.id : undefined,
-				labelable: control.labelable,
-			})
+			ids.bindControl({ id: idPlugin?.id, labelable: control.labelable })
 		}
 
 		/** `id` сменился: сняли свой — снова `id` поля, и `for` подписи — за ним. */
@@ -179,9 +177,8 @@ export class TFieldControlExtension {
 			attached = true
 			field.events.on('change:invalid', syncInvalid)
 			ids.events.on('change:links', syncLinks)
-			controlEvents.on('change:labelable', relabel)
-
-			if ('id' in control) control.events.on('change:id', rebind)
+			control.events.on('change:labelable', relabel)
+			idPlugin?.events.on('change:id', rebind)
 
 			// Поле могло смениться между сборкой и приёмом
 			apply()
@@ -192,9 +189,8 @@ export class TFieldControlExtension {
 			if (attached) {
 				field.events.off('change:invalid', syncInvalid)
 				ids.events.off('change:links', syncLinks)
-				controlEvents.off('change:labelable', relabel)
-
-				if ('id' in control) control.events.off('change:id', rebind)
+				control.events.off('change:labelable', relabel)
+				idPlugin?.events.off('change:id', rebind)
 
 				ids.unbindControl()
 			}

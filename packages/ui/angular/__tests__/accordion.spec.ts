@@ -87,6 +87,43 @@ describe('связка ARIA заголовок ↔ панель', () => {
 			'Содержимое B',
 		])
 	})
+
+	/**
+	 * Свой `id` секции — её вход: статический атрибут и привязка `[id]` пишут
+	 * вход, статику база снимает с корня, и на заголовок `id` встаёт из набора
+	 * секции — панель ссылается на него, узел с ним один. `id` панели своего
+	 * входа не имеет и остаётся формулой.
+	 */
+	it('свой id секции — на заголовке, панель ссылается на него и идёт за его сменой', () => {
+		@Component({
+			standalone: true,
+			imports: [TAccordionComponent, TAccordionItemComponent],
+			template: `<div so-accordion>
+				<div so-accordion-item text="Первый" value="a" [id]="own()"><p>A</p></div>
+				<div so-accordion-item text="Второй" value="b" id="faq-second"><p>B</p></div>
+			</div>`,
+		})
+		class OwnIdHost {
+			readonly own = signal<string | undefined>('faq-first')
+		}
+
+		const fixture = mountHost(OwnIdHost)
+		const [first, second] = contents()
+
+		expect(header('Первый').id).toBe('faq-first')
+		expect(header('Второй').id).toBe('faq-second')
+		expect(first.getAttribute('aria-labelledby')).toBe('faq-first')
+		expect(second.getAttribute('aria-labelledby')).toBe('faq-second')
+		expect(header('Первый').getAttribute('aria-controls')).toBe(first.id)
+		expect(document.querySelectorAll('[id="faq-first"]')).toHaveLength(1)
+		expect(sections().some((section) => section.hasAttribute('id'))).toBe(false)
+
+		fixture.componentInstance.own.set('faq-one')
+		fixture.detectChanges()
+
+		expect(header('Первый').id).toBe('faq-one')
+		expect(first.getAttribute('aria-labelledby')).toBe('faq-one')
+	})
 })
 
 describe('aria-expanded', () => {
