@@ -29,6 +29,7 @@ import {
 	TElementPlugin,
 	TCollectionBundlesPlugin,
 	TCollectionElements,
+	TOptionIdsPlugin,
 	TPluginBundle,
 } from '@soldy-ui/plugins'
 
@@ -64,7 +65,8 @@ const pressOnRow = (row: HTMLElement, key: string) => {
  * нём у каждого элемента свой узел (`TElementPlugin` в его bundle, узлы отдаёт
  * `TCollectionElements`), внутри узла — строка с `tabindex="-1"`. В разметке
  * атрибут приходит из набора `aria` элемента, его пишет `TListBoxExtension`;
- * по нему плагин и узнаёт строку.
+ * по нему плагин и узнаёт строку. `id` элементу пишет его плагин `id`
+ * (`TOptionIdsPlugin`) — от монтирования, как у адаптера.
  */
 async function setup(texts: string[]) {
 	const owner = new TListBox()
@@ -96,7 +98,7 @@ async function setup(texts: string[]) {
 	/** Строки элементов по порядку: после клика фокус остаётся на строке. */
 	const rows: HTMLElement[] = []
 
-	for (const item of items) {
+	for (const [index, item] of items.entries()) {
 		const node = document.createElement('div')
 		const row = document.createElement('div')
 
@@ -105,10 +107,11 @@ async function setup(texts: string[]) {
 		list.appendChild(node)
 		rows.push(row)
 
-		const bundle = new TPluginBundle(item)
+		const bundle = new TPluginBundle(item, `m${index + 1}`)
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
+		bundle.use(TOptionIdsPlugin)
 
 		required(bundle.get(TElementPlugin), 'TElementPlugin').element = node
 		itemPlugins.set(item.uid, required(bundle.get(TListItemPlugin), 'TListItemPlugin'))
@@ -755,4 +758,115 @@ describe.each([
 			expect(document.activeElement).toBe(focused)
 		},
 	)
+})
+
+/**
+ * Фокус ListBox — на узле списка, элемент под стрелками — отметка, и по APG
+ * его называет `aria-activedescendant` узла с фокусом: без ссылки стрелки для
+ * скринридера немые. Ссылку клавиатура пишет в набор `aria` списка — разметка
+ * кладёт его на узел списка, — на `id` элемента из его набора
+ * (`TOptionIdsPlugin`). Ссылка повторяет экран: есть, пока у элемента видна
+ * отметка и он в документе. Позиция без отметки — за выбором или на строке, с
+ * которой пришла клавиша, — ссылкой не становится.
+ */
+describe('ссылка на элемент под стрелками', () => {
+	/** Ссылка узла списка — из набора `aria` списка. */
+	const activeDescendant = ({ owner }: TListBoxSetup) =>
+		owner.aria.get('aria-activedescendant') ?? null
+
+	/** `id` элемента — из его набора, как его кладёт разметка. */
+	const idOf = ({ facade }: TListBoxSetup, index: number) =>
+		facade.engine.extensions.batch.items[index]?.aria.get('id') ?? null
+
+	it('до клавиш ссылки нет — и когда позиция стоит на выбранном', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { facade, keyboard } = listBox
+
+		expect(activeDescendant(listBox)).toBeNull()
+
+		facade.engine.extensions.selection.select(facade.engine.extensions.batch.items[1])
+
+		expect(keyboard.highlightedUid).toBe(facade.engine.extensions.batch.items[1].uid)
+		expect(activeDescendant(listBox)).toBeNull()
+	})
+
+	it('↓ — на `id` подсвеченного, следующая ↓ — на следующий', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+
+		listBox.press('ArrowDown')
+
+		expect(idOf(listBox, 0)).toBe('m1-option')
+		expect(activeDescendant(listBox)).toBe(idOf(listBox, 0))
+
+		listBox.press('ArrowDown')
+
+		expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+	})
+
+	it('стрелка со строки — на элемент, следующий за строкой', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+
+		pressOnRow(listBox.rows[0], 'ArrowDown')
+
+		expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+	})
+
+	/**
+	 * Клавиша со строки ставит позицию на её элемент без отметки, и отметка
+	 * прежнего элемента гаснет. Tab шага не делает — позиция без отметки, и
+	 * ссылки нет.
+	 */
+	it('Tab со строки — отметка погасла, и ссылка снята', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+
+		listBox.press('ArrowDown')
+		pressOnRow(listBox.rows[2], 'Tab')
+
+		expect(marks(listBox)).toEqual([false, false, false])
+		expect(activeDescendant(listBox)).toBeNull()
+	})
+
+	it('выбор из кода уводит позицию без отметки — ссылка снята', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { facade } = listBox
+
+		listBox.press('ArrowDown')
+		facade.engine.extensions.selection.select(facade.engine.extensions.batch.items[2])
+
+		expect(marks(listBox)).toEqual([false, false, false])
+		expect(activeDescendant(listBox)).toBeNull()
+	})
+
+	it('подсвеченный убрали из данных — ссылка снята', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { batch } = listBox.facade.engine.extensions
+
+		listBox.press('ArrowDown')
+		batch.remove([batch.items[0]])
+
+		expect(activeDescendant(listBox)).toBeNull()
+	})
+
+	it('убрали другой элемент — ссылка на месте', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { batch } = listBox.facade.engine.extensions
+
+		listBox.press('ArrowDown')
+
+		const reference = activeDescendant(listBox)
+
+		batch.remove([batch.items[2]])
+
+		expect(activeDescendant(listBox)).toBe(reference)
+	})
+
+	it('клавиатуру уничтожили — ссылка снята вместе с отметкой', async () => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+
+		listBox.press('ArrowDown')
+		listBox.keyboard.destroy()
+
+		expect(marks(listBox)).toEqual([false, false, false])
+		expect(activeDescendant(listBox)).toBeNull()
+	})
 })

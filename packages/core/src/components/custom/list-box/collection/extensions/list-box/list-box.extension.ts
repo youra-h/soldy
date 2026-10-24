@@ -236,9 +236,10 @@ export class TListBoxExtension<
 
 	/** Что элемент получает от списка: место в обходе и атрибуты. */
 	private _applyItem(item: TItem): void {
-		// Roving tabindex (APG listbox): фокусируем контейнер, элементы — только
-		// стрелками (`TListKeyboardPlugin`), не Tab'ом. Без этого Tab перебирал бы
-		// элементы по одному — при тысяче опций так невозможно уйти со списка.
+		// Фокус — на контейнере (APG Listbox, `aria-activedescendant`): по
+		// элементам ходят стрелки (`TListKeyboardPlugin`), а не Tab. Без этого Tab
+		// перебирал бы элементы по одному — при тысяче опций так невозможно уйти
+		// со списка.
 		item.aria.add('tabindex', '-1')
 
 		this._applySelectedAria(item)

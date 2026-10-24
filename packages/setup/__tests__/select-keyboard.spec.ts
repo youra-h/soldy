@@ -23,7 +23,7 @@ import {
 	TCollectionElements,
 	TListItemPlugin,
 	TPluginBundle,
-	TSelectItemIdsPlugin,
+	TOptionIdsPlugin,
 	useMotion,
 } from '@soldy-ui/plugins'
 import type { ISelectKeyboardPluginOptions, TMotionMode } from '@soldy-ui/plugins'
@@ -102,7 +102,7 @@ async function setup(
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
-		bundle.use(TSelectItemIdsPlugin)
+		bundle.use(TOptionIdsPlugin)
 
 		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
 		const highlight = required(bundle.get(TListItemPlugin), 'TListItemPlugin')

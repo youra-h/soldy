@@ -1316,14 +1316,14 @@ ListBox, список Select, будущие Menu и Popover выглядят о
 
 **Списки одинаковы на вид и различны по семантике:**
 
-|                 | ListBox         | список Select            | Menu               |
-| --------------- | --------------- | ------------------------ | ------------------ |
-| роль контейнера | `listbox`       | `listbox`                | `menu`             |
-| роль элемента   | `option`        | `option`                 | `menuitem`         |
-| где DOM-фокус   | на узле списка  | **на поле, не в списке** | на элементе        |
-| навигация       | roving tabindex | `aria-activedescendant`  | roving tabindex    |
-| элемент         | выбирается      | выбирается               | выполняет действие |
-| `aria-selected` | есть            | есть                     | нет                |
+|                 | ListBox                 | список Select            | Menu               |
+| --------------- | ----------------------- | ------------------------ | ------------------ |
+| роль контейнера | `listbox`               | `listbox`                | `menu`             |
+| роль элемента   | `option`                | `option`                 | `menuitem`         |
+| где DOM-фокус   | на узле списка          | **на поле, не в списке** | на элементе        |
+| навигация       | `aria-activedescendant` | `aria-activedescendant`  | roving tabindex    |
+| элемент         | выбирается              | выбирается               | выполняет действие |
+| `aria-selected` | есть                    | есть                     | нет                |
 
 Проверка на коде: `ListBox.vue` держит `tabindex="0"` на узле списка
 (`so-list-box__list`), а `TListKeyboardPlugin` берёт клавиши с него — ListBox

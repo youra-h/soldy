@@ -16,6 +16,13 @@ import type { TBundlesEvents } from './types'
  * Порядок bundles всегда берётся из коллекции, поэтому `item:moved` не требует
  * дополнительной обработки.
  *
+ * Запись живёт, пока набор элемента в документе, и о каждой снятой записи
+ * реестр сообщает `bundle:unregistered` — кончилось ли монтирование элемента
+ * из данных (`release`) или элемент ушёл из коллекции: убран из данных, снят
+ * из разметки, коллекцию очистили. Иначе подписчик, который держит что-то за
+ * набором элемента (ссылку `aria-activedescendant` на его `id`, наблюдатель
+ * его узла), узнавал бы только об одном из путей.
+ *
  * Устанавливается на owner-компоненте коллекции (например, Tabs). Коллекция
  * привязывается через {@link bindEngine} из adapter-слоя после её создания.
  */
@@ -31,17 +38,19 @@ export class TCollectionBundlesPlugin extends TBasePlugin<any, TBundlesEvents> {
 
 		const plain = plainOf<IComponentView>(engine)
 
-		// Синхронизация реестра bundles с жизненным циклом элементов коллекции.
+		// Синхронизация реестра bundles с жизненным циклом элементов коллекции:
+		// элемент ушёл — его запись снимается тем же путём, что и кончившееся
+		// монтирование, с `bundle:unregistered`
 		this._listenTo(plain?.events, 'item:removed', (e) => {
 			const uid = this._uid(e.item)
 
-			if (uid !== undefined) {
-				this._bundles.delete(uid)
-			}
+			if (uid !== undefined && this._bundles.has(uid)) this.unregister(uid)
 		})
 
+		// Очистка шлёт `item:removed` каждому элементу раньше `reset`: к нему
+		// остаются только записи, чьих элементов в коллекции не было
 		this._listenTo(plain?.events, 'reset', () => {
-			this._bundles.clear()
+			for (const uid of [...this._bundles.keys()]) this.unregister(uid)
 		})
 
 		// Оповещаем плагины о том, что коллекция привязана.

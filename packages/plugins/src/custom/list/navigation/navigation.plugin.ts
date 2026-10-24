@@ -27,14 +27,22 @@ const HIGHLIGHT = 'highlight'
  * клавиши и что означает активация — дело наследника.
  *
  * Граница проведена именно так не из аккуратности. `ListBox` — самостоятельный
- * фокусируемый виджет с roving tabindex, `Select` — combobox, у которого фокус
- * не уходит с поля, а подсветка передаётся через `aria-activedescendant`. Роли
- * (`option` против `option` в другом контейнере), набор клавиш и смысл
- * активации у них разные, и попытка выразить это режимами одного плагина
- * заставила бы его тесты охранять два поведения сразу.
+ * фокусируемый виджет: фокус держит узел списка. `Select` — combobox, у
+ * которого фокус не уходит с поля. Элемент под стрелками оба объявляют через
+ * `aria-activedescendant` узла с фокусом, но узел, роли (`option` против
+ * `option` в другом контейнере), набор клавиш и смысл активации у них разные,
+ * и попытка выразить это режимами одного плагина заставила бы его тесты
+ * охранять два поведения сразу.
  *
  * Подсветка — не выбор. Она визуальна, живёт только во время навигации и в
  * значение не попадает; хранится в `TListItemPlugin` каждого элемента.
+ *
+ * **Ссылка на подсвеченный элемент** (`aria-activedescendant`) повторяет
+ * экран: она есть, пока у элемента видна отметка и он в документе. Поэтому
+ * наследник узнаёт не о каждом переезде позиции, а о смене видимой подсветки
+ * (`onHighlightChanged`), и `null` приходит ему и тогда, когда позиция ушла
+ * без отметки (`trackHighlight`). `id` для ссылки отдаёт `highlightedId()`, а
+ * куда её писать, решает наследник: туда, где фокус.
  *
  * **В окне** (обёртка `Virtual`) в документе только видимые элементы, и у
  * ненарисованного нет ни узла, ни `TListItemPlugin`. Поэтому подсвеченный
@@ -149,7 +157,16 @@ export abstract class TListNavigationPlugin<
 	/** Коллекция появилась — можно синхронизировать начальное состояние. */
 	protected onEngineBound(_engine: TCollectionEngine<any, any>): void {}
 
-	/** Подсветка переехала. Здесь наследник обновляет ARIA, скроллит и т.п. */
+	/**
+	 * Видимая подсветка сменилась. Здесь наследник обновляет ARIA, скроллит и
+	 * т.п.
+	 *
+	 * `uid` — элемент, который получил отметку. Переход с элемента на элемент —
+	 * один вызов, с новым: прежняя отметка снимается молча, а `null` между ними
+	 * у меню увёл бы фокус на панель. `null` — отметки больше нет: подсветку
+	 * сняли (`clearHighlight`) или позиция ушла без отметки (`trackHighlight`).
+	 * Без отметки позиция переезжает молча: экран при этом не меняется.
+	 */
 	protected onHighlightChanged(_uid: string | number | null): void {}
 
 	/**
@@ -206,6 +223,28 @@ export abstract class TListNavigationPlugin<
 	}
 
 	/**
+	 * `id` подсвеченного элемента для ссылки `aria-activedescendant`, пока она
+	 * повторяет экран: у элемента видна отметка и он в документе — его набор
+	 * зарегистрирован. Иначе — `null`: позиция без отметки ссылкой не
+	 * становится, а у элемента вне окна (`Virtual`) своего `id` нет, и
+	 * оставшийся от прошлого монтирования указывал бы в пустоту.
+	 *
+	 * `id` — из набора `aria` элемента, а не с DOM-узла: узел, который знает
+	 * реестр, — корень элемента, а `id` вместе со всей ARIA стоит на его строке.
+	 * В набор его пишет `TOptionIdsPlugin` элемента, и ссылка берёт ровно то,
+	 * что окажется в разметке. Куда её писать, решает наследник — туда, где
+	 * фокус.
+	 */
+	protected highlightedId(): string | null {
+		const uid = this._highlightedUid
+
+		if (uid === null || !this._marked) return null
+		if (this._bundles?.getByUid(uid) === undefined) return null
+
+		return this.itemByUid(uid)?.aria.get('id') ?? null
+	}
+
+	/**
 	 * Сдвигает подсветку к ближайшему доступному элементу в направлении шага.
 	 * Навигация зациклена: с последнего элемента `↓` уводит на первый — так
 	 * принято в списках и так делают Ark и Radix.
@@ -252,7 +291,7 @@ export abstract class TListNavigationPlugin<
 	protected highlight(uid: string | number): void {
 		if (this._highlightedUid === uid) return
 
-		this.trackHighlight(uid)
+		this._moveTo(uid)
 
 		const plugin = this.itemPlugin(uid)
 
@@ -269,19 +308,19 @@ export abstract class TListNavigationPlugin<
 	 * Запомнить позицию, не отмечая элемент визуально.
 	 *
 	 * Нужно при синхронизации с выбором: список открылся на выбранном
-	 * элементе, но подсветка навигации ещё не должна быть видна.
+	 * элементе, но подсветка навигации ещё не должна быть видна. Отметка, которая
+	 * была видна, снимается, и наследник узнаёт об этом `onHighlightChanged(null)`:
+	 * позиция осталась, а подсветки на экране нет. Без отметки позиция переезжает
+	 * молча.
 	 */
 	protected trackHighlight(uid: string | number): void {
 		if (this._highlightedUid === uid) return
 
-		this.unmarkCurrent()
+		const marked = this._marked
 
-		this._highlightedUid = uid
-		this._pinHighlighted()
+		this._moveTo(uid)
 
-		const index = this.indexOf(uid)
-
-		this.emitHighlight(this.itemAt(index), this.itemAt(index - 1), this.itemAt(index + 1))
+		if (marked) this.onHighlightChanged(null)
 	}
 
 	protected clearHighlight(): void {
@@ -298,6 +337,23 @@ export abstract class TListNavigationPlugin<
 
 	protected itemPlugin(uid: string | number): TListItemPlugin | undefined {
 		return this._bundles?.getByUid(uid)?.get(TListItemPlugin)
+	}
+
+	/**
+	 * Позиция — на элемент: прежняя отметка снята, элемент закреплён в окне,
+	 * `change:highlight` — с соседями. Ставить ли отметку и что сказать
+	 * наследнику, решает тот, кто позицию перенёс: `highlight` или
+	 * `trackHighlight`.
+	 */
+	private _moveTo(uid: string | number): void {
+		this.unmarkCurrent()
+
+		this._highlightedUid = uid
+		this._pinHighlighted()
+
+		const index = this.indexOf(uid)
+
+		this.emitHighlight(this.itemAt(index), this.itemAt(index - 1), this.itemAt(index + 1))
 	}
 
 	/** Снимает визуальную отметку с текущего элемента. */

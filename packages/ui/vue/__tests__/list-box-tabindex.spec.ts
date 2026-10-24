@@ -1,7 +1,9 @@
 /**
- * Roving tabindex ListBox: Tab фокусирует список, а не перебирает элементы по
- * одному — по APG-паттерну listbox перемещение по элементам делают стрелки
- * (`TListKeyboardPlugin`), не Tab.
+ * Остановка Tab ListBox — узел списка: Tab фокусирует список, а не перебирает
+ * элементы по одному — по APG-паттерну listbox перемещение по элементам делают
+ * стрелки (`TListKeyboardPlugin`), не Tab. Фокус по строкам не ходит, и
+ * элемент под стрелками называет `aria-activedescendant` узла списка — на
+ * `id` подсвеченной строки.
  *
  * Список — узел внутри корня (`.so-list-box__list`): `role="listbox"` пишет
  * ядро списка, `aria-multiselectable` в `multiple` — коллекция, имя —
@@ -12,7 +14,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import { Button, Input, ListBox, ListBoxItem } from '@soldy-ui/vue'
 import ListBoxHarness from './ListBox.test.vue'
 
@@ -55,6 +57,41 @@ describe('ListBox: остановка Tab — узел списка', () => {
 
 		expect(items).toHaveLength(3)
 		expect(items.every((item) => item.parentElement === list)).toBe(true)
+	})
+})
+
+/**
+ * `id` строке пишет плагин `id` элемента от монтирования, ссылку — клавиатура
+ * списка в набор `aria` списка. До клавиш подсветки на экране нет — и ссылки
+ * нет.
+ */
+describe('ListBox: элемент под стрелками — aria-activedescendant', () => {
+	it('у узла списка — id подсвеченной строки, узел с ним один', async () => {
+		wrapper = mount(ListBoxHarness, { attachTo: document.body })
+
+		// Клавиатура списка слушает корень с `element:ready` — через кадр
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		const list = find('[role="listbox"]')
+		const ids = [...document.querySelectorAll('[role="option"]')].map((option) => option.id)
+
+		expect(ids).toHaveLength(3)
+		expect(ids.every((id) => id !== '')).toBe(true)
+		expect(new Set(ids).size).toBe(ids.length)
+		expect(list.hasAttribute('aria-activedescendant')).toBe(false)
+
+		for (const step of [0, 1]) {
+			list.dispatchEvent(
+				new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+			)
+			await nextTick()
+
+			const reference = list.getAttribute('aria-activedescendant')
+
+			expect(reference).toBe(ids[step])
+			expect(find('[role="option"][data-highlighted="true"]').id).toBe(reference)
+			expect(document.querySelectorAll(`[id="${reference}"]`)).toHaveLength(1)
+		}
 	})
 })
 

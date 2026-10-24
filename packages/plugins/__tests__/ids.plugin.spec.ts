@@ -19,6 +19,7 @@ import {
 	TDrawer,
 	TField,
 	TListBoxGroup,
+	TListBoxItem,
 	TMenu,
 	TMenuGroup,
 	TMenuPopoverItem,
@@ -51,11 +52,11 @@ import {
 	TMenuIdsPlugin,
 	TMenuPopupIdsPlugin,
 	TModalIdsPlugin,
+	TOptionIdsPlugin,
 	TPluginBundle,
 	TPopoverIdsPlugin,
 	TRadioGroupNamePlugin,
 	TSelectIdsPlugin,
-	TSelectItemIdsPlugin,
 	TTableColumnIdsPlugin,
 	TTableRowIdsPlugin,
 	TTabsItemIdsPlugin,
@@ -293,12 +294,25 @@ describe('коллекции', () => {
 		expect(select.field.aria.get('aria-controls')).toBe('m1-list')
 	})
 
-	it('Select.Item: id опции — от её монтирования', () => {
-		const option = new TSelectItem({ value: 'a' })
+	/**
+	 * Плагин `id` элемента — один на оба списка: на `id` ссылается
+	 * `aria-activedescendant` узла с фокусом — поля Select и узла списка ListBox.
+	 * Элемент из данных рисуется с готовым экземпляром, поэтому новое
+	 * монтирование пишет свой `id`.
+	 */
+	it.each([
+		['Select.Item', () => new TSelectItem({ value: 'a' })],
+		['ListBox.Item', () => new TListBoxItem({ value: 'a' })],
+	] as const)('%s: id элемента — от его монтирования', (_name, create) => {
+		const item = create()
 
-		new TPluginBundle(option, 'm2').use(TSelectItemIdsPlugin)
+		new TPluginBundle(item, 'm2').use(TOptionIdsPlugin)
 
-		expect(option.aria.get('id')).toBe('m2-option')
+		expect(item.aria.get('id')).toBe('m2-option')
+
+		new TPluginBundle(item, 'm3').use(TOptionIdsPlugin)
+
+		expect(item.aria.get('id')).toBe('m3-option')
 	})
 
 	it('Tabs.Item: id таба и aria-controls его панели', () => {

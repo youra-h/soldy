@@ -283,8 +283,8 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Roving tabindex (APG listbox): Tab фокусирует узел списка, а по элементам
-	 * ходят стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
+	 * Остановка Tab одна — узел списка (APG Listbox), а по элементам ходят
+	 * стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
 	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
 	 * сама: набор владельца главнее. Корень — рамка вокруг шапки, списка и
 	 * подвала, остановкой он не бывает.
@@ -329,6 +329,36 @@ describe('выбор', () => {
 		await press(nodeOf(list), ' ')
 
 		expect(selection()).toEqual(['true', 'true'])
+	})
+
+	/**
+	 * Фокус по строкам не ходит, и элемент под стрелками скринридеру называет
+	 * `aria-activedescendant` узла списка (APG Listbox): `id` строке пишет
+	 * плагин `id` элемента, ссылку — клавиатура списка. До клавиш подсветки на
+	 * экране нет — и ссылки нет.
+	 */
+	it('элемент под стрелками — aria-activedescendant узла списка на id подсвеченной строки', async () => {
+		const list = listIn(await mount(HARNESS))
+
+		await nextFrame()
+
+		const ids = rows().map((row) => row.id)
+
+		expect(ids.every((id) => id !== '')).toBe(true)
+		expect(new Set(ids).size).toBe(ids.length)
+		expect(nodeOf(list).hasAttribute('aria-activedescendant')).toBe(false)
+
+		for (const step of [0, 1]) {
+			await press(nodeOf(list), 'ArrowDown')
+
+			const reference = nodeOf(list).getAttribute('aria-activedescendant')
+
+			expect(reference).toBe(ids[step])
+			expect(document.querySelector('[role="option"][data-highlighted="true"]')?.id).toBe(
+				reference,
+			)
+			expect(document.querySelectorAll(`[id="${reference}"]`)).toHaveLength(1)
+		}
 	})
 
 	/**
