@@ -287,11 +287,20 @@ export abstract class TListNavigationPlugin<
 		this.highlight(items[edge === 'first' ? 0 : items.length - 1].uid)
 	}
 
-	/** Перенести подсветку: позиция плюс визуальная отметка элемента. */
+	/**
+	 * Подсветить элемент: позиция плюс визуальная отметка.
+	 *
+	 * Позиция может уже стоять на элементе без отметки — её ставит
+	 * `trackHighlight` за выбором и со строки, с которой пришла клавиша. Тогда
+	 * отметка встаёт на месте, и наследник узнаёт о ней (`onHighlightChanged`),
+	 * а `change:highlight` не шлётся: позиция не сменилась. Так стрелка
+	 * отмечает единственный доступный элемент — шаг по кругу приводит к нему
+	 * же. Подсвечивать нечего, только когда у элемента и позиция, и отметка.
+	 */
 	protected highlight(uid: string | number): void {
-		if (this._highlightedUid === uid) return
+		if (this._highlightedUid === uid && this._marked) return
 
-		this._moveTo(uid)
+		if (this._highlightedUid !== uid) this._moveTo(uid)
 
 		const plugin = this.itemPlugin(uid)
 
