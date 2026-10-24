@@ -112,9 +112,10 @@ Playwright (конфиг `vitest.browser.config.ts`).
 
 - **Спек «база без темы» подключает только общий слой тем**
   (`browser/theme-base-controls.spec.ts`, `browser/theme-base-fields.spec.ts`,
-  `browser/theme-base-layers.spec.ts`, `browser/theme-base-scales.spec.ts` и
-  `browser/theme-base-dates.spec.ts`: `import '@soldy-ui/theme-base'`, а не
-  `@soldy-ui/theme-oren`). У каждого файла спека своя страница, и листа темы
+  `browser/theme-base-layers.spec.ts`, `browser/theme-base-scales.spec.ts`,
+  `browser/theme-base-dates.spec.ts` и `browser/theme-base-table.spec.ts`:
+  `import '@soldy-ui/theme-base'`, а не `@soldy-ui/theme-oren`). У каждого
+  файла спека своя страница, и листа темы
   на его странице нет — это его первая проверка; поведение темы (`useTheme` в
   `browser/setup.ts`) CSS не несёт. Спек держит структуру, перенесённую в
   базу: части без облика рабочие — клик по видимой части переключает контрол,
@@ -126,9 +127,13 @@ Playwright (конфиг `vitest.browser.config.ts`).
   указателем, нажатие на звезду ставит её номер, лента встаёт на начало
   элемента, клетки пагинации — высотой с кнопку, сетка календаря — семь
   колонок, панель выбора даты — у поля, регион уведомлений — у своего угла, а
-  задние уведомления стопки — за передним и его высоты
+  задние уведомления стопки — за передним и его высоты, таблица с известными
+  ширинами — шириной в сумму колонок, окно прокручивает её вбок, а
+  закреплённая шапка стоит у края прокрутки и строки под ней не просвечивают
   (`packages/themes/base/AGENTS.md`, «Перенос структуры»). Меряет он то, что
-  видит пользователь, а не числа базы.
+  видит пользователь, а не числа базы. Поверхность места, которую механике
+  объявляют тема и приложение, спек ставит сам, как приложение: карточку со
+  своим фоном и `--so-place-surface` рядом.
 
 **Событие `error` на `window` роняет тест.** Хук
 `packages/playground/vue/browser/setup.ts` (подключён в `setupFiles` конфига,
