@@ -72,6 +72,7 @@
 @import './components/skeleton.css' layer(so);
 @import './components/slider.css' layer(so);
 @import './components/switch.css' layer(so);
+@import './components/table.css' layer(so);
 @import './components/tabs.css' layer(so);
 @import './components/tags.css' layer(so);
 @import './components/textarea.css' layer(so);

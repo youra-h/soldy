@@ -7,8 +7,8 @@ import oren, { TTableHeadPlugin, TTabsViewPlugin, TToastsFrontPlugin } from '../
  * Поведение темы: `@soldy-ui/theme-oren/setup` ставит плагины, данные которых
  * читает её CSS. Полосу под активным табом рисует `_tabs.scss` по переменным
  * `TTabsViewPlugin` — без регистрации её нет. Отступ прокрутки к фокусу под
- * закреплённой шапкой Table `_table.scss` берёт из высоты шапки, которую пишет
- * `TTableHeadPlugin`, а высоту задних тостов стопки общий слой тем
+ * закреплённой шапкой Table общий слой тем (`components/table.css`) берёт из
+ * высоты шапки, которую пишет `TTableHeadPlugin`, а высоту задних тостов стопки
  * (`components/toasts.css`) — из высоты переднего от `TToastsFrontPlugin`, и
  * `_toasts.scss` ведёт её переходом.
  */
