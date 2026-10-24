@@ -2888,7 +2888,7 @@ useToasts()`. API опускает лифт (`TOASTS_ELEVATOR`, расширен
   `ui/svelte/__tests__/collections.server.spec.ts` и
   `ui/angular/__tests__/collections.server.spec.ts` (сервер — без
   `draggable`, у Angular и гидратация), «превью drag-and-drop» в
-  `playground/vue/__tests__/smoke.spec.ts`, превью DragAndDrop в
+  `playground/vue/__tests__/smoke/suite.ts`, превью DragAndDrop в
   `playground/vue/__tests__/webc-host.spec.ts` и
   `playground/vue/browser/drag-and-drop.spec.ts` (и на странице стенда у
   каждого фреймворка).

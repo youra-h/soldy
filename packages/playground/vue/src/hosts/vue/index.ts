@@ -44,7 +44,7 @@ function drawing(component: string, fixture: string | undefined): Component {
  * пометке первой в документе, и жест, фокус и немой фон уходили бы на чужую
  * скрытую панель. Несколько приложений на странице Vue и просит различать
  * префиксом; `v` — по умолчанию, у оболочки. Сторожит «пометки панелей
- * владельцами не повторяются» в `__tests__/smoke.spec.ts`.
+ * владельцами не повторяются» в `__tests__/smoke/suite.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEW_COMPONENTS),
