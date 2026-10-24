@@ -119,4 +119,29 @@ describe('TListNavigationPlugin — onHighlightChanged', () => {
 
 		expect(plugin.changes).toEqual(['b', null])
 	})
+
+	/**
+	 * Позиция уже на элементе, но без отметки — так стрелка приходит к
+	 * единственному доступному элементу, на котором позиция стоит за выбором.
+	 * Отметка встаёт на месте, и хук узнаёт о ней, а `change:highlight` —
+	 * событие позиции, и шлёт его только `track`. Повторная отметка ничего не
+	 * меняет, а уход позиции после неё гасит видимую отметку — `null`.
+	 */
+	it('отметка на позиции без неё — элемент, без change:highlight; повтор — молча', () => {
+		const plugin = new TProbeNavigationPlugin()
+		const onHighlight = vi.fn<TProbeEvents['change:highlight']>()
+
+		plugin.events.on('change:highlight', onHighlight)
+		plugin.track('a')
+		plugin.mark('a')
+		plugin.mark('a')
+
+		expect(plugin.changes).toEqual(['a'])
+		expect(onHighlight).toHaveBeenCalledTimes(1)
+		expect(plugin.highlightedUid).toBe('a')
+
+		plugin.track('b')
+
+		expect(plugin.changes).toEqual(['a', null])
+	})
 })
