@@ -3,8 +3,10 @@ import { TBasePlugin } from '../../../base'
 import type { IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
-import { isFocusableElement } from '../../../utils'
+import { TLeavingFocus } from '../../collection/leaving-focus'
+import { focusFirst, isFocusableElement, tabStopsAfter } from '../../../utils'
 import type { IDomEventTarget } from '../../../utils'
+import { listOf } from '../parts'
 import { tabOf } from '../tab'
 import type { TTabsKeyboardPluginEvents } from './types'
 
@@ -15,7 +17,8 @@ const AXIS_KEYS: Record<TTabsOrientation, readonly [back: string, forward: strin
 }
 
 /**
- * TTabsKeyboardPlugin — клавиатура Tabs по паттерну APG Tabs.
+ * TTabsKeyboardPlugin — клавиатура Tabs по паттерну APG Tabs и фокус после
+ * закрытия таба.
  *
  * Стрелки по оси списка (у горизонтального ←/→, у вертикального ↑/↓) ведут к
  * соседнему табу по кругу, `Home`/`End` — к первому и последнему. Табы, на
@@ -27,6 +30,22 @@ const AXIS_KEYS: Record<TTabsOrientation, readonly [back: string, forward: strin
  * локально. Поэтому фокус и активный таб не расходятся, и остановка Tab —
  * активный таб — считается в коллекции без знания о фокусе. `Enter` и пробел
  * здесь не обрабатываются: таб — нативная `<button>`, и активирует её клик.
+ *
+ * **Закрытый таб отдаёт фокус остановке Tab** — любым закрытием: клавишей,
+ * крестиком, из кода. Крестик фокус от клика принимает, и узел таба уходит из
+ * документа вместе с ним: фокус ушёл бы на страницу, и следующий Tab начинал
+ * бы обход заново. Переносится только фокус из узла закрываемого таба — на
+ * таб-остановку после удаления (`tabStop`): закрыли активный — это сосед,
+ * которого уже активировал `TTabsExtension`; закрыли неактивный — прежний
+ * активный, соседа такое закрытие не активирует. Остановки нет — к первой
+ * остановке Tab после списка; нет и её — фокус не трогается.
+ *
+ * Когда переносить фокус, решает помощник коллекции (`TLeavingFocus`), общий с
+ * Tags: таб бывает снят ещё до того, как закрытие дойдёт до плагина, —
+ * подписчиком `item:close`, который стоит раньше, например приложением в
+ * обработчике события фасада. Удаление, отменённое в `item:remove:before`, и
+ * уход таба без закрытия фокус не трогают. Закрыть таб из кода можно и на
+ * сервере, поэтому фокус читается только при узле корня.
  *
  * Сами `tabindex` плагин не пишет: roving tabindex ставит `TTabsExtension`,
  * потому что атрибут обязан стоять с первой отрисовки, включая серверную.
@@ -42,30 +61,42 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 	private _element: Element | null = null
 	private _elements: TCollectionElements | null = null
 	private _engine: TTabsCollection | null = null
+	/** Фокус закрываемого таба — ждёт, пока таб закроют и он уйдёт из списка. */
+	private _leaving: TLeavingFocus<ITabsItem, undefined> | null = null
 
 	override install(ctx: IPluginContext): void {
 		super.install(ctx)
 
 		this._owner = ctx.getInstance<ITabs>()
 		this._elements = ctx.get(TCollectionElements) ?? null
+		this._leaving = new TLeavingFocus(this._elements, {
+			root: () => this._element,
+			// Месту закрытого таба запоминать нечего: цель — остановка после удаления
+			place: () => undefined,
+			pass: (root) => this._pass(root),
+		})
 
 		const elementPlugin = ctx.get(TElementPlugin)
 
 		elementPlugin?.events.on('ready', (element) => this._attach(element))
-		elementPlugin?.events.on('removed', () => this._detach())
+		elementPlugin?.events.on('removed', () => {
+			this._detach()
+			this._leaving?.reset()
+		})
 
 		// Коллекция привязывается после install — ждём момент привязки
-		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) => {
-			this._engine = engine
-		})
+		ctx.get(TCollectionBundlesPlugin)?.events.on('engine:bound', (engine) =>
+			this._bindEngine(engine),
+		)
 	}
 
 	override destroy(): void {
 		this._detach()
+		this._bindEngine(null)
 
 		this._owner = null
 		this._elements = null
-		this._engine = null
+		this._leaving = null
 
 		super.destroy()
 	}
@@ -88,6 +119,16 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 		this._element = null
 	}
 
+	/** Движок сменился — закрытие табов и их уход слушаются у нового. */
+	private _bindEngine(engine: TTabsCollection | null): void {
+		this._engine?.extensions.tabs.events.off('item:close', this._onClose)
+
+		this._engine = engine
+
+		engine?.extensions.tabs.events.on('item:close', this._onClose)
+		this._leaving?.bind(engine?.extensions.plain ?? null)
+	}
+
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {
 		// С модификатором — чужой жест: Alt+← у браузера «назад»
 		if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
@@ -100,8 +141,9 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 
 		if (!tab) return
 
+		// Фокус остановке передаёт само закрытие — тем же путём, что у крестика
 		if (event.key === 'Delete') {
-			this._close(engine, event, tab)
+			if (engine.extensions.tabs.closeTab(tab)) event.preventDefault()
 
 			return
 		}
@@ -199,32 +241,33 @@ export class TTabsKeyboardPlugin extends TBasePlugin<ITabs, TTabsKeyboardPluginE
 		return neighbours
 	}
 
-	/**
-	 * `Delete` закрывает таб. Соседа закрытого активного активирует
-	 * `TTabsExtension`, а фокус переходит туда, где теперь остановка Tab:
-	 * узел закрытого таба уходит из документа вместе с фокусом.
-	 *
-	 * Удаление могли отменить в `item:remove:before` — `closeTab` об этом не
-	 * знает, поэтому проверяется, остался ли таб в коллекции.
-	 */
-	private _close(engine: TTabsCollection, event: KeyboardEvent, tab: ITabsItem): void {
-		const tabs = engine.extensions.tabs
-
-		if (!tabs.closeTab(tab)) return
-
-		event.preventDefault()
-
-		if (engine.extensions.batch.items.includes(tab)) return
-
-		const stop = tabs.tabStop
-
-		if (stop) this._focus(stop)
-	}
-
 	/** Фокус на узел таба с ролью. Гард нужен: узел плагину приходит `Element`. */
 	private _focus(item: ITabsItem): void {
 		const tab = tabOf(this._elements, item.uid)
 
 		if (isFocusableElement(tab)) tab.focus()
+	}
+
+	/**
+	 * Таб закрывают — любым путём: клавишей, крестиком, из кода. Переносить
+	 * ли фокус, решает помощник: фокус мог стоять и не в этом табе.
+	 */
+	private readonly _onClose = (tab: ITabsItem): void => this._leaving?.close(tab)
+
+	/**
+	 * Фокус закрытого таба — на таб-остановку. Остановка берётся по модели
+	 * (`tabStop`), а не по `[tabindex="0"]`: в такте закрытия разметка ещё
+	 * старая. Остановки нет — на первую остановку Tab после списка: за ним
+	 * слот `trailing` и панели; нет и её — фокус остаётся, где был.
+	 */
+	private _pass(root: Element): void {
+		const stop = this._engine?.extensions.tabs.tabStop
+		const tab = stop ? tabOf(this._elements, stop.uid) : null
+
+		if (tab && focusFirst([tab])) return
+
+		const list = this._owner ? listOf(this._owner, root) : null
+
+		if (list) focusFirst(tabStopsAfter(list, null))
 	}
 }
