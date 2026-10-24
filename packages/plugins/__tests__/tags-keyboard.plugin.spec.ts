@@ -1,19 +1,27 @@
 // @vitest-environment jsdom
 
 /**
- * TTagsKeyboardPlugin — клавиатура Tags с выбором по паттерну APG Listbox.
+ * TTagsKeyboardPlugin — клавиатура Tags с выбором по паттерну APG Listbox и
+ * фокус после закрытия тега.
  *
  * Плагины собраны настоящими bundle, как в рантайме, но без адаптера: разметку
  * тест строит сам в том виде, в каком её рисует Vue, — корень, у каждого тега
  * узел элемента, в нём строка с `role="option"` и кнопка закрытия; после
- * тегов — чужое содержимое слота (поле ввода). Движок — `createEngineTags`,
- * как у компонента: остановку Tab считает `TTagsExtension`, плагин переносит
- * фокус и сообщает, на каком теге он оказался.
+ * тегов — чужое содержимое слота (поле ввода), после корня — кнопка страницы.
+ * Движок — `createEngineTags`, как у компонента: остановку Tab считает
+ * `TTagsExtension`, плагин переносит фокус и сообщает, на каком теге он
+ * оказался.
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { TTags, TTagsItem, createEngineTags } from '@soldy-ui/core'
-import type { ITagsItem, ITagsItemProps, ITagsProps, TSelectionMode } from '@soldy-ui/core'
+import type {
+	ITagsItem,
+	ITagsItemProps,
+	ITagsProps,
+	TSelectionMode,
+	TTagsCollection,
+} from '@soldy-ui/core'
 import {
 	TCollectionBundlesPlugin,
 	TCollectionElements,
@@ -46,20 +54,47 @@ function nodeOf(selector: string, root: ParentNode = document): HTMLElement {
 	return node
 }
 
+/** Атрибуты набора ядра — на узел, как их раскладывает разметка. */
+function applySet(node: Element, set: Record<string, unknown>): void {
+	for (const [name, value] of Object.entries(set)) {
+		if (value !== null && value !== undefined) node.setAttribute(name, String(value))
+	}
+}
+
 async function setup(
 	tags: Partial<ITagsItemProps>[],
-	options: { mode?: TSelectionMode; owner?: Partial<ITagsProps> } = {},
+	options: {
+		mode?: TSelectionMode
+		owner?: Partial<ITagsProps>
+		/**
+		 * Строка и крестик — с атрибутами из наборов ядра (`aria`, `closeAria`)
+		 * в режиме набора, как их кладёт адаптер: без выбора у строки нет ни
+		 * роли опции, ни `tabindex`, и остановка тега — крестик, а
+		 * незакрываемому тегу крестик не рисуется. По умолчанию строка — опция
+		 * с `tabindex="-1"` в любом режиме.
+		 */
+		markup?: 'model'
+		/**
+		 * Подписчики движка, которые стоят раньше плагина, — как расширение
+		 * тегов Select: оно подписывается на закрытие, когда создаёт движок.
+		 */
+		before?: (engine: TTagsCollection) => void
+	} = {},
 ) {
 	const owner = new TTags({ closable: true, ...options.owner })
 	const engine = createEngineTags({ owner })
 	const items = tags.map((props) => engine.extensions.plain.push(new TTagsItem(props)))
 
 	engine.extensions.selection.mode = options.mode ?? 'multiple'
+	options.before?.(engine)
 
 	const root = document.createElement('div')
 	const field = document.createElement('input')
+	// Остановка страницы после набора — куда уходит фокус, когда соседа нет
+	const after = document.createElement('button')
 
-	document.body.appendChild(root)
+	after.className = 'after'
+	document.body.append(root, after)
 
 	const bundle = new TPluginBundle(owner)
 		.use(TElementPlugin)
@@ -75,12 +110,25 @@ async function setup(
 		const close = document.createElement('button')
 
 		node.dataset.value = String(item.value)
-		row.setAttribute('role', 'option')
-		// Фокусируемость строки даёт `tabindex` — в разметке его пишет ядро
-		row.tabIndex = -1
+
+		if (options.markup === 'model') {
+			applySet(row, item.aria.valueOf())
+			applySet(close, item.closeAria.valueOf())
+			close.disabled = item.disabled
+		} else {
+			row.setAttribute('role', 'option')
+			// Фокусируемость строки даёт `tabindex` — в разметке его пишет ядро
+			row.tabIndex = -1
+		}
+
 		row.append(item.text)
 		close.className = 'close'
-		node.append(row, close)
+		// Крестик закрывает свой тег, как в разметке, — закрытием набора
+		close.addEventListener('click', () => engine.extensions.tags.closeTag(item))
+		node.append(row)
+
+		if (options.markup !== 'model' || item.closable !== false) node.append(close)
+
 		root.appendChild(node)
 
 		const itemBundle = new TPluginBundle(item).use(TElementPlugin)
@@ -101,6 +149,9 @@ async function setup(
 
 	/** Строка тега с ролью — туда уходит фокус. */
 	const rowOf = (value: string) => nodeOf(`[data-value="${value}"] [role="option"]`, root)
+
+	/** Кнопка закрытия тега — его остановка без выбора. */
+	const closeOf = (value: string) => nodeOf(`[data-value="${value}"] .close`, root)
 
 	/** Нажатие с узла, как у пользователя: событие всплывает до корня. */
 	const press = (from: Element, key: string, init: KeyboardEventInit = {}) => {
@@ -144,10 +195,12 @@ async function setup(
 		bundle,
 		root,
 		field,
+		after,
 		rootElement,
 		selection: engine.extensions.selection,
 		find,
 		rowOf,
+		closeOf,
 		press,
 		pressOn,
 		focused,
@@ -416,6 +469,266 @@ describe('Delete и Backspace закрывают тег', () => {
 		press(nodeOf('[data-value="a"] .close', root), 'Delete')
 
 		expect(values()).toEqual(['b', 'c'])
+	})
+})
+
+/**
+ * Узел закрытого тега уходит из документа, и фокус, стоявший в нём, ушёл бы
+ * на страницу. Закрытие — крестиком, клавишей, из кода — отдаёт его соседу в
+ * любом режиме: следующему, у последнего — предыдущему, на его остановку, а
+ * соседа нет — первой остановке после ряда. Разметка — по наборам ядра: без
+ * выбора у строки нет остановки, и фокус держит крестик.
+ */
+describe('закрытый тег отдаёт фокус соседу', () => {
+	describe('без выбора — на крестик соседа', () => {
+		it('крестик закрыл тег — фокус на крестике следующего', async () => {
+			const { closeOf, values } = await setup(ABC, { mode: 'none', markup: 'model' })
+
+			closeOf('b').focus()
+			closeOf('b').click()
+
+			expect(values()).toEqual(['a', 'c'])
+			expect(document.activeElement).toBe(closeOf('c'))
+		})
+
+		it('у последнего — на крестике предыдущего', async () => {
+			const { closeOf, values } = await setup(ABC, { mode: 'none', markup: 'model' })
+
+			closeOf('c').focus()
+			closeOf('c').click()
+
+			expect(values()).toEqual(['a', 'b'])
+			expect(document.activeElement).toBe(closeOf('b'))
+		})
+
+		it('у единственного — на первой остановке после ряда, а не на поле внутри него', async () => {
+			const { closeOf, after, values } = await setup([{ value: 'a', text: 'A' }], {
+				mode: 'none',
+				markup: 'model',
+			})
+
+			closeOf('a').focus()
+			closeOf('a').click()
+
+			expect(values()).toEqual([])
+			expect(document.activeElement).toBe(after)
+		})
+
+		it('сосед, на которого нельзя перейти или у которого нет крестика, пропускается', async () => {
+			const { closeOf } = await setup(
+				[
+					{ value: 'a', text: 'A' },
+					{ value: 'b', text: 'B', disabled: true },
+					{ value: 'c', text: 'C', closable: false },
+					{ value: 'd', text: 'D' },
+				],
+				{ mode: 'none', markup: 'model' },
+			)
+
+			closeOf('a').focus()
+			closeOf('a').click()
+
+			expect(document.activeElement).toBe(closeOf('d'))
+		})
+
+		it('остановок после ряда нет — фокус не трогается', async () => {
+			const { closeOf, after } = await setup([{ value: 'a', text: 'A' }], {
+				mode: 'none',
+				markup: 'model',
+			})
+
+			after.remove()
+			closeOf('a').focus()
+			closeOf('a').click()
+
+			expect(document.activeElement).toBe(closeOf('a'))
+		})
+	})
+
+	describe('с выбором — на строку соседа', () => {
+		it('крестик закрыл тег — фокус на строке следующего, остановка у него', async () => {
+			const { closeOf, rowOf, values, stop } = await setup(ABC, { markup: 'model' })
+
+			closeOf('b').focus()
+			closeOf('b').click()
+
+			expect(values()).toEqual(['a', 'c'])
+			expect(document.activeElement).toBe(rowOf('c'))
+			expect(stop()).toBe('c')
+		})
+
+		it('Delete — тем же путём: у единственного — первая остановка после ряда', async () => {
+			const { pressOn, after, values } = await setup([{ value: 'a', text: 'A' }], {
+				markup: 'model',
+			})
+
+			pressOn('a', 'Delete')
+
+			expect(values()).toEqual([])
+			expect(document.activeElement).toBe(after)
+		})
+	})
+
+	describe('фокус не в закрываемом теге — на месте', () => {
+		it('на крестике другого тега', async () => {
+			const { engine, find, closeOf, values } = await setup(ABC, {
+				mode: 'none',
+				markup: 'model',
+			})
+
+			closeOf('a').focus()
+			engine.extensions.tags.closeTag(find('b'))
+
+			expect(values()).toEqual(['a', 'c'])
+			expect(document.activeElement).toBe(closeOf('a'))
+		})
+
+		it('вне ряда', async () => {
+			const { engine, find, after, values } = await setup(ABC, {
+				mode: 'none',
+				markup: 'model',
+			})
+
+			after.focus()
+			engine.extensions.tags.closeTag(find('b'))
+
+			expect(values()).toEqual(['a', 'c'])
+			expect(document.activeElement).toBe(after)
+		})
+	})
+
+	it('удаление отменили в item:remove:before — фокус на крестике закрытого тега', async () => {
+		const { engine, closeOf, values } = await setup(ABC, { mode: 'none', markup: 'model' })
+
+		engine.extensions.plain.events.on('item:remove:before', (e) => e.preventDefault())
+		closeOf('b').focus()
+		closeOf('b').click()
+
+		expect(values()).toEqual(['a', 'b', 'c'])
+		expect(document.activeElement).toBe(closeOf('b'))
+	})
+
+	it('после отменённого закрытия следующее закрытие отдаёт фокус соседу', async () => {
+		const { engine, closeOf, values } = await setup(ABC, { mode: 'none', markup: 'model' })
+		let cancel = true
+
+		engine.extensions.plain.events.on('item:remove:before', (e) => {
+			if (cancel) e.preventDefault()
+		})
+
+		closeOf('b').focus()
+		closeOf('b').click()
+		cancel = false
+		closeOf('b').click()
+
+		expect(values()).toEqual(['a', 'c'])
+		expect(document.activeElement).toBe(closeOf('c'))
+	})
+
+	/**
+	 * Поле Select снимает выбор с опции в своём обработчике `item:close` — он
+	 * стоит раньше плагина, и тег уходит из набора до того, как закрытие дойдёт
+	 * до плагина: соседей и фокус плагин снимает в хуке удаления.
+	 */
+	describe('тег снял подписчик закрытия раньше плагина — как поле Select', () => {
+		it('удалением — фокус на крестике соседа', async () => {
+			const { closeOf, values } = await setup(ABC, {
+				mode: 'none',
+				markup: 'model',
+				before: (engine) =>
+					engine.extensions.tags.events.on('item:close', (tag) =>
+						engine.extensions.plain.remove(tag),
+					),
+			})
+
+			closeOf('b').focus()
+			closeOf('b').click()
+
+			expect(values()).toEqual(['a', 'c'])
+			expect(document.activeElement).toBe(closeOf('c'))
+		})
+
+		it('очисткой последнего — на первой остановке после ряда', async () => {
+			const { closeOf, after, values } = await setup([{ value: 'a', text: 'A' }], {
+				mode: 'none',
+				markup: 'model',
+				before: (engine) =>
+					engine.extensions.tags.events.on('item:close', () =>
+						engine.extensions.batch.clear(),
+					),
+			})
+
+			closeOf('a').focus()
+			closeOf('a').click()
+
+			expect(values()).toEqual([])
+			expect(document.activeElement).toBe(after)
+		})
+
+		/**
+		 * Разметка, которая снимает узел синхронно, на изменение набора (Solid),
+		 * уносит фокус на страницу ещё до закрытия, дошедшего до плагина:
+		 * потерянный фокус переносится, как стоявший в теге.
+		 */
+		it('узел тега ушёл из документа раньше — фокус всё равно у соседа', async () => {
+			const { closeOf, values } = await setup(ABC, {
+				mode: 'none',
+				markup: 'model',
+				before: (engine) =>
+					engine.extensions.tags.events.on('item:close', (tag) => {
+						engine.extensions.plain.remove(tag)
+						nodeOf(`[data-value="${tag.value}"]`).remove()
+					}),
+			})
+
+			closeOf('b').focus()
+			closeOf('b').click()
+
+			expect(values()).toEqual(['a', 'c'])
+			expect(document.activeElement).toBe(closeOf('c'))
+		})
+	})
+
+	it('фокус увели, пока тег уходил, — он остаётся, где его поставили', async () => {
+		const { closeOf, field } = await setup(ABC, {
+			mode: 'none',
+			markup: 'model',
+			before: (engine) =>
+				engine.extensions.plain.events.on('item:removed', () => nodeOf('input').focus()),
+		})
+
+		closeOf('b').focus()
+		closeOf('b').click()
+
+		expect(document.activeElement).toBe(field)
+	})
+
+	it('тег ушёл без закрытия — фокус не переносится', async () => {
+		const { engine, find, closeOf, values } = await setup(ABC, {
+			mode: 'none',
+			markup: 'model',
+		})
+
+		closeOf('b').focus()
+		engine.extensions.plain.remove(find('b'))
+
+		expect(values()).toEqual(['a', 'c'])
+		expect(document.activeElement).toBe(closeOf('b'))
+	})
+
+	/** Закрыть тег из кода можно и на сервере: без узла корня фокус не читается. */
+	it('узла корня нет — закрытие фокус не трогает', async () => {
+		const { rootElement, closeOf, values } = await setup(ABC, {
+			mode: 'none',
+			markup: 'model',
+		})
+
+		rootElement.element = null
+		closeOf('b').focus()
+		closeOf('b').click()
+
+		expect(values()).toEqual(['a', 'c'])
+		expect(document.activeElement).toBe(closeOf('b'))
 	})
 })
 
