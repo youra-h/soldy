@@ -98,11 +98,14 @@ export function constants(): Record<string, string> {
  * Тема отдаёт готовый `dist/index.css`: её корень — CSS, и подключают его
  * только dev-сервер и браузерный прогон (`themeCss`). В jsdom стилей нет, и
  * тему туда не тянем. `/setup` темы — раньше корня пакета: алиас сравнивается
- * префиксом.
+ * префиксом. Поведение темы ставит плагины раскладки общего слоя тем, и его
+ * `/setup` — тоже исходником. Корню общего слоя алиас не нужен: это CSS-исходник,
+ * и спеки «база без темы» берут его через манифест.
  */
 export function aliases({ themeCss }: { themeCss: boolean }): Record<string, string> {
 	return {
 		'@soldy-ui/theme-oren/setup': resolve('../../themes/oren/setup/index.ts'),
+		'@soldy-ui/theme-base/setup': resolve('../../themes/base/setup/index.ts'),
 		...(themeCss
 			? { '@soldy-ui/theme-oren': resolve('../../themes/oren/dist/index.css') }
 			: {}),

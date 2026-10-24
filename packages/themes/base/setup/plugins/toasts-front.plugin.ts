@@ -6,7 +6,7 @@ import type { IPluginContext } from '@soldy-ui/plugins'
 const FRONT_HEIGHT = '--so-toasts-front-height'
 
 /**
- * TToastsFrontPlugin — высота переднего тоста стопки для CSS темы.
+ * TToastsFrontPlugin — высота переднего тоста стопки для CSS общего слоя тем.
  *
  * В стопке (`layout: 'cascade'`) задние тосты стоят за передним его высоты и
  * выглядывают из-под него на ступень (`components/toasts.css` общего слоя тем).
@@ -26,9 +26,10 @@ const FRONT_HEIGHT = '--so-toasts-front-height'
  * стопку или уходит из неё. Стопку сменили на столбец, узел сняли или плагин
  * уничтожен — наблюдение снято вместе с переменной.
  *
- * Плагин темы, а не библиотеки: переменную читает CSS темы — общий слой тем
- * (`@soldy-ui/theme-base`) ставит по ней высоту задних, oren ведёт её
- * переходом. Ставит его тема (`setup/plugins/install.ts`) на все Toasts.
+ * Плагин общего слоя тем, а не библиотеки: переменную читает CSS общего слоя
+ * — по ней он ставит высоту задних, а тема ведёт её переходом, — и библиотека
+ * о ней не знает. Ставит его тема своим `defineTheme` на все Toasts (у oren —
+ * `setup/plugins/install.ts`).
  */
 export class TToastsFrontPlugin extends TBasePlugin<IToasts> {
 	private _owner: IToasts | null = null
@@ -124,7 +125,8 @@ export class TToastsFrontPlugin extends TBasePlugin<IToasts> {
 
 	/**
 	 * Передний — тост под фокусом; без фокуса в стопке — первый, а за закрытым
-	 * первым — следующий. Выбор тот же, что у темы (`$cascade-front`).
+	 * первым — следующий. Выбор тот же, что у общего слоя тем
+	 * (`components/toasts.css`) и у движения темы (у oren — `$cascade-front`).
 	 */
 	private readonly _pick = (): void => {
 		const items = [...(this._list?.children ?? [])]

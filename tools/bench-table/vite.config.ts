@@ -21,6 +21,8 @@ export default defineConfig({
 			// Раньше корня пакета: алиас сравнивается префиксом
 			'@soldy-ui/theme-oren/setup': path.join(pk, 'themes/oren/setup/index.ts'),
 			'@soldy-ui/theme-oren': path.join(pk, 'themes/oren/dist/index.css'),
+			// Плагины раскладки, которые ставит поведение темы
+			'@soldy-ui/theme-base/setup': path.join(pk, 'themes/base/setup/index.ts'),
 			'@soldy-ui/core': path.join(pk, 'core/src'),
 			'@soldy-ui/icons-material': path.join(pk, 'icons/material/src'),
 			'@soldy-ui/plugins': path.join(pk, 'plugins/src'),

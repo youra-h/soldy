@@ -6,7 +6,7 @@ import type { IPluginContext } from '@soldy-ui/plugins'
 const HEAD_HEIGHT = '--so-table-head-height'
 
 /**
- * TTableHeadPlugin — высота закреплённой шапки Table для CSS темы.
+ * TTableHeadPlugin — высота закреплённой шапки Table для CSS общего слоя тем.
  *
  * Закреплённая шапка (`stickyHead`) стоит у верхнего края прокрутки, и
  * строки уходят под неё. Узел, на который браузер ведёт прокрутку к фокусу, —
@@ -24,9 +24,10 @@ const HEAD_HEIGHT = '--so-table-head-height'
  * наблюдение снято вместе с переменной. Переменная размера шапки не меняет —
  * её читает только отступ прокрутки в теле, — и петли у наблюдателя нет.
  *
- * Плагин темы, а не библиотеки: переменную читает CSS темы — общий слой тем
- * (`@soldy-ui/theme-base`) ставит по ней отступ прокрутки к фокусу. Ставит его
- * тема (`setup/plugins/install.ts`) на все Table.
+ * Плагин общего слоя тем, а не библиотеки: переменную читает CSS общего слоя
+ * — по ней он ставит отступ прокрутки к фокусу, — а библиотека о ней не
+ * знает. Ставит его тема своим `defineTheme` на все Table (у oren —
+ * `setup/plugins/install.ts`).
  */
 export class TTableHeadPlugin extends TBasePlugin<ITable> {
 	private _owner: ITable | null = null

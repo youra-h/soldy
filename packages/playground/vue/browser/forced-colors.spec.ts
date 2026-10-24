@@ -1206,7 +1206,7 @@ describe('Tabs: активный таб', () => {
 			document.documentElement.dataset.soTheme = scheme
 			render(defineComponent({ render: () => tabs('contained') }))
 
-			// Микрозадача, а не кадр: адаптер отрисовал, плагин темы ещё не мерил
+			// Микрозадача, а не кадр: адаптер отрисовал, плагин раскладки ещё не мерил
 			await nextTick()
 
 			expect(outlined(active()), 'до замера, выбранная обёртка').toBe(true)

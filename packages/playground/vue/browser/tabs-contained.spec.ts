@@ -5,8 +5,9 @@
  *
  * Карточку рисует тема (`themes/oren/src/components/tabs/_tabs.scss`): до
  * замера — фоном выбранной обёртки, после — псевдоэлементом `::before` списка
- * по переменным `--so-tabs-active-*`. Пишет их плагин темы `TTabsViewPlugin`
- * (`themes/oren/setup/plugins/tabs-view.plugin.ts`), он же ставит на список
+ * по переменным `--so-tabs-active-*`. Пишет их плагин раскладки общего слоя
+ * тем `TTabsViewPlugin` (`themes/base/setup/plugins/tabs-view.plugin.ts`,
+ * ставит его `useTheme(oren)`), он же ставит на список
  * признак переезда `--so-tabs-active-moving` при смене активного таба и снимает
  * его, когда переход доиграл; без признака переход нулевой. jsdom не считает
  * ни стилей, ни раскладки и переходов не заводит: там проверяется только

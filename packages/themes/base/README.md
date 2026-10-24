@@ -1,8 +1,9 @@
 # @soldy-ui/theme-base
 
 **The shared layer of Soldy UI themes: what the components need in any theme — a reset of the
-library's own nodes, the writing-direction sign and the structure of the components, with its
-numbers in variables. Plain CSS, no preprocessor, no Tailwind.**
+library's own nodes, the writing-direction sign, the structure of the components with its numbers
+in variables, and the layout plugins that measure what CSS cannot. The CSS is plain CSS, no
+preprocessor, no Tailwind.**
 
 Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
@@ -10,10 +11,10 @@ Web Components.
 
 ## Who needs it
 
-Theme authors. A theme imports this package into its own stylesheet, and the application plugs in
-the theme as one file. If you use a ready theme such as
-[`@soldy-ui/theme-oren`](https://www.npmjs.com/package/@soldy-ui/theme-oren), you do not install
-this package — the theme already carries it.
+Theme authors — [Make your own theme](#make-your-own-theme) below walks through it. If you use a
+ready theme such as [`@soldy-ui/theme-oren`](https://www.npmjs.com/package/@soldy-ui/theme-oren),
+you do not install this package yourself: the theme depends on it, its stylesheet carries the CSS
+of this package, and its behavior installs the plugins of this package.
 
 ## What is inside
 
@@ -44,40 +45,241 @@ this package — the theme already carries it.
 - **The size scales** — heights, paddings, gaps and font sizes per size — as variables on the
   document root with defaults, such as `--so-button-height-sm` or `--so-caption-gap-lg`. A theme
   sets its own numbers there, an application on an ancestor of its area.
+- **The layout plugins** (`@soldy-ui/theme-base/setup`) — data any theme needs and CSS cannot
+  compute: the place of the active tab, the height of a sticky table head and of the front toast in
+  a stack. They write it into CSS variables; a theme installs them with its behavior.
 
 It has no look: no colors, borders, radii, shadows, no names of a theme's variants or views — those
 are the theme's. Where the layout counts on a number of the look — the border width of a field, the
 width of the fade at the edge of a scrolling row of tags or of a scroller, the thickness of a group
 separator, the edge of a slider thumb — the theme sets it in a variable, and without a theme it is
-zero. The surface of an overlay panel is the
-theme's too: the theme paints the panel with `--so-panel-surface`, and this package announces it
-as the surface of the place inside the panel. The surface of the page is announced by the theme and
-that of a card by the application, in `--so-place-surface`: the sticky head of a table takes it as
-its opaque underlay. Every variable a theme may set is listed with its meaning in
-`theme-variables.json`, and so are those the library writes itself, such as the size of a dialog,
-and those the theme's behavior writes — the height of the front toast in a stack and of the sticky
-head of a table.
+zero. The surface of an overlay panel is the theme's too: the theme paints the panel with
+`--so-panel-surface`, and this package announces it as the surface of the place inside the panel.
+The surface of the page is announced by the theme and that of a card by the application, in
+`--so-place-surface`: the sticky head of a table takes it as its opaque underlay. Every variable a
+theme may set is listed with its meaning in `theme-variables.json`, and so are those the library
+writes itself, such as the size of a dialog, and those the layout plugins write — the height of the
+front toast in a stack and of the sticky head of a table.
 
-## Usage in a theme
+## Make your own theme
 
-Import the package first in the theme's stylesheet:
+A theme is a package with three entry points: its stylesheet, the type declarations of the values
+its design offers, and its behavior. The structure comes from this package; the theme adds the look
+on top of it and never styles the page. The steps go in the order to follow, and each says what
+proves it is done.
+
+### 1. The package
+
+All `@soldy-ui/*` packages share one version, and a theme depends on them by that exact version,
+with no `^`. This package is a dependency, not a dev dependency: the behavior of the theme imports
+its plugins at run time.
+
+```json
+{
+  "name": "my-theme",
+  "type": "module",
+  "style": "./dist/index.css",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./dist/index.css" },
+    "./setup": { "types": "./dist/setup/index.d.ts", "default": "./dist/setup/index.js" }
+  },
+  "files": ["dist", "index.d.ts"],
+  "dependencies": { "@soldy-ui/theme-base": "<version>" },
+  "peerDependencies": { "@soldy-ui/core": "<version>", "@soldy-ui/setup": "<version>" }
+}
+```
+
+The application plugs the theme in as one stylesheet and one behavior object:
+
+```ts
+import { useTheme } from '@soldy-ui/setup'
+import theme from 'my-theme/setup'
+
+import 'my-theme'
+
+useTheme(theme)
+```
+
+### 2. The stylesheet: this package first
+
+Import this package first in the theme's stylesheet and build the stylesheet into one file, with
+the CSS of this package inside it:
 
 ```css
 @import '@soldy-ui/theme-base';
 ```
 
 Its rules live in the cascade layer `so`, the reset in the sub-layer `so.reset`, so any rule of the
-theme outside a layer overrides them without fighting specificity.
-
-A theme built with Tailwind puts the package into Tailwind's `base` layer, where preflight used to
-be, so it stays below the application's utilities:
+theme outside a layer overrides them without fighting specificity. A theme built with Tailwind puts
+the package into Tailwind's `base` layer, where preflight used to be, so it stays below the
+application's utilities — and imports Tailwind in parts, without preflight, which would reset the
+whole page:
 
 ```css
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
 @import '@soldy-ui/theme-base' layer(base);
 ```
+
+Done when everything that works on a page with this package alone still works with your
+stylesheet: your rules add the look and take no mechanics away.
+
+### 3. The variables
+
+[`theme-variables.json`](https://github.com/youra-h/soldy/blob/main/packages/themes/base/theme-variables.json)
+is the contract: every variable this package reads, with what it means. Four kinds:
+
+- **Scales and geometry** with a default on `:root`, such as `--so-button-height-sm` or
+  `--so-switch-inset`. Set only those where your numbers differ, on `:root`.
+- **Numbers of your look the layout counts on** — `--so-input-border` and the other field borders,
+  `--so-tags-fade`, `--so-scroller-fade`, `--so-group-separator-width`, `--so-slider-thumb-border`.
+  Zero without a theme; set each where you draw that look.
+- **Surfaces.** Paint the overlay panels with `--so-panel-surface` and set it on them; set
+  `--so-place-surface` on `:root` to the color of your page. Without them a sticky table head has
+  no underlay, and the rows show through it.
+- **Written by the library and by the layout plugins** — the size of a dialog, the positions of
+  slider thumbs, the height of a sticky table head. Do not set them; read them if your look needs
+  them.
+
+Your own variables follow the same scheme, `--so-*`, as every name in the document's global
+namespace: a variable of the application with the same name would replace yours by inheritance.
+
+### 4. The look
+
+Style the `so-*` classes and the `data-*` state attributes the library emits, with the same
+selectors as the structure in `src/components/`. The rules every theme keeps:
+
+- **Only the library's nodes.** Every selector addresses an element with a `so-*` class, in its
+  subject or in an ancestor. A node without a class inside a part is named through the class of its
+  component (`.so-input > input`); there are no rules for everything inside a part (`.so-x *`) —
+  slot content belongs to the application. Outside the library's nodes a theme sets only custom
+  properties, plus `color-scheme` on `:root` and in the block of a scheme, which stands on the
+  attribute `data-so-theme` (`[data-so-theme='my-theme-dark']`).
+- **State from `data-*`, never from `aria-*`** — and not from the native `disabled` attribute: the
+  core duplicates every state into `data-*` on any tag, so an accessibility fix never changes the
+  look.
+- **Disabled fades once.** This package fades a disabled part with its whole subtree by
+  `opacity: var(--so-disabled-opacity)`. Do not fade it yourself; set the variable to change the
+  amount.
+- **Mirror with the sign**, multiplying by `--so-dir-sign`: no `:dir()` and no `[dir]` selectors.
+- **Movement only behind the gate.** Sliding, travelling, turning, resizing over time go into rules
+  under the gate of the library's motion mode; without it the value changes at once. Color, opacity
+  and shadow transitions are not movement and need no gate:
+
+  ```css
+  @media (prefers-reduced-motion: no-preference) {
+    :where(:root:not([data-so-motion='reduce'])) .so-switch__track--thumb {
+      transition: inset-inline-start 200ms;
+    }
+  }
+
+  :where(:root[data-so-motion='full']) .so-switch__track--thumb {
+    transition: inset-inline-start 200ms;
+  }
+  ```
+
+- **Keyframes named `so-*`**, like the variables.
+- **Hover through the label.** A hover rule of CheckBox, Switch and a radio item also matches when
+  the text of its `Label` is hovered: `:is(:hover, :where(.so-label:hover > .so-label__control *))`.
+- **No per-cell rule of Table at rest.** A rule multiplied by every body cell of a Table stands
+  under an attribute the table carries only during a gesture (`[data-reorder-preview]`), with the
+  chain "root > body > row", and no rule has `:has()` on the table root.
+
+Values of the look are modifiers with a prefix: `so-button--view-filled`,
+`so-button--variant-accent`, `so-skeleton--shape-circle`, `so-skeleton--animation-wave`. A block
+without a modifier is the default look.
+
+### 5. The values of the look: `index.d.ts`
+
+The library declares no `variant`, `view`, `shape` or `animation` values: the theme does, by
+augmenting the registries of `@soldy-ui/core`, and the props of every component take exactly these
+names. A registry the theme leaves empty gives its prop the type `never`.
+
+```ts
+export {}
+
+declare module '@soldy-ui/core' {
+  interface IComponentVariants {
+    accent: true
+  }
+
+  interface IButtonViews {
+    filled: true
+    outlined: true
+  }
+}
+```
+
+The registries: `IComponentVariants`, `IButtonViews` (also the rows of ListBox and Accordion and the
+pills of Tags), `ITabsViews`, `ICheckBoxViews`, `IRadioGroupViews`, `ISkeletonShapes`,
+`ISkeletonAnimations`. Declare every modifier your CSS has, and nothing it does not have.
+
+### 6. The behavior: `./setup`
+
+A theme hands over its plugins as one `defineTheme` object, and `useTheme` registers them for every
+component of their type, including those drawn as parts of other components. This package has no
+`defineTheme` of its own — the application plugs in one theme — so the theme installs the layout
+plugins of this package in its object:
+
+```ts
+import { TTable, TTabs, TToasts } from '@soldy-ui/core'
+import { defineTheme } from '@soldy-ui/setup'
+import { TTableHeadPlugin, TTabsViewPlugin, TToastsFrontPlugin } from '@soldy-ui/theme-base/setup'
+
+export default defineTheme({
+  name: 'my-theme',
+  plugins: [
+    { type: TTabs, plugins: [TTabsViewPlugin] },
+    { type: TTable, plugins: [TTableHeadPlugin] },
+    { type: TToasts, plugins: [TToastsFrontPlugin] },
+  ],
+})
+```
+
+- **`TTabsViewPlugin`**, on Tabs, writes on the list `.so-tabs__list`: `--so-tabs-active-pos` and
+  `--so-tabs-active-size` — the place and the length of the active tab along the main axis;
+  `--so-tabs-gap-pos` and `--so-tabs-gap-size` — a gap in a line along the list under it;
+  `--so-tabs-active-moving: 1` while the mark moves to a newly active tab. Once the node is
+  measured, it adds the modifier `so-tabs--ready-animation` to the root. Only the theme reads these:
+  it draws the mark of the active tab — a bar, a card — from them. The plugin lifts the moving flag
+  when the CSS transitions of the list's own pseudo-elements have ended, so a mark that moves is a
+  `::before` or `::after` of the list, with a duration that depends on the flag —
+  `calc(var(--so-tabs-active-moving, 0) * 200ms)` moves it to a new tab and puts it in place at once
+  on a resize. Without the plugin the variables are not there: a mark drawn from them is not drawn,
+  and only what the theme draws by `data-selected` of the tab shows the active one.
+- **`TTableHeadPlugin`**, on Table, writes `--so-table-head-height` on the table root while
+  `stickyHead` is on: this package keeps the focused cell below the sticky head by that height.
+  Without it the offset is one row of the head, and a head wrapped into several rows covers the
+  focus.
+- **`TToastsFrontPlugin`**, on Toasts, writes `--so-toasts-front-height` on the region while the
+  toasts cascade: this package gives the toasts behind the height of the front one, and the theme
+  may transition it. Without it they take the height of the stack cell — the same height, with no
+  transition.
+
+A plugin whose data only your own look needs belongs to your theme, in the same list.
+
+### 7. Check it
+
+The checks of this package run on the built CSS of every theme in the
+[repository](https://github.com/youra-h/soldy): a package in `packages/themes/` with a
+`vite.config.ts` that builds its stylesheet into one CSS file is picked up by
+`npm run test --workspace=@soldy-ui/theme-base` by itself. Outside the repository the same rules
+hold — each check is a rule of step 4:
+
+- `sealed` — every selector addresses a `so-*` node; outside them only custom properties and
+  `color-scheme`; only wrapping at-rules, `@layer`, `@keyframes` and `@property`;
+- `motion` — movement only behind the gate, no `scroll-behavior: smooth`;
+- `variable-prefix` and `keyframes-prefix` — the names `--so-*` and `so-*`, in the stylesheet and
+  in the behavior;
+- `disabled` — a disabled rule takes its opacity only from `--so-disabled-opacity`;
+- `label-hover` — the label context next to `:hover` in every hover rule of CheckBox, Switch and a
+  radio item;
+- `table-reorder` — per-cell rules of Table under the gesture attribute, no `:has()` on its root.
+
+[`@soldy-ui/theme-oren`](https://github.com/youra-h/soldy/tree/main/packages/themes/oren) is a
+complete theme built on these steps: Tailwind and Sass inside, two color schemes, its own values.
 
 ## Layer order next to Tailwind
 
@@ -95,8 +297,8 @@ the application uses Tailwind, name the order before any stylesheet loads, so th
 - [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
   put together.
 - [The package's own notes](https://github.com/youra-h/soldy/blob/main/packages/themes/base/AGENTS.md)
-  — layers, the reset, the direction sign, the variable contract and the checks every theme
-  passes (in Russian).
+  — layers, the reset, the direction sign, the variable contract, the layout plugins and the checks
+  every theme passes (in Russian).
 
 ## License
 

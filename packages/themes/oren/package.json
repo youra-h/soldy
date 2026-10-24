@@ -46,13 +46,14 @@
     "watch": "vite build --watch",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@soldy-ui/theme-base": "0.3.0-alpha.2"
+  },
   "peerDependencies": {
     "@soldy-ui/core": "0.3.0-alpha.2",
-    "@soldy-ui/plugins": "0.3.0-alpha.2",
     "@soldy-ui/setup": "0.3.0-alpha.2"
   },
   "devDependencies": {
-    "@soldy-ui/theme-base": "0.3.0-alpha.2",
     "@tailwindcss/node": "^4.2.2",
     "postcss": "^8.5.9",
     "sass": "^1.99.0",

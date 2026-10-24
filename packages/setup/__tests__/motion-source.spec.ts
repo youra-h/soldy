@@ -37,8 +37,9 @@ const EXCLUDED_DIR_NAMES = new Set(['node_modules', 'dist', '__tests__', '.svelt
 const SOURCE_FILE = /\.(ts|tsx|js|vue|svelte)$/
 
 /**
- * Корни сканирования: всё, что уезжает в пакеты кодом. Поведение — у темы,
- * которая его отдаёт (`setup/`); у общего слоя тем кода нет, только CSS.
+ * Корни сканирования: всё, что уезжает в пакеты кодом. Поведение тем — их
+ * `setup/`: у темы, которая его отдаёт, и у общего слоя тем — плагины
+ * раскладки, которые ставит тема.
  */
 function roots(): string[] {
 	const inside = (dir: string) =>
@@ -103,8 +104,12 @@ describe('режим движения — в одном модуле', () => {
 		// Пустой список прошёл бы проверку ниже на любом коде
 		expect(sources.length).toBeGreaterThan(100)
 		expect(sources.some(({ path }) => path.startsWith(MOTION_MODULE))).toBe(true)
-		// Тема без `setup/` пропускается — поведение oren сканер видеть обязан
+		// Тема без `setup/` пропускается — поведение oren и плагины раскладки
+		// общего слоя тем сканер видеть обязан
 		expect(sources.some(({ path }) => path.startsWith('packages/themes/oren/setup/'))).toBe(
+			true,
+		)
+		expect(sources.some(({ path }) => path.startsWith('packages/themes/base/setup/'))).toBe(
 			true,
 		)
 	})

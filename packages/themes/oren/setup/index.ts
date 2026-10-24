@@ -16,15 +16,17 @@
  * шапка в несколько строк закрывает фокус, а задние тосты стопки встают в
  * высоту переднего сразу, без перехода.
  *
- * Раскладка — по виду регистрации: `plugins/` — плагины и их установщик
+ * Плагины — раскладки, из общего слоя тем (`@soldy-ui/theme-base/setup`):
+ * своего `useTheme` у общего слоя нет, и ставит их тема. Классы плагинов
+ * отсюда не отдаются — их отдаёт общий слой.
+ *
+ * Раскладка — по виду регистрации: `plugins/` — установщик плагинов
  * (`install.ts`). Расширения коллекций встанут рядом тем же порядком:
  * `extensions/` со своим установщиком, подключённым здесь.
  */
 
 import { defineTheme } from '@soldy-ui/setup'
 import { plugins } from './plugins'
-
-export { TTableHeadPlugin, TTabsViewPlugin, TToastsFrontPlugin } from './plugins'
 
 export default defineTheme({
 	name: 'oren',
