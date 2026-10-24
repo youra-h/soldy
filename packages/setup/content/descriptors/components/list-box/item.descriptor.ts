@@ -13,6 +13,7 @@ import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 import {
 	ActionPluginDescriptor,
+	IdPluginDescriptor,
 	ListItemPluginDescriptor,
 	OptionIdsPluginDescriptor,
 } from '../../plugins'
@@ -58,7 +59,9 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 			// обёртка вокруг неё: туда `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: rowIn }),
 			ListItemPluginDescriptor,
-			// `id` элемента — на него ссылается `aria-activedescendant` узла списка
+			// `id` элемента — проп `id` или от монтирования: на него ссылается
+			// `aria-activedescendant` узла списка
+			IdPluginDescriptor,
 			OptionIdsPluginDescriptor,
 		],
 	}),

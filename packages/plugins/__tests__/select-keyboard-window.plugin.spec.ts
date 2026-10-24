@@ -9,10 +9,12 @@
  * `list-navigation-window.plugin.spec.ts`), а своего `id` и узла у неё нет,
  * пока окно её не нарисовало. Поэтому `aria-activedescendant` получает её `id`,
  * когда регистрируется её набор, — до того ссылки нет вовсе, а не ссылки в
- * пустоту, — а прокрутка к ней идёт в следующем кадре: узел и панель адаптер
- * рисует уже после обработчика клавиши. Опции «монтирует» тест — набор с
- * узлом, плагином подсветки и плагином связок в реестр, как адаптер. Как это
- * выглядит в браузере, — `playground/vue/browser/select-virtual.spec.ts`.
+ * пустоту. Прокрутку к ней ведёт общий плагин списков (`TListScrollPlugin`),
+ * как дескриптор Select его ставит, — по подсветке клавиатуры: в следующем
+ * кадре (узел и панель адаптер рисует уже после обработчика клавиши), а к
+ * опции вне окна — когда её набор зарегистрируют. Опции «монтирует» тест —
+ * набор с узлом, плагином подсветки и плагином связок в реестр, как адаптер.
+ * Как это выглядит в браузере, — `playground/vue/browser/select-virtual.spec.ts`.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -23,6 +25,7 @@ import {
 	TCollectionElements,
 	TElementPlugin,
 	TListItemPlugin,
+	TListScrollPlugin,
 	TOptionIdsPlugin,
 	TPluginBundle,
 	TSelectKeyboardPlugin,
@@ -61,7 +64,8 @@ let mounts = 0
 
 /**
  * Select из 200 опций в окне: видны первые 20 (места 0–9 и запас) — их тест
- * монтирует сразу, как адаптер. Прокрутка мгновенная: `scrollIntoView` в
+ * монтирует сразу, как адаптер. Плагины — как в дескрипторе: клавиатура и за
+ * ней прокрутка с её подсветкой. Прокрутка мгновенная: `scrollIntoView` в
  * jsdom нет, и узлы опций отдают свой, который запоминает вызовы.
  */
 async function setup() {
@@ -86,6 +90,7 @@ async function setup() {
 		.use(TCollectionBundlesPlugin)
 		.use(TCollectionElements)
 		.use(TSelectKeyboardPlugin)
+		.use(TListScrollPlugin, { navigation: TSelectKeyboardPlugin })
 
 	bundles.push(bundle)
 

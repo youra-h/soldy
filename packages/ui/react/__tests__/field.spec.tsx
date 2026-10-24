@@ -26,7 +26,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { StrictMode, act, useState, type ReactElement, type ReactNode } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { TField, TInput, TSlider } from '@soldy-ui/core'
+import { TField, TSlider } from '@soldy-ui/core'
 import {
 	CheckBox,
 	DateInput,
@@ -420,34 +420,32 @@ describe('Field · id поля', () => {
 	})
 
 	it('свой id задали позже — for идёт за ним', () => {
-		const ctrl = new TInput()
-
-		mount(
+		const { render } = mount(
 			<Field label="Почта">
-				<Input ctrl={ctrl} />
+				<Input />
 			</Field>,
 		)
 
-		act(() => {
-			ctrl.id = 'email'
-		})
+		render(
+			<Field label="Почта">
+				<Input id="email" />
+			</Field>,
+		)
 
 		expect(find(document, '.so-input input', HTMLInputElement).id).toBe('email')
 		expect(label().htmlFor).toBe('email')
 	})
 
-	it('контрол сняли — его id от поля снят, for — снова на id поля', () => {
-		const ctrl = new TInput()
+	it('контрол сняли — for снова на id поля', () => {
 		const { render } = mount(
 			<Field label="Почта">
-				<Input ctrl={ctrl} />
+				<Input />
 			</Field>,
 		)
 		const id = find(document, '.so-input input', HTMLInputElement).id
 
 		render(<Field label="Почта" />)
 
-		expect(ctrl.id).toBeUndefined()
 		expect(label().htmlFor).toBe(id)
 	})
 })

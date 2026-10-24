@@ -69,6 +69,7 @@
 		embedded="select.field"
 		class="so-select__field"
 		[ctrl]="instance()?.field"
+		[id]="state()['id']"
 		[so-attributes]="state()['aria']"
 	>
 		<ng-template slot="leading">

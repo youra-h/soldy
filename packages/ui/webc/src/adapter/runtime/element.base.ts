@@ -197,8 +197,9 @@ export function ElementBase<
 		throw new Error('[soldy] Описание корня объявляет id поля, а у дескриптора пропа id нет')
 	}
 
-	// `id` поля карта не наблюдает: база берёт атрибут пропом первой сборки и
-	// снимает с корня, а наблюдаемым снятие вернуло бы проп к умолчанию
+	// `id` поля — не вход корня, и в карте пропов его нет: атрибут база берёт
+	// пропом и снимает с корня — при построении и на каждую запись из кода.
+	// Входом снятие вернуло бы проп к умолчанию
 	const fieldId = (plan.control || plan.fieldId) && attributes.has(CONTROL_ID)
 
 	if (fieldId) attributes.delete(CONTROL_ID)
@@ -212,7 +213,7 @@ export function ElementBase<
 
 	class TElementBase extends Native implements IElementBase<TInstance, TFacade, TOwnerFacade> {
 		static get observedAttributes(): string[] {
-			return [...attributes.keys(), ...own.keys()]
+			return [...attributes.keys(), ...own.keys(), ...(fieldId ? [CONTROL_ID] : [])]
 		}
 
 		static is(
@@ -318,6 +319,14 @@ export function ElementBase<
 		}
 
 		attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
+			// `id` поля, записанный из кода (`el.id`, `setAttribute`), — на поле, как
+			// атрибут разметки. Снятие с корня — своё же, его база пропускает
+			if (fieldId && name === CONTROL_ID) {
+				if (value !== null) this._takeFieldId()
+
+				return
+			}
+
 			const attribute = attributes.get(name)
 
 			if (attribute) {
@@ -428,12 +437,13 @@ export function ElementBase<
 			return undefined
 		}
 
+		/** `id` поля — с корня в проп; пустой снимает его, как у нативного `id`. */
 		private _takeFieldId(): void {
 			const id = this.getAttribute(CONTROL_ID)
 
 			if (id === null) return
 
-			this._write(CONTROL_ID, id)
+			this._write(CONTROL_ID, id === '' ? undefined : id)
 			this.removeAttribute(CONTROL_ID)
 		}
 

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 /**
- * Плагины меню у кнопки (APG Menu Button): клавиатура, указатель и модель
- * фокуса — вместе, как их ставит дескриптор.
+ * Плагины меню у кнопки (APG Menu Button): клавиатура, прокрутка списка
+ * пунктов, указатель и модель фокуса — вместе, как их ставит дескриптор.
  *
  * Разметку тест строит сам в том виде, в каком её рисует Vue: кнопка до,
  * корень с триггером, кнопка после — и панель в конце `body` с пометкой
@@ -22,6 +22,7 @@ import {
 	TDismissPlugin,
 	TElementPlugin,
 	TListItemPlugin,
+	TListScrollPlugin,
 	TMenuFocusPlugin,
 	TMenuHoverPlugin,
 	TMenuKeyboardPlugin,
@@ -89,6 +90,7 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 		.use(TCollectionElements)
 		.use(TDismissPlugin, { focusOutside: true })
 		.use(TMenuKeyboardPlugin)
+		.use(TListScrollPlugin, { navigation: TMenuKeyboardPlugin })
 		.use(TMenuPointerPlugin)
 		.use(TMenuHoverPlugin)
 		.use(TMenuFocusPlugin)
@@ -98,12 +100,18 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 	}
 
 	const bundles = pluginOf(bundle, TCollectionBundlesPlugin)
+	/** Пункты, к которым докрутил список, — `value` по порядку вызовов `scrollIntoView`. */
+	const intoView: unknown[] = []
 
 	for (const item of items) {
 		const node = document.createElement('div')
 		const row = document.createElement('div')
 
 		node.dataset.value = String(item.value)
+		// jsdom не умеет `scrollIntoView` — узел пункта запоминает вызовы
+		node.scrollIntoView = () => {
+			intoView.push(item.value)
+		}
 		// Строке `tabindex` пишет коллекция в набор пункта, а разметка раскладывает
 		row.tabIndex = Number(item.aria.get('tabindex'))
 		row.append(item.text)
@@ -183,6 +191,7 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 		highlighted,
 		lit,
 		find,
+		intoView,
 	}
 }
 
@@ -222,6 +231,21 @@ describe('клавиши триггера', () => {
 
 		expect(owner.open).toBe(true)
 		expect(focused()).toBe('remove')
+	})
+
+	/**
+	 * Фокус модель фокуса ставит без прокрутки, и раньше последний пункт
+	 * длинного меню оставался за краем. Теперь к подсвеченному докручивает
+	 * список — за подсветкой, откуда бы она ни пришла.
+	 */
+	it('ArrowUp — список докручивает к последнему пункту', async () => {
+		const { trigger, press, intoView } = await setup()
+
+		trigger.focus()
+		press(trigger, 'ArrowUp')
+		await nextFrame()
+
+		expect(intoView).toEqual(['remove'])
 	})
 
 	it('выключенный пункт пропускается: меню открывается на первом доступном', async () => {
@@ -274,6 +298,26 @@ describe('клавиши панели', () => {
 		expect(focused()).toBe('save')
 		// Горит один — подсвеченный
 		expect(lit()).toEqual(['save'])
+	})
+
+	/**
+	 * Фокус за клавишами — тоже без прокрутки, как за указателем: браузер
+	 * докручивал к фокусу сам и по-своему. Докручивает список — ближайшим
+	 * краем, кадром позже, к последней подсветке.
+	 */
+	it('фокус за стрелкой — без прокрутки, к пункту докручивает список', async () => {
+		const { rowOf, pressFocused, intoView } = await opened()
+		const focus = vi.spyOn(rowOf('save'), 'focus')
+
+		intoView.length = 0
+		pressFocused('ArrowDown')
+
+		expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+		expect(intoView).toEqual([])
+
+		await nextFrame()
+
+		expect(intoView).toEqual(['save'])
 	})
 
 	it('Home и End — к крайним', async () => {
@@ -435,6 +479,20 @@ describe('указатель', () => {
 			expect(focus).toHaveBeenCalledWith({ preventScroll: true })
 		},
 	)
+
+	/**
+	 * Наведение — тоже подсветка: пункт, срезанный краем списка, список
+	 * докручивает к нему, как за стрелкой.
+	 */
+	it('наведение — к пункту докручивает список', async () => {
+		const { owner, rowOf, hover, intoView } = await setup()
+
+		owner.open = true
+		hover(rowOf('save'))
+		await nextFrame()
+
+		expect(intoView).toEqual(['save'])
+	})
 
 	it('касание не подсвечивает: у пальца наведения нет', async () => {
 		const { owner, rowOf, hover, lit } = await setup()

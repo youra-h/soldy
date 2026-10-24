@@ -36,10 +36,11 @@ import {
 	TCalendarKeyboardPlugin,
 	TListHeightPlugin,
 	TListScrollPlugin,
+	TSelectKeyboardPlugin,
 	TTabsActiveTabPlugin,
 	TTextareaAutoresizePlugin,
 } from '@soldy-ui/plugins'
-import { FRAME_LAYER_ATTRIBUTE } from '@soldy-ui/core'
+import { FRAME_LAYER_ATTRIBUTE, menuOf } from '@soldy-ui/core'
 import {
 	CalendarCollectionDescriptor,
 	CalendarDescriptor,
@@ -50,6 +51,11 @@ import {
 	ListBoxCollectionItemDescriptor,
 	ListBoxDescriptor,
 	ListBoxItemDescriptor,
+	MenuCheckboxItemDescriptor,
+	MenuCollectionCheckboxItemDescriptor,
+	MenuCollectionDescriptor,
+	MenuDescriptor,
+	MenuSubmenuDescriptor,
 	SelectCollectionDescriptor,
 	SelectDescriptor,
 	TabsCollectionDescriptor,
@@ -178,6 +184,38 @@ function assembleSelect(props: object) {
 }
 
 /**
+ * Menu, собранный как в адаптере Svelte, — и флажки разметки под ним: свой
+ * контекст флажка и контекст его фасада, лифт — общий с меню.
+ */
+function assembleMenu(markup: readonly object[]) {
+	const { factory: elevator } = createElevatorFactory()
+	const menu = createAdapterContext(MenuDescriptor(), { props: {} })
+	const facade = createAdapterContext(
+		MenuCollectionDescriptor(),
+		{ props: {}, options: { owner: menu.instance } },
+		{ bundle: menu.bundle },
+	).use(TCollectionExtension, { elevator })
+	const accepted = [accept(menu), accept(facade)]
+
+	for (const itemProps of markup) {
+		const item = createAdapterContext(MenuCheckboxItemDescriptor(), { props: itemProps })
+
+		accepted.push(accept(item))
+		accepted.push(
+			accept(
+				createAdapterContext(
+					MenuCollectionCheckboxItemDescriptor(),
+					{ props: itemProps },
+					{ bundle: item.bundle },
+				).use(TCollectionItemExtension, { item: item.instance, elevator }),
+			),
+		)
+	}
+
+	return { facade, unmount: () => unmountAll(accepted) }
+}
+
+/**
  * Tabs, собранный как в адаптере Svelte, — и табы разметки под ним: свой
  * контекст таба и контекст его фасада, лифт — общий с Tabs.
  */
@@ -246,16 +284,23 @@ describe('сторож: сборка списка без узла и без requ
 	})
 
 	/** Иначе сценарии ниже проходили бы без тех, кто работает на кадр. */
-	it('плагины, которые работают на кадр, стоят в наборе ListBox и Select', () => {
+	it('плагины, которые работают на кадр, стоят в наборе ListBox, Select и меню', () => {
 		const list = createAdapterContext(ListBoxDescriptor(), { props: {} })
 		const select = createAdapterContext(SelectDescriptor(), { props: {} })
+		const menu = createAdapterContext(MenuDescriptor(), { props: {} })
+		const submenu = createAdapterContext(MenuSubmenuDescriptor(), { props: {} })
 
 		expect(list.bundle?.get(TListHeightPlugin)).toBeDefined()
 		expect(list.bundle?.get(TListScrollPlugin)).toBeDefined()
 		expect(select.bundle?.get(TListHeightPlugin)).toBeDefined()
+		expect(select.bundle?.get(TListScrollPlugin)).toBeDefined()
+		expect(menu.bundle?.get(TListScrollPlugin)).toBeDefined()
+		expect(submenu.bundle?.get(TListScrollPlugin)).toBeDefined()
 
 		list.destroy()
 		select.destroy()
+		menu.destroy()
+		submenu.destroy()
 	})
 
 	it('ListBox из items: сборка, приём, смена value и maxRows, уничтожение', () => {
@@ -294,7 +339,12 @@ describe('сторож: сборка списка без узла и без requ
 		unmount()
 	})
 
-	it('Select из items: сборка, приём, смена maxRows и состава, уничтожение', () => {
+	/**
+	 * Прокрутка списка панели слушает выбор и подсветку клавиатуры, а оба факта
+	 * приходят и на сервере: значение из пропсов, подсветка — от кода (так её
+	 * ставит ввод поля). Узла нет — кадр она не планирует.
+	 */
+	it('Select из items: сборка, приём, смена value, maxRows и состава, подсветка, уничтожение', () => {
 		const props = {
 			items: [
 				{ value: 'a', text: 'A' },
@@ -304,15 +354,40 @@ describe('сторож: сборка списка без узла и без requ
 			maxRows: 1,
 		}
 		const { select, facade, inputs, facadeInputs, unmount } = assembleSelect(props)
-		const { batch } = facade.instance.engine.extensions
+		const { batch, selection } = facade.instance.engine.extensions
+		const keyboard = required(select.bundle?.get(TSelectKeyboardPlugin), 'клавиатура Select')
 
 		expect(valuesOf(batch.items)).toEqual(['a', 'b'])
 
-		inputs.full({ ...props, maxRows: 2 })
+		inputs.full({ ...props, value: 'b', maxRows: 2 })
 		facadeInputs.full({ ...props, items: [...props.items, { value: 'c', text: 'C' }] })
+		keyboard.highlightSelected()
+		keyboard.highlightByText('')
 
+		expect(valuesOf(selection.selected)).toEqual(['b'])
 		expect(select.instance.maxRows).toBe(2)
 		expect(valuesOf(batch.items)).toEqual(['a', 'b', 'c'])
+
+		unmount()
+	})
+
+	/**
+	 * Меню собирается и на сервере, и отметка флажков — значение меню, за
+	 * которым идёт прокрутка списка пунктов, — там тоже меняется.
+	 */
+	it('Menu с флажками разметки: сборка, приём, отметка, уничтожение', () => {
+		const { facade, unmount } = assembleMenu([
+			{ value: 'grid', text: 'Сетка' },
+			{ value: 'list', text: 'Список' },
+		])
+		const { engine } = facade.instance
+		const { batch, selection } = engine.extensions
+
+		expect(valuesOf(batch.items)).toEqual(['grid', 'list'])
+
+		menuOf(engine)?.checkItem(batch.items[1])
+
+		expect(valuesOf(selection.selected)).toEqual(['list'])
 
 		unmount()
 	})

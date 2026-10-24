@@ -1,59 +1,63 @@
 <!--
-	Края списка — шаблонами: есть ли что-то в `<ng-content>`, Angular не сообщает.
+	Ряд — список табов и края по его сторонам. Края — в ряду, а не в списке: в
+	`[role=tablist]` ARIA пускает только `tab`. Края — шаблонами: есть ли что-то в
+	`<ng-content>`, Angular не сообщает.
 	Слоты таба без scope — проекцией (`ngProjectAs`), остальные — шаблонами в его слив.
 	Шаблоны слотов набора — в слив в конце: иначе сняли бы табы из данных.
 -->
-<div #control class="so-tabs__list" [so-attributes]="state()['aria']">
+<div class="so-tabs__bar">
 	@if (slot('leading'); as leading) {
-		<div class="so-tabs__list--leading">
+		<div class="so-tabs__leading">
 			<ng-container [ngTemplateOutlet]="leading" />
 		</div>
 	}
-	<ng-content>
-		@for (item of state()['shown'] ?? []; track item.uid) {
-			<div so-tabs-item [ctrl]="item">
-				@if (slot('item-leading'); as leading) {
-					<ng-container ngProjectAs="[slot=leading]">
-						<ng-container
-							[ngTemplateOutlet]="leading"
-							[ngTemplateOutletContext]="{ item }"
-						/>
-					</ng-container>
-				}
-				@if (slot('item'); as content) {
-					<ng-template
-						slot="default"
-						ngProjectAs="ng-template[slot]"
-						let-text="text"
-						let-active="active"
-					>
-						<ng-container
-							[ngTemplateOutlet]="content"
-							[ngTemplateOutletContext]="{ item, text, active }"
-						/>
-					</ng-template>
-				}
-				@if (slot('item-trailing'); as trailing) {
-					<ng-container ngProjectAs="[slot=trailing]">
-						<ng-container
-							[ngTemplateOutlet]="trailing"
-							[ngTemplateOutletContext]="{ item }"
-						/>
-					</ng-container>
-				}
-				@if (slot('item-close-icon'); as icon) {
-					<ng-template slot="close-icon" ngProjectAs="ng-template[slot]">
-						<ng-container
-							[ngTemplateOutlet]="icon"
-							[ngTemplateOutletContext]="{ item }"
-						/>
-					</ng-template>
-				}
-			</div>
-		}
-	</ng-content>
+	<div #control class="so-tabs__list" [so-attributes]="state()['aria']">
+		<ng-content>
+			@for (item of state()['shown'] ?? []; track item.uid) {
+				<div so-tabs-item [ctrl]="item">
+					@if (slot('item-leading'); as leading) {
+						<ng-container ngProjectAs="[slot=leading]">
+							<ng-container
+								[ngTemplateOutlet]="leading"
+								[ngTemplateOutletContext]="{ item }"
+							/>
+						</ng-container>
+					}
+					@if (slot('item'); as content) {
+						<ng-template
+							slot="default"
+							ngProjectAs="ng-template[slot]"
+							let-text="text"
+							let-active="active"
+						>
+							<ng-container
+								[ngTemplateOutlet]="content"
+								[ngTemplateOutletContext]="{ item, text, active }"
+							/>
+						</ng-template>
+					}
+					@if (slot('item-trailing'); as trailing) {
+						<ng-container ngProjectAs="[slot=trailing]">
+							<ng-container
+								[ngTemplateOutlet]="trailing"
+								[ngTemplateOutletContext]="{ item }"
+							/>
+						</ng-container>
+					}
+					@if (slot('item-close-icon'); as icon) {
+						<ng-template slot="close-icon" ngProjectAs="ng-template[slot]">
+							<ng-container
+								[ngTemplateOutlet]="icon"
+								[ngTemplateOutletContext]="{ item }"
+							/>
+						</ng-template>
+					}
+				</div>
+			}
+		</ng-content>
+	</div>
 	@if (slot('trailing'); as trailing) {
-		<div class="so-tabs__list--trailing">
+		<div class="so-tabs__trailing">
 			<ng-container [ngTemplateOutlet]="trailing" />
 		</div>
 	}

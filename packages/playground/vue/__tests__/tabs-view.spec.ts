@@ -3,7 +3,7 @@
  *
  * `TTabsViewPlugin` — плагин раскладки общего слоя тем
  * (`@soldy-ui/theme-base/setup`; ставит его `useTheme(oren)` в
- * `__tests__/setup.ts`). Он пишет на список переменные места и
+ * `__tests__/setup.ts`). Он пишет на ряд набора переменные места и
  * длины активного таба (`--so-tabs-active-*`) и разрыва линии (`--so-tabs-gap-*`), а после
  * монтирования ставит `--ready-animation`. Раньше он делал это только для видов
  * `line` и `outline`, то есть знал имена видов. Значения вида теперь объявляет
@@ -54,8 +54,18 @@ const render = async (attrs: string, setup: () => Record<string, unknown> = () =
 	await nextFrame()
 }
 
+/** Ряд набора — список табов и слоты по его краям: на нём переменные геометрии. */
+const bar = (): HTMLElement => {
+	const found = document.querySelector('.so-tabs > .so-tabs__bar')
+
+	if (!(found instanceof HTMLElement)) throw new Error('ряда табов нет')
+
+	return found
+}
+
+/** Список табов — ребёнок ряда: место таба меряется от ряда, а не от него. */
 const list = (): HTMLElement => {
-	const found = document.querySelector('.so-tabs__list')
+	const found = bar().querySelector(':scope > .so-tabs__list')
 
 	if (!(found instanceof HTMLElement)) throw new Error('списка табов нет')
 
@@ -78,12 +88,13 @@ describe('геометрия активного таба без знания о 
 	])('%s: переменные места и разрыва записаны, анимация включена', async (_, attrs) => {
 		await render(attrs)
 
-		const style = list().style
+		const style = bar().style
 
 		expect(style.getPropertyValue('--so-tabs-active-pos')).not.toBe('')
 		expect(style.getPropertyValue('--so-tabs-active-size')).not.toBe('')
 		expect(style.getPropertyValue('--so-tabs-gap-pos')).not.toBe('')
 		expect(style.getPropertyValue('--so-tabs-gap-size')).not.toBe('')
+		expect(list().style.getPropertyValue('--so-tabs-active-pos'), 'не на списке').toBe('')
 		expect(document.querySelector('.so-tabs')?.classList).toContain('so-tabs--ready-animation')
 	})
 })
@@ -91,7 +102,7 @@ describe('геометрия активного таба без знания о 
 /**
  * Признак переезда (`--so-tabs-active-moving`) — по каждой записи геометрии: тест
  * слушает тот же `change:active-tab`, что и плагин раскладки, и подписан позже
- * него (`bundle:create` приходит после сборки набора), поэтому застаёт список
+ * него (`bundle:create` приходит после сборки набора), поэтому застаёт ряд
  * сразу после записи. Переходов в jsdom нет, и признак снимается кадром позже.
  */
 describe('признак переезда', () => {
@@ -104,7 +115,7 @@ describe('признак переезда', () => {
 
 			bundle.get(TTabsActiveTabPlugin)?.events.on('change:active-tab', (offset) => {
 				if (offset)
-					writes.push(offset.listEl.style.getPropertyValue('--so-tabs-active-moving'))
+					writes.push(offset.barEl.style.getPropertyValue('--so-tabs-active-moving'))
 			})
 		})
 
@@ -116,11 +127,11 @@ describe('признак переезда', () => {
 		row(1).click()
 
 		expect(writes).toEqual(['', '1'])
-		expect(list().style.getPropertyValue('--so-tabs-active-moving')).toBe('1')
+		expect(bar().style.getPropertyValue('--so-tabs-active-moving')).toBe('1')
 
 		await nextFrame()
 
-		expect(list().style.getPropertyValue('--so-tabs-active-moving')).toBe('')
+		expect(bar().style.getPropertyValue('--so-tabs-active-moving')).toBe('')
 
 		// Тот же таб, другой вид — пересчёт без признака
 		tabs.view = 'outline'

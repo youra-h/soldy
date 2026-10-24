@@ -154,8 +154,8 @@ const SIGNALS: Record<string, ISignal> = {
 						),
 				},
 			),
-		// Полоса — `::after` списка: своего узла у неё нет
-		color: (cell) => style(part(cell, '.so-tabs__list'), '::after').backgroundColor,
+		// Полоса — `::after` ряда: своего узла у неё нет
+		color: (cell) => style(part(cell, '.so-tabs__bar'), '::after').backgroundColor,
 	},
 	'заливка Button filled': {
 		variants: COLORED,

@@ -13,6 +13,7 @@ import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
 import {
 	ActionPluginDescriptor,
+	IdPluginDescriptor,
 	TabsItemIdsPluginDescriptor,
 	TabsItemNamesPluginDescriptor,
 } from '../../plugins'
@@ -58,7 +59,9 @@ export const TabsItemDescriptor = defineDescriptor(() =>
 			// Фокус держит строка таба с ролью, а корень — обёртка вокруг неё и
 			// крестика: туда `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: tabIn }),
-			// Связка «таб ↔ панель»: `id` таба и `aria-controls` его панели
+			// Связка «таб ↔ панель»: `id` таба — проп `id` или от монтирования —
+			// и `aria-controls` его панели
+			IdPluginDescriptor,
 			TabsItemIdsPluginDescriptor,
 			// Имя крестика от локали — с первой отрисовки
 			TabsItemNamesPluginDescriptor,

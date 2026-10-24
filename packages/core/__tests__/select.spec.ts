@@ -897,51 +897,6 @@ describe('field — экземпляр TInput, которым владеет Sel
 	})
 })
 
-describe('id элемента формы', () => {
-	/**
-	 * Живёт в `TInputControl`, а не в Select: на поле ссылаются `<label for>` и
-	 * `aria-labelledby` разметки потребителя — это нужно любому форменному
-	 * контролу. Значение потребителя: не задан — атрибута нет, сама библиотека
-	 * на поле по `id` не ссылается.
-	 */
-	it('не задан — undefined', () => {
-		expect(new TSelect().id).toBeUndefined()
-	})
-
-	it('заданный снаружи — как есть, и он же у поля', () => {
-		const select = new TSelect({ id: 'city' })
-
-		expect(select.id).toBe('city')
-		expect(select.field.id).toBe('city')
-	})
-
-	it('меняется через instance, сообщает об этом и доходит до поля', () => {
-		const select = new TSelect()
-		const seen: (string | undefined)[] = []
-
-		select.events.on('change:id', (value) => seen.push(value))
-		select.id = 'city'
-		select.id = 'city'
-
-		expect(select.field.id).toBe('city')
-		expect(seen).toEqual(['city'])
-	})
-
-	it('снятие убирает id', () => {
-		const select = new TSelect({ id: 'city' })
-
-		select.id = undefined
-
-		expect(select.id).toBeUndefined()
-		expect(select.getProps().id).toBeUndefined()
-	})
-
-	it('есть у всех форменных контролов, не только у Select', () => {
-		expect(new TInput({ id: 'name' }).id).toBe('name')
-		expect(new TInput().id).toBeUndefined()
-	})
-})
-
 /**
  * `indicator` у Select устроен так же, как у ListBox: сторона одна на всё поле,
  * опция читает её у него. Копия сознательная — общего предка у списка и поля

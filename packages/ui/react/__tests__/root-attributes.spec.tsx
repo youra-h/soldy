@@ -494,13 +494,14 @@ describe('поле: dataset — на корне, aria — у поля', () => {
 type TListProbeProps = ListBoxProps & TabsProps
 
 /**
- * Список, класс его корня и узел списка — ребёнок корня с ролью, которому
- * уходят атрибуты потребителя: на нём `aria` компонента, а корень — рамка
- * (шапка и подвал ListBox, панели Tabs).
+ * Список, класс его корня и узел списка с ролью, которому уходят атрибуты
+ * потребителя: на нём `aria` компонента, а корень — рамка (шапка и подвал
+ * ListBox, панели Tabs). У ListBox узел списка — ребёнок корня, у Tabs —
+ * ребёнок ряда, где рядом со списком стоят слоты.
  */
 const LISTS: ReadonlyArray<readonly [string, ComponentType<TListProbeProps>, string, string]> = [
 	['ListBox', ListBox, '.so-list-box', '.so-list-box > [role="listbox"]'],
-	['Tabs', Tabs, '.so-tabs', '.so-tabs > [role="tablist"]'],
+	['Tabs', Tabs, '.so-tabs', '.so-tabs > .so-tabs__bar > [role="tablist"]'],
 ]
 
 describe('ListBox, Tabs: атрибуты снаружи — узлу списка, поверх его aria', () => {

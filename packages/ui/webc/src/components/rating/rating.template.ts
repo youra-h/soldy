@@ -8,6 +8,7 @@
  */
 
 import type { IRating, TRatingStar } from '@soldy-ui/core'
+import type { TRatingOutputs } from './setup.component'
 import {
 	TKeyedLoop,
 	bind,
@@ -56,7 +57,7 @@ function starOf(ctx: ITemplateContext<IRating>): HTMLElement {
 	return star
 }
 
-export const ratingTemplate: ITemplate<IRating> = {
+export const ratingTemplate: ITemplate<IRating, unknown, TRatingOutputs> = {
 	create: (root) => {
 		const { ownerDocument } = root
 		const track = ownerDocument.createElement('span')

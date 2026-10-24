@@ -368,6 +368,16 @@ export type DescriptorAllEvents<T> = DescriptorEvents<T> & TContractOf<T>['plugi
 export type DescriptorAllProps<T> = DescriptorProps<T> & TContractOf<T>['plugins']['props']
 
 /**
+ * Входы плагинов дескриптора — незащищённые пропсы плагинов:
+ * DescriptorPluginProps<typeof InputDescriptor> → { aria_label?: ...; id?: ... }
+ *
+ * Вход с триггером обмен держит в состоянии, как свойство инстанса, и
+ * разметка читает его оттуда же (`TAdapterState`): `id` поля — проп
+ * `TIdPlugin`, и, заданный полем формы, он есть только в состоянии.
+ */
+export type DescriptorPluginProps<T> = TContractOf<T>['plugins']['props']
+
+/**
  * Выходы плагинов дескриптора — защищённые пропсы, которые плагины отдают
  * разметке: DescriptorPluginOutputs<typeof FrameDescriptor> → { layout_styles: ... }
  *

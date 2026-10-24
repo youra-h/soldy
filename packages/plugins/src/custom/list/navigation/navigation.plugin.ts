@@ -1,7 +1,7 @@
 import { batchOf, drawOf } from '@soldy-ui/core'
-import type { IControl, TCollectionEngine, TEventSink } from '@soldy-ui/core'
+import type { IControl, TCollectionEngine, TComponentViewEvents, TEventSink } from '@soldy-ui/core'
 import { TBasePlugin } from '../../../base'
-import type { IPluginContext } from '../../../base'
+import type { IListenable, IPluginContext } from '../../../base'
 import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin } from '../../collection'
 import type { IDomEventTarget } from '../../../utils'
@@ -37,18 +37,31 @@ const HIGHLIGHT = 'highlight'
  * Подсветка — не выбор. Она визуальна, живёт только во время навигации и в
  * значение не попадает; хранится в `TListItemPlugin` каждого элемента.
  *
+ * **Позиция и видимая подсветка — разные вещи.** Позиция встаёт на элемент и
+ * без отметки: за выбором и на строку, с которой пришла клавиша
+ * (`trackHighlight`). О том, что видно на экране, навигация сообщает одним
+ * приватным методом сразу двоим: событием `change:highlight` — тем, кто
+ * слушает снаружи (прокрутка списка `TListScrollPlugin`, разметка Select), —
+ * и хуком `onHighlightChanged` — наследнику. Элемент — когда отметка встала,
+ * в том числе на месте, где позиция уже стояла без неё; `null` — когда
+ * видимая отметка ушла: подсветку сняли или позиция ушла без отметки. Позиция
+ * без отметки переезжает молча: экран не меняется, и прокручивать к ней
+ * нечего. У Select и меню позиция всегда с отметкой — для них событие одно с
+ * переездом позиции.
+ *
  * **Ссылка на подсвеченный элемент** (`aria-activedescendant`) повторяет
- * экран: она есть, пока у элемента видна отметка и он в документе. Поэтому
- * наследник узнаёт не о каждом переезде позиции, а о смене видимой подсветки
- * (`onHighlightChanged`), и `null` приходит ему и тогда, когда позиция ушла
- * без отметки (`trackHighlight`). `id` для ссылки отдаёт `highlightedId()`, а
- * куда её писать, решает наследник: туда, где фокус.
+ * экран: она есть, пока у элемента видна отметка и он в документе. `id` для
+ * ссылки отдаёт `highlightedId()`, а куда её писать, решает наследник по хуку:
+ * туда, где фокус. `id` подсвеченного бывает и новым при той же подсветке —
+ * `id` элемента от приложения (`TIdPlugin`) задали, сменили или сняли, — и об
+ * этом наследник узнаёт своим хуком (`onHighlightedAriaChanged`): база следит
+ * за набором `aria` элемента на позиции, пока она на нём.
  *
  * **В окне** (обёртка `Virtual`) в документе только видимые элементы, и у
- * ненарисованного нет ни узла, ни `TListItemPlugin`. Поэтому подсвеченный
- * элемент навигация закрепляет в рисовании коллекции (`draw.pin`): окно
- * рисует его на месте, даже когда стрелка увела подсветку за видимую полосу,
- * и до кадра, в котором его прокручивают к глазу. Отметку заново
+ * ненарисованного нет ни узла, ни `TListItemPlugin`. Поэтому элемент позиции
+ * навигация закрепляет в рисовании коллекции (`draw.pin`): окно рисует его на
+ * месте, даже когда стрелка увела подсветку за видимую полосу, и до кадра, в
+ * котором его прокручивают к глазу. Отметку заново
  * смонтированному элементу навигация возвращает при регистрации его набора:
  * прежний набор ушёл вместе с узлом. Тогда же наследник узнаёт, что
  * подсвеченный элемент вошёл в документ (`onHighlightedMounted`): то, что есть
@@ -72,6 +85,13 @@ export abstract class TListNavigationPlugin<
 	protected _highlightedUid: string | number | null = null
 	/** Подсветка видна: у подсвеченного элемента стоит отметка, а не одна позиция. */
 	private _marked = false
+	/**
+	 * Шина элемента на позиции — за его набором `aria` база следит, пока
+	 * позиция на нём: в наборе `id`, на который ведёт ссылка наследника.
+	 * Подписка своя, а не `_listenTo`: элемент сменяется с позицией, и прежнего
+	 * база отпускает сразу, а не при уничтожении.
+	 */
+	private _watched: IListenable<Pick<TComponentViewEvents, 'change:aria'>> | null = null
 
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
@@ -134,6 +154,7 @@ export abstract class TListNavigationPlugin<
 	override destroy(): void {
 		this._element?.removeEventListener('keydown', this._onKeyDown)
 		this.clearHighlight()
+		this._watch(undefined)
 
 		this._element = null
 		this._bundles = null
@@ -158,8 +179,9 @@ export abstract class TListNavigationPlugin<
 	protected onEngineBound(_engine: TCollectionEngine<any, any>): void {}
 
 	/**
-	 * Видимая подсветка сменилась. Здесь наследник обновляет ARIA, скроллит и
-	 * т.п.
+	 * Видимая подсветка сменилась — тем же сообщением, что `change:highlight`.
+	 * Здесь наследник ведёт ссылку `aria-activedescendant` или фокус; прокрутку
+	 * к подсвеченному ведёт `TListScrollPlugin` по событию.
 	 *
 	 * `uid` — элемент, который получил отметку. Переход с элемента на элемент —
 	 * один вызов, с новым: прежняя отметка снимается молча, а `null` между ними
@@ -174,9 +196,24 @@ export abstract class TListNavigationPlugin<
 	 * отметка ему возвращена. Так бывает в окне: подсветка ушла к элементу,
 	 * которого окно не рисовало, и окно дорисовало его уже после
 	 * `onHighlightChanged`. Здесь наследник берёт то, что есть только у
-	 * смонтированного элемента: `id` для ссылки на него и узел для прокрутки.
+	 * смонтированного элемента: `id` для ссылки на него. Прокрутка к нему ждёт
+	 * его набор сама (`TListScrollPlugin`).
 	 */
 	protected onHighlightedMounted(_uid: string | number): void {}
+
+	/**
+	 * Набор `aria` подсвеченного элемента сменился, пока отметка видна, — и
+	 * вместе с ним мог смениться `id`, на который ведёт ссылка: `id` элемента в
+	 * `TIdPlugin` задали, сменили или сняли. Здесь наследник, который ссылается
+	 * на подсвеченный (`aria-activedescendant`), переписывает ссылку.
+	 *
+	 * Отдельный хук, а не повтор `onHighlightChanged`: подсветка не сменилась,
+	 * и наследник не должен снова переносить фокус, а список — прокручивать к
+	 * элементу. База следит за набором, а не за `change:id` `TIdPlugin`
+	 * элемента: `id` в набор пишет плагин связок своим подписчиком того же
+	 * события, и подписчик, пришедший раньше него, прочёл бы прежний.
+	 */
+	protected onHighlightedAriaChanged(_uid: string | number): void {}
 
 	/**
 	 * Показанные элементы — `batch.shown`, а не `batch.items`: ходить
@@ -288,14 +325,17 @@ export abstract class TListNavigationPlugin<
 	}
 
 	/**
-	 * Подсветить элемент: позиция плюс визуальная отметка.
+	 * Подсветить элемент: позиция плюс визуальная отметка — и сообщение о
+	 * ней: `change:highlight` с элементом и соседями и хук наследника
+	 * (`_announce`).
 	 *
 	 * Позиция может уже стоять на элементе без отметки — её ставит
 	 * `trackHighlight` за выбором и со строки, с которой пришла клавиша. Тогда
-	 * отметка встаёт на месте, и наследник узнаёт о ней (`onHighlightChanged`),
-	 * а `change:highlight` не шлётся: позиция не сменилась. Так стрелка
-	 * отмечает единственный доступный элемент — шаг по кругу приводит к нему
-	 * же. Подсвечивать нечего, только когда у элемента и позиция, и отметка.
+	 * отметка встаёт на месте, и сообщение уходит так же: на экране подсветка
+	 * появилась, хоть позиция и не сменилась. Так стрелка отмечает
+	 * единственный доступный элемент — шаг по кругу приводит к нему же, — и
+	 * список докручивает к нему. Подсвечивать нечего, только когда у элемента
+	 * и позиция, и отметка: повтор молчит.
 	 */
 	protected highlight(uid: string | number): void {
 		if (this._highlightedUid === uid && this._marked) return
@@ -310,7 +350,7 @@ export abstract class TListNavigationPlugin<
 
 		this._marked = true
 
-		this.onHighlightChanged(uid)
+		this._announce(uid)
 	}
 
 	/**
@@ -318,9 +358,10 @@ export abstract class TListNavigationPlugin<
 	 *
 	 * Нужно при синхронизации с выбором: список открылся на выбранном
 	 * элементе, но подсветка навигации ещё не должна быть видна. Отметка, которая
-	 * была видна, снимается, и наследник узнаёт об этом `onHighlightChanged(null)`:
-	 * позиция осталась, а подсветки на экране нет. Без отметки позиция переезжает
-	 * молча.
+	 * была видна, снимается, и об этом уходит сообщение с `null`
+	 * (`change:highlight` и `onHighlightChanged(null)`): позиция осталась, а
+	 * подсветки на экране нет. Без отметки позиция переезжает молча — ни
+	 * события, ни хука: на экране ничего не сменилось.
 	 */
 	protected trackHighlight(uid: string | number): void {
 		if (this._highlightedUid === uid) return
@@ -329,19 +370,24 @@ export abstract class TListNavigationPlugin<
 
 		this._moveTo(uid)
 
-		if (marked) this.onHighlightChanged(null)
+		if (marked) this._announce(null)
 	}
 
+	/**
+	 * Снять подсветку: позиции больше нет. Сообщение с `null` — только если
+	 * отметка была видна: позиция без отметки уходит молча, как и переезжает.
+	 */
 	protected clearHighlight(): void {
 		if (this._highlightedUid == null) return
+
+		const marked = this._marked
 
 		this.unmarkCurrent()
 
 		this._highlightedUid = null
-		this._pinHighlighted()
+		this._followPosition()
 
-		this.emitHighlight(null, null, null)
-		this.onHighlightChanged(null)
+		if (marked) this._announce(null)
 	}
 
 	protected itemPlugin(uid: string | number): TListItemPlugin | undefined {
@@ -349,20 +395,49 @@ export abstract class TListNavigationPlugin<
 	}
 
 	/**
-	 * Позиция — на элемент: прежняя отметка снята, элемент закреплён в окне,
-	 * `change:highlight` — с соседями. Ставить ли отметку и что сказать
-	 * наследнику, решает тот, кто позицию перенёс: `highlight` или
+	 * Позиция — на элемент: прежняя отметка снята, элемент закреплён в окне, и
+	 * база следит за его набором. Событий здесь нет: ставить ли отметку и
+	 * сообщать ли о ней, решает тот, кто позицию перенёс, — `highlight` или
 	 * `trackHighlight`.
 	 */
 	private _moveTo(uid: string | number): void {
 		this.unmarkCurrent()
 
 		this._highlightedUid = uid
-		this._pinHighlighted()
+		this._followPosition()
+	}
 
-		const index = this.indexOf(uid)
+	/**
+	 * За позицией — её элемент среди показанных: он закреплён в окне, и база
+	 * следит за его набором `aria`. Позиции нет — закрепление снято, следить
+	 * не за чем.
+	 */
+	private _followPosition(): void {
+		const uid = this._highlightedUid
+		const item =
+			uid === null ? undefined : this.shown().find((candidate) => candidate.uid === uid)
 
-		this.emitHighlight(this.itemAt(index), this.itemAt(index - 1), this.itemAt(index + 1))
+		this._pin(item)
+		this._watch(item)
+	}
+
+	/**
+	 * Видимая подсветка сменилась — одним сообщением обоим слушателям:
+	 * `change:highlight` тем, кто слушает снаружи, и `onHighlightChanged`
+	 * наследнику. Элемент — с соседями среди доступных; `null` — отметки
+	 * больше нет, и соседей тоже.
+	 */
+	private _announce(uid: string | number | null): void {
+		const items = this.items()
+		const index = uid === null ? -1 : items.findIndex((item) => item.uid === uid)
+		const item = items[index] ?? null
+
+		this._sink.emit('change:highlight', {
+			item,
+			prevItem: item && (items[index - 1] ?? null),
+			nextItem: item && (items[index + 1] ?? null),
+		})
+		this.onHighlightChanged(uid)
 	}
 
 	/** Снимает визуальную отметку с текущего элемента. */
@@ -377,24 +452,33 @@ export abstract class TListNavigationPlugin<
 	}
 
 	/**
-	 * Закрепить подсвеченный элемент в окне коллекции, если оно есть: окно
-	 * рисует его на месте, и подсветка, уведённая стрелкой за видимую полосу,
-	 * не теряет узел. Подсветки нет — закрепление снять.
+	 * Закрепить элемент позиции в окне коллекции, если оно есть: окно рисует
+	 * его на месте, и подсветка, уведённая стрелкой за видимую полосу, не
+	 * теряет узел. Позиции нет — закрепление снять.
 	 */
-	private _pinHighlighted(): void {
-		const uid = this._highlightedUid
-		const item =
-			uid === null ? undefined : this.shown().find((candidate) => candidate.uid === uid)
-
+	private _pin(item: TItem | undefined): void {
 		drawOf<TItem>(this._engine)?.pin(HIGHLIGHT, item)
 	}
 
-	private emitHighlight(
-		item: IControl | null,
-		prevItem: IControl | null,
-		nextItem: IControl | null,
-	): void {
-		this._sink.emit('change:highlight', { item, prevItem, nextItem })
+	/**
+	 * Следить за набором `aria` элемента на позиции, а прежнего — отпустить.
+	 * Элемента нет — не следить ни за чьим.
+	 */
+	private _watch(item: TItem | undefined): void {
+		const bus = item?.events ?? null
+
+		if (bus === this._watched) return
+
+		this._watched?.off('change:aria', this._onHighlightedAria)
+		this._watched = bus
+		bus?.on('change:aria', this._onHighlightedAria)
+	}
+
+	/** Набор элемента на позиции сменился: ссылке он важен, только пока отметка видна. */
+	private readonly _onHighlightedAria = (): void => {
+		if (this._marked && this._highlightedUid !== null) {
+			this.onHighlightedAriaChanged(this._highlightedUid)
+		}
 	}
 
 	private readonly _onKeyDown = (event: KeyboardEvent): void => {

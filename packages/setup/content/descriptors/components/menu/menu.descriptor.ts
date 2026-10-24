@@ -5,18 +5,20 @@
  * Наследует StylableDescriptor (size, variant, rendered, visible, tag, наборы и
  * плагины element/ready) и добавляет открытость, сторону панели, способ
  * открытия, разделители секций группировки, выходы для разметки и плагины:
- * коллекцию пунктов, нажатие мимо, клавиатуру, открытие и указатель, модель
- * фокуса и связки.
+ * коллекцию пунктов, нажатие мимо, клавиатуру, прокрутку списка пунктов,
+ * открытие и указатель, модель фокуса и связки.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TMenu } from '@soldy-ui/core'
 import type { IMenuItem, TAriaAttributes, TDatasetAttributes } from '@soldy-ui/core'
+import { TMenuKeyboardPlugin } from '@soldy-ui/plugins'
 import { StylableDescriptor } from '../stylable.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
+	ListScrollPluginDescriptor,
 	MenuFocusPluginDescriptor,
 	MenuHoverPluginDescriptor,
 	MenuIdsPluginDescriptor,
@@ -141,6 +143,10 @@ export const MenuDescriptor = defineDescriptor(() =>
 			// Клавиши триггера и панели, подсветка — фокус. После dismiss: берёт
 			// у него панель
 			MenuKeyboardPluginDescriptor,
+			// Прокрутка списка пунктов за отметкой флажков и переключателей и за
+			// подсветкой — тот же плагин, что у ListBox и Select: фокус подсветки
+			// ставится без прокрутки. После клавиатуры: слушает её подсветку
+			ListScrollPluginDescriptor.with({ navigation: TMenuKeyboardPlugin }),
 			// Открытие по способу `openOn` — клик по кнопке или контекстное меню
 			// области. После клавиатуры: открывает через неё
 			MenuPointerPluginDescriptor,

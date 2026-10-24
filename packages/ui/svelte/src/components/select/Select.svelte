@@ -100,6 +100,7 @@
 				embedded="select.field"
 				class="so-select__field"
 				ctrl={field}
+				id={state.id}
 				leading={fieldLeading}
 				trailing={fieldTrailing}
 				clear={props.clear}

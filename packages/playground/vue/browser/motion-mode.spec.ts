@@ -168,7 +168,7 @@ const CASES: readonly TCase[] = [
 			await show(tabs())
 			await tabsMeasured()
 		},
-		'.so-tabs__list',
+		'.so-tabs__bar',
 		'transform',
 		'::after',
 	),
@@ -178,7 +178,7 @@ const CASES: readonly TCase[] = [
 			await show(tabs('contained'))
 			await tabsMeasured()
 		},
-		'.so-tabs__list',
+		'.so-tabs__bar',
 		'transform',
 		'::before',
 	),

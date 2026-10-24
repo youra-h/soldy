@@ -192,13 +192,13 @@ describe('хост Angular · обёртка и содержимое', () => {
 
 	/**
 	 * Части со слотом ложатся в его проекцию: панели — в `[slot=content]`,
-	 * рядом со списком табов, а не в нём. Видна панель активного таба, и в ней
+	 * рядом с рядом табов, а не в списке. Видна панель активного таба, и в ней
 	 * её содержимое.
 	 */
 	it('панели табов — в слоте content, вне списка табов', () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'tabs', props: {} })
-		const list = node.querySelector('.so-tabs > .so-tabs__list')
+		const list = node.querySelector('.so-tabs > .so-tabs__bar > .so-tabs__list')
 		const panels = all(node, '.so-tabs > .so-tabs__panel')
 
 		expect(list && textsOf(list, '.so-tabs-item')).toEqual(TEXTS)

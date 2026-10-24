@@ -282,12 +282,12 @@ describe('Input · атрибуты разметки', () => {
 		expect(field(el).getAttribute('aria-label')).toBe('Своё')
 	})
 
-	it('id — только у <input>, ctrl.id совпадает с ним', () => {
+	it('id — только у <input>, el.id совпадает с ним', () => {
 		const el = mount('<div is="so-input" id="email"></div>')
 
 		expect(el.hasAttribute('id')).toBe(false)
 		expect(field(el).id).toBe('email')
-		expect(el.ctrl?.id).toBe('email')
+		expect(el.state).toMatchObject({ id: 'email' })
 		expect(document.querySelectorAll('#email')).toHaveLength(1)
 	})
 

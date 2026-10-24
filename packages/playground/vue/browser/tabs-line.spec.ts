@@ -5,11 +5,11 @@
  * сразу.
  *
  * Полосу рисует тема (`themes/oren/src/components/tabs/_tabs.scss`) —
- * псевдоэлементом `::after` списка по переменным `--so-tabs-active-*` и тем же
+ * псевдоэлементом `::after` ряда по переменным `--so-tabs-active-*` и тем же
  * переездом, что карточку `contained` (`tabs-contained.spec.ts`). Пишет
  * переменные плагин раскладки общего слоя тем `TTabsViewPlugin`
  * (`themes/base/setup/plugins/tabs-view.plugin.ts`, ставит его
- * `useTheme(oren)`), он же ставит на список
+ * `useTheme(oren)`), он же ставит на ряд
  * признак переезда `--so-tabs-active-moving` при смене активного таба и снимает
  * его, когда переход доиграл; без признака переход нулевой.
  *
@@ -23,9 +23,9 @@
  *
  * Переходы ловит слушатель `transitionrun`, повешенный до действия, а не
  * снимок после него: переход короткий, — и признак переезда так же, наблюдатель
- * стиля списка (`styleValues`): признак снимается, когда переход доиграл.
+ * стиля ряда (`styleValues`): признак снимается, когда переход доиграл.
  * Переходы самих табов — цвет строки под указателем — тоже всплывают до
- * списка, поэтому в счёт идут только переходы его `::after`. Полосу тест
+ * ряда, поэтому в счёт идут только переходы его `::after`. Полосу тест
  * меряет коробкой псевдоэлемента и сверяет с коробкой обёртки таба по главной
  * оси: полоса лежит под всем табом, вместе с крестиком.
  */
@@ -98,7 +98,8 @@ const harness = ({ tabs = {}, active = 'a', dir = 'ltr', style }: THarness = {})
 	})
 
 const root = () => find('.so-tabs')
-const list = () => find('.so-tabs__list')
+/** Ряд набора — список и слоты по его краям: полосу и признак переезда несёт он. */
+const bar = () => find('.so-tabs__bar')
 const scene = () => find('.so-test-scene')
 
 /** Обёртка таба; под всей ней и лежит полоса. */
@@ -122,13 +123,13 @@ const lengthOf = (value: TValue, axis: TAxis): number => {
 	return axis === 'horizontal' ? box.width : box.height
 }
 
-/** Признак переезда на списке; пустая строка — его нет. */
-const moving = () => list().style.getPropertyValue('--so-tabs-active-moving')
+/** Признак переезда на ряду; пустая строка — его нет. */
+const moving = () => bar().style.getPropertyValue('--so-tabs-active-moving')
 
-/** Переходы полосы: только `::after` списка. */
-const stripRuns = () => pseudoTransitionRuns(list(), '::after')
+/** Переходы полосы: только `::after` ряда. */
+const stripRuns = () => pseudoTransitionRuns(bar(), '::after')
 
-const stripSettled = () => pseudoSettled(list(), '::after')
+const stripSettled = () => pseudoSettled(bar(), '::after')
 
 /**
  * Плагин темы замерил табы: модификатор `--ready-animation` он ставит после
@@ -142,7 +143,7 @@ const measured = async () => {
 
 /** Края полосы по главной оси — края обёртки таба. */
 const stripMisses = (value: TValue, axis: TAxis): string[] => {
-	const strip = pseudoBox(list(), '::after')
+	const strip = pseudoBox(bar(), '::after')
 	const tab = tabOf(value).getBoundingClientRect()
 
 	return EDGES[axis]
@@ -195,7 +196,7 @@ describe('переезд к новому табу', () => {
 			expect(lengthOf('b', axis)).not.toBeCloseTo(lengthOf('a', axis), 0)
 
 			const runs = stripRuns()
-			const flags = styleValues(list(), '--so-tabs-active-moving')
+			const flags = styleValues(bar(), '--so-tabs-active-moving')
 
 			await userEvent.click(rowOf('b'))
 			await transitionEvents()

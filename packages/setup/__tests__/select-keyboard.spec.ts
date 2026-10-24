@@ -21,7 +21,9 @@ import {
 	TElementPlugin,
 	TCollectionBundlesPlugin,
 	TCollectionElements,
+	TIdPlugin,
 	TListItemPlugin,
+	TListScrollPlugin,
 	TPluginBundle,
 	TOptionIdsPlugin,
 	useMotion,
@@ -49,8 +51,10 @@ const keydown = (target: Element, key: string, init: KeyboardEventInit = {}) => 
  * `<input>` поля — первый потомок корня, как в разметке: плагин находит его
  * по `ready` корня (`querySelector('input')`), и `press` шлёт клавишу с него.
  *
- * `layoutProps` — списочные свойства поля: клавиатура читает `scrollBehavior`
- * прямо у инстанса. `keyboardOptions` — опции установки клавиатуры.
+ * За клавиатурой — прокрутка списка с её подсветкой (`TListScrollPlugin`), как
+ * их ставит дескриптор Select. `layoutProps` — списочные свойства поля:
+ * прокрутка читает `scrollBehavior` прямо у инстанса. `keyboardOptions` —
+ * опции установки клавиатуры.
  */
 async function setup(
 	texts: string[],
@@ -74,12 +78,14 @@ async function setup(
 	const bundles = new TCollectionBundlesPlugin()
 	const elements = new TCollectionElements()
 	const keyboard = new TSelectKeyboardPlugin()
+	const scroll = new TListScrollPlugin()
 
-	const ctx = createPluginContext(owner, [rootElement, bundles, elements])
+	const ctx = createPluginContext(owner, [rootElement, bundles, elements, keyboard])
 
 	bundles.install(ctx)
 	elements.install(ctx)
 	keyboard.install(ctx, keyboardOptions)
+	scroll.install(ctx, { navigation: TSelectKeyboardPlugin })
 
 	/** jsdom не умеет `scrollIntoView` — подменяем, чтобы видеть вызовы. */
 	const scrolls: Array<Record<string, unknown> | undefined> = []
@@ -88,6 +94,8 @@ async function setup(
 	// не ставим: в разметке он стоит на строке опции, а не на корне, и
 	// `aria-activedescendant` берёт его из набора `aria` опции, а не из DOM
 	const itemPlugins = new Map<string | number, TListItemPlugin>()
+	/** `TIdPlugin` опций: `id`, который задаёт приложение. */
+	const idPlugins = new Map<string | number, TIdPlugin>()
 
 	for (const item of items) {
 		const node = document.createElement('div')
@@ -102,6 +110,7 @@ async function setup(
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
+		bundle.use(TIdPlugin)
 		bundle.use(TOptionIdsPlugin)
 
 		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
@@ -109,6 +118,7 @@ async function setup(
 
 		registered.element = node
 		itemPlugins.set(item.uid, highlight)
+		idPlugins.set(item.uid, required(bundle.get(TIdPlugin), 'TIdPlugin'))
 
 		bundles.register(bundle, item)
 	}
@@ -123,7 +133,12 @@ async function setup(
 
 	const registry = new TItemContextRegistry(facade.engine.getCore())
 
-	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls }
+	/** `id`, заданный приложением, — в `TIdPlugin` опции. */
+	const setId = (item: ISelectItem, id?: string) => {
+		required(idPlugins.get(item.uid), 'TIdPlugin опции').id = id
+	}
+
+	return { owner, facade, items, keyboard, press, itemPlugins, registry, root, scrolls, setId }
 }
 
 afterEach(() => {
@@ -457,6 +472,46 @@ describe('aria-activedescendant', () => {
 
 		expect(owner.field.aria.get('aria-activedescendant')).toBe(items[0].aria.get('id'))
 	})
+
+	/**
+	 * `id` опции, заданный приложением (`TIdPlugin` опции), главнее `id` от
+	 * монтирования: его пишет на строку плагин связок, и ссылка ведёт на него.
+	 * Сменили у подсвеченной — ссылка идёт за набором опции; подсветка та же, и
+	 * к опции список не прокручивается снова. Сняли — снова `id` от
+	 * монтирования.
+	 */
+	it('id подсвеченной опции от приложения — ссылка на него и за его сменой, без новой прокрутки', async () => {
+		const { owner, press, items, scrolls, setId } = await setup(['Москва', 'Тверь'])
+		const [moscow] = items
+
+		setId(moscow, 'city-msk')
+		press('ArrowDown')
+		await nextFrame()
+
+		expect(moscow.aria.get('id')).toBe('city-msk')
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('city-msk')
+		expect(scrolls).toHaveLength(1)
+
+		setId(moscow, 'city-moscow')
+		await nextFrame()
+
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('city-moscow')
+		expect(scrolls).toHaveLength(1)
+
+		setId(moscow)
+
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('option-москва-option')
+	})
+
+	it('id от приложения у другой опции ссылку не трогает', async () => {
+		const { owner, press, items, setId } = await setup(['Москва', 'Тверь'])
+
+		press('ArrowDown')
+		setId(items[1], 'city-tver')
+
+		expect(items[1].aria.get('id')).toBe('city-tver')
+		expect(owner.field.aria.get('aria-activedescendant')).toBe('option-москва-option')
+	})
 })
 
 /**
@@ -666,16 +721,14 @@ describe('highlightByText — подстрока для ввода в поле',
 })
 
 /**
- * `scrollBehavior` — свойство поля, а прокручивает опцию клавиатура.
+ * `scrollBehavior` — свойство поля, а к подсвеченной опции прокручивает общий
+ * плагин списков — тот же, что у ListBox и меню (`TListScrollPlugin`), по
+ * событию подсветки клавиатуры: ближайшим краем, как фокус. Своей прокрутки у
+ * клавиатуры Select больше нет — три механизма на одно правило расходились.
  *
- * У ListBox то же свойство читает `TListScrollPlugin`, и это не дублирование:
- * там прокрутка идёт за выбором, здесь — за подсветкой, которая живёт только
- * пока панель открыта. Общим сделано свойство, а не реализация — иначе Select
- * тащил бы плагин, половина которого ему не нужна.
- *
- * Прокручивает клавиатура в следующем кадре: панель, открытую той же клавишей,
- * и опцию, которую окно дорисовывает к подсветке, адаптер рисует уже после
- * обработчика (`plugins/__tests__/select-keyboard-window.plugin.spec.ts`).
+ * Прокрутка — в следующем кадре: панель, открытую той же клавишей, и опцию,
+ * которую окно дорисовывает к подсветке, адаптер рисует уже после обработчика
+ * (`plugins/__tests__/select-keyboard-window.plugin.spec.ts`).
  */
 describe('прокрутка к подсвеченной опции', () => {
 	it('по умолчанию прокручивает плавно и по ближайшему краю', async () => {

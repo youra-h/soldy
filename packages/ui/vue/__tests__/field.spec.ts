@@ -19,7 +19,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, shallowRef, type VNode } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { createSSRApp } from 'vue'
-import { TField, TInput, TSlider } from '@soldy-ui/core'
+import { TField, TSlider } from '@soldy-ui/core'
 import {
 	CheckBox,
 	DateInput,
@@ -344,31 +344,27 @@ describe('id поля', () => {
 	})
 
 	it('свой id задали позже — for идёт за ним', async () => {
-		const ctrl = new TInput()
+		const id = shallowRef<string | undefined>()
 
-		await render(() => h(Field, { label: 'Почта' }, () => h(Input, { ctrl })))
+		await render(() => h(Field, { label: 'Почта' }, () => h(Input, { id: id.value })))
 
-		ctrl.id = 'email'
+		id.value = 'email'
 		await nextTick()
 
 		expect(find('.so-input input').id).toBe('email')
 		expect(label().getAttribute('for')).toBe('email')
 	})
 
-	it('контрол сняли — его id от поля снят, for — снова на id поля', async () => {
-		const ctrl = new TInput()
+	it('контрол сняли — for снова на id поля', async () => {
 		const shown = shallowRef(true)
 
-		await render(() =>
-			h(Field, { label: 'Почта' }, () => (shown.value ? h(Input, { ctrl }) : [])),
-		)
+		await render(() => h(Field, { label: 'Почта' }, () => (shown.value ? h(Input) : [])))
 
 		const id = find('.so-input input').id
 
 		shown.value = false
 		await nextTick()
 
-		expect(ctrl.id).toBeUndefined()
 		expect(label().getAttribute('for')).toBe(id)
 	})
 })

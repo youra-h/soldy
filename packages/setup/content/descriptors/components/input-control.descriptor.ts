@@ -2,12 +2,13 @@
  * Дескриптор InputControl (TInputControl).
  *
  * Наследует ValueControlDescriptor (value, name, disabled, focused, size, variant, ...)
- * и добавляет readonly, required.
+ * и добавляет readonly, required и `id` поля.
  */
 
 import { defineComponent, defineDescriptor } from '../../../protected/define'
 import { TInputControl } from '@soldy-ui/core'
 import { ValueControlDescriptor } from './value-control.descriptor'
+import { IdPluginDescriptor } from '../plugins'
 
 export const InputControlDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -19,12 +20,14 @@ export const InputControlDescriptor = defineDescriptor(() =>
 			props: {
 				readonly: { type: Boolean, triggers: ['change:readonly'] },
 				required: { type: Boolean, triggers: ['change:required'] },
-				/**
-				 * `id` элемента формы. Не задан — атрибута нет; задают там, где на
-				 * поле ссылаются `<label for>` или `aria-labelledby`.
-				 */
-				id: { type: String, triggers: ['change:id'] },
 			},
 		},
+
+		plugins: [
+			// `id` поля — проп `id`: на поле ссылаются `<label for>` и
+			// `aria-labelledby` разметки и `for` подписи `Field`. Не задан —
+			// атрибута нет; шаблон кладёт его на само поле, а не на корень
+			IdPluginDescriptor,
+		],
 	}),
 )

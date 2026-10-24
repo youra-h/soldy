@@ -323,7 +323,7 @@ describe('DateInput · атрибуты разметки', () => {
 		)
 
 		expect(el.id).toBe('birthday')
-		expect(el.ctrl?.id).toBe('birthday')
+		expect(el.state).toMatchObject({ id: 'birthday' })
 		expect(el.classList.contains('mine')).toBe(true)
 		expect(el.style.width).toBe('200px')
 		expect(el.getAttribute('aria-label')).toBe('Своё')
@@ -331,20 +331,25 @@ describe('DateInput · атрибуты разметки', () => {
 		expect(el.querySelector('.so-date-input__segments [aria-label="Своё"]')).toBeNull()
 	})
 
-	it('id, записанный инстансу из кода, — на корне, как :id у Vue', async () => {
+	/**
+	 * У DateInput `id` — наблюдаемый атрибут корня: записанный из кода, он
+	 * уходит в проп `id` (`TIdPlugin`), и шаблон держит на корне то же, как
+	 * `:id` у Vue.
+	 */
+	it('id из кода — проп id, на корне; снятый — снят', async () => {
 		const el = await mount('<div is="so-date-input"></div>')
 
-		if (!el.ctrl) throw new Error('инстанса нет')
-
-		el.ctrl.id = 'meeting'
+		el.id = 'meeting'
 		await flush()
 
 		expect(el.id).toBe('meeting')
+		expect(el.state).toMatchObject({ id: 'meeting' })
 
-		el.ctrl.id = undefined
+		el.removeAttribute('id')
 		await flush()
 
 		expect(el.hasAttribute('id')).toBe(false)
+		expect(el.state).toMatchObject({ id: undefined })
 	})
 })
 

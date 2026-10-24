@@ -38,10 +38,17 @@ import type {
 	IPluginsContract,
 	TContextContract,
 	TElevatorFactory,
-	TFieldControl,
+	IFieldControl,
 } from '@soldy-ui/setup'
 import { FIELD_ELEVATOR } from '../content/extensions/field/keys'
-import { createElevatorFactory, leftovers, required, spyBus, subscribed } from './helpers'
+import {
+	createElevatorFactory,
+	idPluginOf,
+	leftovers,
+	required,
+	spyBus,
+	subscribed,
+} from './helpers'
 
 type TFieldProps = {
 	label?: string
@@ -66,12 +73,12 @@ function field(elevator: TElevatorFactory, props: TFieldProps = {}) {
 
 /** Контекст контрола: тип инстанса — из дескриптора. */
 type TControlContext<
-	TInstance extends TFieldControl,
+	TInstance extends IFieldControl,
 	TPlugins extends IPluginsContract,
 > = IAdapterContext<TContextContract<TInstance, TPlugins>>
 
 /** Контрол под тем же лифтом — собранный, ещё не принятый. */
-function assemble<TInstance extends TFieldControl, TPlugins extends IPluginsContract>(
+function assemble<TInstance extends IFieldControl, TPlugins extends IPluginsContract>(
 	elevator: TElevatorFactory,
 	descriptor: IComponentDescriptor<TContextContract<TInstance, TPlugins>>,
 	props: object = {},
@@ -84,7 +91,7 @@ function assemble<TInstance extends TFieldControl, TPlugins extends IPluginsCont
 }
 
 /** Контрол, принятый сразу после сборки, как во Vue. */
-function control<TInstance extends TFieldControl, TPlugins extends IPluginsContract>(
+function control<TInstance extends IFieldControl, TPlugins extends IPluginsContract>(
 	elevator: TElevatorFactory,
 	descriptor: IComponentDescriptor<TContextContract<TInstance, TPlugins>>,
 	props: object = {},
@@ -115,7 +122,7 @@ describe('без поля', () => {
 		const input = control(factory, InputDescriptor())
 
 		expect(input.instance.invalid).toBe(false)
-		expect(input.instance.id).toBeUndefined()
+		expect(idPluginOf(input).id).toBeUndefined()
 		expect(ariaOf(input, 'aria-describedby')).toBeUndefined()
 	})
 })
@@ -130,7 +137,7 @@ describe('сборка: своё контролу — с первой отрис
 		const input = assemble(factory, InputDescriptor())
 
 		expect(input.instance.invalid).toBe(true)
-		expect(input.instance.id).toBe('f-control')
+		expect(idPluginOf(input).id).toBe('f-control')
 		expect(ariaOf(input, 'aria-describedby')).toBe('f-helper')
 		// Labelable-контрол называет `for` подписи, а не ссылка
 		expect(ariaOf(input, 'aria-labelledby')).toBeUndefined()
@@ -147,7 +154,7 @@ describe('сборка: своё контролу — с первой отрис
 		const number = assemble(factory, NumberInputDescriptor())
 
 		expect(number.instance.labelable).toBe(true)
-		expect(number.instance.id).toBe('f-control')
+		expect(idPluginOf(number).id).toBe('f-control')
 		expect(ariaOf(number, 'aria-describedby')).toBe('f-helper')
 		expect(ariaOf(number, 'aria-labelledby')).toBeUndefined()
 		expect(owner.labelAria.get('for')).toBe('f-control')
@@ -160,7 +167,7 @@ describe('сборка: своё контролу — с первой отрис
 
 		const input = assemble(factory, InputDescriptor(), { id: 'own' })
 
-		expect(input.instance.id).toBe('own')
+		expect(idPluginOf(input).id).toBe('own')
 	})
 
 	it('группа: id не задаётся, подпись — ссылкой aria-labelledby', () => {
@@ -170,7 +177,7 @@ describe('сборка: своё контролу — с первой отрис
 
 		const date = assemble(factory, DateInputDescriptor())
 
-		expect(date.instance.id).toBeUndefined()
+		expect(idPluginOf(date).id).toBeUndefined()
 		expect(ariaOf(date, 'aria-labelledby')).toBe('f-label')
 		expect(ariaOf(date, 'aria-describedby')).toBe('f-helper')
 	})
@@ -252,14 +259,14 @@ describe('приём: связка контрола', () => {
 		expect(ids.bound).toBe(true)
 		expect(owner.labelAria.get('for')).toBe('own')
 
-		input.instance.id = 'other'
+		idPluginOf(input).id = 'other'
 
 		expect(owner.labelAria.get('for')).toBe('other')
 
 		// Свой id сняли — снова id поля
-		input.instance.id = undefined
+		idPluginOf(input).id = undefined
 
-		expect(input.instance.id).toBe('f-control')
+		expect(idPluginOf(input).id).toBe('f-control')
 		expect(owner.labelAria.get('for')).toBe('f-control')
 	})
 
@@ -276,15 +283,14 @@ describe('приём: связка контрола', () => {
 		expect(ariaOf(group, 'aria-labelledby')).toBeUndefined()
 	})
 
-	it('Select: id поля уходит его полю, ссылки — в его набор', () => {
+	it('Select: id поля — его id, ссылки — в его набор', () => {
 		const { factory } = createElevatorFactory()
 		const { field: owner } = field(factory, { label: 'Город', helper: 'Подсказка' })
 		const select = control(factory, SelectDescriptor())
 
 		owner.invalid = true
 
-		expect(select.instance.id).toBe('f-control')
-		expect(select.instance.field.id).toBe('f-control')
+		expect(idPluginOf(select).id).toBe('f-control')
 		expect(select.instance.field.invalid).toBe(true)
 		expect(owner.labelAria.get('for')).toBe('f-control')
 		expect(ariaOf(select, 'aria-describedby')).toBe('f-helper')
@@ -363,11 +369,12 @@ describe('снятие: записанное — назад', () => {
 		const { field: owner, ids } = field(factory, { helper: 'Подсказка', invalid: true })
 		const input = control(factory, InputDescriptor())
 		const instance = input.instance
+		const idPlugin = idPluginOf(input)
 
 		input.destroy()
 
 		expect(instance.invalid).toBe(false)
-		expect(instance.id).toBeUndefined()
+		expect(idPlugin.id).toBeUndefined()
 		expect(instance.aria.has('aria-describedby')).toBe(false)
 		expect(owner.labelAria.get('for')).toBe('f-control')
 		expect(ids.bound).toBe(false)
@@ -379,11 +386,11 @@ describe('снятие: записанное — назад', () => {
 		field(factory)
 
 		const input = control(factory, InputDescriptor(), { id: 'own' })
-		const instance = input.instance
+		const idPlugin = idPluginOf(input)
 
 		input.destroy()
 
-		expect(instance.id).toBe('own')
+		expect(idPlugin.id).toBe('own')
 	})
 
 	it('после снятия на шинах поля и контрола подписок связки нет', () => {
@@ -417,6 +424,23 @@ describe('снятие: записанное — назад', () => {
 		expect(leftovers(bus)).toEqual([])
 	})
 
+	it('принятый контрол слушает change:id своего TIdPlugin, снятие отписывает', () => {
+		const { factory } = createElevatorFactory()
+
+		field(factory)
+
+		const assembled = assemble(factory, InputDescriptor())
+		const bus = spyBus('TIdPlugin', idPluginOf(assembled))
+
+		assembled.attach()
+
+		expect(subscribed(bus)).toContain('TIdPlugin: change:id')
+
+		assembled.destroy()
+
+		expect(leftovers(bus)).toEqual([])
+	})
+
 	it('собранный и не принятый контрол снимается тоже', () => {
 		const { factory } = createElevatorFactory()
 
@@ -424,13 +448,14 @@ describe('снятие: записанное — назад', () => {
 
 		const input = assemble(factory, InputDescriptor())
 		const instance = input.instance
+		const idPlugin = idPluginOf(input)
 
 		expect(instance.invalid).toBe(true)
 
 		input.destroy()
 
 		expect(instance.invalid).toBe(false)
-		expect(instance.id).toBeUndefined()
+		expect(idPlugin.id).toBeUndefined()
 	})
 })
 
@@ -447,7 +472,7 @@ describe('одно поле — один контрол', () => {
 
 		expect(first.instance.invalid).toBe(true)
 		expect(second.instance.invalid).toBe(false)
-		expect(second.instance.id).toBeUndefined()
+		expect(idPluginOf(second).id).toBeUndefined()
 		expect(owner.labelAria.get('for')).toBe('f-control')
 	})
 
@@ -471,7 +496,7 @@ describe('одно поле — один контрол', () => {
 
 		expect(first.instance.invalid).toBe(true)
 		expect(second.instance.invalid).toBe(false)
-		expect(second.instance.id).toBeUndefined()
+		expect(idPluginOf(second).id).toBeUndefined()
 	})
 
 	it('контрол опускает пустую связку: контрол в его слотах её не берёт', () => {

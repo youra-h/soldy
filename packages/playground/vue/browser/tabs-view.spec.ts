@@ -153,8 +153,9 @@ function backdropOf(name: TBackdrop): TBackdropUnder {
 const away = (color: string, under: TBackdropUnder): number =>
 	shift(color, under.color) * under.toward
 
-const listOf = (under: TBackdropUnder, view: TView): HTMLElement =>
-	find(`[data-view="${view}"] .so-tabs__list`, under.root)
+/** Ряд набора — список табов и слоты по его краям: линию и полосу вид рисует на нём. */
+const barOf = (under: TBackdropUnder, view: TView): HTMLElement =>
+	find(`[data-view="${view}"] .so-tabs__bar`, under.root)
 
 /** Рамка таба — только у `outline`; ступень у всех табов вида одна. */
 function border(name: TBackdrop): number {
@@ -165,29 +166,29 @@ function border(name: TBackdrop): number {
 }
 
 /**
- * Линия под списком. У вида по умолчанию это граница самого списка, у
- * `outline` — `::before`: там линия разрезана под активным табом на две части,
- * и своего узла у неё нет.
+ * Линия под списком. У вида по умолчанию это граница ряда, у `outline` —
+ * `::before` ряда: там линия разрезана под активным табом на две части, и
+ * своего узла у неё нет.
  */
 function line(name: TBackdrop, view: TView): number {
 	const under = backdropOf(name)
-	const list = listOf(under, view)
+	const bar = barOf(under, view)
 	const color =
-		view === 'outline' ? style(list, '::before').backgroundColor : style(list).borderBottomColor
+		view === 'outline' ? style(bar, '::before').backgroundColor : style(bar).borderBottomColor
 
 	return away(color, under)
 }
 
-/** Полоса под активным табом — `::after` списка у вида по умолчанию. */
+/** Полоса под активным табом — `::after` ряда у вида по умолчанию. */
 function indicator(name: TBackdrop): number {
 	const under = backdropOf(name)
 
-	return away(style(listOf(under, 'по умолчанию'), '::after').backgroundColor, under)
+	return away(style(barOf(under, 'по умолчанию'), '::after').backgroundColor, under)
 }
 
-/** Подложка списка `contained` варианта — фон самого списка. */
+/** Подложка списка `contained` варианта — фон ряда: контейнер вида — он. */
 const containerOf = (under: TBackdropUnder, variant: TComponentVariant): string =>
-	style(find(`[data-variant="${variant}"] .so-tabs__list`, under.root)).backgroundColor
+	style(find(`[data-variant="${variant}"] .so-tabs__bar`, under.root)).backgroundColor
 
 /** Сцена в заданной схеме, указатель уведён со всех табов. */
 async function show(scheme: (typeof SCHEMES)[number], component: Component = scene): Promise<void> {

@@ -20,6 +20,7 @@ import { TMenuPopoverItem } from '@soldy-ui/core'
 import { MenuItemDescriptor } from './item.descriptor'
 import {
 	DismissPluginDescriptor,
+	IdPluginDescriptor,
 	MenuPopoverItemFocusPluginDescriptor,
 	MenuPopoverItemKeyboardPluginDescriptor,
 	MenuPopupIdsPluginDescriptor,
@@ -80,7 +81,9 @@ export const MenuPopoverItemDescriptor = defineDescriptor(() =>
 			// Стрелка к концу строки открывает панель, а в открытую ведёт фокус.
 			// После модели фокуса: берёт её при установке
 			MenuPopoverItemKeyboardPluginDescriptor,
-			// `id` и ссылки «пункт ↔ панель»
+			// `id` и ссылки «пункт ↔ панель»; `id` строки — проп `id` или от
+			// монтирования
+			IdPluginDescriptor,
 			MenuPopupIdsPluginDescriptor,
 		],
 	}),

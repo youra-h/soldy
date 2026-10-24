@@ -234,6 +234,44 @@ describe('выбор', () => {
 	})
 
 	/**
+	 * Свой `id` элемента — его вход: он встаёт на строку вместо `id` от
+	 * монтирования, и ссылка ведёт на него. Атрибутом снаружи он не идёт —
+	 * его съедает связка, — поэтому узел с ним один, строка. Сменили у
+	 * подсвеченного — строка и ссылка идут за ним.
+	 */
+	it('свой id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
+		const [own, setOwn] = createSignal<string | undefined>('row-first')
+
+		mount(() => (
+			<ListBox>
+				<ListBox.Item value="a" text="Первый" id={own()} />
+				<ListBox.Item value="b" text="Второй" />
+			</ListBox>
+		))
+
+		await nextFrame()
+		press(list(), 'ArrowDown')
+
+		expect(rowOf('Первый').id).toBe('row-first')
+		expect(list().getAttribute('aria-activedescendant')).toBe('row-first')
+		expect(document.querySelectorAll('[id="row-first"]')).toHaveLength(1)
+		expect(listItems()[0].hasAttribute('id')).toBe(false)
+
+		setOwn('row-one')
+
+		expect(rowOf('Первый').id).toBe('row-one')
+		expect(list().getAttribute('aria-activedescendant')).toBe('row-one')
+
+		setOwn(undefined)
+
+		const fallback = rowOf('Первый').id
+
+		expect(fallback).not.toBe('')
+		expect(fallback).not.toBe('row-one')
+		expect(list().getAttribute('aria-activedescendant')).toBe(fallback)
+	})
+
+	/**
 	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
 	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
 	 * кнопка нажимается.

@@ -133,6 +133,7 @@ export function Select(props: SelectProps): ReactElement | null {
 		tags,
 		tags_engine,
 		dismiss_ownerAttribute,
+		id,
 	} = state
 
 	if (!rendered) return null
@@ -146,6 +147,7 @@ export function Select(props: SelectProps): ReactElement | null {
 						embedded="select.field"
 						className="so-select__field"
 						ctrl={field}
+						id={id}
 						clear={props.clear}
 						leading={
 							<>

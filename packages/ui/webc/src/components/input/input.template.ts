@@ -6,6 +6,7 @@
  */
 
 import type { IInput } from '@soldy-ui/core'
+import type { TInputOutputs } from './setup.component'
 import { bind, ownerAttributes, type ITemplate } from '../../adapter'
 import { placeClearButton } from '../common/clear'
 
@@ -17,7 +18,7 @@ type TInputParts = {
 
 const parts = new WeakMap<HTMLElement, TInputParts>()
 
-export const inputTemplate: ITemplate<IInput> = {
+export const inputTemplate: ITemplate<IInput, unknown, TInputOutputs> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
 		const leading = ownerDocument.createElement('div')

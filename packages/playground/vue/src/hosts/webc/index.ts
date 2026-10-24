@@ -181,28 +181,17 @@ function fill(
 }
 
 /**
- * Принимает ли элемент проп сам — наблюдает ли атрибут пропа. Не принимает
- * его корень с полем: `id` — проп поля, атрибут разметки элемент берёт только
- * первой сборкой, а `el.id` — собственный `id` корня.
- */
-function takes(element: HTMLElement, prop: string): boolean {
-	const ctor = element.constructor
-
-	return (
-		'observedAttributes' in ctor &&
-		Array.isArray(ctor.observedAttributes) &&
-		ctor.observedAttributes.includes(toAttributeName(prop))
-	)
-}
-
-/**
- * Проп собранному элементу: свойством элемента, а проп, которого элемент сам
- * не принимает (`id` поля), — инстансу, как из кода приложения (`ctrl.id`).
+ * Проп собранному элементу — свойством элемента, как из кода приложения. Проп
+ * на нативном строковом свойстве (`id`: у корня с полем атрибут `id` — проп
+ * поля) снимается пустой строкой, как у платформы: `undefined` нативный
+ * сеттер записал бы строкой `"undefined"`.
  */
 function assign(element: HTMLElement, name: string, value: unknown): void {
-	const target: unknown = takes(element, name) ? element : Reflect.get(element, 'ctrl')
+	const native =
+		(Reflect.has(Element.prototype, name) || Reflect.has(HTMLElement.prototype, name)) &&
+		typeof Reflect.get(element, name) === 'string'
 
-	if (typeof target === 'object' && target !== null) Reflect.set(target, name, value)
+	Reflect.set(element, name, value === undefined && native ? '' : value)
 }
 
 /**

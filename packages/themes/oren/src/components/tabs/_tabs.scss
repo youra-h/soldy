@@ -1,9 +1,9 @@
 @use './mixins' as mixines;
 @use '../button/mixins' as button;
 
-// Структура набора — ориентация и сторона списка от панели, выравнивание
-// списка, зазоры, место слотов списка, строка таба и крестик рядом с ней,
-// гашение выключенного набора — в общем слое тем (`components/tabs.css` в
+// Структура набора — ориентация и сторона ряда от панели, ряд из слотов и
+// списка, выравнивание табов в списке, зазоры, строка таба и крестик рядом с
+// ней, гашение выключенного набора — в общем слое тем (`components/tabs.css` в
 // `@soldy-ui/theme-base`). Здесь — облик: виды и их варианты, цвет текста,
 // тише ли неактивный таб, кольцо фокуса таба и вид его частей.
 
@@ -11,25 +11,32 @@
 //
 // Вид блока без модификатора — `line` с нейтралью; модификатору `line` своё
 // правило не нужно, он совпадает с базой. Виды табов не перекрывают друг
-// друга, а исключают: у `contained` и `outline` нет ни рамки списка, ни полосы
+// друга, а исключают: у `contained` и `outline` нет ни рамки ряда, ни полосы
 // под активным табом, и гасить их пришлось бы по свойству. Поэтому базовый вид
 // не действует, когда задан другой вид из `index.d.ts`. Нулевая специфичность —
 // как у базового вида Button.
 //
+// Линию, полосу и контейнер вида рисует ряд (`__bar` — список табов и слоты по
+// его краям), а не список: место активного таба плагин раскладки меряет от
+// ряда и пишет на него (`TTabsViewPlugin`), а слоты стоят в ряду рядом со
+// списком, и линия идёт под ними так же, как под табами. Позиционирует ряд
+// общий слой тем.
+//
 // Всё, что зависит от модификаторов корня, — вид, его вариант, ориентация и
 // выравнивание (у ориентации и выравнивания — общий слой тем), — пишется от
 // своего корня дочерними комбинаторами:
-// свой список (`> .so-tabs__list`), его табы (`> .so-tabs__list > .so-tabs-item`)
-// и своя панель (`> .so-tabs__panel`). Табы бывают вложены — Tabs в панели
+// свой ряд (`> .so-tabs__bar`), его табы
+// (`> .so-tabs__bar > .so-tabs__list > .so-tabs-item`) и своя панель
+// (`> .so-tabs__panel`). Табы бывают вложены — Tabs в слоте или панели
 // других, — и правило для потомков досталось бы и вложенным: горизонтальные
 // под вертикальными выстраивались столбиком, `contained` под `line` получали
 // линию и полосу, `line` под `outline` — рамки папочных вкладок, а цвета
 // брались от варианта внешних. Сбрасывать у вложенных чужие стили — то же
 // гашение по свойству, что и между видами. Опора — разметка адаптеров:
-// список и панели — дети корня, табы — дети списка.
+// ряд и панели — дети корня, список — ребёнок ряда, табы — дети списка.
 $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 
-// Полоса под активным табом — `::after` списка по `--so-tabs-active-*`. К новому
+// Полоса под активным табом — `::after` ряда по `--so-tabs-active-*`. К новому
 // табу она переезжает так же, как карточка `contained` (`active-tab-move`):
 // место и длина вместе, длина — по главной оси, у вертикальных табов это
 // высота, и табы разной высоты полоса проходит без скачка длины. Едет она
@@ -38,10 +45,10 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 // замера переменных нет и полоса нулевой длины, а первую запись плагин
 // раскладки делает без признака переезда.
 #{$line} {
-	// Horizontal list: separator + indicator via ::after (uses --so-tabs-active-*)
+	// Горизонтальный ряд: линия под ним и полоса — `::after` по `--so-tabs-active-*`
 	&.so-tabs--horizontal {
-		> .so-tabs__list {
-			@apply relative border-b;
+		> .so-tabs__bar {
+			@apply border-b;
 
 			&::after {
 				content: '';
@@ -56,13 +63,13 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 		}
 	}
 
-	// Вертикальные: линия и полоса — у края списка, обращённого к панели.
-	// Сторона логическая: в RTL список встаёт по другую сторону от панели, и
+	// Вертикальные: линия и полоса — у края ряда, обращённого к панели.
+	// Сторона логическая: в RTL ряд встаёт по другую сторону от панели, и
 	// физическая оставила бы линию и полосу на внешнем краю. Место полосы вдоль
-	// списка — сдвиг по вертикали, от направления письма оно не зависит.
+	// ряда — сдвиг по вертикали, от направления письма оно не зависит.
 	&.so-tabs--vertical {
-		> .so-tabs__list {
-			@apply relative border-e;
+		> .so-tabs__bar {
+			@apply border-e;
 
 			&::after {
 				content: '';
@@ -76,9 +83,9 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 			}
 		}
 
-		// Табы в конце ряда: панель — у начала списка
+		// Ряд в конце строки: панель — у его начала
 		&.so-tabs--position-end {
-			> .so-tabs__list {
+			> .so-tabs__bar {
 				@apply border-e-0 border-s;
 
 				&::after {
@@ -113,32 +120,40 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 // Рисуется она двумя путями. До замера — в серверной разметке, до первого
 // кадра и в приложении без `useTheme` — это фон самой выбранной обёртки:
 // переменных геометрии ещё нет. Когда `TTabsViewPlugin` записал их и поставил
-// `--ready-animation`, карточка — `::before` списка по `--so-tabs-active-*`, и к
+// `--ready-animation`, карточка — `::before` ряда по `--so-tabs-active-*`, и к
 // новому табу она переезжает переходом (`active-tab-move`), как полоса `line`.
 // Именно `::before`: он стоит в дереве раньше табов, и позиционированные табы
 // ложатся поверх него без `z-index`.
 .so-tabs--view-contained {
-	// Отступ карточки от края списка — паддинг списка: по поперечной оси табы
-	// растянуты на весь список, и карточка, отступив на него же, встаёт ровно
+	// Отступ карточки от края ряда — паддинг ряда: по поперечной оси список и
+	// табы растянуты на весь ряд, и карточка, отступив на него же, встаёт ровно
 	// на таб. Одно значение на оба места.
 	$inset: calc(var(--spacing) * 1);
 
-	> .so-tabs__list {
-		// Точка отсчёта: `offset*` таба считаются от ближайшего
-		// позиционированного предка, и карточка встаёт от него же
-		@apply relative gap-1.5;
+	// Контейнер — ряд: слоты стоят в нём рядом со списком. От ряда же
+	// считаются `offset*` таба, и карточка встаёт от него. Зазор между табами —
+	// у списка, между слотом и списком — у ряда, число одно.
+	> .so-tabs__bar {
+		@apply gap-1.5;
 		@apply rounded-md;
 		padding: $inset;
+	}
+
+	> .so-tabs__bar > .so-tabs__list {
+		@apply gap-1.5;
 	}
 
 	// Скругление и проявление фона — те же, что у строки-Button. Скругление —
 	// у каждой обёртки: фон таба, с которого ушла статичная карточка, гаснет
 	// переходом и до конца держит углы.
-	> .so-tabs__list > .so-tabs-item {
+	> .so-tabs__bar > .so-tabs__list > .so-tabs-item {
 		@apply rounded-md transition-colors duration-200;
 	}
 
-	&:not(.so-tabs--ready-animation) > .so-tabs__list > .so-tabs-item[data-selected='true'] {
+	&:not(.so-tabs--ready-animation)
+		> .so-tabs__bar
+		> .so-tabs__list
+		> .so-tabs-item[data-selected='true'] {
 		@include mixines.tabs-contained-card;
 	}
 
@@ -148,19 +163,20 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 	// записями, и пересчёт стиля между ними (его требует, например, смена
 	// `tabindex` у таба под фокусом) снял бы псевдоэлемент вместе с переходом —
 	// новый таб получил бы карточку без переезда.
-	&.so-tabs--ready-animation > .so-tabs__list::before {
+	&.so-tabs--ready-animation > .so-tabs__bar::before {
 		content: '';
 		@apply invisible absolute pointer-events-none;
 		@include mixines.tabs-contained-card;
 	}
 
-	&.so-tabs--ready-animation > .so-tabs__list:has(> .so-tabs-item[data-selected='true'])::before {
+	&.so-tabs--ready-animation
+		> .so-tabs__bar:has(> .so-tabs__list > .so-tabs-item[data-selected='true'])::before {
 		@apply visible;
 	}
 
 	// Место физическое — сдвиг от левого и верхнего края, как `offset*` таба,
 	// — поэтому в RTL знак строки не нужен
-	&.so-tabs--horizontal > .so-tabs__list::before {
+	&.so-tabs--horizontal > .so-tabs__bar::before {
 		top: $inset;
 		bottom: $inset;
 		left: 0;
@@ -170,7 +186,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 		@include mixines.active-tab-move(width);
 	}
 
-	&.so-tabs--vertical > .so-tabs__list::before {
+	&.so-tabs--vertical > .so-tabs__bar::before {
 		top: 0;
 		left: $inset;
 		right: $inset;
@@ -199,15 +215,22 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 	}
 }
 
+// Папочные вкладки: линия ряда — `::before` до активного таба и `::after` после
+// него по `--so-tabs-gap-*`, под активным — разрыв.
 .so-tabs--view-outline {
-	> .so-tabs__list {
-		@apply relative gap-1.5;
+	// Зазор между табами — у списка, между слотом и списком — у ряда, число одно
+	> .so-tabs__bar {
+		@apply gap-1.5;
 
 		&::before,
 		&::after {
 			content: '';
 			@apply absolute;
 		}
+	}
+
+	> .so-tabs__bar > .so-tabs__list {
+		@apply gap-1.5;
 
 		> .so-tabs-item {
 			@apply relative border rounded-t-md rounded-b-none;
@@ -236,7 +259,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 
 	&.so-tabs--horizontal {
 		// Структурные стили (не зависят от варианта)
-		> .so-tabs__list {
+		> .so-tabs__bar {
 			&::before,
 			&::after {
 				@apply bottom-0 h-px;
@@ -255,7 +278,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 			}
 		}
 
-		> .so-tabs__list > .so-tabs-item {
+		> .so-tabs__bar > .so-tabs__list > .so-tabs-item {
 			@apply rounded-t-md rounded-b-none border-b-0;
 		}
 	}
@@ -263,7 +286,7 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 	// Вертикальные: линия и открытая сторона вкладок — к панели, логическими
 	// сторонами, как у `line`
 	&.so-tabs--vertical {
-		> .so-tabs__list {
+		> .so-tabs__bar {
 			&::before,
 			&::after {
 				@apply inset-e-0 w-px h-auto;
@@ -282,20 +305,20 @@ $line: ':where(.so-tabs:not(.so-tabs--view-contained, .so-tabs--view-outline))';
 			}
 		}
 
-		> .so-tabs__list > .so-tabs-item {
+		> .so-tabs__bar > .so-tabs__list > .so-tabs-item {
 			@apply rounded-s-md rounded-e-none border-e-0 border-b;
 		}
 
 		&.so-tabs--position-end {
-			> .so-tabs__list {
+			> .so-tabs__bar {
 				&::before,
 				&::after {
 					@apply inset-s-0 inset-e-auto;
 				}
+			}
 
-				> .so-tabs-item {
-					@apply rounded-e-md rounded-s-none border-s-0 border-e;
-				}
+			> .so-tabs__bar > .so-tabs__list > .so-tabs-item {
+				@apply rounded-e-md rounded-s-none border-s-0 border-e;
 			}
 		}
 	}

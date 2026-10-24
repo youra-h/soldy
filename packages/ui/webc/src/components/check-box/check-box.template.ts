@@ -6,6 +6,7 @@
  */
 
 import type { ICheckBox } from '@soldy-ui/core'
+import type { TCheckBoxOutputs } from './setup.component'
 import { bind, drawRoleIcon, ownerAttributes, roleIcon, type ITemplate, patch } from '../../adapter'
 
 /** Части флажка: поле и коробка, одни на всё время жизни элемента. */
@@ -48,7 +49,7 @@ function drawMark(root: HTMLElement, container: HTMLElement, role: string | null
 	if (svg.parentNode !== container) container.appendChild(svg)
 }
 
-export const checkBoxTemplate: ITemplate<ICheckBox> = {
+export const checkBoxTemplate: ITemplate<ICheckBox, unknown, TCheckBoxOutputs> = {
 	create: (root) => {
 		const { ownerDocument } = root
 		const field = ownerDocument.createElement('input')

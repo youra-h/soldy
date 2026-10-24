@@ -14,7 +14,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { Button, Input, ListBox, ListBoxItem } from '@soldy-ui/vue'
 import ListBoxHarness from './ListBox.test.vue'
 
@@ -92,6 +92,58 @@ describe('ListBox: элемент под стрелками — aria-activedesce
 			expect(find('[role="option"][data-highlighted="true"]').id).toBe(reference)
 			expect(document.querySelectorAll(`[id="${reference}"]`)).toHaveLength(1)
 		}
+	})
+
+	/**
+	 * Свой `id` элемента — его вход: он встаёт на строку вместо `id` от
+	 * монтирования, и ссылка ведёт на него. В `$attrs` он не попадает и мимо
+	 * набора на строку не едет, поэтому узел с ним один — строка. Сменили у
+	 * подсвеченного — строка и ссылка идут за ним.
+	 */
+	it('свой id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
+		const own = ref<string | undefined>('city-msk')
+
+		wrapper = mount(
+			defineComponent({
+				render: () =>
+					h(ListBox, null, {
+						default: () => [
+							h(ListBoxItem, { value: 'msk', text: 'Москва', id: own.value }),
+							h(ListBoxItem, { value: 'tver', text: 'Тверь' }),
+						],
+					}),
+			}),
+			{ attachTo: document.body },
+		)
+
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+
+		const list = find('[role="listbox"]')
+
+		list.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+		)
+		await nextTick()
+
+		const row = find('[role="option"][data-highlighted="true"]')
+
+		expect(row.id).toBe('city-msk')
+		expect(list.getAttribute('aria-activedescendant')).toBe('city-msk')
+		expect(document.querySelectorAll('[id="city-msk"]')).toHaveLength(1)
+		expect(find('.so-list-box-item').hasAttribute('id')).toBe(false)
+
+		own.value = 'city-moscow'
+		await nextTick()
+
+		expect(row.id).toBe('city-moscow')
+		expect(list.getAttribute('aria-activedescendant')).toBe('city-moscow')
+
+		own.value = undefined
+		await nextTick()
+
+		expect(row.id).not.toBe('')
+		expect(row.id).not.toBe('city-moscow')
+		expect(list.getAttribute('aria-activedescendant')).toBe(row.id)
 	})
 })
 

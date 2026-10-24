@@ -91,7 +91,8 @@ describe('ValueControl', () => {
 })
 
 describe('InputControl', () => {
-	it('readonly, required и id — в инстанс, снятый проп — к умолчанию', () => {
+	/** `id` — проп `TIdPlugin`, а не инстанса: в состоянии он есть, у `ctrl` его нет. */
+	it('readonly, required — в инстанс, id — в состояние; снятый проп — к умолчанию', () => {
 		const host = document.createElement('div')
 		const ctrl = new TInputControl<unknown>()
 		const binding = setupInputControl(
@@ -101,13 +102,14 @@ describe('InputControl', () => {
 			() => {},
 		)
 
-		expect([ctrl.readonly, ctrl.required, ctrl.id]).toEqual([true, true, 'field'])
+		expect([ctrl.readonly, ctrl.required]).toEqual([true, true])
+		expect('id' in ctrl).toBe(false)
 		expect(binding.state).toMatchObject({ readonly: true, required: true, id: 'field' })
 
 		binding.syncProps({ readonly: undefined, id: undefined })
 
-		expect([ctrl.readonly, ctrl.required, ctrl.id]).toEqual([false, true, undefined])
-		expect(binding.state).toMatchObject({ readonly: false, required: true })
+		expect([ctrl.readonly, ctrl.required]).toEqual([false, true])
+		expect(binding.state).toMatchObject({ readonly: false, required: true, id: undefined })
 
 		binding.destroy()
 	})

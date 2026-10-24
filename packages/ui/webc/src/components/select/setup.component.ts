@@ -5,6 +5,7 @@ import {
 	TFieldControlExtension,
 	TVirtualCollectionExtension,
 	type DescriptorPluginOutputs,
+	type DescriptorPluginProps,
 } from '@soldy-ui/setup'
 import type { ISelect, TSelectCollectionFacade } from '@soldy-ui/core'
 import {
@@ -16,8 +17,12 @@ import {
 import type { TBinding, TUpdateListener } from '../../adapter'
 import { createWebcElevator } from '../../adapter/elevator'
 
-/** Выходы плагинов Select — их читает шаблон: пометку панели владельцем. */
-export type TSelectOutputs = DescriptorPluginOutputs<typeof SelectDescriptor>
+/**
+ * Входы и выходы плагинов Select — их читает шаблон: пометку панели
+ * владельцем и `id` Select, проп `TIdPlugin`, который шаблон отдаёт полю.
+ */
+export type TSelectOutputs = DescriptorPluginProps<typeof SelectDescriptor> &
+	DescriptorPluginOutputs<typeof SelectDescriptor>
 
 export function setupSelect(
 	host: HTMLElement,

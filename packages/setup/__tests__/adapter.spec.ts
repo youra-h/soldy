@@ -17,6 +17,7 @@ import {
 	TDragPlugin,
 	TElementPlugin,
 	TFrameLayoutPlugin,
+	TIdPlugin,
 	TTabsItemIdsPlugin,
 } from '@soldy-ui/plugins'
 import {
@@ -475,9 +476,22 @@ describe('TCollectionItemExtension: сборка и вход', () => {
  * таба от монтирования таба, и панель берёт ровно их.
  */
 describe('TTabsContentBindingExtension: сборка и вход', () => {
-	/** Монтирование таба: его плагин связок пишет `id` от id монтирования. */
-	const mountTab = (tab: ITabsItem, mountId = `tab-${tab.value}`) =>
-		new TPluginBundle(tab, mountId).use(TTabsItemIdsPlugin)
+	/**
+	 * Монтирование таба, как у дескриптора: `TIdPlugin` — `id` приложения, — и
+	 * плагин связок, который пишет его или `id` от монтирования.
+	 */
+	const mounts = new Map<ITabsItem, TPluginBundle>()
+	const mountTab = (tab: ITabsItem, mountId = `tab-${tab.value}`) => {
+		const bundle = new TPluginBundle(tab, mountId).use(TIdPlugin).use(TTabsItemIdsPlugin)
+
+		mounts.set(tab, bundle)
+
+		return bundle
+	}
+
+	/** `TIdPlugin` последнего монтирования таба: `id` приложения пишется в него. */
+	const idPluginOfTab = (tab: ITabsItem) =>
+		required(mounts.get(tab)?.get(TIdPlugin), 'TIdPlugin таба')
 
 	/** Движок Tabs под лифтом и панель `a`, собранная под ним. */
 	function assemblePanel(items: ReadonlyArray<{ value: string; text: string }> = []) {
@@ -562,6 +576,43 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 		mountTab(tab, 'again')
 
 		expect(panelSide(content)).toEqual({ id: 'again-panel', labelledBy: 'again-tab' })
+	})
+
+	/**
+	 * `id` таба, заданный приложением, главнее `id` от монтирования: его пишет в
+	 * набор таба плагин таба, и панель ссылается на него. У панели `id`
+	 * приложения нет, её `id` — формула таба.
+	 */
+	it('id таба задали — панель идёт за ним, сняли — снова id от монтирования', () => {
+		const { engine, content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
+
+		context.attach()
+		idPluginOfTab(tab).id = 'settings'
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'settings' })
+
+		idPluginOfTab(tab).id = undefined
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'tab-a-tab' })
+	})
+
+	/**
+	 * Подписка на таб ждёт входа, а таб пишет свой набор и между сборкой панели
+	 * и её входом: у React сборка — на рендере, а `id` таба приходит его эффектом,
+	 * раньше входа панели. Вход берёт то, что таб записал с тех пор.
+	 */
+	it('таб сменил id между сборкой панели и её входом — вход берёт новый', () => {
+		const { engine, content, context } = assemblePanel([{ value: 'a', text: 'A' }])
+		const [tab] = engine.extensions.batch.items
+
+		idPluginOfTab(tab).id = 'settings'
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'tab-a-tab' })
+
+		context.attach()
+
+		expect(panelSide(content)).toEqual({ id: 'tab-a-panel', labelledBy: 'settings' })
 	})
 
 	it('destroy снимает подписки и связку панели', () => {

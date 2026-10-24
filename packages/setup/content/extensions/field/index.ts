@@ -4,7 +4,5 @@ export type {
 	IFieldControl,
 	IFieldControlExtensionOptions,
 	IFieldExtensionOptions,
-	IFieldInputControl,
 	IFieldLink,
-	TFieldControl,
 } from './types'

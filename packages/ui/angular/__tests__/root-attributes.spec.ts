@@ -661,10 +661,14 @@ class ListBoxProbe extends TProbeHost {}
 })
 class TabsProbe extends TProbeHost {}
 
-/** Список, хост его пробы, селектор корня, класс ядра на нём и селектор узла списка. */
+/**
+ * Список, хост его пробы, селектор корня, класс ядра на нём и путь от корня к
+ * узлу списка: у ListBox узел списка — ребёнок корня, у Tabs — ребёнок ряда,
+ * где рядом со списком стоят слоты.
+ */
 const LISTS: ReadonlyArray<readonly [string, Type<TProbeHost>, string, string, string]> = [
-	['ListBox', ListBoxProbe, '[so-list-box]', 'so-list-box', '[role="listbox"]'],
-	['Tabs', TabsProbe, '[so-tabs]', 'so-tabs', '[role="tablist"]'],
+	['ListBox', ListBoxProbe, '[so-list-box]', 'so-list-box', '[so-list-box] > [role="listbox"]'],
+	['Tabs', TabsProbe, '[so-tabs]', 'so-tabs', '[so-tabs] > .so-tabs__bar > [role="tablist"]'],
 ]
 
 /**
@@ -886,7 +890,7 @@ describe('ListBox и Tabs: атрибуты потребителя делятс�
 			const el = findIn(fixture, selector, HTMLElement)
 			const node = findIn(fixture, list, HTMLElement)
 
-			expect(node.parentElement).toBe(el)
+			expect(el.contains(node)).toBe(true)
 			expect(el.hasAttribute('title')).toBe(false)
 			expect(node.getAttribute('title')).toBe('probe')
 		},

@@ -17,16 +17,14 @@ export default class TInputControl<
 	TEvents extends TInputControlEvents<TValue> = TInputControlEvents<TValue>,
 > extends TValueControl<TValue, TProps, TEvents> {
 	static defaultValues: typeof TValueControl.defaultValues &
-		TDefaultValues<IInputControlProps<any>, 'readonly' | 'required', 'id'> = {
+		TDefaultValues<IInputControlProps<any>, 'readonly' | 'required'> = {
 		...TValueControl.defaultValues,
 		readonly: false,
 		required: false,
-		id: undefined,
 	}
 
 	protected _readonly!: boolean
 	protected _required!: boolean
-	protected _id: string | undefined
 
 	constructor(props: Partial<TProps> = {}) {
 		super(props)
@@ -38,29 +36,11 @@ export default class TInputControl<
 		this._applyReadonly(props.readonly ?? ctor.defaultValues.readonly)
 		this._applyRequired(props.required ?? ctor.defaultValues.required)
 
-		this._id = props.id ?? ctor.defaultValues.id
-
 		this.events.on('change:required', () => this._syncInputAccessibility())
 		this.events.on('change:readonly', () => this._syncInputAccessibility())
 		this.events.on('change:tag', () => this._syncInputAccessibility())
 
 		this._syncInputAccessibility()
-	}
-
-	/**
-	 * `id` элемента формы — значение потребителя: задают его там, где на поле
-	 * ссылается его разметка (`<label for>`, `aria-labelledby`). Не задан —
-	 * атрибута нет: своих ссылок на поле у библиотеки нет.
-	 */
-	get id(): string | undefined {
-		return this._id
-	}
-
-	set id(value: string | undefined) {
-		if (this._id === value) return
-
-		this._id = value
-		this._sink.emit('change:id', value)
 	}
 
 	/**
@@ -122,7 +102,6 @@ export default class TInputControl<
 			...super.getProps(),
 			readonly: this._readonly,
 			required: this._required,
-			id: this._id,
 		} as TProps
 	}
 }
