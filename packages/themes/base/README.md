@@ -32,8 +32,9 @@ of this package, and its behavior installs the plugins of this package.
   Select, Popover, Tooltip, Dialog, Drawer, Scroller, Slider, Rating, ProgressLinear,
   ProgressSpinner, Skeleton, Pagination, Calendar, DateInput, DatePicker, Toasts, DragAndDrop and
   Table. Without a theme they are bare but working: a switch toggles by a click on its track, a
-  label toggles its control, the slots of a button and of a field stay at its edges, a tabs list
-  stands on its side of the panel, a row of tags scrolls, a collapsed accordion section takes no
+  label toggles its control, the slots of a button and of a field stay at its edges, a bar of tabs
+  stands on its side of the panel with its slots at its edges and the tabs aligned between them, a
+  row of tags scrolls, a collapsed accordion section takes no
   room, a closed panel lets clicks through, the body of a dialog scrolls under a header and a footer
   that stay in place, a drawer stands at its edge, the thumbs of a slider sit at the ends of the
   travel and a click sets the value under the pointer, a click on a star sets its number, a scroller
@@ -265,18 +266,21 @@ export default defineTheme({
 })
 ```
 
-- **`TTabsViewPlugin`**, on Tabs, writes on the list `.so-tabs__list`: `--so-tabs-active-pos` and
-  `--so-tabs-active-size` — the place and the length of the active tab along the main axis;
-  `--so-tabs-gap-pos` and `--so-tabs-gap-size` — a gap in a line along the list under it;
-  `--so-tabs-active-moving: 1` while the mark moves to a newly active tab. Once the node is
-  measured, it adds the modifier `so-tabs--ready-animation` to the root. Only the theme reads these
-  (the `theme-reads` section of the contract): it draws the mark of the active tab — a bar, a card
-  — from them. The plugin lifts the moving flag
-  when the CSS transitions of the list's own pseudo-elements have ended, so a mark that moves is a
-  `::before` or `::after` of the list, with a duration that depends on the flag —
-  `calc(var(--so-tabs-active-moving, 0) * 200ms)` moves it to a new tab and puts it in place at once
-  on a resize. Without the plugin the variables are not there: a mark drawn from them is not drawn,
-  and only what the theme draws by `data-selected` of the tab shows the active one.
+- **`TTabsViewPlugin`**, on Tabs, writes on the bar `.so-tabs__bar` — the list of tabs with the
+  slots `leading` and `trailing` at its edges: `--so-tabs-active-pos` and `--so-tabs-active-size`
+  — the place and the length of the active tab along the main axis, from the edge of the bar;
+  `--so-tabs-gap-pos` and `--so-tabs-gap-size` — a gap in a line along the bar under it;
+  `--so-tabs-active-moving: 1` while the mark moves to a newly active tab. The place is measured
+  from the bar because this package positions it and not the list, so draw the mark on the bar:
+  a slot and the room left by `center` are already in the place. Once the node is measured, it
+  adds the modifier `so-tabs--ready-animation` to the root. Only the theme reads these (the
+  `theme-reads` section of the contract): it draws the mark of the active tab — a stripe, a card —
+  from them. The plugin lifts the moving flag when the CSS transitions of the bar's own
+  pseudo-elements have ended, so a mark that moves is a `::before` or `::after` of the bar, with a
+  duration that depends on the flag — `calc(var(--so-tabs-active-moving, 0) * 200ms)` moves it to
+  a new tab and puts it in place at once on a resize. Without the plugin the variables are not
+  there: a mark drawn from them is not drawn, and only what the theme draws by `data-selected` of
+  the tab shows the active one.
 - **`TTableHeadPlugin`**, on Table, writes `--so-table-head-height` on the table root while
   `stickyHead` is on: this package keeps the focused cell below the sticky head by that height.
   Without it the offset is one row of the head, and a head wrapped into several rows covers the

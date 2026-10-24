@@ -5,9 +5,10 @@
  * Структура этих частей — раскладка и механика — лежит в базе, а облик в теме
  * (`packages/themes/base/AGENTS.md`, «Перенос структуры»). Без темы части
  * голые — без рамок, цвета и видов, — но рабочие, и здесь это проверяется тем,
- * что видит пользователь, а не числами базы: список табов стоит с заданной
- * стороны от панели, а табы в нём — по оси ориентации, слоты списка — у начала
- * и у конца его строки в обоих направлениях; ряд тегов `scroll` —
+ * что видит пользователь, а не числами базы: ряд табов стоит с заданной
+ * стороны от панели, а табы в нём — по оси ориентации; слоты ряда — у его
+ * краёв, а табы между ними — по выравниванию, при любом наборе слотов и в
+ * обоих направлениях; ряд тегов `scroll` —
  * одной строкой и прокручивается вбок, а тег под фокусом с клавиатуры встаёт
  * в окно ряда; слоты Input и NumberInput — у краёв, ввод — между ними, кнопки
  * шага — у конца поля; Textarea растёт по строкам до `maxRows` и в одну строку
@@ -17,20 +18,25 @@
  * раскладки не считают.
  *
  * Страница у файла спека своя (`isolate` прогона), и листа темы на ней нет —
- * это проверяет первый тест. Проверен поломкой: без направления списка
+ * это проверяет первый тест. Проверен поломкой: без направления ряда и списка
  * вертикальных Tabs в базе (`flex-direction` у `.so-tabs--vertical >
- * .so-tabs__list`) табы встают в строку, и падают все случаи вертикальных, а
- * с физическим полем слота `trailing` (`margin-left` вместо
- * `margin-inline-start`) в RTL он встаёт вплотную к табам, и падает RTL слотов
- * списка.
+ * .so-tabs__bar` и его списка) табы встают в строку, и падают все случаи
+ * вертикальных, а без роста списка в ряду (`flex-grow` у `.so-tabs__list`)
+ * падают все случаи с `trailing` — он встаёт вплотную к табам, а не у конца
+ * ряда, — и все `center`, `end` и `stretch`: выравнивать табам негде.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from 'vitest-browser-vue'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
-import type { TComponentSize, TTabsOrientation, TTabsPosition } from '@soldy-ui/core'
-import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
+import type {
+	TComponentSize,
+	TTabsAlignment,
+	TTabsOrientation,
+	TTabsPosition,
+} from '@soldy-ui/core'
+import { COMPONENT_SIZES, TABS_ALIGNMENTS } from '@soldy-ui/playground-shared'
 import {
 	Accordion,
 	AccordionItem,
@@ -74,9 +80,15 @@ function find(selector: string, root: ParentNode = document): HTMLElement {
 
 const box = (element: Element) => element.getBoundingClientRect()
 
+/** Сторона метки в слоте, px. */
+const MARK_SIZE = 16
+
 /** Метка в слоте: блок своего размера, по ней видно, где стоит слот. */
 const mark = (name: string) =>
-	h('span', { class: `so-test-${name}`, style: 'display: block; width: 16px; height: 16px' })
+	h('span', {
+		class: `so-test-${name}`,
+		style: `display: block; width: ${MARK_SIZE}px; height: ${MARK_SIZE}px`,
+	})
 
 /** Начало и конец строки на экране: в RTL начало — справа. */
 const edges = (dir: 'ltr' | 'rtl', outer: DOMRect, inner: DOMRect) =>
@@ -111,13 +123,13 @@ const tabItems = () =>
 		h(TabsItem, { key: text, value: String(index), text, active: index === 0 }),
 	)
 
-describe('Tabs — список с заданной стороны от панели', () => {
+describe('Tabs — ряд с заданной стороны от панели', () => {
 	type TSide = 'top' | 'left' | 'right'
 
 	/**
 	 * Сторона — только у вертикальных (`position` горизонтальным модификатора
-	 * не даёт): горизонтальный список всегда над панелью. Вертикальный у
-	 * начала строки — слева в LTR и справа в RTL, у конца — наоборот.
+	 * не даёт): горизонтальный ряд всегда над панелью. Вертикальный у начала
+	 * строки — слева в LTR и справа в RTL, у конца — наоборот.
 	 */
 	const CASES: readonly {
 		orientation: TTabsOrientation
@@ -134,15 +146,15 @@ describe('Tabs — список с заданной стороны от пане
 		{ orientation: 'vertical', position: 'end', dir: 'rtl', side: 'left' },
 	]
 
-	/** Где список относительно панели на экране. */
-	const SIDES: Record<TSide, (list: DOMRect, panel: DOMRect) => boolean> = {
-		top: (list, panel) => list.bottom <= panel.top + EPSILON,
-		left: (list, panel) => list.right <= panel.left + EPSILON,
-		right: (list, panel) => panel.right <= list.left + EPSILON,
+	/** Где ряд относительно панели на экране. */
+	const SIDES: Record<TSide, (bar: DOMRect, panel: DOMRect) => boolean> = {
+		top: (bar, panel) => bar.bottom <= panel.top + EPSILON,
+		left: (bar, panel) => bar.right <= panel.left + EPSILON,
+		right: (bar, panel) => panel.right <= bar.left + EPSILON,
 	}
 
 	it.each(CASES)(
-		'$orientation, position $position, $dir: список — $side от панели, табы — по оси ориентации',
+		'$orientation, position $position, $dir: ряд — $side от панели, табы — по оси ориентации',
 		async ({ orientation, position, dir, side }) => {
 			await show(
 				() =>
@@ -157,10 +169,10 @@ describe('Tabs — список с заданной стороны от пане
 				dir,
 			)
 
-			const list = box(find('.so-tabs__list'))
+			const bar = box(find('.so-tabs__bar'))
 			const panel = box(find('.so-tabs__panel'))
 
-			expect(SIDES[side](list, panel), `список — ${side} от панели`).toBe(true)
+			expect(SIDES[side](bar, panel), `ряд — ${side} от панели`).toBe(true)
 
 			const items = [...document.querySelectorAll('.so-tabs__list > .so-tabs-item')].map(box)
 
@@ -190,37 +202,159 @@ describe('Tabs — список с заданной стороны от пане
 	)
 })
 
-describe('Tabs — слоты списка у краёв строки', () => {
+describe('Tabs — слоты у краёв ряда, табы между ними по выравниванию', () => {
+	/** Какие слоты заданы. */
+	type TSlots = 'нет' | 'leading' | 'trailing' | 'оба'
+
+	const SLOTS: Record<TSlots, { leading: boolean; trailing: boolean }> = {
+		нет: { leading: false, trailing: false },
+		leading: { leading: true, trailing: false },
+		trailing: { leading: false, trailing: true },
+		оба: { leading: true, trailing: true },
+	}
+
+	const SLOT_SETS = Object.keys(SLOTS).filter((name): name is TSlots => name in SLOTS)
+
+	type TCase = {
+		orientation: TTabsOrientation
+		alignment: TTabsAlignment
+		slots: TSlots
+		dir: 'ltr' | 'rtl'
+	}
+
 	/**
-	 * Слоты встают в ряду первым и последним, а свободное место строки забирает
-	 * поле `trailing` со стороны начала строки: он стоит у конца списка, а не
-	 * вплотную к последнему табу. В RTL конец строки — слева.
+	 * Горизонтальные — в обоих направлениях: в RTL начало ряда справа. У
+	 * вертикальных ось — столбец, и направления письма она не касается: они —
+	 * в одном. Вертикальному набору задана высота больше табов, иначе ряд был
+	 * бы высотой с табы, и выравнивать было бы нечего.
 	 */
-	it.each(['ltr', 'rtl'] as const)(
-		'%s: leading — у начала, trailing — у конца, табы между ними',
-		async (dir) => {
-			await show(
-				() =>
-					h(Tabs, null, {
-						leading: () => mark('leading'),
+	const CASES: readonly TCase[] = TABS_ALIGNMENTS.flatMap((alignment) =>
+		SLOT_SETS.flatMap((slots): TCase[] => [
+			{ orientation: 'horizontal', alignment, slots, dir: 'ltr' },
+			{ orientation: 'horizontal', alignment, slots, dir: 'rtl' },
+			{ orientation: 'vertical', alignment, slots, dir: 'ltr' },
+		]),
+	)
+
+	/**
+	 * Отрезок коробки по главной оси — от начала ряда к его концу. У
+	 * горизонтальных в RTL начало справа, и отрезок берётся зеркально: числа
+	 * растут к концу ряда в любом направлении.
+	 */
+	const span = ({ orientation, dir }: TCase, rect: DOMRect): [number, number] => {
+		if (orientation === 'vertical') return [rect.top, rect.bottom]
+
+		return dir === 'ltr' ? [rect.left, rect.right] : [-rect.right, -rect.left]
+	}
+
+	/** Длина слота своей ширины по главной оси: метка и собственное поле слота. */
+	const ownLength = ({ orientation }: TCase, slot: HTMLElement): number => {
+		const style = getComputedStyle(slot)
+		const padding =
+			orientation === 'vertical'
+				? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+				: parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
+
+		return MARK_SIZE + padding
+	}
+
+	/**
+	 * Слоты стоят у краёв ряда, а место между ними забирает список, и табы
+	 * выравниваются в нём: `start` — сразу за `leading` или от начала ряда,
+	 * `end` — перед `trailing` или у конца, `center` — посередине между
+	 * слотами, `stretch` — во всё место между слотами, а слоты своей ширины.
+	 * «Сразу за слотом» — через тот же зазор, что между табами.
+	 */
+	it.each(CASES)('$orientation, $alignment, слоты: $slots, $dir', async (scenario) => {
+		const { orientation, alignment, dir } = scenario
+		const { leading, trailing } = SLOTS[scenario.slots]
+
+		await show(
+			() =>
+				h(
+					Tabs,
+					{
+						orientation,
+						alignment,
+						style: orientation === 'vertical' ? 'height: 320px' : undefined,
+					},
+					{
 						default: tabItems,
-						trailing: () => mark('trailing'),
-					}),
-				dir,
+						...(leading ? { leading: () => mark('leading') } : {}),
+						...(trailing ? { trailing: () => mark('trailing') } : {}),
+					},
+				),
+			dir,
+		)
+
+		const along = (element: Element) => span(scenario, box(element))
+		const [barStart, barEnd] = along(find('.so-tabs__bar'))
+		const tabs = [...document.querySelectorAll('.so-tabs__list > .so-tabs-item')].map(along)
+
+		expect(tabs).toHaveLength(TABS.length)
+
+		for (let index = 1; index < tabs.length; index++) {
+			expect(tabs[index][0], `таб ${index + 1} — после таба ${index}`).toBeGreaterThanOrEqual(
+				tabs[index - 1][1] - EPSILON,
+			)
+		}
+
+		const gap = tabs[1][0] - tabs[0][1]
+		const first = tabs[0][0]
+		const last = tabs[tabs.length - 1][1]
+		let from = barStart
+		let to = barEnd
+
+		if (leading) {
+			const slot = find('.so-tabs__leading')
+			const [start, end] = along(slot)
+
+			expect(Math.abs(start - barStart), 'leading — у начала ряда').toBeLessThanOrEqual(
+				EPSILON,
 			)
 
-			const list = box(find('.so-tabs__list'))
-			const leading = box(find('.so-tabs__list--leading'))
-			const trailing = box(find('.so-tabs__list--trailing'))
-			const items = [...document.querySelectorAll('.so-tabs__list > .so-tabs-item')].map(box)
+			if (alignment === 'stretch') {
+				expect(end - start, 'leading своей длины').toBeCloseTo(ownLength(scenario, slot), 0)
+			}
 
-			expect(items).toHaveLength(TABS.length)
-			expect(edges(dir, list, leading).start, 'leading у начала').toBeLessThanOrEqual(EPSILON)
-			expect(edges(dir, list, trailing).end, 'trailing у конца').toBeLessThanOrEqual(EPSILON)
-			expect(after(dir, leading, items[0]), 'табы после leading').toBe(true)
-			expect(after(dir, items[items.length - 1], trailing), 'trailing после табов').toBe(true)
-		},
-	)
+			from = end + gap
+		}
+
+		if (trailing) {
+			const slot = find('.so-tabs__trailing')
+			const [start, end] = along(slot)
+
+			expect(Math.abs(barEnd - end), 'trailing — у конца ряда').toBeLessThanOrEqual(EPSILON)
+
+			if (alignment === 'stretch') {
+				expect(end - start, 'trailing своей длины').toBeCloseTo(
+					ownLength(scenario, slot),
+					0,
+				)
+			}
+
+			to = start - gap
+		}
+
+		expect(first, 'табы — не раньше места между слотами').toBeGreaterThanOrEqual(from - EPSILON)
+		expect(last, 'табы — не дальше места между слотами').toBeLessThanOrEqual(to + EPSILON)
+
+		if (alignment === 'start' || alignment === 'stretch') {
+			expect(Math.abs(first - from), 'табы — от начала места').toBeLessThanOrEqual(EPSILON)
+		}
+
+		if (alignment === 'end' || alignment === 'stretch') {
+			expect(Math.abs(to - last), 'табы — до конца места').toBeLessThanOrEqual(EPSILON)
+		}
+
+		if (alignment === 'center') {
+			expect(first - from, 'табы отошли от начала места').toBeGreaterThan(EPSILON)
+			expect(
+				Math.abs(first - from - (to - last)),
+				'табы — посередине между слотами',
+			).toBeLessThanOrEqual(EPSILON)
+		}
+	})
 })
 
 describe('Tags — ряд scroll', () => {

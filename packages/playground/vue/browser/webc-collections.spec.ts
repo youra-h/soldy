@@ -133,7 +133,7 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 		expect(all(root, `.webc ${part}`).map(size), part).toEqual(vue)
 	}
 
-	it('Tabs: список, табы, строки и кнопки закрытия', async () => {
+	it('Tabs: ряд, список, табы, строки и кнопки закрытия', async () => {
 		const root = await pair(
 			() =>
 				h(Tabs, { size: scale, closable: true }, () => [
@@ -147,6 +147,7 @@ describe.each(COMPONENT_SIZES)('размер %s — как у Vue', (scale) => {
 		)
 
 		for (const part of [
+			'.so-tabs__bar',
 			'.so-tabs__list',
 			'.so-tabs-item',
 			'.so-tabs-item [role="tab"]',

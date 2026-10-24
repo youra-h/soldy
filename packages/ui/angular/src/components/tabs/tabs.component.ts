@@ -7,8 +7,9 @@ import { TTabsSurface } from '../../generated/tabs.metadata'
 import { setupTabs } from './setup.component'
 
 /**
- * Набор вкладок: список табов и панели под ним. Набор `aria` и атрибуты потребителя — списку.
- * Панели — слот `content`: `default` лежит внутри `[role=tablist]`.
+ * Набор вкладок: ряд со списком табов и панели под ним. Набор `aria` и атрибуты
+ * потребителя — списку (`#control`), слоты `leading` и `trailing` — в ряду рядом
+ * с ним. Панели — слот `content`: `default` лежит внутри `[role=tablist]`.
  */
 @Component({
 	selector: 'div[so-tabs], [so-tabs]',

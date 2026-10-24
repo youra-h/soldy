@@ -1,7 +1,9 @@
 /**
  * Шаблон Tabs: набор `aria` владельца — на списке табов `div.so-tabs__list`.
- * Список и панели — дети корня, табы — дети списка: тема рисует набор дочерними
- * комбинаторами. docs/architecture.md, Layer 8d, «Коллекция».
+ * Ряд `div.so-tabs__bar` и панели — дети корня, список и слоты `leading` и
+ * `trailing` — дети ряда, табы — дети списка: в `[role=tablist]` ARIA пускает
+ * только `tab`, а тема рисует набор дочерними комбинаторами. docs/architecture.md,
+ * Layer 8d, «Коллекция».
  */
 
 import type { ITabs, ITabsItem, TTabsCollectionFacade } from '@soldy-ui/core'
@@ -45,23 +47,26 @@ function tabOf(
 export const tabsTemplate: ITemplate<ITabs, TTabsCollectionFacade> = {
 	create: (root, { hasSlot }) => {
 		const { ownerDocument } = root
+		const bar = ownerDocument.createElement('div')
 		const list = ownerDocument.createElement('div')
 		const leading = ownerDocument.createElement('div')
 		const trailing = ownerDocument.createElement('div')
 
+		bar.className = 'so-tabs__bar'
 		list.className = 'so-tabs__list'
-		leading.className = 'so-tabs__list--leading'
-		trailing.className = 'so-tabs__list--trailing'
-		root.appendChild(list)
+		leading.className = 'so-tabs__leading'
+		trailing.className = 'so-tabs__trailing'
+		root.appendChild(bar)
 
-		if (hasSlot('leading')) list.appendChild(leading)
+		// Слоты — в ряду по краям списка, а не в нём: в списке только табы
+		if (hasSlot('leading')) bar.appendChild(leading)
 
-		const end = hasSlot('trailing') ? trailing : null
+		bar.appendChild(list)
 
-		if (end) list.appendChild(end)
+		if (hasSlot('trailing')) bar.appendChild(trailing)
 
 		if (!hasSlot('default')) {
-			loops.set(root, new TKeyedLoop(list, end, (item: ITabsItem) => item.uid))
+			loops.set(root, new TKeyedLoop(list, null, (item: ITabsItem) => item.uid))
 		}
 
 		lists.set(root, list)
@@ -69,9 +74,9 @@ export const tabsTemplate: ITemplate<ITabs, TTabsCollectionFacade> = {
 		return {
 			slots: {
 				leading: { mode: 'append', node: leading },
-				default: end ? { mode: 'before', node: end } : { mode: 'append', node: list },
+				default: { mode: 'append', node: list },
 				trailing: { mode: 'append', node: trailing },
-				// Панели — после списка: в `default` они оказались бы внутри `[role=tablist]`
+				// Панели — после ряда: в `default` они оказались бы внутри `[role=tablist]`
 				content: { mode: 'append', node: root },
 				item: { mode: 'sample' },
 				'item-leading': { mode: 'sample' },

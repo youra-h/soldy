@@ -24,39 +24,46 @@ export default { ...SetupTabs, components: { TabsItem } }
 			(`containerAttrs`), остальное — списку табов (`controlAttrs`), поверх
 			его `aria`: `aria-label` и `id` потребителя называют список, а не
 			корень без роли.
+
+			Список стоит в ряду (`so-tabs__bar`), а слоты `leading` и `trailing` —
+			рядом с ним, по краям ряда: в `[role=tablist]` ARIA пускает только
+			`tab`, и кнопка в слоте была бы недопустимым потомком. Ряд — просто
+			разметка: ни набора, ни атрибутов потребителя у него нет.
 		-->
-		<div class="so-tabs__list" v-bind="{ ...aria, ...controlAttrs }">
-			<div class="so-tabs__list--leading" v-if="$slots.leading">
+		<div class="so-tabs__bar">
+			<div class="so-tabs__leading" v-if="$slots.leading">
 				<slot name="leading"></slot>
 			</div>
-			<slot>
-				<!--
-					Слоты элементов статические и получают сам элемент через scope:
-					динамические имена (`item:${value}:leading`) резолвит только Vue,
-					в остальных пяти адаптерах они недостижимы. Адресация конкретного
-					элемента — условием внутри слота по `item.value`.
+			<div class="so-tabs__list" v-bind="{ ...aria, ...controlAttrs }">
+				<slot>
+					<!--
+						Слоты элементов статические и получают сам элемент через scope:
+						динамические имена (`item:${value}:leading`) резолвит только Vue,
+						в остальных пяти адаптерах они недостижимы. Адресация конкретного
+						элемента — условием внутри слота по `item.value`.
 
-					Проброс целиком: у каждого слота таба есть `item-<слот>`, и его
-					scope — scope слота таба плюс сам таб. Иконку крестика таб рисует
-					сам, пока слот не задан, — поэтому её слот отдаётся табу, только
-					когда задан набору.
-				-->
-				<TabsItem v-for="item in shown" :key="item.uid" :ctrl="item">
-					<template #leading>
-						<slot name="item-leading" :item="item" />
-					</template>
-					<template #default="{ text, active }">
-						<slot name="item" :item="item" :text="text" :active="active" />
-					</template>
-					<template #trailing>
-						<slot name="item-trailing" :item="item" />
-					</template>
-					<template v-if="$slots['item-close-icon']" #close-icon>
-						<slot name="item-close-icon" :item="item" />
-					</template>
-				</TabsItem>
-			</slot>
-			<div class="so-tabs__list--trailing" v-if="$slots.trailing">
+						Проброс целиком: у каждого слота таба есть `item-<слот>`, и его
+						scope — scope слота таба плюс сам таб. Иконку крестика таб рисует
+						сам, пока слот не задан, — поэтому её слот отдаётся табу, только
+						когда задан набору.
+					-->
+					<TabsItem v-for="item in shown" :key="item.uid" :ctrl="item">
+						<template #leading>
+							<slot name="item-leading" :item="item" />
+						</template>
+						<template #default="{ text, active }">
+							<slot name="item" :item="item" :text="text" :active="active" />
+						</template>
+						<template #trailing>
+							<slot name="item-trailing" :item="item" />
+						</template>
+						<template v-if="$slots['item-close-icon']" #close-icon>
+							<slot name="item-close-icon" :item="item" />
+						</template>
+					</TabsItem>
+				</slot>
+			</div>
+			<div class="so-tabs__trailing" v-if="$slots.trailing">
 				<slot name="trailing"></slot>
 			</div>
 		</div>

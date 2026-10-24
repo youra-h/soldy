@@ -5,13 +5,15 @@ import { TElementPlugin } from '../../element'
 import { TCollectionBundlesPlugin, TCollectionElements } from '../../collection'
 import { isMeasurableElement } from '../../../utils'
 import { TTabsLayoutPlugin } from '../layout'
+import { barOf } from '../parts'
 import type { TActiveTabOffset, TTabsActiveTabPluginEvents } from './types'
 
 /**
  * TTabsActiveTabPlugin — вычисляет позицию/размер активного таба (offset).
  *
  * Использует:
- * - корневой DOM-элемент списка табов (через TElementPlugin);
+ * - корень набора (через TElementPlugin) и его ряд — ребёнка корня, от
+ *   которого считаются `offset*` табов;
  * - активный элемент коллекции (engine.extensions.activation);
  * - DOM-элемент активного таба (через TCollectionElements).
  *
@@ -97,12 +99,12 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 			return null
 		}
 
-		const listCls = this._tabs.classes.resolve('__list', { point: true })
-		const listEl = this._element.querySelector(listCls)
+		const barEl = barOf(this._tabs, this._element)
 
-		// Подчёркивание таба тема рисует переменными на списке, а позиция считается
-		// в `offset*`: без layout-бокса offset'ы считать не по чему.
-		if (!isMeasurableElement(listEl)) return null
+		// Отметку таба тема рисует переменными на ряду, а место считается в
+		// `offset*` от него — ближайшего позиционированного предка таба: без
+		// layout-бокса offset'ы считать не по чему.
+		if (!isMeasurableElement(barEl)) return null
 
 		const activeItem = this._engine.extensions.activation.activeItem
 		const activeEl = activeItem
@@ -111,7 +113,7 @@ export class TTabsActiveTabPlugin extends TBasePlugin<ITabs, TTabsActiveTabPlugi
 		const activeBox = isMeasurableElement(activeEl) ? activeEl : null
 
 		return {
-			listEl,
+			barEl,
 			offsetLeft: activeBox ? activeBox.offsetLeft : 0,
 			offsetWidth: activeBox ? activeBox.offsetWidth : 0,
 			offsetTop: activeBox ? activeBox.offsetTop : 0,
