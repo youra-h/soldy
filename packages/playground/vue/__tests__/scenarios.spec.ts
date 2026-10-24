@@ -43,7 +43,7 @@ async function rendered(): Promise<void> {
 	await new Promise((resolve) => requestAnimationFrame(resolve))
 }
 
-/** Предупреждения и ошибки в консоли роняют тест — как в `smoke.spec.ts`. */
+/** Предупреждения и ошибки в консоли роняют тест — как в `smoke/harness.ts`. */
 const warnings: string[] = []
 
 beforeAll(async () => {
