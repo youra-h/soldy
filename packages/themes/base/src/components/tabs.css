@@ -79,7 +79,9 @@
 }
 
 /* Слоты списка — по краям ряда табов, а не в его порядке: ядро ставит табам
- * `order`, и слоты встают первым и последним. */
+ * `order`, и слоты встают первым и последним. К концу строки `trailing`
+ * уводит поле со стороны её начала — логической, а не левой: в RTL конец
+ * строки слева. */
 .so-tabs__list--leading,
 .so-tabs__list--trailing {
 	display: flex;
@@ -93,7 +95,7 @@
 
 .so-tabs__list--trailing {
 	order: 9999;
-	margin-left: auto;
+	margin-inline-start: auto;
 }
 
 .so-tabs__panel {

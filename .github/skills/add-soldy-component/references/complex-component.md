@@ -37,8 +37,9 @@ Select — самый сложный компонент в проекте: в н
     ListBox контракт `IList`);
   - `DismissPluginDescriptor` — закрытие по нажатию мимо (общий слой
     оверлея, см. AGENTS.md → «Слой оверлея»);
-  - `SelectPointerPluginDescriptor` — клик по полю: тумблер всего поля в
-    select-only, только клик по стрелке в `editable`;
+  - `SelectPointerPluginDescriptor` — указатель на поле: клик — тумблер
+    всего поля в select-only, только клик по стрелке в `editable`; нажатие
+    мимо остановок Tab поля в обоих режимах гасится, и фокус остаётся в поле;
   - `SelectKeyboardPluginDescriptor` — клавиатура APG Combobox, пишет
     `aria-activedescendant`;
   - `SelectEditablePluginDescriptor` — реакция на ввод текста (`search`/

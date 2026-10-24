@@ -175,8 +175,8 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Roving tabindex (APG listbox): Tab фокусирует узел списка, а по элементам
-	 * ходят стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
+	 * Остановка Tab одна — узел списка (APG Listbox), а по элементам ходят
+	 * стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
 	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
 	 * сама: набор владельца главнее. Корень — рамка вокруг шапки, списка и
 	 * подвала, остановкой он не бывает.
@@ -227,6 +227,37 @@ describe('выбор', () => {
 		press(fixture, list, ' ')
 
 		expect(selection()).toEqual(['true', 'true'])
+	})
+
+	/**
+	 * Фокус по строкам не ходит, и элемент под стрелками скринридеру называет
+	 * `aria-activedescendant` узла списка (APG Listbox): `id` строке пишет
+	 * плагин `id` элемента от монтирования, ссылку — клавиатура списка. До
+	 * клавиш подсветки на экране нет — и ссылки нет.
+	 */
+	it('элемент под стрелками — aria-activedescendant узла списка на id подсвеченной строки', async () => {
+		const fixture = mountHost(Harness)
+		const list = listOf(fixture)
+
+		await nextFrame()
+
+		const ids = rows().map((row) => row.id)
+
+		expect(ids.every((id) => id !== '')).toBe(true)
+		expect(new Set(ids).size).toBe(ids.length)
+		expect(list.hasAttribute('aria-activedescendant')).toBe(false)
+
+		for (const step of [0, 1]) {
+			press(fixture, list, 'ArrowDown')
+
+			const reference = list.getAttribute('aria-activedescendant')
+
+			expect(reference).toBe(ids[step])
+			expect(document.querySelector('[role="option"][data-highlighted="true"]')?.id).toBe(
+				reference,
+			)
+			expect(document.querySelectorAll(`[id="${reference}"]`)).toHaveLength(1)
+		}
 	})
 
 	/**
@@ -495,6 +526,11 @@ describe('состав', () => {
 		expect(selection()).toEqual(['false', 'true'])
 	})
 
+	/**
+	 * Атрибут — не из тех, что называет ядро: `id` строки пишет плагин `id`
+	 * элемента в его набор (на него ссылается `aria-activedescendant` списка), а
+	 * имя из набора база Angular считает своим всегда.
+	 */
 	it('класс и стиль потребителя — корню элемента, остальное — строке', () => {
 		@Component({
 			standalone: true,
@@ -506,7 +542,7 @@ describe('состав', () => {
 					text="A"
 					class="mine"
 					style="color: red"
-					id="row-a"
+					title="row-a"
 				></div>
 			</div>`,
 		})
@@ -518,8 +554,8 @@ describe('состав', () => {
 
 		expect(item.classList.contains('mine')).toBe(true)
 		expect(item.style.color).toBe('red')
-		expect(item.hasAttribute('id')).toBe(false)
-		expect(rowOf('A').id).toBe('row-a')
+		expect(item.hasAttribute('title')).toBe(false)
+		expect(rowOf('A').getAttribute('title')).toBe('row-a')
 		expect(rowOf('A').classList.contains('mine')).toBe(false)
 	})
 

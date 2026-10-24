@@ -26,7 +26,7 @@ import {
 	TDismissPlugin,
 	TListItemPlugin,
 	TPluginBundle,
-	TSelectItemIdsPlugin,
+	TOptionIdsPlugin,
 } from '@soldy-ui/plugins'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
@@ -115,7 +115,7 @@ async function setup(
 
 		bundle.use(TElementPlugin)
 		bundle.use(TListItemPlugin)
-		bundle.use(TSelectItemIdsPlugin)
+		bundle.use(TOptionIdsPlugin)
 
 		const registered = required(bundle.get(TElementPlugin), 'TElementPlugin')
 

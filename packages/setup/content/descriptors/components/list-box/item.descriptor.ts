@@ -2,8 +2,8 @@
  * Дескриптор ListBoxItem (TListBoxItem).
  *
  * Наследует `ValueControlDescriptor` (value, name, disabled, focused, size,
- * variant, ...), добавляет `text`, `contentFit` и плагин подсветки элемента
- * (клавиатурная навигация).
+ * variant, ...), добавляет `text`, `contentFit`, плагин подсветки элемента
+ * (клавиатурная навигация) и его `id` в документе.
  */
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
@@ -11,7 +11,11 @@ import { TListBoxItem } from '@soldy-ui/core'
 import { rowIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
-import { ActionPluginDescriptor, ListItemPluginDescriptor } from '../../plugins'
+import {
+	ActionPluginDescriptor,
+	ListItemPluginDescriptor,
+	OptionIdsPluginDescriptor,
+} from '../../plugins'
 
 export const ListBoxItemDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -54,6 +58,8 @@ export const ListBoxItemDescriptor = defineDescriptor(() =>
 			// обёртка вокруг неё: туда `focused = true` и ставит фокус
 			ActionPluginDescriptor.with({ focusTarget: rowIn }),
 			ListItemPluginDescriptor,
+			// `id` элемента — на него ссылается `aria-activedescendant` узла списка
+			OptionIdsPluginDescriptor,
 		],
 	}),
 )

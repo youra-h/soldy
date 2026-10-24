@@ -1,5 +1,5 @@
 import { listOf, selectionOf } from '@soldy-ui/core'
-import type { IListBoxItem, TCollectionEngine } from '@soldy-ui/core'
+import type { IListBox, IListBoxItem, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
 import { isFocusableElement } from '../../../utils'
 import { TCollectionElements } from '../../collection'
@@ -24,6 +24,17 @@ import type { TListKeyboardPluginEvents } from './types'
  * стрелками показывает подсветка (`data-highlighted`). Enter и Space
  * переключают выбор подсвеченного через расширение списка
  * (`list.chooseItem`), как и клик по строке.
+ *
+ * **Элемент под стрелками скринридеру называет `aria-activedescendant` узла
+ * списка** (APG Listbox): фокус по строкам не ходит, и без ссылки стрелки были
+ * бы для скринридера немыми. Ссылку плагин пишет в набор `aria` списка — его
+ * разметка кладёт на узел списка, — на `id` подсвеченного элемента
+ * (`TOptionIdsPlugin`), и она повторяет экран: есть, пока у элемента видна
+ * отметка и он в документе (`highlightedId` навигации). Позиция без отметки —
+ * за выбором или на строке, с которой пришла клавиша, — ссылкой не
+ * становится. В окне (`Virtual`) ссылка ждёт, когда окно дорисует
+ * подсвеченный элемент (`onHighlightedMounted`), а элемент, ушедший из
+ * документа, — из коллекции или со снятым монтированием, — её снимает.
  *
  * Слушатель висит на корне, но клавишу список берёт только с узла списка
  * (`listOf`) и со строки показанного элемента. До корня всплывают и клавиши
@@ -53,6 +64,8 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<
 	TListKeyboardPluginEvents,
 	IListBoxItem
 > {
+	/** Список: в его набор `aria` — ссылка на подсвеченный элемент. */
+	private _owner: IListBox | null = null
 	/**
 	 * Узлы элементов — по ним ищется строка, с которой пришла клавиша. Без
 	 * этого плагина строку не узнать, и список берёт клавиши только с узла
@@ -63,13 +76,38 @@ export class TListKeyboardPlugin extends TListNavigationPlugin<
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
 
+		this._owner = ctx.getInstance<IListBox>()
 		this._elements = ctx.get(TCollectionElements) ?? null
+
+		// Подсвеченный элемент ушёл из документа — из коллекции или со снятым
+		// монтированием: ссылка на его `id` указывала бы в пустоту
+		this._bundles?.events.on('bundle:unregistered', ({ uid }) => {
+			if (uid === this._highlightedUid) this._refer()
+		})
 	}
 
 	override destroy(): void {
-		this._elements = null
-
+		// Снятие подсветки в `destroy()` базы снимает и ссылку — пока список
+		// ещё известен: свой `ctrl` приложения переживает плагин
 		super.destroy()
+
+		this._owner = null
+		this._elements = null
+	}
+
+	/** Видимая подсветка сменилась — ссылка за ней. */
+	protected override onHighlightChanged(_uid: string | number | null): void {
+		this._refer()
+	}
+
+	/** Окно дорисовало подсвеченный элемент: у него появился `id` — на него ссылка. */
+	protected override onHighlightedMounted(_uid: string | number): void {
+		this._refer()
+	}
+
+	/** `aria-activedescendant` списка — на подсвеченный элемент, пока он на экране. */
+	private _refer(): void {
+		this._owner?.aria.add('aria-activedescendant', this.highlightedId())
 	}
 
 	/**
