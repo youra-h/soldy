@@ -54,6 +54,7 @@ export const MenuOutputNames = [
 	'soDismissCreate',
 	'soDismissDismiss',
 	'soKeyboardCreate',
+	'soScrollCreate',
 	'soPointerCreate',
 	'soHoverCreate',
 	'soFocusCreate',
@@ -207,6 +208,9 @@ export abstract class TMenuSurface<TInstance extends IEntity> extends TComponent
 	}
 	get soKeyboardCreate(): TOutputEmitter<typeof descriptor, 'keyboard:create'> {
 		return this.createOutput('soKeyboardCreate')
+	}
+	get soScrollCreate(): TOutputEmitter<typeof descriptor, 'scroll:create'> {
+		return this.createOutput('soScrollCreate')
 	}
 	get soPointerCreate(): TOutputEmitter<typeof descriptor, 'pointer:create'> {
 		return this.createOutput('soPointerCreate')

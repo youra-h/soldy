@@ -4,9 +4,9 @@
  * Пропсы, события и плагины пункта — от `MenuItemDescriptor`: в меню над ним
  * это обычный пункт — строка, подсветка, размер меню. Сверх них — открытость,
  * разделители секций своих пунктов, наборы панели и плагины владельца своих
- * пунктов: коллекция, нажатие и уход фокуса мимо, клавиши уровня, указатель,
- * модель фокуса и связки. Членство в меню над ним — фасад пункта
- * (`MenuCollectionItemDescriptor`), свои пункты — фасад меню
+ * пунктов: коллекция, нажатие и уход фокуса мимо, клавиши уровня, прокрутка
+ * списка пунктов, указатель, модель фокуса и связки. Членство в меню над ним
+ * — фасад пункта (`MenuCollectionItemDescriptor`), свои пункты — фасад меню
  * (`MenuCollectionDescriptor`): у каждого уровня меню своя коллекция.
  *
  * Слоты объявлены заново — они не наследуются, а разметка у пункта с подменю
@@ -19,12 +19,14 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TMenuSubmenu } from '@soldy-ui/core'
 import type { IMenuItem } from '@soldy-ui/core'
+import { TMenuSubmenuKeyboardPlugin } from '@soldy-ui/plugins'
 import { MenuItemDescriptor } from './item.descriptor'
 import {
 	CollectionBundlesPluginDescriptor,
 	CollectionElementsPluginDescriptor,
 	DismissPluginDescriptor,
 	IdPluginDescriptor,
+	ListScrollPluginDescriptor,
 	MenuHoverPluginDescriptor,
 	MenuPopupIdsPluginDescriptor,
 	MenuSubmenuFocusPluginDescriptor,
@@ -128,6 +130,9 @@ export const MenuSubmenuDescriptor = defineDescriptor(() =>
 			// Клавиши строки и панели, подсветка — фокус. После dismiss: берёт у
 			// него панель
 			MenuSubmenuKeyboardPluginDescriptor,
+			// Прокрутка списка своих пунктов за отметкой и подсветкой, как у меню.
+			// После клавиатуры: слушает её подсветку
+			ListScrollPluginDescriptor.with({ navigation: TMenuSubmenuKeyboardPlugin }),
 			// Указатель в панели: подсветка, панели пунктов ниже и путь к ним
 			MenuHoverPluginDescriptor,
 			// Фокус при открытии и закрытии уровня, Escape и Tab. После dismiss и

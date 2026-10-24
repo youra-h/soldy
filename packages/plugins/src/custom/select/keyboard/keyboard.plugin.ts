@@ -1,9 +1,7 @@
 import { batchOf, selectOf, selectionOf } from '@soldy-ui/core'
-import type { IList, ISelect, ISelectItem, TCollectionEngine } from '@soldy-ui/core'
+import type { ISelect, ISelectItem, TCollectionEngine } from '@soldy-ui/core'
 import type { IPluginContext } from '../../../base'
-import { smoothScrollBehavior } from '../../../motion'
 import { TElementPlugin } from '../../element'
-import { TCollectionElements } from '../../collection'
 import { fieldOf } from '../../input/field'
 import { TListNavigationPlugin } from '../../list/navigation'
 import type { TListEdge } from '../../list/navigation'
@@ -42,12 +40,15 @@ import type { ISelectKeyboardPluginOptions, TSelectKeyboardPluginEvents } from '
  * буквы — по опциям на неё, без совпадения подсветка на месте. Набор живёт,
  * пока открыта панель: закрытие начинает следующий заново, как у меню.
  *
+ * Прокрутки здесь нет: к подсвеченной опции и к выбранной список докручивает
+ * `TListScrollPlugin` — тот же, что у ListBox и меню, — по событию подсветки
+ * этого плагина (`change:highlight`) и по смене выбора.
+ *
  * **В окне** (обёртка `Virtual`) клавиши ходят по всем показанным опциям, а
  * подсветка, уведённая к опции вне окна, закрепляет её в рисовании (база).
- * Своего `id` и узла у такой опции нет, пока окно её не нарисует: ссылка
- * `aria-activedescendant` и прокрутка к ней ждут, когда опция войдёт в
- * документ (`onHighlightedMounted`), — ссылка в пустоту оставила бы
- * скринридер немым.
+ * Своего `id` у такой опции нет, пока окно её не нарисует: ссылка
+ * `aria-activedescendant` ждёт, когда опция войдёт в документ
+ * (`onHighlightedMounted`), — ссылка в пустоту оставила бы скринридер немым.
  */
 export class TSelectKeyboardPlugin
 	extends TListNavigationPlugin<TSelectKeyboardPluginEvents, ISelectItem>
@@ -56,21 +57,15 @@ export class TSelectKeyboardPlugin
 	private _owner: ISelect | null = null
 	/** `<input>` поля — единственный источник клавиш комбобокса. */
 	private _input: HTMLInputElement | null = null
-	private _elements: TCollectionElements | null = null
-	private _list: IList | null = null
 	private _strategy: ISelectKeyboardStrategy = new TSelectOnlyKeyboardStrategy()
 	/** Набор по первым буквам; паузу набора задают опции установки. */
 	private _typeahead = new TTypeahead()
-	/** Кадр с отложенной прокруткой к подсветке; `null` — прокручивать нечего. */
-	private _scrollFrame: number | null = null
 
 	override install(ctx: IPluginContext, options?: ISelectKeyboardPluginOptions): void {
 		super.install(ctx, options)
 
 		this._typeahead = new TTypeahead(options?.typeaheadTimeout)
 		this._owner = ctx.getInstance<ISelect>() ?? null
-		this._elements = ctx.get(TCollectionElements) ?? null
-		this._list = ctx.getInstance<IList>()
 
 		// Поле — по общему правилу полей (`fieldOf`), так же, как у
 		// `TEditablePlugin` и `TSelectBackspacePlugin`
@@ -97,18 +92,12 @@ export class TSelectKeyboardPlugin
 	}
 
 	override destroy(): void {
-		// Отложенная прокрутка уничтоженного плагина узла уже не найдёт — и
-		// искать его незачем
-		this._cancelScroll()
-
 		// Снятие подсветки в `destroy()` базы снимает и ссылку с поля — пока
 		// Select ещё известен: свой `ctrl` приложения переживает плагин
 		super.destroy()
 
 		this._owner = null
 		this._input = null
-		this._elements = null
-		this._list = null
 	}
 
 	/** Стратегия по режиму `editable` — выбор класса, а не проверка внутри. */
@@ -147,28 +136,17 @@ export class TSelectKeyboardPlugin
 		})
 	}
 
-	/**
-	 * Подсветка для скринридера плюс прокрутка к опции.
-	 *
-	 * Прокрутка — в следующем кадре: опцию, которую окно дорисовывает к
-	 * подсветке, и панель, открытую той же клавишей, адаптер рисует уже после
-	 * обработчика, и узла опции или его места на экране сейчас ещё нет.
-	 */
-	protected override onHighlightChanged(uid: string | number | null): void {
+	/** Видимая подсветка сменилась — ссылка поля за ней. */
+	protected override onHighlightChanged(_uid: string | number | null): void {
 		this._refer()
-
-		if (uid == null) this._cancelScroll()
-		else this._scheduleScroll(uid)
 	}
 
 	/**
 	 * Подсвеченная опция вошла в документ: окно дорисовало её уже после
-	 * подсветки. Теперь у неё есть `id` этого монтирования — на него ссылка, —
-	 * и узел, к которому прокрутить: до этого прокручивать было не к чему.
+	 * подсветки. Теперь у неё есть `id` этого монтирования — на него ссылка.
 	 */
-	protected override onHighlightedMounted(uid: string | number): void {
+	protected override onHighlightedMounted(_uid: string | number): void {
 		this._refer()
-		this._scheduleScroll(uid)
 	}
 
 	/**
@@ -189,49 +167,6 @@ export class TSelectKeyboardPlugin
 	 */
 	private _refer(): void {
 		this._owner?.field.aria.add('aria-activedescendant', this.highlightedId())
-	}
-
-	/** Прокрутить к опции в следующем кадре; прежняя отложенная прокрутка отменяется. */
-	private _scheduleScroll(uid: string | number): void {
-		this._cancelScroll()
-
-		this._scrollFrame = requestAnimationFrame(() => {
-			this._scrollFrame = null
-			this._scrollTo(uid)
-		})
-	}
-
-	private _cancelScroll(): void {
-		if (this._scrollFrame === null) return
-
-		cancelAnimationFrame(this._scrollFrame)
-		this._scrollFrame = null
-	}
-
-	/**
-	 * Прокрутка к подсвеченной опции с оглядкой на `scrollBehavior`.
-	 *
-	 * Свойство читается у инстанса (`IList`) — так же, как его читает
-	 * `TListScrollPlugin` у ListBox. Сам плагин прокрутки Select не подключает:
-	 * тот ходит за выбором, а здесь прокрутка идёт за подсветкой, и это разные
-	 * события. Общим остаётся свойство, а не реализация.
-	 *
-	 * `scrollIntoView` есть не везде: его нет в jsdom и он бессмыслен для узла
-	 * вне документа. Прокрутка — удобство, а не часть контракта.
-	 *
-	 * Плавная прокрутка — движение: `smooth` плавный, только пока режим
-	 * движения библиотеки его не убрал (`smoothScrollBehavior`).
-	 */
-	private _scrollTo(uid: string | number): void {
-		const behavior = this._list?.scrollBehavior
-		const option = this._optionElement(uid)
-
-		if (!option || behavior === undefined || behavior === 'none') return
-
-		option.scrollIntoView?.({
-			block: 'nearest',
-			behavior: behavior === 'instant' ? 'instant' : smoothScrollBehavior(option),
-		})
 	}
 
 	protected override onKeyDown(e: KeyboardEvent): void {
@@ -332,9 +267,5 @@ export class TSelectKeyboardPlugin
 		} else {
 			this.clearHighlight()
 		}
-	}
-
-	private _optionElement(uid: string | number): Element | null {
-		return this._elements?.getElementByUid(uid) ?? null
 	}
 }

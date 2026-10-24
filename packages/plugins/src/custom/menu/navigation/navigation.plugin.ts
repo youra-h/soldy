@@ -24,6 +24,14 @@ import type { TMenuNavigationPluginEvents } from './types'
  * Закрытие подсветку снимает, фокус не трогая: куда его вернуть, решает модель
  * фокуса уровня.
  *
+ * **Фокус ставится без прокрутки** (`preventScroll`), откуда бы ни пришла
+ * подсветка — от клавиш или от указателя. К подсвеченному пункту список
+ * докручивает `TListScrollPlugin` по событию подсветки, тем же правилом, что у
+ * ListBox и Select: ближайшим краем. Браузер, который докручивал к фокусу сам,
+ * делал это только за клавишами и по-своему, а открытие меню стрелкой вверх
+ * (фокус ставит модель фокуса, тоже без прокрутки) оставляло последний пункт
+ * за краем.
+ *
  * Панель слушается, пока меню открыто, — её находит `TDismissPlugin` по
  * пометке владельцем: панель телепортирована, и до корня её клавиши не
  * всплывают. ↑/↓ — по кругу, Home и End — к крайним, буква — набор по первым
@@ -60,8 +68,6 @@ export abstract class TMenuNavigationPlugin<
 	/** Панель со слушателем клавиш — пока меню открыто. */
 	private _panel: IDomEventTarget | null = null
 	private readonly _typeahead = new TTypeahead()
-	/** Как ставить фокус на смене подсветки: указатель — без прокрутки. */
-	private _focusOptions: FocusOptions | undefined = undefined
 
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
@@ -107,33 +113,19 @@ export abstract class TMenuNavigationPlugin<
 	/**
 	 * Подсветить пункт — фокус его строке. Недоступный не подсвечивается.
 	 *
-	 * @param options — как ставить фокус: указатель зовёт без прокрутки, пункт
-	 *   под ним и так виден
 	 * @returns подсвечен ли пункт
 	 */
-	highlightItem(uid: string | number, options?: FocusOptions): boolean {
+	highlightItem(uid: string | number): boolean {
 		if (!this.itemByUid(uid)) return false
 
-		this._focusOptions = options
-
-		try {
-			this.highlight(uid)
-		} finally {
-			this._focusOptions = undefined
-		}
+		this.highlight(uid)
 
 		return true
 	}
 
 	/** Снять подсветку: у открытого меню фокус уходит панели. */
-	unhighlight(options?: FocusOptions): void {
-		this._focusOptions = options
-
-		try {
-			this.clearHighlight()
-		} finally {
-			this._focusOptions = undefined
-		}
+	unhighlight(): void {
+		this.clearHighlight()
 	}
 
 	/**
@@ -168,13 +160,14 @@ export abstract class TMenuNavigationPlugin<
 
 	/**
 	 * Подсветка — фокус: подсвеченному пункту — его строке, без подсветки у
-	 * открытого меню — панели. Строки нет в документе (панель ещё скрыта, её
+	 * открытого меню — панели. Без прокрутки: к пункту докручивает
+	 * `TListScrollPlugin`. Строки нет в документе (панель ещё скрыта, её
 	 * откроет следующий кадр) — фокус ставит модель фокуса при открытии.
 	 */
 	protected override onHighlightChanged(uid: string | number | null): void {
 		const target = uid === null ? this._openPanel() : rowOf(this._elements, uid)
 
-		if (isFocusableElement(target)) target.focus(this._focusOptions)
+		if (isFocusableElement(target)) target.focus({ preventScroll: true })
 	}
 
 	/** Панель открытого меню; закрытое фокус не получает. */

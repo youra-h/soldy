@@ -502,8 +502,14 @@ describe('подсветка следует за выбором', () => {
 	})
 })
 
+/**
+ * `change:highlight` — о видимой подсветке: по нему список докручивает к
+ * подсвеченному (`TListScrollPlugin`). Позиция без отметки — за выбором и на
+ * строке, с которой пришла клавиша, — его не шлёт: на экране подсветки нет, и
+ * прокручивать не к чему. Отметка, вставшая на месте такой позиции, — шлёт.
+ */
 describe('событие change:highlight', () => {
-	it('несёт соседей — по ним плагин прокрутки решает, куда скроллить', async () => {
+	it('несёт подсвеченный и его соседей', async () => {
 		const { keyboard, press, items } = await setup(['Один', 'Два', 'Три'])
 		const seen: unknown[] = []
 
@@ -518,6 +524,33 @@ describe('событие change:highlight', () => {
 			prevItem: items[0],
 			nextItem: items[2],
 		})
+	})
+
+	it('позиция за выбором и со строки — без события', async () => {
+		const { keyboard, facade, rows } = await setup(['Один', 'Два', 'Три'])
+		const { batch, selection } = facade.engine.extensions
+		const seen: unknown[] = []
+
+		keyboard.events.on('change:highlight', (payload) => seen.push(payload))
+
+		selection.select(batch.items[1])
+		pressOnRow(rows[2], 'Tab')
+
+		expect(keyboard.highlightedUid).toBe(batch.items[2].uid)
+		expect(seen).toEqual([])
+	})
+
+	it('отметка на месте позиции без неё — событие с элементом', async () => {
+		const { keyboard, facade, items, press } = await setup(['Один', 'Два'])
+		const { batch, selection } = facade.engine.extensions
+		const seen: unknown[] = []
+
+		items[0].disabled = true
+		selection.select(batch.items[1])
+		keyboard.events.on('change:highlight', (payload) => seen.push(payload))
+		press('ArrowDown')
+
+		expect(seen).toEqual([{ item: items[1], prevItem: null, nextItem: null }])
 	})
 })
 
@@ -819,6 +852,64 @@ describe('ссылка на элемент под стрелками', () => {
 		pressOnRow(listBox.rows[0], 'ArrowDown')
 
 		expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+	})
+
+	/**
+	 * Доступный элемент один — он один в списке или остальные выключены, — и
+	 * позиция уже стоит на нём без отметки: за выбором или на строке, с которой
+	 * пришла клавиша. Шаг по кругу приводит к нему же, и стрелка ставит отметку
+	 * на месте. Раньше навигация считала, что подсвечивать нечего — позиция та
+	 * же, — и стрелка не показывала ничего, а скринридер элемент не называл.
+	 */
+	describe('доступный элемент один — стрелка отмечает его', () => {
+		it.each(ARROWS)('один выбранный — %s ставит отметку и ссылку', async (_name, key) => {
+			const listBox = await setup(['Один'])
+			const { facade, keyboard, press } = listBox
+			const { batch, selection } = facade.engine.extensions
+
+			selection.select(batch.items[0])
+
+			// Позиция — на выбранном, без отметки
+			expect(keyboard.highlightedUid).toBe(batch.items[0].uid)
+			expect(marks(listBox)).toEqual([false])
+			expect(activeDescendant(listBox)).toBeNull()
+
+			press(key)
+
+			expect(marks(listBox)).toEqual([true])
+			expect(activeDescendant(listBox)).toBe(idOf(listBox, 0))
+		})
+
+		it.each(ARROWS)('выключенный и выбранный — %s отмечает выбранный', async (_name, key) => {
+			const listBox = await setup(['Один', 'Два'])
+			const { facade, items, press } = listBox
+			const { batch, selection } = facade.engine.extensions
+
+			items[0].disabled = true
+			selection.select(batch.items[1])
+			press(key)
+
+			expect(marks(listBox)).toEqual([false, true])
+			expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+		})
+
+		it.each(ARROWS)('клик по его строке, затем %s — отметка на нём', async (_name, key) => {
+			const listBox = await setup(['Один', 'Два', 'Три'])
+			const { facade, items, list, rows } = listBox
+			const { batch } = facade.engine.extensions
+
+			items[0].disabled = true
+			items[2].disabled = true
+
+			// Клик выбирает через расширение списка, фокус остаётся на строке
+			facade.engine.extensions.list.chooseItem(batch.items[1])
+			pressOnRow(rows[1], key)
+
+			expect(facade.selected).toEqual([items[1]])
+			expect(marks(listBox)).toEqual([false, true, false])
+			expect(activeDescendant(listBox)).toBe(idOf(listBox, 1))
+			expect(document.activeElement).toBe(list)
+		})
 	})
 
 	/**
