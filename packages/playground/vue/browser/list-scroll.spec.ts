@@ -123,7 +123,7 @@ describe('значение — двигается только сам списо
 		]
 		const step = second.getBoundingClientRect().top - first.getBoundingClientRect().top
 
-		// Пол-строки вниз: строка у нижнего края срезана
+		// Список прокручен на три с половиной строки: строка у нижнего края срезана
 		list.scrollTop = step * 3.5
 		await frames()
 
