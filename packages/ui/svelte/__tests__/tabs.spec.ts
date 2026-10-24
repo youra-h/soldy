@@ -361,8 +361,8 @@ describe('связка ARIA в разметке', () => {
 	/**
 	 * Свой `id` таба — его вход: он встаёт на таб вместо `id` от монтирования,
 	 * и панель ссылается на него. Атрибутом снаружи он не идёт — его съедает
-	 * связка, — поэтому узел с ним один, таб. `id` панели своего входа не имеет
-	 * и остаётся формулой.
+	 * связка, — поэтому узел с ним один, таб. Своего `id` у панели здесь нет, и
+	 * её `id` — формула таба.
 	 */
 	it('свой id таба — на табе, панель ссылается на него и идёт за его сменой', () => {
 		const items = (id: string): TabsItemProps[] => [
@@ -386,6 +386,43 @@ describe('связка ARIA в разметке', () => {
 
 		expect(tab('First').id).toBe('general')
 		expect(panel().getAttribute('aria-labelledby')).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
+	})
+
+	/**
+	 * Свой `id` панели — её вход (`TIdPlugin`): он встаёт на панель вместо
+	 * формулы таба, и `aria-controls` таба ведёт на него — со входа панели.
+	 * Атрибутом снаружи он не идёт, поэтому узел с ним один — панель. Смена
+	 * ведёт за собой и панель, и ссылку, снятый `id` возвращает обе к формуле
+	 * таба.
+	 */
+	it('свой id панели — на панели, таб ссылается на него и идёт за его сменой', () => {
+		const panels = (id?: string) => [{ value: 'a', text: 'Панель A', id }]
+		const props = reactiveProps<THarnessProps>({
+			items: [
+				{ value: 'a', text: 'First', active: true },
+				{ value: 'b', text: 'Second' },
+			],
+			panels: panels('general'),
+		})
+
+		mount(Harness, props)
+
+		expect(panel().id).toBe('general')
+		expect(tab('First').getAttribute('aria-controls')).toBe('general')
+		expect(panel().getAttribute('aria-labelledby')).toBe(tab('First').id)
+		expect(document.querySelectorAll('[id="general"]')).toHaveLength(1)
+
+		props.panels = panels('common')
+		flushSync()
+
+		expect(panel().id).toBe('common')
+		expect(tab('First').getAttribute('aria-controls')).toBe('common')
+
+		props.panels = panels(undefined)
+		flushSync()
+
+		expect(panel().id).not.toBe('common')
 		expect(tab('First').getAttribute('aria-controls')).toBe(panel().id)
 	})
 })

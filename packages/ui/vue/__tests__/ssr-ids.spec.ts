@@ -23,7 +23,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import {
 	Accordion,
 	Calendar,
@@ -127,6 +127,37 @@ describe('id при гидратации', () => {
 		expect(attrs(client, '[role="tab"]', 'id')).toEqual(attrs(server, '[role="tab"]', 'id'))
 		expect(controls).toEqual(attrs(server, '[role="tab"]', 'aria-controls'))
 		expect(attrs(client, '.so-tabs__panel', 'id')).toEqual([controls[0]])
+	})
+
+	/**
+	 * Свой `id` панели — на ней и у сервера: узел его с первой отрисовки. Таб
+	 * нарисован раньше, чем собралась панель, и в разметке сервера ведёт на
+	 * формулу; гидратация с ней сходится, а ссылку на `id` панели таб получает
+	 * следом — кадром Vue после неё.
+	 */
+	it('табы со своим id панели: гидратация сходится, ссылка таба после неё — на id панели', async () => {
+		const { server, client, warnings } = await hydrate(() =>
+			h(Tabs, null, {
+				default: () => [
+					h(TabsItem, { value: 'a', text: 'A', active: true }),
+					h(TabsItem, { value: 'b', text: 'B' }),
+				],
+				content: () => [
+					h(TabsContent, { value: 'a', id: 'general' }, () => 'Панель A'),
+					h(TabsContent, { value: 'b' }, () => 'Панель B'),
+				],
+			}),
+		)
+
+		expect(warnings).toEqual([])
+		expect(attrs(server, '.so-tabs__panel', 'id')).toEqual(['general'])
+		expect(attrs(client, '.so-tabs__panel', 'id')).toEqual(['general'])
+
+		await nextTick()
+
+		expect(warnings).toEqual([])
+		expect(attrs(client, '[role="tab"]', 'aria-controls')[0]).toBe('general')
+		expect(client.querySelectorAll('[id="general"]')).toHaveLength(1)
 	})
 
 	const items = [

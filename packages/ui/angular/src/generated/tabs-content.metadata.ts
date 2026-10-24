@@ -23,6 +23,7 @@ export const TabsContentInputNames = [
 	'visible',
 	'direction',
 	'value',
+	'id',
 ] as const
 export const TabsContentOutputNames = [
 	'soBundleCreate',
@@ -48,6 +49,7 @@ export const TabsContentOutputNames = [
 	'soChangeDataset',
 	'soChangeAttrs',
 	'soChangeValue',
+	'soChangeId',
 	'soChangeActive',
 ] as const
 
@@ -59,6 +61,7 @@ export const TabsContentOutputNames = [
 		{ name: 'visible', transform: booleanInput },
 		'direction',
 		'value',
+		'id',
 	],
 	outputs: [...TabsContentOutputNames],
 })
@@ -83,6 +86,7 @@ export abstract class TTabsContentSurface<TInstance extends IEntity> extends TCo
 	declare visible: TInputValue<typeof descriptor, 'visible'>
 	declare direction: TInputValue<typeof descriptor, 'direction'>
 	declare value: TInputValue<typeof descriptor, 'value'>
+	declare id: TInputValue<typeof descriptor, 'id'>
 	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
 		return this.createOutput('soBundleCreate')
 	}
@@ -151,6 +155,9 @@ export abstract class TTabsContentSurface<TInstance extends IEntity> extends TCo
 	}
 	get soChangeValue(): TOutputEmitter<typeof descriptor, 'change:value'> {
 		return this.createOutput('soChangeValue')
+	}
+	get soChangeId(): TOutputEmitter<typeof descriptor, 'change:id'> {
+		return this.createOutput('soChangeId')
 	}
 	get soChangeActive(): TOutputEmitter<typeof facade, 'change:active'> {
 		return this.createOutput('soChangeActive')

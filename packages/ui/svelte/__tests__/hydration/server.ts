@@ -35,6 +35,7 @@ import FrameContained from './FrameContained.test.svelte'
 import PopoverContained from './PopoverContained.test.svelte'
 import TabsActiveFirst from './TabsActiveFirst.test.svelte'
 import TabsActiveSecond from './TabsActiveSecond.test.svelte'
+import TabsContentOwnId from './TabsContentOwnId.test.svelte'
 import TagsSelectedSecond from './TagsSelectedSecond.test.svelte'
 import { TODAY } from './today'
 
@@ -64,6 +65,7 @@ export function renderServerMarkup() {
 		'field-text': render(FieldText).body,
 		'tabs-active-second': render(TabsActiveSecond).body,
 		'tabs-active-first': render(TabsActiveFirst).body,
+		'tabs-content-own-id': render(TabsContentOwnId).body,
 		'tags-selected-second': render(TagsSelectedSecond).body,
 	}
 }

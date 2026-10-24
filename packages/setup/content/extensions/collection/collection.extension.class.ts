@@ -4,8 +4,13 @@
  * Режим фасада: context.instance владеет `engine` (Tabs/Accordion/...).
  *
  * Выполняется: привязка коллекции к реестру bundles,
- * передача коллекции детям через ITEM_CONTEXT_ELEVATOR и регистрация item-ов
- * через COLLECTION_ENGINE_ELEVATOR.
+ * передача коллекции детям через ITEM_CONTEXT_ELEVATOR, а реестра bundles —
+ * через COLLECTION_BUNDLES_ELEVATOR, и регистрация item-ов через
+ * COLLECTION_ENGINE_ELEVATOR.
+ *
+ * Реестр — детям, которые в коллекцию не входят, а с её элементами связаны:
+ * панель `Tabs.Content` отдаёт свой `id` плагину связок своего таба, а набор
+ * таба — нынешнего его монтирования — находит в реестре.
  */
 
 import { batchOf, plainOf } from '@soldy-ui/core'
@@ -18,6 +23,7 @@ import {
 	COLLECTION_ENGINE_ELEVATOR,
 	ITEM_CONTEXT_ELEVATOR,
 } from '../../../protected/adapter/elevator/keys'
+import { COLLECTION_BUNDLES_ELEVATOR } from './keys'
 import type { ICollectionExtensionOptions, TCollectionOwner } from './types'
 
 export class TCollectionExtension {
@@ -59,6 +65,10 @@ export class TCollectionExtension {
 		if (bundles) {
 			bundles.bindEngine(engine)
 		}
+
+		// Реестр — рядом с движком, от того же владельца. Нет реестра — пустое
+		// значение: иначе детям этого движка достался бы реестр коллекции выше
+		elevator(COLLECTION_BUNDLES_ELEVATOR).down(bundles ?? null)
 
 		// Расширения реестра (`useExtensions`) — в движок владельца. Владелец —
 		// хозяин набора плагинов: фасад делит набор с компонентом, а сам

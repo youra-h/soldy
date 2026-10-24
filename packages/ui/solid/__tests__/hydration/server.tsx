@@ -45,6 +45,7 @@ import {
 	TabsActiveFirst,
 	TabsActiveSecond,
 	TabsActiveStreamed,
+	TabsContentOwnId,
 	TabsContentStreamed,
 	TabsStreamed,
 	TagsSelectedSecond,
@@ -85,6 +86,7 @@ export async function renderServerMarkup() {
 		// Страница целиком (`renderToString`)
 		'tabs-active-second': renderToString(() => <TabsActiveSecond />),
 		'tabs-active-first': renderToString(() => <TabsActiveFirst />),
+		'tabs-content-own-id': renderToString(() => <TabsContentOwnId />),
 		'tags-selected-second': renderToString(() => <TagsSelectedSecond />),
 		'root-probe': renderToString(() => <RootProbe />),
 		'part-probe': renderToString(() => <PartProbe />),

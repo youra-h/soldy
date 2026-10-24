@@ -22,6 +22,7 @@ import { flushSync } from 'svelte'
 import { createEngineTabs, createEngineTags } from '@soldy-ui/core'
 import TabsActiveFirst from './TabsActiveFirst.test.svelte'
 import TabsActiveSecond from './TabsActiveSecond.test.svelte'
+import TabsContentOwnId from './TabsContentOwnId.test.svelte'
 import TagsSelectedSecond from './TagsSelectedSecond.test.svelte'
 import { expectServedNodes, hydrateServed, markupOf, serve } from './serve'
 
@@ -86,6 +87,31 @@ describe('Tabs · гидратация', () => {
 		expect(engine.extensions.tabs.tabStop?.value).toBe('a')
 		expect(attributeOf(rows, 'tabindex')).toEqual(['0', '-1'])
 		expect(attributeOf(rows, 'aria-selected')).toEqual(['true', 'false'])
+	})
+
+	/**
+	 * Свой `id` панели — на ней и у сервера, а таб, отданный раньше панели,
+	 * ведёт на формулу. Браузер собирает в том же порядке: вход панели отдаёт
+	 * табу свой `id`, и на ближайшем такте после `hydrate()` Svelte
+	 * перерисовывает набор таба на узле сервера, как лишнюю остановку Tab.
+	 */
+	it('табы со своим id панели: у сервера таб ведёт на формулу, после гидратации — на id панели', () => {
+		const engine = createEngineTabs()
+		const container = serve(markupOf('tabs-content-own-id'))
+		const served = rowsOf(container, 'tab')
+		const panel = () => rowsOf(container, 'tabpanel')
+
+		expect(attributeOf(panel(), 'id')).toEqual(['general'])
+		expect(attributeOf(served, 'aria-controls')[0]).not.toBe('general')
+
+		hydrateServed(container, TabsContentOwnId, { engine })
+
+		const rows = rowsOf(container, 'tab')
+
+		expectServedNodes(rows, served)
+		expect(attributeOf(panel(), 'id')).toEqual(['general'])
+		expect(attributeOf(rows, 'aria-controls')[0]).toBe('general')
+		expect(container.querySelectorAll('[id="general"]')).toHaveLength(1)
 	})
 })
 

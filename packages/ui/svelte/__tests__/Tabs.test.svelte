@@ -1,17 +1,19 @@
 <script lang="ts">
 	/**
 	 * Тестовая обёртка: набор с табами и панелями разметки. Табы — по пропсам из
-	 * `items`, ключ — значение. Панели — `{ value, text }` по порядку, ключ —
-	 * место: смена `value` — смена пропа той же панели, как у потребителя,
-	 * который переносит панель к другому табу. Панели — в слоте `content`, а с
-	 * `panelsInList` — в содержимом, то есть внутри `[role=tablist]`.
+	 * `items`, ключ — значение. Панели — `{ value, text, id }` по порядку, ключ —
+	 * место: смена `value` или `id` — смена пропа той же панели, как у
+	 * потребителя, который переносит панель к другому табу. Панели — в слоте
+	 * `content`, а с `panelsInList` — в содержимом, то есть внутри
+	 * `[role=tablist]`.
 	 *
 	 * Без табов разметки содержимого у набора нет, и он рисует табы из своих
 	 * данных (`tabs.items`).
 	 */
 	import { Tabs, type TabsItemProps, type TabsProps } from '@soldy-ui/svelte'
 
-	type TPanel = { value: string; text: string }
+	/** Панель разметки: `id` — свой `id` панели, вход её `TIdPlugin`. */
+	type TPanel = { value: string; text: string; id?: string }
 
 	type THarnessProps = {
 		/** Пропсы набора. */
@@ -29,7 +31,7 @@
 
 {#snippet contents()}
 	{#each panels as panel, index (index)}
-		<Tabs.Content value={panel.value}>{panel.text}</Tabs.Content>
+		<Tabs.Content value={panel.value} id={panel.id}>{panel.text}</Tabs.Content>
 	{/each}
 {/snippet}
 

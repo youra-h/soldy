@@ -689,8 +689,9 @@ describe('общий name радио', () => {
  * `id`, заданный приложением, держит `TIdPlugin` набора — проп `id`, — и он
  * главнее `id` от монтирования, как у поля: плагин связок пишет его в набор
  * строки и в ссылки на неё, на смену переписывает обе стороны, а снятый
- * возвращает формулу. `id` второй стороны — панели — приложение не задаёт, он
- * остаётся формулой.
+ * возвращает формулу. `id` второй стороны — панели — у секции и пунктов меню
+ * приложение не задаёт, он остаётся формулой; у панели таба — задаёт, и ссылку
+ * таба на неё ведёт тот же плагин таба.
  */
 describe('id приложения у элемента', () => {
 	/** Набор с `TIdPlugin` и плагином связок — как у дескриптора: `TIdPlugin` раньше. */
@@ -727,7 +728,7 @@ describe('id приложения у элемента', () => {
 		},
 	)
 
-	it('Tabs.Item: id — у таба, а id панели по-прежнему от монтирования', () => {
+	it('Tabs.Item: id — у таба, а id панели без её TIdPlugin — от монтирования', () => {
 		const tab = new TTabsItem({ value: 'a' })
 		const idPlugin = mount(tab, TTabsItemIdsPlugin)
 
@@ -740,6 +741,101 @@ describe('id приложения у элемента', () => {
 
 		expect(tab.aria.get('id')).toBe('m1-tab')
 		expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+	})
+
+	/**
+	 * `id` второй стороны связки таба — панели — задаёт приложение её
+	 * `TIdPlugin`, а `aria-controls` пишет только плагин таба: связка панели
+	 * отдаёт ему `TIdPlugin` панели (`bindPanel`), и ссылка ведёт на её `id` и
+	 * идёт за его сменой. Отвязали (`unbindPanel`) — снова формула от
+	 * монтирования таба.
+	 */
+	describe('Tabs.Item: id приложения у панели', () => {
+		/** Плагин связок таба `a` и `TIdPlugin` панели — у каждого свой набор. */
+		function mountPair() {
+			const tab = new TTabsItem({ value: 'a' })
+			const bundle = new TPluginBundle(tab, 'm1').use(TIdPlugin).use(TTabsItemIdsPlugin)
+			const ids = bundle.get(TTabsItemIdsPlugin)
+			const panel = new TPluginBundle({}, 'm2').use(TIdPlugin).get(TIdPlugin)
+
+			if (!ids || !panel) throw new Error('плагины не встали')
+
+			return { tab, bundle, ids, panel }
+		}
+
+		it('aria-controls — на id панели, пока она привязана, и за его сменой', () => {
+			const { tab, ids, panel } = mountPair()
+
+			panel.id = 'general'
+			ids.bindPanel(panel)
+
+			expect(tab.aria.get('aria-controls')).toBe('general')
+
+			panel.id = 'common'
+
+			expect(tab.aria.get('aria-controls')).toBe('common')
+
+			// Сняли `id` у панели — ссылка на формулу, задали снова — на него
+			panel.id = undefined
+
+			expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+
+			panel.id = 'general'
+
+			expect(tab.aria.get('aria-controls')).toBe('general')
+
+			ids.unbindPanel(panel)
+
+			expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+
+			panel.id = 'other'
+
+			expect(tab.aria.get('aria-controls')).toBe('m1-panel')
+		})
+
+		it('id таба от id панели не зависит', () => {
+			const { tab, ids, panel } = mountPair()
+
+			panel.id = 'general'
+			ids.bindPanel(panel)
+
+			expect(tab.aria.get('id')).toBe('m1-tab')
+		})
+
+		/**
+		 * Новое монтирование панели бывает принято раньше, чем снято прежнее:
+		 * отвязка прежней не снимает ссылку на новую.
+		 */
+		it('привязанная следом панель заменяет прежнюю, отвязка прежней её не трогает', () => {
+			const { tab, ids, panel } = mountPair()
+			const next = new TPluginBundle({}, 'm3').use(TIdPlugin).get(TIdPlugin)
+
+			if (!next) throw new Error('TIdPlugin не встал')
+
+			panel.id = 'old'
+			next.id = 'new'
+			ids.bindPanel(panel)
+			ids.bindPanel(next)
+
+			expect(tab.aria.get('aria-controls')).toBe('new')
+
+			ids.unbindPanel(panel)
+			panel.id = 'older'
+
+			expect(tab.aria.get('aria-controls')).toBe('new')
+		})
+
+		it('после destroy за панелью не следит и набор таба не пишет', () => {
+			const { tab, bundle, ids, panel } = mountPair()
+
+			panel.id = 'general'
+			ids.bindPanel(panel)
+			bundle.destroy()
+			panel.id = 'common'
+			ids.unbindPanel(panel)
+
+			expect(tab.aria.get('aria-controls')).toBe('general')
+		})
 	})
 
 	it('Accordion.Item: id — у заголовка и в ссылке панели на него', () => {

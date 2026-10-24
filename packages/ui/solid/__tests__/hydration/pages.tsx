@@ -76,6 +76,26 @@ export function TabsActiveFirst(props: TTabsPageProps): JSX.Element {
 	)
 }
 
+/**
+ * Табы разметкой и панель со своим `id`: у сервера таб, отданный раньше
+ * панели, ведёт на формулу, а ссылку на `id` панели получает с гидратацией.
+ */
+export function TabsContentOwnId(props: TTabsPageProps): JSX.Element {
+	return (
+		<Tabs
+			engine={props.engine}
+			content={
+				<Tabs.Content value="a" id="general">
+					Панель A
+				</Tabs.Content>
+			}
+		>
+			<Tabs.Item value="a" text="A" active />
+			<Tabs.Item value="b" text="B" />
+		</Tabs>
+	)
+}
+
 /** Теги разметкой с выбором, выбран второй: у сервера остановок Tab две, как у табов. */
 export function TagsSelectedSecond(props: TTagsPageProps): JSX.Element {
 	return (

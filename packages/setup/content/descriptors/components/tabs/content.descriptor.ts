@@ -9,7 +9,7 @@
 import { defineComponent, defineDescriptor } from '../../../../protected/define'
 import { TTabsContent, TTabsContentCollectionFacade } from '@soldy-ui/core'
 import { ComponentViewDescriptor } from '../component-view.descriptor'
-import { TabsContentWarnPluginDescriptor } from '../../plugins'
+import { IdPluginDescriptor, TabsContentWarnPluginDescriptor } from '../../plugins'
 
 export const TabsContentDescriptor = defineDescriptor(() =>
 	defineComponent({
@@ -27,7 +27,13 @@ export const TabsContentDescriptor = defineDescriptor(() =>
 			},
 		},
 
-		plugins: [TabsContentWarnPluginDescriptor],
+		plugins: [
+			// `id` панели — проп `id`: на панель ведёт `aria-controls` её таба, и
+			// `id` приложения главнее формулы таба. На панель и в ссылку таба его
+			// кладёт связка панели (`TTabsContentBindingExtension`)
+			IdPluginDescriptor,
+			TabsContentWarnPluginDescriptor,
+		],
 	}),
 )
 
@@ -41,9 +47,10 @@ export const TabsCollectionContentDescriptor = defineDescriptor(() =>
 		 * Отделены от собственных ровно как у элемента (`TabsCollectionItemDescriptor`):
 		 * активность — свойство членства в коллекции, а не панели.
 		 *
-		 * ARIA-связки здесь нет: `role`, `id`, `aria-labelledby` и `tabindex` пишет
-		 * прямо в `aria` панели `TTabsContentBindingExtension` — то единственное
-		 * место, где известно, что панель и таб нашли друг друга.
+		 * ARIA-связки здесь нет: `id` и `aria-labelledby` пишет прямо в `aria`
+		 * панели `TTabsContentBindingExtension` — то единственное место, где
+		 * известно, что панель и таб нашли друг друга. `role` и `tabindex` панель
+		 * пишет себе сама.
 		 */
 		contribution: {
 			props: {
