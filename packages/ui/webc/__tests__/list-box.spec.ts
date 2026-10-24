@@ -360,15 +360,21 @@ describe('выбор', () => {
 		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['false'])
 	})
 
-	/** Клавиша со строки, на которой фокус остался после клика, — тоже списка. */
-	it('стрелка со строки под фокусом ведёт подсветку', async () => {
-		await mount(HARNESS)
+	/**
+	 * Клавиша со строки, на которой фокус остался после клика, — тоже списка, с
+	 * места этой строки: стрелка ведёт подсветку от неё, а фокус возвращается
+	 * узлу списка. Строку плагин узнаёт по разметке шаблона элемента.
+	 */
+	it('стрелка со строки под фокусом ведёт подсветку от строки, фокус — узлу списка', async () => {
+		const list = listIn(await mount(HARNESS))
+
 		await nextFrame()
 
 		rowOf('A').focus()
 		await press(rowOf('A'), 'ArrowDown')
 
-		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['true', 'false'])
+		expect(rows().map((row) => row.getAttribute('data-highlighted'))).toEqual(['false', 'true'])
+		expect(document.activeElement).toBe(nodeOf(list))
 	})
 })
 

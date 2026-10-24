@@ -382,25 +382,34 @@ describe('клавиатура', () => {
 	 * Список — одна остановка Tab, по элементам ходят стрелки его клавиатуры.
 	 * Остановка — узел списка в корне, не сам корень: рядом с узлом в корне
 	 * стоят шапка и подвал. Строку элемента — кнопку на `div` — плагин списка
-	 * узнаёт по разметке шаблона элемента: стрелка и Enter с неё — клавиши
-	 * списка. Enter выбирает один раз: строка его не нажимает, иначе второе
-	 * переключение сняло бы выбор.
+	 * узнаёт по разметке шаблона элемента: клавиша с неё — клавиша списка с
+	 * места строки, и фокус она возвращает узлу списка. Enter со строки
+	 * выбирает её элемент один раз: строка его не нажимает, иначе второе
+	 * переключение сняло бы выбор. Стрелка со строки шагает от неё.
 	 */
-	it('ListBox: стрелка и Enter со строки элемента выбирают его один раз', async () => {
+	it('ListBox: Enter со строки выбирает её элемент один раз, стрелка шагает от строки', async () => {
 		const root = await show(`<div is="so-list-box">
 			<div is="so-list-box-item" value="msk" text="Москва"></div>
 			<div is="so-list-box-item" value="spb" text="Петербург"></div>
 		</div>`)
 		const rows = all(root, '.so-list-box-item .so-button')
+		const list = find(root, '.so-list-box > .so-list-box__list', HTMLDivElement)
 
-		expect(find(root, '.so-list-box > .so-list-box__list', HTMLDivElement).tabIndex).toBe(0)
+		expect(list.tabIndex).toBe(0)
 		expect(find(root, '.so-list-box', HTMLDivElement).tabIndex).toBe(-1)
+
+		rows[0]?.focus()
+		await userEvent.keyboard('{Enter}')
+		await nextFrame()
+
+		expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['true', 'false'])
+		expect(document.activeElement).toBe(list)
 
 		rows[0]?.focus()
 		await userEvent.keyboard('{ArrowDown}{Enter}')
 		await nextFrame()
 
-		expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['true', 'false'])
+		expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['false', 'true'])
 	})
 
 	/**

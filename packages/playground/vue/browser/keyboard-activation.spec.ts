@@ -15,8 +15,8 @@
  *
  * Так же клавиатура ListBox глушила поле и кнопку из шапки и подвала списка:
  * пробел не печатался, кнопка не нажималась, стрелки из поля двигали подсветку.
- * Теперь она берёт клавиши только с корня и со строки элемента, в jsdom это
- * сторожит `setup/__tests__/list-keyboard.spec.ts`.
+ * Теперь она берёт клавиши только с узла списка и со строки элемента, в jsdom
+ * это сторожит `setup/__tests__/list-keyboard.spec.ts`.
  *
  * Спек браузерный, потому что проверяет действия браузера по умолчанию: ввод
  * символа, переключение чекбокса, клик из Enter или пробела на `<button>`.
@@ -356,7 +356,8 @@ describe('строка тега: клавиша переключает выбо�
  * слоты потребителя. Их клавиши — не списка: поле печатает, кнопка нажимается,
  * стрелка из поля подсветку не двигает. Своя клавиша списка приходит с узла
  * списка — остановки Tab внутри корня — или со строки элемента, на которой
- * фокус остаётся после клика.
+ * фокус остаётся после клика. Клавиша со строки возвращает фокус узлу списка и
+ * идёт от места строки.
  */
 describe('ListBox: клавиша списка — только с узла списка и со строки элемента', () => {
 	const cities = () => [
@@ -426,14 +427,51 @@ describe('ListBox: клавиша списка — только с узла сп
 		},
 	)
 
-	it('стрелка и Enter со строки элемента выбирают его', async () => {
+	/**
+	 * Клик оставляет фокус на строке: у неё `tabindex="-1"`. Клавиша со строки
+	 * возвращает фокус узлу списка, и кольцо после неё — у узла, как после Tab.
+	 * Раньше фокус оставался на строке, после клавиши браузер включал ей
+	 * `:focus-visible`, и кольцо строки висело до ухода из списка, пока
+	 * подсветка ходила по другим элементам. Стрелка идёт от строки: Enter
+	 * выбирает соседа кликнутого. Строку плагин узнаёт по разметке `Item.vue`:
+	 * разойдись они — клавиши со строки пропали бы молча.
+	 */
+	it('клик по строке, стрелка и Enter: фокус и кольцо — у узла списка, выбор — от строки', async () => {
 		await show(() => h(ListBox, null, { default: cities }))
 
-		// Фокус на строке — как после клика. Строку плагин узнаёт по разметке
-		// `Item.vue`: разойдись они — клавиши со строки пропали бы молча
-		rowOf('Москва').focus()
-		await userEvent.keyboard('{ArrowDown}{Enter}')
+		await userEvent.click(rowOf('Москва'))
 
+		expect(document.activeElement).toBe(rowOf('Москва'))
 		await expect.poll(() => rowOf('Москва').getAttribute('aria-selected')).toBe('true')
+
+		await userEvent.keyboard('{ArrowDown}')
+
+		const list = find('.so-list-box > .so-list-box__list')
+
+		expect(document.activeElement).toBe(list)
+		expect(list.matches(':focus-visible')).toBe(true)
+		expect(rowOf('Москва').matches(':focus-visible')).toBe(false)
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(() => rowOf('Петербург').getAttribute('aria-selected')).toBe('true')
+		expect(rowOf('Москва').getAttribute('aria-selected')).toBe('false')
+	})
+
+	/**
+	 * Shift+Tab со строки идёт от узла списка и выводит из ListBox одним
+	 * нажатием. Раньше фокус уходил на сам узел: он предок строки, значит,
+	 * предыдущая остановка.
+	 */
+	it('клик по строке, Shift+Tab — фокус на поле шапки', async () => {
+		await show(() => h(ListBox, null, { header: () => h(Input), default: cities }))
+
+		await userEvent.click(rowOf('Петербург'))
+
+		expect(document.activeElement).toBe(rowOf('Петербург'))
+
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+
+		expect(document.activeElement).toBe(field('.so-list-box .so-input input'))
 	})
 })

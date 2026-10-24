@@ -13,8 +13,10 @@
  *
  * Корень — рамка: шапка, узел списка и подвал. Клавишу список берёт только с
  * узла списка — остановки Tab с ролью `listbox` — и со строки элемента, на
- * которой фокус остаётся после клика. До корня всплывают и клавиши полей и
- * кнопок из шапки, подвала и слотов элемента — их плагин не трогает.
+ * которой фокус остаётся после клика. Клавиша со строки — клавиша списка с
+ * места этой строки: позиция встаёт на её элемент, фокус возвращается узлу
+ * списка. До корня всплывают и клавиши полей и кнопок из шапки, подвала и
+ * слотов элемента — их плагин не трогает.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -42,6 +44,16 @@ const keydown = (target: Element, key: string) => {
 	target.dispatchEvent(event)
 
 	return event
+}
+
+/**
+ * Клавиша со строки, на которой фокус, — как после клика по ней: у строки
+ * `tabindex="-1"`, и клик оставляет фокус на ней.
+ */
+const pressOnRow = (row: HTMLElement, key: string) => {
+	row.focus()
+
+	return keydown(row, key)
 }
 
 /**
@@ -422,41 +434,42 @@ const ACTIVATION_KEYS = [
 	['пробел', ' '],
 ] as const
 
+/** Стрелка и то, куда она ведёт со строки второго из трёх элементов. */
+const ARROWS_FROM_SECOND = [
+	['стрелка вниз', 'ArrowDown', 2],
+	['стрелка вверх', 'ArrowUp', 0],
+] as const
+
+/** Отметки подсветки всех элементов по порядку — их пишет `TListItemPlugin`. */
+const marks = ({ items, itemPlugins }: TListBoxSetup) =>
+	items.map((item) => required(itemPlugins.get(item.uid), 'плагин элемента').highlighted)
+
 /**
  * Слушатель висит на корне, и до него всплывают клавиши всего, что лежит под
- * корнем. Список берёт клавишу с узла списка — там фокус после Tab — и со
- * строки элемента: у строки `tabindex="-1"`, и после клика фокус остаётся на
- * ней. Свою клавишу список отменяет: пробел иначе прокрутил бы страницу.
- *
- * Строка — не первого элемента: так видно, что плагин узнаёт строку любого
- * показанного элемента, а не одну.
+ * корнем. Список берёт клавишу с узла списка — там фокус после Tab. Свою
+ * клавишу список отменяет: пробел иначе прокрутил бы страницу.
  */
-describe.each([
-	['с узла списка', ({ list }: TListBoxSetup) => list],
-	['со строки элемента', ({ rows }: TListBoxSetup) => rows[1]],
-] as const)('клавиша %s — списка', (_from, targetOf) => {
+describe('клавиша с узла списка — списка', () => {
 	it('стрелки двигают подсветку и отменяются', async () => {
-		const listBox = await setup(['Один', 'Два', 'Три'])
-		const { keyboard, items } = listBox
+		const { keyboard, press, items } = await setup(['Один', 'Два', 'Три'])
 
-		const down = keydown(targetOf(listBox), 'ArrowDown')
+		const down = press('ArrowDown')
 
 		expect(keyboard.highlightedUid).toBe(items[0].uid)
 		expect(down.defaultPrevented).toBe(true)
 
-		const up = keydown(targetOf(listBox), 'ArrowUp')
+		const up = press('ArrowUp')
 
 		expect(keyboard.highlightedUid).toBe(items[2].uid)
 		expect(up.defaultPrevented).toBe(true)
 	})
 
 	it.each(ACTIVATION_KEYS)('%s выбирает подсвеченное и отменяется', async (_name, key) => {
-		const listBox = await setup(['Один', 'Два', 'Три'])
-		const { facade, items } = listBox
+		const { facade, press, items } = await setup(['Один', 'Два', 'Три'])
 
-		keydown(targetOf(listBox), 'ArrowDown')
+		press('ArrowDown')
 
-		const event = keydown(targetOf(listBox), key)
+		const event = press(key)
 
 		expect(facade.selected).toEqual([items[0]])
 		expect(event.defaultPrevented).toBe(true)
@@ -464,38 +477,141 @@ describe.each([
 })
 
 /**
+ * Клавиша со строки — клавиша списка с места этой строки. У строки
+ * `tabindex="-1"`, и после клика фокус остаётся на ней. Клавиша ставит позицию
+ * на элемент строки, возвращает фокус узлу списка и идёт дальше так же, как с
+ * узла. Раньше фокус оставался на строке, и после клавиши браузер включал ей
+ * `:focus-visible`: кольцо висело на строке до ухода из списка, пока подсветка
+ * ходила по другим элементам (браузерный прогон —
+ * `playground/vue/browser/keyboard-activation.spec.ts`). А стрелка шла от
+ * позиции списка — с края или, в `multiple`, от первого выбранного.
+ *
+ * Строка — не первого элемента: так видно, что плагин узнаёт строку любого
+ * показанного элемента и шагает от неё, а не от края.
+ */
+describe('клавиша со строки элемента — списка, с места строки', () => {
+	/**
+	 * Правило — для любой клавиши, не только для своих клавиш списка: Tab и
+	 * буква тоже возвращают фокус узлу.
+	 */
+	it.each([...ARROWS, ...ACTIVATION_KEYS, ['Tab', 'Tab'], ['буква', 'a']] as const)(
+		'%s возвращает фокус узлу списка',
+		async (_name, key) => {
+			const { list, rows } = await setup(['Один', 'Два', 'Три'])
+
+			pressOnRow(rows[1], key)
+
+			expect(document.activeElement).toBe(list)
+		},
+	)
+
+	it.each(ARROWS_FROM_SECOND)('%s шагает от строки и отменяется', async (_name, key, target) => {
+		const listBox = await setup(['Один', 'Два', 'Три'])
+		const { keyboard, items, rows } = listBox
+
+		const event = pressOnRow(rows[1], key)
+
+		expect(keyboard.highlightedUid).toBe(items[target].uid)
+		expect(event.defaultPrevented).toBe(true)
+		// Отметка — только у элемента под стрелкой: позиция на строке её не ставит
+		expect(marks(listBox)).toEqual(items.map((_item, index) => index === target))
+	})
+
+	it.each(ACTIVATION_KEYS)('%s переключает элемент строки и отменяется', async (_name, key) => {
+		const { facade, items, rows } = await setup(['Один', 'Два', 'Три'])
+
+		const event = pressOnRow(rows[1], key)
+
+		expect(facade.selected).toEqual([items[1]])
+		expect(event.defaultPrevented).toBe(true)
+
+		pressOnRow(rows[1], key)
+
+		expect(facade.selected).toEqual([])
+	})
+
+	it('следующая клавиша — уже с узла — идёт от новой подсветки', async () => {
+		const { keyboard, press, items, rows } = await setup(['Один', 'Два', 'Три', 'Четыре'])
+
+		pressOnRow(rows[1], 'ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[2].uid)
+
+		press('ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[3].uid)
+	})
+
+	/**
+	 * Позиция следует за выбором и в `multiple` стоит на первом выбранном, а
+	 * клик по строке оставляет фокус на этой строке: стрелка с неё шла от
+	 * первого выбранного.
+	 */
+	it('в multiple стрелка шагает от строки, а не от первого выбранного', async () => {
+		const { facade, keyboard, items, rows } = await setup(['Один', 'Два', 'Три', 'Четыре'])
+
+		facade.mode = 'multiple'
+		facade.engine.extensions.selection.select(items[0] as IListBoxItem)
+
+		// Без этого проверка ниже не отличила бы строку от позиции списка
+		expect(keyboard.highlightedUid).toBe(items[0].uid)
+
+		pressOnRow(rows[2], 'ArrowDown')
+
+		expect(keyboard.highlightedUid).toBe(items[3].uid)
+	})
+
+	/**
+	 * Tab список не отменяет: фокус переводит браузер, но уже от узла списка, —
+	 * и Tab выводит из ListBox одним нажатием, а Shift+Tab не останавливается
+	 * на самом узле, предке строки. Самого перехода jsdom не делает — его
+	 * проверяет браузерный прогон.
+	 */
+	it('Tab не отменяется: фокус до перехода — на узле списка', async () => {
+		const { list, rows } = await setup(['Один', 'Два'])
+
+		const event = pressOnRow(rows[1], 'Tab')
+
+		expect(document.activeElement).toBe(list)
+		expect(event.defaultPrevented).toBe(false)
+	})
+})
+
+/**
  * Строка выключенного элемента — тоже строка списка. Навигация элемент
  * пропускает, но фокус на его строке бывает: элемент могли выключить, пока
  * фокус на ней, а если тема не глушит мышь на выключенной строке, фокус на неё
- * ставит и клик. Если бы плагин искал строку только среди доступных, стрелки с
- * неё не работали бы.
+ * ставит и клик. Если бы плагин искал строку только среди доступных, клавиши с
+ * неё не работали бы. Клавиша идёт от места строки: стрелка — к соседнему
+ * доступному, а Enter и пробел ничего не выбирают — выключенному элементу
+ * отказывает список.
  */
 describe('клавиша со строки выключенного элемента — списка', () => {
-	it('стрелки двигают подсветку мимо него и отменяются', async () => {
-		const { keyboard, items, rows } = await setup(['Один', 'Два', 'Три'])
+	it.each(ARROWS_FROM_SECOND)(
+		'%s ведёт к соседнему доступному и отменяется',
+		async (_name, key, target) => {
+			const { keyboard, list, items, rows } = await setup(['Один', 'Два', 'Три'])
 
+			items[1].disabled = true
+
+			const event = pressOnRow(rows[1], key)
+
+			expect(keyboard.highlightedUid).toBe(items[target].uid)
+			expect(event.defaultPrevented).toBe(true)
+			expect(document.activeElement).toBe(list)
+		},
+	)
+
+	it.each(ACTIVATION_KEYS)('%s ничего не выбирает и отменяется', async (_name, key) => {
+		const { facade, press, items, rows } = await setup(['Один', 'Два', 'Три'])
+
+		// Подсветка — на доступном элементе: клавиша с узла выбрала бы его
+		press('ArrowDown')
 		items[1].disabled = true
 
-		const down = keydown(rows[1], 'ArrowDown')
+		const event = pressOnRow(rows[1], key)
 
-		expect(keyboard.highlightedUid).toBe(items[0].uid)
-		expect(down.defaultPrevented).toBe(true)
-
-		const next = keydown(rows[1], 'ArrowDown')
-
-		expect(keyboard.highlightedUid).toBe(items[2].uid)
-		expect(next.defaultPrevented).toBe(true)
-	})
-
-	it.each(ACTIVATION_KEYS)('%s выбирает подсвеченное и отменяется', async (_name, key) => {
-		const { facade, items, rows } = await setup(['Один', 'Два', 'Три'])
-
-		items[1].disabled = true
-		keydown(rows[1], 'ArrowDown')
-
-		const event = keydown(rows[1], key)
-
-		expect(facade.selected).toEqual([items[0]])
+		expect(facade.selected).toEqual([])
 		expect(event.defaultPrevented).toBe(true)
 	})
 })
@@ -537,7 +653,8 @@ const placeDivButton = (root: Element) => {
  *
  * Шапка и подвал — дети корня рядом с узлом списка, а не внутри него: в
  * `listbox` ARIA пускает только опции. Сам корень — только рамка: клавиша с
- * него тоже не списка.
+ * него тоже не списка. Фокус такая клавиша не трогает: узлу списка его
+ * возвращает только клавиша со строки, а из поля в шапке он увёл бы ввод.
  */
 describe.each([
 	['поля в шапке', ({ root }: TListBoxSetup) => place(root, 'input', 'first')],
@@ -547,7 +664,7 @@ describe.each([
 	['самого корня', ({ root }: TListBoxSetup) => root],
 ] as const)('клавиша %s — не списка', (_from, slotted) => {
 	it.each([...ARROWS, ...ACTIVATION_KEYS])(
-		'%s не отменяется, подсветка и выбор не меняются',
+		'%s не отменяется, подсветка, выбор и фокус не меняются',
 		async (_name, key) => {
 			const listBox = await setup(['Один', 'Два', 'Три'])
 			const { facade, keyboard, press, items } = listBox
@@ -556,11 +673,16 @@ describe.each([
 			// Подсветка — с узла списка: Enter и пробелу есть что выбрать
 			press('ArrowDown')
 
+			// Корень без `tabindex` фокуса не берёт — тогда он остаётся у `body`
+			target.focus()
+
+			const focused = document.activeElement
 			const event = keydown(target, key)
 
 			expect(event.defaultPrevented).toBe(false)
 			expect(keyboard.highlightedUid).toBe(items[0].uid)
 			expect(facade.selected).toEqual([])
+			expect(document.activeElement).toBe(focused)
 		},
 	)
 })
