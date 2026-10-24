@@ -102,7 +102,7 @@ afterEach(() => {
 describe.each(DIRECTION_CASES)('вертикальные табы по ближайшему dir: $name', (scenario) => {
 	const sides = sidesOf(scenario.line)
 
-	/** Сцена отрисована, и плагин темы записал геометрию активного таба. */
+	/** Сцена отрисована, и плагин раскладки записал геометрию активного таба. */
 	async function show(look: TLook): Promise<void> {
 		setDir(document.documentElement, scenario.page)
 		mount(look, scenario.direction, scenario.ancestor)

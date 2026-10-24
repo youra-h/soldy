@@ -7,8 +7,9 @@
  * Полосу рисует тема (`themes/oren/src/components/tabs/_tabs.scss`) —
  * псевдоэлементом `::after` списка по переменным `--so-tabs-active-*` и тем же
  * переездом, что карточку `contained` (`tabs-contained.spec.ts`). Пишет
- * переменные плагин темы `TTabsViewPlugin`
- * (`themes/oren/setup/plugins/tabs-view.plugin.ts`), он же ставит на список
+ * переменные плагин раскладки общего слоя тем `TTabsViewPlugin`
+ * (`themes/base/setup/plugins/tabs-view.plugin.ts`, ставит его
+ * `useTheme(oren)`), он же ставит на список
  * признак переезда `--so-tabs-active-moving` при смене активного таба и снимает
  * его, когда переход доиграл; без признака переход нулевой.
  *

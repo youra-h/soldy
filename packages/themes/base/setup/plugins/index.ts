@@ -1,0 +1,3 @@
+export { TTableHeadPlugin } from './table-head.plugin'
+export { TTabsViewPlugin } from './tabs-view.plugin'
+export { TToastsFrontPlugin } from './toasts-front.plugin'

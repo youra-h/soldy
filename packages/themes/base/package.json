@@ -1,7 +1,7 @@
 {
   "name": "@soldy-ui/theme-base",
   "version": "0.3.0-alpha.2",
-  "description": "Общий слой тем Soldy UI: сброс частей библиотеки, знак направления письма и структура частей с числами в переменных — чистый CSS, без препроцессора",
+  "description": "Общий слой тем Soldy UI: сброс частей библиотеки, знак направления письма и структура частей с числами в переменных — чистый CSS, без препроцессора, — и плагины раскладки для поведения темы",
   "keywords": [
     "soldy",
     "ui",
@@ -26,14 +26,24 @@
   "style": "./src/index.css",
   "exports": {
     ".": "./src/index.css",
+    "./setup": {
+      "types": "./dist/setup/index.d.ts",
+      "default": "./dist/setup/index.js"
+    },
     "./theme-variables.json": "./theme-variables.json"
   },
   "files": [
+    "dist",
     "src",
     "theme-variables.json"
   ],
   "scripts": {
+    "build": "vite build -c vite.setup.config.ts && tsc -p tsconfig.build.json",
     "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@soldy-ui/core": "0.3.0-alpha.2",
+    "@soldy-ui/plugins": "0.3.0-alpha.2"
   },
   "devDependencies": {
     "postcss": "^8.5.9",

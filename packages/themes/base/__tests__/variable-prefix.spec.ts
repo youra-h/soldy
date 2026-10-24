@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import postcss from 'postcss'
 import type { Container, Rule } from 'postcss'
 
@@ -10,13 +10,13 @@ import type { TTheme } from './themes'
 /**
  * Переменные CSS темы названы схемой `--so-`, как у библиотеки (корневой
  * `AGENTS.md`, «Префикс — только в глобальном пространстве имён»): токены,
- * переменные компонентов и те, что пишет поведение темы. Правило общее для
- * любой темы, и сторож проходит по каждой теме репозитория.
+ * переменные компонентов и те, что пишут поведение темы и плагины раскладки.
+ * Правило общее для любой темы, и сторож проходит по каждой теме репозитория.
  *
  * Переменная наследуется по DOM, и одноимённая переменная приложения у предка
  * подменяет ту, которую тема на узле ещё не объявила. Так брала бы чужое
- * геометрия Tabs у oren: поведение темы пишет её на список только после
- * замера, а до него — в серверной разметке, в первом кадре, без `useTheme` —
+ * геометрия Tabs: плагин раскладки пишет её на список только после замера, а
+ * до него — в серверной разметке, в первом кадре, без `useTheme` —
  * список наследует переменную предка. Префикс поэтому у всей категории, а не
  * у имён, которые уже столкнулись: переменная, которую тема объявляет на том
  * же узле, где читает, — тоже `--so-*`.
@@ -31,7 +31,11 @@ import type { TTheme } from './themes'
  * константой имени или аргументом `setProperty`. Модификатор класса пишется
  * так же, но его место — аргумент метода `TClasses`
  * (`classes.add('--ready-animation')`), так же его различает сторож
- * библиотеки (`packages/setup/__tests__/css-variable-prefix.spec.ts`).
+ * библиотеки (`packages/setup/__tests__/css-variable-prefix.spec.ts`). Так же
+ * пишут переменные плагины раскладки общего слоя тем (`setup/` базы), которые
+ * ставит тема: геометрию Tabs, высоту закреплённой шапки Table и переднего
+ * тоста стопки. Их сторож читает отдельно и тем же способом: в списке тем базы
+ * нет, а её плагины встают в поведение любой темы.
  *
  * В собранном CSS есть и имена инструментов: Tailwind объявляет свои
  * переменные, а Lightning CSS — `--lightningcss-*`. Их сторож пропускает
@@ -115,6 +119,15 @@ function inspect(source: string, theme: TTheme) {
 
 const reports = await inspectThemes(inspect)
 
+/**
+ * Поведение общего слоя тем — плагины раскладки, которые ставит тема. Стилей
+ * базы здесь нет: их сторож видит в CSS каждой темы.
+ */
+const baseBehaviour = behaviourVariables({
+	name: '@soldy-ui/theme-base',
+	dir: resolve(import.meta.dirname, '..'),
+})
+
 describe.each(reports)('переменные темы — схемой --so- · $name', ({ report }) => {
 	it('имя каждой переменной — --so-* или инструмента сборки', () => {
 		const violations = [...report.styles, ...report.behaviour]
@@ -130,12 +143,26 @@ describe.each(reports)('переменные темы — схемой --so- · 
 	})
 })
 
+describe('переменные плагинов раскладки — схемой --so-', () => {
+	it('имя каждой переменной, которую пишет поведение общего слоя тем, — --so-*', () => {
+		const violations = baseBehaviour
+			.filter(({ name }) => !name.startsWith('--so-'))
+			.map(({ place, name }) => `${place}: ${name}`)
+
+		expect(
+			[...new Set(violations)],
+			'Переменная, которую пишет плагин раскладки, начинается с --so- ' +
+				'(packages/themes/base/AGENTS.md, «Сторожа»): до первой записи узел наследует ' +
+				'переменную предка, и одноимённая переменная приложения подменила бы её',
+		).toEqual([])
+	})
+})
+
 describe('сторож не пуст', () => {
 	const { styles, behaviour } = reportOf(reports, OREN)
 
-	it('у oren сторож видит имена в стилях и в поведении темы', () => {
+	it('у oren сторож видит имена в стилях', () => {
 		const inStyles = new Set(styles.map(({ name }) => name))
-		const written = new Set(behaviour.map(({ name }) => name))
 
 		// Пустой список прошёл бы проверку выше на любом коде: объявление
 		// токена, чтение переменной поведения, регистрация и имя Tailwind
@@ -143,17 +170,24 @@ describe('сторож не пуст', () => {
 		expect(inStyles).toContain('--so-tabs-active-pos')
 		expect(inStyles).toContain('--so-swipe-offset')
 		expect(inStyles).toContain('--spacing')
+	})
+
+	it('в поведении общего слоя сторож видит имена, которые пишут плагины раскладки', () => {
+		const written = new Set(baseBehaviour.map(({ name }) => name))
+
 		// Константа имени и аргумент `setProperty`: место модификатора, которое
 		// их глотает, стерегло бы пустоту
 		expect(written).toContain('--so-table-head-height')
+		expect(written).toContain('--so-toasts-front-height')
 		expect(written).toContain('--so-tabs-active-moving')
 		expect(written).toContain('--so-tabs-gap-pos')
 	})
 
-	it('у oren модификатор класса — не переменная', () => {
-		const names = new Set([...styles, ...behaviour].map(({ name }) => name))
+	it('модификатор класса — не переменная', () => {
+		const names = new Set([...styles, ...behaviour, ...baseBehaviour].map(({ name }) => name))
 
-		// `.so-tabs--ready-animation` в стилях, `classes.add('--ready-animation')` в поведении
+		// `.so-tabs--ready-animation` в стилях oren, `classes.add('--ready-animation')`
+		// в плагине раскладки
 		expect(names).not.toContain('--ready-animation')
 		// `.so-drawer--placement-bottom` в стилях
 		expect(names).not.toContain('--placement-bottom')

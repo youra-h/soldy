@@ -18,9 +18,11 @@ from it, not the other way round.
 npm install @soldy-ui/theme-oren
 ```
 
-The stylesheet already carries
-[`@soldy-ui/theme-base`](https://www.npmjs.com/package/@soldy-ui/theme-base), the shared layer of
-Soldy UI themes; it is not installed separately.
+The theme is built on [`@soldy-ui/theme-base`](https://www.npmjs.com/package/@soldy-ui/theme-base),
+the shared layer of Soldy UI themes, and depends on it: the stylesheet carries its CSS, and the
+behavior installs its layout plugins. npm installs it with the theme; you do not import it
+yourself. To make a theme of your own on the same layer, see
+[Make your own theme](https://github.com/youra-h/soldy/tree/main/packages/themes/base#make-your-own-theme).
 
 ## Usage
 
@@ -36,9 +38,11 @@ import '@soldy-ui/theme-oren'
 useTheme(oren)
 ```
 
-`./setup` carries the plugins and collection extensions the theme's CSS reads — without it the
-styles are in place, but what CSS takes from plugin variables is not drawn: the bar under the
-active tab.
+`./setup` installs the plugins whose values the theme's CSS reads — the layout plugins of the shared
+layer. Without it the styles are in place, but what CSS takes from plugin variables is not drawn:
+there is no bar under the active tab, the card of the active tab does not move to a new one, focus
+in a table body slips under a sticky head that wraps into several rows, and the toasts behind the
+front one of a stack take its height at once, with no transition.
 
 The dark scheme is switched on with an attribute on the root element:
 

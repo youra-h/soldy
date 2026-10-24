@@ -9,6 +9,7 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@soldy-ui/theme-oren/setup": ["../../themes/oren/setup/index.ts"],
+      "@soldy-ui/theme-base/setup": ["../../themes/base/setup/index.ts"],
       "@soldy-ui/core": ["../../core/src"],
       "@soldy-ui/icons-lucide": ["../../icons/lucide/src"],
       "@soldy-ui/icons-material": ["../../icons/material/src"],
