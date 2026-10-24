@@ -17,7 +17,7 @@
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TListBox } from '@soldy-ui/core'
 import type { IListBoxItem } from '@soldy-ui/core'
-import { listOf } from '@soldy-ui/plugins'
+import { TListKeyboardPlugin, listOf } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import {
 	ActionPluginDescriptor,
@@ -100,9 +100,10 @@ export const ListBoxDescriptor = defineDescriptor(() =>
 			// прокрутки: предел строк ставится на `ready` корня, и начальная
 			// прокрутка к выбранному на том же `ready` видит список уже в нём
 			ListHeightPluginDescriptor,
-			// Клавиатура и прокрутка (последняя читает `scrollBehavior`)
+			// Клавиатура и прокрутка за значением и подсветкой клавиатуры. Прокрутка
+			// — после клавиатуры: слушает её подсветку
 			ListKeyboardPluginDescriptor,
-			ListScrollPluginDescriptor,
+			ListScrollPluginDescriptor.with({ navigation: TListKeyboardPlugin }),
 			// Drag-and-drop
 			DragPluginDescriptor,
 		],

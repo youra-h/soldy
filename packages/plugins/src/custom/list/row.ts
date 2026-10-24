@@ -1,3 +1,4 @@
+import { isScrollable } from '../../utils'
 import type { TCollectionElements } from '../collection'
 
 /**
@@ -20,10 +21,18 @@ const ROW_SELECTOR = '[tabindex]'
  * роль `listbox` среди детей корня — только у узла списка. И не по классу
  * темы: правило одно на клавиатуру списка (с чьего узла пришла клавиша),
  * календарь (куда ставить фокус списку панели выбора), узел фокуса ListBox
- * (`focusTarget` плагина действия), предел строк и прокрутку списка
- * (`closestList`): у ListBox и у Select блок класса свой, а роль списка одна.
+ * (`focusTarget` плагина действия), предел строк (`closestList`) и границу
+ * прокрутки списка (`scrollContainerOf`): у ListBox и у Select блок класса
+ * свой, а роль списка одна.
  */
 const LIST_SELECTOR = '[role="listbox"]'
+
+/**
+ * Граница прокрутки списка — узел с ролью списка: `listbox` у ListBox и
+ * Select, `menu` у панели меню и подменю. Выше него прокрутка списку не
+ * принадлежит: там панель, страница или меню над подменю.
+ */
+const LIST_BOUNDARY_SELECTOR = `${LIST_SELECTOR}, [role="menu"]`
 
 /**
  * Строка элемента коллекции — узел, который держит фокус внутри узла
@@ -73,8 +82,29 @@ export function listOf(root: Element | null): Element | null {
  * списке.
  *
  * Не родитель элемента: у элемента группы (`ListBox.Group`, `Select.Group`)
- * родитель — группа, а предел строк и прокрутку держит список вокруг групп.
+ * родитель — группа, а предел строк держит список вокруг групп.
  */
 export function closestList(element: Element): Element | null {
 	return element.closest(LIST_SELECTOR)
+}
+
+/**
+ * Прокрутка списка, в котором стоит элемент, — ближайший предок его узла,
+ * который прокручивается по вертикали, не выше узла с ролью списка (`listbox`,
+ * `menu`). `null` — своей прокрутки у списка нет: элементы помещаются, список
+ * скрыт или прокручивает его только страница.
+ *
+ * У ListBox и Select это сам узел с ролью `listbox` — ему предел строк ставит
+ * `TListHeightPlugin`. У меню прокручивается список пунктов внутри панели с
+ * ролью `menu` (`.so-menu__list`), и `closestList` его не находит. Не
+ * родитель элемента: у элемента группы родитель — группа, а прокручивается
+ * список вокруг групп.
+ */
+export function scrollContainerOf(element: Element): HTMLElement | null {
+	for (let current = element.parentElement; current; current = current.parentElement) {
+		if (isScrollable(current, 'y')) return current
+		if (current.matches(LIST_BOUNDARY_SELECTOR)) return null
+	}
+
+	return null
 }
