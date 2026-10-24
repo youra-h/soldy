@@ -9,7 +9,9 @@
  * `--so-required-dot: none` на обёртке контрола. Переменной, а не
  * селектором: селектор перечислял бы контролы поимённо, а точка у каждого
  * стоит на своём узле — на корне Switch и полей семьи Input, на коробке
- * CheckBox.
+ * CheckBox. У диапазона DatePicker точка — у коробки на корне, а у полей
+ * концов внутри неё её нет (`components/date-picker.css`); у одной даты она —
+ * у самого поля, DateInput.
  *
  * Список — контролы, чья структура в общем слое; место точки у своего
  * контрола уточняет файл его блока (у Switch оно ближе к углу). Остальным
@@ -25,7 +27,9 @@
 .so-switch--required::after,
 .so-input--required::after,
 .so-number-input--required::after,
-.so-textarea--required::after {
+.so-textarea--required::after,
+.so-date-input--required::after,
+.so-date-picker--range.so-date-picker--required::after {
 	content: '';
 	display: var(--so-required-dot, block);
 	position: absolute;

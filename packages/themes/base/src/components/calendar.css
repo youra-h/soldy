@@ -1,0 +1,570 @@
+/* ─── Calendar ────────────────────────────────────────────────
+ * Сетки показанных месяцев, одна пара кнопок листания на все и подвал, если
+ * его передали.
+ *
+ *   .so-calendar                    корень — столбец: ряд месяцев и подвал
+ *     .so-calendar__months          ряд месяцев
+ *       .so-calendar__month         месяц, по одному на сетку
+ *         .so-calendar__heading     ряд заголовка — корень Popover панели выбора
+ *           .so-calendar__title     заголовок месяца — кнопка, триггер панели
+ *             .so-calendar__title-text  текст: имя сетки и живая область
+ *         .so-calendar__prev        кнопка «назад» (Button) — только у первого месяца
+ *         .so-calendar__next        кнопка «вперёд» (Button) — там же
+ *         .so-calendar__grid        сетка — `table`
+ *           .so-calendar__weekdays  строка дней недели (`thead > tr`)
+ *             .so-calendar__weekday день недели (`th`)
+ *           .so-calendar__week      неделя (`tbody > tr`)
+ *             .so-calendar__filler  заполнитель — день соседнего месяца (`td`)
+ *             .so-calendar-item     день — Calendar.Item (`td`)
+ *               __day              плитка дня: номер или содержимое слота
+ *     .so-calendar__footer          подвал — ряд действий под сетками, если передан
+ *
+ * Геометрия — одна переменная на размер, сторона плитки дня
+ * (`--so-calendar-day`): высота Button того же размера (`button.css`) —
+ * кнопки листания стоят в ряду заголовков вровень с плитками крайних колонок и
+ * сами квадратные, той же стороны. Ячейка шире плитки на запас под кольцо
+ * фокуса с каждой стороны (`--so-calendar-bleed`): кольцо дня умещается в
+ * своей ячейке и не ложится на соседей, а кольцо кнопки листания — в коробке
+ * календаря, и прокручиваемая панель вокруг его не срежет. От ячейки
+ * считается всё остальное: строка дней недели (ниже недели — подписи колонок
+ * мельче номеров), высота месяца, зазор между месяцами (полъячейки), место
+ * кнопок листания, края подвала. Содержимому слота дня крупнее плитки размер
+ * задаёт потребитель — той же переменной на календаре.
+ *
+ * Корень — столбец: ряд месяцев, под ним подвал. Ширина — по месяцам, а не по
+ * контейнеру: кнопки листания стоят у конца корня и обязаны оказаться над
+ * последними колонками. Месяцы не поместились в ширину — переносятся, и
+ * первая строка разносится по краям: стрелки остаются над последними
+ * колонками последнего месяца строки. Подвал ширину не задаёт (`contain:
+ * inline-size`): кнопки шире месяца переносятся в нём на вторую строку, а не
+ * раздвигают календарь.
+ *
+ * Кнопки листания — одна пара на весь календарь, вплотную у конца ряда
+ * заголовков, над двумя последними колонками, как в календаре Android. В DOM
+ * пара стоит у первого месяца, сразу за его заголовком (Tab идёт заголовок,
+ * «назад», «вперёд», сетка), поэтому кнопки вынуты из потока и стоят от конца
+ * корня: блок месяца и корень поповера заголовка не позиционированы. Квадрат
+ * со стороной плитки: в кнопке одна иконка, и поле шкалы Button снято.
+ *
+ * Месяц держит высоту под шесть недель при любом месяце: календарь не прыгает
+ * при листании, а ряды соседних сеток стоят вровень. Заголовок месяца —
+ * кнопка высотой с плитку; название длиннее ряда обрезается многоточием, а не
+ * переносится — вторая строка сдвинула бы сетку. Поле ряда заголовка у конца
+ * — в две ячейки, под кнопки листания, у всех месяцев одно.
+ *
+ * Сетка — таблица из семи колонок по ячейке, ширина колонок задана первой
+ * строкой, и содержимое дня её не раздвигает. Подпись дня недели обрезается
+ * по колонке без многоточия: от короткого имени многоточие оставило бы букву.
+ * День — ячейка, несёт фокус (одна остановка Tab на все сетки); плитка внутри
+ * — по центру ячейки, в запасе под кольцо, столбец по центру: номер или то,
+ * что потребитель положил в слот. Выбрать можно — указатель руки; недоступный
+ * день фокус получает, но не выбирается, выключенный — ни того ни другого.
+ *
+ * Кегль — шкала номера дня (`--so-calendar-day-font-size-<размер>`): метка в
+ * ячейке на ступень мельче текста Button. Тем же кеглем подписаны плитки
+ * панели выбора — сетка плиток стоит на месте сетки дней. Подпись дня недели —
+ * на размер ниже, на `sm` — тот же: это справка над столбцом. Заголовок
+ * месяца — кегль Button того же размера, строкой во всю ячейку: многоточие на
+ * длинном названии держит только блок. Ширина колонки не уже трёх кеглей
+ * подписи, и короткое имя дня в три буквы в неё помещается (правило
+ * `weekdayLabelWidth` ядра) — сужать колонку или крупнить подпись можно только
+ * вместе с проверкой «дни недели» в браузерном спеке календаря.
+ *
+ * Выключенный календарь гаснет корнем целиком (`disabled.css`), выключенный
+ * день — ячейкой, с плиткой; день в выключенном календаре второй раз не
+ * гаснет.
+ *
+ * Панель выбора месяца и года — поповер заголовка внутри календаря
+ * (`contained`, `edge="top"`): он не уходит в `body`, а накрывает календарь —
+ * его позиционированный предок — подложкой во весь календарь, а выбирают в
+ * карточке у её верхнего края.
+ *
+ *   .so-popover__panel              панель поповера — подложка на весь календарь
+ *     .so-popover__handle           полоса жеста, если он включён (`swipe`)
+ *     .so-popover__content          раскладка в подложке — ровно по карточке
+ *       .so-calendar__picker        карточка: список и шапка
+ *         .so-calendar__picker-list   список месяцев или лет — ListBox
+ *           .so-list-box__list          узел списка: плитки сеткой
+ *         .so-calendar__picker-header шапка: год и стрелки (в DOM после списка)
+ *           .so-calendar__picker-heading  год или отрезок лет — кнопка уровня
+ *           .so-calendar__picker-prev     стрелка «назад» (Button)
+ *           .so-calendar__picker-next     стрелка «вперёд» (Button)
+ *
+ * Подложка — сама панель: она растянута на весь календарь, и нажатие по
+ * подложке — нажатие внутри поповера, по которому панель закрывает код
+ * календаря с возвратом фокуса на заголовок. Карточка — одна ячейка сетки
+ * панели во всю ширину, у верхнего края, высотой по содержимому: под ней
+ * видно последние недели месяца. Полоса жеста — в той же ячейке, у нижнего
+ * края карточки и поверх неё: панель прижата к верхнему краю, и тянут её
+ * снизу; карточка держит под ней поле, и список полоса не накрывает. Шапка
+ * в DOM стоит после списка — фокус при открытии встаёт на список, — и наверх
+ * её ставит порядок флекса. Список — 4 колонки по 3 строки, ячейки поровну по
+ * ширине карточки, строка выше ячейки дня на четверть; плитка — во всю свою
+ * ячейку, подпись по центру, шире плитки — переносится только между словами,
+ * а слово шире самой плитки режется многоточием.
+ *
+ * Селектор панели — через корень поповера заголовка, прямой потомок месяца:
+ * в слоте дня может стоять чужой поповер, а он лежит в ячейке сетки. Между
+ * корнем и панелью — потомок, а не ребёнок: панель с `contained` адаптер
+ * вправе держать в своих узлах без коробки (`Teleport` React). Вес — выше
+ * правил панели у якоря и в контейнере (`anchored.css`,
+ * `components/popover.css`): они подключены ниже, и равный вес проиграл бы
+ * порядком.
+ *
+ * Запас и шкала кегля — переменные корня документа; умолчания — числа темы
+ * oren, тема задаёт свои на корне документа.
+ *
+ * Облик — цвета выбора, наведения, ленты диапазона и предпросмотра, рамка
+ * «сегодня», зачёркнутый недоступный день, начертание заголовков и подписей,
+ * цифры одной ширины, кольцо фокуса, вид кнопок, зеркало стрелок в RTL, вид в
+ * режиме принудительных цветов, вуаль подложки, поверхность, кромка и тень
+ * карточки, её въезд и жест — рисует тема. */
+
+:root {
+	--so-calendar-bleed: 0.25rem;
+
+	--so-calendar-day-font-size-sm: 0.75rem;
+	--so-calendar-day-line-height-sm: calc(1 / 0.75);
+	--so-calendar-day-font-size-normal: 0.875rem;
+	--so-calendar-day-line-height-normal: calc(1.25 / 0.875);
+	--so-calendar-day-font-size-lg: 1rem;
+	--so-calendar-day-line-height-lg: 1.5;
+	--so-calendar-day-font-size-xl: 1.125rem;
+	--so-calendar-day-line-height-xl: calc(1.75 / 1.125);
+	--so-calendar-day-font-size-2xl: 1.25rem;
+	--so-calendar-day-line-height-2xl: calc(1.75 / 1.25);
+}
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
+ * без него обязан выглядеть умолчанием. От корня считаются кнопки листания и
+ * панель выбора. */
+.so-calendar {
+	--so-calendar-day: var(--so-button-height-normal);
+	--so-calendar-cell: calc(var(--so-calendar-day) + 2 * var(--so-calendar-bleed));
+	--so-calendar-head: var(--so-calendar-day);
+	--so-calendar-gap: calc(var(--so-calendar-cell) / 2);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: calc(2 * var(--so-calendar-bleed));
+	width: fit-content;
+	max-width: 100%;
+}
+
+.so-calendar .so-calendar__title {
+	line-height: var(--so-calendar-cell);
+}
+
+.so-calendar .so-calendar__weekday {
+	font-size: var(--so-calendar-day-font-size-sm);
+	line-height: var(--so-calendar-day-line-height-sm);
+}
+
+.so-calendar .so-calendar-item,
+.so-calendar .so-calendar__picker-list > .so-list-box__list > .so-list-box-item > .so-button {
+	font-size: var(--so-calendar-day-font-size-normal);
+	line-height: var(--so-calendar-day-line-height-normal);
+}
+
+.so-calendar--size-sm {
+	--so-calendar-day: var(--so-button-height-sm);
+}
+
+.so-calendar--size-sm .so-calendar__title {
+	font-size: var(--so-button-font-size-sm);
+	line-height: var(--so-calendar-cell);
+}
+
+.so-calendar--size-sm .so-calendar__weekday,
+.so-calendar--size-sm .so-calendar-item,
+.so-calendar--size-sm
+	.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item
+	> .so-button {
+	font-size: var(--so-calendar-day-font-size-sm);
+	line-height: var(--so-calendar-day-line-height-sm);
+}
+
+.so-calendar--size-normal {
+	--so-calendar-day: var(--so-button-height-normal);
+}
+
+.so-calendar--size-normal .so-calendar__title {
+	line-height: var(--so-calendar-cell);
+}
+
+.so-calendar--size-normal .so-calendar__weekday {
+	font-size: var(--so-calendar-day-font-size-sm);
+	line-height: var(--so-calendar-day-line-height-sm);
+}
+
+.so-calendar--size-normal .so-calendar-item,
+.so-calendar--size-normal
+	.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item
+	> .so-button {
+	font-size: var(--so-calendar-day-font-size-normal);
+	line-height: var(--so-calendar-day-line-height-normal);
+}
+
+.so-calendar--size-lg {
+	--so-calendar-day: var(--so-button-height-lg);
+}
+
+.so-calendar--size-lg .so-calendar__title {
+	font-size: var(--so-button-font-size-lg);
+	line-height: var(--so-calendar-cell);
+}
+
+.so-calendar--size-lg .so-calendar__weekday {
+	font-size: var(--so-calendar-day-font-size-normal);
+	line-height: var(--so-calendar-day-line-height-normal);
+}
+
+.so-calendar--size-lg .so-calendar-item,
+.so-calendar--size-lg
+	.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item
+	> .so-button {
+	font-size: var(--so-calendar-day-font-size-lg);
+	line-height: var(--so-calendar-day-line-height-lg);
+}
+
+.so-calendar--size-xl {
+	--so-calendar-day: var(--so-button-height-xl);
+}
+
+.so-calendar--size-xl .so-calendar__title {
+	font-size: var(--so-button-font-size-xl);
+	line-height: var(--so-calendar-cell);
+}
+
+.so-calendar--size-xl .so-calendar__weekday {
+	font-size: var(--so-calendar-day-font-size-lg);
+	line-height: var(--so-calendar-day-line-height-lg);
+}
+
+.so-calendar--size-xl .so-calendar-item,
+.so-calendar--size-xl
+	.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item
+	> .so-button {
+	font-size: var(--so-calendar-day-font-size-xl);
+	line-height: var(--so-calendar-day-line-height-xl);
+}
+
+.so-calendar--size-2xl {
+	--so-calendar-day: var(--so-button-height-2xl);
+}
+
+.so-calendar--size-2xl .so-calendar__title {
+	font-size: var(--so-button-font-size-2xl);
+	line-height: var(--so-calendar-cell);
+}
+
+.so-calendar--size-2xl .so-calendar__weekday {
+	font-size: var(--so-calendar-day-font-size-xl);
+	line-height: var(--so-calendar-day-line-height-xl);
+}
+
+.so-calendar--size-2xl .so-calendar-item,
+.so-calendar--size-2xl
+	.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item
+	> .so-button {
+	font-size: var(--so-calendar-day-font-size-2xl);
+	line-height: var(--so-calendar-day-line-height-2xl);
+}
+
+/* Выключенный календарь гаснет корнем целиком — заголовки, дни недели, дни,
+ * кнопки листания и подвал. Дни и кнопки выключены вместе с ним и под
+ * погасшим корнем второй раз не гаснут. */
+.so-calendar[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-calendar[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Месяцы — в ряд, своим узлом: подвал в одном ряду с ними прибавил бы к
+ * ширине ряда свою ширину, и кнопки листания повисли бы за последней
+ * колонкой. Пока месяцы помещаются, свободного места нет, и зазор между ними
+ * — ровно `--so-calendar-gap`. */
+.so-calendar__months {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--so-calendar-gap);
+}
+
+/* «Назад» — над шестой колонкой, «вперёд» — над седьмой, вровень с их
+ * плитками; между кнопками два запаса, как между плитками соседних дней. */
+.so-calendar__prev,
+.so-calendar__next {
+	position: absolute;
+	inset-block-start: var(--so-calendar-bleed);
+	inline-size: var(--so-calendar-day);
+	block-size: var(--so-calendar-day);
+	padding-inline: 0;
+}
+
+.so-calendar__prev {
+	inset-inline-end: calc(var(--so-calendar-cell) + var(--so-calendar-bleed));
+}
+
+.so-calendar__next {
+	inset-inline-end: var(--so-calendar-bleed);
+}
+
+/* Недели прижаты к верху, запас под шесть недель — под последней. */
+.so-calendar__month {
+	display: flex;
+	flex-direction: column;
+	min-block-size: calc(
+		var(--so-calendar-cell) + var(--so-calendar-head) + 6 * var(--so-calendar-cell)
+	);
+}
+
+/* Ряд заголовка — корень поповера: строчный у Popover, здесь он занимает ряд
+ * целиком и ставит кнопку заголовка у начала месяца, вровень с плиткой первой
+ * колонки. Позиционировать его нельзя: от корня календаря стоят кнопки
+ * листания и панель выбора. */
+.so-calendar__month > .so-calendar__heading {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	block-size: var(--so-calendar-cell);
+	padding-inline-start: var(--so-calendar-bleed);
+	padding-inline-end: calc(2 * var(--so-calendar-cell));
+}
+
+.so-calendar__title {
+	min-width: 0;
+	max-width: 100%;
+	block-size: var(--so-calendar-day);
+}
+
+.so-calendar__title-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.so-calendar__grid {
+	table-layout: fixed;
+	border-collapse: collapse;
+	inline-size: calc(7 * var(--so-calendar-cell));
+}
+
+.so-calendar__weekdays {
+	block-size: var(--so-calendar-head);
+}
+
+.so-calendar__weekday {
+	padding: 0;
+	text-align: center;
+	vertical-align: middle;
+	overflow: hidden;
+	white-space: nowrap;
+	inline-size: var(--so-calendar-cell);
+}
+
+/* Высота задана рядом: у заполнителя содержимого нет, и ряд без неё сжался бы
+ * до дней в нём. */
+.so-calendar__week {
+	block-size: var(--so-calendar-cell);
+}
+
+/* Заполнитель только держит место в неделе: число повторило бы дату, которая
+ * стоит в соседней сетке. */
+.so-calendar__filler {
+	padding: 0;
+}
+
+/* Содержимое — у конца строки, как кнопки диалога, края — вровень с плитками
+ * крайних колонок. */
+.so-calendar__footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	contain: inline-size;
+	gap: calc(2 * var(--so-calendar-bleed));
+	padding-inline: var(--so-calendar-bleed);
+}
+
+/* Ячейка позиционирована: на ней тема рисует ленту диапазона, а плитка — тоже
+ * позиционированная и в DOM после неё — встаёт поверх. */
+.so-calendar-item {
+	position: relative;
+	padding: 0;
+	text-align: center;
+	vertical-align: middle;
+	-webkit-user-select: none;
+	user-select: none;
+	inline-size: var(--so-calendar-cell);
+	block-size: var(--so-calendar-cell);
+}
+
+/* Не уже плитки и не ниже её; содержимое слота крупнее раздвигает плитку. */
+.so-calendar-item__day {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	margin-inline: auto;
+	inline-size: fit-content;
+	min-inline-size: var(--so-calendar-day);
+	min-block-size: var(--so-calendar-day);
+}
+
+.so-calendar-item:not([data-disabled='true'], [data-unavailable='true']) {
+	cursor: pointer;
+}
+
+.so-calendar-item[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-calendar-item[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+/* Панель выбора — во весь календарь, а не по высоте содержимого, как панель
+ * с краем `top`; своих полей у неё нет. Карточка и полоса — в одной ячейке
+ * сетки, сверху. */
+.so-calendar__month > .so-calendar__heading .so-popover__panel[data-contained='true'] {
+	display: grid;
+	align-content: flex-start;
+	inset: 0;
+	padding: 0;
+}
+
+/* Раскладка в подложке — ровно по карточке: во всю ширину подложки, без поля
+ * поповера и без прокрутки — карточка в календарь помещается на любом
+ * размере. */
+.so-calendar__month
+	> .so-calendar__heading
+	.so-popover__panel[data-contained='true']
+	> .so-popover__content {
+	grid-area: 1 / 1;
+	width: auto;
+	padding: 0;
+	overflow: visible;
+}
+
+/* Карточка — в ритме двух запасов, как соседние дни: поле, промежуток между
+ * шапкой и списком, зазор между плитками. Поле держит и кольцо фокуса списка. */
+.so-calendar__picker {
+	display: flex;
+	flex-direction: column;
+	gap: calc(2 * var(--so-calendar-bleed));
+	padding: calc(2 * var(--so-calendar-bleed));
+}
+
+/* Шапка — как ряд заголовков календаря: год или отрезок лет — у начала, стрелки
+ * — вплотную у конца; остаток строки забирает логический автоотступ кнопки
+ * года. */
+.so-calendar__picker-header {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	order: -9999;
+	gap: calc(2 * var(--so-calendar-bleed));
+	block-size: var(--so-calendar-day);
+}
+
+.so-calendar__picker-heading {
+	min-width: 0;
+	block-size: var(--so-calendar-day);
+	margin-inline-end: auto;
+}
+
+.so-calendar__picker-prev,
+.so-calendar__picker-next {
+	flex-shrink: 0;
+	inline-size: var(--so-calendar-day);
+	block-size: var(--so-calendar-day);
+	padding-inline: 0;
+}
+
+/* Плитки — дети узла списка, а не корня ListBox: корень — рамка вокруг шапки,
+ * списка и подвала, и ему остаётся снять поле и ширину списка. */
+.so-calendar__picker > .so-calendar__picker-list {
+	min-width: 0;
+	max-width: none;
+	padding: 0;
+}
+
+.so-calendar__picker > .so-calendar__picker-list > .so-list-box__list {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	grid-template-rows: repeat(3, calc(1.25 * var(--so-calendar-cell)));
+	gap: calc(2 * var(--so-calendar-bleed));
+}
+
+/* Полоса — прямой потомок панели: так её узнаёт плагин жеста. */
+.so-calendar__month
+	> .so-calendar__heading
+	.so-popover__panel[data-contained='true']
+	> .so-popover__handle {
+	position: static;
+	z-index: 1;
+	grid-area: 1 / 1;
+	align-self: flex-end;
+}
+
+.so-calendar__month
+	> .so-calendar__heading
+	.so-popover__panel[data-contained='true']:has(> .so-popover__handle)
+	.so-calendar__picker {
+	padding-block-end: var(--so-target-size);
+}
+
+/* Плитка — строка во всю ячейку, а не кнопка своего размера посреди неё.
+ * Подпись — по центру: по высоте её ставит кнопка, по ширине — выравнивание
+ * текста, которое строка ListBox держит у начала. Плитка — выбор месяца или
+ * года, нажатие сразу что-то делает: указатель руки, у выключенной —
+ * обычный. */
+.so-calendar__picker-list > .so-list-box__list > .so-list-box-item {
+	display: flex;
+}
+
+.so-calendar__picker-list > .so-list-box__list > .so-list-box-item > .so-button {
+	flex: 1;
+	min-width: 0;
+	height: auto;
+	padding-inline: 0;
+}
+
+.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item
+	> .so-button:not([data-disabled='true']) {
+	cursor: pointer;
+}
+
+.so-calendar__picker-list > .so-list-box__list > .so-list-box-item > .so-button > .so-button__text {
+	text-align: center;
+}
+
+/* Перенос (`data-content-fit='wrap'` строки, его ставит календарь) — только
+ * между словами: подпись в несколько слов (`vi-VN` — «Tháng 10», год `th-TH` с
+ * эрой) многоточием потеряла бы номер. Слову шире плитки переносить некуда, и
+ * область текста срезает его многоточием кнопки в той строке подписи, которая
+ * не поместилась, а не выпускает наружу, как строка ListBox с переносом. */
+.so-calendar__picker-list
+	> .so-list-box__list
+	> .so-list-box-item[data-content-fit='wrap']
+	> .so-button
+	> .so-button__text {
+	overflow: hidden;
+	overflow-wrap: normal;
+}

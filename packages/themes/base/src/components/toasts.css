@@ -1,0 +1,408 @@
+/* ─── Toasts ──────────────────────────────────────────────────
+ * Всплывающие уведомления: регион у края окна и тосты в нём.
+ *
+ *   .so-toasts                     регион — телепортирован в `body`
+ *     .so-toasts__list             список — тосты по порядку, новый первым
+ *       .so-toasts-item            тост — место в списке
+ *         .so-toasts-item__card    плашка — то, что видно
+ *           .so-toasts-item__icon        значок вида, кольцо ожидания или слот `icon`
+ *           .so-toasts-item__body        текст — заголовок, описание, своё содержимое
+ *             .so-toasts-item__text        заголовок
+ *             .so-toasts-item__description описание
+ *             .so-toasts-item__content     своё содержимое (`render`)
+ *           .so-toasts-item__close       крестик — Button
+ *
+ * Регион стоит всегда, и пустым: живая область должна быть в документе до
+ * первого тоста. Места он не занимает — он `fixed`, — и нажатий мимо тостов не
+ * ловит: указатель берут только сами тосты (`pointer-events` наследуется, и
+ * тост возвращает его себе). Номер слоя код пишет региону инлайном.
+ *
+ * Место — модификатор региона `--placement-*`, код пишет его всегда: шесть
+ * мест у верхнего или нижнего края окна — у начала строки, по центру и у
+ * конца. Регион — во всю ширину окна без отступов, а тосты в нём встают у
+ * начала, по центру или у конца (`align-items` списка): `start` и `end`
+ * логические, в RTL тосты сами встают у другого края. Стороны отступа —
+ * физические и обе сразу: поправки на вырез экрана (`safe-area-inset-*`)
+ * физические тоже, и логическая сторона в RTL взяла бы поправку чужого края.
+ *
+ * Раскладка — модификатор региона `--layout-*`, тоже всегда: столбец (`list`)
+ * или стопка (`cascade`). Столбец: новый тост в разметке первый, а на экране —
+ * у края — у верхнего края столбец идёт сверху вниз, у нижнего — снизу вверх,
+ * и список растёт от края. Тост — узла два: место в списке и плашка. Место —
+ * сетка в одну строку (`minmax(0, 1fr)`): тема схлопывает строку переходом, и
+ * соседи сдвигаются, а высоту тоста никто не мерит. Плашка своей высоты не
+ * меняет — она прижата к стороне места, дальней от края окна, а зазор до
+ * соседа — поле места с другой стороны (у последнего тоста его нет: полоса
+ * зазора за столбцом ловила бы указатель). Что не поместилось в строку, режет
+ * `clip-path` места — с запасом в зазор под тень, кромку и кольцо фокуса
+ * плашки; `overflow` резал бы ровно по краю места. Ширина тоста — строка около
+ * сорока знаков, на узком экране — во всю ширину региона. Закрытый тост
+ * нажатий не ловит: нажатие сквозь него — нажатие по тому, что под ним. Тянут
+ * — курсор «держу», где бы указатель ни был.
+ *
+ * Плашка — ряд: значок, текст, крестик. Строка текста (`--so-toasts-line`) —
+ * переменная: значок стоит в её квадрате (кегль коробки — её сторона, иконка
+ * soldy меряется в `em`), а крестик — квадрат высоты Button `normal` — по
+ * центру первой строки; поля по оси блока у него — минус половина разницы со
+ * строкой, и тост в одну строку крестик не раздвигает, а у конца строки он
+ * заходит в поле плашки на четверть своей стороны — значок встаёт на край
+ * текста, как у кнопок шапки окна (`modal.css`). Кегль текста — облик, его
+ * задаёт тема без интерлиньяжа. Кольцо ожидания на месте значка — по кругу
+ * глифа значка (`--so-toasts-spinner-size`), а не по своей шкале. Пустая часть
+ * места не занимает. Длинное слово в тексте переносится, а не раздвигает тост.
+ *
+ * Стопка: тосты перекрывают друг друга в одной ячейке сетки списка. Передний
+ * — тост под фокусом, без фокуса — первый, а за закрытым первым — следующий;
+ * он в потоке ячейки и своей высоты, содержимое открыто. Задние — за ним
+ * (`z-index` по ступени), во всю ячейку стопки и места в потоке не занимают
+ * (`contain: size`): высота стопки — высота переднего. Высоту переднего
+ * задним пишет поведение темы (`--so-toasts-front-height` на регионе, у oren —
+ * `TToastsFrontPlugin`), и тема меняет её переходом, когда передний сменился;
+ * без поведения задний — во всю ячейку, той же высоты. Ступень — глубина тоста
+ * (`--so-toasts-depth`, место в составе, его пишет разметка): на одну дальше
+ * за тостом под фокусом и на одну ближе за закрытым, пока он гаснет. Задний
+ * уже переднего за каждую ступень и выглядывает из-под него на зазор столбца к
+ * дальней от края окна стороне; глубже последнего видимого слоя тост стоит за
+ * ним и прозрачен. Сжатие — от дальнего края: он и выглядывает, и на сжатии
+ * стоит на месте. Плашка заднего — во всю его высоту, её содержимое срезано и
+ * нажатий не ловит: край заднего ловит сам тост, и фокус на нём выводит тост
+ * вперёд. Закрытый передний встаёт поверх нового переднего, пока гаснет.
+ *
+ * Отступ региона, ширина, зазор, поля, строка, зазоры частей, кольцо и
+ * ступени стопки — переменные корня документа; умолчания — числа темы oren,
+ * тема задаёт свои на корне документа.
+ *
+ * Облик — поверхность, кромка, тень и скругление плашки, цвет вида сообщения,
+ * кегль и начертание текста, цвет значка и описания, кольцо фокуса, вид
+ * крестика и кнопок на заливке, закрытое содержимое заднего, а движение —
+ * проявление и исчезание, въезд, уход, сдвиг за указателем и переход ступени —
+ * рисует тема. */
+
+:root {
+	--so-toasts-offset: 1rem;
+	--so-toasts-width: 22rem;
+	--so-toasts-gap: 0.75rem;
+	--so-toasts-padding-block: 0.875rem;
+	--so-toasts-padding-inline: 1rem;
+	--so-toasts-line: 1.25rem;
+	--so-toasts-card-gap: 0.75rem;
+	--so-toasts-body-gap: 0.125rem;
+	--so-toasts-content-gap: 0.5rem;
+	--so-toasts-content-offset: 0.375rem;
+	--so-toasts-spinner-size: calc(1em * 5 / 6);
+	--so-toasts-cascade-narrow: 0.05;
+	--so-toasts-cascade-layers: 2;
+}
+
+.so-toasts {
+	position: fixed;
+	left: calc(var(--so-toasts-offset) + env(safe-area-inset-left, 0px));
+	right: calc(var(--so-toasts-offset) + env(safe-area-inset-right, 0px));
+	margin: 0;
+	padding: 0;
+	pointer-events: none;
+}
+
+.so-toasts__list {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+.so-toasts--placement-top-start,
+.so-toasts--placement-top,
+.so-toasts--placement-top-end {
+	top: calc(var(--so-toasts-offset) + env(safe-area-inset-top, 0px));
+}
+
+.so-toasts--placement-bottom-start,
+.so-toasts--placement-bottom,
+.so-toasts--placement-bottom-end {
+	bottom: calc(var(--so-toasts-offset) + env(safe-area-inset-bottom, 0px));
+}
+
+.so-toasts--placement-bottom-start > .so-toasts__list,
+.so-toasts--placement-bottom > .so-toasts__list,
+.so-toasts--placement-bottom-end > .so-toasts__list {
+	flex-direction: column-reverse;
+}
+
+.so-toasts--placement-top-start > .so-toasts__list,
+.so-toasts--placement-bottom-start > .so-toasts__list {
+	align-items: flex-start;
+}
+
+.so-toasts--placement-top > .so-toasts__list,
+.so-toasts--placement-bottom > .so-toasts__list {
+	align-items: center;
+}
+
+.so-toasts--placement-top-end > .so-toasts__list,
+.so-toasts--placement-bottom-end > .so-toasts__list {
+	align-items: flex-end;
+}
+
+/* Зазор до соседа — `--so-toasts-item-gap`: у последнего тоста и в стопке его
+ * нет. */
+.so-toasts-item {
+	--so-toasts-item-gap: var(--so-toasts-gap);
+	display: grid;
+	grid-template-rows: minmax(0, 1fr);
+	width: min(var(--so-toasts-width), 100%);
+	clip-path: inset(calc(-1 * var(--so-toasts-gap)));
+	pointer-events: auto;
+}
+
+.so-toasts-item:last-child {
+	--so-toasts-item-gap: 0px;
+}
+
+.so-toasts-item[data-swiping='true'] {
+	cursor: grabbing;
+}
+
+.so-toasts-item[data-open='false'] {
+	pointer-events: none;
+}
+
+.so-toasts-item__card {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--so-toasts-card-gap);
+	align-self: start;
+	padding: var(--so-toasts-padding-block) var(--so-toasts-padding-inline);
+	margin-block-start: var(--so-toasts-item-gap);
+}
+
+.so-toasts--placement-top-start > .so-toasts__list > .so-toasts-item > .so-toasts-item__card,
+.so-toasts--placement-top > .so-toasts__list > .so-toasts-item > .so-toasts-item__card,
+.so-toasts--placement-top-end > .so-toasts__list > .so-toasts-item > .so-toasts-item__card {
+	align-self: end;
+	margin-block: 0 var(--so-toasts-item-gap);
+}
+
+/* Коробка — квадрат строки текста и по ширине тоже: значок, кольцо и свой
+ * значок потребителя занимают одну колонку, и текст не сдвигается, когда
+ * кольцо сменилось значком. */
+.so-toasts-item__icon {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	min-inline-size: var(--so-toasts-line);
+	min-block-size: var(--so-toasts-line);
+	font-size: var(--so-toasts-line);
+}
+
+/* Специфичность — выше модификатора размера: ядро пишет его кольцу всегда. */
+.so-toasts-item__icon > .so-progress-spinner {
+	--so-progress-spinner-size: var(--so-toasts-spinner-size);
+}
+
+.so-toasts-item__body {
+	display: flex;
+	flex-direction: column;
+	flex-grow: 1;
+	gap: var(--so-toasts-body-gap);
+	min-width: 0;
+	line-height: var(--so-toasts-line);
+	overflow-wrap: break-word;
+}
+
+.so-toasts-item__content {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--so-toasts-content-gap);
+	margin-block-start: var(--so-toasts-content-offset);
+}
+
+.so-toasts-item__icon:empty,
+.so-toasts-item__text:empty,
+.so-toasts-item__description:empty,
+.so-toasts-item__content:empty {
+	display: none;
+}
+
+.so-toasts-item__close {
+	flex-shrink: 0;
+	aspect-ratio: 1;
+	padding-inline: 0;
+	margin-block: calc((var(--so-toasts-line) - var(--so-button-height-normal)) / 2);
+	margin-inline-end: calc(var(--so-button-height-normal) / -4);
+}
+
+/* Значок — по центру квадрата, как у кнопок шапки окна (`modal.css`). */
+.so-toasts-item__close > .so-button__text {
+	display: flex;
+	justify-content: center;
+}
+
+/* Стопка. Ступени — `z-index` тостов, и за стопку они не выходят. */
+.so-toasts--layout-cascade > .so-toasts__list {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	isolation: isolate;
+}
+
+/* Стопка — у края окна, задние выглядывают к дальней от него стороне. */
+.so-toasts--layout-cascade:is(
+	.so-toasts--placement-bottom-start,
+	.so-toasts--placement-bottom,
+	.so-toasts--placement-bottom-end
+) {
+	--so-toasts-peek-sign: -1;
+}
+
+.so-toasts--layout-cascade:is(
+		.so-toasts--placement-bottom-start,
+		.so-toasts--placement-bottom,
+		.so-toasts--placement-bottom-end
+	)
+	> .so-toasts__list {
+	align-items: end;
+}
+
+.so-toasts--layout-cascade:is(
+	.so-toasts--placement-top-start,
+	.so-toasts--placement-top,
+	.so-toasts--placement-top-end
+) {
+	--so-toasts-peek-sign: 1;
+}
+
+.so-toasts--layout-cascade:is(
+		.so-toasts--placement-top-start,
+		.so-toasts--placement-top,
+		.so-toasts--placement-top-end
+	)
+	> .so-toasts__list {
+	align-items: start;
+}
+
+.so-toasts--layout-cascade:is(.so-toasts--placement-top-start, .so-toasts--placement-bottom-start)
+	> .so-toasts__list {
+	justify-items: start;
+}
+
+.so-toasts--layout-cascade:is(.so-toasts--placement-top, .so-toasts--placement-bottom)
+	> .so-toasts__list {
+	justify-items: center;
+}
+
+.so-toasts--layout-cascade:is(.so-toasts--placement-top-end, .so-toasts--placement-bottom-end)
+	> .so-toasts__list {
+	justify-items: end;
+}
+
+/* Тост стопки — задний; передний — ниже. Сдвиг ступени — `translate`, то же
+ * свойство, что у сдвига жеста: тема пишет его целиком, со ступенью отсюда
+ * (`--so-toasts-lift`). */
+.so-toasts--layout-cascade > .so-toasts__list > .so-toasts-item {
+	--so-toasts-item-gap: 0px;
+	--so-toasts-place: calc(
+		var(--so-toasts-depth, 0) + var(--so-toasts-behind-focus, 0) -
+			var(--so-toasts-after-closed, 0)
+	);
+	--so-toasts-lift: calc(
+		var(--so-toasts-peek-sign) * min(var(--so-toasts-place), var(--so-toasts-cascade-layers)) *
+			var(--so-toasts-gap)
+	);
+	grid-area: 1 / 1;
+	z-index: calc(-1 * var(--so-toasts-place));
+	contain: size;
+	height: var(--so-toasts-front-height, 100%);
+	scale: calc(
+		1 - min(var(--so-toasts-place), var(--so-toasts-cascade-layers)) *
+			var(--so-toasts-cascade-narrow)
+	);
+	opacity: clamp(0, var(--so-toasts-cascade-layers) + 1 - var(--so-toasts-place), 1);
+	translate: 0 var(--so-toasts-lift);
+}
+
+.so-toasts--layout-cascade:is(
+		.so-toasts--placement-bottom-start,
+		.so-toasts--placement-bottom,
+		.so-toasts--placement-bottom-end
+	)
+	> .so-toasts__list
+	> .so-toasts-item {
+	transform-origin: 50% 0;
+}
+
+.so-toasts--layout-cascade:is(
+		.so-toasts--placement-top-start,
+		.so-toasts--placement-top,
+		.so-toasts--placement-top-end
+	)
+	> .so-toasts__list
+	> .so-toasts-item {
+	transform-origin: 50% 100%;
+}
+
+/* Тост под фокусом — передний, стоявшие перед ним — на ступень дальше: видно
+ * так, будто его переставили первым. Перестановки нет: порядок Tab — порядок
+ * документа. */
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item:has(~ .so-toasts-item:focus-within) {
+	--so-toasts-behind-focus: 1;
+}
+
+/* Стоявшие за закрытым — на ступень ближе, пока он гаснет: из коллекции он
+ * уйдёт, когда догаснет, и тогда глубина задних сойдётся со ступенью. */
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item[data-open='false']
+	~ .so-toasts-item {
+	--so-toasts-after-closed: 1;
+}
+
+.so-toasts--layout-cascade > .so-toasts__list > .so-toasts-item:focus-within {
+	--so-toasts-place: 0;
+}
+
+.so-toasts--layout-cascade > .so-toasts__list > .so-toasts-item > .so-toasts-item__card {
+	align-self: stretch;
+	margin-block: 0;
+	overflow: clip;
+	pointer-events: none;
+}
+
+/* Передний — тост под фокусом; без фокуса в стопке — первый, а за закрытым
+ * первым — следующий. Тот же выбор у поведения темы, которое меряет его
+ * высоту. */
+.so-toasts--layout-cascade > .so-toasts__list > .so-toasts-item:focus-within,
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item:first-child:not(:has(~ .so-toasts-item:focus-within)),
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item[data-open='false']:first-child
+	+ .so-toasts-item:not(:has(~ .so-toasts-item:focus-within)) {
+	contain: none;
+	height: auto;
+}
+
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item:focus-within
+	> .so-toasts-item__card,
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item:first-child:not(:has(~ .so-toasts-item:focus-within))
+	> .so-toasts-item__card,
+.so-toasts--layout-cascade
+	> .so-toasts__list
+	> .so-toasts-item[data-open='false']:first-child
+	+ .so-toasts-item:not(:has(~ .so-toasts-item:focus-within))
+	> .so-toasts-item__card {
+	overflow: visible;
+	pointer-events: inherit;
+}
+
+.so-toasts--layout-cascade > .so-toasts__list > .so-toasts-item[data-open='false']:first-child {
+	z-index: 1;
+}

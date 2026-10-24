@@ -1,0 +1,208 @@
+/* ─── DatePicker ──────────────────────────────────────────────
+ * Поле даты и календарь в панели, как Select — поле и список.
+ *
+ *   .so-date-picker                  корень — якорь панели; у диапазона — коробка поля
+ *     .so-date-picker__field         поле одной даты — DateInput
+ *       .so-date-input__trailing     слоты поля `clear` и `trailing` (`date-input.css`)
+ *         .so-date-picker__clear     кнопка очистки — Button, если `clearable`
+ *         .so-date-picker__trigger   кнопка календаря — Button
+ *     .so-date-picker__start         поле начала диапазона — DateInput
+ *     .so-date-picker__dash          тире между полями
+ *     .so-date-picker__end           поле конца диапазона — DateInput
+ *     .so-date-picker__clear         кнопка очистки периода, если `clearable`
+ *     .so-date-picker__trigger       кнопка календаря после поля конца
+ *
+ *   .so-date-picker__panel           панель — Frame, телепортирована в `body`
+ *     .so-date-picker__handle        полоса жеста, если он включён (`swipe`)
+ *     .so-date-picker__content       содержимое — прокручивается оно, а не панель
+ *       .so-date-picker__calendar    календарь — Calendar
+ *         .so-calendar__footer       подвал календаря, при `confirmable`
+ *
+ * Корень — строчный флекс по полю: DatePicker встаёт в строку, как само поле
+ * даты, и ширина у него — по дате и кнопкам. Задали корню ширину — поле
+ * растягивается до неё, а кнопки остаются у его конца.
+ *
+ * Кнопки очистки и календаря — квадрат со стороной в строку слота: в коробке
+ * поля они стоят на том же просвете от рамки, что подсветка части, и на любом
+ * размере не выше её. Сторону задаёт режим: у одной даты кнопки стоят в слоте
+ * поля, у диапазона — в коробке корня. Цель на мелком размере им добирает
+ * зона нажатия (`target.css`): кнопке календаря она нужна не меньше очистки —
+ * без `clearable` поле даты стоит вплотную к ней.
+ *
+ * Диапазон — одна коробка на оба поля: период — одно значение, два конца, одна
+ * очистка, одна кнопка календаря, поэтому и рамка у него одна, а поля внутри —
+ * без своей коробки. Коробка та же, что у DateInput: высота размера по шкале
+ * поля, строка слота, тире кеглем поля. Поле внутри — во всю строку коробки:
+ * нажатие у её края попадает в поле, и плагин указателя поля отдаёт фокус
+ * ближайшей части; точки обязательного поля у него нет — она у коробки.
+ * Раскладка — сетка из пяти колонок: начало, тире, конец и две кнопки, каждая
+ * по своей ширине; без очистки кнопка календаря встаёт в четвёртую колонку, а
+ * пятая пуста. Колонки полей равны, и держит их поле начала своим минимумом
+ * ряда — шириной самой широкой даты: ширина не меняется, пока даты набирают.
+ * Поле конца шириной по дате стоит у конца своей колонки, и тире встаёт
+ * посередине между датами. Колонки логические: в RTL начало справа. Кнопки —
+ * с теми же отступами друг от друга и от рамки, что в слоте поля. Выключенный
+ * период гаснет коробкой целиком — с датами, тире и кнопками
+ * (`disabled.css`).
+ *
+ * Панель — та же семья, что панели Select и Popover, — колонка: полоса жеста —
+ * её поле, содержимое берёт остаток высоты и прокручивается само. Пока жест
+ * включён, плагин жеста отдаёт касание вдоль оси панели жесту
+ * (`touch-action`), и прокручиваемую саму панель палец бы не прокрутил. Высота
+ * — по календарю, потолок — окно целиком, а не половина, как у Popover:
+ * месяц держит высоту под шесть недель и срезался бы уже на экране ноутбука.
+ * Когда ни над полем, ни под ним места нет, панель встаёт туда, где места
+ * больше, и заходит за край: сдвиг `TAnchorPlugin` держит её в окне только по
+ * строке. Ширину по содержимому просит сам календарь: раскладка Frame пишет
+ * панели ширину `auto`, а у панели с `left` это место до края окна — у поля
+ * справа месяцы сложились бы в столбец. Поле вокруг календаря — внутри
+ * прокрутки: у края прокручиваемой области кольцо фокуса дня обрезалось бы.
+ * Закрытая панель, полоса жеста у края со стороны поля — `anchored.css` и
+ * `swipe.css`.
+ *
+ * Рамку коробки диапазона рисует тема и задаёт её толщину на блоке
+ * (`--so-date-picker-border`, контракт): строка слота считается без неё. Поле
+ * панели — переменная корня документа; умолчание — число темы oren, тема
+ * задаёт своё на корне документа.
+ *
+ * Облик — рамка коробки и её снятие у полей внутри, поверхность, кольцо
+ * фокуса, цвет тире пустого периода, вид кнопок, варианты и ошибка,
+ * поверхность, кромка, тень и скругление панели, её проявление и жест — рисует
+ * тема. */
+
+:root {
+	--so-date-picker-padding: 0.5rem;
+}
+
+.so-date-picker {
+	display: inline-flex;
+}
+
+.so-date-picker__field {
+	--so-date-picker-button: var(--so-date-input-slot-row);
+	flex-grow: 1;
+}
+
+.so-date-picker__clear,
+.so-date-picker__trigger {
+	flex-shrink: 0;
+	padding-inline: 0;
+	inline-size: var(--so-date-picker-button);
+	block-size: var(--so-date-picker-button);
+}
+
+/* Размер без модификатора — `normal`. `relative` — опора точки обязательного
+ * поля (`required.css`). */
+.so-date-picker--range {
+	--so-date-picker-height: var(--so-input-height-normal);
+	--so-date-picker-slot-row: calc(
+		var(--so-date-picker-height) - 2 * var(--so-date-picker-border, 0px) - 2 *
+			var(--so-input-slot-gap)
+	);
+	--so-date-picker-button: var(--so-date-picker-slot-row);
+	position: relative;
+	display: inline-grid;
+	grid-template-columns: 1fr auto 1fr auto auto;
+	align-items: center;
+	height: var(--so-date-picker-height);
+}
+
+.so-date-picker--range[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+}
+
+.so-date-picker--range[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+.so-date-picker--range > .so-date-picker__dash {
+	line-height: var(--so-date-picker-slot-row);
+}
+
+.so-date-picker--range.so-date-picker--size-sm {
+	--so-date-picker-height: var(--so-input-height-sm);
+}
+
+.so-date-picker--range.so-date-picker--size-sm > .so-date-picker__dash {
+	font-size: var(--so-input-font-size-sm);
+	line-height: var(--so-date-picker-slot-row);
+}
+
+.so-date-picker--range.so-date-picker--size-normal {
+	--so-date-picker-height: var(--so-input-height-normal);
+}
+
+.so-date-picker--range.so-date-picker--size-normal > .so-date-picker__dash {
+	line-height: var(--so-date-picker-slot-row);
+}
+
+.so-date-picker--range.so-date-picker--size-lg {
+	--so-date-picker-height: var(--so-input-height-lg);
+}
+
+.so-date-picker--range.so-date-picker--size-lg > .so-date-picker__dash {
+	font-size: var(--so-input-font-size-lg);
+	line-height: var(--so-date-picker-slot-row);
+}
+
+.so-date-picker--range.so-date-picker--size-xl {
+	--so-date-picker-height: var(--so-input-height-xl);
+}
+
+.so-date-picker--range.so-date-picker--size-xl > .so-date-picker__dash {
+	font-size: var(--so-input-font-size-xl);
+	line-height: var(--so-date-picker-slot-row);
+}
+
+.so-date-picker--range.so-date-picker--size-2xl {
+	--so-date-picker-height: var(--so-input-height-2xl);
+}
+
+.so-date-picker--range.so-date-picker--size-2xl > .so-date-picker__dash {
+	font-size: var(--so-input-font-size-2xl);
+	line-height: var(--so-date-picker-slot-row);
+}
+
+.so-date-picker--range > .so-date-input {
+	align-self: stretch;
+	height: auto;
+}
+
+.so-date-picker--range > .so-date-input.so-date-input--required::after {
+	content: none;
+}
+
+/* Минимум ряда держит поле начала: формат у полей один, и минимумы равны. */
+.so-date-picker--range > .so-date-picker__end {
+	justify-self: flex-end;
+}
+
+.so-date-picker--range > .so-date-picker__end .so-date-input__segments {
+	min-inline-size: 0;
+}
+
+.so-date-picker--range > .so-date-picker__clear {
+	margin-inline-end: var(--so-input-slot-spacing);
+}
+
+.so-date-picker--range > .so-date-picker__trigger {
+	margin-inline-end: var(--so-input-slot-padding);
+}
+
+.so-date-picker__panel {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	max-width: calc(100vw - 1rem);
+	max-height: calc(100dvh - 1rem);
+}
+
+.so-date-picker__content {
+	min-height: 0;
+	padding: var(--so-date-picker-padding);
+	overflow-y: auto;
+}
+
+.so-date-picker__content > .so-date-picker__calendar {
+	width: max-content;
+}

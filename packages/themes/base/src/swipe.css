@@ -1,14 +1,15 @@
 /* ─── Полоса жеста ───────────────────────────────────────────
- * «Смахнуть, чтобы закрыть» — у слоёв, которые смахивают: панелей Popover и
- * Select, выезжающей панели Drawer. Полосу, за которую тянут, рисует разметка
- * прямым потомком панели, пока жест включён (`swipe`), под `aria-hidden`: сама
- * она ничего не делает, тянут её жестом.
+ * «Смахнуть, чтобы закрыть» — у слоёв, которые смахивают: панелей Popover,
+ * Select и DatePicker, выезжающей панели Drawer. Полосу, за которую тянут,
+ * рисует разметка прямым потомком панели, пока жест включён (`swipe`), под
+ * `aria-hidden`: сама она ничего не делает, тянут её жестом.
  *
  * Зона захвата — сторона в минимум цели указателя (`--so-target-size`,
  * `target.css`): полосу берут пальцем. Вдоль края она во всю его длину, и
  * цель не меньше квадрата минимума. Где зона стоит, решает слой — край
  * панели у якоря (`anchored.css`), край панели Popover в контейнере
- * (`components/popover.css`), край Drawer (`components/drawer.css`); здесь
+ * (`components/popover.css`) и низ карточки выбора месяца Calendar
+ * (`components/calendar.css`), край Drawer (`components/drawer.css`); здесь
  * — то, что у полосы одно: курсор «можно взять» и штрих посередине зоны.
  *
  * Штрих — псевдоэлемент полосы: здесь его место и размер, вдоль края. У
@@ -26,6 +27,7 @@
 
 .so-popover__handle,
 .so-select__handle,
+.so-date-picker__handle,
 .so-drawer__handle {
 	display: flex;
 	align-items: center;
@@ -35,6 +37,7 @@
 
 .so-popover__handle::before,
 .so-select__handle::before,
+.so-date-picker__handle::before,
 .so-drawer__handle::before {
 	content: '';
 	display: block;

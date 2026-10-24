@@ -1,0 +1,224 @@
+/* ─── DateInput ───────────────────────────────────────────────
+ * Поле даты из частей по формату локали — коробка поля семьи Input.
+ *
+ *   .so-date-input                 корень — коробка поля
+ *     .so-date-input__leading      слот перед датой
+ *     .so-date-input__segments     ряд частей — `inline-flex`, свой `dir`
+ *       .so-date-input__segment    часть даты или времени
+ *       .so-date-input__literal    разделитель — литерал формата
+ *     .so-date-input__trailing     слот после даты: кнопка календаря DatePicker
+ *       .so-date-input__clear      кнопка очистки, первой в слоте — Button
+ *
+ * Коробка — та же, что у Input (`input.css`): высота размера, строка слота —
+ * высота без рамки и двух просветов, слоты у краёв логическими сторонами.
+ * Шкала — шкала поля: высота, кегль и отступ текста от рамки те же, что у
+ * Input того же размера, и в одной форме оба стоят вровень по высоте и по
+ * началу текста. Кегль — ряду частей, а не корню: слоты — разметка
+ * потребителя. Строка ряда — строка слота, по ней же высота подсветки части.
+ * Ширина — по дате и слотам, а не минимум Input: дата — строка известной длины
+ * и не схлопывается. Слот у конца уходит к концу поля: ряд частей шириной по
+ * дате, и без автоотступа кнопка календаря встала бы вплотную к дате, а не у
+ * края растянутого поля. Курсор текста — по всему полю: нажатие на пустое
+ * место поля отдаёт фокус части (это решает плагин).
+ *
+ * Ряд частей — флекс, а не строка текста (условие поведения, а не вкус):
+ * часть и разделитель — свои коробки. В строчной раскладке Chrome переносит
+ * начало выделения от края части в соседний текст, и протяжка мышью с края
+ * дня ничего не выделяет. Не таблица: внутри `label` HTML разрешает только
+ * строчную разметку. Направление ряда — свой `dir` от ядра, по дате в локали,
+ * а не направление поля, поэтому отступ ряда — поровну с обеих сторон, а не
+ * логической стороной: дата встаёт у начала поля с тем же отступом текста,
+ * что у Input, — отступ ряда и поле части вместе дают отступ ввода. Выделение
+ * — текстом, явно: дату протягивают мышью и выделяют целиком Ctrl/Cmd+A, и ряд
+ * выделяется и внутри обёртки с `user-select: none`. Пробелы литералов
+ * сохранены как есть (`cs-CZ` «12. 5. 2026»): на краю флекс-элемента они
+ * схлопнулись бы, а перенос в ряду не нужен вовсе.
+ *
+ * Ширина ряда не меняется, пока дату набирают. Цифры одной ширины: ↑/↓ и
+ * набор поверх части её ширину не меняют. Год держит место под четыре цифры
+ * (`ch` — ширина нуля), в минимум входят поля части: ядро пишет год как есть
+ * — «2», «20», «2026», — и без места поле росло бы с каждой цифрой, а у
+ * формата с годом в начале (`ja-JP`) за ним сдвигалась бы вся дата. Другим
+ * частям места не нужно — ядро дописывает их нулём до двух цифр. Минимум ряда
+ * — по самой широкой дате, пустой или набранной (подсказка бывает шире цифр):
+ * снят в Chromium по локалям — дата до 14.9ch (`lt-LT`), дата со временем до
+ * 23.1ch, до секунды до 26.2ch (`ko-KR`); поле со временем узнаётся по части
+ * часа, время до секунды — по части секунды. Предел: цифры шире латинского
+ * нуля (`bn-BD`) минимум перерастают, и корень при наборе растёт — ширина
+ * таких цифр зависит от шрифтов машины, минимума под язык ряда нет.
+ *
+ * Поле подсветки части от её цифр — узкое, в шестнадцатую кегля: дата
+ * читается строкой, как текст Input, а не вразрядку, и в RTL у флекс-элемента
+ * Chrome красит выделением текст, а не поля. Разделитель — с полями, дата не
+ * слипается в сплошную строку. Оба поля — в `em`, растут с текстом.
+ *
+ * Выключенное поле гаснет коробкой целиком, с кнопками и содержимым слотов
+ * (`disabled.css`); выключенность — `data-disabled` корня: нативного
+ * `disabled` у корня нет, а частей много. Нажатия коробка не гасит: в слотах
+ * — разметка потребителя.
+ *
+ * Рамку рисует тема и задаёт её толщину на блоке
+ * (`--so-date-input-border`, контракт): строка слота считается без неё. Поля
+ * части и разделителя — переменные корня документа; умолчания — числа темы
+ * oren, тема задаёт свои на корне документа.
+ *
+ * Облик — рамка, поверхность, скругление, кольцо фокуса, подсветка части под
+ * фокусом и выделения, цвет подсказки, вид кнопки очистки, каретка, цвет
+ * точки обязательного поля, варианты и ошибка — рисует тема. */
+
+:root {
+	--so-date-input-segment-padding: 0.0625em;
+	--so-date-input-literal-padding: 0.125em;
+}
+
+/* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
+ * без него обязан выглядеть умолчанием. `relative` — опора точки
+ * обязательного поля (`required.css`). */
+.so-date-input {
+	--so-date-input-height: var(--so-input-height-normal);
+	--so-date-input-indent: var(--so-input-indent-normal);
+	--so-date-input-slot-row: calc(
+		var(--so-date-input-height) - 2 * var(--so-date-input-border, 0px) - 2 *
+			var(--so-input-slot-gap)
+	);
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	height: var(--so-date-input-height);
+	cursor: text;
+}
+
+/* Фокуса у частей выключенного поля нет — ядро не ставит им остановку Tab. */
+.so-date-input[data-disabled='true'] {
+	opacity: var(--so-disabled-opacity);
+	cursor: default;
+}
+
+.so-date-input[data-disabled='true'] > * {
+	--so-disabled-opacity: 1;
+}
+
+.so-date-input .so-date-input__segments {
+	line-height: var(--so-date-input-slot-row);
+}
+
+.so-date-input--size-sm {
+	--so-date-input-height: var(--so-input-height-sm);
+	--so-date-input-indent: var(--so-input-indent-sm);
+}
+
+.so-date-input--size-sm .so-date-input__segments {
+	font-size: var(--so-input-font-size-sm);
+	line-height: var(--so-date-input-slot-row);
+}
+
+.so-date-input--size-normal {
+	--so-date-input-height: var(--so-input-height-normal);
+	--so-date-input-indent: var(--so-input-indent-normal);
+}
+
+.so-date-input--size-normal .so-date-input__segments {
+	line-height: var(--so-date-input-slot-row);
+}
+
+.so-date-input--size-lg {
+	--so-date-input-height: var(--so-input-height-lg);
+	--so-date-input-indent: var(--so-input-indent-lg);
+}
+
+.so-date-input--size-lg .so-date-input__segments {
+	font-size: var(--so-input-font-size-lg);
+	line-height: var(--so-date-input-slot-row);
+}
+
+.so-date-input--size-xl {
+	--so-date-input-height: var(--so-input-height-xl);
+	--so-date-input-indent: var(--so-input-indent-xl);
+}
+
+.so-date-input--size-xl .so-date-input__segments {
+	font-size: var(--so-input-font-size-xl);
+	line-height: var(--so-date-input-slot-row);
+}
+
+.so-date-input--size-2xl {
+	--so-date-input-height: var(--so-input-height-2xl);
+	--so-date-input-indent: var(--so-input-indent-2xl);
+}
+
+.so-date-input--size-2xl .so-date-input__segments {
+	font-size: var(--so-input-font-size-2xl);
+	line-height: var(--so-date-input-slot-row);
+}
+
+/* Высота слота — строка поля, как у Input. */
+.so-date-input__leading,
+.so-date-input__trailing {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	gap: var(--so-input-slot-spacing);
+	height: var(--so-date-input-slot-row);
+	cursor: default;
+}
+
+.so-date-input__leading {
+	padding-inline-start: var(--so-input-slot-padding);
+}
+
+.so-date-input__trailing {
+	margin-inline-start: auto;
+	padding-inline-end: var(--so-input-slot-padding);
+}
+
+/* Кнопка очистки — квадрат в строку слота, как у Input; кнопка календаря
+ * DatePicker рядом — квадрат той же стороны. Цель на мелком размере ей
+ * добирает зона нажатия (`target.css`). */
+.so-date-input__clear {
+	flex-shrink: 0;
+	padding-inline: 0;
+	inline-size: var(--so-date-input-slot-row);
+	block-size: var(--so-date-input-slot-row);
+}
+
+.so-date-input__segments {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	white-space: pre;
+	-webkit-user-select: text;
+	user-select: text;
+	padding-inline: calc(var(--so-date-input-indent) - var(--so-date-input-segment-padding));
+	font-variant-numeric: tabular-nums;
+	min-inline-size: calc(
+		15ch + 2 * (var(--so-date-input-indent) - var(--so-date-input-segment-padding))
+	);
+}
+
+/* Правило секунды идёт за правилом часа и перекрывает его. */
+.so-date-input__segments:has(> [data-type='hour']) {
+	min-inline-size: calc(
+		23.5ch + 2 * (var(--so-date-input-indent) - var(--so-date-input-segment-padding))
+	);
+}
+
+.so-date-input__segments:has(> [data-type='second']) {
+	min-inline-size: calc(
+		26.5ch + 2 * (var(--so-date-input-indent) - var(--so-date-input-segment-padding))
+	);
+}
+
+.so-date-input__literal {
+	padding-inline: var(--so-date-input-literal-padding);
+}
+
+.so-date-input__segment {
+	padding-inline: var(--so-date-input-segment-padding);
+}
+
+/* Цифры стоят у начала части, свободное место — за ними. Коробка — от рамки,
+ * поэтому в минимум входят и поля части. */
+.so-date-input__segment[data-type='year'] {
+	min-inline-size: calc(4ch + 2 * var(--so-date-input-segment-padding));
+}

@@ -1,5 +1,11 @@
 // Точка-маркер обязательного поля.
 //
+// Место и размер точки — у угла начала строки, логической стороной, — даёт
+// общий слой тем (`required.css` в `@soldy-ui/theme-base`) всем контролам с
+// точкой: CheckBox, Switch, полям семьи Input, DateInput и коробке диапазона
+// DatePicker. Он же переносит маркер к подписи в поле формы `Field`
+// (`--so-required-dot`). Здесь — облик точки.
+//
 // Цвет из шкалы темы (`s-negative`), а не из палитры Tailwind (`rose`):
 // иначе маркер один на все темы и цветовые схемы — пакет темы им управлять
 // не может.
@@ -19,39 +25,4 @@
 		forced-color-adjust: none;
 		background-color: CanvasText;
 	}
-}
-
-// Точка целиком — место у угла контрола и облик.
-//
-// Место — угол начала строки, а не левый: сторона логическая (`$start`), и в
-// RTL маркер стоит справа, у начала поля, как и слоты поля. Левым он был у
-// каждого вызова, и в RTL съезжал к концу у Input, CheckBox и Switch.
-//
-// Маркер у поля один. В поле формы `Field` с подписью он переезжает к подписи,
-// а точку контрола гасит переменная `--so-required-dot: none` на обёртке
-// контрола (общий слой тем). Переменной, а не селектором: селектор перечислял
-// бы контролы поимённо, а точка у каждого стоит на своём узле — на корне поля,
-// на коробке CheckBox.
-//
-// Место точки контролов, чья структура уже в общем слое тем (CheckBox,
-// Switch, Input, Textarea, NumberInput), даёт он (`required.css` в
-// `@soldy-ui/theme-base`), и они берут здесь только облик (`required-dot`).
-// Остальные — DateInput и DatePicker — берут точку целиком, пока их структура
-// в теме (`packages/themes/base/AGENTS.md`, «Перенос структуры»).
-@mixin required-indicator(
-	$size: '1',
-	$color: 'so-negative',
-	$shade: '500',
-	$top: '-top-1',
-	$start: '-start-1'
-) {
-	content: '';
-	display: var(--so-required-dot, block);
-	@apply absolute;
-	@apply #{$top};
-	@apply #{$start};
-	@apply #{'w-' + $size};
-	@apply #{'h-' + $size};
-	@apply pointer-events-none;
-	@include required-dot($color, $shade);
 }
