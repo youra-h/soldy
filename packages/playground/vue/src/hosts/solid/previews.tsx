@@ -645,6 +645,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 						items={TABLE_MANY_ROWS}
 						columns={TABLE_COLUMNS}
 						reorderPreview="column"
+						resizable
+						reorderable
 						aria_label="Сотрудники"
 					/>
 				</div>

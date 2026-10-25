@@ -522,6 +522,8 @@ describe('снимок шапки', () => {
 					items: stickyHead ? TABLE_SCROLL_ROWS : TABLE_ROWS,
 					columns: TABLE_COLUMNS,
 					aria_label: 'Сотрудники',
+					resizable: true,
+					reorderable: true,
 					stickyHead,
 				}),
 			],

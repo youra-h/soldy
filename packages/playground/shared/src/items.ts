@@ -117,8 +117,10 @@ export const TABLE_SCROLL_ROWS = numberedRows(40)
 /**
  * Колонки таблицы стенда — данными: имя называет строки (`rowHeader`), все
  * сортируются, у возраста — ширина и выравнивание по концу, как у чисел.
- * Ширину каждой меняет ручка у края заголовка — в границах колонки, а место —
- * перетаскивание заголовка и Ctrl+Shift+←/→ на нём.
+ * Своих `resizable` и `reorderable` у колонок нет — их дают пропы таблицы,
+ * одной строкой стенда на все колонки. Ширину меняет ручка у края заголовка —
+ * в границах колонки, а место — перетаскивание заголовка и Ctrl+Shift+←/→ на
+ * нём.
  *
  * Границы — у всех трёх. Имя и город — без своей ширины: их раскладывает
  * таблица по месту (`columnFit`), в их границах. На широком экране имя
@@ -131,8 +133,6 @@ export const TABLE_COLUMNS = [
 		text: 'Имя',
 		rowHeader: true,
 		sortable: true,
-		resizable: true,
-		reorderable: true,
 		minWidth: 120,
 		maxWidth: 360,
 	},
@@ -140,8 +140,6 @@ export const TABLE_COLUMNS = [
 		field: 'city',
 		text: 'Город',
 		sortable: true,
-		resizable: true,
-		reorderable: true,
 		minWidth: 100,
 		maxWidth: 300,
 	},
@@ -151,8 +149,6 @@ export const TABLE_COLUMNS = [
 		align: 'end' as const,
 		width: 120,
 		sortable: true,
-		resizable: true,
-		reorderable: true,
 		minWidth: 80,
 		maxWidth: 200,
 	},
