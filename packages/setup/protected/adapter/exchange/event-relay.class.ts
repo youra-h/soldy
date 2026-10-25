@@ -17,7 +17,6 @@
  * получает.
  */
 
-import type { TLine } from './line.class'
 import type { TTap } from './tap.class'
 import type { IRoute, TEventSink } from './types'
 
@@ -26,11 +25,11 @@ export class TEventRelay {
 	private _sinks?: readonly TEventSink[]
 
 	/**
-	 * @param _lines линии обмена — из них модели читают новое значение
+	 * @param _owners владельцы участников монтирования — у них модели читают новое значение
 	 * @param _tap слушатель участников, общий с состоянием обмена
 	 */
 	constructor(
-		private readonly _lines: readonly TLine[],
+		private readonly _owners: readonly object[],
 		private readonly _tap: TTap,
 	) {}
 
@@ -94,7 +93,7 @@ export class TEventRelay {
 		for (const sink of sinks) {
 			sink(event, args)
 
-			for (const model of models) sink(model.name, [this._lines[model.line].read()])
+			for (const model of models) sink(model.name, [model.line.read(this._owners)])
 		}
 	}
 }

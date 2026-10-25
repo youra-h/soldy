@@ -23,8 +23,8 @@
  * pluginProps» в порту входов нет.
  */
 
-import type { IEventEmitter, TPluginEvent } from '@soldy-ui/core'
-import type { IPluginBundle, TPluginBundleEvents } from '@soldy-ui/plugins'
+import type { IEventEmitter, TEventListener, TPluginEvent } from '@soldy-ui/core'
+import type { IPlugin, IPluginBundle, TPluginBundleEvents } from '@soldy-ui/plugins'
 import { pluginContractOf } from '../../define'
 import type { TPluginCtor } from '../../define'
 import { CommonProfile } from '../../naming'
@@ -49,18 +49,22 @@ export class TExternalPlugins {
 	static readonly defaultValues = { pluginProps: {} }
 
 	private readonly _bag = new TCell<object>({}, sameValue)
-	private readonly _detach = new Map<TPluginCtor, () => void>()
+	/** Отвязки плагинов, поставленных снаружи, — с первого такого плагина. */
+	private _detach?: Map<TPluginCtor, () => void>
+	/** Отписка от набора. */
+	private readonly _unlisten: () => void
 
 	/**
 	 * @param _own плагины дескриптора: через `pluginProps` они не пишутся — их пропсы уже в поверхности
 	 */
 	constructor(
-		private readonly _bundle: IPluginBundle,
+		bundle: IPluginBundle,
 		private readonly _instance: object,
 		private readonly _own: ReadonlySet<TPluginCtor>,
 	) {
-		_bundle.events.on('use', this._onUse)
-		_bundle.events.on('remove', this._onRemove)
+		// Один слушатель на шину, а не подписка на каждое событие: подписке набор
+		// заводит карту и по набору обработчиков на событие, слушателю — нет
+		this._unlisten = bundle.events.listen(this._onBundle)
 	}
 
 	get pluginProps(): object {
@@ -72,18 +76,24 @@ export class TExternalPlugins {
 	}
 
 	destroy(): void {
-		this._bundle.events.off('use', this._onUse)
-		this._bundle.events.off('remove', this._onRemove)
+		this._unlisten()
 
-		for (const detach of this._detach.values()) detach()
+		const detach = this._detach
 
-		this._detach.clear()
+		this._detach = undefined
+
+		for (const off of detach?.values() ?? []) off()
 	}
 
-	private readonly _onUse: TPluginBundleEvents['use'] = (ctor, plugin) => {
+	private readonly _onBundle: TEventListener<TPluginBundleEvents> = (event, [ctor, plugin]) => {
+		if (event === 'use') this._use(ctor, plugin)
+		else this._remove(ctor)
+	}
+
+	private _use(ctor: TPluginCtor, plugin: IPlugin<any, any>): void {
 		if (this._own.has(ctor)) return
 
-		this._detach.get(ctor)?.()
+		this._detach?.get(ctor)?.()
 
 		const contract = pluginContractOf(ctor)
 
@@ -94,22 +104,24 @@ export class TExternalPlugins {
 		const member = new TMember(plugin, contract)
 		// Значения, пришедшие раньше плагина, ждали его в мешке: для него это пропсы сборки
 		const bag = this._bag.value
-		const exchange = new TExchange([member], TSurface.of(contract, CommonProfile), bag)
+		const surface = TSurface.of(contract, CommonProfile)
+		const exchange = new TExchange([member], surface, bag)
 
-		TInputPort.seed(exchange.lines, bag)
+		TInputPort.seed([member], surface, bag)
 
 		const offBag = this._bag.listen((bag) => exchange.inputs.full(bag))
 		const offEvents = exchange.events.listen((name, args) => this._announce({ name, args }))
 
+		this._detach ??= new Map()
 		this._detach.set(ctor, () => {
 			offBag()
 			offEvents()
 		})
 	}
 
-	private readonly _onRemove: TPluginBundleEvents['remove'] = (ctor) => {
-		this._detach.get(ctor)?.()
-		this._detach.delete(ctor)
+	private _remove(ctor: TPluginCtor): void {
+		this._detach?.get(ctor)?.()
+		this._detach?.delete(ctor)
 	}
 
 	/** Конверт — на шину инстанса: его видят и адаптер, и тот, у кого на руках только `ctrl`. */

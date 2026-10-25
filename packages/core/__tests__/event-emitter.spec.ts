@@ -75,15 +75,47 @@ describe('TEventEmitter', () => {
 		expect(Reflect.get(emitter, '_items')).toBeUndefined()
 
 		emitter.on('test', handler)
+		emitter.on('other', handler)
 		emitter.off('test', handler)
+		emitter.off('other', handler)
 
 		expect(Reflect.get(emitter, '_items')).toBeUndefined()
 
 		emitter.on('test', handler)
+		emitter.on('other', handler)
 		emitter.remove('test')
+		emitter.remove('other')
 
 		expect(Reflect.get(emitter, '_items')).toBeUndefined()
 		expect(emitter.size).toBe(0)
+	})
+
+	/**
+	 * У большинства шин слушают одно событие одним обработчиком, и карта с
+	 * набором на каждую были почти половиной подписок строки таблицы: карта
+	 * заводится со второго события, набор — со второго обработчика.
+	 */
+	it('одно событие одним обработчиком — без карты и без набора', () => {
+		const emitter = new TEventEmitter()
+		const first = vi.fn()
+		const second = vi.fn()
+
+		emitter.on('test', first)
+
+		expect(Reflect.get(emitter, '_items')).toBeUndefined()
+		expect(Reflect.get(emitter, '_handlers')).toBe(first)
+
+		emitter.on('test', second)
+
+		expect(Reflect.get(emitter, '_handlers')).toBeInstanceOf(Set)
+
+		emitter.on('other', first)
+		emitter.emit('test')
+		emitter.emit('other')
+
+		expect(Reflect.get(emitter, '_items')).toBeInstanceOf(Map)
+		expect(first).toHaveBeenCalledTimes(2)
+		expect(second).toHaveBeenCalledTimes(1)
 	})
 })
 
@@ -139,6 +171,77 @@ describe('TEventEmitter: семантика эмита', () => {
 		emitter.on('test', () => emitter.on('test', late))
 		emitter.emit('test')
 
+		expect(late).toHaveBeenCalledTimes(1)
+	})
+
+	/**
+	 * Единственный обработчик лежит без набора, и эмит зовёт его напрямую. Всё,
+	 * что он сделал за свой вызов, эмит обязан отработать так же, как обход
+	 * набора, заведённого с первой подписки.
+	 */
+	it('единственный обработчик поставил другого и снял себя — другой вызывается в том же эмите', () => {
+		const emitter = new TEventEmitter()
+		const late = vi.fn()
+		const once = (): void => {
+			emitter.on('test', late)
+			emitter.off('test', once)
+		}
+
+		emitter.on('test', once)
+		emitter.emit('test')
+
+		expect(late).toHaveBeenCalledTimes(1)
+		expect(emitter.size).toBe(1)
+	})
+
+	it('единственный обработчик снял себя и поставил заново с другим — другой ждёт следующего эмита', () => {
+		const emitter = new TEventEmitter()
+		const late = vi.fn()
+		const handler = (): void => {
+			emitter.off('test', handler)
+			emitter.on('test', handler)
+			emitter.on('test', late)
+		}
+
+		emitter.on('test', handler)
+		emitter.emit('test')
+
+		expect(late).not.toHaveBeenCalled()
+
+		emitter.off('test', handler)
+		emitter.emit('test')
+
+		expect(late).toHaveBeenCalledTimes(1)
+	})
+
+	it('вложенный эмит того же события: поставленного посреди вызывают оба эмита', () => {
+		const emitter = new TEventEmitter()
+		const late = vi.fn()
+		let nested = false
+
+		emitter.on('test', () => {
+			if (nested) return
+
+			nested = true
+			emitter.on('test', late)
+			emitter.emit('test')
+		})
+		emitter.emit('test')
+
+		expect(late).toHaveBeenCalledTimes(2)
+	})
+
+	it('эмит другого эмиттера посреди вызова не путает их обработчики', () => {
+		const first = new TEventEmitter()
+		const second = new TEventEmitter()
+		const late = vi.fn()
+		const shared = vi.fn(() => first.on('test', late))
+
+		first.on('test', () => second.emit('test'))
+		second.on('test', shared)
+		first.emit('test')
+
+		expect(shared).toHaveBeenCalledTimes(1)
 		expect(late).toHaveBeenCalledTimes(1)
 	})
 })

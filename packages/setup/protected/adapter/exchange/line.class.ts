@@ -1,17 +1,23 @@
 /**
- * TLine — линия: одно свойство одного владельца на время монтирования.
+ * TLine — линия: одно свойство одного участника в составе компонента.
  *
- * Описание (`TPropSpec`) + владелец (инстанс, плагин или связка) + имя во
- * фреймворке. Это единственный объект, который знает про свойство всё сразу,
- * поэтому каждое правило записи живёт здесь один раз — и для сборки, и для
- * обмена, и для плагинов, поставленных снаружи:
+ * Описание (`TPropSpec`) + место участника в составе + имя во фреймворке.
+ * Это знание типа, а не монтирования: линии строит таблица маршрутов
+ * (`TRouting`) один раз на поверхность и состав, а владельцев участников
+ * монтирование отдаёт каждому вызову списком (`owners`, по порядку состава).
+ * Объекта на свойство у монтирования нет: раньше линия держала своего
+ * владельца, и у строки таблицы с чекбоксом их было около пятидесяти.
+ *
+ * Линия — единственный объект, который знает про свойство всё сразу, поэтому
+ * каждое правило записи живёт здесь один раз — и для сборки, и для обмена, и
+ * для плагинов, поставленных снаружи:
  *
  * - `write`  — `protected` не пишется. То же ли это значение, решает сеттер
  *   владельца — сверкой со своим записанным значением. Геттер для этого не
  *   годится: у свойства с резольвером он отдаёт итог (`disabled` элемента —
  *   своё или владельца, прижатое `value` Slider), и значение, равное итогу, но
  *   не своему, сверка с геттером теряла бы. Повтор от фреймворка сюда не
- *   доходит: его гасит ячейка входа (`TInputPort`);
+ *   доходит: его гасит память входов (`TInputPort`);
  * - `reset`  — к умолчанию описания; ключа умолчания нет — значение остаётся;
  * - `accept` — что пришло от фреймворка: `undefined` значит «сняли»;
  * - `seed`   — начальное значение: `undefined` и равное умолчанию ничего не
@@ -19,11 +25,10 @@
  *   подставил умолчание за автора (Vue делает это с каждым пропом, у которого
  *   объявлен `default`).
  *
- * Памяти у линии нет: «что задал фреймворк» помнит ячейка входа (`TInputPort`),
- * «что отдано фреймворку» — ячейка выхода (`TStateStore`). Подписок тоже нет:
- * за триггерами свойства следит слушатель участника (`TTap`) по таблице
- * маршрутов типа (`TRouting`), а линии строит она же — одним правилом для
- * обмена и для начальных значений сборки.
+ * Памяти у линии нет: «что задал фреймворк» помнит память входов
+ * (`TInputPort`), «что отдано фреймворку» — состояние (`TStateStore`).
+ * Подписок тоже нет: за триггерами свойства следит слушатель участников
+ * (`TTap`) по таблице маршрутов типа.
  */
 
 import type { TPropSpec } from '../../define'
@@ -32,7 +37,8 @@ import { sameValue } from './value'
 export class TLine {
 	constructor(
 		readonly spec: TPropSpec,
-		readonly owner: object,
+		/** Место участника в составе: владелец свойства — `owners[member]`. */
+		readonly member: number,
 		/** Имя во фреймворке: `text`, `aria_label`. */
 		readonly name: string,
 	) {}
@@ -46,27 +52,27 @@ export class TLine {
 		return !this.spec.protected
 	}
 
-	read(): unknown {
-		return this.spec.read(this.owner)
+	read(owners: readonly object[]): unknown {
+		return this.spec.read(owners[this.member])
 	}
 
-	write(value: unknown): void {
-		if (this.writable) this.spec.assign(this.owner, value)
+	write(owners: readonly object[], value: unknown): void {
+		if (this.writable) this.spec.assign(owners[this.member], value)
 	}
 
-	reset(): void {
-		if (this.spec.hasDefault) this.write(this.spec.default)
+	reset(owners: readonly object[]): void {
+		if (this.spec.hasDefault) this.write(owners, this.spec.default)
 	}
 
-	accept(value: unknown): void {
-		if (value === undefined) this.reset()
-		else this.write(value)
+	accept(owners: readonly object[], value: unknown): void {
+		if (value === undefined) this.reset(owners)
+		else this.write(owners, value)
 	}
 
-	seed(value: unknown): void {
+	seed(owners: readonly object[], value: unknown): void {
 		if (value === undefined) return
 		if (this.spec.hasDefault && sameValue(value, this.spec.default)) return
 
-		this.write(value)
+		this.write(owners, value)
 	}
 }

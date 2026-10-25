@@ -1,5 +1,5 @@
 /**
- * TExchange — обмен значениями на время монтирования: линии участников и три порта над ними.
+ * TExchange — обмен значениями на время монтирования: владельцы участников и три порта над ними.
  *
  * Это всё, что видит адаптер: `state` (куда положить значение — решает он),
  * `inputs` (каким способом доставки пользоваться — решает он) и `events` (как
@@ -11,8 +11,11 @@
  *
  * Что делать с событием участника, решает таблица маршрутов типа
  * (`TRouting`), а шины участников слушает один слушатель на шину (`TTap`) —
- * его делят состояние и события. На монтирование у обмена — линии, ячейки и
- * эти слушатели; маршрутов, подписок и замыканий на каждое событие нет.
+ * его делят состояние и события. Линии свойств — тоже строки таблицы. На
+ * монтирование у обмена — владельцы участников, значения состояния и входов и
+ * эти слушатели; объектов на свойство, маршрутов, подписок и замыканий на
+ * каждое событие нет. Участников (`TMember`) обмен не держит: они нужны,
+ * чтобы найти таблицу и владельцев.
  *
  * Пока над кем-то из участников идёт сборка другого монтирования
  * (`TAssembling`), обмен отдаёт фреймворку итог сборки, а не каждый её шаг:
@@ -47,7 +50,10 @@ function isCancelable(args: readonly unknown[]): boolean {
 }
 
 export class TExchange {
+	/** Линии состава — общие у всех монтирований типа, владельцев берут из `owners`. */
 	readonly lines: readonly TLine[]
+	/** Владельцы участников по порядку состава: инстанс, плагины, связка. */
+	readonly owners: readonly object[]
 	readonly state: TStateStore
 	readonly inputs: TInputPort
 	readonly events: TEventRelay
@@ -61,11 +67,10 @@ export class TExchange {
 		buildProps: object = {},
 	) {
 		const routing = TRouting.of(surface, members)
-		const lines = routing.lines(members)
 		const owners = members.map((member) => member.owner)
 		// Порядок — правило обмена, а не очерёдность подписок: сначала состояние,
 		// потом событие и его модели
-		const tap = new TTap(members, routing.routes, (route, args) => {
+		const tap = new TTap(owners, routing.routes, (route, args) => {
 			if (this._queue === undefined && !assembling.covers(owners)) {
 				this.state.refresh(route.cells)
 				this.events.publish(route, args)
@@ -78,16 +83,11 @@ export class TExchange {
 			}
 		})
 
-		this.lines = lines
-		this.state = new TStateStore(
-			routing.readable.map((index) => lines[index]),
-			tap,
-		)
-		this.inputs = new TInputPort(
-			routing.writable.map((index) => lines[index]),
-			buildProps,
-		)
-		this.events = new TEventRelay(lines, tap)
+		this.lines = routing.lines
+		this.owners = owners
+		this.state = new TStateStore(routing.readable, owners, tap)
+		this.inputs = new TInputPort(routing.writable, owners, buildProps)
+		this.events = new TEventRelay(owners, tap)
 	}
 
 	/** Пропсы, которые компонент не съел: уходят атрибутами в корневой узел. */

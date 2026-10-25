@@ -16,20 +16,23 @@ import { TMember } from '../exchange/member.class'
 import type { IBundleTenancy } from './types'
 
 export class TSharedBundle implements IBundleTenancy {
-	readonly members: readonly TMember[]
-	/** Чужим плагинам начальные значения пишет владелец набора. */
-	readonly seeded: readonly TMember[] = []
-
 	constructor(
-		descriptor: Pick<IComponentDescriptor, 'plugins'>,
+		private readonly _descriptor: Pick<IComponentDescriptor, 'plugins'>,
 		readonly bundle: IPluginBundle | null,
-	) {
-		this.members = descriptor.plugins.flatMap((plugin) => {
-			const owner = bundle?.get(plugin.ctor)
+	) {}
+
+	members(): readonly TMember[] {
+		return this._descriptor.plugins.flatMap((plugin) => {
+			const owner = this.bundle?.get(plugin.ctor)
 
 			// Описание участника-плагина — его определение: одно на тип
 			return owner ? [new TMember(owner, plugin)] : []
 		})
+	}
+
+	/** Чужим плагинам начальные значения пишет владелец набора. */
+	seeded(): readonly TMember[] {
+		return []
 	}
 
 	complete(): void {}

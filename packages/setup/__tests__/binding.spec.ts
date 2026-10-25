@@ -200,15 +200,13 @@ describe('связка · ядро ↔ фреймворк', () => {
 	it('проп читается по имени фреймворка и по сырому имени', () => {
 		const context = createAdapterContext(ButtonDescriptor(), {})
 		const binding = context.connect(CallbackProfile)
-		const label = required(
-			[...binding.inputs].find(
-				(input) => input.line.spec.name.getName() === new TName('label', 'aria').getName(),
-			),
-			'проп aria:label',
-		)
+		const index = binding.lines
+			.filter((line) => line.writable)
+			.findIndex((line) => line.spec.name.getName() === new TName('label', 'aria').getName())
 
-		expect(label.pick({ aria_label: 'Закрыть' })).toBe('Закрыть')
-		expect(label.pick({ label: 'Закрыть' })).toBe('Закрыть')
+		expect(index).not.toBe(-1)
+		expect(binding.inputs.pick({ aria_label: 'Закрыть' })[index]).toBe('Закрыть')
+		expect(binding.inputs.pick({ label: 'Закрыть' })[index]).toBe('Закрыть')
 	})
 })
 

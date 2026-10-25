@@ -71,7 +71,7 @@ function bind(adapter: IAdapterContext): TStore {
 	return {
 		adapter,
 		binding,
-		snapshot: new TStableSnapshot(binding.state.getSnapshot),
+		snapshot: new TStableSnapshot(binding.state),
 		callbacks: new TEventCallbacks(),
 	}
 }
@@ -93,7 +93,7 @@ function useExchange(
 	const { binding, snapshot, callbacks } = store
 
 	const state = useSyncExternalStore(
-		binding.state.subscribe,
+		snapshot.subscribe,
 		snapshot.getSnapshot,
 		snapshot.getSnapshot,
 	)

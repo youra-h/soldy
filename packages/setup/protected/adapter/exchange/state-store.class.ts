@@ -1,52 +1,54 @@
 /**
- * TStateStore — ядро → фреймворк: ячейка на каждое свойство с триггерами и снимок всего состояния.
+ * TStateStore — ядро → фреймворк: значение каждого свойства с триггерами и снимок всего состояния.
  *
- * Путь у значения один: сработал триггер — свойство перечитано и положено в
- * ячейку; подписался фреймворк — то же самое для каждого свойства. «Сменилось
- * ли» решает правило равенства ячейки (`sameValue`), поэтому снимок остаётся
- * тем же объектом, пока ни одна ячейка не сменилась, — не проверкой, а по
- * построению.
+ * Путь у значения один: сработал триггер — свойство перечитано и положено на
+ * своё место; подписался фреймворк — то же самое для каждого свойства.
+ * «Сменилось ли» решает одно правило равенства (`sameValue`), поэтому снимок
+ * остаётся тем же объектом, пока ни одно значение не сменилось, — не
+ * проверкой, а по построению.
+ *
+ * Значения лежат одним списком по линиям (значение `i` — линии `i`), а не
+ * ячейкой на свойство: подписчиков у отдельного свойства нет — уведомляет
+ * состояние целиком, — и объект на свойство был бы только обёрткой над
+ * значением. Список заводит первое чтение: обмену плагина, поставленного
+ * снаружи, состояние не нужно — ему хватает входов и событий.
  *
  * За триггерами следит слушатель участников обмена (`TTap`): состояние держит
- * его, пока у него есть подписчики, а слушатель зовёт `refresh` с ячейками,
- * для чьих свойств событие — триггер. На свои ячейки состояние не
- * подписывается: что значение сменилось, оно узнаёт из ответа `set()`.
+ * его, пока у него есть подписчики, а слушатель зовёт `refresh` со
+ * значениями, для чьих свойств событие — триггер.
  *
- * `subscribe` и `getSnapshot` — стрелки: их отдают `useSyncExternalStore` без `this`.
+ * `subscribe` и `getSnapshot` — методы: фреймворк, которому они нужны без
+ * `this` (`useSyncExternalStore`), привязывает их у себя в адаптере.
  */
 
-import { TCell } from './cell.class'
 import type { TLine } from './line.class'
 import type { TTap } from './tap.class'
 import type { TStateListener, TStateSnapshot } from './types'
 import { sameValue } from './value'
 
 export class TStateStore {
-	private readonly _cells: readonly TCell<unknown>[]
+	/** Значения по линиям — с первого чтения. */
+	private _values?: unknown[]
 	/** Подписчики — пока есть хоть один. Список не правится на месте: уведомление обходит тот, что застало. */
 	private _listeners?: readonly TStateListener[]
 	private _snapshot: TStateSnapshot | null = null
-	private _primed = false
 
 	/**
-	 * @param _lines линии с триггерами: ячейка `i` — линия `i`
+	 * @param _lines линии с триггерами: значение `i` — линии `i`
+	 * @param _owners владельцы участников монтирования — по порядку состава
 	 * @param _tap слушатель участников, общий с событиями обмена
 	 */
 	constructor(
 		private readonly _lines: readonly TLine[],
+		private readonly _owners: readonly object[],
 		private readonly _tap: TTap,
-	) {
-		// Значения читаются при первом обращении, а не при создании: обмену плагина,
-		// поставленного снаружи, состояние не нужно — ему хватает входов и событий
-		this._cells = _lines.map(() => new TCell<unknown>(undefined, sameValue))
-	}
+	) {}
 
-	readonly subscribe = (listener: TStateListener): (() => void) => {
+	subscribe(listener: TStateListener): () => void {
 		// Сначала подписка на триггеры, потом чтение: иначе изменение между ними теряется
 		if (this._listeners === undefined) this._tap.hold()
 
-		this._refresh()
-
+		const values = this._refresh()
 		const listeners = this._listeners
 
 		// Литерал, а не спред в пустой список: у массива, собранного по элементу,
@@ -54,7 +56,7 @@ export class TStateStore {
 		if (!listeners) this._listeners = [listener]
 		else if (!listeners.includes(listener)) this._listeners = [...listeners, listener]
 
-		this._lines.forEach((line, index) => listener(line.name, this._cells[index].value))
+		this._lines.forEach((line, index) => listener(line.name, values[index]))
 
 		return () => {
 			const current = this._listeners
@@ -71,53 +73,57 @@ export class TStateStore {
 		}
 	}
 
-	readonly getSnapshot = (): TStateSnapshot => {
+	getSnapshot(): TStateSnapshot {
 		// Первое обращение читает значения; дальше снимок меняют только триггеры и
 		// подписка. Рендер React зовёт снимок без подписки и обязан получать тот же
 		// объект — изменение ядра между рендером и подпиской подхватит `subscribe`
-		if (!this._primed) this._refresh()
+		const values = this._values ?? this._refresh()
 
 		this._snapshot ??= Object.freeze(
-			Object.fromEntries(
-				this._lines.map((line, index) => [line.name, this._cells[index].value]),
-			),
+			Object.fromEntries(this._lines.map((line, index) => [line.name, values[index]])),
 		)
 
 		return this._snapshot
 	}
 
 	/**
-	 * Сработал триггер: перечитать ячейки его свойств. Зовёт слушатель
-	 * участников (`TTap`), а не адаптер. Пока состояние не слушают, ячейки не
+	 * Сработал триггер: перечитать значения его свойств. Зовёт слушатель
+	 * участников (`TTap`), а не адаптер. Пока состояние не слушают, значения не
 	 * перечитываются — их перечитает подписка.
 	 */
 	refresh(cells: readonly number[]): void {
-		if (this._listeners === undefined) return
+		const values = this._values
 
-		for (const index of cells) this._read(index)
+		if (this._listeners === undefined || values === undefined) return
+
+		for (const index of cells) this._read(values, index)
 	}
 
 	/**
-	 * Перечитать все ячейки: триггеры пришли во время чужой сборки, и обмен
+	 * Перечитать все значения: триггеры пришли во время чужой сборки, и обмен
 	 * отложил их (`TExchange`). Пока состояние не слушают — как у `refresh`.
 	 */
 	refreshAll(): void {
 		if (this._listeners !== undefined) this._refresh()
 	}
 
-	private _refresh(): void {
-		this._primed = true
+	private _refresh(): unknown[] {
+		// `map`, а не `new Array(n)`: список без дыр и ровно по числу линий
+		const values = (this._values ??= this._lines.map(() => undefined))
 
-		for (let index = 0; index < this._lines.length; index++) this._read(index)
+		for (let index = 0; index < this._lines.length; index++) this._read(values, index)
+
+		return values
 	}
 
 	/** Перечитать свойство: сменилось — снимок устарел, подписчики получают новое значение. */
-	private _read(index: number): void {
+	private _read(values: unknown[], index: number): void {
 		const line = this._lines[index]
-		const value = line.read()
+		const value = line.read(this._owners)
 
-		if (!this._cells[index].set(value)) return
+		if (sameValue(values[index], value)) return
 
+		values[index] = value
 		this._snapshot = null
 
 		const listeners = this._listeners

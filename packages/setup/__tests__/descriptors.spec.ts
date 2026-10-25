@@ -70,7 +70,9 @@ import { required } from './helpers'
 const assemble = (descriptor: IComponentDescriptor, instance: object) => {
 	const context = createAdapterContext(descriptor, { ctrl: instance })
 
-	return { bundle: context.bundle, lines: context.connect(CommonProfile).lines }
+	const { lines, owners } = context.connect(CommonProfile)
+
+	return { bundle: context.bundle, lines, owners }
 }
 
 const propNames = (d: Pick<IComponentDescriptor, 'props'>) => d.props.map((p) => p.name.name)
@@ -119,13 +121,13 @@ describe('дескрипторы компонентов (наследовани�
 	it('ButtonDescriptor: линия привязывает собственный проп к instance', () => {
 		const d = ButtonDescriptor()
 		const instance = new TButton()
-		const { lines } = assemble(d, instance)
+		const { lines, owners } = assemble(d, instance)
 
 		const viewProp = required(
 			lines.find((line) => line.spec.name.name === 'view'),
 			'prop view',
 		)
-		expect(viewProp.owner).toBe(instance)
+		expect(owners[viewProp.member]).toBe(instance)
 
 		// Плагины дают события с namespace
 		expect(d.getEvents().some((event) => event.getName() === 'element:ready')).toBe(true)

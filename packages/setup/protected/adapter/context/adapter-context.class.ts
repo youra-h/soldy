@@ -1,8 +1,8 @@
 /**
- * TAdapterContext — компонент на время монтирования: инстанс, набор, участники обмена и расширения.
+ * TAdapterContext — компонент на время монтирования: инстанс, набор, обмен и расширения.
  *
- * Расширения регистрируются по самому классу — карта ключуется конструктором,
- * как `TPluginBundle` ключуется классом плагина.
+ * Расширения регистрируются по самому классу — как `TPluginBundle` ключуется
+ * классом плагина.
  *
  * `bindElement` — метод контекста, а не расширение: связку корня с
  * `TElementPlugin` зовут все шесть адаптеров, а расширение каждый из них был бы
@@ -13,18 +13,22 @@
  * Angular и Web Components это сама сборка, у React — коммит. Поэтому фаза —
  * метод контекста, как `bindElement`, а не шаг, который помнит каждый компонент.
  *
- * Пропсы сборки контекст держит до первого `connect()`. Нужны они двоим:
- * расширениям, которые читают их в конструкторе (`meta` элемента коллекции), и
- * обмену — его память входов начинается с них. Дальше память входов живёт
- * своими ячейками, и контекст пропсы отпускает: пропсы сборки бывают снимком
- * одного прохода фреймворка, и до размонтирования контекст держал бы значения,
- * которые с тех пор сменились, — у таблицы прежний список строк со всеми
- * записями.
+ * Участников обмена и пропсы сборки контекст держит до первого `connect()`.
+ * Пропсы нужны двоим: расширениям, которые читают их в конструкторе (`meta`
+ * элемента коллекции), и обмену — его память входов начинается с них.
+ * Участники — только обмену: по ним он находит таблицу маршрутов и владельцев.
+ * Дальше обмен живёт своими значениями, и контекст отпускает и то и другое:
+ * пропсы сборки бывают снимком одного прохода фреймворка, и до размонтирования
+ * контекст держал бы значения, которые с тех пор сменились, — у таблицы
+ * прежний список строк со всеми записями.
  *
  * Обмен один на монтирование: первый `connect()` его заводит, повторный с тем
  * же профилем отдаёт его же — фреймворк вправе позвать инициализатор связки
  * дважды, а пропсов сборки, с которых начать второй обмен, у контекста уже
  * нет. С другим профилем — ошибка: одно монтирование — один фреймворк.
+ *
+ * Шина событий контекста и список расширений заводятся с первым обращением:
+ * у фасада коллекции и у компонента без расширений их нет.
  */
 
 import { TEvented } from '@soldy-ui/core'
@@ -37,24 +41,44 @@ import type { TMember } from '../exchange/member.class'
 import { TSurface } from '../surface'
 import type { IAdapterContext, IBundleTenancy, TAdapterEvents, TAnyExtensionCtor } from './types'
 
-export class TAdapterContext<C extends IComponentContract> implements IAdapterContext<C> {
-	readonly events = new TEvented<TAdapterEvents>()
+/** Из чего первый `connect()` заводит обмен. */
+interface IAssembly {
+	readonly members: readonly TMember[]
+	readonly props: object
+}
 
-	private readonly _extensions = new Map<TAnyExtensionCtor, unknown>()
-	/** Пропсы сборки — до первого `connect()`. */
-	private _props: object | undefined
-	/** Обмен монтирования — его заводит первый `connect()`. */
-	private _exchange: TExchange | undefined
+/** Расширение заведено этим классом, а не его наследником или предком. */
+function isExact(extension: unknown, ExtensionCtor: TAnyExtensionCtor): boolean {
+	return (
+		typeof extension === 'object' &&
+		extension !== null &&
+		Object.getPrototypeOf(extension) === ExtensionCtor.prototype
+	)
+}
+
+export class TAdapterContext<C extends IComponentContract> implements IAdapterContext<C> {
+	private _events?: TEvented<TAdapterEvents>
+	/**
+	 * Расширения — с первого. Список, а не карта по классу: расширение у
+	 * контекста обычно одно, и карта стоила бы втрое дороже.
+	 */
+	private _extensions?: unknown[]
+	/** До первого `connect()` — участники и пропсы сборки, после — обмен монтирования. */
+	private _link: IAssembly | TExchange
 
 	constructor(
 		readonly descriptor: IComponentDescriptor,
 		readonly instance: C['instance'],
 		private readonly _tenancy: IBundleTenancy,
-		private readonly _members: readonly TMember[],
+		members: readonly TMember[],
 		props: object,
 		readonly embedded: string | undefined,
 	) {
-		this._props = props
+		this._link = { members, props }
+	}
+
+	get events(): TEvented<TAdapterEvents> {
+		return (this._events ??= new TEvented())
 	}
 
 	get bundle(): IPluginBundle | null {
@@ -62,12 +86,14 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 	}
 
 	get props(): object | undefined {
-		return this._props
+		return this._link instanceof TExchange ? undefined : this._link.props
 	}
 
 	connect(profile: IAdapterProfile): TExchange {
 		const surface = TSurface.of(this.descriptor, profile)
-		const exchange = this._exchange ?? new TExchange(this._members, surface, this._props)
+		const link = this._link
+		const exchange =
+			link instanceof TExchange ? link : new TExchange(link.members, surface, link.props)
 
 		if (exchange.surface !== surface) {
 			throw new Error(
@@ -75,21 +101,25 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 			)
 		}
 
-		// Память входов завела свои ячейки: пропсы сборки больше никому не нужны
-		this._exchange = exchange
-		this._props = undefined
+		// Память входов завела свои значения: участники и пропсы сборки больше никому не нужны
+		this._link = exchange
 
 		return exchange
 	}
 
 	use(ExtensionCtor: TAnyExtensionCtor, options?: unknown): this {
-		this._extensions.set(ExtensionCtor, new ExtensionCtor(this, options))
+		const extension = new ExtensionCtor(this, options)
+		const extensions = (this._extensions ??= [])
+		const index = extensions.findIndex((current) => isExact(current, ExtensionCtor))
+
+		if (index === -1) extensions.push(extension)
+		else extensions[index] = extension
 
 		return this
 	}
 
 	get<T>(ExtensionCtor: new (...args: any[]) => T): T | undefined {
-		const extension = this._extensions.get(ExtensionCtor)
+		const extension = this._extensions?.find((current) => isExact(current, ExtensionCtor))
 
 		return extension instanceof ExtensionCtor ? extension : undefined
 	}
@@ -101,12 +131,12 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 	}
 
 	attach(): void {
-		this.events.emit('attach')
+		this._events?.emit('attach')
 	}
 
 	destroy(): void {
-		this.events.emit('destroy')
-		this._extensions.clear()
+		this._events?.emit('destroy')
+		this._extensions = undefined
 		this._tenancy.destroy()
 	}
 }
