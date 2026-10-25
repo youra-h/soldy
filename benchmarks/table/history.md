@@ -6,7 +6,7 @@
 
 ## Стенд
 
-[`tools/bench-table/`](../tools/bench-table/) — Vite-страница и прогонщик на Playwright.
+[`tools/bench-table/`](../../tools/bench-table/) — Vite-страница и прогонщик на Playwright.
 Вне workspaces: зависимости других библиотек ставятся только в стенд и в монорепо не
 попадают.
 

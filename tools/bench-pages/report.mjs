@@ -4,7 +4,7 @@ import path from 'node:path'
 /**
  * Таблицы журнала из итога прогона (`results/<фреймворк>.json`, его пишет
  * `run.mjs`) — Markdown в вывод, для раздела журнала
- * `benchmarks/pages_<фреймворк>.md`.
+ * `benchmarks/pages/<фреймворк>.md`.
  *
  *   node report.mjs vue
  *

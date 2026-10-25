@@ -7,7 +7,7 @@ import { serve } from './serve.mjs'
 
 /**
  * Прогон страниц компонентов: вес страницы и утечки по циклам (см.
- * benchmarks/README.md, «Страницы компонентов»).
+ * benchmarks/pages/README.md).
  *
  *   npm run bench                                  # все фреймворки, все страницы
  *   npm run bench -- --fw vue,react --pages button,select --cycles 10

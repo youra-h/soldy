@@ -25,7 +25,7 @@ function sourceOf({ below, above }: TStates, key: string | symbol): object {
 /**
  * Обработчик один на все виды: геттер на каждое имя обоих состояний —
  * замыкание, его область и пара аксессоров — у строки таблицы стоил килобайты
- * (benchmarks/table_svelte.md).
+ * (benchmarks/table/svelte.md).
  */
 const JOINED: ProxyHandler<TStates> = {
 	get: (states, key) => Reflect.get(sourceOf(states, key), key),

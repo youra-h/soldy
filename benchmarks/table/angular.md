@@ -1,7 +1,7 @@
 # Таблица на Angular
 
 Таблица soldy на адаптере Angular рядом с таблицами библиотек Angular. Стенд, условия сравнения
-и методика — [`README.md`, «Таблица»](README.md#таблица).
+и методика — [`README.md`](README.md).
 
 ## 2026-10-25 — Angular, первый замер
 
@@ -56,7 +56,7 @@ npm run bench -- 5000 3 angular:soldy+fit=none+width=3248+track,angular:material
 
 - Выделение у soldy — быстрее всех библиотек; рендер на 0,4 с медленнее Material и PrimeNG.
 - Память — больше всех: 400 МБ против 104 МБ у Material. У Vue та же таблица — 296 МБ
-  (`table_vue.md`): адаптер Angular держит на строку на треть больше.
+  (`vue.md`): адаптер Angular держит на строку на треть больше.
 
 ## 2026-10-25 — Angular, запросы узлов шаблона и ветки ячеек
 
@@ -108,7 +108,7 @@ npm run heap -- 5000 unmount angular:soldy+fit=none+width=3248+track 1 2000
 
 [869fmckzg](https://app.clickup.com/t/869fmckzg). Правка общего слоя — обмена setup
 (`packages/setup/protected/`) и эмиттера ядра, — одна для всех адаптеров; разбор по куче —
-`table_webc.md`, раздел этого дня. soldy — `main` на `80f66138f` и ветка
+`webc.md`, раздел этого дня. soldy — `main` на `80f66138f` и ветка
 `task/869fmckzg-exchange-memory`; замеры подряд, в одних условиях:
 `angular:soldy+fit=none+width=3248+track`, 5000 строк × 20 колонок, 3 прогона, медиана; время — в
 секундах до успокоения.
@@ -144,7 +144,7 @@ npm run bench -- 5000 3 angular:soldy+fit=none+width=3248+track
 ## 2026-10-25 — Angular, слушатель шины снимается по ссылке
 
 [869fmcrp8](https://app.clickup.com/t/869fmcrp8). Правка шины ядра и обмена setup
-(`packages/setup/protected/`), одна для всех адаптеров; разбор по куче — `table_webc.md`, раздел этого дня. soldy — `main` на `ddf80c3f6` и
+(`packages/setup/protected/`), одна для всех адаптеров; разбор по куче — `webc.md`, раздел этого дня. soldy — `main` на `ddf80c3f6` и
 ветка `task/869fmcrp8-unlisten`; замеры подряд, в одних условиях: `soldy+fit=none+width=3248+track`,
 5000 строк × 20 колонок, 3 прогона, медиана; время — в секундах до успокоения.
 

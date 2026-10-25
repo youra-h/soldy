@@ -1,7 +1,7 @@
 # Таблица на Web Components
 
 Таблица soldy на Web Components рядом с таблицами библиотек на Web Components. Стенд, условия
-сравнения и методика — [`README.md`, «Таблица»](README.md#таблица).
+сравнения и методика — [`README.md`](README.md).
 
 ## 2026-10-25 — Web Components, первый замер
 

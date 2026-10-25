@@ -91,7 +91,7 @@ export function useAdapterParts(
 	// составное — массив ячеек строки таблицы, каждую ячейку, её `aria` и
 	// `dataset`, элементы коллекции — с зависимостью Vue на каждый прочитанный
 	// ключ, и следить за ними незачем: на месте их никто не меняет. В таблице
-	// это была почти пятая часть памяти строки (benchmarks/table.md, 869fekb4g)
+	// это была почти пятая часть памяти строки (benchmarks/table/history.md, 869fekb4g)
 	const refs: Record<string, Ref<unknown>> = {}
 
 	offs.push(

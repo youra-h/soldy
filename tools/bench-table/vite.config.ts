@@ -7,7 +7,7 @@ import path from 'node:path'
 import { angular } from '../../packages/playground/vue/src/vite-angular.ts'
 
 /**
- * Стенд замера таблиц (см. benchmarks/README.md в корне). soldy берётся исходниками,
+ * Стенд замера таблиц (см. benchmarks/table/README.md в корне). soldy берётся исходниками,
  * как в стенде разработчика; таблицы других библиотек — из своих зависимостей стенда.
  * Страница на фреймворк: `index.html` — участники на Vue, `react.html`, `angular.html`,
  * `svelte.html`, `solid.html` и `webc.html` — на своих.

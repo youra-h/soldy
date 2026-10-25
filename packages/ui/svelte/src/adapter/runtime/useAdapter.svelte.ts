@@ -62,7 +62,7 @@ export type TCollectionBinding<TState extends object, TProps extends object = ob
  * всё составное — массив ячеек строки таблицы, каждую ячейку, её `aria` и
  * `dataset`, — с источником на каждый прочитанный ключ, и следить за ними
  * незачем: на месте их никто не меняет. В таблице это была треть памяти строки
- * (benchmarks/table_svelte.md, 869fmcau7)
+ * (benchmarks/table/svelte.md, 869fmcau7)
  */
 class TRawValue {
 	value = $state.raw<unknown>()
@@ -85,7 +85,7 @@ function valueOf({ values }: TRawValues, name: string | symbol): TRawValue | und
 /**
  * Состояние связки — прокси над рунами её свойств, обработчик один на все
  * связки. Геттер на каждое свойство — замыкание, его области и пара
- * аксессоров — у строки таблицы стоил килобайты (benchmarks/table_svelte.md).
+ * аксессоров — у строки таблицы стоил килобайты (benchmarks/table/svelte.md).
  * Руна заводится подпиской, а не первым чтением: руна, заведённая в
  * исполняемом эффекте, в нём же не отслеживается.
  */

@@ -1,8 +1,8 @@
 # Таблица на React
 
 Таблица soldy на адаптере React рядом с таблицами библиотек React. Стенд, условия сравнения и
-методика — [`README.md`, «Таблица»](README.md#таблица); история замеров до 2026-10-25 —
-[`table.md`](table.md).
+методика — [`README.md`](README.md); история замеров до 2026-10-25 —
+[`history.md`](history.md).
 
 ## 2026-10-25 — React, на равных
 
@@ -30,8 +30,8 @@ npm run bench -- 5000 3 react:soldy+fit=none+width=3248+track,react:mui,react:ma
 | Память после снятия  | **2,5 МБ**   | 3,5 МБ   | 3,5 МБ      |
 
 - MUI — `Table` по примеру «Sorting & selecting», Mantine — `Table` и `Checkbox` по примерам
-  «Table with selection» и «Sort table»: сортирует приложение (`table.md`, «Стенд»).
-- Ant Design 6.6 не замерен: на 5000 строк за полчаса не закончился ни один прогон (`table.md`,
+  «Table with selection» и «Sort table»: сортирует приложение (`history.md`, «Стенд»).
+- Ant Design 6.6 не замерен: на 5000 строк за полчаса не закончился ни один прогон (`history.md`,
   «React, на равных с shadcn, MUI, Ant Design, Mantine»).
 
 ### Ориентиры
@@ -60,7 +60,7 @@ npm run bench -- 5000 3 react:soldy+fit=none+width=3248+track,react:mui,react:ma
 
 [869fmckzg](https://app.clickup.com/t/869fmckzg). Правка общего слоя — обмена setup
 (`packages/setup/protected/`) и эмиттера ядра, — одна для всех адаптеров; разбор по куче —
-`table_webc.md`, раздел этого дня. soldy — `main` на `80f66138f` и ветка
+`webc.md`, раздел этого дня. soldy — `main` на `80f66138f` и ветка
 `task/869fmckzg-exchange-memory`; замеры подряд, в одних условиях:
 `react:soldy+fit=none+width=3248+track`, 5000 строк × 20 колонок, 3 прогона, медиана; время — в
 секундах до успокоения.
@@ -96,7 +96,7 @@ npm run bench -- 5000 3 react:soldy+fit=none+width=3248+track
 ## 2026-10-25 — React, слушатель шины снимается по ссылке
 
 [869fmcrp8](https://app.clickup.com/t/869fmcrp8). Правка шины ядра и обмена setup
-(`packages/setup/protected/`), одна для всех адаптеров; разбор по куче — `table_webc.md`, раздел этого дня. soldy — `main` на `ddf80c3f6` и
+(`packages/setup/protected/`), одна для всех адаптеров; разбор по куче — `webc.md`, раздел этого дня. soldy — `main` на `ddf80c3f6` и
 ветка `task/869fmcrp8-unlisten`; замеры подряд, в одних условиях: `soldy+fit=none+width=3248+track`,
 5000 строк × 20 колонок, 3 прогона, медиана; время — в секундах до успокоения.
 
