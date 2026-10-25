@@ -1017,6 +1017,31 @@ describe('ручка ширины', () => {
 		expect(text(find('.so-table-column__text', name))).toBe('Имя')
 	})
 
+	it('resizable таблицы — ручки у колонок без своего, вместе с пропом', async () => {
+		const resizable = ref(true)
+
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [
+					{ ...NAME, width: 150 },
+					{ ...AGE, width: 100, resizable: false },
+				],
+				resizable: resizable.value,
+			}),
+		)
+
+		const [name, age] = findAll('.so-table-column')
+
+		expect(findAll('.so-table-column__resizer', name)).toHaveLength(1)
+		expect(findAll('.so-table-column__resizer', age)).toEqual([])
+
+		resizable.value = false
+		await settle()
+
+		expect(findAll('.so-table-column__resizer')).toEqual([])
+	})
+
 	it('клавиша на поле — ширина заголовка, поле и column:resize таблицы', async () => {
 		const resize = vi.fn()
 		const engine = engineOf('none', [ANNA], [RESIZABLE])
@@ -1056,6 +1081,28 @@ describe('перестановка колонок', () => {
 
 		expect(name.dataset.reorderable).toBe('true')
 		expect(age.dataset.reorderable).toBe('false')
+	})
+
+	it('reorderable таблицы — колонкам без своего, вместе с пропом', async () => {
+		const reorderable = ref(true)
+
+		await render(() =>
+			h(Table, {
+				items: [{ data: ANNA }],
+				columns: [NAME, { ...AGE, reorderable: false }],
+				reorderable: reorderable.value,
+			}),
+		)
+
+		const [name, age] = findAll('.so-table-column')
+
+		expect(name.dataset.reorderable).toBe('true')
+		expect(age.dataset.reorderable).toBe('false')
+
+		reorderable.value = false
+		await settle()
+
+		expect(name.dataset.reorderable).toBe('false')
 	})
 
 	it('Ctrl+Shift+← на кнопке сортировки — шапка и ячейки в новом порядке, column:move', async () => {

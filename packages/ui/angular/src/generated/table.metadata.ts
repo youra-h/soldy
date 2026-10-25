@@ -30,6 +30,8 @@ export const TableInputNames = [
 	'columnFit',
 	'reorderPreview',
 	'resizePreview',
+	'resizable',
+	'reorderable',
 	'aria_label',
 	'aria_labelledBy',
 	'aria_describedBy',
@@ -87,6 +89,8 @@ export const TableOutputNames = [
 	'soChangeColumnFit',
 	'soChangeReorderPreview',
 	'soChangeResizePreview',
+	'soChangeResizable',
+	'soChangeReorderable',
 	'soAriaChangeLabel',
 	'soAriaChangeLabelledBy',
 	'soAriaChangeDescribedBy',
@@ -139,6 +143,8 @@ export const TableOutputNames = [
 		'columnFit',
 		'reorderPreview',
 		'resizePreview',
+		{ name: 'resizable', transform: booleanInput },
+		{ name: 'reorderable', transform: booleanInput },
 		'aria_label',
 		'aria_labelledBy',
 		'aria_describedBy',
@@ -182,6 +188,8 @@ export abstract class TTableSurface<TInstance extends IEntity> extends TComponen
 	declare columnFit: TInputValue<typeof descriptor, 'columnFit'>
 	declare reorderPreview: TInputValue<typeof descriptor, 'reorderPreview'>
 	declare resizePreview: TInputValue<typeof descriptor, 'resizePreview'>
+	declare resizable: TInputValue<typeof descriptor, 'resizable'>
+	declare reorderable: TInputValue<typeof descriptor, 'reorderable'>
 	declare aria_label: TInputValue<typeof descriptor, 'aria_label'>
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
@@ -322,6 +330,12 @@ export abstract class TTableSurface<TInstance extends IEntity> extends TComponen
 	}
 	get soChangeResizePreview(): TOutputEmitter<typeof descriptor, 'change:resizePreview'> {
 		return this.createOutput('soChangeResizePreview')
+	}
+	get soChangeResizable(): TOutputEmitter<typeof descriptor, 'change:resizable'> {
+		return this.createOutput('soChangeResizable')
+	}
+	get soChangeReorderable(): TOutputEmitter<typeof descriptor, 'change:reorderable'> {
+		return this.createOutput('soChangeReorderable')
 	}
 	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
 		return this.createOutput('soAriaChangeLabel')

@@ -48,6 +48,11 @@ import type { TTableResizePreview } from './column/types'
  * или призрак новой границы до отпускания. Значение расширение колонок
  * отдаёт колонкам, а теме уходит только признак отложенного жеста на
  * заголовке.
+ *
+ * И то, что пользователь делает с колонками без своего значения: меняет
+ * ширину ручкой (`resizable`) и переставляет (`reorderable`). Значение
+ * расширение колонок пишет колонкам входом таблицы (`tableResizable`,
+ * `tableReorderable`), а своё значение колонки сильнее.
  */
 export class TTable extends TControl<ITableProps, TTableEvents> implements ITable {
 	static override baseClass = 'so-table'
@@ -55,7 +60,13 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 	static defaultValues: typeof TControl.defaultValues &
 		TDefaultValues<
 			ITableProps,
-			'locale' | 'stickyHead' | 'columnFit' | 'reorderPreview' | 'resizePreview'
+			| 'locale'
+			| 'stickyHead'
+			| 'columnFit'
+			| 'reorderPreview'
+			| 'resizePreview'
+			| 'resizable'
+			| 'reorderable'
 		> = {
 		...TControl.defaultValues,
 		tag: 'table',
@@ -67,6 +78,9 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		reorderPreview: 'head',
 		// Колонка за указателем, как до отложенного жеста
 		resizePreview: 'live',
+		// Ручка ширины и перестановка колонок — решение потребителя
+		resizable: false,
+		reorderable: false,
 	}
 
 	protected _locale: string
@@ -74,6 +88,8 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 	protected _columnFit: TTableColumnFit
 	protected _reorderPreview: TTableReorderPreview
 	protected _resizePreview: TTableResizePreview
+	protected _resizable: boolean
+	protected _reorderable: boolean
 
 	constructor(props: Partial<ITableProps> = {}) {
 		super(props)
@@ -84,6 +100,8 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this._columnFit = props.columnFit ?? ctor.defaultValues.columnFit
 		this._reorderPreview = props.reorderPreview ?? ctor.defaultValues.reorderPreview
 		this._resizePreview = props.resizePreview ?? ctor.defaultValues.resizePreview
+		this._resizable = props.resizable ?? ctor.defaultValues.resizable
+		this._reorderable = props.reorderable ?? ctor.defaultValues.reorderable
 		this._applyStickyHead(props.stickyHead ?? ctor.defaultValues.stickyHead)
 	}
 
@@ -166,6 +184,36 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 		this.events.emit('change:resizePreview', value)
 	}
 
+	/**
+	 * Пользователь меняет ширину ручкой у колонок без своего `resizable`. Своё
+	 * значение колонки сильнее: и в таблице с ручками колонка бывает без неё.
+	 */
+	get resizable(): boolean {
+		return this._resizable
+	}
+
+	set resizable(value: boolean) {
+		if (this._resizable === value) return
+
+		this._resizable = value
+		this.events.emit('change:resizable', value)
+	}
+
+	/**
+	 * Пользователь переставляет колонки без своего `reorderable`. Своё значение
+	 * колонки сильнее.
+	 */
+	get reorderable(): boolean {
+		return this._reorderable
+	}
+
+	set reorderable(value: boolean) {
+		if (this._reorderable === value) return
+
+		this._reorderable = value
+		this.events.emit('change:reorderable', value)
+	}
+
 	override getProps(): ITableProps {
 		return {
 			...super.getProps(),
@@ -174,6 +222,8 @@ export class TTable extends TControl<ITableProps, TTableEvents> implements ITabl
 			columnFit: this._columnFit,
 			reorderPreview: this._reorderPreview,
 			resizePreview: this._resizePreview,
+			resizable: this._resizable,
+			reorderable: this._reorderable,
 		}
 	}
 

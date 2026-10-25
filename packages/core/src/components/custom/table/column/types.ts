@@ -123,9 +123,9 @@ export type TTableColumnEvents = TComponentViewEvents & {
 	'change:compare': (value: TTableCompare | undefined) => void
 	/** change:rowHeader */
 	'change:rowHeader': (value: boolean) => void
-	/** change:resizable */
+	/** Итог `resizable` сменился — от своего значения или таблицы */
 	'change:resizable': (value: boolean) => void
-	/** change:reorderable */
+	/** Итог `reorderable` сменился — от своего значения или таблицы */
 	'change:reorderable': (value: boolean) => void
 	/** change:disabled */
 	'change:disabled': (value: boolean) => void
@@ -197,9 +197,15 @@ export interface ITableColumnProps extends IComponentViewProps {
 	compare?: TTableCompare
 	/** Ячейки колонки — заголовки строк: по их тексту строку называют */
 	rowHeader?: boolean
-	/** Пользователь меняет ширину колонки ручкой у края заголовка */
+	/**
+	 * Пользователь меняет ширину колонки ручкой у края заголовка. Не задано —
+	 * как у таблицы (`resizable` таблицы)
+	 */
 	resizable?: boolean
-	/** Пользователь переставляет колонку, перетаскивая её заголовок или клавишами */
+	/**
+	 * Пользователь переставляет колонку, перетаскивая её заголовок или
+	 * клавишами. Не задано — как у таблицы (`reorderable` таблицы)
+	 */
 	reorderable?: boolean
 	/** Колонка выключена: ручки нет. Пишет таблица — свой `disabled` */
 	disabled?: boolean
@@ -252,19 +258,34 @@ export interface ITableColumn<
 	 */
 	readonly widthStyle: TTableColumnStyle
 	/**
-	 * Пользователь меняет ширину колонки ручкой у края заголовка. Решение
-	 * потребителя, поэтому по умолчанию нет. Код меняет ширину и у колонки без
-	 * ручки — записью `width`
+	 * Пользователь меняет ширину колонки ручкой у края заголовка — итог: своё
+	 * значение, а без него — таблицы (`tableResizable`). Записывается своё,
+	 * `undefined` — как у таблицы. Код меняет ширину и у колонки без ручки —
+	 * записью `width`
 	 */
-	resizable: boolean
+	get resizable(): boolean
+	set resizable(value: boolean | undefined)
+	/**
+	 * `resizable` таблицы — его пишет расширение колонок, без таблицы `false`.
+	 * Своё значение колонки сильнее. В пропсах колонки его нет — это значение
+	 * таблицы
+	 */
+	tableResizable: boolean
 	/**
 	 * Пользователь переставляет колонку: тащит её заголовок или жмёт
-	 * Ctrl+Shift+←/→ на нём. Решение потребителя, поэтому по умолчанию нет.
+	 * Ctrl+Shift+←/→ на нём, — итог: своё значение, а без него — таблицы
+	 * (`tableReorderable`). Записывается своё, `undefined` — как у таблицы.
 	 * Колонку без него пользователь не возьмёт, но другие колонки встают по обе
 	 * стороны от неё. Код переставляет любые колонки — перемещением в коллекции
 	 * колонок
 	 */
-	reorderable: boolean
+	get reorderable(): boolean
+	set reorderable(value: boolean | undefined)
+	/**
+	 * `reorderable` таблицы — его пишет расширение колонок, без таблицы
+	 * `false`. Своё значение колонки сильнее. В пропсах колонки его нет
+	 */
+	tableReorderable: boolean
 	/**
 	 * Колонка выключена: ручки нет, и команды ручки ничего не делают; взять её
 	 * за заголовок нельзя. Пишет таблица — свой `disabled`, как строкам

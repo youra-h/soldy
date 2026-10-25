@@ -53,13 +53,19 @@ import { RESIZE_MAX, RESIZE_MIN, clampWidth } from './width'
  * уходит переменной заголовка (`widthStyle`): формула одна, а не в каждой
  * разметке.
  *
- * **Перестановка** (`reorderable`) — колонку берут за заголовок и переносят на
+ * **Перестановка** (`reorderable`) и **ручка ширины** (`resizable`) — своё
+ * значение колонки, а без него — значение таблицы (`tableReorderable`,
+ * `tableResizable`: их пишет расширение колонок). Геттер отдаёт итог, сеттер
+ * пишет своё, как у ширины: `change:reorderable` и `change:resizable` — о
+ * смене итога от любого входа.
+ *
+ * **Перестановка** — колонку берут за заголовок и переносят на
  * другое место среди показанных. Место колонки знает коллекция колонок, а не
  * она, поэтому жест и команда перестановки — у расширения `columns`
  * коллекции строк; колонка только разрешает себя взять и сообщает это теме
  * (`data-reorderable`).
  *
- * **Ручка ширины** (`resizable`) — поле у края заголовка. Границы слоёв те же,
+ * **Ручка ширины** — поле у края заголовка. Границы слоёв те же,
  * что у Slider: **значение — здесь, операция — в плагине.** Жест и клавиши
  * приходят командами (`grab`, `drag`, `release`, `shift`, `moveToEdge`): где
  * указатель и какая клавиша, знает плагин, а какой станет ширина — колонка.
@@ -95,15 +101,8 @@ export default class TTableColumn<
 	static defaultValues: typeof TComponentView.defaultValues &
 		TDefaultValues<
 			ITableColumnProps,
-			| 'field'
-			| 'text'
-			| 'align'
-			| 'sortable'
-			| 'rowHeader'
-			| 'resizable'
-			| 'reorderable'
-			| 'disabled',
-			'width' | 'minWidth' | 'maxWidth' | 'compare'
+			'field' | 'text' | 'align' | 'sortable' | 'rowHeader' | 'disabled',
+			'width' | 'minWidth' | 'maxWidth' | 'compare' | 'resizable' | 'reorderable'
 		> = {
 		...TComponentView.defaultValues,
 		tag: 'th',
@@ -118,10 +117,10 @@ export default class TTableColumn<
 		compare: undefined,
 		// Какая колонка называет строки, знает только потребитель
 		rowHeader: false,
-		// Ручка ширины — тоже решение потребителя
-		resizable: false,
-		// Перестановка за заголовок — тоже
-		reorderable: false,
+		// Ручка ширины и перестановка — как у таблицы, а у таблицы по умолчанию
+		// их нет: решение потребителя
+		resizable: undefined,
+		reorderable: undefined,
 		disabled: false,
 	}
 
@@ -137,8 +136,14 @@ export default class TTableColumn<
 	protected _sortable: boolean
 	protected _compare: TTableCompare | undefined
 	protected _rowHeader: boolean
-	protected _resizable: boolean
-	protected _reorderable: boolean
+	/** Своё значение — как задано; итог с таблицей считает геттер `resizable` */
+	protected _resizable: boolean | undefined
+	/** Своё значение — как задано; итог с таблицей считает геттер `reorderable` */
+	protected _reorderable: boolean | undefined
+	/** `resizable` таблицы — пишет расширение колонок */
+	protected _tableResizable = false
+	/** `reorderable` таблицы — пишет расширение колонок */
+	protected _tableReorderable = false
 	protected _disabled: boolean
 	protected _gesture: TTableColumnGesture | undefined = undefined
 	/** Что идёт за протяжкой — значение таблицы, его пишет расширение колонок */
@@ -331,29 +336,56 @@ export default class TTableColumn<
 		this._sink.emit('change:rowHeader', value)
 	}
 
+	/** Итог: своё значение, а без него — значение таблицы. */
 	get resizable(): boolean {
-		return this._resizable
+		return this._resizable ?? this._tableResizable
 	}
 
-	set resizable(value: boolean) {
+	/** Пишет своё значение; `undefined` — как у таблицы. Сверка — со своим. */
+	set resizable(value: boolean | undefined) {
 		if (this._resizable === value) return
 
-		this._update(() => {
+		this._updateResizable(() => {
 			this._resizable = value
 		})
-		this._sink.emit('change:resizable', value)
 	}
 
+	get tableResizable(): boolean {
+		return this._tableResizable
+	}
+
+	set tableResizable(value: boolean) {
+		if (this._tableResizable === value) return
+
+		this._updateResizable(() => {
+			this._tableResizable = value
+		})
+	}
+
+	/** Итог: своё значение, а без него — значение таблицы. */
 	get reorderable(): boolean {
-		return this._reorderable
+		return this._reorderable ?? this._tableReorderable
 	}
 
-	set reorderable(value: boolean) {
+	/** Пишет своё значение; `undefined` — как у таблицы. Сверка — со своим. */
+	set reorderable(value: boolean | undefined) {
 		if (this._reorderable === value) return
 
-		this._reorderable = value
-		this._syncReorderable()
-		this._sink.emit('change:reorderable', value)
+		this._updateReorderable(() => {
+			this._reorderable = value
+		})
+	}
+
+	get tableReorderable(): boolean {
+		return this._tableReorderable
+	}
+
+	set tableReorderable(value: boolean) {
+		if (this._tableReorderable === value) return
+
+		this._updateReorderable(() => {
+			this._tableReorderable = value
+		})
 	}
 
 	get disabled(): boolean {
@@ -546,7 +578,28 @@ export default class TTableColumn<
 
 	/** Ручка работает: колонка `resizable` и не выключена. */
 	protected _canResize(): boolean {
-		return this._resizable && !this._disabled
+		return this.resizable && !this._disabled
+	}
+
+	/** Сменить вход `resizable` — своё или таблицы: событие — о смене итога. */
+	protected _updateResizable(apply: () => void): void {
+		const resizable = this.resizable
+
+		this._update(apply)
+
+		if (this.resizable !== resizable) this._sink.emit('change:resizable', this.resizable)
+	}
+
+	/** Сменить вход `reorderable` — своё или таблицы: событие — о смене итога. */
+	protected _updateReorderable(apply: () => void): void {
+		const reorderable = this.reorderable
+
+		apply()
+
+		if (this.reorderable === reorderable) return
+
+		this._syncReorderable()
+		this._sink.emit('change:reorderable', this.reorderable)
 	}
 
 	/**
@@ -629,7 +682,7 @@ export default class TTableColumn<
 
 	/**
 	 * Сменить то, от чего зависят итог ширины и ручка: своё значение, ширину
-	 * раскладки, границу, `resizable` или `disabled`. Хранимое не прижимается —
+	 * раскладки, границу, `resizable` — своё или таблицы — или `disabled`. Хранимое не прижимается —
 	 * пересчитываются итог и выходы ручки, и каждое событие приходит, только
 	 * если его значение сменилось.
 	 */
@@ -657,7 +710,7 @@ export default class TTableColumn<
 	 * касания. Выключенную таблицу тема различает сама — по корню.
 	 */
 	protected _syncReorderable(): void {
-		this._dataset.add('reorderable', this._reorderable)
+		this._dataset.add('reorderable', this.reorderable)
 	}
 
 	/** `data-align` — выравнивание для темы, с первой отрисовки. */

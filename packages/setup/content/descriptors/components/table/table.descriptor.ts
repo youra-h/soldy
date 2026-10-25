@@ -112,6 +112,16 @@ export const TableDescriptor = defineDescriptor(() =>
 				 * только признак отложенного жеста на заголовке.
 				 */
 				resizePreview: { type: String, triggers: ['change:resizePreview'] },
+				/**
+				 * Ручка ширины у колонок без своего `resizable`, по умолчанию нет.
+				 * Своё значение колонки сильнее — исключение в обе стороны.
+				 */
+				resizable: { type: Boolean, triggers: ['change:resizable'] },
+				/**
+				 * Перестановка колонок без своего `reorderable`, по умолчанию нет.
+				 * Своё значение колонки сильнее.
+				 */
+				reorderable: { type: Boolean, triggers: ['change:reorderable'] },
 			},
 		},
 

@@ -88,7 +88,11 @@ type TColumnDrag = {
  * на строки: выключенная таблица выключает их ручки, включённая — включает.
  * Пишется он в обычное свойство колонки — при добавлении, на смену у таблицы
  * и поверх патча. Таблица — опция движка строк (`owner`): она приходит и
- * уходит после сборки, и расширение её наблюдает.
+ * уходит после сборки, и расширение её наблюдает. Её `resizable` и
+ * `reorderable` расширение пишет каждой колонке во вход таблицы
+ * (`tableResizable`, `tableReorderable`) — при добавлении и на смену у
+ * таблицы, без таблицы `false`. Своё значение колонки — другое поле, и патч
+ * его не затирает: итог считает колонка.
  *
  * **Раскладка** — ширины гибких показанных колонок, колонок без своей ширины:
  * из места таблицы (`notifySpace` — его мерит плагин) и её `columnFit`, по
@@ -244,8 +248,11 @@ export class TTableColumnsExtension<
 		plain.events.on('items:query:invalidated', () => this._notifyShown())
 
 		// Колонке — `disabled` таблицы: пришедшей и поверх патча, который пишет
-		// ей своё из данных
-		plain.events.on('item:added', (e) => this._inheritOwner(e.item))
+		// ей своё из данных. Входы таблицы — только пришедшей: патч их не пишет
+		plain.events.on('item:added', (e) => {
+			this._inheritOwner(e.item)
+			this._shareFlags(e.item)
+		})
 		plain.events.on('item:updated', (e) => this._inheritOwner(e.item))
 	}
 
@@ -271,6 +278,26 @@ export class TTableColumnsExtension<
 			)
 
 			scope.on(owner.events, 'change:columnFit', () => this._notifyLayout())
+
+			// Ручка ширины и перестановка у колонок без своего значения: пришла
+			// таблица и сменилось у неё; ушла — снова `false`
+			this.columns.forEach((column) => this._shareFlags(column))
+			scope.on(owner.events, 'change:resizable', (value: boolean) =>
+				this.columns.forEach((column) => {
+					column.tableResizable = value
+				}),
+			)
+			scope.on(owner.events, 'change:reorderable', (value: boolean) =>
+				this.columns.forEach((column) => {
+					column.tableReorderable = value
+				}),
+			)
+			scope.add(() =>
+				this.columns.forEach((column) => {
+					column.tableResizable = false
+					column.tableReorderable = false
+				}),
+			)
 
 			// Что идёт за протяжкой ручки — показанным колонкам: пришла таблица и
 			// сменилось у неё; ушла — снова `live`
@@ -485,6 +512,17 @@ export class TTableColumnsExtension<
 	 */
 	private _inheritOwner(column: Partial<ITableColumn>): void {
 		if (this._ctx?.options.get('owner')?.disabled) column.disabled = true
+	}
+
+	/**
+	 * `resizable` и `reorderable` таблицы — во входы таблицы колонки; без
+	 * таблицы `false`. Колонка или её источник — как у `_inheritOwner`.
+	 */
+	private _shareFlags(column: Partial<ITableColumn>): void {
+		const owner = this._ctx?.options.get('owner')
+
+		column.tableResizable = owner?.resizable ?? false
+		column.tableReorderable = owner?.reorderable ?? false
 	}
 
 	/** Пользователь вправе переставить колонку: она `reorderable`, не выключена и показана. */
