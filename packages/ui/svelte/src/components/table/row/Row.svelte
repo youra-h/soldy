@@ -18,6 +18,8 @@
 	Чекбокс берётся только в ветке `selecting`: геттер item-адаптера таблицы его создаёт.
 	Ячейки — петля по колонке: записи новые на каждую смену, а узел с фокусом сетки остаётся.
 	Своей границы перерисовки ячейкам не нужно: Svelte перерисовывает то, что прочло сменившееся.
+	Слот или текст — ветка на строку, а не в каждой ячейке: ветка Svelte — блок с эффектами, и
+	в каждой ячейке таблицы она стоила десятую часть памяти строки (benchmarks/table_svelte.md).
 	Ячейки стоят вплотную: пробел между ними Svelte оставил бы в строке текстом.
 -->
 {#if state.rendered}
@@ -36,7 +38,7 @@
 					ctrl={context?.adapters.table.checkBox}
 					aria_labelledBy={state.rowHeaderId}
 				/>
-			</td>{/if}{#each state.cells ?? [] as cell (cell.column.uid)}
+			</td>{/if}{#if props.cell}{#each state.cells ?? [] as cell (cell.column.uid)}
 			<svelte:element
 				this={cell.rowHeader ? 'th' : 'td'}
 				class="so-table-row__cell"
@@ -45,12 +47,19 @@
 				{...state.cellAria}
 				{...cell.aria}
 			>
-				{#if props.cell}
-					{@render props.cell({ row, column: cell.column, value: cell.value })}
-				{:else}
-					{cell.text}
-				{/if}
+				{@render props.cell({ row, column: cell.column, value: cell.value })}
 			</svelte:element>
-		{/each}
+		{/each}{:else}{#each state.cells ?? [] as cell (cell.column.uid)}
+			<svelte:element
+				this={cell.rowHeader ? 'th' : 'td'}
+				class="so-table-row__cell"
+				scope={cell.rowHeader ? 'row' : undefined}
+				{...cell.dataset}
+				{...state.cellAria}
+				{...cell.aria}
+			>
+				{cell.text}
+			</svelte:element>
+		{/each}{/if}
 	</Dynamic>
 {/if}

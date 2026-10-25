@@ -1172,6 +1172,26 @@ describe('перерисовка ячеек', () => {
 		expect(slot.draws).toHaveLength(6)
 	})
 
+	/**
+	 * Состояние связки — сырые руны: значение доезжает до сниппета тем же
+	 * объектом, что отдало ядро. Глубокая руна оборачивала в прокси массив
+	 * ячеек строки, каждую ячейку, её `aria`, `dataset` и значение — с
+	 * источником на каждый прочитанный ключ (benchmarks/table_svelte.md).
+	 */
+	it('значение-объект доезжает до сниппета тем же объектом, а не прокси', async () => {
+		const META: TTableColumnSource = { field: 'meta', text: 'Мета' }
+		const meta = { tags: ['a'] }
+		const slot = cellSlot(() => '')
+
+		await render(Table, {
+			items: [{ data: { id: 1, name: 'Анна', meta } }],
+			columns: [NAME, META],
+			cell: slot.snippet,
+		})
+
+		expect(slot.draws.find((scope) => scope.column.field === 'meta')?.value).toBe(meta)
+	})
+
 	it('«выбрать все» и снятие выбора сниппет ячеек не перерисовывают', async () => {
 		const { slot } = await renderCounted(engineOf('multiple'))
 		const head = checkBoxInput('.so-table__select')
