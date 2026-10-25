@@ -384,16 +384,37 @@ const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
 	fixtures: Object.keys(FIXTURES),
 
-	mount(node, { component, fixture, props, onEvent }) {
+	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : []
 		const root = createComponent(PreviewRootComponent, { environmentInjector: app.injector })
 		const element: Element = root.location.nativeElement
 		const outlet = root.instance.outlet()
-		const draw = (next: TProps): TDrawn =>
+		const drawOne = (next: TProps): TDrawn =>
 			fixture === undefined
 				? drawPreview(outlet, component, next, listeners)
 				: drawFixture(outlet, fixture, next, listeners)
+		// Копии — в то же место одна за другой (`TPreviewMount.count`)
+		const draw = (next: TProps): TDrawn => {
+			const copies: TDrawn[] = []
+			const destroy = (): void => {
+				for (const copy of copies) copy.destroy()
+			}
+
+			try {
+				for (let index = 0; index < count; index++) copies.push(drawOne(next))
+			} catch (error) {
+				destroy()
+				throw error
+			}
+
+			return {
+				write(props) {
+					for (const copy of copies) copy.write(props)
+				},
+				destroy,
+			}
+		}
 
 		let bind = props
 		let drawn: TDrawn

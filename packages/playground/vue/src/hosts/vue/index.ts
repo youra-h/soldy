@@ -50,7 +50,7 @@ const host: IPreviewHost = {
 	previews: Object.keys(PREVIEW_COMPONENTS),
 	fixtures: Object.keys(FIXTURE_COMPONENTS),
 
-	mount(node, { component, fixture, props, onEvent }) {
+	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
@@ -58,7 +58,9 @@ const host: IPreviewHost = {
 		const app = createApp({
 			render: () =>
 				h(LocaleProvider, { locale: locale.value }, () =>
-					h(preview, { ...bind.value, ...listeners }),
+					Array.from({ length: count }, (_, key) =>
+						h(preview, { ...bind.value, ...listeners, key }),
+					),
 				),
 		})
 

@@ -109,6 +109,61 @@ export function describeSmoke(framework: string): void {
 	})
 
 	/**
+	 * Копии превью (`count`) — одним корнем, рядом: так стенд замера страниц
+	 * (`tools/bench-pages`) ставит десятки компонентов на страницу. У копий
+	 * пропсы общие, у каждой свой экземпляр, а снятие уносит все.
+	 */
+	describe('копии превью', () => {
+		it.each(drawing('button', 'list-box'))(
+			'%s: count рисует копии рядом, снятие уносит все',
+			async (framework) => {
+				const node = document.body.appendChild(document.createElement('div'))
+
+				try {
+					const buttons = hostOf(framework).mount(node, {
+						component: 'button',
+						props: { text: 'Копия' },
+						count: 3,
+					})
+
+					await nextFrame()
+
+					expect(
+						[...node.querySelectorAll('.so-button')].map((button) =>
+							button.textContent?.trim(),
+						),
+					).toEqual(['Копия', 'Копия', 'Копия'])
+
+					buttons.unmount()
+
+					expect(node.querySelector('.so-button')).toBeNull()
+
+					const lists = hostOf(framework).mount(node, {
+						component: 'list-box',
+						props: {},
+						count: 2,
+					})
+
+					await nextFrame()
+
+					expect(
+						[...node.querySelectorAll('.so-list-box')].map(
+							(list) => list.querySelectorAll('.so-list-box-item').length,
+						),
+					).toEqual([COLLECTION_ITEMS.length, COLLECTION_ITEMS.length])
+
+					lists.unmount()
+
+					expect(node.querySelector('.so-list-box')).toBeNull()
+					expect(firstLines()).toEqual([])
+				} finally {
+					node.remove()
+				}
+			},
+		)
+	})
+
+	/**
 	 * Значения, которые превью задаёт компоненту само, лежат не в разметке хоста, а
 	 * в общих данных (`PREVIEW_PROPS`), и витрине их отдаёт оболочка. Забудь она
 	 * их — ячейка осталась бы нарисованной, но кнопка — без подписи, а кольцо —

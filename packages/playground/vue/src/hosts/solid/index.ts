@@ -36,12 +36,12 @@ const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
 	fixtures: Object.keys(FIXTURES),
 
-	mount(node, { component, fixture, props, onEvent }) {
+	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
 		const [bind, setBind] = createSignal<TPreviewProps>({ ...props, ...listeners })
-		const dispose = render(() => createComponent(Root, { preview, bind }), node)
+		const dispose = render(() => createComponent(Root, { preview, bind, count }), node)
 
 		return {
 			update(next) {

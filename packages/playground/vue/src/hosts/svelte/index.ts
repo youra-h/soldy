@@ -37,12 +37,12 @@ const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
 	fixtures: Object.keys(FIXTURES),
 
-	mount(node, { component, fixture, props, onEvent }) {
+	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
 		const bind = new TLive<TPreviewProps>({ ...props, ...listeners })
-		const root = mount(Root, { target: node, props: { preview, bind } })
+		const root = mount(Root, { target: node, props: { preview, bind, count } })
 
 		flushSync()
 

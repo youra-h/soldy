@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "noEmit": true,
+    // Конфиг Vite импортирует общий конфиг стенда с расширением
+    // (`vite.base.ts`), TypeScript без этого флага его запрещает
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@soldy-ui/theme-oren/setup": ["../../packages/themes/oren/setup/index.ts"],
+      "@soldy-ui/theme-base/setup": ["../../packages/themes/base/setup/index.ts"],
+      "@soldy-ui/core": ["../../packages/core/src"],
+      "@soldy-ui/icons-material": ["../../packages/icons/material/src"],
+      "@soldy-ui/plugins": ["../../packages/plugins/src"],
+      "@soldy-ui/setup": ["../../packages/setup/index.ts"],
+      "@soldy-ui/playground-shared": ["../../packages/playground/shared/src/index.ts"]
+    }
+  },
+  // Хосты фреймворков — программы типов стенда разработчика, их страница грузит
+  // glob-ом (`bench.ts`)
+  "include": ["bench.ts", "scenarios.ts"]
+}
