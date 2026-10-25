@@ -1,5 +1,22 @@
 # @soldy-ui/angular
 
+## 0.3.0-alpha.4
+
+### Minor Changes
+
+- 6f96bae: Table: `resizable` и `reorderable` таблицы — значение колонок без своего, своё значение колонки сильнее. Ломающее: по умолчанию `resizable` и `reorderable` колонки — `undefined` («как у таблицы»), а не `false`, и геттер колонки отдаёт итог, а `change:resizable` и `change:reorderable` колонки приходят и от смены у таблицы. Обновиться: разметку менять не нужно — у таблицы по умолчанию их тоже нет; своё значение колонки читается из `getProps()`.
+
+### Patch Changes
+
+- f890f7b: Table на Angular держит память вровень с Vue: запросы узлов шаблона объявляет поверхность только на ссылки своего шаблона, ветка th/td — над петлёй ячеек (пайп soRuns), раскладчик атрибутов — без Map и модульного WeakMap
+- Updated dependencies [6f96bae]
+- Updated dependencies [8eb76c2]
+- Updated dependencies [1c703ad]
+- Updated dependencies [8bb9bdc]
+  - @soldy-ui/core@0.3.0-alpha.4
+  - @soldy-ui/setup@0.3.0-alpha.4
+  - @soldy-ui/plugins@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes
