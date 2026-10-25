@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, resolveSlot, rootTag } from '../../adapter'
+import { Root, createRootProps, renderSlot, resolveSlot } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { setupLabel } from './setup.component'
 import type { LabelProps } from './base.component'
@@ -25,10 +24,10 @@ export function Label(props: LabelProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<span class="so-label__control">{renderSlot(props.children)}</span>
 				<span class="so-label__text">{content() ?? (state.text || undefined)}</span>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

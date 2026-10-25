@@ -133,7 +133,7 @@ export function toRootProps(
 
 /**
  * Атрибуты корня мемо — спред на корень:
- * `<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>`.
+ * `<Root tag={state.tag} attributes={root} ref={binding.ref}>`.
  */
 export function createRootProps(read: () => TRootSource): Accessor<TRootProps> {
 	return createHeldMemo(read, rootPropsOf)
@@ -174,7 +174,7 @@ export function toWrappedRootProps(
 
 /**
  * Обёртка и корень мемо: `<div {...layout().wrapper} ref={binding.consumerRef}>`,
- * внутри `<Dynamic {...layout().root} … ref={binding.bindRef}>`.
+ * внутри `<Root tag={state.tag} attributes={() => layout().root} ref={binding.bindRef}>`.
  */
 export function createWrappedRootProps(
 	read: () => TWrappedRootSource,

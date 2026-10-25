@@ -11,7 +11,7 @@ export function isTagComponent(tag: unknown): tag is TTagComponent {
 	return typeof tag === 'function'
 }
 
-/** Корень по `tag` для `Dynamic`: строка или компонент Solid, иначе корня нет. */
+/** Корень по `tag` для `Root`: строка или компонент Solid, иначе корня нет. */
 export function rootTag(tag: unknown): string | TTagComponent | undefined {
 	if (typeof tag === 'string' || isTagComponent(tag)) return tag
 

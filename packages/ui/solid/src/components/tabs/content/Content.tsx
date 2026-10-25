@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, rootTag } from '../../../adapter'
+import { Root, createRootProps, renderSlot } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { setupTabsContent } from './setup.component'
 import type { TabsContentProps } from './base.component'
@@ -17,9 +16,9 @@ export function TabsContent(props: TabsContentProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered && state.active}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				{renderSlot(props.children)}
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

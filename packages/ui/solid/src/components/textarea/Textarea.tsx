@@ -1,9 +1,8 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	createPartProps,
 	createRootProps,
-	rootTag,
 	textareaText,
 	toControlAttrs,
 	toRootForward,
@@ -30,7 +29,7 @@ export function Textarea(props: TextareaProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<textarea
 					id={state.id}
 					name={state.name}
@@ -49,7 +48,7 @@ export function Textarea(props: TextareaProps): JSX.Element {
 						{state.names_counter}
 					</div>
 				</Show>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
 	ResolvedSlot,
+	Root,
 	createRootProps,
 	liveScope,
 	renderSlot,
-	rootTag,
 	toPartClass,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
@@ -35,7 +34,7 @@ export function Menu(props: MenuProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					{renderSlot(props.trigger, trigger)}
 					<Frame
@@ -59,7 +58,7 @@ export function Menu(props: MenuProps): JSX.Element {
 						</div>
 					</Frame>
 				</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

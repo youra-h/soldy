@@ -1,16 +1,15 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { TCalendarCell, TCalendarGrid, TCalendarPicker } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 import {
 	Elevate,
 	KeyedFor,
 	ResolvedSlot,
+	Root,
 	createPartProps,
 	createRootProps,
 	relaySlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Index, Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
@@ -211,7 +210,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					<div class="so-calendar__months">
 						<Index each={state.grids}>{month}</Index>
@@ -220,7 +219,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 						{(nodes) => <div class="so-calendar__footer">{nodes()}</div>}
 					</ResolvedSlot>
 				</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

@@ -1,13 +1,12 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
+	Root,
 	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Icon } from '../icon'
@@ -73,9 +72,9 @@ export function Field(props: FieldProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>{parts()}</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

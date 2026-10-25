@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
-	createPartProps,
+	Root,
+	createPartNode,
 	createRootProps,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
@@ -31,29 +30,27 @@ export function CheckBox(props: CheckBoxProps): JSX.Element {
 		sets: [state.attrs, state.dataset],
 		forward: toRootForward(binding.forwardProps()),
 	}))
-	const aria = createPartProps(() => state.aria)
-	const control = createPartProps(() =>
-		toControlAttrs<CheckBoxAttributes>(binding.forwardProps()),
-	)
 	const scope = () => ({ value: state.value, indeterminate: state.indeterminate ?? false })
 
 	function content(): JSX.Element {
 		const icon = resolveSlot(() => props.icon, scope)
 		const indeterminateIcon = resolveSlot(() => props['indeterminate-icon'], scope)
+		// Узел — в теле, а не вызовом в разметке: вызов компилятор обернул бы в мемо
+		const input = createPartNode('input', () => ({
+			type: 'checkbox',
+			id: state.id,
+			name: state.name,
+			disabled: state.disabled,
+			required: state.required,
+			...state.aria,
+			...toControlAttrs<CheckBoxAttributes>(binding.forwardProps()),
+			checked: state.value,
+			'prop:indeterminate': state.indeterminate,
+		}))
 
 		return (
 			<>
-				<input
-					type="checkbox"
-					id={state.id}
-					name={state.name}
-					disabled={state.disabled}
-					required={state.required}
-					{...aria()}
-					{...control()}
-					checked={state.value}
-					prop:indeterminate={state.indeterminate}
-				/>
+				{input}
 				<span class="so-check-box__container" aria-hidden="true">
 					<Show
 						when={state.indeterminate}
@@ -72,9 +69,9 @@ export function CheckBox(props: CheckBoxProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>{content()}</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

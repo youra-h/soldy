@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, resolveSlot, rootTag } from '../../../adapter'
+import { Root, createRootProps, resolveSlot } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
 import { setupPaginationItem } from './setup.component'
@@ -27,7 +26,7 @@ export function PaginationItem(props: PaginationItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Button
 					embedded="pagination.page"
 					type="button"
@@ -39,7 +38,7 @@ export function PaginationItem(props: PaginationItemProps): JSX.Element {
 				>
 					{content() ?? state.text}
 				</Button>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

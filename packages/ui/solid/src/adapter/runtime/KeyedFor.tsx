@@ -5,7 +5,15 @@
  * Окна гидратации переживает, как `flow.ts`. AGENTS.md (Solid), «Ветки и петли».
  */
 
-import { createRoot, createSignal, onCleanup, untrack, type Accessor, type JSX } from 'solid-js'
+import {
+	createRoot,
+	createSignal,
+	onCleanup,
+	untrack,
+	type Accessor,
+	type JSX,
+	type Setter,
+} from 'solid-js'
 import { createHeldMemo } from '../common/hydration'
 
 export type TKeyedForProps<TEntry, TKey> = {
@@ -15,25 +23,32 @@ export type TKeyedForProps<TEntry, TKey> = {
 	children: (entry: Accessor<TEntry>) => JSX.Element
 }
 
-type TRow<TEntry> = {
-	readonly node: JSX.Element
-	readonly update: (entry: TEntry) => void
-	readonly dispose: () => void
+/** Строка петли — объект, а не замыкание на строку: строк тысячи (ячейки таблицы). */
+class TRow<TEntry> {
+	constructor(
+		readonly node: JSX.Element,
+		private readonly _write: Setter<TEntry>,
+		readonly dispose: () => void,
+	) {}
+
+	update(entry: TEntry): void {
+		// Запись-функцию сеттер сигнала счёл бы updater'ом
+		this._write(() => entry)
+	}
 }
 
-export function KeyedFor<TEntry, TKey>(props: TKeyedForProps<TEntry, TKey>): JSX.Element {
+export function KeyedFor<TEntry, TKey>(props: TKeyedForProps<TEntry, TKey>): JSX.Element
+export function KeyedFor<TEntry, TKey>(
+	props: TKeyedForProps<TEntry, TKey>,
+): JSX.Element | Accessor<JSX.Element[]> {
 	const rows = new Map<TKey, TRow<TEntry>>()
 
 	// Строка — в своём корне под владельцем петли: контекст места тот же
 	const createRow = (entry: TEntry): TRow<TEntry> =>
 		createRoot((dispose) => {
-			const [current, setCurrent] = createSignal(entry)
+			const [current, write] = createSignal(entry)
 
-			return {
-				node: props.children(current),
-				update: (next) => setCurrent(() => next),
-				dispose,
-			}
+			return new TRow(props.children(current), write, dispose)
 		})
 
 	onCleanup(() => {
@@ -74,5 +89,6 @@ export function KeyedFor<TEntry, TKey>(props: TKeyedForProps<TEntry, TKey>): JSX
 		(source) => source.each,
 	)
 
-	return <>{nodes()}</>
+	// Само мемо, а не фрагмент: фрагмент над ним — ещё мемо на каждую петлю
+	return nodes
 }

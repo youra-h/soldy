@@ -1,14 +1,13 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { IPaginationItem, TPaginationCell } from '@soldy-ui/core'
 import {
 	Elevate,
 	KeyedFor,
+	Root,
 	createRootProps,
 	relaySlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
@@ -101,9 +100,9 @@ export function Pagination(props: PaginationProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>{content()}</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

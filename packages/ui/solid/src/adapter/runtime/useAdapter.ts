@@ -1,8 +1,8 @@
 /**
  * useAdapter — связка adapter-context с Solid, аналог `useAdapter` у Vue.
  *
- * - состояние — неглубокое, сигнал на свойство (`createShallowState`), его
- *   заполняет подписка на связку;
+ * - состояние — неглубокое, сигнал на прочитанное свойство
+ *   (`createShallowState`), его заполняет подписка на связку;
  * - входы — эффект над всеми пропсами, связка пишет сменившиеся;
  * - события — колбэк-пропсы `onXxx`;
  * - тело компонента выполняется один раз, на сервере тоже: это и есть приём
@@ -98,7 +98,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	const forwardProps = createMemo(() => binding.forward(props))
 	const [rootElement, setRootElement] = createSignal<Element | null>(null)
 
-	// Отвязка — очисткой владельца узла: смена тега (`Dynamic`) отвязывает прежний
+	// Отвязка — очисткой владельца узла: смена тега (`Root`) отвязывает прежний
 	const bindRef = (el: Element): void => {
 		adapter.bindElement(el)
 		setRootElement(el)

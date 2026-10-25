@@ -1,13 +1,12 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	Teleport,
 	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
@@ -50,10 +49,9 @@ export function Drawer(props: DrawerProps): JSX.Element {
 		<Show when={state.rendered}>
 			<Teleport to={state.target} disabled={state.contained}>
 				<div {...backdrop()} />
-				<Dynamic
-					tabindex="-1"
-					{...panel()}
-					component={rootTag(state.tag)}
+				<Root
+					tag={state.tag}
+					attributes={() => ({ tabindex: '-1', ...panel() })}
 					ref={binding.ref}
 				>
 					<Show when={state.handleRendered}>
@@ -74,7 +72,7 @@ export function Drawer(props: DrawerProps): JSX.Element {
 					>
 						{closeIcon() ?? <Icon embedded="drawer.close-icon" tag={CLOSE} />}
 					</Button>
-				</Dynamic>
+				</Root>
 			</Teleport>
 		</Show>
 	)

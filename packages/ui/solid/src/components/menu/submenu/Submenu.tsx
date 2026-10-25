@@ -1,17 +1,16 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { IMenuItem, TGroupSection, TMenuSubmenuEntries } from '@soldy-ui/core'
 import {
 	Elevate,
 	KeyedFor,
 	ResolvedSlot,
+	Root,
 	chainHandler,
 	createRootProps,
 	relaySlot,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	toControlAttrs,
 	toPartClass,
 	toRootForward,
@@ -146,7 +145,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<ItemRow
 					embedded="menu.row"
 					tag="div"
@@ -185,7 +184,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 						</div>
 					</Frame>
 				</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

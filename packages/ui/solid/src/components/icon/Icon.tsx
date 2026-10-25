@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, rootTag } from '../../adapter'
+import { Root, createRootProps } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { setupIcon } from './setup.component'
 import type { IconProps } from './base.component'
@@ -20,7 +19,7 @@ export function Icon(props: IconProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref} />
+			<Root tag={state.tag} attributes={root} ref={binding.ref} />
 		</Show>
 	)
 }

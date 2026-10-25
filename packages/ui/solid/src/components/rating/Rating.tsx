@@ -1,14 +1,13 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { TRatingStar } from '@soldy-ui/core'
 import {
 	Elevate,
+	Root,
 	createPartProps,
 	createRootProps,
 	fieldText,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Index, Show } from '../../adapter/runtime/flow'
 import { setupRating } from './setup.component'
@@ -53,7 +52,7 @@ export function Rating(props: RatingProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					<span class="so-rating__track">
 						<Index each={state.stars}>{star}</Index>
@@ -74,7 +73,7 @@ export function Rating(props: RatingProps): JSX.Element {
 						</span>
 					</span>
 				</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

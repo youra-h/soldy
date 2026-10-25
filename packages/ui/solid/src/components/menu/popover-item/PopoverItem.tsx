@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	chainHandler,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
@@ -56,7 +55,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<ItemRow
 					embedded="menu.row"
 					tag="div"
@@ -90,7 +89,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): JSX.Element {
 						<Show when={state.contentRendered}>{renderSlot(props.children)}</Show>
 					</div>
 				</Frame>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

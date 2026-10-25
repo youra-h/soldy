@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createPartProps, createRootProps, rootTag } from '../../../adapter'
+import { Root, createPartNode, createRootProps } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { CheckBox } from '../../check-box'
 import { TableRowCells } from './Cells'
@@ -20,19 +19,22 @@ export function TableRow(props: TableRowProps): JSX.Element {
 		sets: [state.attrs, state.aria, state.dataset],
 		forward: binding.forwardProps(),
 	}))
-	const cellAria = createPartProps(() => state.cellAria)
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Show when={state.selecting}>
-					<td class="so-table-row__select" {...cellAria()}>
-						<CheckBox
-							embedded="table.select"
-							ctrl={context?.adapters.table.checkBox}
-							aria_labelledBy={state.rowHeaderId}
-						/>
-					</td>
+					{createPartNode(
+						'td',
+						() => ({ class: 'so-table-row__select', ...state.cellAria }),
+						() => (
+							<CheckBox
+								embedded="table.select"
+								ctrl={context?.adapters.table.checkBox}
+								aria_labelledBy={state.rowHeaderId}
+							/>
+						),
+					)}
 				</Show>
 				<TableRowCells
 					row={binding.ctrl}
@@ -40,7 +42,7 @@ export function TableRow(props: TableRowProps): JSX.Element {
 					cellAria={state.cellAria}
 					cell={props.cell}
 				/>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

@@ -1,14 +1,13 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { ITableRow, TDrawnEntry } from '@soldy-ui/core'
 import {
 	Elevate,
 	KeyedFor,
+	Root,
 	createPartProps,
 	createWrappedRootProps,
 	relaySlot,
 	renderSlot,
-	rootTag,
 } from '../../adapter'
 import { For, Show } from '../../adapter/runtime/flow'
 import { CheckBox } from '../check-box'
@@ -63,7 +62,7 @@ export function Table(props: TableProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<div {...layout().wrapper} ref={binding.consumerRef}>
-				<Dynamic {...layout().root} component={rootTag(state.tag)} ref={binding.bindRef}>
+				<Root tag={state.tag} attributes={() => layout().root} ref={binding.bindRef}>
 					<Elevate layer={binding.layer}>
 						<thead class="so-table__head">
 							<tr class="so-table__head-row" {...headRowAria()}>
@@ -105,7 +104,7 @@ export function Table(props: TableProps): JSX.Element {
 							</Show>
 						</tbody>
 					</Elevate>
-				</Dynamic>
+				</Root>
 			</div>
 		</Show>
 	)
