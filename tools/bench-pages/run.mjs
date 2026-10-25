@@ -12,7 +12,8 @@ import { serve } from './serve.mjs'
  *   npm run bench                                  # все фреймворки, все страницы
  *   npm run bench -- --fw vue,react --pages button,select --cycles 10
  *
- * Фреймворк — свой браузер и своя страница. На странице два прохода:
+ * Фреймворк — свой браузер и своя страница. Сначала прогрев — каждая страница
+ * по разу, без замера, — потом проходы:
  *
  * 1. **Страницы по одной.** Страница компонента — N копий одним корнем —
  *    монтируется, сценарий действует на первые `act` копий, язык меняется
@@ -199,6 +200,16 @@ async function measureFramework(fw) {
 
 		result.pages[id] = { cycles, base, end: await settled(), errors: errors.length }
 		console.log(fw, id, summary(result.pages[id]))
+	}
+
+	// Прогрев: каждая страница по разу, без замера. Без него первая страница
+	// прогона несла бы в своём росте разогрев движка — компиляцию общего кода
+	// адаптера и плагинов, — а остальные нет
+	for (const id of pages) {
+		await evaluate(([p, n]) => bench.mount(p, n), [id, N])
+		await evaluate(([p, act]) => bench.scenario(p, act), [id, ACT])
+		await evaluate(() => bench.locale())
+		await evaluate(() => bench.unmount())
 	}
 
 	for (const id of pages) await cyclesOf(id)
