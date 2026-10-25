@@ -696,6 +696,8 @@ export class DragAndDropPreview implements TFixture {
 						[items]="rows"
 						[columns]="columns"
 						reorderPreview="column"
+						[resizable]="true"
+						[reorderable]="true"
 						aria_label="Сотрудники"
 					></div>
 				</div>

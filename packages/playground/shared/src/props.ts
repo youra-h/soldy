@@ -531,7 +531,9 @@ export const PREVIEW_PROPS: Readonly<Record<string, Readonly<Record<string, unkn
 	// стороны видны с первой отрисовки. Имени у ряда без приложения нет
 	pagination: { total: 100, value: 5, aria_label: 'Страницы' },
 	// Имени без видимой подписи нет ни у таблицы, ни у полосы, ни у кольца
-	table: { aria_label: 'Сотрудники' },
+	// Ручка ширины и перестановка — пропами таблицы: у колонок стенда своих
+	// нет, и строка таблицы включает и выключает их у всех колонок разом
+	table: { aria_label: 'Сотрудники', resizable: true, reorderable: true },
 	'progress-linear': { aria_label: 'Загрузка' },
 	'progress-spinner': { aria_label: 'Загрузка' },
 	skeleton: { width: 160, height: 16 },

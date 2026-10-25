@@ -404,6 +404,8 @@ const windowed = (): Node => {
 			items: TABLE_MANY_ROWS,
 			columns: TABLE_COLUMNS,
 			reorderPreview: 'column',
+			resizable: true,
+			reorderable: true,
 			aria_label: 'Сотрудники',
 		}),
 	)
