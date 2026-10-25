@@ -214,6 +214,68 @@ describe('разметка', () => {
 		expect(name.id).not.toBe('')
 	})
 
+	const SURNAME: TTableColumnSource = { field: 'surname', text: 'Фамилия', rowHeader: true }
+	const NUMBER: TTableColumnSource = { field: 'id', text: 'Номер' }
+
+	/** Таблица без слота `cell` и со слотом: ячейка `age` слота — `ключ/значение`. */
+	const DRAWS = [
+		['без слота cell', (table: TableProps) => render(Table, table), '30'],
+		['со слотом cell', (table: TableProps) => render(Slots, { case: 'cell', table }), '1/30'],
+	] as const
+
+	it.each(DRAWS)(
+		'%s: заголовков строки несколько и не подряд — th и td на местах своих колонок',
+		async (_case, draw, age) => {
+			await draw({
+				items: [{ data: { ...ANNA, surname: 'Иванова' } }],
+				columns: [AGE, NAME, NUMBER, SURNAME],
+			})
+
+			const cells = [...node('.so-table-row').children]
+
+			expect(cells.map((cell) => cell.tagName)).toEqual(['TD', 'TH', 'TD', 'TH'])
+			expect(cells.map(text)).toEqual([age, 'Анна', '1', 'Иванова'])
+			expect(cells.map((cell) => cell.getAttribute('scope'))).toEqual([
+				null,
+				'row',
+				null,
+				'row',
+			])
+			// Набор заголовка строки, с `id`, — только у первой колонки rowHeader
+			expect(cells[1].id).not.toBe('')
+			expect(cells[3].id).toBe('')
+		},
+	)
+
+	/**
+	 * Ветка Svelte — блок с менеджером веток, эффектами и якорем-комментарием в
+	 * строке. Ветка по заголовку строки стоит над петлёй ячеек — одна на серию
+	 * колонок с тем же `rowHeader` (`runsOf`), — и колонки той же серии якорей
+	 * строке не прибавляют, а ветка в каждой ячейке прибавляла бы по якорю на
+	 * ячейку (benchmarks/table_svelte.md).
+	 */
+	it.each(DRAWS)('%s: якорей в строке не больше с числом колонок', async (_case, draw) => {
+		const props = reactiveProps<TableProps>({ items: [{ data: ANNA }], columns: [NAME, AGE] })
+
+		await draw(props)
+
+		const anchors = () =>
+			[...node('.so-table-row').childNodes].filter(
+				(each) => each.nodeType === Node.COMMENT_NODE,
+			).length
+		const few = anchors()
+		const extra = ['a', 'b', 'c', 'd'].map((field): TTableColumnSource => ({
+			field,
+			text: field,
+		}))
+
+		props.columns = [NAME, AGE, ...extra]
+		flushSync()
+
+		expect(nodes('.so-table-row__cell')).toHaveLength(6)
+		expect(anchors()).toBe(few)
+	})
+
 	it('Table.Column и Table.Row — части таблицы', () => {
 		expect(Table.Column).toBe(TableColumn)
 		expect(Table.Row).toBe(TableRow)

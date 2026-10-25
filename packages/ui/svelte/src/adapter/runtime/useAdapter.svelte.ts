@@ -72,14 +72,42 @@ class TRawValue {
 	}
 }
 
+/** Руны свойств связки по именам — за прокси её состояния. */
+type TRawValues = {
+	readonly values: Map<string, TRawValue>
+}
+
+/** Руна свойства — как свойство объекта: у символа и незаведённого имени её нет. */
+function valueOf({ values }: TRawValues, name: string | symbol): TRawValue | undefined {
+	return typeof name === 'string' ? values.get(name) : undefined
+}
+
+/**
+ * Состояние связки — прокси над рунами её свойств, обработчик один на все
+ * связки. Геттер на каждое свойство — замыкание, его области и пара
+ * аксессоров — у строки таблицы стоил килобайты (benchmarks/table_svelte.md).
+ * Руна заводится подпиской, а не первым чтением: руна, заведённая в
+ * исполняемом эффекте, в нём же не отслеживается.
+ */
+const STATE: ProxyHandler<TRawValues> = {
+	get: (target, name) => valueOf(target, name)?.value,
+	has: (target, name) => valueOf(target, name) !== undefined,
+	ownKeys: ({ values }) => [...values.keys()],
+	getOwnPropertyDescriptor(target, name) {
+		const known = valueOf(target, name)
+
+		return (
+			known && { value: known.value, enumerable: true, configurable: true, writable: false }
+		)
+	},
+}
+
 /** Общая часть `useAdapter` и `useCollectionAdapter`. */
 function useExchange(
 	adapter: IAdapterContext,
 	getProps: () => object,
-): { exchange: TExchange; state: Record<string, unknown> } {
+): { exchange: TExchange; state: Readonly<Record<string, unknown>> } {
 	const exchange = adapter.connect(SvelteProfile)
-	// Состояние — геттер на каждое свойство поверх его руны
-	const state: Record<string, unknown> = {}
 	const values = new Map<string, TRawValue>()
 
 	// 1. Подписка — сразу, а не в эффекте: эффекта нет на сервере. Первое
@@ -90,16 +118,8 @@ function useExchange(
 			untrack(() => {
 				const known = values.get(name)
 
-				if (known) {
-					known.value = value
-
-					return
-				}
-
-				const created = new TRawValue(value)
-
-				values.set(name, created)
-				Object.defineProperty(state, name, { enumerable: true, get: () => created.value })
+				if (known) known.value = value
+				else values.set(name, new TRawValue(value))
 			})
 		}),
 	)
@@ -125,7 +145,7 @@ function useExchange(
 	// 6.
 	$effect(() => () => adapter.destroy())
 
-	return { exchange, state }
+	return { exchange, state: new Proxy<TRawValues>({ values }, STATE) }
 }
 
 /**
