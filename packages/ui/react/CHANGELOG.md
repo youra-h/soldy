@@ -1,5 +1,13 @@
 # @soldy-ui/react
 
+## 0.3.0-alpha.5
+
+### Patch Changes
+
+- @soldy-ui/core@0.3.0-alpha.5
+  - @soldy-ui/plugins@0.3.0-alpha.5
+  - @soldy-ui/setup@0.3.0-alpha.5
+
 ## 0.3.0-alpha.4
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/solid",
-  "version": "0.3.0-alpha.4",
+  "version": "0.3.0-alpha.5",
   "description": "Адаптер Solid: компоненты на headless-моделях ядра",
   "keywords": [
     "soldy",
@@ -41,16 +41,16 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.4",
-    "@soldy-ui/plugins": "0.3.0-alpha.4",
-    "@soldy-ui/setup": "0.3.0-alpha.4"
+    "@soldy-ui/core": "0.3.0-alpha.5",
+    "@soldy-ui/plugins": "0.3.0-alpha.5",
+    "@soldy-ui/setup": "0.3.0-alpha.5"
   },
   "peerDependencies": {
     "solid-js": "^1.9.13"
   },
   "devDependencies": {
-    "@soldy-ui/icons-material": "0.3.0-alpha.4",
-    "@soldy-ui/theme-oren": "0.3.0-alpha.4",
+    "@soldy-ui/icons-material": "0.3.0-alpha.5",
+    "@soldy-ui/theme-oren": "0.3.0-alpha.5",
     "solid-js": "^1.9.17",
     "vite-plugin-solid": "^2.11.14"
   }

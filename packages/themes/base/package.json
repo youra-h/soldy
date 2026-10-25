@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/theme-base",
-  "version": "0.3.0-alpha.4",
+  "version": "0.3.0-alpha.5",
   "description": "Общий слой тем Soldy UI: сброс частей библиотеки, знак направления письма и структура частей с числами в переменных — чистый CSS, без препроцессора, — и плагины раскладки для поведения темы",
   "keywords": [
     "soldy",
@@ -42,8 +42,8 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.4",
-    "@soldy-ui/plugins": "0.3.0-alpha.4"
+    "@soldy-ui/core": "0.3.0-alpha.5",
+    "@soldy-ui/plugins": "0.3.0-alpha.5"
   },
   "devDependencies": {
     "postcss": "^8.5.9",
