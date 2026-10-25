@@ -348,7 +348,29 @@ jobs:
       - name: Changeset
         run: npx changeset status --since=origin/main
 
-      # Текст changeset'а уходит в CHANGELOG.md как есть, а CHANGELOG пишется
-      # по-английски (docs/agents/build.md, «Версии пакетов»).
-      - name: Changeset на английском
-        run: node tools/changeset-language/check.mjs
+  # Comments, commits and CHANGELOG are in English (AGENTS.md, «Комментарии,
+  # коммиты и CHANGELOG — на английском»). Comments are checked only on lines
+  # the PR or the push to main added or changed: the translation is gradual.
+  # Commits are guarded by the agent hook, not here: a task branch is never
+  # rewritten, so a Russian commit in a PR could not be fixed.
+  english:
+    name: Английский
+    runs-on: ubuntu-latest
+
+    steps:
+      # Full history: the diff against the base needs their merge base.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Changeset
+        run: node tools/english/changesets.mjs
+
+      - name: Комментарии
+        run: node tools/english/comments.mjs "$BASE"
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}

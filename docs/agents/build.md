@@ -81,10 +81,11 @@ npm run changeset -- --empty
 по-английски** — его читают потребители из любой страны (решение владельца,
 2026-10-26). Поэтому текст каждого changeset'а, пустого тоже, — на английском;
 прежние разделы `CHANGELOG.md` на русском остаются как выпущены. Сторож —
-`tools/changeset-language/check.mjs`, шаг «Changeset на английском» задачи CI
-`changeset`: кириллица в ждущем выпуска `.changeset/*.md` роняет PR. Проверка
-CI локально — `npx changeset status --since=origin/main` (новый changeset она
-видит только после `git add`) и `node tools/changeset-language/check.mjs`.
+`tools/english/changesets.mjs`, задача CI «Английский»: кириллица в ждущем
+выпуска `.changeset/*.md` роняет PR (корневой `AGENTS.md`, «Комментарии,
+коммиты и CHANGELOG — на английском»). Проверка CI локально —
+`npx changeset status --since=origin/main` (новый changeset она видит только
+после `git add`) и `node tools/english/changesets.mjs`.
 
 **До `1.0` версия несёт суффикс `alpha`.** Библиотека не готова, и `0.2.0`,
 выпущенная без суффикса, читалась как готовая. Поэтому changesets стоит в

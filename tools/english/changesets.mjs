@@ -1,9 +1,9 @@
-// Текст changeset'а уходит в CHANGELOG.md пакета как есть, а CHANGELOG пишется
-// по-английски (docs/agents/build.md, «Версии пакетов»). Ждущие выпуска
-// changeset'ы — `.changeset/*.md` кроме README; использованные выпуск уже
-// унёс в `.changeset/pre/`, их не смотрим.
+// A changeset's text goes into the package CHANGELOG.md as is, and CHANGELOG
+// is written in English (AGENTS.md, «Комментарии, коммиты и CHANGELOG — на
+// английском»). Checks the changesets waiting for a release — `.changeset/*.md`
+// except README; the release has already moved used ones to `.changeset/pre/`.
 //
-// node tools/changeset-language/check.mjs
+// node tools/english/changesets.mjs
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
