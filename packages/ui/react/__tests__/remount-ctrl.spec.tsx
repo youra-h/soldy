@@ -37,8 +37,11 @@ function watchBus(bus: TEvented<any>): () => number {
 	const on = bus.on.bind(bus)
 	const off = bus.off.bind(bus)
 	const listen = bus.listen.bind(bus)
+	const unlisten = bus.unlisten.bind(bus)
 	const use = bus.use.bind(bus)
 	const handlers = new Set<unknown>()
+	// Слушатель, поставленный дважды, снимается по одному разу — список, а не набор
+	const listeners: unknown[] = []
 	const release = (undo: () => void) => {
 		let done = false
 
@@ -58,9 +61,14 @@ function watchBus(bus: TEvented<any>): () => number {
 		off(event, handler)
 	})
 	vi.spyOn(bus, 'listen').mockImplementation((listener) => {
-		live++
+		listeners.push(listener)
+		listen(listener)
+	})
+	vi.spyOn(bus, 'unlisten').mockImplementation((listener) => {
+		const index = listeners.indexOf(listener)
 
-		return release(listen(listener))
+		if (index !== -1) listeners.splice(index, 1)
+		unlisten(listener)
 	})
 	vi.spyOn(bus, 'use').mockImplementation((middleware) => {
 		live++
@@ -68,7 +76,7 @@ function watchBus(bus: TEvented<any>): () => number {
 		return release(use(middleware))
 	})
 
-	return () => live + handlers.size
+	return () => live + handlers.size + listeners.length
 }
 
 /** Ждёт обещания на рендере — так сосед в группе `Suspense` ждёт данных. */

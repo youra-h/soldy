@@ -55,7 +55,7 @@ const ITEMS = [
 
 /**
  * Живые подписки шин: `on` без парного `off`, перехватчики `use` и слушатели
- * `listen`, которых не сняли.
+ * `listen` без парного `unlisten`.
  */
 function watchBuses(buses: readonly TEvented<any>[]): () => string[] {
 	const live = new Map<string, number>()
@@ -82,6 +82,7 @@ function watchBuses(buses: readonly TEvented<any>[]): () => string[] {
 		const off = bus.off.bind(bus)
 		const use = bus.use.bind(bus)
 		const listen = bus.listen.bind(bus)
+		const unlisten = bus.unlisten.bind(bus)
 
 		vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
 			count(keyOf(handler, String(event)), 1)
@@ -103,15 +104,12 @@ function watchBuses(buses: readonly TEvented<any>[]): () => string[] {
 			}
 		})
 		vi.spyOn(bus, 'listen').mockImplementation((listener) => {
-			const key = `listen#${next++}`
-			const release = listen(listener)
-
-			count(key, 1)
-
-			return () => {
-				count(key, -1)
-				release()
-			}
+			count(keyOf(listener, 'listen'), 1)
+			listen(listener)
+		})
+		vi.spyOn(bus, 'unlisten').mockImplementation((listener) => {
+			count(keyOf(listener, 'listen'), -1)
+			unlisten(listener)
 		})
 	}
 

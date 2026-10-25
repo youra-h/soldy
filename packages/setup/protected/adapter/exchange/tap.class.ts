@@ -27,7 +27,7 @@
  * подписчиков самого источника.
  */
 
-import type { IRoute } from './types'
+import type { IRoute, TBusListener } from './types'
 import { busOf } from './value'
 
 /** Что делать с событием участника: маршрут из таблицы и аргументы события. */
@@ -36,8 +36,12 @@ type TReceiver = (route: IRoute, args: readonly unknown[]) => void
 export class TTap {
 	/** Сколько портов обмена слушают шины: состояние и события. */
 	private _holds = 0
-	/** Отписки слушателей по участникам — пока шины слушают; у участника без слушателя пусто. */
-	private _offs?: readonly ((() => void) | undefined)[]
+	/**
+	 * Слушатели по участникам — пока шины слушают; у участника без слушателя пусто.
+	 * Снимаются по ссылке (`unlisten`): функция отписки на каждую шину держала бы
+	 * ещё по замыканию со своей областью.
+	 */
+	private _listeners?: readonly (TBusListener | undefined)[]
 
 	/**
 	 * @param _owners владельцы участников монтирования — по порядку состава
@@ -53,17 +57,21 @@ export class TTap {
 	hold(): void {
 		if (this._holds++ > 0) return
 
-		this._offs = this._owners.map((owner, index) => {
+		this._listeners = this._owners.map((owner, index) => {
 			const routes = this._routes[index]
 			const bus = routes && busOf(owner)
 
-			return routes && bus
-				? bus.listen((event, args) => {
-						const route = routes.get(event)
+			if (!routes || !bus) return undefined
 
-						if (route) this._receive(route, args)
-					})
-				: undefined
+			const listener: TBusListener = (event, args) => {
+				const route = routes.get(event)
+
+				if (route) this._receive(route, args)
+			}
+
+			bus.listen(listener)
+
+			return listener
 		})
 	}
 
@@ -71,10 +79,15 @@ export class TTap {
 	release(): void {
 		if (this._holds === 0 || --this._holds > 0) return
 
-		const offs = this._offs ?? []
+		const listeners = this._listeners
 
-		this._offs = undefined
+		this._listeners = undefined
 
-		for (const off of offs) off?.()
+		// Шина участника — та же, что при постановке: `events` владельца не меняется
+		this._owners.forEach((owner, index) => {
+			const listener = listeners?.[index]
+
+			if (listener) busOf(owner)?.unlisten(listener)
+		})
 	}
 }

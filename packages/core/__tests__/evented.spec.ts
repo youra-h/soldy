@@ -539,8 +539,11 @@ describe('TEvented: структуры — с первой подпиской', 
 
 		expect(structuresOf(events)).toEqual([])
 
+		const listener = vi.fn()
+
 		events.use(vi.fn())()
-		events.listen(vi.fn())()
+		events.listen(listener)
+		events.unlisten(listener)
 
 		expect(structuresOf(events)).toEqual([])
 	})
@@ -636,12 +639,13 @@ describe('TEvented: listen', () => {
 		expect(listener).not.toHaveBeenCalled()
 	})
 
-	it('снимается своей отпиской и destroy', () => {
+	it('снимается unlisten по ссылке и destroy', () => {
 		const events = new TEvented<TestEvents>()
 		const first = vi.fn()
 		const second = vi.fn()
 
-		events.listen(first)()
+		events.listen(first)
+		events.unlisten(first)
 		events.listen(second)
 		events.emit('reset')
 		events.destroy()
@@ -651,21 +655,41 @@ describe('TEvented: listen', () => {
 		expect(second).toHaveBeenCalledTimes(1)
 	})
 
+	it('поставленный дважды снимается по одному разу за unlisten; не поставленный — ничего', () => {
+		const events = new TEvented<TestEvents>()
+		const twice = vi.fn()
+		const other = vi.fn()
+
+		events.listen(twice)
+		events.listen(twice)
+		events.unlisten(other)
+		events.unlisten(twice)
+		events.emit('reset')
+
+		expect(twice).toHaveBeenCalledTimes(1)
+
+		events.unlisten(twice)
+		events.unlisten(twice)
+		events.emit('reset')
+
+		expect(twice).toHaveBeenCalledTimes(1)
+		expect(structuresOf(events)).toEqual([])
+	})
+
 	it('снятый посреди эмита этот эмит не получает, поставленный — получает следующий', () => {
 		const events = new TEvented<TestEvents>()
 		const removed = vi.fn()
 		const late = vi.fn()
-		let release = (): void => {}
 		let first = true
 
 		events.listen(() => {
 			if (!first) return
 
 			first = false
-			release()
+			events.unlisten(removed)
 			events.listen(late)
 		})
-		release = events.listen(removed)
+		events.listen(removed)
 		events.emit('change', 'первый')
 
 		expect(removed).not.toHaveBeenCalled()
@@ -692,6 +716,7 @@ describe('TEvented: проброс держит источник, пока це�
 		const off = bus.off.bind(bus)
 		const use = bus.use.bind(bus)
 		const listen = bus.listen.bind(bus)
+		const unlisten = bus.unlisten.bind(bus)
 
 		vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
 			count++
@@ -712,14 +737,12 @@ describe('TEvented: проброс держит источник, пока це�
 			}
 		})
 		vi.spyOn(bus, 'listen').mockImplementation((listener) => {
-			const release = listen(listener)
-
 			count++
-
-			return () => {
-				count--
-				release()
-			}
+			listen(listener)
+		})
+		vi.spyOn(bus, 'unlisten').mockImplementation((listener) => {
+			count--
+			unlisten(listener)
 		})
 
 		return () => count
@@ -735,8 +758,10 @@ describe('TEvented: проброс держит источник, пока це�
 		target.relay(source, ['change'])
 		other.relayAll(source)
 
-		const release = target.listen(listener)
-		const releaseOther = other.listen(vi.fn())
+		const otherListener = vi.fn()
+
+		target.listen(listener)
+		other.listen(otherListener)
 
 		expect(held()).toBe(2)
 
@@ -744,8 +769,8 @@ describe('TEvented: проброс держит источник, пока це�
 
 		expect(listener).toHaveBeenCalledWith('change', ['x'])
 
-		release()
-		releaseOther()
+		target.unlisten(listener)
+		other.unlisten(otherListener)
 
 		expect(held()).toBe(0)
 	})
@@ -888,7 +913,9 @@ describe('TEvented: проброс держит источник, пока це�
 
 		expect(held()).toBe(0)
 
-		const release = target.listen(vi.fn())
+		const listener = vi.fn()
+
+		target.listen(listener)
 
 		expect(held()).toBe(1)
 
@@ -898,7 +925,7 @@ describe('TEvented: проброс держит источник, пока це�
 		expect(held()).toBe(0)
 		expect(reaction.mock.calls).toEqual([[2]])
 
-		release()
+		target.unlisten(listener)
 	})
 })
 

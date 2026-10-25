@@ -81,7 +81,7 @@ TEntity (uid, getProps, assign, toJSON)
 ### Key Exports
 
 - `IComponent<TProps, TEvents>` - Component contract
-- `TEvented<T>` - Event bus: `on`, middleware `use`, listener of all events `listen` (called after the event's `on` handlers), relays. Pays per subscription: its structures appear with the first subscriber and go with the last one
+- `TEvented<T>` - Event bus: `on`, middleware `use`, listener of all events `listen` (called after the event's `on` handlers; removed by reference with `unlisten`, as `off` removes `on` — `listen` returns no disposer), relays. Pays per subscription: its structures appear with the first subscriber and go with the last one
 - `TChangeEvent<T>` - property write that a `change:<x>:before` subscriber may edit or cancel
 
 ---
@@ -103,7 +103,7 @@ TEntity (uid, getProps, assign, toJSON)
   - `seed(owners, value)` - начальное значение: `undefined` и равное умолчанию ничего не задают
 - **TMember**: a participant of the mount — an owner and its description (`IMemberSpec`: props and events). The owner is the mount's, the description is the type's: a plugin's definition, one description per descriptor for the instance and the binding. The instance, a descriptor plugin, an external plugin and the binding itself (`TExternalPlugins`, the owner of `pluginProps`) are members of the same kind
 - **TRouting**: the route table of a type — one per surface × composition of member descriptions, shared by all mounts. It holds the lines of the composition (`lines`, `readable` for the state, `writable` for the inputs — one rule for the exchange and the assembly's initial values) and says what to do with a member's event: which state values to re-read, which surface event and which models to send. The publisher of an event is the first member that declares it
-- **TTap**: one listener of all events (`TEvented.listen`) on each member's bus, shared by the state and the events of the exchange — set by the first of `state.subscribe` / `events.listen`, removed by the last one to leave. The exchange has no `on` subscriptions at all. The order is one rule for all six adapters: the bus hands the event to the listener after its `on` handlers (the framework hears after the core subscribers), and inside the exchange the state is refreshed before the event and its model go out. Within one bus only: an event a facade got through `relayAll` reaches the framework before the source's own subscribers
+- **TTap**: one listener of all events (`TEvented.listen`) on each member's bus, shared by the state and the events of the exchange — set by the first of `state.subscribe` / `events.listen`, removed by the last one to leave (by reference, `unlisten`: a disposer per bus would hold one more closure with its own scope). The exchange has no `on` subscriptions at all. The order is one rule for all six adapters: the bus hands the event to the listener after its `on` handlers (the framework hears after the core subscribers), and inside the exchange the state is refreshed before the event and its model go out. Within one bus only: an event a facade got through `relayAll` reaches the framework before the source's own subscribers
 - **TStateStore** (core → framework): a value list, one per property with triggers, created on the first read; `subscribe` / `getSnapshot` (methods — React binds them in `TStableSnapshot`); holds the member listener while there is at least one subscriber; a change is decided by `sameValue` against the stored value
 - **TInputPort** (framework → core): a value list, one per writable prop, seeded with the build props. `full(props)` / `delta(changes)` differ only in what counts as a change: a changed value or the mere presence of the key; `pick(props)` reads the inputs for a framework that tracks reads (Vue). The initial values are written by the static `TInputPort.seed(members, surface, buildProps)` — the same props reading, no memory: the assembly (`createAdapterContext`, step 5) and external plugins call it, and the assembly builds no exchange for that
 - **TEventRelay** (events out): the surface event of a route and right after it its `v-model` event; holds the member listener while there is at least one sink
@@ -120,7 +120,7 @@ Names in a framework's notation are computed by the surface — `TSurface.of(des
 - [exchange/tap.class.ts](../packages/setup/protected/adapter/exchange/tap.class.ts) - TTap: слушатель участников и порядок «состояние, потом событие»
 - [exchange/state-store.class.ts](../packages/setup/protected/adapter/exchange/state-store.class.ts), [input-port.class.ts](../packages/setup/protected/adapter/exchange/input-port.class.ts), [event-relay.class.ts](../packages/setup/protected/adapter/exchange/event-relay.class.ts) - the three ports
 - [exchange/exchange.class.ts](../packages/setup/protected/adapter/exchange/exchange.class.ts) - TExchange
-- [exchange/value.ts](../packages/setup/protected/adapter/exchange/value.ts) - `sameValue` (plain objects and arrays by content, the rest by identity), `busOf` (`owner.events`, а без поля — сам владелец; без `listen` источника нет)
+- [exchange/value.ts](../packages/setup/protected/adapter/exchange/value.ts) - `sameValue` (plain objects and arrays by content, the rest by identity), `busOf` (`owner.events`, а без поля — сам владелец; без `listen` и `unlisten` источника нет)
 
 ### Key Exports
 
