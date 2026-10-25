@@ -11,9 +11,12 @@ import path from 'node:path'
  * Рост считается от конца разогрева (`warm` циклов) до последнего цикла, по
  * осевшим замерам (после паузы `settle`). Итог страницы:
  *
- * - **утечка** — после снятия осталось больше живых экземпляров ядра, узлов
- *   DOM или слушателей, чем было: счётчики точные, и любой рост — это то, что
- *   страница держит после себя;
+ * - **утечка** — после снятия живых экземпляров ядра, узлов DOM или
+ *   слушателей стало больше, чем было, и рост копится: не меньше чем на
+ *   половину числа циклов. То, что страница держит за собой, прибавляется
+ *   каждым её циклом — хоть по одному. Разовый сдвиг меньше — колебание: у
+ *   Svelte число узлов после снятия ходит на ±1 от цикла к циклу и не
+ *   копится;
  * - **куча растёт** — счётчики на месте, а наклон кучи за цикл выше шума:
  *   втрое больше, чем у `empty` (корень без компонентов), и не меньше 4 КБ;
  * - **чисто** — ни того, ни другого.
@@ -90,9 +93,21 @@ function verdict(summary) {
 		COUNTERS.filter(([key]) => values[key] > 0)
 			.map(([key, label]) => `${label} ${signed(values[key])}`)
 			.join(', ')
-	const leaked = listed(summary.grown)
+	const accumulated = (key) => summary.grown[key] >= result.cycles / 2
+	const leaked = listed(
+		Object.fromEntries(
+			COUNTERS.map(([key]) => [key, accumulated(key) ? summary.grown[key] : 0]),
+		),
+	)
+	const jitter = listed(
+		Object.fromEntries(
+			COUNTERS.map(([key]) => [key, accumulated(key) ? 0 : summary.grown[key]]),
+		),
+	)
 	const held = listed(summary.held)
-	const note = held ? `; до паузы держал таймер: ${held}` : ''
+	const note =
+		(held ? `; до паузы держал таймер: ${held}` : '') +
+		(jitter ? `; колебание, не копится: ${jitter}` : '')
 
 	if (leaked) return `**утечка**: ${leaked}${note}`
 	if (summary.heapSlope > noise) {
