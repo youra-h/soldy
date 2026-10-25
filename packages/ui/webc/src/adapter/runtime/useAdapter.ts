@@ -150,6 +150,41 @@ export function useCollectionAdapter<C extends IComponentContract>(
 	}
 }
 
+type TJoinedStates = {
+	readonly states: readonly Readonly<Record<string, unknown>>[]
+}
+
+/** Состояние, где имя есть, — первое по порядку. */
+function stateOf(
+	{ states }: TJoinedStates,
+	name: string | symbol,
+): Readonly<Record<string, unknown>> | undefined {
+	return typeof name === 'string' ? states.find((state) => Object.hasOwn(state, name)) : undefined
+}
+
+/**
+ * Обработчик один на все виды: геттер на каждое имя каждого вида — замыкание,
+ * его область и пара аксессоров, — у строки таблицы стоил килобайты.
+ */
+const JOINED: ProxyHandler<TJoinedStates> = {
+	get(target, name) {
+		return typeof name === 'string' ? stateOf(target, name)?.[name] : undefined
+	},
+	has(target, name) {
+		return stateOf(target, name) !== undefined
+	},
+	ownKeys({ states }) {
+		return [...new Set(states.flatMap((state) => Object.keys(state)))]
+	},
+	getOwnPropertyDescriptor(target, name) {
+		const state = stateOf(target, name)
+
+		return state && typeof name === 'string'
+			? { value: state[name], enumerable: true, configurable: true, writable: false }
+			: undefined
+	},
+}
+
 /**
  * Живой вид нескольких состояний: свойство — из первого, где оно есть. Ключи
  * заполнила подписка при сборке, новых не появляется, значения читаются в
@@ -158,20 +193,7 @@ export function useCollectionAdapter<C extends IComponentContract>(
 function joinStates(
 	states: readonly Readonly<Record<string, unknown>>[],
 ): Readonly<Record<string, unknown>> {
-	const view: Record<string, unknown> = {}
-
-	for (const name of new Set(states.flatMap((state) => Object.keys(state)))) {
-		Object.defineProperty(view, name, {
-			enumerable: true,
-			get: () => {
-				for (const state of states) if (Object.hasOwn(state, name)) return state[name]
-
-				return undefined
-			},
-		})
-	}
-
-	return view
+	return new Proxy<TJoinedStates>({ states }, JOINED)
 }
 
 /** Граница рантайма и типа, как `toInstanceState`: связь имён держат дескрипторы. */
