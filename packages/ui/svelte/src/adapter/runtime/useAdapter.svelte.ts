@@ -1,7 +1,7 @@
 /**
  * useAdapter — связка adapter-context со Svelte, аналог `useAdapter` у Vue.
  *
- * 1. Core → Svelte: подписка на состояние связки, значения — в руну `$state`
+ * 1. Core → Svelte: подписка на состояние связки, значения — в сырые руны
  * 2. Svelte → Core: входные пропсы в эффекте
  * 3. События — в колбэк-пропы `onXxx`
  * 4. Компонент принят — `adapter.attach()` при инициализации
@@ -55,29 +55,54 @@ export type TCollectionBinding<TState extends object, TProps extends object = ob
 	readonly forwardProps: TForwardProps<TProps>
 }
 
+/**
+ * Значение свойства связки — сырая руна (`$state.raw`). Ядро отдаёт значения, а
+ * не ручки на живое состояние, и о смене сообщает новым значением (AGENTS.md,
+ * «Контракт границы core → ui»). Глубокая руна `$state` оборачивала в прокси
+ * всё составное — массив ячеек строки таблицы, каждую ячейку, её `aria` и
+ * `dataset`, — с источником на каждый прочитанный ключ, и следить за ними
+ * незачем: на месте их никто не меняет. В таблице это была треть памяти строки
+ * (benchmarks/table_svelte.md, 869fmcau7)
+ */
+class TRawValue {
+	value = $state.raw<unknown>()
+
+	constructor(value: unknown) {
+		this.value = value
+	}
+}
+
 /** Общая часть `useAdapter` и `useCollectionAdapter`. */
 function useExchange(
 	adapter: IAdapterContext,
 	getProps: () => object,
 ): { exchange: TExchange; state: Record<string, unknown> } {
 	const exchange = adapter.connect(SvelteProfile)
-	const values: Record<string, unknown> = {}
-	let target = values
+	// Состояние — геттер на каждое свойство поверх его руны
+	const state: Record<string, unknown> = {}
+	const values = new Map<string, TRawValue>()
 
-	// 1. Подписка — сразу, а не в эффекте: эффекта нет на сервере. Первые
-	// значения ложатся в обычный объект, руна заводится над полным составом.
-	// Запись — мимо слежения: ядро меняется и посреди отрисовки
+	// 1. Подписка — сразу, а не в эффекте: эффекта нет на сервере. Первое
+	// значение свойства заводит его руну. Запись — мимо слежения: ядро
+	// меняется и посреди отрисовки
 	onDestroy(
 		exchange.state.subscribe((name, value) => {
 			untrack(() => {
-				target[name] = value
+				const known = values.get(name)
+
+				if (known) {
+					known.value = value
+
+					return
+				}
+
+				const created = new TRawValue(value)
+
+				values.set(name, created)
+				Object.defineProperty(state, name, { enumerable: true, get: () => created.value })
 			})
 		}),
 	)
-
-	const state = $state(values)
-
-	target = state
 
 	// 2. Эффект читает все пропсы, связка пишет только сменившиеся
 	$effect(() => {
