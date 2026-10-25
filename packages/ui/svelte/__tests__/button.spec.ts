@@ -243,7 +243,7 @@ describe('Button · события через колбэк-пропы', () => {
 
 /**
  * Живые подписки шины внешнего `ctrl` по её публичному API: пары `on` без
- * своего `off` и слушатели `listen` без своей отписки. Обмен адаптера слушает
+ * своего `off` и слушатели `listen` без своего `unlisten`. Обмен адаптера слушает
  * шину участника одним слушателем `listen`, подписок `on` на события и
  * триггеры у него нет.
  */
@@ -251,22 +251,12 @@ function watchBus(ctrl: TButton): () => number {
 	const { events } = ctrl
 	const on = vi.spyOn(events, 'on')
 	const off = vi.spyOn(events, 'off')
-	const listen = events.listen.bind(events)
-	let listening = 0
-
-	vi.spyOn(events, 'listen').mockImplementation((listener) => {
-		const release = listen(listener)
-
-		listening++
-
-		return () => {
-			listening--
-			release()
-		}
-	})
+	const listen = vi.spyOn(events, 'listen')
+	const unlisten = vi.spyOn(events, 'unlisten')
 
 	return () =>
-		listening +
+		listen.mock.calls.filter(([listener]) => !unlisten.mock.calls.some(([l]) => l === listener))
+			.length +
 		on.mock.calls.filter(
 			([event, handler]) => !off.mock.calls.some(([e, h]) => e === event && h === handler),
 		).length

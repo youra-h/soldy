@@ -53,8 +53,9 @@ export type TBusListener = (event: string, args: readonly unknown[]) => void
 /**
  * Нетипизированный вид шины владельца: имена событий слой знает строками из
  * дескриптора. Обмену хватает слушателя всех событий — подписок на имена у
- * него нет.
+ * него нет. Снимается слушатель по ссылке, как `off` снимает `on`.
  */
 export interface IBus {
-	listen(listener: TBusListener): () => void
+	listen(listener: TBusListener): void
+	unlisten(listener: TBusListener): void
 }

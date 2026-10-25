@@ -51,20 +51,18 @@ export class TExternalPlugins {
 	private readonly _bag = new TCell<object>({}, sameValue)
 	/** Отвязки плагинов, поставленных снаружи, — с первого такого плагина. */
 	private _detach?: Map<TPluginCtor, () => void>
-	/** Отписка от набора. */
-	private readonly _unlisten: () => void
-
 	/**
+	 * @param _bundle набор компонента: слушатель снимается с его шины по ссылке
 	 * @param _own плагины дескриптора: через `pluginProps` они не пишутся — их пропсы уже в поверхности
 	 */
 	constructor(
-		bundle: IPluginBundle,
+		private readonly _bundle: IPluginBundle,
 		private readonly _instance: object,
 		private readonly _own: ReadonlySet<TPluginCtor>,
 	) {
 		// Один слушатель на шину, а не подписка на каждое событие: подписке набор
 		// заводит карту и по набору обработчиков на событие, слушателю — нет
-		this._unlisten = bundle.events.listen(this._onBundle)
+		_bundle.events.listen(this._onBundle)
 	}
 
 	get pluginProps(): object {
@@ -76,7 +74,7 @@ export class TExternalPlugins {
 	}
 
 	destroy(): void {
-		this._unlisten()
+		this._bundle.events.unlisten(this._onBundle)
 
 		const detach = this._detach
 

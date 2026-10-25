@@ -165,11 +165,13 @@ export function spyBus(name: string, holder: unknown): IBusSpy[] {
 	const off = bus.off.bind(bus)
 	const use = bus.use.bind(bus)
 	const listen = bus.listen.bind(bus)
+	const unlisten = bus.unlisten.bind(bus)
 	const destroy = bus.destroy.bind(bus)
 	const subscribed: string[] = []
 	const handlers = new Map<unknown, Set<string>>()
 	const middlewares = new Set<object>()
-	const listeners = new Set<object>()
+	// Слушатель, поставленный дважды, снимается по одному разу — список, а не набор
+	const listeners: unknown[] = []
 
 	vi.spyOn(bus, 'on').mockImplementation((event, handler) => {
 		const events = handlers.get(handler) ?? new Set<string>()
@@ -195,20 +197,19 @@ export function spyBus(name: string, holder: unknown): IBusSpy[] {
 		}
 	})
 	vi.spyOn(bus, 'listen').mockImplementation((listener) => {
-		const token = {}
-		const release = listen(listener)
+		listeners.push(listener)
+		listen(listener)
+	})
+	vi.spyOn(bus, 'unlisten').mockImplementation((listener) => {
+		const index = listeners.indexOf(listener)
 
-		listeners.add(token)
-
-		return () => {
-			listeners.delete(token)
-			release()
-		}
+		if (index !== -1) listeners.splice(index, 1)
+		unlisten(listener)
 	})
 	vi.spyOn(bus, 'destroy').mockImplementation(() => {
 		handlers.clear()
 		middlewares.clear()
-		listeners.clear()
+		listeners.length = 0
 		destroy()
 	})
 
@@ -219,7 +220,7 @@ export function spyBus(name: string, holder: unknown): IBusSpy[] {
 			live: () => [
 				...[...handlers.values()].flatMap((events) => [...events]),
 				...[...middlewares].map(() => 'use'),
-				...[...listeners].map(() => 'listen'),
+				...listeners.map(() => 'listen'),
 			],
 		},
 	]

@@ -24,7 +24,7 @@ type TRelayChannel = Pick<IEventEmitter, 'on' | 'off' | 'emit'>
 
 /**
  * TEvented — шина событий: подписки {@link on}, перехватчики {@link use},
- * слушатели всех событий {@link listen}, пробросы из источников
+ * слушатели всех событий {@link listen} / {@link unlisten}, пробросы из источников
  * ({@link relay}, {@link relayAll}) и своя реакция на событие источника
  * ({@link follow}).
  *
@@ -272,33 +272,47 @@ export class TEvented<TEvents extends Record<string, (...args: any) => any>> {
 	 * Слушатель, снятый посреди эмита, этот эмит уже не получает; поставленный
 	 * посреди эмита получает следующий.
 	 *
+	 * Снимает слушателя {@link unlisten} по ссылке, как `off` снимает `on`.
+	 * Функции отписки `listen` не возвращает: она держала бы на каждого
+	 * слушателя замыкание со своей областью, а слушают шину много объектов на
+	 * каждый смонтированный компонент — обмен адаптера по слушателю на шину
+	 * каждого участника.
+	 *
 	 * @param listener - слушатель: имя события и его аргументы
-	 * @returns Функция отписки слушателя.
 	 *
 	 * @example
-	 * const unlisten = events.listen((event, args) => {
+	 * const log: TEventListener<TEvents> = (event, args) => {
 	 *     console.log(String(event), args)
-	 * })
+	 * }
+	 *
+	 * events.listen(log)
+	 * events.unlisten(log)
 	 */
-	listen(listener: TEventListener<TEvents>): () => void {
+	listen(listener: TEventListener<TEvents>): void {
 		// Литерал, а не спред в пустой список: у массива, собранного по элементу,
 		// запас под рост, а слушатель у шины обычно один
 		this._listeners = this._listeners ? [...this._listeners, listener] : [listener]
 		this._relays?.subscribe()
+	}
 
-		return () => {
-			const listeners = this._listeners
-			const index = listeners?.indexOf(listener) ?? -1
+	/**
+	 * Снять слушателя {@link listen}. Слушатель, поставленный дважды, снимается
+	 * по одному разу за вызов; не поставленный — ничего не происходит.
+	 *
+	 * @param listener - тот же слушатель, что получил `listen`
+	 */
+	unlisten(listener: TEventListener<TEvents>): void {
+		const listeners = this._listeners
+		const index = listeners?.indexOf(listener) ?? -1
 
-			if (listeners === undefined || index === -1) return
+		if (listeners === undefined || index === -1) return
 
-			this._listeners =
-				listeners.length === 1
-					? undefined
-					: [...listeners.slice(0, index), ...listeners.slice(index + 1)]
+		this._listeners =
+			listeners.length === 1
+				? undefined
+				: [...listeners.slice(0, index), ...listeners.slice(index + 1)]
 
-			if (!this._listened) this._relays?.unsubscribe()
-		}
+		if (!this._listened) this._relays?.unsubscribe()
 	}
 
 	/**
