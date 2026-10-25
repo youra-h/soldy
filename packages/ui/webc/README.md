@@ -2,7 +2,7 @@
 
 **The Web Components adapter: Soldy UI as Custom Elements on the headless models of the core.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -65,7 +65,7 @@ Button's `default` slot) cannot be passed into it — slot content reads it from
 > or a range), the `<so-virtual>` window for long lists and the
 > `<so-drag-and-drop>` wrapper that lets users reorder the items of Tabs, ListBox and Accordion by
 > dragging (`so:move`; `so:move:before` can cancel with `event.preventDefault()`) are ported, the
-> rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy#components).
+> rest of the set is on its way. See [the adapter table](https://github.com/youra-h/soldy-ui#components).
 
 ## Install
 
@@ -567,11 +567,11 @@ useTheme(oren)
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — the component set and what each
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — the component set and what each
   adapter implements so far.
-- [Architecture overview](https://github.com/youra-h/soldy/blob/main/docs/architecture.md) —
+- [Architecture overview](https://github.com/youra-h/soldy-ui/blob/main/docs/architecture.md) —
   layers, descriptors, plugins, collections, adapters.
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+[MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE)

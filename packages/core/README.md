@@ -3,7 +3,7 @@
 **Headless component models with no framework in them: components, the collection engine, facades
 and extensions.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -49,14 +49,14 @@ engine.extensions.plain.events.on('item:remove:before', (e) => e.preventDefault(
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — what the library is and how it is
   put together.
-- [Architecture overview](https://github.com/youra-h/soldy/blob/main/docs/architecture.md) —
+- [Architecture overview](https://github.com/youra-h/soldy-ui/blob/main/docs/architecture.md) —
   layers, descriptors, plugins, collections, adapters.
 
 ## License
 
-The code of the package is [MIT](https://github.com/youra-h/soldy/blob/main/LICENSE).
+The code of the package is [MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE).
 
 The first day of the week by region, which the calendar uses when a locale does not name it, is
 [Unicode CLDR](https://cldr.unicode.org/) data — CLDR 48, `weekData.firstDay` of

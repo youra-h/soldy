@@ -5,7 +5,7 @@ library's own nodes, the writing-direction sign, the structure of the components
 in variables, and the layout plugins that measure what CSS cannot. The CSS is plain CSS, no
 preprocessor, no Tailwind.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -134,7 +134,7 @@ stylesheet: your rules add the look and take no mechanics away.
 
 ### 3. The variables
 
-[`theme-variables.json`](https://github.com/youra-h/soldy/blob/main/packages/themes/base/theme-variables.json)
+[`theme-variables.json`](https://github.com/youra-h/soldy-ui/blob/main/packages/themes/base/theme-variables.json)
 is the contract, with the meaning of every variable, in two sections.
 
 `base-reads` — every variable this package reads. Four kinds:
@@ -295,7 +295,7 @@ A plugin whose data only your own look needs belongs to your theme, in the same 
 ### 7. Check it
 
 The checks of this package run on the built CSS of every theme in the
-[repository](https://github.com/youra-h/soldy): a package in `packages/themes/` with a
+[repository](https://github.com/youra-h/soldy-ui): a package in `packages/themes/` with a
 `vite.config.ts` that builds its stylesheet into one CSS file is picked up by
 `npm run test --workspace=@soldy-ui/theme-base` by itself. Outside the repository the same rules
 hold — each check is a rule of step 3 or 4:
@@ -311,7 +311,7 @@ hold — each check is a rule of step 3 or 4:
   radio item;
 - `table-reorder` — per-cell rules of Table under the gesture attribute, no `:has()` on its root.
 
-[`@soldy-ui/theme-oren`](https://github.com/youra-h/soldy/tree/main/packages/themes/oren) is a
+[`@soldy-ui/theme-oren`](https://github.com/youra-h/soldy-ui/tree/main/packages/themes/oren) is a
 complete theme built on these steps: Tailwind and Sass inside, two color schemes, its own values.
 
 ## Layer order next to Tailwind
@@ -327,12 +327,12 @@ the application uses Tailwind, name the order before any stylesheet loads, so th
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — what the library is and how it is
   put together.
-- [The package's own notes](https://github.com/youra-h/soldy/blob/main/packages/themes/base/AGENTS.md)
+- [The package's own notes](https://github.com/youra-h/soldy-ui/blob/main/packages/themes/base/AGENTS.md)
   — layers, the reset, the direction sign, the variable contract, the layout plugins and the checks
   every theme passes (in Russian).
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+[MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE)

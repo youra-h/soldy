@@ -2,7 +2,7 @@
 
 **The React adapter: Soldy UI components rendered on the headless models of the core.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -45,7 +45,7 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 > (`<DragAndDrop onMove={…}><ListBox items={…} /></DragAndDrop>`, `onMoveBefore` can cancel) are
 > ported, the rest of the set is on its way. Icon renders the `tag` it is given; `roleIcon(role)`
 > makes that tag from the registered icon pack. See
-> [the adapter table](https://github.com/youra-h/soldy#components).
+> [the adapter table](https://github.com/youra-h/soldy-ui#components).
 
 ## Install
 
@@ -151,11 +151,11 @@ useTheme(oren)
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — the component set and what each
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — the component set and what each
   adapter implements so far.
-- [Architecture overview](https://github.com/youra-h/soldy/blob/main/docs/architecture.md) —
+- [Architecture overview](https://github.com/youra-h/soldy-ui/blob/main/docs/architecture.md) —
   layers, descriptors, plugins, collections, adapters.
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+[MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE)

@@ -15,7 +15,7 @@ the latest release receives security fixes.
 **Please do not report security vulnerabilities in public issues, pull requests or discussions.**
 
 Report them privately through GitHub:
-[open a private vulnerability report](https://github.com/youra-h/soldy/security/advisories/new)
+[open a private vulnerability report](https://github.com/youra-h/soldy-ui/security/advisories/new)
 (the **Security** tab → **Report a vulnerability**). The report is visible only to the maintainers.
 
 Please include:

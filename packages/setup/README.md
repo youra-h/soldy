@@ -3,7 +3,7 @@
 **What all six adapters share: component descriptors, the assembly that runs on mount, and the
 exchange of values with a framework.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -54,11 +54,11 @@ export const ButtonDescriptor = defineDescriptor(() =>
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — what the library is and how it is
   put together.
-- [Architecture overview](https://github.com/youra-h/soldy/blob/main/docs/architecture.md) —
+- [Architecture overview](https://github.com/youra-h/soldy-ui/blob/main/docs/architecture.md) —
   layers, descriptors, plugins, collections, adapters.
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+[MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE)

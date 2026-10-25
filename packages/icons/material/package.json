@@ -12,12 +12,12 @@
   "author": "Yuri Soldatov",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/youra-h/soldy.git",
+    "url": "git+https://github.com/youra-h/soldy-ui.git",
     "directory": "packages/icons/material"
   },
-  "homepage": "https://github.com/youra-h/soldy",
+  "homepage": "https://github.com/youra-h/soldy-ui",
   "bugs": {
-    "url": "https://github.com/youra-h/soldy/issues"
+    "url": "https://github.com/youra-h/soldy-ui/issues"
   },
   "publishConfig": {
     "access": "public"

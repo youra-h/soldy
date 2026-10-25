@@ -2,7 +2,7 @@
 
 **The Svelte adapter: Soldy UI components rendered on the headless models of the core.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -55,7 +55,7 @@ slot is `children`.
 > class, style and `ref` to the scroll viewport around it; a menu, like a popover, gives them to
 > its root around the trigger. `Label` names the control it wraps; `LocaleProvider` gives a subtree
 > its language and library strings, such as the name of the clear button of `Input`. See
-> [the adapter table](https://github.com/youra-h/soldy#components).
+> [the adapter table](https://github.com/youra-h/soldy-ui#components).
 
 ## Install
 
@@ -189,11 +189,11 @@ useTheme(oren)
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — the component set and what each
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — the component set and what each
   adapter implements so far.
-- [Architecture overview](https://github.com/youra-h/soldy/blob/main/docs/architecture.md) —
+- [Architecture overview](https://github.com/youra-h/soldy-ui/blob/main/docs/architecture.md) —
   layers, descriptors, plugins, collections, adapters.
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+[MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE)

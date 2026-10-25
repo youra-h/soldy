@@ -96,10 +96,10 @@ If something in Soldy UI keeps you from using an application, or keeps you from 
 accessible one, please tell us:
 
 - open an issue with the
-  [Accessibility barrier](https://github.com/youra-h/soldy/issues/new?template=accessibility.yml)
+  [Accessibility barrier](https://github.com/youra-h/soldy-ui/issues/new?template=accessibility.yml)
   form. Say which component and adapter, what you expected, what happened, and which browser and
   assistive technology you use;
 - if the problem should not be public, report it privately through
-  [GitHub's private reporting form](https://github.com/youra-h/soldy/security/advisories/new).
+  [GitHub's private reporting form](https://github.com/youra-h/soldy-ui/security/advisories/new).
 
 Accessibility barriers are treated as bugs, not as feature requests.

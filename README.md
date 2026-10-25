@@ -7,7 +7,7 @@
 **UI components with the logic written once: a framework-agnostic core and thin adapters that
 render it in Vue, React, Angular, Svelte, Solid and Web Components.**
 
-[![CI](https://github.com/youra-h/soldy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/youra-h/soldy/actions/workflows/ci.yml)
+[![CI](https://github.com/youra-h/soldy-ui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/youra-h/soldy-ui/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@soldy-ui/core?label=npm)](https://www.npmjs.com/org/soldy-ui)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 

@@ -3,7 +3,7 @@
 **The oren theme: CSS for the BEM classes and `data-*` attributes of Soldy UI, in a light and a
 dark scheme.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -22,7 +22,7 @@ The theme is built on [`@soldy-ui/theme-base`](https://www.npmjs.com/package/@so
 the shared layer of Soldy UI themes, and depends on it: the stylesheet carries its CSS, and the
 behavior installs its layout plugins. npm installs it with the theme; you do not import it
 yourself. To make a theme of your own on the same layer, see
-[Make your own theme](https://github.com/youra-h/soldy/tree/main/packages/themes/base#make-your-own-theme).
+[Make your own theme](https://github.com/youra-h/soldy-ui/tree/main/packages/themes/base#make-your-own-theme).
 
 ## Usage
 
@@ -72,11 +72,11 @@ body {
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — what the library is and how it is
   put together.
-- [The theme's own notes](https://github.com/youra-h/soldy/blob/main/packages/themes/oren/AGENTS.md)
+- [The theme's own notes](https://github.com/youra-h/soldy-ui/blob/main/packages/themes/oren/AGENTS.md)
   — scales, step roles, semantic tokens, color schemes (in Russian).
 
 ## License
 
-[MIT](https://github.com/youra-h/soldy/blob/main/LICENSE)
+[MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE)

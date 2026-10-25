@@ -9,13 +9,13 @@ By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 ## Reporting issues
 
 - **Bugs** — use the
-  [Bug report](https://github.com/youra-h/soldy/issues/new?template=bug.yml) form. Name the
+  [Bug report](https://github.com/youra-h/soldy-ui/issues/new?template=bug.yml) form. Name the
   framework adapter and the version, and give a minimal reproduction.
 - **Accessibility barriers** — use the
-  [Accessibility barrier](https://github.com/youra-h/soldy/issues/new?template=accessibility.yml)
+  [Accessibility barrier](https://github.com/youra-h/soldy-ui/issues/new?template=accessibility.yml)
   form. See also [ACCESSIBILITY.md](ACCESSIBILITY.md).
 - **Feature requests and new components** — use the
-  [Feature request](https://github.com/youra-h/soldy/issues/new?template=feature.yml) form.
+  [Feature request](https://github.com/youra-h/soldy-ui/issues/new?template=feature.yml) form.
 - **Security vulnerabilities** — never in a public issue; see [SECURITY.md](SECURITY.md).
 
 ## Before you start on a change

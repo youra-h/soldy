@@ -52,7 +52,7 @@ as an appointed representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the
 community leaders responsible for enforcement privately, through
-[GitHub's private reporting form](https://github.com/youra-h/soldy/security/advisories/new): it
+[GitHub's private reporting form](https://github.com/youra-h/soldy-ui/security/advisories/new): it
 reaches only the maintainers. Mention in the title that the report concerns the Code of Conduct.
 All complaints will be reviewed and investigated promptly and fairly.
 

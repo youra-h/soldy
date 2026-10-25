@@ -2,7 +2,7 @@
 
 **Material icons implementing the Soldy UI icon-role contract.**
 
-Part of [Soldy UI](https://github.com/youra-h/soldy) — UI components with the logic written once: a
+Part of [Soldy UI](https://github.com/youra-h/soldy-ui) — UI components with the logic written once: a
 framework-agnostic core and thin adapters that render it in Vue, React, Angular, Svelte, Solid and
 Web Components.
 
@@ -47,14 +47,14 @@ Content Security Policy without `'unsafe-inline'` styles does not strip it. An i
 
 ## Documentation
 
-- [Soldy UI README](https://github.com/youra-h/soldy#readme) — what the library is and how it is
+- [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — what the library is and how it is
   put together.
-- [Architecture overview](https://github.com/youra-h/soldy/blob/main/docs/architecture.md) —
+- [Architecture overview](https://github.com/youra-h/soldy-ui/blob/main/docs/architecture.md) —
   layers, descriptors, plugins, collections, adapters.
 
 ## License
 
-The code of the package is [MIT](https://github.com/youra-h/soldy/blob/main/LICENSE).
+The code of the package is [MIT](https://github.com/youra-h/soldy-ui/blob/main/LICENSE).
 
 The icons are [Material Symbols](https://fonts.google.com/icons) by Google, © Google, licensed
 under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0); its text
