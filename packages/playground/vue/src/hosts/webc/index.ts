@@ -239,7 +239,7 @@ const host: IPreviewHost = {
 	// Тег корня — сам элемент: его задаёт регистрация, а не проп
 	tagProp: false,
 
-	mount(node, { component, fixture, props, onEvent }) {
+	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : []
@@ -250,9 +250,12 @@ const host: IPreviewHost = {
 		roots.add(root)
 
 		let bind = props
-		let built = build(preview, bind, listeners)
+		// Копии — рядом в одном корне (`TPreviewMount.count`)
+		const buildAll = (next: TPreviewProps): TBuilt[] =>
+			Array.from({ length: count }, () => build(preview, next, listeners))
+		let copies = buildAll(bind)
 
-		root.appendChild(built.outer)
+		for (const built of copies) root.appendChild(built.outer)
 
 		return {
 			update(next) {
@@ -262,13 +265,15 @@ const host: IPreviewHost = {
 				const rebuilt = (preview.rebuild ?? []).some((name) => next[name] !== bind[name])
 
 				if (next.ctrl !== bind.ctrl || next.engine !== bind.engine || rebuilt) {
-					built.outer.remove()
-					built = build(preview, next, listeners)
-					root.appendChild(built.outer)
+					for (const built of copies) built.outer.remove()
+					copies = buildAll(next)
+					for (const built of copies) root.appendChild(built.outer)
 				} else {
-					write(built.element, propsOf(preview, bind), propsOf(preview, next))
+					for (const built of copies) {
+						write(built.element, propsOf(preview, bind), propsOf(preview, next))
 
-					if (preview.wrapper) applyStyle(built.outer, preview.wrapper, next)
+						if (preview.wrapper) applyStyle(built.outer, preview.wrapper, next)
+					}
 				}
 
 				bind = next

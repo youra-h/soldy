@@ -1,0 +1,9 @@
+{
+  "name": "bench-pages",
+  "private": true,
+  "type": "module",
+  "description": "Замер страниц компонентов soldy: вес страницы и утечки памяти по циклам, см. benchmarks/README.md в корне",
+  "scripts": {
+    "bench": "node run.mjs"
+  }
+}

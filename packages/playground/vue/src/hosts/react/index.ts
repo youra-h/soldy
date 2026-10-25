@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { Fragment, createElement } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { enUS, type TLocale } from '@soldy-ui/plugins'
@@ -56,7 +56,7 @@ const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
 	fixtures: Object.keys(FIXTURES),
 
-	mount(node, { component, fixture, props, onEvent }) {
+	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
 		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
@@ -66,7 +66,13 @@ const host: IPreviewHost = {
 		const draw = () =>
 			flushSync(() =>
 				root.render(
-					createElement(LocaleProvider, { locale }, preview({ ...bind, ...listeners })),
+					createElement(
+						LocaleProvider,
+						{ locale },
+						Array.from({ length: count }, (_, key) =>
+							createElement(Fragment, { key }, preview({ ...bind, ...listeners })),
+						),
+					),
 				),
 			)
 

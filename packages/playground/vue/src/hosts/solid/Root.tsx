@@ -15,13 +15,20 @@ export type TRootProps = {
 	preview: TPreview
 	/** Пропсы превью с колбэками событий — сигнал, его меняет `update` хоста. */
 	bind: Accessor<TPreviewProps>
+	/** Сколько копий превью рядом (`TPreviewMount.count`). */
+	count: number
 }
 
 /**
  * Корень хоста Solid: свой `LocaleProvider` вокруг превью. Контекст
  * провайдера оболочки в чужой корень не проходит, и язык шапки корню даёт
- * хост.
+ * хост. Копии превью строятся один раз, как тело компонента: число копий
+ * корень не меняет.
  */
 export function Root(props: TRootProps): JSX.Element {
-	return <LocaleProvider locale={language()}>{props.preview(props.bind)}</LocaleProvider>
+	return (
+		<LocaleProvider locale={language()}>
+			{Array.from({ length: props.count }, () => props.preview(props.bind))}
+		</LocaleProvider>
+	)
 }

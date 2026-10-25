@@ -8,16 +8,21 @@
 		preview: TPreview
 		/** Пропсы превью с колбэками событий — их меняет `update` хоста. */
 		bind: TLive<TPreviewProps>
+		/** Сколько копий превью рядом (`TPreviewMount.count`). */
+		count: number
 	}
 
-	const { preview: Preview, bind }: TRootProps = $props()
+	const { preview: Preview, bind, count }: TRootProps = $props()
 </script>
 
 <!--
 	Корень хоста Svelte: свой `LocaleProvider` вокруг превью. Контекст
 	провайдера оболочки в чужой корень не проходит, и язык шапки корню даёт
-	хост — смена доходит до провайдера без перемонтирования.
+	хост — смена доходит до провайдера без перемонтирования. Копии превью —
+	рядом, число копий корень не меняет.
 -->
 <LocaleProvider locale={language.current}>
-	<Preview {...bind.current} />
+	{#each { length: count }, index (index)}
+		<Preview {...bind.current} />
+	{/each}
 </LocaleProvider>
