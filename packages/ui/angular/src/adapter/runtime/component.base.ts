@@ -16,7 +16,6 @@
 
 import {
 	Directive,
-	ElementRef,
 	EventEmitter,
 	Injector,
 	Input,
@@ -31,7 +30,6 @@ import {
 	inject,
 	runInInjectionContext,
 	signal,
-	viewChild,
 	type Signal,
 } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
@@ -47,6 +45,9 @@ export type TSetup<TInstance, TFacade = unknown, TOutputs = unknown, TOwnerFacad
 	ctrl: TInstance | undefined,
 	inputs: object,
 ) => TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
+
+/** Ссылка шаблона на узел, который нужен базе: корень, поле, спутник слоя. */
+export type TTemplateRef = 'root' | 'control' | 'companion'
 
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
@@ -128,19 +129,18 @@ export abstract class TComponentBase<
 		!this._root.hidesRoot && this._hidden() ? 'none' : undefined,
 	)
 
-	// Сигнальные запросы — полями: в методе компилятор роняет AOT (NG8110).
-	// `read` задан, иначе `nativeElement` был бы `any`
-	private readonly _rootQuery = viewChild<unknown, ElementRef<Element>>('root', {
-		read: ElementRef,
-	})
-	private readonly _controlQuery = viewChild<unknown, ElementRef<Element>>('control', {
-		read: ElementRef,
-	})
-	private readonly _companionQuery = viewChild<unknown, ElementRef<Element>>('companion', {
-		read: ElementRef,
-	})
-
 	private readonly _slots = contentChildren(SlotDirective)
+
+	/**
+	 * Узел шаблона по ссылке — `#root`, `#control`, `#companion`; ссылки нет —
+	 * `null`. Запросы объявляет сгенерированная поверхность, и только на
+	 * ссылки шаблона компонента: запрос Angular копирует себя в каждое
+	 * представление шаблона — блок `@if`, итерацию `@for`, — и у компонента
+	 * без ссылки это память на каждый блок.
+	 */
+	protected templateNode(_ref: TTemplateRef): Element | null {
+		return null
+	}
 
 	/** Шаблон слота по имени из контракта. */
 	protected slot(name: string): TemplateRef<unknown> | null {
@@ -163,9 +163,9 @@ export abstract class TComponentBase<
 			state: this.state,
 			drawn: this._drawn,
 			hidden: this._hidden,
-			root: () => this._rootQuery()?.nativeElement ?? null,
-			control: () => this._controlQuery()?.nativeElement ?? null,
-			companion: () => this._companionQuery()?.nativeElement ?? null,
+			root: () => this.templateNode('root'),
+			control: () => this.templateNode('control'),
+			companion: () => this.templateNode('companion'),
 		})
 
 		this.placed = this._root.placed

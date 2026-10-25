@@ -247,6 +247,16 @@ abstract class TDataHost {
 })
 class DataHost extends TDataHost {}
 
+/** Хост над данными с шаблоном ячеек: значение текстом. */
+@Component({
+	standalone: true,
+	imports: [TTableComponent, SlotDirective, TextPipe],
+	template: `<div so-table [items]="items()" [columns]="columns()">
+		<ng-template slot="cell" let-value="value">{{ value | soText }}</ng-template>
+	</div>`,
+})
+class CellDataHost extends TDataHost {}
+
 /** Смонтировать хост над записями `records` и колонками `columns` и дождаться кадра. */
 async function renderData<T extends TDataHost>(
 	host: Type<T>,
@@ -300,6 +310,59 @@ describe('разметка', () => {
 		expect(name.tagName).toBe('TH')
 		expect(name.getAttribute('scope')).toBe('row')
 		expect(name.id).not.toBe('')
+	})
+
+	it.each([
+		['без шаблона cell', DataHost],
+		['с шаблоном cell', CellDataHost],
+	])(
+		'%s: заголовков строки несколько и не подряд — th и td на местах своих колонок',
+		async (_case, host) => {
+			const surname: TTableColumnSource = {
+				field: 'surname',
+				text: 'Фамилия',
+				rowHeader: true,
+			}
+			const id: TTableColumnSource = { field: 'id', text: 'Номер' }
+
+			await renderData(host, [{ ...ANNA, surname: 'Иванова' }], [AGE, NAME, id, surname])
+
+			const cells = [...find('.so-table-row').children]
+
+			expect(cells.map((cell) => cell.tagName)).toEqual(['TD', 'TH', 'TD', 'TH'])
+			expect(cells.map(text)).toEqual(['30', 'Анна', '1', 'Иванова'])
+			// Набор заголовка строки, с `id`, — только у первой колонки rowHeader
+			expect(cells[1].id).not.toBe('')
+			expect(cells[3].id).toBe('')
+		},
+	)
+
+	/**
+	 * Блок Angular — представление и якорь-комментарий в строке. Ветка по
+	 * заголовку строки стоит над петлёй ячеек — одна на серию колонок с тем же
+	 * `rowHeader`, — и колонки той же серии блоков строке не прибавляют, а
+	 * ветка в каждой ячейке прибавляла бы по блоку на ячейку.
+	 */
+	it.each([
+		['без шаблона cell', DataHost],
+		['с шаблоном cell', CellDataHost],
+	])('%s: блоков в строке не больше с числом колонок', async (_case, host) => {
+		const fixture = await renderData(host, [ANNA], [NAME, AGE])
+		const anchors = () =>
+			[...find('.so-table-row').childNodes].filter(
+				(node) => node.nodeType === Node.COMMENT_NODE,
+			).length
+		const few = anchors()
+		const extra = ['a', 'b', 'c', 'd'].map((field): TTableColumnSource => ({
+			field,
+			text: field,
+		}))
+
+		fixture.componentInstance.columns.set([NAME, AGE, ...extra])
+		fixture.detectChanges()
+
+		expect(findAll('.so-table-row__cell')).toHaveLength(6)
+		expect(anchors()).toBe(few)
 	})
 
 	it('заголовки и строки — части таблицы на тегах ячейки шапки и строки', async () => {

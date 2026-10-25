@@ -58,6 +58,7 @@ import {
 	TTooltipComponent,
 } from '@soldy-ui/angular'
 import {
+	NO_APPLIED_ATTRIBUTES,
 	applyAttributes,
 	applyClasses,
 	applyStyles,
@@ -1176,7 +1177,11 @@ describe('раскладка наборов и классов', () => {
 		node.setAttribute('aria-disabled', 'true')
 		node.setAttribute('title', 'Сохранить')
 
-		let applied = applyAttributes(node, { tabindex: '0', 'aria-disabled': null }, new Map())
+		let applied = applyAttributes(
+			node,
+			{ tabindex: '0', 'aria-disabled': null },
+			NO_APPLIED_ATTRIBUTES,
+		)
 
 		expect(node.getAttribute('tabindex')).toBe('0')
 		// `null` ядро имени не называет: атрибут не его, база его не трогает
