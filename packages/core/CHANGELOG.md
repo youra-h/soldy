@@ -1,5 +1,9 @@
 # @soldy-ui/core
 
+## 0.3.0-alpha.5
+
+No changes in this release.
+
 ## 0.3.0-alpha.4
 
 ### Minor Changes

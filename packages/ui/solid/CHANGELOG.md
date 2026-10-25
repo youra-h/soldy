@@ -1,5 +1,17 @@
 # @soldy-ui/solid
 
+## 0.3.0-alpha.5
+
+### Minor Changes
+
+- d2a81a7: Минимальная версия Solid — 1.9.13 вместо 1.9.10: серверная сборка `solid-js/web` до 1.9.13 не экспортирует `use`, и адаптер не загружался при серверном рендере. Обновитесь до solid-js 1.9.13 или новее.
+
+### Patch Changes
+
+- @soldy-ui/core@0.3.0-alpha.5
+  - @soldy-ui/plugins@0.3.0-alpha.5
+  - @soldy-ui/setup@0.3.0-alpha.5
+
 ## 0.3.0-alpha.4
 
 ### Patch Changes
