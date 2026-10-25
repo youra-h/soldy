@@ -3,6 +3,7 @@ import { build } from 'vite'
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
+import { urlOf } from './pages.mjs'
 
 /**
  * Снимок кучи: что прибавляют N строк таблицы soldy. Два снимка на одной
@@ -47,19 +48,6 @@ const REPLACES = SCENARIO ? Number(process.argv[5] ?? 1) : 0
 const PAUSE = SCENARIO ? Number(process.argv[6] ?? 0) : 0
 const TOP = Number(process.argv[SCENARIO ? 7 : 4] ?? 45)
 const SCROLL = !SCENARIO && process.argv[5] === 'scroll'
-// Участник на React — с префиксом «react:»: `react:soldy+fit=none` —
-// `react.html?lib=soldy&fit=none`
-const urlOf = (lib) => {
-	const react = lib.startsWith('react:')
-	const [name, ...flags] = (react ? lib.slice('react:'.length) : lib).split('+')
-
-	return (
-		(react ? 'react.html' : '') +
-		'?lib=' +
-		name +
-		flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
-	)
-}
 process.env.PROF = '1'
 await build({ configFile: path.resolve(import.meta.dirname, 'vite.config.ts'), logLevel: 'warn' })
 const dist = path.resolve(import.meta.dirname, 'dist-prof')

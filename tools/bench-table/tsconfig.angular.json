@@ -1,0 +1,32 @@
+{
+  // Программа Angular страницы `angular.html` — её компилирует плагин Angular
+  // стенда разработчика (`vite.config.ts`): страница, участники и, через `paths`,
+  // адаптер и соседи исходниками. Сам Angular и rxjs — одной копией стенда, как в
+  // сборке (`dedupe`): адаптер из исходников иначе взял бы копию корня монорепо.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [],
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "paths": {
+      "@soldy-ui/core": ["../../packages/core/src"],
+      "@soldy-ui/plugins": ["../../packages/plugins/src"],
+      "@soldy-ui/setup": ["../../packages/setup/index.ts"],
+      "@soldy-ui/angular": ["../../packages/ui/angular/src/index.ts"],
+      "@soldy-ui/icons-material": ["../../packages/icons/material/src"],
+      "@soldy-ui/theme-oren/setup": ["../../packages/themes/oren/setup/index.ts"],
+      "@soldy-ui/theme-base/setup": ["../../packages/themes/base/setup/index.ts"],
+      "@angular/*": ["./node_modules/@angular/*"],
+      "rxjs": ["./node_modules/rxjs"],
+      "rxjs/*": ["./node_modules/rxjs/*"]
+    }
+  },
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "files": ["angular.ts"],
+  "include": ["libs/angular/**/*.ts"]
+}

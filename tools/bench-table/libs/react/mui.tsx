@@ -7,7 +7,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TableSortLabel from '@mui/material/TableSortLabel'
 import { COLUMNS, type TRec } from '../data'
-import { nextSort, sorted, type TSort } from './sort'
+import { nextSort, sorted, type TSort } from '../sort'
 
 export const sel = {
 	selectAll: 'thead input[type="checkbox"]',

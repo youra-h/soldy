@@ -1,6 +1,10 @@
-import type { TRec } from '../data'
+import type { TRec } from './data'
 
-/** Сравнение значений колонки — как у голой таблицы Vue: числа по величине. */
+/**
+ * Сравнение значений колонки — как у голой таблицы Vue: числа по величине.
+ * Общее для страниц: им сортирует приложение, когда библиотека даёт только
+ * заголовок с событием, и голые таблицы фреймворков.
+ */
 const collator = new Intl.Collator(undefined, { numeric: true })
 
 export const compareBy = (field: string) => (a: TRec, b: TRec) =>
