@@ -2,9 +2,13 @@
  * TStableSnapshot — снимок связки, где значение, не сменившееся по
  * содержимому, остаётся прежним объектом. AGENTS.md (React), «Связка и
  * состояние».
+ *
+ * Он же отдаёт `useSyncExternalStore` подписку на состояние: обоим нужны
+ * функции без `this`, а у состояния обмена это методы — привязывает их тот,
+ * кому они нужны так.
  */
 
-import type { TStateSnapshot } from '@soldy-ui/setup'
+import type { TStateSnapshot, TStateStore } from '@soldy-ui/setup'
 
 function isPlain(value: unknown): value is object {
 	if (typeof value !== 'object' || value === null) return false
@@ -37,10 +41,12 @@ export class TStableSnapshot {
 	private _source: TStateSnapshot | null = null
 	private _snapshot: TStateSnapshot | null = null
 
-	constructor(private readonly _read: () => TStateSnapshot) {}
+	constructor(private readonly _state: Pick<TStateStore, 'getSnapshot' | 'subscribe'>) {}
+
+	readonly subscribe = (onChange: () => void): (() => void) => this._state.subscribe(onChange)
 
 	readonly getSnapshot = (): TStateSnapshot => {
-		const source = this._read()
+		const source = this._state.getSnapshot()
 
 		if (source === this._source && this._snapshot) return this._snapshot
 

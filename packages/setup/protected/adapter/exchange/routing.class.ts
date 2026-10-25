@@ -5,10 +5,13 @@
  * свойства перечитать в состоянии, какое событие поверхности отдать наружу и
  * какие модели (`update:<проп>`) послать следом. Это знание типа — описаний
  * участников (`IMemberSpec`) и поверхности, — поэтому таблица строится один
- * раз и её делят все монтирования. На монтирование остаются линии, ячейки и по
- * слушателю на шину участника (`TTap`); объекта, массива и замыкания на каждое
- * событие у монтирования нет. Раньше маршрут события — объект, обработчик,
- * отписка и подписка на шину — строился на каждое событие поверхности каждого
+ * раз и её делят все монтирования. Линии (`TLine`) — тоже её строки: свойство
+ * участника в составе знает тип, а владельца линия берёт из списка
+ * монтирования по месту участника. На монтирование остаются владельцы
+ * участников, значения состояния и входов и по слушателю на шину участника
+ * (`TTap`); объекта на свойство, а на событие — объекта, массива и замыкания у
+ * монтирования нет. Раньше маршрут события — объект, обработчик, отписка и
+ * подписка на шину — строился на каждое событие поверхности каждого
  * монтирования, слушают его или нет: у строки таблицы с чекбоксом их было около
  * восьмидесяти.
  *
@@ -22,11 +25,11 @@
  * - **линии** — свойства участников, у которых есть запись поверхности, по
  *   порядку участников и их пропсов. Свойство без записи линии не получает:
  *   описание плагина, которого нет в чужом наборе, молча пропускается;
- * - **ячейки состояния** — линии с триггерами, **входы** — записываемые линии;
- * - **маршруты** участника — по сырому имени события на его шине: ячейки, для
- *   чьих свойств событие — триггер (у `change:visible` это и `visible`, и
- *   `present`: синхронизацию состояния не дедуплицируют), и событие
- *   поверхности с моделями, если участник его публикует.
+ * - **состояние** — линии с триггерами, **входы** — записываемые линии;
+ * - **маршруты** участника — по сырому имени события на его шине: значения
+ *   состояния, для чьих свойств событие — триггер (у `change:visible` это и
+ *   `visible`, и `present`: синхронизацию состояния не дедуплицируют), и
+ *   событие поверхности с моделями, если участник его публикует.
  *
  * Повторов наружу нет по построению: поверхность держит события без повторов
  * по полному имени (`TSurface.events`), и у события один публикатор — первый
@@ -35,20 +38,11 @@
  * сборка.
  */
 
-import type { TName, TPropSpec } from '../../define'
+import type { TName } from '../../define'
 import type { TSurface } from '../surface'
 import { TLine } from './line.class'
 import type { TMember } from './member.class'
 import type { IMemberSpec, IModelRoute, IRoute } from './types'
-
-/** Свойство участника в поверхности — из него монтирование строит линию. */
-interface IEntry {
-	/** Индекс участника в составе. */
-	readonly member: number
-	readonly spec: TPropSpec
-	/** Имя во фреймворке. */
-	readonly name: string
-}
 
 /** Маршрут, пока таблица строится. */
 interface IRouteDraft {
@@ -73,18 +67,18 @@ function* publishedBy(spec: IMemberSpec): Generator<TName> {
 }
 
 export class TRouting {
-	/** Ячейка состояния `i` — линия `readable[i]`. */
-	readonly readable: readonly number[]
-	/** Записываемые линии — по входу на каждую. */
-	readonly writable: readonly number[]
+	/** Линии состава: свойства участников в поверхности. */
+	readonly lines: readonly TLine[]
+	/** Линии с триггерами: значение состояния `i` — линия `readable[i]`. */
+	readonly readable: readonly TLine[]
+	/** Записываемые линии: значение входа `i` — линия `writable[i]`. */
+	readonly writable: readonly TLine[]
 	/**
 	 * Маршруты участников по порядку состава: сырое имя на шине участника →
 	 * маршрут. У участника, с событиями которого обмену делать нечего, —
 	 * `undefined`: его шину обмен не слушает.
 	 */
 	readonly routes: readonly (ReadonlyMap<string, IRoute> | undefined)[]
-
-	private readonly _entries: readonly IEntry[]
 
 	/** Таблица поверхности для состава участников монтирования; строится один раз на пару. */
 	static of(surface: TSurface, members: readonly TMember[]): TRouting {
@@ -115,10 +109,10 @@ export class TRouting {
 	}
 
 	private constructor(surface: TSurface, specs: readonly IMemberSpec[]) {
-		const entries: IEntry[] = []
-		const readable: number[] = []
-		const writable: number[] = []
-		const lineOf = new Map<TName, number>()
+		const lines: TLine[] = []
+		const readable: TLine[] = []
+		const writable: TLine[] = []
+		const lineOf = new Map<TName, TLine>()
 		const drafts = specs.map(() => new Map<string, IRouteDraft>())
 
 		const draftOf = (member: number, raw: string): IRouteDraft => {
@@ -139,9 +133,9 @@ export class TRouting {
 
 				if (!entry) continue
 
-				const line = entries.length
+				const line = new TLine(prop, member, entry.exportName)
 
-				entries.push({ member, spec: prop, name: entry.exportName })
+				lines.push(line)
 				lineOf.set(prop.name, line)
 
 				if (!prop.protected) writable.push(line)
@@ -185,7 +179,7 @@ export class TRouting {
 			})
 		}
 
-		this._entries = Object.freeze(entries)
+		this.lines = Object.freeze(lines)
 		this.readable = Object.freeze(readable)
 		this.writable = Object.freeze(writable)
 		this.routes = Object.freeze(
@@ -203,16 +197,6 @@ export class TRouting {
 							]),
 						),
 			),
-		)
-	}
-
-	/**
-	 * Линии монтирования: владельцы участников на свойствах таблицы. Состав тот
-	 * же, по которому таблица найдена.
-	 */
-	lines(members: readonly TMember[]): TLine[] {
-		return this._entries.map(
-			(entry) => new TLine(entry.spec, members[entry.member].owner, entry.name),
 		)
 	}
 }

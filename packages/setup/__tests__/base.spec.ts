@@ -195,10 +195,10 @@ describe('defineComponent', () => {
 		})
 
 		const context = createAdapterContext(descriptor, {})
-		const { lines } = context.connect(CommonProfile)
+		const { lines, owners } = context.connect(CommonProfile)
 
 		expect(lines).toHaveLength(1)
-		expect(lines[0].owner).toBe(context.instance)
+		expect(owners[lines[0].member]).toBe(context.instance)
 		expect(lines[0].spec.name.name).toBe('text')
 		expect(descriptor.getEvents().map((event) => event.name)).toEqual(['click'])
 	})
@@ -223,15 +223,14 @@ describe('defineComponent', () => {
 		})
 
 		const context = createAdapterContext(descriptor, {})
+		const { lines, owners } = context.connect(CommonProfile)
 		const active = required(
-			context
-				.connect(CommonProfile)
-				.lines.find((line) => line.spec.name.getName() === 'p:active'),
+			lines.find((line) => line.spec.name.getName() === 'p:active'),
 			'линия p:active',
 		)
 
 		expect(active.name).toBe('p_active')
-		expect(active.owner).toBe(required(context.bundle, 'бандл').get(PluginWithProps))
+		expect(owners[active.member]).toBe(required(context.bundle, 'бандл').get(PluginWithProps))
 		expect(descriptor.getEvents().some((event) => event.getName() === 'p:toggle')).toBe(true)
 	})
 })

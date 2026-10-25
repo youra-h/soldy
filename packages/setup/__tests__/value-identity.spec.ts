@@ -30,10 +30,12 @@ import { CommonProfile } from '../protected/naming'
 
 /** Читает значение пропа так же, как это делает адаптер. */
 function read(ctx: IAdapterContext, name: string): unknown {
+	const { lines, owners } = ctx.connect(CommonProfile)
+
 	return required(
-		ctx.connect(CommonProfile).lines.find((line) => line.spec.name.name === name),
+		lines.find((line) => line.spec.name.name === name),
 		`проп ${name}`,
-	).read()
+	).read(owners)
 }
 
 describe('Составные props меняют идентичность при изменении', () => {

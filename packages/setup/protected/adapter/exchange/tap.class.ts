@@ -27,7 +27,6 @@
  * подписчиков самого источника.
  */
 
-import type { TMember } from './member.class'
 import type { IRoute } from './types'
 import { busOf } from './value'
 
@@ -40,8 +39,12 @@ export class TTap {
 	/** Отписки слушателей по участникам — пока шины слушают; у участника без слушателя пусто. */
 	private _offs?: readonly ((() => void) | undefined)[]
 
+	/**
+	 * @param _owners владельцы участников монтирования — по порядку состава
+	 * @param _routes маршруты участников из таблицы типа — по тому же порядку
+	 */
 	constructor(
-		private readonly _members: readonly TMember[],
+		private readonly _owners: readonly object[],
 		private readonly _routes: readonly (ReadonlyMap<string, IRoute> | undefined)[],
 		private readonly _receive: TReceiver,
 	) {}
@@ -50,9 +53,9 @@ export class TTap {
 	hold(): void {
 		if (this._holds++ > 0) return
 
-		this._offs = this._members.map((member, index) => {
+		this._offs = this._owners.map((owner, index) => {
 			const routes = this._routes[index]
-			const bus = routes && busOf(member.owner)
+			const bus = routes && busOf(owner)
 
 			return routes && bus
 				? bus.listen((event, args) => {

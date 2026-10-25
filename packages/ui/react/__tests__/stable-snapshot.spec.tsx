@@ -13,7 +13,8 @@ function sourceOf(initial: TStateSnapshot) {
 	let current = Object.freeze({ ...initial })
 
 	return {
-		read: () => current,
+		getSnapshot: () => current,
+		subscribe: () => () => {},
 		write: (next: TStateSnapshot) => {
 			current = Object.freeze({ ...next })
 		},
@@ -29,14 +30,14 @@ const cells = () => [
 describe('TStableSnapshot', () => {
 	it('первый снимок — снимок связки как есть', () => {
 		const source = sourceOf({ cells: cells() })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 
-		expect(snapshot.getSnapshot()).toBe(source.read())
+		expect(snapshot.getSnapshot()).toBe(source.getSnapshot())
 	})
 
 	it('перечитанное то же по содержимому — прежний снимок и прежние объекты', () => {
 		const source = sourceOf({ cells: cells(), selected: false })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 		const first = snapshot.getSnapshot()
 
 		source.write({ cells: cells(), selected: false })
@@ -46,7 +47,7 @@ describe('TStableSnapshot', () => {
 
 	it('сменилось одно свойство — новый снимок, остальные прежними объектами', () => {
 		const source = sourceOf({ cells: cells(), selected: false })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 		const first = snapshot.getSnapshot()
 
 		source.write({ cells: cells(), selected: true })
@@ -60,7 +61,7 @@ describe('TStableSnapshot', () => {
 
 	it('сменилось вложенное — новое значение', () => {
 		const source = sourceOf({ cells: cells() })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 		const first = snapshot.getSnapshot()
 		const changed = cells()
 
@@ -77,7 +78,7 @@ describe('TStableSnapshot', () => {
 		}
 
 		const source = sourceOf({ items: [new TItem('a')] })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 		const replaced = [new TItem('a')]
 
 		snapshot.getSnapshot()
@@ -88,7 +89,7 @@ describe('TStableSnapshot', () => {
 
 	it('массив и объект с теми же ключами — разные значения', () => {
 		const source = sourceOf({ value: ['a'] })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 
 		snapshot.getSnapshot()
 		source.write({ value: { 0: 'a' } })
@@ -98,7 +99,7 @@ describe('TStableSnapshot', () => {
 
 	it('снимок связки тот же — сверки нет, снимок тот же', () => {
 		const source = sourceOf({ cells: cells() })
-		const snapshot = new TStableSnapshot(source.read)
+		const snapshot = new TStableSnapshot(source)
 
 		expect(snapshot.getSnapshot()).toBe(snapshot.getSnapshot())
 	})

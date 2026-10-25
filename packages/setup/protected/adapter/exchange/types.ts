@@ -3,6 +3,7 @@
  */
 
 import type { TName, TPropSpec } from '../../define'
+import type { TLine } from './line.class'
 
 export type TSame<T> = (a: T, b: T) => boolean
 
@@ -28,17 +29,17 @@ export interface IMemberSpec {
 	readonly events: readonly TName[]
 }
 
-/** Модель, которая уходит следом за событием: линия обмена и имя события привязки. */
+/** Модель, которая уходит следом за событием: линия свойства и имя события привязки. */
 export interface IModelRoute {
-	/** Индекс линии в обмене. */
-	readonly line: number
+	/** Линия свойства, чьё новое значение уходит с моделью. */
+	readonly line: TLine
 	/** Имя события привязки во фреймворке: `update:text`. */
 	readonly name: string
 }
 
 /** Что обмен делает с событием участника. */
 export interface IRoute {
-	/** Ячейки состояния, для чьих свойств событие — триггер: индексы в состоянии обмена. */
+	/** Значения состояния, для чьих свойств событие — триггер: индексы в состоянии обмена. */
 	readonly cells: readonly number[]
 	/** Имя события во фреймворке — если участник его публикует. */
 	readonly event?: string

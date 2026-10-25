@@ -183,10 +183,14 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
  */
 export interface IBundleTenancy {
 	readonly bundle: IPluginBundle | null
-	/** Участники обмена от набора: плагины дескриптора, а у своего набора — ещё и связка. */
-	readonly members: readonly TMember[]
-	/** Кому из них эта сборка пишет начальные значения. */
-	readonly seeded: readonly TMember[]
+	/**
+	 * Участники обмена от набора: плагины дескриптора, а у своего набора — ещё и
+	 * связка. Строятся на вызов: нужны они сборке и обмену, а не набору, и набор
+	 * их не держит.
+	 */
+	members(): readonly TMember[]
+	/** Кому из участников набора (`members()`) эта сборка пишет начальные значения. */
+	seeded(members: readonly TMember[]): readonly TMember[]
 	/** Завершить сборку после начальных значений: плагины реестра и объявление набора наружу. */
 	complete(): void
 	destroy(): void

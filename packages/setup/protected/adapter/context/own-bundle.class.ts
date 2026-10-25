@@ -26,7 +26,7 @@ import { TElementPlugin, TPluginBundle } from '@soldy-ui/plugins'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { PLUGIN_PROPS } from '../../naming'
 import { resolveRegisteredPlugins } from '../../registry'
-import type { IBundleContext, IComponentDescriptor } from '../../define'
+import type { IBundleContext, IComponentDescriptor, TPluginCtor } from '../../define'
 import { TMember } from '../exchange/member.class'
 import type { IMemberSpec } from '../exchange/types'
 import { TExternalPlugins } from './external-plugins.class'
@@ -44,6 +44,7 @@ function hasEmit(value: unknown): value is Pick<IEventEmitter, 'emit'> {
 type TBundleDescriptor = Pick<IComponentDescriptor, 'ctor' | 'plugins' | 'props'>
 
 const externalSpecs = new WeakMap<TBundleDescriptor, IMemberSpec>()
+const ownPlugins = new WeakMap<TBundleDescriptor, ReadonlySet<TPluginCtor>>()
 
 /**
  * Описание участника-связки: `pluginProps` — с умолчанием от класса его
@@ -68,16 +69,22 @@ function externalSpecOf(descriptor: TBundleDescriptor): IMemberSpec {
 	return spec
 }
 
+/** Классы плагинов дескриптора — один набор на дескриптор, а не на монтирование. */
+function ownPluginsOf(descriptor: TBundleDescriptor): ReadonlySet<TPluginCtor> {
+	let own = ownPlugins.get(descriptor)
+
+	if (!own) {
+		own = new Set(descriptor.plugins.map((plugin) => plugin.ctor))
+		ownPlugins.set(descriptor, own)
+	}
+
+	return own
+}
+
 export class TOwnBundle implements IBundleTenancy {
 	readonly bundle: IPluginBundle
-	readonly members: readonly TMember[]
 
 	private readonly _external: TExternalPlugins
-
-	/** Своим плагинам и связке начальные значения пишет эта сборка. */
-	get seeded(): readonly TMember[] {
-		return this.members
-	}
 
 	constructor(
 		private readonly _descriptor: TBundleDescriptor,
@@ -90,22 +97,25 @@ export class TOwnBundle implements IBundleTenancy {
 		for (const plugin of _descriptor.plugins) bundle.use(plugin.ctor, plugin.options ?? {})
 
 		this.bundle = bundle
-		this._external = new TExternalPlugins(
-			bundle,
-			_instance,
-			new Set(_descriptor.plugins.map((plugin) => plugin.ctor)),
-		)
+		this._external = new TExternalPlugins(bundle, _instance, ownPluginsOf(_descriptor))
+	}
 
-		this.members = [
-			..._descriptor.plugins.flatMap((plugin) => {
-				const owner = bundle.get(plugin.ctor)
+	members(): readonly TMember[] {
+		return [
+			...this._descriptor.plugins.flatMap((plugin) => {
+				const owner = this.bundle.get(plugin.ctor)
 
 				// Описание участника-плагина — его определение: одно на тип
 				return owner ? [new TMember(owner, plugin)] : []
 			}),
 			// Связка — такой же участник: её свойство `pluginProps` пишет обычная линия
-			new TMember(this._external, externalSpecOf(_descriptor)),
+			new TMember(this._external, externalSpecOf(this._descriptor)),
 		]
+	}
+
+	/** Своим плагинам и связке начальные значения пишет эта сборка. */
+	seeded(members: readonly TMember[]): readonly TMember[] {
+		return members
 	}
 
 	complete(): void {

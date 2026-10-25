@@ -26,7 +26,6 @@ import type { IComponentDescriptor, IPluginsContract } from '../../define'
 import { assembling } from '../exchange/assembling.class'
 import { TInputPort } from '../exchange/input-port.class'
 import { TMember } from '../exchange/member.class'
-import { TRouting } from '../exchange/routing.class'
 import type { IMemberSpec } from '../exchange/types'
 import { TSurface } from '../surface'
 import { TAdapterContext } from './adapter-context.class'
@@ -109,16 +108,14 @@ export function createAdapterContext<TInstance extends object, TPlugins extends 
 
 		// 4. Участники
 		const owner = new TMember(instance, instanceSpecOf(descriptor))
-		const members = [owner, ...tenancy.members]
+		const own = tenancy.members()
+		const members = [owner, ...own]
 
 		// 5. Начальные значения
-		const seeded = options.ctrl ? [owner, ...tenancy.seeded] : tenancy.seeded
+		const seeded = options.ctrl ? [owner, ...tenancy.seeded(own)] : tenancy.seeded(own)
 
 		if (seeded.length > 0) {
-			TInputPort.seed(
-				TRouting.of(TSurface.of(descriptor, CommonProfile), seeded).lines(seeded),
-				props,
-			)
+			TInputPort.seed(seeded, TSurface.of(descriptor, CommonProfile), props)
 		}
 
 		// 6. Плагины реестра и объявление набора
