@@ -57,6 +57,10 @@ export type TTableEvents = TControlEvents & {
 	'change:reorderPreview': (value: TTableReorderPreview) => void
 	/** change:resizePreview */
 	'change:resizePreview': (value: TTableResizePreview) => void
+	/** change:resizable */
+	'change:resizable': (value: boolean) => void
+	/** change:reorderable */
+	'change:reorderable': (value: boolean) => void
 }
 
 /** Полный набор пропсов таблицы: свои и коллекции строк (`ITableCollectionProps`). */
@@ -96,6 +100,16 @@ export interface ITableProps extends IControlProps, ITableCollectionProps {
 	 * `data-resize-ghost` заголовка, только на время жеста
 	 */
 	resizePreview?: TTableResizePreview
+	/**
+	 * Пользователь меняет ширину колонок ручкой — у колонок без своего
+	 * `resizable`. Своё значение колонки сильнее
+	 */
+	resizable?: boolean
+	/**
+	 * Пользователь переставляет колонки — у колонок без своего `reorderable`.
+	 * Своё значение колонки сильнее
+	 */
+	reorderable?: boolean
 }
 
 export interface ITable extends IControl<ITableProps, TTableEvents> {
@@ -109,4 +123,8 @@ export interface ITable extends IControl<ITableProps, TTableEvents> {
 	reorderPreview: TTableReorderPreview
 	/** Что идёт за протяжкой ручки ширины: колонка или призрак */
 	resizePreview: TTableResizePreview
+	/** Ручка ширины у колонок без своего `resizable` */
+	resizable: boolean
+	/** Перестановка колонок без своего `reorderable` */
+	reorderable: boolean
 }

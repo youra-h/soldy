@@ -2492,6 +2492,158 @@ describe('перестановка колонок', () => {
 	})
 })
 
+/**
+ * `resizable` и `reorderable` таблицы — колонкам без своего значения. Своё
+ * значение колонки сильнее в обе стороны. Значение таблицы колонка получает
+ * входом (`tableResizable`, `tableReorderable`) от расширения колонок, а
+ * геттер свойства отдаёт итог: по нему работают ручка, `data-reorderable` и
+ * перестановка, и `change:*` приходит о смене итога.
+ */
+describe('resizable и reorderable таблицы', () => {
+	const WIDE = { width: 150 }
+
+	/** Таблица с движком строк и колонками из данных; у `age` своё «нет». */
+	function tableWith(props: { resizable?: boolean; reorderable?: boolean }) {
+		const owner = new TTable(props)
+		const engine = createEngineTable({ owner })
+		const { columns } = engine.extensions
+
+		columns.columns = [
+			{ ...NAME, ...WIDE },
+			{ ...AGE, ...WIDE, resizable: false, reorderable: false },
+			{ ...ID, ...WIDE },
+		]
+
+		return {
+			owner,
+			engine,
+			columns,
+			name: columnOf(columns, 'name'),
+			age: columnOf(columns, 'age'),
+		}
+	}
+
+	it('по умолчанию у таблицы нет; в пропсах', () => {
+		const owner = new TTable()
+
+		expect(owner.resizable).toBe(false)
+		expect(owner.reorderable).toBe(false)
+		expect(new TTable({ resizable: true, reorderable: true }).getProps()).toMatchObject({
+			resizable: true,
+			reorderable: true,
+		})
+	})
+
+	it('колонки без своего значения — как таблица, своё сильнее', () => {
+		const { name, age, columns } = tableWith({ resizable: true, reorderable: true })
+
+		expect(name.resizable).toBe(true)
+		expect(name.resizerRendered).toBe(true)
+		expect(name.reorderable).toBe(true)
+		expect(name.dataset.get('reorderable')).toBe('true')
+		expect(name.grab()).toBe(true)
+		name.release()
+
+		expect(age.resizable).toBe(false)
+		expect(age.resizerRendered).toBe(false)
+		expect(age.grab()).toBe(false)
+		expect(age.reorderable).toBe(false)
+		expect(age.dataset.get('reorderable')).toBe('false')
+		expect(columns.moveColumn(age, 0)).toBe(false)
+		expect(columns.moveColumn(name, 2)).toBe(true)
+	})
+
+	it('своё «да» сильнее таблицы без флагов', () => {
+		const { columns } = createEngineTable({ owner: new TTable() }).extensions
+
+		columns.columns = [{ ...NAME, ...WIDE, resizable: true, reorderable: true }, AGE]
+
+		expect(columnOf(columns, 'name').resizerRendered).toBe(true)
+		expect(columnOf(columns, 'name').reorderable).toBe(true)
+		expect(columnOf(columns, 'age').resizable).toBe(false)
+		expect(columnOf(columns, 'age').reorderable).toBe(false)
+	})
+
+	it('смена у таблицы — колонкам без своего; change:* только о смене итога', () => {
+		const { owner, name, age } = tableWith({})
+		const nameResizable = vi.fn()
+		const nameReorderable = vi.fn()
+		const rendered = vi.fn()
+		const ageResizable = vi.fn()
+
+		name.events.on('change:resizable', nameResizable)
+		name.events.on('change:reorderable', nameReorderable)
+		name.events.on('change:resizerRendered', rendered)
+		age.events.on('change:resizable', ageResizable)
+
+		owner.resizable = true
+		owner.reorderable = true
+
+		expect(nameResizable).toHaveBeenCalledExactlyOnceWith(true)
+		expect(nameReorderable).toHaveBeenCalledExactlyOnceWith(true)
+		expect(rendered).toHaveBeenCalledExactlyOnceWith(true)
+		expect(name.dataset.get('reorderable')).toBe('true')
+		expect(ageResizable).not.toHaveBeenCalled()
+		expect(age.resizable).toBe(false)
+
+		owner.resizable = false
+
+		expect(nameResizable).toHaveBeenLastCalledWith(false)
+		expect(name.resizerRendered).toBe(false)
+	})
+
+	it('своё, равное итогу, пишется молча; undefined возвращает к таблице', () => {
+		const { owner, name } = tableWith({ resizable: true })
+		const changed = vi.fn()
+
+		name.events.on('change:resizable', changed)
+
+		name.resizable = true
+
+		expect(changed).not.toHaveBeenCalled()
+		expect(name.getProps()).toMatchObject({ resizable: true })
+
+		owner.resizable = false
+
+		expect(name.resizable).toBe(true)
+		expect(changed).not.toHaveBeenCalled()
+
+		name.resizable = undefined
+
+		expect(name.resizable).toBe(false)
+		expect(changed).toHaveBeenCalledExactlyOnceWith(false)
+	})
+
+	it('пришедшая позже колонка и патч данных — с флагом таблицы', () => {
+		const { columns } = tableWith({ resizable: true })
+
+		columns.columns = [
+			{ ...NAME, ...WIDE, text: 'Имя (новое)' },
+			{ ...AGE, ...WIDE, resizable: false },
+			{ ...ID, ...WIDE },
+			{ field: 'city', text: 'Город', width: 120 },
+		]
+
+		expect(columnOf(columns, 'name').resizable).toBe(true)
+		expect(columnOf(columns, 'age').resizable).toBe(false)
+		expect(columnOf(columns, 'city').resizable).toBe(true)
+	})
+
+	it('без таблицы — нет; новая таблица — её значения', () => {
+		const { engine, name } = tableWith({ resizable: true, reorderable: true })
+
+		engine.options.set({ owner: undefined })
+
+		expect(name.resizable).toBe(false)
+		expect(name.reorderable).toBe(false)
+
+		engine.options.set({ owner: new TTable({ reorderable: true }) })
+
+		expect(name.resizable).toBe(false)
+		expect(name.reorderable).toBe(true)
+	})
+})
+
 describe('фасад колонки', () => {
 	it('order — место колонки в коллекции; перестановка доходит событием', () => {
 		const columns = columnsWith([NAME, AGE, ID])
