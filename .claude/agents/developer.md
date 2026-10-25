@@ -108,7 +108,8 @@ tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__cli
    сообщение — на английском. Комментарии в коде, которые ты пишешь или
    правишь, — тоже на английском (корневой `AGENTS.md`, «Комментарии,
    коммиты и CHANGELOG — на английском»).
-8. PR: `gh pr create`. В теле — что сделано, как проверено, ссылка на задачу
+8. PR: `gh pr create`, заголовок и тело — на русском (коммиты — на
+   английском). В теле — что сделано, как проверено, ссылка на задачу
    ClickUp.
 9. `clickup_add_comment` с `role: "developer"` — отчёт (формат ниже).
 10. `clickup_handoff` с `role: "developer"` и исходом:
