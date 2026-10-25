@@ -1,6 +1,6 @@
 import { Table } from 'antd'
 import { COLUMNS, type TRec } from '../data'
-import { compareBy } from './sort'
+import { compareBy } from '../sort'
 
 export const sel = {
 	selectAll: 'thead .ant-table-selection input',

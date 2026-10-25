@@ -1,13 +1,34 @@
 import { makeRows, type TRec } from './libs/data'
 
 /**
- * Сценарии стенда (`window.bench`) — общие для страниц Vue (`main.ts`) и
- * React (`react.tsx`): страница монтирует таблицу участника и отдаёт сюда
- * его селекторы и запись строк.
+ * Сценарии стенда (`window.bench`) — общие для страниц всех фреймворков
+ * (`main.ts` — Vue, `react.tsx`, `angular.ts`, `svelte.ts`, `solid.tsx`,
+ * `webc.ts`): страница монтирует таблицу участника и отдаёт сюда его
+ * селекторы и запись строк.
  */
 
-/** Селекторы участника: чекбокс «выбрать все», заголовок сортировки, у soldy — заголовки и ручки. */
-export type TSel = { selectAll: string; sort: string; columns?: string; resizers?: string }
+/**
+ * Узел, по которому кликает сценарий: селектор в документе или функция — у
+ * таблицы на теневом DOM узел лежит в тени, и селектор документа до него не
+ * достаёт.
+ */
+export type TTarget = string | (() => HTMLElement)
+
+/** Что видно в таблице: строки тела, отмеченные строки, первая ячейка данных. */
+export type TShown = { rows: number; checked: number; first: string | undefined }
+
+/**
+ * Селекторы участника: чекбокс «выбрать все», заголовок сортировки, у soldy —
+ * заголовки и ручки. `shown` — счёт таблицы, если стандартный (`tbody tr`,
+ * отмеченные чекбоксы тела) её не видит: строки в тени или не `tr`.
+ */
+export type TSel = {
+	selectAll: TTarget
+	sort: TTarget
+	columns?: string
+	resizers?: string
+	shown?: () => TShown
+}
 
 /** Участник страницы: селекторы и запись строк в его таблицу. */
 export type TParticipant = { sel: TSel; setRows: (rows: TRec[] | null) => void }
@@ -16,6 +37,37 @@ export function q(s: string) {
 	const el = document.querySelector<HTMLElement>(s)
 	if (!el) throw new Error('нет ' + s)
 	return el
+}
+
+function target(t: TTarget): HTMLElement {
+	return typeof t === 'string' ? q(t) : t()
+}
+
+/** Стандартный счёт таблицы — по разметке `table` в документе. */
+function shown(): TShown {
+	return {
+		rows: document.querySelectorAll('tbody tr').length,
+		checked: document.querySelectorAll(
+			'tbody input[type="checkbox"]:checked, tbody [role="checkbox"][aria-checked="true"], tbody .n-checkbox--checked',
+		).length,
+		// Первая ячейка данных: в режиме окна первым в теле стоит распорка
+		first: document.querySelector('tbody tr > td:nth-child(2)')?.textContent?.trim(),
+	}
+}
+
+/**
+ * Элементы страницы вместе с теневыми деревьями: у таблиц на Web Components
+ * часть разметки — в тени, и `getElementsByTagName` её не считает.
+ */
+function nodes(root: Document | ShadowRoot): number {
+	let count = 0
+
+	for (const el of root.querySelectorAll('*')) {
+		count++
+		if (el.shadowRoot) count += nodes(el.shadowRoot)
+	}
+
+	return count
 }
 
 /** Участник по имени из `?lib=`, по умолчанию `soldy`. */
@@ -228,19 +280,14 @@ export function startBench(participant: TParticipant) {
 			render: (n: number) => measure(() => lib.setRows(makeRows(n))),
 			replace: (n: number, seed: number) => measure(() => lib.setRows(makeRows(n, seed))),
 			clear: () => measure(() => lib.setRows(null)),
-			selectAll: () => measure(() => q(lib.sel.selectAll).click()),
-			sort: () => measure(() => q(lib.sel.sort).click()),
+			selectAll: () => measure(() => target(lib.sel.selectAll).click()),
+			sort: () => measure(() => target(lib.sel.sort).click()),
 			scrollThrough,
 			...reorder,
 			resize,
 			info: () => ({
-				rows: document.querySelectorAll('tbody tr').length,
-				nodes: document.getElementsByTagName('*').length,
-				checked: document.querySelectorAll(
-					'tbody input[type="checkbox"]:checked, tbody [role="checkbox"][aria-checked="true"], tbody .n-checkbox--checked',
-				).length,
-				// Первая ячейка данных: в режиме окна первым в теле стоит распорка
-				first: document.querySelector('tbody tr > td:nth-child(2)')?.textContent?.trim(),
+				...(lib.sel.shown ?? shown)(),
+				nodes: nodes(document),
 				// Первые заголовки колонок данных — порядок до и после перестановки
 				heads: lib.sel.columns
 					? headers()

@@ -16,19 +16,20 @@ const query = new URLSearchParams(location.search)
 // `?motion=reduce` — без движения (`useMotion('reduce')`): соседи взятого
 // заголовка стоят, место — линия. Без флага — режим системы
 if (query.get('motion') === 'reduce') useMotion('reduce')
-// `?reorder=1` — колонки можно переставлять (`reorderable`): для сценариев
-// перестановки. Без флага колонки те же, что всегда
-const reorder = query.get('reorder') === '1'
+// `?reorder=1` — колонки таблицы можно переставлять (`reorderable`): для
+// сценариев перестановки. Без флага проп не задан — колонки стоят
+const reorder = query.get('reorder') === '1' ? { reorderable: true } : {}
 // `?preview=column` — за жестом перестановки идут и ячейки строк
 // (`reorderPreview: 'column'`), `?preview=none` — шапка стоит
 // (`reorderPreview: 'none'`). Без флага проп не задан
 const previewFlag = query.get('preview')
 const preview =
 	previewFlag === 'column' || previewFlag === 'none' ? { reorderPreview: previewFlag } : {}
-// `?resize=1` — у колонок ручка ширины (`resizable`): для сценариев протяжки;
-// `?resize=deferred` — и отложенная протяжка (`resizePreview: 'deferred'`)
+// `?resize=1` — у колонок таблицы ручка ширины (`resizable`): для сценариев
+// протяжки; `?resize=deferred` — и отложенная протяжка (`resizePreview: 'deferred'`).
+// Без флага проп не задан — ручек нет
 const resizeFlag = query.get('resize')
-const resize = resizeFlag === '1' || resizeFlag === 'deferred'
+const resize = resizeFlag === '1' || resizeFlag === 'deferred' ? { resizable: true } : {}
 const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as const } : {}
 // `?fit=<значение>` — `columnFit` таблицы, любое значение `TTableColumnFit`:
 // `contain` — гибкие колонки ровно заполняют место, таблица не шире места, и
@@ -38,12 +39,7 @@ const resizePreview = resizeFlag === 'deferred' ? { resizePreview: 'deferred' as
 const FITS: readonly TTableColumnFit[] = ['none', 'auto', 'contain']
 const fitFlag = FITS.find((fit) => fit === query.get('fit'))
 const columnFit = fitFlag ? { columnFit: fitFlag } : {}
-export const columns = COLUMNS.map((c) => ({
-	...c,
-	sortable: true,
-	...(reorder ? { reorderable: true } : {}),
-	...(resize ? { resizable: true } : {}),
-}))
+export const columns = COLUMNS.map((c) => ({ ...c, sortable: true }))
 export const sel = {
 	selectAll: 'thead .so-table__select input',
 	sort: 'thead .so-table-column__sort',
@@ -68,11 +64,27 @@ const trackBy =
 	query.get('track') === '1'
 		? { trackBy: (item: { data?: Record<string, unknown> }) => item.data?.id }
 		: {}
-/** Пропсы таблицы из флагов — кроме колонок и строк. */
-export const tableProps = {
+/**
+ * Пропсы таблицы из флагов — кроме колонок и строк. Не заданный флагом проп не
+ * задан и у таблицы: страницы раскладывают пропсы спредом, а шаблон Angular
+ * привязывает их по именам, и вход со значением `undefined` адаптер не пишет.
+ */
+export type TTableProps = {
+	mode: 'none' | 'multiple'
+	aria_label: string
+	reorderable?: boolean
+	reorderPreview?: 'column' | 'none'
+	resizable?: boolean
+	resizePreview?: 'deferred'
+	columnFit?: TTableColumnFit
+	trackBy?: (item: { data?: Record<string, unknown> }) => unknown
+}
+export const tableProps: TTableProps = {
 	mode,
 	aria_label: 'Бенч',
+	...reorder,
 	...preview,
+	...resize,
 	...resizePreview,
 	...columnFit,
 	...trackBy,

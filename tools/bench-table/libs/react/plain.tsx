@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { COLUMNS, type TRec } from '../data'
-import { nextSort, sorted, type TSort } from './sort'
+import { nextSort, sorted, type TSort } from '../sort'
 
 export const sel = { selectAll: 'thead input[type="checkbox"]', sort: 'thead th[data-col="name"]' }
 

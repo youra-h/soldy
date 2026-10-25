@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Checkbox, MantineProvider, Table, UnstyledButton } from '@mantine/core'
 import '@mantine/core/styles.css'
 import { COLUMNS, type TRec } from '../data'
-import { nextSort, sorted, type TSort } from './sort'
+import { nextSort, sorted, type TSort } from '../sort'
 
 export const sel = {
 	selectAll: 'thead input[type="checkbox"]',

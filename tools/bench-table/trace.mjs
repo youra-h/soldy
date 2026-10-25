@@ -2,6 +2,7 @@ import { chromium } from 'playwright'
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
+import { types, urlOf } from './pages.mjs'
 
 // Трасса сценариев стенда: что делает главный поток браузера — скрипт,
 // пересчёт стилей, раскладка, обход перед отрисовкой, отрисовка и перестройка
@@ -18,19 +19,6 @@ const N = Number(process.argv[2] ?? 5000)
 const LIBS = (process.argv[3] ?? 'soldy+reorder').split(',')
 const RUNS = Number(process.argv[4] ?? 3)
 const SET = process.argv[5] ?? 'reorder'
-// Участник на React — с префиксом «react:»: `react:soldy+fit=none` —
-// `react.html?lib=soldy&fit=none`
-const urlOf = (lib) => {
-	const react = lib.startsWith('react:')
-	const [name, ...flags] = (react ? lib.slice('react:'.length) : lib).split('+')
-
-	return (
-		(react ? 'react.html' : '') +
-		'?lib=' +
-		name +
-		flags.map((flag) => `&${flag.includes('=') ? flag : flag + '=1'}`).join('')
-	)
-}
 
 /**
  * Наборы сценариев — по порядку, как у `run.mjs`: подпись, путь к сценарию в
@@ -65,7 +53,6 @@ const SCENARIOS = SETS[SET]
 if (!SCENARIOS) throw new Error(`набора «${SET}» нет: ${Object.keys(SETS).join(', ')}`)
 
 const dist = path.resolve(import.meta.dirname, 'dist')
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
 const server = http
 	.createServer((req, res) => {
 		const p = req.url.split('?')[0]
