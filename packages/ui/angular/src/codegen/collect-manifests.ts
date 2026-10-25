@@ -4,12 +4,16 @@
  * компонента ещё `facade`, у пункта с подменю — `ownerFacade`. Реэкспортом, а
  * не `const`: выведенный тип `const` декларации пакета выписать не могут
  * (TS2883, TS7056). Имя — путь папки через дефис: `tabs/item` — `tabs-item`.
+ *
+ * Ссылки шаблона, которые нужны базе (`#root`, `#control`, `#companion`), —
+ * из шаблона компонента: `*.component.html` его папки, без HTML-комментариев.
  */
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { IComponentDescriptor } from '@soldy-ui/setup'
+import type { TTemplateRef } from '../adapter/runtime/component.base'
 
 export type TManifest = {
 	name: string
@@ -18,6 +22,27 @@ export type TManifest = {
 	descriptor: () => IComponentDescriptor
 	facade?: () => IComponentDescriptor
 	ownerFacade?: () => IComponentDescriptor
+	/** Ссылки шаблона компонента, которые читает база, — в порядке `TEMPLATE_REFS`. */
+	refs: readonly TTemplateRef[]
+}
+
+const TEMPLATE_REFS: readonly TTemplateRef[] = ['root', 'control', 'companion']
+
+/** Ссылки `#имя` на элементах шаблона; в комментарии это не ссылка. */
+function templateRefs(folder: string): TTemplateRef[] {
+	const names = new Set<string>()
+
+	for (const file of fs.readdirSync(folder)) {
+		if (!file.endsWith('.component.html')) continue
+
+		const markup = fs
+			.readFileSync(path.join(folder, file), 'utf8')
+			.replace(/<!--[\s\S]*?-->/g, '')
+
+		for (const [, name] of markup.matchAll(/\s#([\w-]+)/g)) names.add(name)
+	}
+
+	return TEMPLATE_REFS.filter((ref) => names.has(ref))
 }
 
 function manifestFolders(root: string, dir: string = root): string[] {
@@ -55,6 +80,7 @@ export async function collectManifests(): Promise<TManifest[]> {
 			descriptor: mod.descriptor,
 			...(typeof mod.facade === 'function' ? { facade: mod.facade } : {}),
 			...(typeof mod.ownerFacade === 'function' ? { ownerFacade: mod.ownerFacade } : {}),
+			refs: templateRefs(path.join(componentsDir, folder)),
 		})
 	}
 

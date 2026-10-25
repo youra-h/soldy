@@ -8,7 +8,12 @@
  * `TComponentBase`».
  */
 
-export type TAppliedAttributes = ReadonlyMap<string, string>
+/**
+ * Память раскладки атрибутов — сумма слоёв, которую она положила. Объект, а не
+ * `Map`: раскладчик стоит на каждой ячейке таблицы, и `Map` на каждую — своя
+ * хеш-таблица.
+ */
+export type TAppliedAttributes = Readonly<Record<string, string>>
 export type TAppliedClasses = ReadonlySet<string>
 /** Стиль: имя свойства, как в CSS (`z-index`, `--*`), → значение. */
 export type TRootStyles = ReadonlyMap<string, string>
@@ -16,6 +21,7 @@ export type TAppliedStyles = TRootStyles
 
 // Пустые значения — одни на всех: тот же объект не будит эффект зря
 export const NO_ATTRIBUTES: object = Object.freeze({})
+export const NO_APPLIED_ATTRIBUTES: TAppliedAttributes = Object.freeze({})
 const NO_CLASSES: readonly string[] = Object.freeze([])
 
 /** Набор из состояния — объект, иначе пустой: база читает состояние по именам. */
@@ -93,12 +99,19 @@ export function applyAttributes(
 	set: object,
 	applied: TAppliedAttributes,
 ): TAppliedAttributes {
-	return reconcile(
-		new Map(Object.entries(sumLayers([set]))),
-		applied,
-		(name, value) => element.setAttribute(name, value),
-		(name) => element.removeAttribute(name),
-	)
+	const next = sumLayers([set])
+
+	for (const [name, value] of Object.entries(next)) {
+		if (!Object.hasOwn(applied, name) || applied[name] !== value) {
+			element.setAttribute(name, value)
+		}
+	}
+
+	for (const name of Object.keys(applied)) {
+		if (!Object.hasOwn(next, name)) element.removeAttribute(name)
+	}
+
+	return next
 }
 
 export function applyClasses(
@@ -157,7 +170,12 @@ export const ATTRIBUTE_LAYERS = [
 
 export type TAttributeLayer = (typeof ATTRIBUTE_LAYERS)[number]
 
-const LAID_OUT = new WeakMap<Element, TElementAttributes>()
+/**
+ * Раскладчик — свойством самого элемента, а не в таблице модуля: таблица
+ * `WeakMap` растёт до самого большого числа элементов разом (ячеек таблицы) и
+ * не сжимается, когда они уходят.
+ */
+const LAID_OUT = Symbol('soldy.laidOut')
 
 /**
  * Атрибуты элемента от всех, кто на него пишет, — одной памятью: две раскладки
@@ -166,26 +184,25 @@ const LAID_OUT = new WeakMap<Element, TElementAttributes>()
  */
 export class TElementAttributes {
 	static of(element: Element): TElementAttributes {
-		let attributes = LAID_OUT.get(element)
+		const found: unknown = Reflect.get(element, LAID_OUT)
 
-		if (!attributes) {
-			attributes = new TElementAttributes(element)
-			LAID_OUT.set(element, attributes)
-		}
+		if (found instanceof TElementAttributes) return found
+
+		const attributes = new TElementAttributes(element)
+
+		Object.defineProperty(element, LAID_OUT, { value: attributes })
 
 		return attributes
 	}
 
-	private readonly _layers = new Map<TAttributeLayer, object>()
-	private _applied: TAppliedAttributes = new Map()
+	/** Слои по местам `ATTRIBUTE_LAYERS`. */
+	private readonly _layers: object[] = ATTRIBUTE_LAYERS.map(() => NO_ATTRIBUTES)
+	private _applied: TAppliedAttributes = NO_APPLIED_ATTRIBUTES
 
 	private constructor(private readonly _element: Element) {}
 
 	set(layer: TAttributeLayer, set: object): void {
-		this._layers.set(layer, set)
-
-		const layers = ATTRIBUTE_LAYERS.map((name) => this._layers.get(name) ?? NO_ATTRIBUTES)
-
-		this._applied = applyAttributes(this._element, sumLayers(layers), this._applied)
+		this._layers[ATTRIBUTE_LAYERS.indexOf(layer)] = set
+		this._applied = applyAttributes(this._element, sumLayers(this._layers), this._applied)
 	}
 }

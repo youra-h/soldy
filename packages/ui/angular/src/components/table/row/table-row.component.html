@@ -10,40 +10,46 @@
 	</td>
 }
 <!--
-	Ветка по шаблону — над петлёй: `@if` в ячейке — ещё якорь и представление на каждую.
-	Ключ — колонка ячейки: новая запись строки рисуется в тех же узлах, с фокусом сетки.
+	Ветки — над петлёй ячеек: блок Angular — ещё якорь и представление, и ветка в ячейке стоила бы
+	их на каждую. Ветка по шаблону — одна на строку, по заголовку строки — одна на серию ячеек с
+	тем же `rowHeader` (`soRuns`). Ключ ячейки — колонка: новая запись строки рисуется в тех же
+	узлах, с фокусом сетки.
 -->
 @if (slot('cell'); as content) {
-	@for (cell of state()['cells'] ?? []; track cell.column.uid) {
-		@if (cell.rowHeader) {
-			<th
-				class="so-table-row__cell"
-				scope="row"
-				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
-			>
-				<ng-container
-					[ngTemplateOutlet]="content"
-					[ngTemplateOutletContext]="{
-						row: instance(),
-						column: cell.column,
-						value: cell.value,
-					}"
-				/>
-			</th>
+	@for (run of state()['cells'] ?? [] | soRuns: 'rowHeader'; track $index) {
+		@if (run.value) {
+			@for (cell of run.items; track cell.column.uid) {
+				<th
+					class="so-table-row__cell"
+					scope="row"
+					[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+				>
+					<ng-container
+						[ngTemplateOutlet]="content"
+						[ngTemplateOutletContext]="{
+							row: instance(),
+							column: cell.column,
+							value: cell.value,
+						}"
+					/>
+				</th>
+			}
 		} @else {
-			<td
-				class="so-table-row__cell"
-				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
-			>
-				<ng-container
-					[ngTemplateOutlet]="content"
-					[ngTemplateOutletContext]="{
-						row: instance(),
-						column: cell.column,
-						value: cell.value,
-					}"
-				/>
-			</td>
+			@for (cell of run.items; track cell.column.uid) {
+				<td
+					class="so-table-row__cell"
+					[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+				>
+					<ng-container
+						[ngTemplateOutlet]="content"
+						[ngTemplateOutletContext]="{
+							row: instance(),
+							column: cell.column,
+							value: cell.value,
+						}"
+					/>
+				</td>
+			}
 		}
 	}
 } @else {
@@ -51,20 +57,24 @@
 		Текст — свойством, а не интерполяцией: Prettier переносит содержимое ячейки на свою
 		строку, и Angular оставил бы пробелы по краям.
 	-->
-	@for (cell of state()['cells'] ?? []; track cell.column.uid) {
-		@if (cell.rowHeader) {
-			<th
-				class="so-table-row__cell"
-				scope="row"
-				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
-				[textContent]="cell.text"
-			></th>
+	@for (run of state()['cells'] ?? [] | soRuns: 'rowHeader'; track $index) {
+		@if (run.value) {
+			@for (cell of run.items; track cell.column.uid) {
+				<th
+					class="so-table-row__cell"
+					scope="row"
+					[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+					[textContent]="cell.text"
+				></th>
+			}
 		} @else {
-			<td
-				class="so-table-row__cell"
-				[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
-				[textContent]="cell.text"
-			></td>
+			@for (cell of run.items; track cell.column.uid) {
+				<td
+					class="so-table-row__cell"
+					[so-attributes]="{ ...cell.dataset, ...state()['cellAria'], ...cell.aria }"
+					[textContent]="cell.text"
+				></td>
+			}
 		}
 	}
 }
