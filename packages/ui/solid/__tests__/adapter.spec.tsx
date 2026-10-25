@@ -9,18 +9,20 @@
  *   их на свой корень, содержимое рисует внутри.
  * - Привязанный корень разметка читает аксессором (`rootElement`): узел, снятие
  *   и смена тега доходят до читающих.
+ * - Состояние связки неглубокое (`createShallowState`): значение — то, что
+ *   отдало ядро, без прокси стора на вложенных объектах, сигнал — на свойство.
  * - Состояние двух контекстов коллекции — один вид (`joinState`), и он идёт за
- *   обоими сторами, в том числе за свойством, которого к сборке не было.
+ *   обоими состояниями, в том числе за свойством, которого к сборке не было.
  */
 
 import { describe, it, expect, vi, onTestFinished } from 'vitest'
-import { Show, createRenderEffect, createRoot, type Accessor, type JSX } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { $PROXY, Show, createRenderEffect, createRoot, type Accessor, type JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { TComponentView } from '@soldy-ui/core'
 import { TPluginBundle } from '@soldy-ui/plugins'
 import {
 	Button,
+	createShallowState,
 	isTagComponent,
 	joinState,
 	roleIcon,
@@ -198,46 +200,119 @@ describe('аксессор привязанного корня', () => {
 	})
 })
 
-/**
- * Вид двух сторов — свой и фасада. Ключа со значением `undefined` в сторе
- * Solid нет вовсе, и вид геттерами по ключам, собранный при сборке, не увидел
- * бы свойства, которое появилось позже (`closable` таба, имя из `aria_label`).
- */
-describe('joinState', () => {
-	type TState = { own?: string; facade?: string; shared?: string }
+/** Значения, которые увидел эффект, читающий `key` состояния; эффект снимается с тестом. */
+function watch(key: string, state: Readonly<Record<string, unknown>>): unknown[] {
+	const seen: unknown[] = []
 
-	/** Значения, которые увидел эффект, читающий `key` вида; эффект снимается с тестом. */
-	function watch(key: keyof TState, view: TState): Array<string | undefined> {
-		const seen: Array<string | undefined> = []
-
-		createRoot((dispose) => {
-			createRenderEffect(() => {
-				seen.push(view[key])
-			})
-
-			onTestFinished(dispose)
+	createRoot((dispose) => {
+		createRenderEffect(() => {
+			seen.push(state[key])
 		})
 
-		return seen
+		onTestFinished(dispose)
+	})
+
+	return seen
+}
+
+/**
+ * Состояние связки — сигнал на свойство, значение как есть. Ядро отдаёт
+ * значения, сменившееся — новым объектом, и стор Solid, который оборачивал
+ * каждый вложенный объект в прокси с сигналом на прочитанное свойство, держал
+ * в таблице около двух десятков сигналов на ячейку (benchmarks/table_solid.md,
+ * «Solid, состояние без стора»).
+ */
+describe('состояние связки', () => {
+	type TProbeProps = ComponentViewProps & {
+		/** Состояние связки — тесту, при сборке. */
+		onState: (state: Readonly<Record<string, unknown>>) => void
 	}
 
+	function StateProbe(props: TProbeProps): JSX.Element {
+		const binding = setupComponentView(props)
+
+		props.onState(binding.state)
+
+		return <Dynamic component={rootTag(binding.state.tag)} ref={binding.ref} />
+	}
+
+	it('вложенное значение компонента — не прокси стора', () => {
+		const states: Array<Readonly<Record<string, unknown>>> = []
+
+		mount(() => <StateProbe ctrl={new TComponentView()} onState={(s) => states.push(s)} />)
+
+		const classes = states[0]?.classes
+
+		expect(Array.isArray(classes)).toBe(true)
+		expect(Array.isArray(classes) && $PROXY in classes).toBe(false)
+	})
+
+	it('отдаёт записанный объект тем же, вложенные объекты — без обёртки', () => {
+		const [state, write] = createShallowState()
+		const cells = [{ text: 'a', aria: { role: 'cell' } }]
+
+		write('cells', cells)
+
+		expect(state.cells).toBe(cells)
+		expect($PROXY in cells[0]).toBe(false)
+		expect($PROXY in cells[0].aria).toBe(false)
+	})
+
+	it('читающий свойство идёт за ним, функцию значением не зовёт', () => {
+		const [state, write] = createShallowState()
+		const seen = watch('handler', state)
+		const handler = vi.fn()
+
+		write('handler', handler)
+		write('handler', handler)
+
+		expect(seen).toEqual([undefined, handler])
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('свойство со значением undefined — незаданное', () => {
+		const [state, write] = createShallowState()
+
+		write('closable', true)
+
+		expect('closable' in state).toBe(true)
+
+		write('closable', undefined)
+
+		expect('closable' in state).toBe(false)
+	})
+})
+
+/**
+ * Вид двух состояний — своего и фасада. Свойства, которое ещё не задано, в
+ * состоянии нет (`in` его не видит), и вид геттерами по ключам, собранный при
+ * сборке, не увидел бы свойства, которое появилось позже (`closable` таба, имя
+ * из `aria_label`).
+ */
+describe('joinState', () => {
 	it('свойство, которого к сборке не было, вид видит, когда оно появилось', () => {
-		const [own] = createStore<TState>({ own: 'a' })
-		const [facade, setFacade] = createStore<TState>({})
+		const [own, writeOwn] = createShallowState()
+		const [facade, writeFacade] = createShallowState()
+
+		writeOwn('own', 'a')
+
 		const seen = watch('facade', joinState(own, facade))
 
-		setFacade({ facade: 'b' })
+		writeFacade('facade', 'b')
 
 		expect(seen).toEqual([undefined, 'b'])
 	})
 
 	it('верхнее перекрывает нижнее, снятое верхнее — снова нижнее', () => {
-		const [below] = createStore<TState>({ shared: 'снизу' })
-		const [above, setAbove] = createStore<TState>({})
+		const [below, writeBelow] = createShallowState()
+		const [above, writeAbove] = createShallowState()
+
+		writeBelow('shared', 'снизу')
+
 		const seen = watch('shared', joinState(below, above))
 
-		setAbove({ shared: 'сверху' })
-		setAbove({ shared: undefined })
+		writeAbove('shared', 'сверху')
+		writeAbove('shared', undefined)
 
 		expect(seen).toEqual(['снизу', 'сверху', 'снизу'])
 	})

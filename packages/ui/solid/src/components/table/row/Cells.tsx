@@ -1,5 +1,4 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
 import { KeyedFor, createPartProps, liveScope, renderSlot } from '../../../adapter'
 import type { TableRowProps } from './base.component'
@@ -36,25 +35,22 @@ export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
 
 	/** Ячейка колонки — заголовок строки или обычная. */
 	const drawCell = (cell: Accessor<TTableCell>) => {
-		const dataset = createPartProps(() => cell().dataset)
-		const aria = createPartProps(() => cell().aria)
+		const attrs = createPartProps(() => ({ ...cell().dataset, ...cellAria(), ...cell().aria }))
 
-		return (
-			<Dynamic
-				component={cell().rowHeader ? 'th' : 'td'}
-				class="so-table-row__cell"
-				scope={cell().rowHeader ? 'row' : undefined}
-				{...dataset()}
-				{...cellAria()}
-				{...aria()}
-			>
+		// Тег — часть ключа петли: сменился заголовок строки — ячейка новая
+		return cell().rowHeader ? (
+			<th class="so-table-row__cell" scope="row" {...attrs()}>
 				{content(cell)}
-			</Dynamic>
+			</th>
+		) : (
+			<td class="so-table-row__cell" {...attrs()}>
+				{content(cell)}
+			</td>
 		)
 	}
 
 	return (
-		<KeyedFor each={props.cells} by={(cell) => cell.column.uid}>
+		<KeyedFor each={props.cells} by={(cell) => `${cell.column.uid}:${cell.rowHeader}`}>
 			{drawCell}
 		</KeyedFor>
 	)

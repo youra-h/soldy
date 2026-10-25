@@ -1,7 +1,8 @@
 /**
  * useAdapter — связка adapter-context с Solid, аналог `useAdapter` у Vue.
  *
- * - состояние — стор, его заполняет подписка на связку;
+ * - состояние — неглубокое, сигнал на свойство (`createShallowState`), его
+ *   заполняет подписка на связку;
  * - входы — эффект над всеми пропсами, связка пишет сменившиеся;
  * - события — колбэк-пропсы `onXxx`;
  * - тело компонента выполняется один раз, на сервере тоже: это и есть приём
@@ -14,11 +15,10 @@
  */
 
 import { createEffect, createMemo, createSignal, onCleanup, type Accessor } from 'solid-js'
-import { createStore } from 'solid-js/store'
 import { toInstanceState } from '@soldy-ui/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } from '@soldy-ui/setup'
 import { SolidProfile } from '../common'
-import { joinState, type TJoinedState } from './state'
+import { createShallowState, joinState, type TJoinedState } from './state'
 
 /**
  * `ref` потребителя — корень компонента: функция или переменная, которую
@@ -61,16 +61,15 @@ export type TJoinedBinding<
 	forwardProps: () => Partial<TProps>
 }
 
-/** Общее у компонента и фасада: обмен, стор, входы, события, приём и очистка. */
+/** Общее у компонента и фасада: обмен, состояние, входы, события, приём и очистка. */
 function useExchange(
 	adapter: IAdapterContext,
 	props: object,
 ): { binding: TExchange; state: Readonly<Record<string, unknown>> } {
 	const binding = adapter.connect(SolidProfile)
-	const [state, setState] = createStore<Record<string, unknown>>({})
+	const [state, write] = createShallowState()
 
-	// Merge-форма: путевая `setState(key, value)` сочла бы значение-функцию updater'ом
-	onCleanup(binding.state.subscribe((name, value) => setState({ [name]: value })))
+	onCleanup(binding.state.subscribe(write))
 
 	createEffect(() => binding.inputs.full(props))
 

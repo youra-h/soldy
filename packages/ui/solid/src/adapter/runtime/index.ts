@@ -7,7 +7,7 @@ export {
 	type TConsumerRef,
 	type TJoinedBinding,
 } from './useAdapter'
-export { joinState, type TJoinedState } from './state'
+export { createShallowState, joinState, type TJoinedState } from './state'
 export { KeyedFor, type TKeyedForProps } from './KeyedFor'
 export { Teleport, type TTeleportProps } from './Teleport'
 export { isTagComponent, rootTag, type TTagComponent } from './tag'

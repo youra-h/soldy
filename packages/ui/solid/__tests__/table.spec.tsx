@@ -198,6 +198,28 @@ describe('разметка', () => {
 		expect(name.id).not.toBe('')
 	})
 
+	/**
+	 * Тег ячейки — не `Dynamic` на каждую ячейку, а ветка по `rowHeader`, и
+	 * `rowHeader` входит в ключ петли ячеек: сменился — узел ячейки новый, как
+	 * у `Dynamic` со сменой `component`.
+	 */
+	it('rowHeader колонки сменился — ячейки её строк сменили тег', async () => {
+		const engine = engineOf('none', [ANNA])
+
+		await render(() => <Table engine={engine} />)
+
+		columnOf(engine, 'name').rowHeader = false
+		columnOf(engine, 'age').rowHeader = true
+
+		const [name, age] = [...find('.so-table-row').children]
+
+		expect([name.tagName, text(name)]).toEqual(['TD', 'Анна'])
+		expect(name.hasAttribute('scope')).toBe(false)
+		expect([age.tagName, text(age)]).toEqual(['TH', '30'])
+		expect(age.getAttribute('scope')).toBe('row')
+		expect(age.getAttribute('data-align')).toBe('end')
+	})
+
 	it('Table.Column и Table.Row — части таблицы', () => {
 		expect(Table.Column).toBe(TableColumn)
 		expect(Table.Row).toBe(TableRow)
