@@ -7,12 +7,16 @@
  * Components), «Раскладка на узел».
  */
 
-type TAppliedAttribute = {
-	readonly value: string
-	readonly input: boolean
+/**
+ * Атрибуты, которые раскладка пишет или записала: имя → значение и, среди
+ * них, входы пропов. Значения — объектом, а не `Map`: узлы с одним набором
+ * имён (ячейки таблицы) делят одну форму объекта, и память на узел — десятки
+ * байт, а не таблица `Map` на каждый.
+ */
+export type TAppliedAttributes = {
+	readonly values: Readonly<Record<string, string>>
+	readonly inputs: ReadonlySet<string>
 }
-
-export type TAppliedAttributes = ReadonlyMap<string, TAppliedAttribute>
 
 export type TAppliedClasses = ReadonlySet<string>
 
@@ -32,6 +36,10 @@ export type THiddenDisplay = string | undefined
 
 const NO_INPUTS: ReadonlySet<string> = new Set()
 const NO_SET: object = Object.freeze({})
+const NO_ATTRIBUTES: TAppliedAttributes = Object.freeze({
+	values: Object.freeze({}),
+	inputs: NO_INPUTS,
+})
 const NO_CLASSES: readonly string[] = Object.freeze([])
 
 /**
@@ -73,26 +81,34 @@ export function applyAttributes(
 	wanted: TAppliedAttributes,
 	applied: TAppliedAttributes,
 ): TAppliedAttributes {
-	const next = new Map<string, TAppliedAttribute>()
+	const values: Record<string, string> = {}
 
-	for (const [name, attribute] of wanted) {
+	for (const [name, value] of Object.entries(wanted.values)) {
 		const current = element.getAttribute(name)
 
-		if (current !== null && current !== applied.get(name)?.value && !attribute.input) continue
+		if (current !== null && current !== valueOf(applied, name) && !wanted.inputs.has(name))
+			continue
 
-		if (current !== attribute.value) element.setAttribute(name, attribute.value)
+		if (current !== value) element.setAttribute(name, value)
 
-		next.set(name, attribute)
+		values[name] = value
 	}
 
 	// Вход пропа снимается при любом значении: ядро его уже приняло
-	for (const [name, { value, input }] of applied) {
-		if (next.has(name)) continue
+	for (const [name, value] of Object.entries(applied.values)) {
+		if (Object.hasOwn(values, name)) continue
 
-		if (input || element.getAttribute(name) === value) element.removeAttribute(name)
+		if (applied.inputs.has(name) || element.getAttribute(name) === value) {
+			element.removeAttribute(name)
+		}
 	}
 
-	return next
+	// Входы раскладка пишет всегда — записанные входы те же, что желанные
+	return { values, inputs: wanted.inputs }
+}
+
+function valueOf(attributes: TAppliedAttributes, name: string): string | undefined {
+	return Object.hasOwn(attributes.values, name) ? attributes.values[name] : undefined
 }
 
 export function applyClasses(
@@ -205,8 +221,8 @@ export class TElementAttributes {
 		return attributes
 	}
 
-	private readonly _layers = new Map<TAttributeLayer, TLayer>()
-	private _applied: TAppliedAttributes = new Map()
+	private readonly _layers: Partial<Record<TAttributeLayer, TLayer>> = {}
+	private _applied: TAppliedAttributes = NO_ATTRIBUTES
 
 	/** Раскладчик поля; `null` — поле ещё не построено; `undefined` — поля нет. */
 	private _field: TElementAttributes | null | undefined = undefined
@@ -222,7 +238,7 @@ export class TElementAttributes {
 			return
 		}
 
-		this._layers.set(layer, { set, inputs })
+		this._layers[layer] = { set, inputs }
 		this._applied = applyAttributes(this._element, this._sum(), this._applied)
 	}
 
@@ -232,7 +248,7 @@ export class TElementAttributes {
 	 * атрибута, пришедший посреди раскладки, видит уже то, что она пишет.
 	 */
 	wanted(name: string): string | undefined {
-		return this._sum().get(name)?.value
+		return valueOf(this._sum(), name)
 	}
 
 	/** У узла есть поле: слой владельца ждёт его построения. */
@@ -249,20 +265,26 @@ export class TElementAttributes {
 
 	/** Имя называет только строка: `null` нижний слой не перекрывает. */
 	private _sum(): TAppliedAttributes {
-		const sum = new Map<string, TAppliedAttribute>()
+		const values: Record<string, string> = {}
+		let inputs: Set<string> | undefined
 
 		for (const name of ATTRIBUTE_LAYERS) {
-			const layer = this._layers.get(name)
+			const layer = this._layers[name]
 
 			if (!layer) continue
 
 			for (const [attribute, value] of Object.entries(layer.set)) {
-				if (typeof value === 'string')
-					sum.set(attribute, { value, input: layer.inputs.has(attribute) })
+				if (typeof value !== 'string') continue
+
+				values[attribute] = value
+
+				// Вход ли имя — решает верхний слой, который его называет
+				if (layer.inputs.has(attribute)) (inputs ??= new Set()).add(attribute)
+				else inputs?.delete(attribute)
 			}
 		}
 
-		return sum
+		return { values, inputs: inputs ?? NO_INPUTS }
 	}
 }
 
