@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { realpathSync } from 'node:fs'
 import { posix, relative, resolve, sep } from 'node:path'
 import * as ts from 'typescript'
 
@@ -20,6 +21,12 @@ import * as ts from 'typescript'
  * учётом `extends`, как их читает сам TypeScript, — и цель считается от того же
  * каталога, что у него: от звена, которое объявило `paths`.
  *
+ * Судятся только пакеты репозитория. Каталог, который на деле лежит в
+ * `node_modules`, — внешняя зависимость, и манифест ей положен: стенд замеров
+ * ведёт `@angular/*` в свои `node_modules`, чтобы фреймворк был одной копией.
+ * Место берётся настоящее, после ссылок: пакет воркспейса в `node_modules` —
+ * ссылка на каталог репозитория, и запись через `node_modules` его не прячет.
+ *
  * Список конфигов не хардкодится: это каждый `tsconfig*.json` репозитория, и
  * находит их тот же обход, которым TypeScript раскрывает `include`, —
  * `node_modules` он пропускает.
@@ -29,6 +36,14 @@ const ROOT = resolve(__dirname, '../../..')
 
 /** Почему каталог пакета не годится в цель `paths`. */
 const WHY = 'каталог с package.json: TypeScript разрешит его через манифест, то есть в dist'
+
+/** Файлы конфигов и настоящее место каталога — после всех ссылок. */
+type TRepoHost = ts.ParseConfigHost & { realpath(path: string): string }
+
+/** Каталог — внешняя зависимость: его настоящий путь проходит через `node_modules`. */
+function isDependency(dir: string, host: TRepoHost): boolean {
+	return host.realpath(dir).split(/[\\/]/).includes('node_modules')
+}
 
 /** Ошибка TypeScript в разборе конфига — нарушение со своим текстом. */
 function unparsed(diagnostic: ts.Diagnostic): string {
@@ -53,17 +68,20 @@ function pathsBaseOf(options: ts.CompilerOptions): string {
 }
 
 /**
- * Подстановки цели, которые называют каталог с `package.json`, — как они
- * записаны в конфиге. Точная цель — она сама. В шаблоне `*` TypeScript
- * заменяет любой строкой, `/` в том числе, поэтому манифесты ищутся под
- * неизменной частью шаблона, и каждый подошедший даёт свою подстановку.
+ * Подстановки цели, которые называют каталог пакета репозитория с
+ * `package.json`, — как они записаны в конфиге. Точная цель — она сама. В
+ * шаблоне `*` TypeScript заменяет любой строкой, `/` в том числе, поэтому
+ * манифесты ищутся под неизменной частью шаблона, и каждый подошедший даёт свою
+ * подстановку. Внешние зависимости не в счёт.
  */
-function packageTargets(target: string, base: string, host: ts.ParseConfigHost): string[] {
+function packageTargets(target: string, base: string, host: TRepoHost): string[] {
 	const path = posix.join(base, target)
 	const star = path.indexOf('*')
 
 	if (star < 0) {
-		return host.fileExists(posix.join(path, 'package.json')) ? [target] : []
+		return host.fileExists(posix.join(path, 'package.json')) && !isDependency(path, host)
+			? [target]
+			: []
 	}
 
 	const prefix = path.slice(0, star)
@@ -78,7 +96,8 @@ function packageTargets(target: string, base: string, host: ts.ParseConfigHost):
 			(dir) =>
 				dir.length >= prefix.length + suffix.length &&
 				dir.startsWith(prefix) &&
-				dir.endsWith(suffix),
+				dir.endsWith(suffix) &&
+				!isDependency(dir, host),
 		)
 		.map((dir) => target.replace('*', dir.slice(prefix.length, dir.length - suffix.length)))
 		.sort()
@@ -91,7 +110,7 @@ function packageTargets(target: string, base: string, host: ts.ParseConfigHost):
  * разобрал, тоже нарушение: без пропавшего звена сторож судил бы неполные
  * опции.
  */
-function checkSourcePaths(file: string, host: ts.ParseConfigHost): string[] {
+function checkSourcePaths(file: string, host: TRepoHost): string[] {
 	const { config, error } = ts.readConfigFile(file, (path) => host.readFile(path))
 
 	if (error) {
@@ -132,6 +151,16 @@ function fromRoot(file: string): string {
 	return relative(ROOT, file).split(sep).join('/')
 }
 
+/** Репозиторий на диске: файлы читает TypeScript, настоящее место каталога даёт файловая система. */
+const DISK: TRepoHost = {
+	useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+	fileExists: (path) => ts.sys.fileExists(path),
+	readFile: (path) => ts.sys.readFile(path),
+	readDirectory: (root, extensions, excludes, includes, depth) =>
+		ts.sys.readDirectory(root, extensions, excludes, includes, depth),
+	realpath: (path) => realpathSync(path),
+}
+
 /** Конфиги TypeScript репозитория — тем же обходом, которым TypeScript раскрывает `include`. */
 const CONFIGS = ts.sys
 	.readDirectory(ROOT, ['.json'], undefined, ['**/tsconfig*.json'])
@@ -152,7 +181,7 @@ describe('пути к исходникам', () => {
 
 	describe.each(CONFIGS)('$name', ({ file, name }) => {
 		it('paths не ведёт в каталог с package.json', () => {
-			const violations = checkSourcePaths(file, ts.sys)
+			const violations = checkSourcePaths(file, DISK)
 
 			expect(
 				violations,
@@ -178,10 +207,21 @@ describe('сторож путей к исходникам', () => {
 	 * Каталог в памяти: путь → текст файла. Обход отдаёт файлы под каталогом с
 	 * нужным расширением, шаблонов `include` не разбирает: сторож отбирает
 	 * манифесты по имени сам, а TypeScript без исходников счёл бы конфиг пустым
-	 * (TS18003).
+	 * (TS18003). Ссылки — каталог → настоящее место: файлы под ссылкой
+	 * перечисляются по её пути, как их видит обход.
 	 */
-	const memoryHost = (files: Readonly<Record<string, string>>): ts.ParseConfigHost => ({
+	const memoryHost = (
+		files: Readonly<Record<string, string>>,
+		links: Readonly<Record<string, string>> = {},
+	): TRepoHost => ({
 		useCaseSensitiveFileNames: true,
+		realpath: (path) => {
+			const link = Object.entries(links).find(
+				([from]) => path === from || path.startsWith(`${from}/`),
+			)
+
+			return link === undefined ? path : link[1] + path.slice(link[0].length)
+		},
 		fileExists: (path) => Object.hasOwn(files, path),
 		readFile: (path) => files[path],
 		readDirectory: (root, extensions) =>
@@ -249,6 +289,52 @@ describe('сторож путей к исходникам', () => {
 		expect(
 			withPaths({ '@soldy-ui/setup/*': ['./*'], '@soldy-ui/src/*': ['../*/src'] }),
 		).toEqual([])
+	})
+
+	describe('node_modules', () => {
+		const STAND = '/repo/tools/bench/tsconfig.json'
+
+		/**
+		 * Стенд со своими зависимостями, как стенд замеров: фреймворк одной копией и
+		 * пакет воркспейса — ссылкой на каталог репозитория.
+		 */
+		const standCheck = (paths: Readonly<Record<string, readonly string[]>>): string[] =>
+			checkSourcePaths(
+				STAND,
+				memoryHost(
+					{
+						...REPO,
+						'/repo/tools/bench/index.ts': '',
+						'/repo/tools/bench/node_modules/rxjs/package.json': '{}',
+						'/repo/tools/bench/node_modules/@angular/core/package.json': '{}',
+						'/repo/tools/bench/node_modules/@angular/common/package.json': '{}',
+						'/repo/tools/bench/node_modules/@soldy-ui/core/package.json':
+							'{ "types": "./dist/index.d.ts" }',
+						[STAND]: text({ compilerOptions: { paths } }),
+					},
+					{ '/repo/tools/bench/node_modules/@soldy-ui/core': '/repo/packages/core' },
+				),
+			)
+
+		it('внешняя зависимость с манифестом — без нарушений', () => {
+			expect(
+				standCheck({
+					'@angular/*': ['./node_modules/@angular/*'],
+					rxjs: ['./node_modules/rxjs'],
+					'rxjs/*': ['./node_modules/rxjs/*'],
+				}),
+			).toEqual([])
+		})
+
+		// Пакет воркспейса в node_modules — ссылка: судится каталог репозитория за ней
+		it('пакет репозитория через node_modules — нарушение', () => {
+			expect(standCheck({ '@soldy-ui/core': ['./node_modules/@soldy-ui/core'] })).toEqual([
+				`paths "@soldy-ui/core" → "./node_modules/@soldy-ui/core" — ${WHY}`,
+			])
+			expect(standCheck({ '@soldy-ui/*': ['./node_modules/@soldy-ui/*'] })).toEqual([
+				`paths "@soldy-ui/*" → "./node_modules/@soldy-ui/*" → "./node_modules/@soldy-ui/core" — ${WHY}`,
+			])
+		})
 	})
 
 	// Без пропавшего звена сторож судил бы неполные опции
