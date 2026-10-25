@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { Elevate, ResolvedSlot, createRootProps, relaySlot, rootTag } from '../../adapter'
+import { Elevate, ResolvedSlot, Root, createRootProps, relaySlot } from '../../adapter'
 import { For, Show } from '../../adapter/runtime/flow'
 import { RadioGroupItem } from './item'
 import { setupRadioGroup } from './setup.component'
@@ -18,7 +17,7 @@ export function RadioGroup(props: RadioGroupProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					<ResolvedSlot
 						content={props.children}
@@ -33,7 +32,7 @@ export function RadioGroup(props: RadioGroupProps): JSX.Element {
 						}
 					/>
 				</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

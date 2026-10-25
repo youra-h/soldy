@@ -1,11 +1,10 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	chainHandler,
 	createPartProps,
 	createRootProps,
 	resolveSlot,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
@@ -47,7 +46,7 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<input
 					class="so-radio-group-item__input"
 					type="radio"
@@ -62,7 +61,7 @@ export function RadioGroupItem(props: RadioGroupItemProps): JSX.Element {
 					<span class="so-radio-group-item__indicator" />
 				</span>
 				<span class="so-radio-group-item__text">{label()}</span>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

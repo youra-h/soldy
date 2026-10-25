@@ -1,11 +1,10 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	chainHandler,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
@@ -46,7 +45,7 @@ export function MenuItem(props: MenuItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<ItemRow
 					embedded="menu.row"
 					tag="div"
@@ -61,7 +60,7 @@ export function MenuItem(props: MenuItemProps): JSX.Element {
 				>
 					{content() ?? state.text}
 				</ItemRow>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

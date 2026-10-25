@@ -2,11 +2,11 @@ import type { Component, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import type { TToastsItemType } from '@soldy-ui/core'
 import {
+	Root,
 	createRootProps,
 	isToastRender,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	type TRoleIconProps,
 	type TToastRender,
 } from '../../../adapter'
@@ -69,7 +69,7 @@ export function ToastsItem(props: ToastsItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<div class="so-toasts-item__card">
 					<span class="so-toasts-item__icon" aria-hidden="true">
 						<Show
@@ -102,7 +102,7 @@ export function ToastsItem(props: ToastsItemProps): JSX.Element {
 						{closeIcon() ?? <Icon embedded="toasts.close-icon" tag={CLOSE} />}
 					</Button>
 				</div>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

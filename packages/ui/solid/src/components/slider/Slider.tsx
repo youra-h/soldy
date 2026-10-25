@@ -1,13 +1,12 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { TSliderShownMark, TSliderThumb } from '@soldy-ui/core'
 import {
 	Elevate,
+	Root,
 	createPartProps,
 	createRootProps,
 	fieldText,
 	resolveSlot,
-	rootTag,
 } from '../../adapter'
 import { Index, Show } from '../../adapter/runtime/flow'
 import { setupSlider } from './setup.component'
@@ -81,7 +80,7 @@ export function Slider(props: SliderProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>
 					{/* Дорожка — ход центров ручек, её мерит плагин; рельс рисует тема. */}
 					<span class="so-slider__track">
@@ -94,7 +93,7 @@ export function Slider(props: SliderProps): JSX.Element {
 						<Index each={state.thumbs}>{thumb}</Index>
 					</span>
 				</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

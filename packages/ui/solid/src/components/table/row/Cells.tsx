@@ -1,6 +1,13 @@
 import type { Accessor, JSX } from 'solid-js'
 import type { ITableRow, TAriaAttributes, TTableCell } from '@soldy-ui/core'
-import { KeyedFor, createPartProps, liveScope, renderSlot } from '../../../adapter'
+import {
+	KeyedFor,
+	createPartNode,
+	createPartNodes,
+	liveScope,
+	renderSlot,
+	type TPartNodeAttributes,
+} from '../../../adapter'
 import type { TableRowProps } from './base.component'
 
 /** Входы ячеек — то, что строка уже получила, и сама строка для scope слота. */
@@ -15,13 +22,47 @@ type TTableRowCellsProps = {
 	readonly cell: TableRowProps['cell']
 }
 
+/** Свои атрибуты ячейки — заголовка строки и обычной. */
+const ROW_HEADER: TPartNodeAttributes = { class: 'so-table-row__cell', scope: 'row' }
+const CELL: TPartNodeAttributes = { class: 'so-table-row__cell' }
+
+/** Тег — часть ключа: сменился заголовок строки — ячейка новая. */
+function keyOf(cell: TTableCell): string {
+	return `${cell.column.uid}:${cell.rowHeader}`
+}
+
+function tagOf(cell: TTableCell): string {
+	return cell.rowHeader ? 'th' : 'td'
+}
+
+function textOf(cell: TTableCell): string {
+	return cell.text
+}
+
 /** Ячейки строки — внутренняя часть `Table.Row` без дескриптора и контекста, не экспортируется. */
 export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
-	const cellAria = createPartProps(() => props.cellAria)
+	/** Три набора ячейки — одним объектом; в окне гидратации их держат узлы. */
+	const attributesOf = (cell: TTableCell): TPartNodeAttributes => ({
+		...(cell.rowHeader ? ROW_HEADER : CELL),
+		...cell.dataset,
+		...props.cellAria,
+		...cell.aria,
+	})
+
+	// Без слота ячейка — значение текстом: узлы всех ячеек строки — одно мемо
+	if (props.cell === undefined) {
+		return createPartNodes({
+			each: () => props.cells,
+			by: keyOf,
+			tag: tagOf,
+			attributes: attributesOf,
+			text: textOf,
+		})
+	}
 
 	/**
-	 * Содержимое ячейки: слот, а без него и на месте пустого — значение текстом.
-	 * Живой scope — только для функции слота: ячеек тысячи, и ячейке без слота он ни к чему.
+	 * Содержимое ячейки со слотом: слот, а на месте пустого — значение текстом.
+	 * Живой scope — только для функции слота.
 	 */
 	const content = (cell: Accessor<TTableCell>): JSX.Element => {
 		const slot = props.cell
@@ -33,24 +74,15 @@ export function TableRowCells(props: TTableRowCellsProps): JSX.Element {
 		return renderSlot(slot, scope) ?? cell().text
 	}
 
-	/** Ячейка колонки — заголовок строки или обычная. */
-	const drawCell = (cell: Accessor<TTableCell>) => {
-		const attrs = createPartProps(() => ({ ...cell().dataset, ...cellAria(), ...cell().aria }))
-
-		// Тег — часть ключа петли: сменился заголовок строки — ячейка новая
-		return cell().rowHeader ? (
-			<th class="so-table-row__cell" scope="row" {...attrs()}>
-				{content(cell)}
-			</th>
-		) : (
-			<td class="so-table-row__cell" {...attrs()}>
-				{content(cell)}
-			</td>
+	const drawCell = (cell: Accessor<TTableCell>): JSX.Element =>
+		createPartNode(
+			tagOf(cell()),
+			() => attributesOf(cell()),
+			() => content(cell),
 		)
-	}
 
 	return (
-		<KeyedFor each={props.cells} by={(cell) => `${cell.column.uid}:${cell.rowHeader}`}>
+		<KeyedFor each={props.cells} by={keyOf}>
 			{drawCell}
 		</KeyedFor>
 	)

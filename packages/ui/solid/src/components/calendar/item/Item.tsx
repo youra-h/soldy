@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, resolveSlot, rootTag } from '../../../adapter'
+import { Root, createRootProps, resolveSlot } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { setupCalendarItem } from './setup.component'
 import type { CalendarItemProps } from './base.component'
@@ -25,9 +24,9 @@ export function CalendarItem(props: CalendarItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<div class="so-calendar-item__day">{content() ?? state.text}</div>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

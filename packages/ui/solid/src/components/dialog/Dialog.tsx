@@ -1,13 +1,12 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	Teleport,
 	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
@@ -64,10 +63,9 @@ export function Dialog(props: DialogProps): JSX.Element {
 		<Show when={state.rendered}>
 			<Teleport to={state.target}>
 				<div {...backdrop()} />
-				<Dynamic
-					tabindex="-1"
-					{...panel()}
-					component={rootTag(state.tag)}
+				<Root
+					tag={state.tag}
+					attributes={() => ({ tabindex: '-1', ...panel() })}
 					ref={binding.ref}
 				>
 					<h2 class="so-dialog__title" {...titleAria()}>
@@ -106,7 +104,7 @@ export function Dialog(props: DialogProps): JSX.Element {
 					>
 						{closeIcon() ?? <Icon embedded="dialog.close-icon" tag={CLOSE} />}
 					</Button>
-				</Dynamic>
+				</Root>
 			</Teleport>
 		</Show>
 	)

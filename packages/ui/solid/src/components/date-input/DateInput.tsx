@@ -1,14 +1,13 @@
 import type { Accessor, JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import type { TDateInputPart, TDateInputSegment } from '@soldy-ui/core'
 import {
 	Elevate,
 	KeyedFor,
+	Root,
 	createPartProps,
 	createRootProps,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
@@ -146,9 +145,13 @@ export function DateInput(props: DateInputProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic id={state.id} {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root
+				tag={state.tag}
+				attributes={() => ({ id: state.id, ...root() })}
+				ref={binding.ref}
+			>
 				<Elevate layer={binding.layer}>{content()}</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

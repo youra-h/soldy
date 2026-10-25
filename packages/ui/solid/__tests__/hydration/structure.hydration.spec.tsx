@@ -5,9 +5,10 @@
  * ключу текущего окна, а под ним у сервера чужой узел или никакого (`Hydration
  * Mismatch`), снятие же узла у подключённого родителя пропускает. Ветка или
  * петля, пересчитанная в окне, поэтому держит прежнее и меняется после окна:
- * примитивы адаптера `Show`, `For`, `Index` (`src/adapter/runtime/flow.ts`) и
- * `KeyedFor`. Первое значение у них живое: структура после детей читает то,
- * что видел сервер (`list-box.hydration.spec.tsx`).
+ * примитивы адаптера `Show`, `For`, `Index` (`src/adapter/runtime/flow.ts`),
+ * `KeyedFor` и узлы записей `createPartNodes`. Первое значение у них живое:
+ * структура после детей читает то, что видел сервер
+ * (`list-box.hydration.spec.tsx`).
  *
  * Окно бывает поздним: содержимое границы `Suspense`, которое сервер дослал
  * потоком, браузер гидратирует, когда пришли её данные. Вход элемента за
@@ -144,7 +145,7 @@ describe('Toasts · структура в позднем окне', () => {
 })
 
 describe('структура · основное окно', () => {
-	it('Show, For, Index и KeyedFor, чей источник после них сменил сосед: после гидратации — сменившаяся структура', () => {
+	it('Show, For, Index, KeyedFor и узлы записей, чей источник после них сменил сосед: после гидратации — сменившаяся структура', () => {
 		const container = serve(markupOf('structure-probe'))
 		const root = container.firstElementChild
 		const entry = container.querySelector('i')
@@ -160,8 +161,10 @@ describe('структура · основное окно', () => {
 			'for',
 			'index',
 			'keyed',
+			'nodes',
 		])
 		expect([...container.querySelectorAll('b')].map((node) => node.textContent)).toEqual([
+			'entered',
 			'entered',
 			'entered',
 			'entered',

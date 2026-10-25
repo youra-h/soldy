@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	chainHandler,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
@@ -63,7 +62,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Button
 					embedded="tabs.row"
 					type="button"
@@ -92,7 +91,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 						)}
 					</Button>
 				</Show>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	createPartProps,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
@@ -45,7 +44,7 @@ export function Scroller(props: ScrollerProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Button
 					embedded="scroller.prev"
 					type="button"
@@ -77,7 +76,7 @@ export function Scroller(props: ScrollerProps): JSX.Element {
 						<Icon embedded="scroller.next-icon" tag={ARROW} size={state.size} />
 					)}
 				</Button>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

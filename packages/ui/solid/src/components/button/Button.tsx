@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, resolveSlot, rootTag } from '../../adapter'
+import { Root, createRootProps, renderSlot, resolveSlot } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { setupButton } from './setup.component'
 import type { ButtonProps } from './base.component'
@@ -31,11 +30,11 @@ export function renderButton(binding: TButtonBinding, props: ButtonProps): JSX.E
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				{renderSlot(props.leading)}
 				<span class="so-button__text">{content() ?? state.text}</span>
 				{renderSlot(props.trailing)}
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	chainHandler,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../../adapter'
@@ -66,7 +65,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<ItemRow
 					embedded="select.row"
 					tag="span"
@@ -91,7 +90,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 				>
 					{content() ?? state.text}
 				</ItemRow>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

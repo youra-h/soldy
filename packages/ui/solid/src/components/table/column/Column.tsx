@@ -1,12 +1,11 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
+	Root,
 	createPartProps,
 	createRootProps,
 	fieldText,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
@@ -41,7 +40,7 @@ export function TableColumn(props: TableColumnProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<span class="so-table-column__content">
 					<span class="so-table-column__text" {...textAria()}>
 						{caption() ?? state.text}
@@ -75,7 +74,7 @@ export function TableColumn(props: TableColumnProps): JSX.Element {
 						</span>
 					)}
 				</Show>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

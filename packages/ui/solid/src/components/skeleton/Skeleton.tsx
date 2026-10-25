@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, renderSlot, rootTag } from '../../adapter'
+import { Root, createRootProps, renderSlot } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { setupSkeleton } from './setup.component'
 import type { SkeletonProps } from './base.component'
@@ -19,11 +18,11 @@ export function Skeleton(props: SkeletonProps): JSX.Element {
 	}))
 
 	return (
-		<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+		<Root tag={state.tag} attributes={root} ref={binding.ref}>
 			<Show when={state.present}>
 				<div class="so-skeleton__placeholder" aria-hidden="true" />
 			</Show>
 			{renderSlot(props.children)}
-		</Dynamic>
+		</Root>
 	)
 }

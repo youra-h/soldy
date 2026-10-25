@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { Elevate, Teleport, createRootProps, relaySlot, renderSlot, rootTag } from '../../adapter'
+import { Elevate, Root, Teleport, createRootProps, relaySlot, renderSlot } from '../../adapter'
 import { For, Show } from '../../adapter/runtime/flow'
 import { ToastsItem } from './item'
 import { setupToasts } from './setup.component'
@@ -24,7 +23,7 @@ export function Toasts(props: ToastsProps): JSX.Element {
 			{renderSlot(props.children)}
 			<Show when={state.rendered}>
 				<Teleport to={state.target}>
-					<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+					<Root tag={state.tag} attributes={root} ref={binding.ref}>
 						<ol class="so-toasts__list">
 							<For each={state.shown}>
 								{(item) => (
@@ -39,7 +38,7 @@ export function Toasts(props: ToastsProps): JSX.Element {
 								)}
 							</For>
 						</ol>
-					</Dynamic>
+					</Root>
 				</Teleport>
 			</Show>
 		</Elevate>

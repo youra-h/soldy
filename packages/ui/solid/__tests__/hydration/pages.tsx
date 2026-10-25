@@ -24,6 +24,8 @@ import type {
 	TAccordionCollection,
 	TAttributesMap,
 	TListBoxCollection,
+	TTableCollection,
+	TTableColumnSource,
 	TTabsCollection,
 	TTagsCollection,
 } from '@soldy-ui/core'
@@ -35,9 +37,11 @@ import {
 	ListBox,
 	Input,
 	RadioGroup,
+	Table,
 	Tabs,
 	Tags,
 	Toasts,
+	createPartNodes,
 	createPartProps,
 	createRootProps,
 	useToasts,
@@ -149,12 +153,12 @@ export function PartProbe(): JSX.Element {
 }
 
 /** Запись зонда петли по ключу. */
-type TProbeRecord = { readonly key: string; readonly text: string }
+export type TProbeRecord = { readonly key: string; readonly text: string }
 
 /**
  * Структура, чей источник после неё меняет вход соседа, — зонд примитивов
- * адаптера: ветки (`Show`), петель по записи и по месту (`For`, `Index`) и по
- * ключу (`KeyedFor`). Сервер печатает их до входа соседа — пустыми, — и
+ * адаптера: ветки (`Show`), петель по записи и по месту (`For`, `Index`), по
+ * ключу (`KeyedFor`) и узлов записей (`createPartNodes`). Сервер печатает их до входа соседа — пустыми, — и
  * браузер собирает их в той же точке, а вход соседа меняет их источник уже во
  * время гидратации. Примитивы — по пути модуля: в бочку адаптера они не входят.
  */
@@ -162,6 +166,13 @@ export function StructureProbe(): JSX.Element {
 	const [entered, setEntered] = createSignal(false)
 	const texts = (): readonly string[] => (entered() ? ['entered'] : [])
 	const records = (): readonly TProbeRecord[] => texts().map((text) => ({ key: text, text }))
+	const nodes = createPartNodes({
+		each: records,
+		by: (record) => record.key,
+		tag: () => 'b',
+		attributes: () => ({ class: 'nodes' }),
+		text: (record) => record.text,
+	})
 
 	return (
 		<div>
@@ -173,6 +184,7 @@ export function StructureProbe(): JSX.Element {
 			<KeyedFor each={records()} by={(record) => record.key}>
 				{(record) => <b class="keyed">{record().text}</b>}
 			</KeyedFor>
+			{nodes}
 			<ProbeEntry enter={() => setEntered(true)} />
 		</div>
 	)
@@ -216,6 +228,57 @@ export function ListBoxWithEmpty(): JSX.Element {
 		<ListBox empty={<span class="empty">Пусто</span>}>
 			<ListBox.Item value="a" text="A" />
 		</ListBox>
+	)
+}
+
+/** Записи зонда узлов записей — у сервера и в начале гидратации. */
+export const PART_NODES_RECORDS: readonly TProbeRecord[] = [
+	{ key: 'a', text: 'A' },
+	{ key: 'b', text: 'B' },
+]
+
+/** Записи снаружи — только у гидратации: по ним тест меняет список после неё. */
+export type TPartNodesProbeProps = { readonly records?: Accessor<readonly TProbeRecord[]> }
+
+/** Узлы записей (`createPartNodes`) — узел на запись, атрибут и текст от записи. */
+export function PartNodesProbe(props: TPartNodesProbeProps): JSX.Element {
+	const nodes = createPartNodes({
+		each: () => props.records?.() ?? PART_NODES_RECORDS,
+		by: (record) => record.key,
+		tag: () => 'li',
+		attributes: (record) => ({ 'data-key': record.key }),
+		text: (record) => record.text,
+	})
+
+	return <ul>{nodes}</ul>
+}
+
+export type TTablePageProps = { readonly engine?: TTableCollection }
+
+/** Записи таблицы страницы: ключ — `id`. */
+export const TABLE_RECORDS = [
+	{ id: 1, name: 'Анна', age: 30 },
+	{ id: 2, name: 'Борис', age: 41 },
+]
+
+const TABLE_COLUMNS: TTableColumnSource[] = [
+	{ field: 'name', text: 'Имя', rowHeader: true },
+	{ field: 'age', text: 'Возраст', align: 'end' },
+]
+
+/**
+ * Таблица с колонкой выбора: ячейки строк — узлы записей
+ * (`createPartNodes`), ячейка выбора и поле флажка — узлы частей
+ * (`createPartNode`), корни строк и флажков — `Root`.
+ */
+export function TableSelectable(props: TTablePageProps): JSX.Element {
+	return (
+		<Table
+			engine={props.engine}
+			items={TABLE_RECORDS.map((data) => ({ data }))}
+			columns={TABLE_COLUMNS}
+			mode="multiple"
+		/>
 	)
 }
 

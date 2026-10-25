@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { createRootProps, rootTag } from '../../adapter'
+import { Root, createRootProps } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { setupProgressLinear } from './setup.component'
 import type { ProgressLinearProps } from './base.component'
@@ -18,10 +17,10 @@ export function ProgressLinear(props: ProgressLinearProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				{/* Бегущий отрезок тема рисует псевдоэлементом корня — своего узла у него нет. */}
 				<span class="so-progress-linear__range" />
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

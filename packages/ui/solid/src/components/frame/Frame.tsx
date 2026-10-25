@@ -1,6 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import { Teleport, createRootProps, renderSlot, rootTag } from '../../adapter'
+import { Root, Teleport, createRootProps, renderSlot } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { setupFrame } from './setup.component'
 import type { FrameProps } from './base.component'
@@ -18,9 +17,9 @@ export function Frame(props: FrameProps): JSX.Element {
 	return (
 		<Show when={state.rendered}>
 			<Teleport to={state.target} disabled={state.contained}>
-				<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+				<Root tag={state.tag} attributes={root} ref={binding.ref}>
 					{renderSlot(props.children)}
-				</Dynamic>
+				</Root>
 			</Teleport>
 		</Show>
 	)

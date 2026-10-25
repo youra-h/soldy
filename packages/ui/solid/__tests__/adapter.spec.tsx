@@ -10,7 +10,8 @@
  * - Привязанный корень разметка читает аксессором (`rootElement`): узел, снятие
  *   и смена тега доходят до читающих.
  * - Состояние связки неглубокое (`createShallowState`): значение — то, что
- *   отдало ядро, без прокси стора на вложенных объектах, сигнал — на свойство.
+ *   отдало ядро, без прокси стора на вложенных объектах, сигнал — на
+ *   прочитанное свойство.
  * - Состояние двух контекстов коллекции — один вид (`joinState`), и он идёт за
  *   обоими состояниями, в том числе за свойством, которого к сборке не было.
  */
@@ -270,6 +271,20 @@ describe('состояние связки', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
+	it('записанное до первого чтения читается записанным, и за ним идут', () => {
+		const [state, write] = createShallowState()
+
+		// Подписка связки пишет все свойства, а сигнал заводит первое чтение
+		write('text', 'a')
+		write('text', 'b')
+
+		const seen = watch('text', state)
+
+		write('text', 'c')
+
+		expect(seen).toEqual(['b', 'c'])
+	})
+
 	it('свойство со значением undefined — незаданное', () => {
 		const [state, write] = createShallowState()
 
@@ -287,14 +302,32 @@ describe('состояние связки', () => {
  * Вид двух состояний — своего и фасада. Свойства, которое ещё не задано, в
  * состоянии нет (`in` его не видит), и вид геттерами по ключам, собранный при
  * сборке, не увидел бы свойства, которое появилось позже (`closable` таба, имя
- * из `aria_label`).
+ * из `aria_label`). Подписка связки отдаёт каждое свойство сразу, поэтому
+ * свойство, которого у верхнего нет вовсе, вид читает снизу и сигнала наверху
+ * не заводит.
  */
 describe('joinState', () => {
+	it('свойство, которого у верхнего нет вовсе, вид читает снизу', () => {
+		const [below, writeBelow] = createShallowState()
+		const [above, writeAbove] = createShallowState()
+
+		writeBelow('own', 'a')
+		writeAbove('facade', 'b')
+
+		const seen = watch('own', joinState(below, above))
+
+		writeBelow('own', 'c')
+
+		expect(seen).toEqual(['a', 'c'])
+	})
+
 	it('свойство, которого к сборке не было, вид видит, когда оно появилось', () => {
 		const [own, writeOwn] = createShallowState()
 		const [facade, writeFacade] = createShallowState()
 
 		writeOwn('own', 'a')
+		// Подписка связки отдаёт каждое свойство сразу, незаданное — тоже
+		writeFacade('facade', undefined)
 
 		const seen = watch('facade', joinState(own, facade))
 
@@ -308,6 +341,7 @@ describe('joinState', () => {
 		const [above, writeAbove] = createShallowState()
 
 		writeBelow('shared', 'снизу')
+		writeAbove('shared', undefined)
 
 		const seen = watch('shared', joinState(below, above))
 

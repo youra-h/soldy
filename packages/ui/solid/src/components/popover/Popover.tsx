@@ -1,13 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import {
-	createRootProps,
-	liveScope,
-	renderSlot,
-	resolveSlot,
-	roleIcon,
-	rootTag,
-} from '../../adapter'
+import { Root, createRootProps, liveScope, renderSlot, resolveSlot, roleIcon } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Frame } from '../frame'
@@ -47,7 +39,7 @@ export function Popover(props: PopoverProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				{renderSlot(props.trigger, trigger)}
 				<Frame
 					embedded="popover.frame"
@@ -81,7 +73,7 @@ export function Popover(props: PopoverProps): JSX.Element {
 						{closeIcon() ?? <Icon embedded="popover.close-icon" tag={CLOSE} />}
 					</Button>
 				</Frame>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }

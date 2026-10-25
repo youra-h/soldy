@@ -1,13 +1,12 @@
 import type { JSX } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
 import {
 	Elevate,
+	Root,
 	createPartProps,
 	createRootProps,
 	fieldText,
 	resolveSlot,
 	roleIcon,
-	rootTag,
 	toControlAttrs,
 	toRootForward,
 } from '../../adapter'
@@ -116,9 +115,9 @@ export function Input(props: InputProps): JSX.Element {
 
 	return (
 		<Show when={state.rendered}>
-			<Dynamic {...root()} component={rootTag(state.tag)} ref={binding.ref}>
+			<Root tag={state.tag} attributes={root} ref={binding.ref}>
 				<Elevate layer={binding.layer}>{content()}</Elevate>
-			</Dynamic>
+			</Root>
 		</Show>
 	)
 }
