@@ -1,5 +1,19 @@
 # @soldy-ui/solid
 
+## 0.3.0-alpha.4
+
+### Patch Changes
+
+- 986c3b9: Table на Solid: корень компонента — Root адаптера вместо Dynamic, ячейки строки без слота — одно мемо на строку (createPartNodes), поле флажка и ячейка выбора — createPartNode без спреда, сигнал свойства связки — по первому чтению; память таблицы на 5000 строк — 460 → 229 МБ, рендер — 1,76 → 1,51 с
+- 7db01d2: Table на Solid: состояние связки — сигнал на свойство вместо глубокого стора, ячейка — без Dynamic; память таблицы на 5000 строк — 503 МБ вместо 1,28 ГБ, рендер — 1,8 с вместо 3,4 с
+- Updated dependencies [6f96bae]
+- Updated dependencies [8eb76c2]
+- Updated dependencies [1c703ad]
+- Updated dependencies [8bb9bdc]
+  - @soldy-ui/core@0.3.0-alpha.4
+  - @soldy-ui/setup@0.3.0-alpha.4
+  - @soldy-ui/plugins@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes

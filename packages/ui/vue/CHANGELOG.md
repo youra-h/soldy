@@ -1,5 +1,18 @@
 # @soldy-ui/vue
 
+## 0.3.0-alpha.4
+
+### Patch Changes
+
+- 8eb76c2: Обмен с ядром держит меньше памяти на компонент (общий слой setup, линии и входы без объекта на свойство).
+- Updated dependencies [6f96bae]
+- Updated dependencies [8eb76c2]
+- Updated dependencies [1c703ad]
+- Updated dependencies [8bb9bdc]
+  - @soldy-ui/core@0.3.0-alpha.4
+  - @soldy-ui/setup@0.3.0-alpha.4
+  - @soldy-ui/plugins@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # @soldy-ui/icons-material
 
+## 0.3.0-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [6f96bae]
+- Updated dependencies [8eb76c2]
+- Updated dependencies [1c703ad]
+  - @soldy-ui/setup@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes

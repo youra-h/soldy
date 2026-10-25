@@ -1,5 +1,19 @@
 # @soldy-ui/webc
 
+## 0.3.0-alpha.4
+
+### Patch Changes
+
+- 229de1a: Таблица на Web Components держит на 11% меньше памяти: раскладка атрибутов на узле хранит записанное объектами вместо Map, а сведённое состояние элемента коллекции — один Proxy вместо геттера на каждое имя.
+- 80f7f2d: Таблица на Web Components больше не падает с переполнением стека на тысячах строк: очередь ожидания подключения разбирается одним циклом, а не вложенно на каждый ждущий элемент.
+- Updated dependencies [6f96bae]
+- Updated dependencies [8eb76c2]
+- Updated dependencies [1c703ad]
+- Updated dependencies [8bb9bdc]
+  - @soldy-ui/core@0.3.0-alpha.4
+  - @soldy-ui/setup@0.3.0-alpha.4
+  - @soldy-ui/plugins@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes

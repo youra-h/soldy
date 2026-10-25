@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/webc",
-  "version": "0.3.0-alpha.3",
+  "version": "0.3.0-alpha.4",
   "description": "Адаптер Web Components: Custom Elements на headless-моделях ядра",
   "keywords": [
     "soldy",
@@ -41,13 +41,13 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.3",
-    "@soldy-ui/plugins": "0.3.0-alpha.3",
-    "@soldy-ui/setup": "0.3.0-alpha.3",
+    "@soldy-ui/core": "0.3.0-alpha.4",
+    "@soldy-ui/plugins": "0.3.0-alpha.4",
+    "@soldy-ui/setup": "0.3.0-alpha.4",
     "@ungap/custom-elements": "^1.3.0"
   },
   "devDependencies": {
-    "@soldy-ui/icons-material": "0.3.0-alpha.3",
-    "@soldy-ui/theme-oren": "0.3.0-alpha.3"
+    "@soldy-ui/icons-material": "0.3.0-alpha.4",
+    "@soldy-ui/theme-oren": "0.3.0-alpha.4"
   }
 }

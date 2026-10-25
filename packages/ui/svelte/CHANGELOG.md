@@ -1,5 +1,18 @@
 # @soldy-ui/svelte
 
+## 0.3.0-alpha.4
+
+### Patch Changes
+
+- 4baad0f: Table на Svelte держит на 40% меньше памяти и быстрее заменяет данные: состояние связки — сырые руны вместо глубокого прокси, ветка «слот или текст» у ячеек — одна на строку
+- Updated dependencies [6f96bae]
+- Updated dependencies [8eb76c2]
+- Updated dependencies [1c703ad]
+- Updated dependencies [8bb9bdc]
+  - @soldy-ui/core@0.3.0-alpha.4
+  - @soldy-ui/setup@0.3.0-alpha.4
+  - @soldy-ui/plugins@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes

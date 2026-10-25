@@ -1,5 +1,21 @@
 # @soldy-ui/setup
 
+## 0.3.0-alpha.4
+
+### Minor Changes
+
+- 6f96bae: Table: `resizable` и `reorderable` таблицы — значение колонок без своего, своё значение колонки сильнее. Ломающее: по умолчанию `resizable` и `reorderable` колонки — `undefined` («как у таблицы»), а не `false`, и геттер колонки отдаёт итог, а `change:resizable` и `change:reorderable` колонки приходят и от смены у таблицы. Обновиться: разметку менять не нужно — у таблицы по умолчанию их тоже нет; своё значение колонки читается из `getProps()`.
+- 8eb76c2: Обмен адаптера держит на строку таблицы около 5,8 КБ меньше памяти на любом адаптере: линии свойств общие у всех монтирований типа, состояние и входы — списки значений, участники сборки не живут после неё. Что сломалось для своего адаптера: `TLine` берёт владельца из списка `exchange.owners` (`line.read(owners)`, место — `line.member`); вход `TInput` и итерация `exchange.inputs` убраны — значения входов для слежения отдаёт `inputs.pick(props)`, запись — `inputs.full(props)`; `state.subscribe` и `state.getSnapshot` — методы, без `this` их надо привязать.
+- 1c703ad: Шина ядра: `TEvented.listen` больше не возвращает функцию отписки — слушателя снимает новый метод `unlisten(listener)` по ссылке, как `off` снимает `on`. Как обновиться: держите слушателя в переменной и вместо вызова отписки зовите `events.unlisten(listener)`. Обмен адаптера снимает слушателей шин так же и держит на строке таблицы около 0,7 КБ меньше.
+
+### Patch Changes
+
+- Updated dependencies [6f96bae]
+- Updated dependencies [1c703ad]
+- Updated dependencies [8bb9bdc]
+  - @soldy-ui/core@0.3.0-alpha.4
+  - @soldy-ui/plugins@0.3.0-alpha.4
+
 ## 0.3.0-alpha.3
 
 ### Minor Changes
