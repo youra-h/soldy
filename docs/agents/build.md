@@ -72,14 +72,19 @@ changeset по нему:
 интерактивные вопросы:
 
 ```bash
-npm run changeset -- --patch @soldy-ui/core,@soldy-ui/setup -m "Что изменилось для потребителя"
-npm run changeset -- --minor @soldy-ui/vue -m "Что сломалось и как обновиться"
+npm run changeset -- --patch @soldy-ui/core,@soldy-ui/setup -m "Select: the panel closes on Escape"
+npm run changeset -- --minor @soldy-ui/vue -m "Tabs: prop \`closeable\` renamed to \`closable\` — rename it in your templates"
 npm run changeset -- --empty
 ```
 
-Описание попадает в `CHANGELOG.md` пакета как есть. Проверка CI локально —
-`npx changeset status --since=origin/main`; новый changeset она видит только
-после `git add`.
+Описание попадает в `CHANGELOG.md` пакета как есть. **`CHANGELOG.md` пишется
+по-английски** — его читают потребители из любой страны (решение владельца,
+2026-10-26). Поэтому текст каждого changeset'а, пустого тоже, — на английском;
+прежние разделы `CHANGELOG.md` на русском остаются как выпущены. Сторож —
+`tools/changeset-language/check.mjs`, шаг «Changeset на английском» задачи CI
+`changeset`: кириллица в ждущем выпуска `.changeset/*.md` роняет PR. Проверка
+CI локально — `npx changeset status --since=origin/main` (новый changeset она
+видит только после `git add`) и `node tools/changeset-language/check.mjs`.
 
 **До `1.0` версия несёт суффикс `alpha`.** Библиотека не готова, и `0.2.0`,
 выпущенная без суффикса, читалась как готовая. Поэтому changesets стоит в

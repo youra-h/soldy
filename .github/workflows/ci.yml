@@ -347,3 +347,8 @@ jobs:
       # Пакет изменён, а changeset'а в PR нет — код 1. Пустой changeset проходит.
       - name: Changeset
         run: npx changeset status --since=origin/main
+
+      # Текст changeset'а уходит в CHANGELOG.md как есть, а CHANGELOG пишется
+      # по-английски (docs/agents/build.md, «Версии пакетов»).
+      - name: Changeset на английском
+        run: node tools/changeset-language/check.mjs

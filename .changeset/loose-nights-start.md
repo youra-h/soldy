@@ -1,4 +1,4 @@
 ---
 ---
 
-Ссылки на журналы замеров: benchmarks разложен по папкам замеров
+Links to benchmark logs: benchmarks split into per-benchmark folders
