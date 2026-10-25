@@ -5,6 +5,9 @@
 
 let depth = 0
 
+/** Разбор очереди идёт: подключение из неё очередь не разбирает — его пришедшее заберёт тот же цикл. */
+let draining = false
+
 const waiting: (() => void)[] = []
 
 export function isConnecting(): boolean {
@@ -20,12 +23,23 @@ export function connecting(run: () => void): void {
 	} finally {
 		depth -= 1
 
-		if (depth === 0) runAll(drain())
+		if (depth === 0 && !draining) drainAll()
 	}
 }
 
 export function wait(resume: () => void): void {
 	waiting.push(resume)
+}
+
+/** Один разбор на всё подключение: вложенный разбор растил бы стек на каждый ждущий элемент. */
+function drainAll(): void {
+	draining = true
+
+	try {
+		runAll(drain())
+	} finally {
+		draining = false
+	}
 }
 
 function* drain(): Generator<() => void> {
