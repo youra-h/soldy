@@ -291,6 +291,70 @@ describe('Tabs со своим id панели · сервер и гидрата
 	})
 })
 
+/**
+ * Panels with the `default` template: the server draws the template of the
+ * active panel only, and hydration takes its nodes. The inactive panel has
+ * created nothing, and the choice of its tab draws its template in the browser.
+ */
+describe('Tabs с шаблоном панели · сервер и гидратация', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+		leavePage()
+	})
+
+	@Component({
+		selector: 'app-root',
+		standalone: true,
+		imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent, SlotDirective],
+		template: `<div so-tabs>
+			<div so-tabs-item value="a" text="A" active></div>
+			<div so-tabs-item value="b" text="B"></div>
+			<div so-tabs-content slot="content" value="a">
+				<ng-template slot="default"><b class="so-test-content">Панель A</b></ng-template>
+			</div>
+			<div so-tabs-content slot="content" value="b">
+				<ng-template slot="default"><b class="so-test-content">Панель B</b></ng-template>
+			</div>
+		</div>`,
+	})
+	class TemplatePage {}
+
+	it('у сервера — шаблон активной панели, неактивная — скрытый элемент без содержимого', async () => {
+		const page = await serverPage(TemplatePage)
+
+		expect(shownPanels(page).map((panel) => panel.textContent)).toEqual(['Панель A'])
+		expect(all(page, '.so-test-content').map((node) => node.textContent)).toEqual(['Панель A'])
+	})
+
+	it('гидратация берёт узлы шаблона, ошибок нет; выбор таба рисует шаблон его панели', async () => {
+		const error = vi.spyOn(console, 'error')
+		const warn = vi.spyOn(console, 'warn')
+
+		loadPage(await renderOnServer(TemplatePage))
+
+		const [content] = all(document, '.so-test-content')
+		const app = await hydrate(TemplatePage)
+
+		await app.whenStable()
+
+		expect(all(document, '.so-test-content')).toEqual([content])
+		expect(error).not.toHaveBeenCalled()
+		expect(warn).not.toHaveBeenCalled()
+
+		const tab = all(document, '[role="tab"]')[1]
+
+		if (!(tab instanceof HTMLElement)) throw new Error('таба B нет')
+
+		tab.click()
+		await app.whenStable()
+
+		expect(shownPanels(document).map((panel) => panel.textContent)).toEqual(['Панель B'])
+		expect(all(document, '.so-test-content').map((node) => node.textContent)).toEqual([
+			'Панель B',
+		])
+	})
+})
+
 describe('Accordion · серверный рендер', () => {
 	@Component({
 		selector: 'app-root',

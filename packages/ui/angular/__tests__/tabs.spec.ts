@@ -21,18 +21,20 @@
  * `TActionPlugin`, он не доходит.
  */
 
-import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
+import { describe, it, expect, expectTypeOf, vi, afterEach, beforeEach } from 'vitest'
 import { Component, signal, type EventEmitter } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
-import type { TTabsOrientation } from '@soldy-ui/core'
+import { TCheckBox, type TTabsOrientation } from '@soldy-ui/core'
 import { TElementPlugin } from '@soldy-ui/plugins'
 import {
 	SlotDirective,
+	TCheckBoxComponent,
 	TPopoverComponent,
 	TTabsComponent,
 	TTabsContentComponent,
 	TTabsItemComponent,
 } from '@soldy-ui/angular'
+import { countAssemblies, type TAssemblyProbe } from './assemblies'
 import { announced } from './element-plugin'
 import { find, findIn, mountHost, nextFrame } from './mount'
 
@@ -305,6 +307,184 @@ describe('показ панели по активному табу', () => {
 		await nextFrame()
 
 		expect(warn).not.toHaveBeenCalled()
+	})
+})
+
+/** The `default` template of the second panel: a checkbox, which the probe counts. */
+@Component({
+	selector: 'probe-tabs-template',
+	standalone: true,
+	imports: [
+		TTabsComponent,
+		TTabsItemComponent,
+		TTabsContentComponent,
+		TCheckBoxComponent,
+		SlotDirective,
+	],
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-item value="b" text="Second"></div>
+		<div so-tabs-content slot="content" value="a">Панель A</div>
+		<div so-tabs-content slot="content" value="b">
+			<ng-template slot="default">
+				<span so-check-box class="so-test-check"></span>
+			</ng-template>
+		</div>
+	</div>`,
+})
+class TemplateHost {}
+
+/** The same checkbox written as is: a projection. */
+@Component({
+	selector: 'probe-tabs-projection',
+	standalone: true,
+	imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent, TCheckBoxComponent],
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-item value="b" text="Second"></div>
+		<div so-tabs-content slot="content" value="a">Панель A</div>
+		<div so-tabs-content slot="content" value="b">
+			<span so-check-box class="so-test-check"></span>
+		</div>
+	</div>`,
+})
+class ProjectionHost {}
+
+/** The `default` template next to a projection in the active panel. */
+@Component({
+	selector: 'probe-tabs-template-projection',
+	standalone: true,
+	imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent, SlotDirective],
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-content slot="content" value="a">
+			<ng-template slot="default"><b class="so-test-template">Шаблон</b></ng-template>
+			<b class="so-test-projected">Проекция</b>
+		</div>
+	</div>`,
+})
+class TemplateProjectionHost {}
+
+/** An open popover in the `default` template of the first panel. */
+@Component({
+	selector: 'probe-tabs-popover-template',
+	standalone: true,
+	imports: [
+		TTabsComponent,
+		TTabsItemComponent,
+		TTabsContentComponent,
+		TPopoverComponent,
+		SlotDirective,
+	],
+	template: `<div so-tabs>
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-item value="b" text="Second"></div>
+		<div so-tabs-content slot="content" value="a">
+			<ng-template slot="default">
+				<span so-popover open><button class="so-test-inside">В поповере</button></span>
+			</ng-template>
+		</div>
+		<div so-tabs-content slot="content" value="b">Панель B</div>
+	</div>`,
+})
+class PopoverTemplateHost {}
+
+/**
+ * The `default` template of a panel is created by the panel itself, under its
+ * `@if (active)`: an inactive panel creates nothing, and leaving the tab
+ * removes the content, as the `v-if` of a panel does in Vue. A projection
+ * Angular creates right away, in the template that wrote it, and `@if` only
+ * keeps it out of the document. Whether a component is assembled, a probe
+ * plugin on its class sees (`assemblies.ts`): `DebugElement` does not see a
+ * projection that is not drawn.
+ */
+describe('шаблон default панели', () => {
+	/** Assemblies of the checkboxes: the page has no other checkbox. */
+	let probe: TAssemblyProbe
+
+	beforeEach(() => {
+		probe = countAssemblies(TCheckBox)
+	})
+
+	afterEach(() => probe.dispose())
+
+	/** The checkbox of the content in the document; none — the test fails here. */
+	const check = () => find(document, '.so-test-check', HTMLElement)
+
+	it('неактивная панель ничего не собирает, выбор таба — собирает, уход — снимает', () => {
+		const fixture = mountHost(TemplateHost)
+
+		expect(probe.counts).toEqual({ install: 0, destroy: 0 })
+		expect(document.querySelector('.so-test-check')).toBeNull()
+
+		click(fixture, tab('Second'))
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(panel().contains(check())).toBe(true)
+
+		const box = check()
+
+		click(fixture, tab('First'))
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 1 })
+		expect(document.querySelector('.so-test-check')).toBeNull()
+		expect(panel().textContent).toBe('Панель A')
+
+		click(fixture, tab('Second'))
+
+		// Back to the tab: a new assembly in a new node
+		expect(probe.counts).toEqual({ install: 2, destroy: 1 })
+		expect(panel().contains(check())).toBe(true)
+		expect(check()).not.toBe(box)
+	})
+
+	it('проекция собрана сразу, а уход с таба её не снимает', () => {
+		const fixture = mountHost(ProjectionHost)
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(document.querySelector('.so-test-check')).toBeNull()
+
+		click(fixture, tab('Second'))
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(panel().contains(check())).toBe(true)
+
+		click(fixture, tab('First'))
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(document.querySelector('.so-test-check')).toBeNull()
+	})
+
+	it('шаблон рядом с проекцией — рисуется шаблон', () => {
+		mountHost(TemplateProjectionHost)
+
+		expect(panel().querySelector('.so-test-template')?.textContent).toBe('Шаблон')
+		expect(document.querySelector('.so-test-projected')).toBeNull()
+	})
+
+	/** A popover of the template goes with it, its panel in `body` too. */
+	it('поповер в шаблоне: другой таб снимает его панель из body, назад — новая панель', async () => {
+		const fixture = mountHost(PopoverTemplateHost)
+
+		await nextFrame()
+
+		const opened = find(document, '.so-popover__panel', HTMLElement)
+
+		expect(opened.parentElement).toBe(document.body)
+
+		click(fixture, tab('Second'))
+
+		expect(opened.isConnected).toBe(false)
+		expect(document.querySelector('.so-popover__panel')).toBeNull()
+
+		click(fixture, tab('First'))
+		await nextFrame()
+
+		const reopened = find(document, '.so-popover__panel', HTMLElement)
+
+		expect(reopened).not.toBe(opened)
+		expect(reopened.parentElement).toBe(document.body)
+		expect(reopened.style.display).toBe('')
 	})
 })
 

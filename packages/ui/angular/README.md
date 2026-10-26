@@ -224,6 +224,24 @@ template given to the owner renders in every item in place of its own. A tab pan
 active stays in place hidden, its content not inserted; a markup tab closed with its close button
 is hidden the same way — the element is yours.
 
+A tab panel takes its content as is or as a template, `<ng-template slot="default">`, and a given
+template is drawn instead. Write heavy content — a table, a calendar, a form — as a template: the
+panel creates it when its tab is chosen and removes it when the tab is left, so an inactive panel
+holds nothing. Content written as is Angular creates right away, with the template that wrote it:
+the components of every panel live as long as the tabs do, an inactive panel only keeps them out of
+the document.
+
+```ts
+template: `<div so-tabs>
+  <div so-tabs-item value="a" text="General" active></div>
+  <div so-tabs-item value="b" text="History"></div>
+  <div so-tabs-content slot="content" value="a">…</div>
+  <div so-tabs-content slot="content" value="b">
+    <ng-template slot="default"><div so-table [items]="rows" [columns]="columns"></div></ng-template>
+  </div>
+</div>`
+```
+
 A tag set, `<div so-tags>`, is the row itself: your markup stays on it, next to its role. Tags are
 `<div so-tags-item>` parts or come from `items`; with `mode` they become selectable, and with
 `closable` every tag gets a close button. To lay the shown tags out yourself — in a scroller strip,
