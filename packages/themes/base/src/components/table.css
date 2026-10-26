@@ -117,7 +117,15 @@
 
 	--so-table-font-size-sm: 0.75rem;
 	--so-table-line-height-sm: calc(1 / 0.75);
-	--so-table-font-size-normal: 0.875rem;
+	/* A `normal` table is one step smaller than the font of its place, as the
+	 * `normal` Button takes that font itself: `em` resolves where the variable is
+	 * read — on the root `table`, against its viewport, that is the place. At a
+	 * 16px place that is 14px, at a 14px place 12.25px; a fixed `0.875rem`
+	 * equalled a `normal` Button at a 14px place. The place of a nested table is
+	 * its cell, so a `normal` one is one step smaller than the cell, as a
+	 * `normal` Button in that cell takes the cell's font. The other steps stay
+	 * absolute, as those of Button do. */
+	--so-table-font-size-normal: 0.875em;
 	--so-table-line-height-normal: calc(1.25 / 0.875);
 	--so-table-font-size-lg: 1rem;
 	--so-table-line-height-lg: 1.5;
