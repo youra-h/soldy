@@ -68,8 +68,8 @@ async function scrollThrough(engine: TWindowed, content: () => VNode): Promise<n
 	host.remove()
 	// The selector engine of jsdom keeps the node of its last query
 	// (`closest`, `querySelector`), and through its `__vnode` the whole unmounted
-	// tree: an open panel's plugins query the panel's nodes. A query on the
-	// document lets it go — a browser keeps no such node
+	// tree: the plugins of a Select query its nodes and its panel's. A query on
+	// the document lets it go — a browser keeps no such node
 	document.querySelector('body')
 
 	return alive
