@@ -6,41 +6,44 @@ import { parseArgs } from 'node:util'
 import { serve } from './serve.mjs'
 
 /**
- * Прогон страниц компонентов: вес страницы и утечки по циклам (см.
+ * Component page run: page weight and leaks over cycles (see
  * benchmarks/pages/README.md).
  *
- *   npm run bench                                  # все фреймворки, все страницы
+ *   npm run bench                                  # all frameworks, all pages
  *   npm run bench -- --fw vue,react --pages button,select --cycles 10
  *
- * Фреймворк — свой браузер и своя страница. Сначала прогрев — каждая страница
- * по разу, без замера, — потом проходы:
+ * Each framework gets its own browser and its own page. First the warm-up —
+ * every component page once, then the run's other pages, without measuring,
+ * whatever `--pages` lists — then the passes:
  *
- * 1. **Страницы по одной.** Страница компонента — N копий одним корнем —
- *    монтируется, сценарий действует на первые `act` копий, язык меняется
- *    туда и обратно, страница снимается; так `warm + cycles` раз подряд. После
- *    каждого монтирования и каждого снятия — сборка мусора и замер. Первые
- *    `warm` циклов — разогрев (ленивые определения компонентов, кэши
- *    форматов, регистрация элементов), от их конца считается рост. Сверх
- *    компонентов — `all` (каждый компонент по разу, своим корнем) и `empty`
- *    (корень без компонентов — шум самого замера).
- * 2. **Обход.** Все страницы по очереди, `rounds` кругов, без перезагрузки:
- *    вес каждой страницы и пустая страница после неё — на каждом круге.
- * 3. **`leak`** — кнопки с подставной утечкой, циклами, как страницы: проверка,
- *    что замер её видит. Последней: то, что она держит, остаётся до конца.
+ * 1. **Pages one by one.** A component page — N copies under one root — is
+ *    mounted, the scenario acts on the first `act` copies, the locale switches
+ *    there and back, the page is unmounted; `warm + cycles` times in a row.
+ *    Every mount and every unmount is followed by garbage collection and a
+ *    measurement. The first `warm` cycles warm the page itself up (lazy
+ *    component definitions, format caches, element registration); growth
+ *    counts from their end. Besides the components — `all` (every component
+ *    once, each under its own root) and `empty` (a root without components —
+ *    the noise of the measurement itself).
+ * 2. **Tour.** All pages in turn, `rounds` rounds, without reloading: the
+ *    weight of each page and of the empty page after it, on every round.
+ * 3. **`leak`** — buttons with a planted leak, in cycles, like the pages: a
+ *    check that the measurement sees it. Last: what it holds stays to the end.
  *
- * Счётчики страницы сверяются «осевшими»: после разогрева и после последнего
- * цикла замер ждёт `settle` мс. Таймер приложения держит снятое до своего
- * срабатывания — превью тостов меняет тост через 2 с, — и это не утечка;
- * утечка — то, что держится и после.
+ * Page counters are compared settled: after the warm-up cycles and after the
+ * last cycle the run waits `settle` ms. An application timer holds what was
+ * unmounted until it fires — the toasts preview replaces a toast after 2 s —
+ * and that is not a leak; a leak is what is still held afterwards.
  *
- * Замер — после сборки мусора протоколом DevTools (`HeapProfiler.collectGarbage`
- * дважды): занятая куча, живые узлы DOM и слушатели событий (счётчики
- * `Performance.getMetrics` — узлы и слушатели, которые держит кто-то, считаются
- * и отсоединёнными) и живые экземпляры ядра — компоненты (`TComponent`) и шины
- * событий (`TEventEmitter`) — через `Runtime.queryObjects`.
+ * A measurement follows garbage collection over the DevTools protocol
+ * (`HeapProfiler.collectGarbage` twice): the used heap, live DOM nodes and
+ * event listeners (the `Performance.getMetrics` counters — nodes and listeners
+ * someone holds count even when detached) and live core instances —
+ * components (`TComponent`) and event buses (`TEventEmitter`) — via
+ * `Runtime.queryObjects`.
  *
- * Итог — `results/<фреймворк>.json`; таблицы журнала из него собирает
- * `report.mjs`.
+ * The result is `results/<framework>.json`; `report.mjs` builds the journal
+ * tables from it.
  */
 const { values } = parseArgs({
 	options: {
@@ -202,15 +205,25 @@ async function measureFramework(fw) {
 		console.log(fw, id, summary(result.pages[id]))
 	}
 
-	// Прогрев: каждая страница по разу, без замера. Без него первая страница
-	// прогона несла бы в своём росте разогрев движка — компиляцию общего кода
-	// адаптера и плагинов, — а остальные нет
-	for (const id of pages) {
+	// Warm-up: every component page once, then the run's other pages, without
+	// measuring — whatever `--pages` lists, so a page's result does not depend
+	// on which pages share the run. Without it the first page of the run would
+	// carry the engine warming up — compiling the shared adapter and plugin
+	// code — in its growth, and the others would not. Warming only the run's
+	// own pages is not enough: `all` holds a single copy of each component per
+	// cycle and kept warming up through its own measured cycles (~33 KB/cycle
+	// with every counter in place)
+	const warmup = [...all, ...pages.filter((id) => !all.includes(id))]
+	const warmStart = performance.now()
+
+	for (const id of warmup) {
 		await evaluate(([p, n]) => bench.mount(p, n), [id, N])
 		await evaluate(([p, act]) => bench.scenario(p, act), [id, ACT])
 		await evaluate(() => bench.locale())
 		await evaluate(() => bench.unmount())
 	}
+
+	console.log(fw, 'прогрев', `${Math.round((performance.now() - warmStart) / 1000)} с`)
 
 	for (const id of pages) await cyclesOf(id)
 
