@@ -389,11 +389,11 @@ describe('ListBox в окне — цикл Angular', () => {
 })
 
 /**
- * Select в окне: список панели — увезённой в `body` — рисует только видимые
- * опции. Панель закрыта: она в документе всегда, открытость — её `display`, и
- * опции в ней собраны с первой отрисовки. Подключение к окну Select читает из
- * слоя, внутри которого его написали, — панель уехала, а DI идёт по дереву
- * объявлений.
+ * Select in the window: the list of its panel — taken away into `body` — draws
+ * only the visible options. Options from data are drawn from the panel's first
+ * opening on, so the panel is open from the start. The Select reads its
+ * connection to the window from the layer it was written inside — the panel
+ * went away, and DI follows the tree of declarations.
  */
 describe('Select в окне', () => {
 	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
@@ -413,7 +413,7 @@ describe('Select в окне', () => {
 	@Component({
 		standalone: true,
 		imports: [TSelectComponent],
-		template: `<div so-select [items]="items"></div>`,
+		template: `<div so-select [items]="items" open></div>`,
 	})
 	class BareSelectHost {
 		readonly items = items(80)
@@ -423,7 +423,7 @@ describe('Select в окне', () => {
 		standalone: true,
 		imports: [TSelectComponent, TVirtualComponent],
 		template: `<ng-container so-virtual [enabled]="enabled()">
-			<div so-select [items]="items"></div>
+			<div so-select [items]="items" open></div>
 		</ng-container>`,
 	})
 	class SelectWindowHost {
@@ -435,7 +435,7 @@ describe('Select в окне', () => {
 		standalone: true,
 		imports: [TSelectComponent, TVirtualComponent],
 		template: `<ng-container so-virtual
-			><div so-select [engine]="engine()"></div
+			><div so-select [engine]="engine()" open></div
 		></ng-container>`,
 	})
 	class SelectEngineHost {

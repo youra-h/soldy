@@ -173,9 +173,11 @@ describe('ListBox в окне', () => {
 })
 
 /**
- * Select в окне: окно — у списка панели, он и прокручивается. Панель
- * телепортирована, и опции входят в коллекцию, когда её смонтирует
- * `Teleport`, — окно рисует их там же, по секциям нарисованного.
+ * Select in the window: the window is at the list of the panel, and the list
+ * scrolls. The panel is teleported, and the options enter the collection when
+ * `Teleport` mounts it — the window draws them there, by the sections of what
+ * is drawn. Options from data are drawn from the panel's first opening on, so
+ * the panel is open from the start.
  */
 describe('Select в окне', () => {
 	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
@@ -193,14 +195,14 @@ describe('Select в окне', () => {
 	}
 
 	it('без обёртки — все опции, распорок нет', () => {
-		mount(Select, { items: items(80) })
+		mount(Select, { items: items(80), open: true })
 
 		expect(selectOptions()).toHaveLength(80)
 		expect(selectFillers()).toEqual([])
 	})
 
 	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
-		mount(Windowed, { kind: 'select', select: { items: items(80) } })
+		mount(Windowed, { kind: 'select', select: { items: items(80), open: true } })
 
 		expect(selectOptions()).toHaveLength(50)
 		expect(selectFillers()).toEqual([])
@@ -210,7 +212,7 @@ describe('Select в окне', () => {
 		mount(Windowed, {
 			kind: 'select',
 			virtual: { enabled: false },
-			select: { items: items(80) },
+			select: { items: items(80), open: true },
 		})
 
 		expect(selectOptions()).toHaveLength(80)
@@ -219,7 +221,7 @@ describe('Select в окне', () => {
 	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', async () => {
 		const engine = createEngineSelect({ items: items(200) })
 
-		mount(Windowed, { kind: 'select', select: { engine } })
+		mount(Windowed, { kind: 'select', select: { engine, open: true } })
 		await nextFrame()
 
 		// Видны места 100–109: с запасом — 90–119

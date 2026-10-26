@@ -196,10 +196,13 @@ describe('ListBox в окне', () => {
 })
 
 /**
- * Select в окне: окно — у списка панели, он и прокручивается. Панель
- * телепортирована, и опции собираются, когда её содержимое прочтёт портал, —
- * в слое лифта Select, где коллекция подхватила окно обёртки; окно рисует их
- * там же, по секциям нарисованного.
+ * Select in the window: the window is at the list of the panel, and the list
+ * scrolls. The panel is teleported, and the options are assembled when the
+ * portal reads its content — in the elevator layer of the Select, where the
+ * collection picked up the wrapper's window; the window draws them there, by
+ * the sections of what is drawn. Options from data are drawn from the panel's
+ * first opening on, so the panel is open from the start where the test looks
+ * at them.
  */
 describe('Select в окне', () => {
 	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
@@ -220,7 +223,7 @@ describe('Select в окне', () => {
 	}
 
 	it('без обёртки — все опции, распорок нет', () => {
-		mount(() => <Select items={items(80)} />)
+		mount(() => <Select items={items(80)} open />)
 
 		expect(selectOptions()).toHaveLength(80)
 		expect(selectFillers()).toEqual([])
@@ -229,7 +232,7 @@ describe('Select в окне', () => {
 	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
 		mount(() => (
 			<Virtual>
-				<Select items={items(80)} />
+				<Select items={items(80)} open />
 			</Virtual>
 		))
 
@@ -240,7 +243,7 @@ describe('Select в окне', () => {
 	it('`enabled: false` — все опции', () => {
 		mount(() => (
 			<Virtual enabled={false}>
-				<Select items={items(80)} />
+				<Select items={items(80)} open />
 			</Virtual>
 		))
 
@@ -252,7 +255,7 @@ describe('Select в окне', () => {
 
 		mount(() => (
 			<Virtual>
-				<Select engine={engine} />
+				<Select engine={engine} open />
 			</Virtual>
 		))
 		await nextFrame()
@@ -285,7 +288,7 @@ describe('Select в окне', () => {
 
 		mount(() => (
 			<Virtual>
-				<Select engine={engine} />
+				<Select engine={engine} open />
 			</Virtual>
 		))
 		await nextFrame()

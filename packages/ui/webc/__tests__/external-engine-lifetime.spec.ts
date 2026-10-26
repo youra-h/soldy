@@ -378,6 +378,11 @@ describe('Select над движком и владельцем снаружи', 
 	it('переставленный трижды и снятый — на шинах владельца, поля и движка ничего', async () => {
 		const owner = new TSelect()
 		const engine = createEngineSelect({ owner, items: ITEMS })
+
+		// Opened once: every assembly draws the options from data from then on
+		owner.open = true
+		owner.open = false
+
 		const extensions = Object.values(engine.extensions).flatMap((extension) =>
 			extension ? [extension.events] : [],
 		)

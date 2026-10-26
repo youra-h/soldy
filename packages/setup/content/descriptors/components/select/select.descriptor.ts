@@ -184,6 +184,12 @@ export const SelectDescriptor = defineDescriptor(() =>
 				 * без экземпляра формулу не повторяет.
 				 */
 				handleRendered: { type: Boolean, protected: true, triggers: ['change:swipe'] },
+				/**
+				 * Whether the panel's options from data are mounted: from the first
+				 * opening on. Options in markup are the consumer's content and are
+				 * mounted from the start.
+				 */
+				contentRendered: { type: Boolean, protected: true, triggers: ['change:open'] },
 				// Общие с ListBox — объявлены один раз в `components/list.ts`
 				...LIST_PROPS,
 			},

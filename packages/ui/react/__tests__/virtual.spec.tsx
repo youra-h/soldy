@@ -331,9 +331,9 @@ describe('ListBox в окне — цикл React', () => {
 })
 
 /**
- * Select в окне: список панели — телепортированной в `body` — рисует только
- * видимые опции. Панель закрыта: она в документе всегда, открытость — её
- * `display`, и опции в ней смонтированы с первой отрисовки.
+ * Select in the window: the list of its panel — teleported into `body` — draws
+ * only the visible options. Options from data are drawn from the panel's first
+ * opening on, so the panel is open from the start.
  */
 describe('Select в окне', () => {
 	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
@@ -351,7 +351,7 @@ describe('Select в окне', () => {
 	}
 
 	it('без обёртки — все опции, распорок нет', () => {
-		mount(<Select items={items(80)} />)
+		mount(<Select items={items(80)} open />)
 
 		expect(selectOptions()).toHaveLength(80)
 		expect(selectFillers()).toEqual([])
@@ -360,7 +360,7 @@ describe('Select в окне', () => {
 	it('в обёртке — до замера первые 50 опций из 80, без распорок', () => {
 		mount(
 			<Virtual>
-				<Select items={items(80)} />
+				<Select items={items(80)} open />
 			</Virtual>,
 		)
 
@@ -371,7 +371,7 @@ describe('Select в окне', () => {
 	it('`enabled: false` — все опции', () => {
 		mount(
 			<Virtual enabled={false}>
-				<Select items={items(80)} />
+				<Select items={items(80)} open />
 			</Virtual>,
 		)
 
@@ -383,7 +383,7 @@ describe('Select в окне', () => {
 
 		mount(
 			<Virtual>
-				<Select engine={engine} />
+				<Select engine={engine} open />
 			</Virtual>,
 		)
 
@@ -417,7 +417,7 @@ describe('Select в окне', () => {
 
 		mount(
 			<Virtual>
-				<Select engine={engine} />
+				<Select engine={engine} open />
 			</Virtual>,
 		)
 

@@ -6,7 +6,5 @@ defineOptions({ name: 'SoldySelectPage' })
 </script>
 
 <template>
-	<Select placeholder="Выберите" editable>
-		<Select.Item v-for="item in COLLECTION_ITEMS" :key="item.value" v-bind="item" />
-	</Select>
+	<Select placeholder="Выберите" editable :items="COLLECTION_ITEMS" />
 </template>
