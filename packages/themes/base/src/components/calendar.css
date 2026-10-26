@@ -26,11 +26,14 @@
  * tile by a bleed for the focus ring on every side (`--so-calendar-bleed`):
  * the ring of a day fits its cell and does not lie on its neighbours, and the
  * ring of a paging button fits the calendar box, so a scrolling panel around
- * it does not clip it. Everything else counts from the cell: the weekday row
- * (lower than a week — column labels are smaller than numbers), the month
- * height, the gap between months (half a cell), the place of the paging
- * buttons, the footer edges. Slot content larger than the tile gets its size
- * from the consumer — through the same variable on the calendar.
+ * it does not clip it. The column (`--so-calendar-column`) is the cell, but
+ * not narrower than two and a half label fonts: on large sizes the labels
+ * outgrow the cell, and the calendar widens instead of clipping them; the
+ * tile stays centred in a wider column, `--so-calendar-inset` from its edge.
+ * Everything else counts from the cell and the column: the weekday row, the
+ * month height, the gap between months (half a cell), the place of the
+ * paging buttons, the footer edges. Slot content larger than the tile gets
+ * its size from the consumer — through the same variable on the calendar.
  *
  * The root is a column: the row of months, the footer below. The width
  * follows the months, not the container: the paging buttons stand at the end
@@ -69,10 +72,9 @@
  * weekday labels and the tiles of the month and year picker take the same
  * font: they stand on the place of the day grid. The month title is the
  * Button font of the same size, a line as high as the cell: only a block
- * keeps the ellipsis on a long name. The column is
- * not narrower than three label fonts, and a three-letter short weekday name
- * fits it (the `weekdayLabelWidth` rule of the core) — narrow the column or
- * enlarge the labels only together with the «дни недели» check of the
+ * keeps the ellipsis on a long name. A three-letter short weekday name fits
+ * the column (the `weekdayLabelWidth` rule of the core) — narrow the column
+ * or enlarge the labels only together with the «дни недели» check of the
  * calendar browser spec.
  *
  * A disabled calendar fades by its root as a whole (`disabled.css`), a
@@ -157,6 +159,11 @@
 	--so-calendar-day: var(--so-button-height-normal);
 	--so-calendar-cell: calc(var(--so-calendar-day) + 2 * var(--so-calendar-bleed));
 	--so-calendar-head: var(--so-calendar-day);
+	--so-calendar-column: max(
+		var(--so-calendar-cell),
+		2.5 * var(--so-calendar-day-font-size-normal)
+	);
+	--so-calendar-inset: calc((var(--so-calendar-column) - var(--so-calendar-day)) / 2);
 	--so-calendar-gap: calc(var(--so-calendar-cell) / 2);
 	position: relative;
 	display: flex;
@@ -179,6 +186,7 @@
 
 .so-calendar--size-sm {
 	--so-calendar-day: var(--so-button-height-sm);
+	--so-calendar-column: max(var(--so-calendar-cell), 2.5 * var(--so-calendar-day-font-size-sm));
 }
 
 .so-calendar--size-sm .so-calendar__title {
@@ -199,6 +207,10 @@
 
 .so-calendar--size-normal {
 	--so-calendar-day: var(--so-button-height-normal);
+	--so-calendar-column: max(
+		var(--so-calendar-cell),
+		2.5 * var(--so-calendar-day-font-size-normal)
+	);
 }
 
 .so-calendar--size-normal .so-calendar__title {
@@ -218,6 +230,7 @@
 
 .so-calendar--size-lg {
 	--so-calendar-day: var(--so-button-height-lg);
+	--so-calendar-column: max(var(--so-calendar-cell), 2.5 * var(--so-calendar-day-font-size-lg));
 }
 
 .so-calendar--size-lg .so-calendar__title {
@@ -238,6 +251,7 @@
 
 .so-calendar--size-xl {
 	--so-calendar-day: var(--so-button-height-xl);
+	--so-calendar-column: max(var(--so-calendar-cell), 2.5 * var(--so-calendar-day-font-size-xl));
 }
 
 .so-calendar--size-xl .so-calendar__title {
@@ -258,6 +272,7 @@
 
 .so-calendar--size-2xl {
 	--so-calendar-day: var(--so-button-height-2xl);
+	--so-calendar-column: max(var(--so-calendar-cell), 2.5 * var(--so-calendar-day-font-size-2xl));
 }
 
 .so-calendar--size-2xl .so-calendar__title {
@@ -311,11 +326,11 @@
 }
 
 .so-calendar__prev {
-	inset-inline-end: calc(var(--so-calendar-cell) + var(--so-calendar-bleed));
+	inset-inline-end: calc(var(--so-calendar-column) + var(--so-calendar-inset));
 }
 
 .so-calendar__next {
-	inset-inline-end: var(--so-calendar-bleed);
+	inset-inline-end: var(--so-calendar-inset);
 }
 
 /* Weeks are pressed to the top, the room for six weeks is under the last. */
@@ -336,8 +351,8 @@
 	align-items: center;
 	justify-content: flex-start;
 	block-size: var(--so-calendar-cell);
-	padding-inline-start: var(--so-calendar-bleed);
-	padding-inline-end: calc(2 * var(--so-calendar-cell));
+	padding-inline-start: var(--so-calendar-inset);
+	padding-inline-end: calc(2 * var(--so-calendar-column));
 }
 
 .so-calendar__title {
@@ -355,7 +370,7 @@
 .so-calendar__grid {
 	table-layout: fixed;
 	border-collapse: collapse;
-	inline-size: calc(7 * var(--so-calendar-cell));
+	inline-size: calc(7 * var(--so-calendar-column));
 }
 
 .so-calendar__weekdays {
@@ -368,7 +383,7 @@
 	vertical-align: middle;
 	overflow: hidden;
 	white-space: nowrap;
-	inline-size: var(--so-calendar-cell);
+	inline-size: var(--so-calendar-column);
 }
 
 /* The height is set on the row: a filler has no content, and without it the
@@ -392,7 +407,7 @@
 	justify-content: flex-end;
 	contain: inline-size;
 	gap: calc(2 * var(--so-calendar-bleed));
-	padding-inline: var(--so-calendar-bleed);
+	padding-inline: var(--so-calendar-inset);
 }
 
 /* The cell is positioned: the theme draws the range band on it, and the tile
@@ -404,7 +419,7 @@
 	vertical-align: middle;
 	-webkit-user-select: none;
 	user-select: none;
-	inline-size: var(--so-calendar-cell);
+	inline-size: var(--so-calendar-column);
 	block-size: var(--so-calendar-cell);
 }
 
@@ -512,7 +527,7 @@
 .so-calendar__picker > .so-calendar__picker-list > .so-list-box__list {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
-	grid-template-rows: repeat(3, calc(1.25 * var(--so-calendar-cell)));
+	grid-template-rows: repeat(3, minmax(calc(1.25 * var(--so-calendar-cell)), 1fr));
 	gap: calc(2 * var(--so-calendar-bleed));
 }
 
