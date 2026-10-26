@@ -125,7 +125,14 @@
 
 	--so-calendar-day-font-size-sm: 0.75rem;
 	--so-calendar-day-line-height-sm: calc(1 / 0.75);
-	--so-calendar-day-font-size-normal: 0.875rem;
+	/* A `normal` day is one step smaller than the font of its place, as the
+	 * `normal` Button takes that font itself: `em` resolves where the variable is
+	 * read — on the day cell, on the tiles of the month and year picker and, at
+	 * `lg`, on the weekday labels, each against a parent that takes the font of
+	 * the calendar, that is of the place. At a 16px place that is 14px, at a
+	 * 14px place 12.25px; a fixed `0.875rem` equalled a `normal` Button at a
+	 * 14px place. The other steps stay absolute, as those of Button do. */
+	--so-calendar-day-font-size-normal: 0.875em;
 	--so-calendar-day-line-height-normal: calc(1.25 / 0.875);
 	--so-calendar-day-font-size-lg: 1rem;
 	--so-calendar-day-line-height-lg: 1.5;
