@@ -28,8 +28,8 @@
  * reachable instances of a class (see `ui/vue/__tests__/virtual-rows.spec.ts`).
  * The counters are global to the worker, so the spec counts the difference —
  * `2N` items against `N`: for a collection it cancels what the collection
- * itself holds, and for a bare item what the first instances create once,
- * like the lazy caches of the modules.
+ * itself holds, and for a bare item whatever is created once, with the first
+ * instance.
  */
 
 import { describe, it, expect } from 'vitest'
