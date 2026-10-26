@@ -197,10 +197,9 @@ export class TCalendarViewExtension
 
 		if (existing) return existing
 
-		const sets: TCalendarGridSets = { title: new TAria(), grid: new TAria() }
-
-		sets.title.events.on('change', () => this.events.emit('change:grids'))
-		sets.grid.events.on('change', () => this.events.emit('change:grids'))
+		// Both sets report one `change:grids`
+		const changed = () => this.events.emit('change:grids')
+		const sets: TCalendarGridSets = { title: new TAria(changed), grid: new TAria(changed) }
 
 		this._gridSets[index] = sets
 

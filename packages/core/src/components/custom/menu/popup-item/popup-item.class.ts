@@ -50,9 +50,7 @@ export default abstract class TMenuPopupItem<
 
 		// Сторона панели связки. Роль пишет наследник, `id` и `aria-labelledby`
 		// на строку — плагин связок
-		this._panelAria = new TAria()
-
-		this._panelAria.events.on('change', () =>
+		this._panelAria = new TAria(() =>
 			this._sink.emit('change:panelAria', this._panelAria.toObject()),
 		)
 

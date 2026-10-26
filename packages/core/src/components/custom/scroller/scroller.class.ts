@@ -70,13 +70,11 @@ export default class TScroller
 		this._dataset.add('can-prev', this._canPrev)
 		this._dataset.add('can-next', this._canNext)
 
-		this._prevAria = new TAria()
-		this._prevAria.events.on('change', () =>
+		this._prevAria = new TAria(() =>
 			this.events.emit('change:prevAria', this._prevAria.toObject()),
 		)
 
-		this._nextAria = new TAria()
-		this._nextAria.events.on('change', () =>
+		this._nextAria = new TAria(() =>
 			this.events.emit('change:nextAria', this._nextAria.toObject()),
 		)
 	}

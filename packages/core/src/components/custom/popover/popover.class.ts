@@ -97,18 +97,14 @@ export default class TPopover
 		// этот же набор
 		this._aria.add('role', 'dialog')
 
-		this._triggerAria = new TAria()
-
-		this._triggerAria.events.on('change', () =>
+		this._triggerAria = new TAria(() =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 
 		// `dialog`, а не `true`: `true` у ARIA значит `menu`
 		this._triggerAria.add('aria-haspopup', 'dialog')
 
-		this._closeAria = new TAria()
-
-		this._closeAria.events.on('change', () =>
+		this._closeAria = new TAria(() =>
 			this.events.emit('change:closeAria', this._closeAria.toObject()),
 		)
 

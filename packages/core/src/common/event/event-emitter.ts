@@ -49,25 +49,30 @@ const frames: IFrame[] = []
 let depth = 0
 
 /**
- * Обобщённый эмиттер, где Events — словарь событий и их сигнатур.
+ * A generic emitter, where Events is a map of events and their signatures.
  *
- * Платит за подписку, а не за событие, и за второе — не раньше, чем оно
- * случилось. Единственное слушаемое событие лежит в полях эмиттера, а карта
- * событий заводится со второго и уходит с последней отпиской. Единственный
- * обработчик события лежит как есть, а набор заводится со второго и уходит с
- * последним. У большинства шин слушают одно событие одним обработчиком
- * (`change` у наборов `aria`, `classes`, `dataset`), и карта с набором на
- * каждую были почти половиной подписок строки таблицы.
+ * It pays for a subscription, not for an event, and for the second one not
+ * before it happens. The only listened event lives in the emitter's fields,
+ * and the event map appears with the second one and goes with the last
+ * unsubscription. The only handler of an event lives as is, and the handler
+ * set appears with the second one and goes with the last. Most buses are
+ * listened to with one event and one handler: a collection item that has never
+ * been drawn is listened to only by its collection (`change:contentFit` of a
+ * ListBox item, `change:text` of a Select option, `change:disabled` of a table
+ * row). The attribute sets `aria`, `classes` and `dataset` used to be such
+ * buses too, before they lost theirs (`TAttributes`), and a map with a set for
+ * each was almost half of the subscriptions of a table row.
  *
- * Семантика эмита — как у обхода набора (`Set.forEach`): обработчики — в
- * порядке подписки, снятый посреди эмита в нём уже не вызывается,
- * поставленный — вызывается в нём же. Без набора эмит зовёт обработчик
- * напрямую, а если тот за свой вызов поставил другого, обходит набор, в
- * который вырос, — так же, как обошёл бы набор с самого начала (`frames`).
+ * The emit semantics are those of iterating a set (`Set.forEach`): handlers run
+ * in subscription order, one removed during an emit is not called in it, one
+ * added is called in the same emit. Without a set the emit calls the handler
+ * directly, and if that one added another during its call, it iterates the
+ * set it has grown into — just as it would have iterated a set from the start
+ * (`frames`).
  *
  * @example
  * const emitter = new TEventEmitter<{ greet: (msg: string) => void }>()
- * emitter.emit('greet', 123) // Ошибка
+ * emitter.emit('greet', 123) // Error
  */
 export class TEventEmitter<
 	Events extends Record<string, (...args: any[]) => any> = Record<

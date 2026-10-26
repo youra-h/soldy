@@ -1,27 +1,43 @@
-import { TEvented } from '../event/evented'
-import type { TClassEntry, TClassesEvents } from './types'
+import type { TClassEntry } from './types'
 
-/** Управляет набором CSS-классов компонента: базовым, статическими и динамическими. */
+/**
+ * Manages the CSS classes of a component: the base one, static and dynamic ones.
+ *
+ * Like the attribute sets (`TAttributes`), it reports to its owner without a
+ * bus of its own: the owner passes the "set changed" callback to the
+ * constructor, and the set calls it on every real change, without arguments.
+ * The static set and the list of dynamic entries appear with their first entry.
+ */
 export class TClasses {
 	/** Базовый класс (всегда первый в списке). */
 	private _base: string
-	/** Статические классы, добавленные через `add(string)`. */
-	private _statics: Set<string> = new Set()
-	/** Динамические классы — функции, вычисляемые при каждом вызове `toArray()`. */
-	private _dynamics: Array<() => string | null | undefined | false> = []
+	/** Static classes added with `add(string)` — from the first one. */
+	private _statics?: Set<string>
+	/** Dynamic classes — functions computed on every `toArray()` call; from the first one. */
+	private _dynamics?: Array<() => string | null | undefined | false>
 
-	/** Эмиттер событий. `change` — при любом изменении набора классов. */
-	readonly events = new TEvented<TClassesEvents>()
+	/** The owner's "set changed" callback. */
+	private readonly _changed?: () => void
 
 	/**
-	 * @param base — базовый CSS-класс компонента
-	 * @param initial — начальные статические классы
+	 * @param base — the base CSS class of the component
+	 * @param changed — called on every real change of the set, not for `initial`
+	 * @param initial — the starting static classes
 	 */
-	constructor(base: string, initial: string[] = []) {
+	constructor(base: string, changed?: () => void, initial?: string[]) {
 		this._base = base
+		this._changed = changed
+
+		if (initial === undefined) return
+
 		for (const cls of initial) {
-			this._statics.add(cls)
+			this._staticSet().add(cls)
 		}
+	}
+
+	/** The static set, created by the first static class. */
+	private _staticSet(): Set<string> {
+		return (this._statics ??= new Set())
 	}
 
 	/** Базовый CSS-класс. */
@@ -29,12 +45,12 @@ export class TClasses {
 		return this._base
 	}
 
-	/** Заменяет базовый класс. Эмитит `change` если значение изменилось. */
+	/** Replaces the base class. Reports the change if the value has changed. */
 	setBase(base: string): this {
 		if (this._base === base) return this
 
 		this._base = base
-		this.events.emit('change')
+		this._changed?.()
 
 		return this
 	}
@@ -57,22 +73,24 @@ export class TClasses {
 	}
 
 	/**
-	 * Добавляет статический класс (строку) или динамическую функцию.
-	 * Статический класс добавляется только если его ещё нет.
-	 * Динамическая функция добавляется всегда (дубликаты не проверяются).
-	 * Эмитит `change` если запись была добавлена.
-	 * @param withBase — если `true`, строка автоматически предваряется базовым классом
+	 * Adds a static class (a string) or a dynamic function.
+	 * A static class is added only if it is not there yet.
+	 * A dynamic function is always added (duplicates are not checked).
+	 * Reports the change if an entry was added.
+	 * @param withBase — if `true`, the string is prefixed with the base class
 	 */
 	add(entry: TClassEntry, withBase = true): this {
 		if (typeof entry === 'function') {
-			this._dynamics.push(entry)
-			this.events.emit('change')
+			if (this._dynamics) this._dynamics.push(entry)
+			else this._dynamics = [entry]
+
+			this._changed?.()
 		} else {
 			const cls = this.resolve(entry, { withBase })
 
-			if (!this._statics.has(cls)) {
-				this._statics.add(cls)
-				this.events.emit('change')
+			if (!this._statics?.has(cls)) {
+				this._staticSet().add(cls)
+				this._changed?.()
 			}
 		}
 
@@ -80,16 +98,13 @@ export class TClasses {
 	}
 
 	/**
-	 * Удаляет статический класс. Эмитит `change` если класс присутствовал.
-	 * @param withBase — если `true`, строка автоматически предваряется базовым классом
+	 * Removes a static class. Reports the change if the class was there.
+	 * @param withBase — if `true`, the string is prefixed with the base class
 	 */
 	remove(entry: string, withBase = true): this {
 		const cls = this.resolve(entry, { withBase })
 
-		if (this._statics.has(cls)) {
-			this._statics.delete(cls)
-			this.events.emit('change')
-		}
+		if (this._statics?.delete(cls)) this._changed?.()
 
 		return this
 	}
@@ -162,7 +177,7 @@ export class TClasses {
 	has(suffix: string, withBase = true): boolean {
 		const cls = this.resolve(suffix, { withBase })
 
-		return this._statics.has(cls)
+		return this._statics?.has(cls) ?? false
 	}
 
 	/**
@@ -174,6 +189,8 @@ export class TClasses {
 	 */
 	get(suffix: string, withBase = true): string | undefined {
 		const target = this.resolve(suffix, { withBase })
+
+		if (this._statics === undefined) return undefined
 
 		for (const cls of this._statics) {
 			if (cls.endsWith(target)) {
@@ -191,7 +208,9 @@ export class TClasses {
 
 	/** Возвращает итоговый список классов: `[base, ...statics, ...computed dynamics]`. */
 	toArray(): string[] {
-		const result: string[] = [this._base, ...this._statics]
+		const result: string[] = this._statics ? [this._base, ...this._statics] : [this._base]
+
+		if (this._dynamics === undefined) return result
 
 		for (const fn of this._dynamics) {
 			const val = fn()

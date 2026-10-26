@@ -204,11 +204,17 @@ export class TCalendarPickerExtension
 		const engine = createEngineListBox({ owner: list })
 		const month = this._gridMonth(index)
 		const year = month === undefined ? FIRST_YEAR : yearOf(month)
+		// The three sets of the place report one change of the picker
+		const changed = () => this._notify()
 		const place: TPlace = {
 			popover,
 			list,
 			engine,
-			sets: { heading: new TAria(), prev: new TAria(), next: new TAria() },
+			sets: {
+				heading: new TAria(changed),
+				prev: new TAria(changed),
+				next: new TAria(changed),
+			},
 			level: 'months',
 			year,
 			page: pageOf(year),
@@ -225,9 +231,6 @@ export class TCalendarPickerExtension
 		engine.extensions.list.events.on('choose', (item: IListBoxItem) =>
 			this._choose(place, index, item),
 		)
-		place.sets.heading.events.on('change', () => this._notify())
-		place.sets.prev.events.on('change', () => this._notify())
-		place.sets.next.events.on('change', () => this._notify())
 
 		this._places[index] = place
 

@@ -62,11 +62,9 @@ describe('TDataset · сам набор', () => {
 		expect(dataset.has('selected')).toBe(false)
 	})
 
-	it('change эмитится только при настоящем изменении', () => {
-		const dataset = new TDataset()
+	it('функция владельца зовётся только при настоящем изменении', () => {
 		let count = 0
-
-		dataset.events.on('change', () => count++)
+		const dataset = new TDataset(() => count++)
 
 		dataset.add('selected', true)
 		dataset.add('selected', true)

@@ -82,13 +82,11 @@ export default class TCalendar
 		this._timeZone = props.timeZone ?? ctor.defaultValues.timeZone
 		this._months = props.months ?? ctor.defaultValues.months
 
-		this._prevAria = new TAria()
-		this._prevAria.events.on('change', () =>
+		this._prevAria = new TAria(() =>
 			this.events.emit('change:prevAria', this._prevAria.toObject()),
 		)
 
-		this._nextAria = new TAria()
-		this._nextAria.events.on('change', () =>
+		this._nextAria = new TAria(() =>
 			this.events.emit('change:nextAria', this._nextAria.toObject()),
 		)
 	}

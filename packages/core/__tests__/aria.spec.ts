@@ -33,18 +33,16 @@ describe('TAria · сам набор', () => {
 	it('null и undefined снимают атрибут', () => {
 		// Позволяет писать add('aria-disabled', disabled ? 'true' : null)
 		// вместо ветвления на каждом вызове
-		const aria = new TAria({ role: 'tab' })
+		const aria = new TAria(undefined, { role: 'tab' })
 
 		aria.add('role', null)
 
 		expect(aria.has('role')).toBe(false)
 	})
 
-	it('change эмитится только при настоящем изменении', () => {
-		const aria = new TAria()
+	it('функция владельца зовётся только при настоящем изменении', () => {
 		let count = 0
-
-		aria.events.on('change', () => count++)
+		const aria = new TAria(() => count++)
 
 		aria.add('role', 'tab')
 		aria.add('role', 'tab')
@@ -53,11 +51,9 @@ describe('TAria · сам набор', () => {
 		expect(count).toBe(1)
 	})
 
-	it('remove эмитит change только если атрибут был', () => {
-		const aria = new TAria({ role: 'tab' })
+	it('remove зовёт функцию владельца, только если атрибут был', () => {
 		let count = 0
-
-		aria.events.on('change', () => count++)
+		const aria = new TAria(() => count++, { role: 'tab' })
 
 		aria.remove('role')
 		aria.remove('role')
@@ -65,8 +61,34 @@ describe('TAria · сам набор', () => {
 		expect(count).toBe(1)
 	})
 
+	/**
+	 * The initial entries are not a change: the owner builds the set in its own
+	 * constructor, and there is no one to report to yet.
+	 */
+	it('начальный набор функцию владельца не зовёт', () => {
+		let count = 0
+		const aria = new TAria(() => count++, { role: 'tab' })
+
+		expect(aria.get('role')).toBe('tab')
+		expect(count).toBe(0)
+	})
+
 	it('начальный набор пропускает null', () => {
-		expect(new TAria({ role: 'tab', 'aria-disabled': null }).names).toEqual(['role'])
+		expect(new TAria(undefined, { role: 'tab', 'aria-disabled': null }).names).toEqual(['role'])
+	})
+
+	/** The set has no bus of its own: it reports a change to the owner through the callback. */
+	it('своей шины у набора нет', () => {
+		expect('events' in new TAria()).toBe(false)
+	})
+
+	it('пустой набор отдаёт пустой снимок и ничего не находит', () => {
+		const aria = new TAria()
+
+		expect(aria.toObject()).toEqual({})
+		expect(aria.names).toEqual([])
+		expect(aria.has('role')).toBe(false)
+		expect(aria.get('role')).toBeUndefined()
 	})
 })
 

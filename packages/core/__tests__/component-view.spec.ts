@@ -133,6 +133,25 @@ describe('TComponentView', () => {
 		expect(handler).not.toHaveBeenCalled()
 	})
 
+	/**
+	 * The `direction` setter writes `dir` after the write and before its event:
+	 * a subscriber already reads the new attribute, and the adapter exchange
+	 * gets `change:attrs` first.
+	 */
+	it('подписчик change:direction видит dir по новому значению, change:attrs — раньше', () => {
+		const p = new TComponentView()
+		const seen: unknown[] = []
+		const order: string[] = []
+
+		p.events.on('change:direction', () => seen.push(p.attrs.get('dir')))
+		p.events.listen((event) => order.push(String(event)))
+
+		p.direction = 'rtl'
+
+		expect(seen).toEqual(['rtl'])
+		expect(order).toEqual(['change:attrs', 'change:direction'])
+	})
+
 	it('direction: принимается через props и сериализуется', () => {
 		const p = new TComponentView({ direction: 'rtl' })
 		expect(p.direction).toBe('rtl')

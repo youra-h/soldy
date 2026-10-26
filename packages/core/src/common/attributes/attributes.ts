@@ -1,40 +1,64 @@
-import { TEvented } from '../event/evented'
-import type { TAttributesMap, TAttributesEvents } from './types'
+import type { TAttributesMap } from './types'
 
 /**
- * Живой набор атрибутов вида `имя → значение`.
+ * A live set of attributes, `name → value`.
  *
- * База для `TAria` и `TData`. Общее у них не только хранилище: одинаковы
- * семантика `null` (снять атрибут), правило «эмитить только при настоящем
- * изменении» и — важнее всего — снимок через `valueOf()`.
+ * The base of `TAria` and `TDataset`. They share more than the storage: the
+ * meaning of `null` (remove the attribute), the rule "report only a real
+ * change" and, above all, the snapshot through `valueOf()`.
  *
- * Снимок здесь не удобство, а контракт границы core → ui: адаптер узнаёт об
- * изменении по смене идентичности значения, поэтому за границу обязан уходить
- * новый объект, а не ссылка на состояние. Продублируй эту механику во втором
- * классе — и однажды один из двух наборов перестанет доезжать до разметки,
- * причём молча.
+ * The snapshot is not a convenience but the core → ui boundary contract: the
+ * adapter detects a change by a new value identity, so a new object has to
+ * cross the boundary, not a reference to the state. Duplicate this mechanism
+ * in a second class, and one day one of the two sets silently stops reaching
+ * the markup.
  *
- * Хранит значения, а не функции. Вычисляемых записей нет намеренно: их
- * свежесть зависела бы от того, вспомнил ли кто-то перечислить источники в
- * триггерах пропа. Здесь триггер один и срабатывает ровно тогда, когда набор
- * действительно изменился.
+ * It stores values, not functions. There are no computed entries on purpose:
+ * their freshness would depend on someone remembering to list the sources in
+ * the prop triggers. Here the trigger is single and fires exactly when the set
+ * has really changed.
  *
- * Наследники добавляют то, что у них своё: `TData` — префикс и приведение
- * типов, `TAria` — исключения вроде `role` и `tabindex`, которые лежат в
- * наборе, хотя и не начинаются на `aria-`.
+ * **The set reports to its owner, it has no bus of its own.** The owner passes
+ * the "set changed" callback to the constructor, and the set calls it on every
+ * real change, without arguments. What to emit and whether with a snapshot is
+ * the owner's call: a component emits `change:<set>` with the snapshot, while
+ * the two sets of a date input part give one `change:segments` without it. A
+ * set without a callback reports to no one. A bus per set cost every
+ * collection item four emitters, even an item that is never drawn.
+ *
+ * The storage map appears with the first entry: an empty set (`attrs` of a
+ * list item, `headerAria` of a table row before mounting) holds no map.
+ *
+ * Subclasses add their own: `TDataset` — the prefix and type coercion, `TAria`
+ * — exceptions like `role` and `tabindex` that belong to the set without
+ * starting with `aria-`.
  */
 export class TAttributes {
-	protected _map: Map<string, string> = new Map()
+	/** Entries — from the first one. */
+	protected _map?: Map<string, string>
 
-	/** `change` — при любом изменении набора. */
-	readonly events = new TEvented<TAttributesEvents>()
+	/** The owner's "set changed" callback. */
+	private readonly _changed?: () => void
 
-	constructor(initial: TAttributesMap = {}) {
+	/**
+	 * @param changed — called on every real change of the set, not for `initial`
+	 * @param initial — the starting entries; `null` ones are skipped
+	 */
+	constructor(changed?: () => void, initial?: TAttributesMap) {
+		this._changed = changed
+
+		if (initial === undefined) return
+
 		for (const [name, value] of Object.entries(initial)) {
 			if (value === null) continue
 
-			this._map.set(this.resolve(name), value)
+			this._entries().set(this.resolve(name), value)
 		}
+	}
+
+	/** The storage map, created by the first entry. */
+	private _entries(): Map<string, string> {
+		return (this._map ??= new Map())
 	}
 
 	/**
@@ -46,47 +70,47 @@ export class TAttributes {
 	}
 
 	/**
-	 * Ставит атрибут. `null` и `undefined` его снимают — это позволяет писать
-	 * `add('aria-disabled', disabled ? 'true' : null)` вместо ветвления на
-	 * каждом вызове.
+	 * Sets an attribute. `null` and `undefined` remove it — so one can write
+	 * `add('aria-disabled', disabled ? 'true' : null)` instead of branching on
+	 * every call.
 	 *
-	 * Эмитит `change`, только если набор действительно изменился.
+	 * Reports the change only if the set has really changed.
 	 */
 	add(name: string, value: string | null | undefined): this {
 		if (value === null || value === undefined) return this.remove(name)
 
 		const key = this.resolve(name)
 
-		if (this._map.get(key) === value) return this
+		if (this._map?.get(key) === value) return this
 
-		this._map.set(key, value)
-		this.events.emit('change')
+		this._entries().set(key, value)
+		this._changed?.()
 
 		return this
 	}
 
-	/** Снимает атрибут. Эмитит `change`, если он был. */
+	/** Removes an attribute. Reports the change if it was set. */
 	remove(name: string): this {
-		if (!this._map.delete(this.resolve(name))) return this
+		if (!this._map?.delete(this.resolve(name))) return this
 
-		this.events.emit('change')
+		this._changed?.()
 
 		return this
 	}
 
 	/** Значение атрибута или `undefined`. */
 	get(name: string): string | undefined {
-		return this._map.get(this.resolve(name))
+		return this._map?.get(this.resolve(name))
 	}
 
 	/** Стоит ли атрибут. */
 	has(name: string): boolean {
-		return this._map.has(this.resolve(name))
+		return this._map?.has(this.resolve(name)) ?? false
 	}
 
 	/** Имена всех выставленных атрибутов — уже канонические. */
 	get names(): string[] {
-		return [...this._map.keys()]
+		return this._map ? [...this._map.keys()] : []
 	}
 
 	/**
@@ -96,7 +120,7 @@ export class TAttributes {
 	 * не ссылка на состояние. Иначе потребитель мог бы незаметно его испортить.
 	 */
 	toObject(): TAttributesMap {
-		return Object.fromEntries(this._map)
+		return this._map ? Object.fromEntries(this._map) : {}
 	}
 
 	/** Тот же снимок. Вызывается адаптером автоматически при чтении пропа. */

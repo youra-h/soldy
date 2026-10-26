@@ -15,8 +15,6 @@ import type { TAttributesMap } from '../attributes'
  */
 export type TAriaAttributes = TAttributesMap
 
-export type { TAttributesEvents as TAriaEvents } from '../attributes'
-
 /**
  * Теги, у которых есть собственный атрибут `disabled`. На них состояние
  * передаётся им, а не `aria-disabled` — дублировать оба неверно.

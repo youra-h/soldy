@@ -88,15 +88,11 @@ export default class TModalLayer<
 		// операция — фон на самих узлах прячет `THideOutsidePlugin`
 		this._aria.add('aria-modal', 'true')
 
-		this._titleAria = new TAria()
-
-		this._titleAria.events.on('change', () =>
+		this._titleAria = new TAria(() =>
 			this._sink.emit('change:titleAria', this._titleAria.toObject()),
 		)
 
-		this._closeAria = new TAria()
-
-		this._closeAria.events.on('change', () =>
+		this._closeAria = new TAria(() =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 	}
