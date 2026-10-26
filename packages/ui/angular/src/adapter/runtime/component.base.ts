@@ -26,7 +26,6 @@ import {
 	TemplateRef,
 	afterRenderEffect,
 	computed,
-	contentChildren,
 	inject,
 	runInInjectionContext,
 	signal,
@@ -36,7 +35,7 @@ import type { IEntity } from '@soldy-ui/core'
 import type { TStateSnapshot } from '@soldy-ui/setup'
 import { createRoot, type TRoot } from './root/strategies'
 import type { TRootSpec } from './root/spec'
-import { SlotDirective } from './slot.directive'
+import type { SlotDirective } from './slot.directive'
 import { SUBTREE_PRESENT, SubtreeDirective } from './subtree.directive'
 import type { TBinding, TBindingState } from './useAdapter'
 
@@ -51,8 +50,11 @@ export type TTemplateRef = 'root' | 'control' | 'companion'
 
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
-/** Пустое состояние — его база рисует на слое не на своём месте. */
-const NO_STATE: TStateSnapshot = Object.freeze({})
+/** State before the assembly: nothing — the same object on every read. */
+const NO_BINDING_STATE = Object.freeze({})
+
+/** No slot templates: the component reads no slots. */
+const NO_SLOTS: readonly SlotDirective[] = Object.freeze([])
 
 @Directive({
 	// `hostDirectives` наследник получает, а `providers` — нет
@@ -92,25 +94,33 @@ export abstract class TComponentBase<
 
 	private readonly _boundRoot = signal<Element | null>(null)
 
-	/** Узел, который база отдала `TElementPlugin`: `null` на сервере, до отрисовки и у снятого корня. */
-	protected readonly rootElement: Signal<Element | null> = this._boundRoot.asReadonly()
+	/**
+	 * The node the base gave `TElementPlugin`: `null` on the server, before the
+	 * render and while the root is removed. A method reading the signal, as
+	 * `state()`, `instance()` and `facade()`: a `computed` or a read-only copy
+	 * of a signal on every instance only forwarded it.
+	 */
+	protected rootElement(): Element | null {
+		return this._boundRoot()
+	}
 
 	/** В его контексте заводятся эмиттеры и идёт сборка. */
 	private readonly _injector = inject(Injector)
 
-	/** Состояние ядра с выходами плагинов и свойствами фасадов. */
-	readonly state = computed<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>>(
-		() => this._binding()?.state() ?? {},
-	)
+	/** State of the core with plugin outputs and facade properties — the signal of the binding. */
+	state(): TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade> {
+		return this._binding()?.state() ?? NO_BINDING_STATE
+	}
 
-	protected readonly instance = computed<TInstance | undefined>(() => this._binding()?.ctrl)
+	/** The core instance: the outer `ctrl` or the one assembled in `ngOnInit`. */
+	protected instance(): TInstance | undefined {
+		return this._binding()?.ctrl
+	}
 
-	/** Фасад коллекции: через его контекст шаблон зовёт команды коллекции. */
-	protected readonly facade = computed<TFacade | undefined>(() => this._binding()?.facade)
-
-	private readonly _drawn = computed<TStateSnapshot>(() =>
-		this.placed() ? this.state() : NO_STATE,
-	)
+	/** The collection facade: through its context the template calls collection commands. */
+	protected facade(): TFacade | undefined {
+		return this._binding()?.facade
+	}
 
 	/** Внешний узел скрыт. Инстанса база не знает и читает состояние по именам. */
 	private readonly _hidden = computed(() => {
@@ -129,8 +139,6 @@ export abstract class TComponentBase<
 		!this._root.hidesRoot && this._hidden() ? 'none' : undefined,
 	)
 
-	private readonly _slots = contentChildren(SlotDirective)
-
 	/**
 	 * Узел шаблона по ссылке — `#root`, `#control`, `#companion`; ссылки нет —
 	 * `null`. Запросы объявляет сгенерированная поверхность, и только на
@@ -142,9 +150,19 @@ export abstract class TComponentBase<
 		return null
 	}
 
-	/** Шаблон слота по имени из контракта. */
+	/**
+	 * Slot templates of the component (`<ng-template slot>`). The query is
+	 * declared by the generated surface, and only where the component reads
+	 * slots (`slot()`): a content query costs every instance, and an item row
+	 * or an icon inside every element of a collection reads none.
+	 */
+	protected slotTemplates(): readonly SlotDirective[] {
+		return NO_SLOTS
+	}
+
+	/** The template of a slot by its name from the contract. */
 	protected slot(name: string): TemplateRef<unknown> | null {
-		return this._slots().find((slot) => slot.name === name)?.template ?? null
+		return this.slotTemplates().find((slot) => slot.name === name)?.template ?? null
 	}
 
 	constructor(
@@ -160,8 +178,7 @@ export abstract class TComponentBase<
 
 		this._root = createRoot(spec, {
 			own: ['ctrl', ...inputNames],
-			state: this.state,
-			drawn: this._drawn,
+			state: () => this.state(),
 			hidden: this._hidden,
 			root: () => this.templateNode('root'),
 			control: () => this.templateNode('control'),

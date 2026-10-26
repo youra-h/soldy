@@ -42,22 +42,33 @@ export function toNodeAttributes(
 }
 
 /**
- * Ставит свойства слоёв разницей с тем, что поставил сам; чужие не трогает.
- * Заводится один раз на компонент: новый на том же узле принял бы чужие
- * свойства за свои. Стоящее на узле с начала — стиль сервера при гидратации.
+ * Sets the properties of the layers as a difference with what it set itself;
+ * foreign ones it leaves alone. Created once per component: a new one on the
+ * same node would take foreign properties for its own. What stands on the node
+ * from the start is the server's style on hydration.
+ *
+ * One effect: the consumer's style is parsed again only when its string
+ * changed — two `$derived` for that were a reaction graph on every root.
  */
 export function rootStyle(getStyle: () => TRootStyleLayers): Attachment<Element> {
 	return (node) => {
 		if (!hasInlineStyle(node)) return
 
 		const { style } = node
-		const forward = $derived(getStyle().forward)
-		const parsed = $derived(parseStyle(forward, node.ownerDocument))
 
 		let applied = readDeclarations(style)
+		let forward: string | undefined
+		let parsed = EMPTY
 
 		$effect(() => {
-			const next = toDeclarations(getStyle(), parsed)
+			const layers = getStyle()
+
+			if (layers.forward !== forward) {
+				forward = layers.forward
+				parsed = parseStyle(forward, node.ownerDocument)
+			}
+
+			const next = toDeclarations(layers, parsed)
 
 			applyDeclarations(style, applied, next)
 			applied = next
@@ -70,8 +81,10 @@ function hasInlineStyle(node: Element): node is Element & ElementCSSInlineStyle 
 	return 'style' in node
 }
 
-/** Свойства, которые стоят в инлайновом стиле. */
+/** The properties of an inline style; none — the shared empty map. */
 function readDeclarations(style: CSSStyleDeclaration): TDeclarations {
+	if (style.length === 0) return EMPTY
+
 	const declarations = new Map<string, TDeclaration>()
 
 	for (let index = 0; index < style.length; index++) {
@@ -97,7 +110,11 @@ function parseStyle(text: string | undefined, document: Document): TDeclarations
 	return readDeclarations(probe.style)
 }
 
-/** Свойства слоёв снизу вверх: из одноимённых действует верхнее. */
+/**
+ * The properties of the layers from the bottom up: of the same name the upper
+ * one acts. No properties — the shared empty map: the root keeps the last
+ * declarations, and most roots have none.
+ */
 function toDeclarations(layers: TRootStyleLayers, forward: TDeclarations): TDeclarations {
 	const declarations = new Map<string, TDeclaration>()
 
@@ -111,7 +128,7 @@ function toDeclarations(layers: TRootStyleLayers, forward: TDeclarations): TDecl
 		declarations.set(name, { value, priority: '' })
 	}
 
-	return declarations
+	return declarations.size > 0 ? declarations : EMPTY
 }
 
 /** Пропавшие свойства — снять, новые и сменившиеся — поставить; остальное не трогать. */

@@ -129,21 +129,25 @@ function useExchange(
 		exchange.inputs.full(getProps())
 	})
 
-	// 3. Подписка одна на всё время жизни, колбэк читается лениво
-	$effect(() =>
-		exchange.events.listen((exportName, args) => {
+	// 3. and 6. One subscription for the whole life, the callback is read
+	// lazily; one effect that tracks nothing: its teardown unsubscribes, then
+	// destroys the adapter — the order two effects had, at the cost of one
+	$effect(() => {
+		const stop = exchange.events.listen((exportName, args) => {
 			const callback: unknown = Reflect.get(getProps(), exportName)
 
 			if (typeof callback === 'function') callback(...args)
-		}),
-	)
+		})
+
+		return () => {
+			stop()
+			adapter.destroy()
+		}
+	})
 
 	// 4. Инициализация компонента — и на сервере тоже — это его монтирование:
 	// элемент коллекции входит в неё к серверной разметке, в порядке DOM
 	adapter.attach()
-
-	// 6.
-	$effect(() => () => adapter.destroy())
 
 	return { exchange, state: new Proxy<TRawValues>({ values }, STATE) }
 }

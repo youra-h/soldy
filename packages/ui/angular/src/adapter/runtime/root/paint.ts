@@ -1,13 +1,15 @@
 /**
- * Эффекты раскладки ядра на корень: классы, наборы слоями `TElementAttributes`,
- * выходы плагинов и стиль. Корень бывает узлом шаблона, которого до отрисовки
- * нет и который бывает новым: на новом узле память раскладки пуста, и первая
- * раскладка пишет всё.
+ * Layout of the core onto the root: classes, the attribute sets as layers of
+ * `TElementAttributes`, plugin outputs and the style — one effect per root.
+ * The root may be a template node that does not exist before the first render
+ * and may be replaced: a new node has an empty layout memory, and the first
+ * layout on it writes everything.
  */
 
-import { computed, effect, signal, type Signal } from '@angular/core'
+import { effect, type Signal } from '@angular/core'
 import type { TStateSnapshot } from '@soldy-ui/setup'
 import {
+	NO_ATTRIBUTES,
 	TElementAttributes,
 	applyClasses,
 	applyStyles,
@@ -23,12 +25,17 @@ import type { TRootPaint, TRootSet } from './spec'
 
 export type TNode = () => Element | null
 
+/** A read of state: of the component, or what the base draws on the root. */
+export type TStateRead = () => TStateSnapshot
+
+/** Nothing to draw: what the base draws on a layer away from its place. */
+export const NO_STATE: TStateSnapshot = Object.freeze({})
+
 const ROOT_SETS: readonly TRootSet[] = ['attrs', 'aria', 'dataset']
 const NO_APPLIED_CLASSES: TAppliedClasses = new Set()
 export const NO_APPLIED_STYLES: TAppliedStyles = new Map()
-/** Верхний слой стиля корня, которого прячет стиль, а не привязка хоста. */
+/** The top layer of the style of a root its style hides, not the host binding. */
 const HIDDEN_ROOT: object = Object.freeze({ display: 'none' })
-const NEVER_HIDDEN: Signal<boolean> = signal(false).asReadonly()
 const COMPANION_SHOWN: TRootStyles = new Map()
 const COMPANION_HIDDEN: TRootStyles = new Map([['display', 'none']])
 
@@ -56,80 +63,123 @@ function paintOn<TApplied>(
 	})
 }
 
+/** The value `name` of the state is another object than at the last layout. */
+function moved(last: TStateSnapshot, next: TStateSnapshot, name: string | undefined): boolean {
+	return name !== undefined && last[name] !== next[name]
+}
+
 /**
- * Раскладка `drawn` на корень `target()`. `hidden` — у корня, которого прячет
- * его стиль (регион тостов): скрытый получает `display: none` верхним слоем.
+ * Layer `name` of the root: the core set when the description puts it on the
+ * root (`sets`), and in the `attrs` layer under the set — the `id` of the root
+ * (at Vue `:id` stands before `v-bind`).
+ */
+function setLayer(drawn: TStateSnapshot, own: string | undefined, id: string | undefined): object {
+	const set = own === undefined ? NO_ATTRIBUTES : attributesOf(drawn[own])
+
+	return id === undefined ? set : { id: drawn[id], ...set }
+}
+
+/**
+ * Layout memory of one root: its node and the state of the last layout on it.
+ * A layer is written when the node is new or a state value the layer is built
+ * from is another object: the binding replaces a value only when its content
+ * changes, so a change of a property no layer reads writes nothing — the
+ * identity check does the work a `computed` per layer did.
+ */
+class TRootPainter {
+	private _node: Element | null = null
+	private _drawn: TStateSnapshot = NO_STATE
+	private _hidden = false
+	private _classes: TAppliedClasses = NO_APPLIED_CLASSES
+	private _styles: TAppliedStyles = NO_APPLIED_STYLES
+
+	constructor(private readonly _paint: TRootPaint) {}
+
+	paint(node: Element, drawn: TStateSnapshot, hidden: boolean): void {
+		const paint = this._paint
+		const fresh = node !== this._node
+		const last = this._drawn
+
+		if (fresh || moved(last, drawn, 'classes')) {
+			this._classes = applyClasses(
+				node,
+				classesOf(drawn['classes']),
+				fresh ? NO_APPLIED_CLASSES : this._classes,
+			)
+		}
+
+		const sets = paint.sets ?? ROOT_SETS
+
+		for (const name of ROOT_SETS) {
+			const own = sets.includes(name)
+				? name === 'aria'
+					? (paint.aria ?? 'aria')
+					: name
+				: undefined
+			const id = name === 'attrs' ? paint.id : undefined
+
+			if (own === undefined && id === undefined) continue
+
+			if (fresh || moved(last, drawn, own) || moved(last, drawn, id)) {
+				TElementAttributes.of(node).set(name, setLayer(drawn, own, id))
+			}
+		}
+
+		const plugins = paint.plugins
+
+		if (plugins && (fresh || plugins.some((name) => moved(last, drawn, name)))) {
+			const layer: Record<string, unknown> = {}
+
+			for (const name of plugins) Object.assign(layer, attributesOf(drawn[name]))
+
+			TElementAttributes.of(node).set('plugins', layer)
+		}
+
+		const order = paint.order === undefined ? undefined : 'order'
+
+		if (
+			fresh ||
+			hidden !== this._hidden ||
+			moved(last, drawn, 'layout_styles') ||
+			moved(last, drawn, paint.style) ||
+			moved(last, drawn, order)
+		) {
+			this._styles = applyStyles(
+				node,
+				stylesOf(
+					drawn['layout_styles'],
+					paint.style === undefined ? undefined : drawn[paint.style],
+					orderOf(paint.order, drawn['order']),
+					hidden ? HIDDEN_ROOT : undefined,
+				),
+				fresh ? NO_APPLIED_STYLES : this._styles,
+			)
+		}
+
+		this._node = node
+		this._drawn = drawn
+		this._hidden = hidden
+	}
+}
+
+/**
+ * Layout of `drawn` onto the root `target()` — one effect. `hidden` — at a root
+ * its style hides (the toasts region): hidden, it gets `display: none` as the
+ * top layer.
  */
 export function paintRoot(
 	target: TNode,
 	paint: TRootPaint,
-	drawn: Signal<TStateSnapshot>,
-	hidden: Signal<boolean> = NEVER_HIDDEN,
+	drawn: TStateRead,
+	hidden?: Signal<boolean>,
 ): void {
-	const classes = computed(() => classesOf(drawn()['classes']))
+	const painter = new TRootPainter(paint)
 
-	paintOn(target, NO_APPLIED_CLASSES, (node, applied) => applyClasses(node, classes(), applied))
+	effect(() => {
+		const node = target()
 
-	const sets = paint.sets ?? ROOT_SETS
-
-	for (const name of ROOT_SETS) {
-		const layer = rootLayer(name, paint, sets, drawn)
-
-		if (layer) onNode(target, (node) => TElementAttributes.of(node).set(name, layer()))
-	}
-
-	if (paint.plugins) {
-		const outputs = paint.plugins.map((name) => computed(() => attributesOf(drawn()[name])))
-
-		onNode(target, (node) => {
-			const layer: Record<string, unknown> = {}
-
-			for (const output of outputs) Object.assign(layer, output())
-
-			TElementAttributes.of(node).set('plugins', layer)
-		})
-	}
-
-	// Значения состояния — как есть: связка заменяет их только на смену
-	// содержимого, и эффект не будит смена чужих свойств
-	const style = paint.style
-	const layout = computed(() => drawn()['layout_styles'])
-	const own = computed(() => (style === undefined ? undefined : drawn()[style]))
-	const order = computed(() => (paint.order ? drawn()['order'] : undefined))
-
-	paintOn(target, NO_APPLIED_STYLES, (node, applied) =>
-		applyStyles(
-			node,
-			stylesOf(
-				layout(),
-				own(),
-				orderOf(paint.order, order()),
-				hidden() ? HIDDEN_ROOT : undefined,
-			),
-			applied,
-		),
-	)
-}
-
-/**
- * Слой `name` корня: набор ядра, если описание кладёт его на корень (`sets`), а
- * в слое `attrs` под набором — `id` корня (у Vue `:id` стоит перед `v-bind`).
- */
-function rootLayer(
-	name: TRootSet,
-	paint: TRootPaint,
-	sets: readonly TRootSet[],
-	drawn: Signal<TStateSnapshot>,
-): Signal<object> | null {
-	const output = name === 'aria' ? (paint.aria ?? 'aria') : name
-	const own = sets.includes(name) ? computed(() => attributesOf(drawn()[output])) : null
-	const idOutput = name === 'attrs' ? paint.id : undefined
-
-	if (idOutput === undefined) return own
-
-	const id = computed(() => drawn()[idOutput])
-
-	return computed(() => ({ id: id(), ...own?.() }))
+		if (node) painter.paint(node, drawn(), hidden !== undefined && hidden())
+	})
 }
 
 /** Спутник слоя (подложка) прячется тем же значением, что корень. */
