@@ -15,8 +15,11 @@
  * the property — the item keeps no emitter of its own.
  *
  * What is left on the item's bus is the collection's subscription: the content
- * fit of a ListBox item, the text of a Select option, the disabled state of a
- * table row. All of them share the one emitter of that bus.
+ * fit of a ListBox item, the disabled state of a table row, the text of a
+ * selected Select option. All of them share the one emitter of that bus. A
+ * Select listens to the renaming of its selected options only — the selected
+ * text and the tags are made of them — and an option nobody selected holds no
+ * emitter at all.
  *
  * `queryObjects` from `node:v8` collects garbage itself and counts the
  * reachable instances of a class (see `ui/vue/__tests__/virtual-rows.spec.ts`).
@@ -107,16 +110,6 @@ const cases: TCase[] = [
 		},
 	},
 	{
-		name: 'Select',
-		fill: (count) => {
-			const engine = createEngineSelect({ owner: new TSelect() })
-
-			engine.extensions.batch.set(sources(count))
-
-			return engine
-		},
-	},
-	{
 		name: 'Table',
 		fill: (count) => {
 			const engine = createEngineTable({ owner: new TTable() })
@@ -135,5 +128,40 @@ describe.each(cases)('$name · элемент, который ни разу не
 
 		expect(twice.buses - once.buses).toBe(COUNT)
 		expect(twice.emitters - once.emitters).toBeLessThanOrEqual(COUNT)
+	})
+})
+
+/**
+ * A Select collection of `count` options, owner included; `selected` is the
+ * index of the option marked selected in the data.
+ */
+function fillSelect(count: number, selected?: number) {
+	const engine = createEngineSelect({ owner: new TSelect() })
+
+	engine.extensions.batch.set(
+		sources(count).map((source, index) =>
+			index === selected ? { ...source, _: { selected: true } } : source,
+		),
+	)
+
+	return engine
+}
+
+describe('Select · опция, которая ни разу не рисовалась', () => {
+	it('невыбранная — одна шина и ни одного эмиттера', () => {
+		const once = added(() => fillSelect(COUNT))
+		const twice = added(() => fillSelect(2 * COUNT))
+
+		expect(twice.buses - once.buses).toBe(COUNT)
+		expect(twice.emitters - once.emitters).toBe(0)
+	})
+
+	/** The same list with one option selected, against none: what that option adds. */
+	it('выбранная — один эмиттер, подписки Select на её переименование', () => {
+		const none = added(() => fillSelect(COUNT))
+		const one = added(() => fillSelect(COUNT, 0))
+
+		expect(one.buses - none.buses).toBe(0)
+		expect(one.emitters - none.emitters).toBe(1)
 	})
 })
