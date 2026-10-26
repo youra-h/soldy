@@ -211,7 +211,8 @@ different component». Граница тишины — сама сборка, с
   пакете поэтому запрещён. Единственный эффект импорта — запись контракта
   плагина в `definePlugin`; чтобы модуль с ней не выбросило, плагин с
   контрактом ставят снаружи определением: `usePlugins(TButton,
-[AnchorPluginDescriptor])`. Сторож — `__tests__/tree-shaking.spec.ts`.
+[AnchorPluginDescriptor])`. Сторожа — `__tests__/tree-shaking.spec.ts` и
+  `tools/side-effects` (docs/agents/build.md, «Сборка пакетов»).
 
 **Что видит адаптер.** `adapter.connect(Profile)` отдаёт `TExchange`:
 

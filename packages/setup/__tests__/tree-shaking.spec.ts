@@ -1,19 +1,22 @@
 /**
- * Сторож tree-shaking: приложение с одной кнопкой не тянет плагины и дескрипторы Select.
+ * Tree-shaking guard: an application with one button does not pull the plugins
+ * and descriptors of Select.
  *
- * Каждый файл дескриптора зовёт `defineDescriptor` / `definePlugin` на верхнем
- * уровне модуля, и без `"sideEffects": false` в `package.json` сборщик обязан
- * сохранить все модули бочки: бандл с одним `ButtonDescriptor` весил 466 KiB.
+ * Every descriptor file calls `defineDescriptor` / `definePlugin` at the top
+ * level of its module, and without `"sideEffects": false` in `package.json`
+ * the bundler has to keep every module of the barrel: a bundle with one
+ * `ButtonDescriptor` weighed 466 KiB.
  *
- * Падает, если флаг убрали или если в пакете появился импорт ради побочного
- * эффекта, который снова связал кнопку со всеми дескрипторами. `@soldy-ui/core`
- * флага пока не объявляет, поэтому сверяется состав модулей setup и plugins, а
- * не общий размер.
+ * Fails if the flag is removed or if the package gets an import for a side
+ * effect that ties the button to all descriptors again. The modules of setup
+ * and plugins are compared, not the total size. The flag of every library
+ * package and the bundle of one button from each adapter are checked by
+ * `tools/side-effects`.
  *
- * Второй сторож здесь же — о сборке: потребителю уезжает `dist`, а не
- * исходники, и склеенный в один файл пакет теряет всё вышесказанное. Слепленный
- * `@soldy-ui/setup` отдавал кнопке 420 KiB вместо 224 KiB — вместе с
- * дескрипторами Select, Tabs и Accordion.
+ * The second guard here is about the build: the consumer gets `dist`, not the
+ * sources, and a package glued into one file loses all of the above. A glued
+ * `@soldy-ui/setup` gave the button 420 KiB instead of 224 KiB — together with
+ * the descriptors of Select, Tabs and Accordion.
  */
 
 import { describe, it, expect } from 'vitest'
