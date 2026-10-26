@@ -222,8 +222,6 @@ different component». Граница тишины — сама сборка, с
   которому они нужны без `this` (`useSyncExternalStore`), их привязывает
   адаптерный слой (у React — `TStableSnapshot`);
 - `inputs.full(props)` / `inputs.delta(changes)` — фреймворк → ядро;
-  `inputs.pick(props)` — значения входов для фреймворка, который следит за
-  чтением пропсов (геттер `watch` у Vue);
 - `events.listen(sink)` — события в именах фреймворка: после подписчиков ядра
   и после того, как состояние уже обновлено;
 - `forward(props)` — пропсы, которые компонент не съел.
