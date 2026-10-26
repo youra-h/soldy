@@ -1,47 +1,52 @@
 /* ─── Pagination ──────────────────────────────────────────────
- * Постраничная навигация: стрелки по краям, между ними — список страниц с
- * пропусками. Первая и последняя страницы видны всегда, между ними — N
- * страниц вокруг текущей, на месте пропущенных — многоточие:
+ * Page navigation: arrows at the edges and between them the list of pages
+ * with gaps. The first and the last page are always shown, between them N
+ * pages around the current one, and an ellipsis in place of the skipped ones:
  * `‹ 1 … 4 5 6 … 10 ›`.
  *
- *   .so-pagination                 корень — `nav`, ряд в одну строку
- *     .so-pagination__prev         стрелка «назад» (Button)
- *     .so-pagination__list         список — `ol`: страницы и пропуски по порядку
- *       .so-pagination-item        страница — `li`, элемент коллекции
- *         .so-button               строка страницы: номер или текст (Button)
- *       .so-pagination__ellipsis   пропуск — `li` с «…», разметка владельца
- *     .so-pagination__next         стрелка «вперёд» (Button)
+ *   .so-pagination                 root — `nav`, a row in one line
+ *     .so-pagination__prev         the "back" arrow (Button)
+ *     .so-pagination__list         the list — `ol`: pages and gaps in order
+ *       .so-pagination-item        a page — `li`, an item of the collection
+ *         .so-button               the row of a page: number or text (Button)
+ *       .so-pagination__ellipsis   a gap — `li` with "…", markup of the owner
+ *     .so-pagination__next         the "forward" arrow (Button)
  *
- * Ряд в одну строку и без переноса, ширина — по содержимому: сжать ряд
- * контейнер не может — строка страницы под нажимом обрезалась бы
- * многоточием, и номер пропал бы. Поставить ряд по центру или у конца — дело
- * места. Цифры одной ширины: номер «11» не уже «18», и ряд не прыгает при
- * листании. Клетки не сжимаются.
+ * One line without wrapping, as wide as its content: a container cannot
+ * squeeze the row — the row of a page would be cut by an ellipsis and its
+ * number would vanish. Centring the row or putting it at the end is up to the
+ * place. Digits of one width: "11" is not narrower than "18", and the row does
+ * not jump while paging. Cells do not shrink.
  *
- * Шкала — Button (`components/button.css`): сторона клетки — его высота,
- * зазор между клетками — зазор частей его строки, кегль — его кегль. Страницы
- * и стрелки — те же Button этого размера, и клетка пропуска обязана совпасть с
- * ними. Кегль — у корня, и пропуск берёт его наследованием; у `normal` своего
- * кегля нет, как у Button. Блок берёт ступени своего размера в
- * `--so-pagination-cell` и `--so-pagination-gap`.
+ * The scale is that of Button (`components/button.css`): the side of a cell is
+ * its height, the gap between cells the gap between the parts of its row, the
+ * font its font. Pages and arrows are Buttons of this size and take the font
+ * themselves; the gap cell has to match them and takes the same step on its
+ * own node. Not on the root: a step counts from the font of the parent, and
+ * the Buttons inside would count theirs from the root's and grow a second
+ * step. At `normal` there is no font of its own, as with Button. The block
+ * takes the steps of its size into `--so-pagination-cell` and
+ * `--so-pagination-gap`.
  *
- * Строка страницы — не уже клетки и её высоты: узкий номер стоит квадратом, а
- * номер шире и текст раздвигают строку в своём поле. Поле — сколько остаётся
- * в клетке от двух цифр (`ch` — ширина цифры: цифры одной ширины), поровну с
- * каждой стороны: квадратами стоят и однозначные, и двузначные номера, и ряд
- * не меняет ширину на переходе от 9 к 10. Поле Button для этого велико. Стрелки
- * — квадрат клетки: в кнопке одна иконка, и поле снято. Строки и стрелки
- * перекрывают шкалу Button той же или большей специфичностью, поэтому файл
- * подключён ниже `button.css`.
+ * The row of a page is not narrower than a cell and as tall as one: a narrow
+ * number stands as a square, while a wider number and text widen the row by
+ * their field. The field is what remains of the cell after two digits (`ch`
+ * is the width of a digit: digits of one width), equally on each side: one-
+ * and two-digit numbers stand as squares, and the row keeps its width from 9
+ * to 10. The field of Button is too large for that. Arrows are the square of a
+ * cell: the button holds one icon, and the field is removed. Rows and arrows
+ * override the scale of Button with the same or a higher specificity, so this
+ * file is imported below `button.css`.
  *
- * Текущая — `data-selected` на обёртке страницы: клик по ней ничего не
- * меняет, и курсор обычный. Пропуск — клетка той же ширины, что узкая
- * страница, на которой ничего не нажимают. Выключенный компонент гаснет
- * корнем целиком (`disabled.css`); страницы и стрелки выключены вместе с ним
- * и под погасшим корнем второй раз не гаснут.
+ * The current page is `data-selected` on the wrapper of the page: a click on
+ * it changes nothing, and the cursor is the default. A gap is a cell as wide
+ * as a narrow page, on which nothing is pressed. A disabled component fades as
+ * a whole at its root (`disabled.css`); pages and arrows are disabled with it
+ * and do not fade a second time under the faded root.
  *
- * Облик — вид страниц и стрелок, отметка текущей, цвет пропуска, переходы,
- * зеркало стрелок в RTL и вид в режиме принудительных цветов — рисует тема. */
+ * The look — the view of pages and arrows, the mark of the current one, the
+ * colour of a gap, transitions, the mirror of arrows in RTL and the view in
+ * forced colours mode — is drawn by the theme. */
 
 /* Размер без модификатора — `normal`: ядро пишет `--size-*` всегда, но блок и
  * без него обязан выглядеть умолчанием. */
@@ -58,6 +63,9 @@
 .so-pagination--size-sm {
 	--so-pagination-cell: var(--so-button-height-sm);
 	--so-pagination-gap: var(--so-button-gap-sm);
+}
+
+.so-pagination--size-sm > .so-pagination__list > .so-pagination__ellipsis {
 	font-size: var(--so-button-font-size-sm);
 	line-height: var(--so-button-line-height-sm);
 }
@@ -70,6 +78,9 @@
 .so-pagination--size-lg {
 	--so-pagination-cell: var(--so-button-height-lg);
 	--so-pagination-gap: var(--so-button-gap-lg);
+}
+
+.so-pagination--size-lg > .so-pagination__list > .so-pagination__ellipsis {
 	font-size: var(--so-button-font-size-lg);
 	line-height: var(--so-button-line-height-lg);
 }
@@ -77,6 +88,9 @@
 .so-pagination--size-xl {
 	--so-pagination-cell: var(--so-button-height-xl);
 	--so-pagination-gap: var(--so-button-gap-xl);
+}
+
+.so-pagination--size-xl > .so-pagination__list > .so-pagination__ellipsis {
 	font-size: var(--so-button-font-size-xl);
 	line-height: var(--so-button-line-height-xl);
 }
@@ -84,6 +98,9 @@
 .so-pagination--size-2xl {
 	--so-pagination-cell: var(--so-button-height-2xl);
 	--so-pagination-gap: var(--so-button-gap-2xl);
+}
+
+.so-pagination--size-2xl > .so-pagination__list > .so-pagination__ellipsis {
 	font-size: var(--so-button-font-size-2xl);
 	line-height: var(--so-button-line-height-2xl);
 }
