@@ -1,0 +1,146 @@
+# Соседи — Web Components
+
+Стенд, сценарии и методика — [README.md](README.md).
+
+## 2026-10-26 — первый прогон
+
+Участники: soldy (`@soldy-ui/webc` 0.3.0-alpha.5, тема oren, иконки Material), Vaadin 25.3.4
+(`@vaadin/*`, Lumo), Carbon `@carbon/web-components` 2.66.0 (тема White по умолчанию),
+Spectrum Web Components 1.12.5 (`sp-theme` light/medium), UI5 `@ui5/webcomponents` 2.28.1
+(Horizon), Web Awesome `@awesome.me/webawesome` 3.14.0 (наследник Shoelace). Новых пакетов не
+ставили.
+
+### Матрица
+
+| soldy                 | Vaadin                            | Carbon                       | Spectrum                | UI5                    | Web Awesome               |
+| --------------------- | --------------------------------- | ---------------------------- | ----------------------- | ---------------------- | ------------------------- |
+| button                | vaadin-button                     | cds-button                   | sp-button               | ui5-button             | wa-button                 |
+| input                 | vaadin-text-field                 | cds-text-input               | sp-textfield            | ui5-input              | wa-input                  |
+| check-box             | vaadin-checkbox                   | cds-checkbox                 | sp-checkbox             | ui5-checkbox           | wa-checkbox               |
+| switch                | —                                 | cds-toggle                   | sp-switch               | ui5-switch + ui5-label | wa-switch                 |
+| select (ввод, фильтр) | vaadin-combo-box                  | cds-combo-box                | sp-combobox             | ui5-combobox           | — (у wa-select нет ввода) |
+| tabs                  | vaadin-tabs, панели — приложение¹ | cds-tabs, панели по `target` | sp-tabs                 | ui5-tabcontainer       | wa-tab-group              |
+| dialog (с полем)      | vaadin-dialog                     | cds-modal                    | sp-dialog-wrapper       | ui5-dialog             | wa-dialog                 |
+| tooltip               | vaadin-tooltip                    | cds-tooltip                  | sp-tooltip self-managed | — (только `title`)     | wa-tooltip                |
+| menu                  | vaadin-menu-bar¹                  | cds-menu-button              | sp-action-menu          | ui5-menu               | wa-dropdown¹              |
+| date-picker           | vaadin-date-picker                | cds-date-picker              | —                       | ui5-date-picker        | —                         |
+
+¹ Собрано из частей библиотеки по её документации: у Vaadin радио-группа и флажки меню — пункты
+`checked` с переключением в `item-selected`, подписи групп — выключенные пункты; панели вкладок
+пишет приложение (tabsheet не ставили); у Web Awesome радио-группы меню нет — пункты-флажки с
+взаимоисключением. Пункта с календарём («Срок») нет ни у одного соседа; опасного варианта пункта
+нет у Spectrum и UI5, подписей групп у UI5. Подменю с подменю, флажки, выключенный пункт и
+сочетания — у всех пяти.
+
+Число действий совпало с soldy на всех клетках, расхождений прогонщик не напечатал.
+
+### Итог
+
+`node report.mjs webc`:
+
+Прогон 2026-10-26: N = 50, act = 10, циклов 2 + 20.
+
+| Страница       | Участник   | Вес копии (у `all` — набора), КБ | Монтирование, мс | Рост кучи, КБ/цикл |  Узлы | Слушатели | Итог        |
+| -------------- | ---------- | -------------------------------: | ---------------: | -----------------: | ----: | --------: | ----------- |
+| button         | soldy      |                              9,0 |               12 |                0,4 |     0 |         0 | чисто       |
+| button         | carbon     |                              2,6 |               22 |                0,5 |     0 |         0 | чисто       |
+| button         | spectrum   |                              2,2 |               21 |                0,7 |     0 |         0 | чисто       |
+| button         | ui5        |                              5,1 |               22 |                1,9 |     0 |         0 | чисто       |
+| button         | vaadin     |                              1,6 |               24 |                4,3 |     0 |         0 | куча растёт |
+| button         | webawesome |                              3,3 |               25 |                1,0 |     0 |         0 | чисто       |
+| input          | soldy      |                             11,7 |               12 |               -0,2 |     0 |         0 | чисто       |
+| input          | carbon     |                              5,4 |               20 |                0,6 |     0 |         0 | чисто       |
+| input          | spectrum   |                              3,6 |               20 |                0,7 |     0 |         0 | чисто       |
+| input          | ui5        |                              6,6 |               25 |                2,1 |     0 |         0 | чисто       |
+| input          | vaadin     |                              5,5 |               23 |               10,0 |     0 |         0 | куча растёт |
+| input          | webawesome |                              4,3 |               25 |                0,7 |     0 |         0 | чисто       |
+| check-box      | soldy      |                             16,6 |               15 |                0,0 |     0 |         0 | чисто       |
+| check-box      | carbon     |                              3,0 |               21 |                0,5 |     0 |         0 | чисто       |
+| check-box      | spectrum   |                              1,4 |               19 |                0,5 |     0 |         0 | чисто       |
+| check-box      | ui5        |                              7,0 |               24 |                2,8 |     0 |         0 | чисто       |
+| check-box      | vaadin     |                              4,8 |               23 |                1,7 |     0 |         0 | чисто       |
+| check-box      | webawesome |                              4,1 |               21 |                0,3 |     0 |         0 | чисто       |
+| switch         | soldy      |                             16,2 |               15 |               -0,2 |     0 |         0 | чисто       |
+| switch         | carbon     |                              3,3 |               20 |                0,1 |     0 |         0 | чисто       |
+| switch         | spectrum   |                              1,2 |               20 |                0,5 |     0 |         0 | чисто       |
+| switch         | ui5        |                             14,9 |               31 |                0,2 |     0 |         0 | чисто       |
+| switch         | webawesome |                              3,3 |               23 |                0,4 |     0 |         0 | чисто       |
+| select         | soldy      |                            167,6 |              117 |               -0,3 |     0 |         0 | чисто       |
+| select         | carbon     |                             13,7 |               31 |                0,8 |     0 |         0 | чисто       |
+| select         | spectrum   |                             28,5 |               52 |               19,9 |     0 |         0 | куча растёт |
+| select         | ui5        |                             54,1 |               69 |             2612,2 | 87220 |     79700 | **утечка**  |
+| select         | vaadin     |                              8,5 |               20 |               12,7 |     0 |         0 | куча растёт |
+| tabs           | soldy      |                            187,3 |              129 |               -0,7 |     0 |         0 | чисто       |
+| tabs           | carbon     |                             34,0 |              137 |                1,0 |     0 |         0 | чисто       |
+| tabs           | spectrum   |                             15,0 |               30 |                1,2 |     0 |         0 | чисто       |
+| tabs           | ui5        |                             80,5 |              101 |                1,3 |     0 |         0 | чисто       |
+| tabs           | vaadin     |                              8,9 |               22 |               14,0 |     0 |         0 | куча растёт |
+| tabs           | webawesome |                             13,5 |               22 |                0,3 |     0 |         0 | чисто       |
+| dialog         | soldy      |                             65,1 |               46 |               -0,8 |     0 |         0 | чисто       |
+| dialog         | carbon     |                             24,8 |               42 |                0,8 |     0 |         0 | чисто       |
+| dialog         | spectrum   |                             22,1 |               56 |               20,2 |     0 |         0 | куча растёт |
+| dialog         | ui5        |                             32,9 |               27 |                4,1 |     0 |         0 | куча растёт |
+| dialog         | vaadin     |                              6,6 |               20 |                3,5 |     0 |         0 | чисто       |
+| dialog         | webawesome |                             17,9 |               21 |                0,7 |     0 |         0 | чисто       |
+| tooltip        | soldy      |                             26,6 |               24 |               -0,1 |     0 |         0 | чисто       |
+| tooltip        | carbon     |                              6,1 |               31 |                6,1 |     0 |         0 | куча растёт |
+| tooltip        | spectrum   |                              6,5 |               29 |               11,7 |     0 |         0 | куча растёт |
+| tooltip        | vaadin     |                              5,2 |               23 |                2,8 |     0 |         0 | чисто       |
+| tooltip        | webawesome |                              7,2 |               22 |                2,0 |     0 |         0 | чисто       |
+| menu           | soldy      |                            431,6 |              264 |                0,1 |     0 |         0 | чисто       |
+| menu           | carbon     |                             71,5 |              275 |                3,0 |     0 |         0 | чисто       |
+| menu           | spectrum   |                             73,2 |              165 |               13,4 |     0 |         0 | куча растёт |
+| menu           | ui5        |                            201,0 |              169 |                8,1 |     0 |         0 | куча растёт |
+| menu           | vaadin     |                             11,9 |               20 |               17,3 |     0 |         0 | куча растёт |
+| menu           | webawesome |                             36,6 |               49 |                1,1 |     0 |         0 | чисто       |
+| date-picker    | soldy      |                            442,2 |              191 |               -0,1 |     0 |         0 | чисто       |
+| date-picker    | carbon     |                             25,9 |               49 |                1,4 |     0 |         0 | чисто       |
+| date-picker    | ui5        |                            102,7 |             3669 |                1,9 |     0 |         0 | чисто       |
+| date-picker    | vaadin     |                              8,8 |               27 |               27,9 |     0 |         0 | куча растёт |
+| all:carbon     | soldy      |                           1761,3 |               26 |               -0,4 |     0 |         0 | чисто       |
+| all:carbon     | carbon     |                            266,0 |               33 |                0,0 |     0 |         0 | чисто       |
+| all:spectrum   | soldy      |                           1250,0 |               20 |               -0,4 |     0 |         0 | чисто       |
+| all:spectrum   | spectrum   |                            233,4 |               31 |                3,0 |     0 |         0 | чисто       |
+| all:ui5        | soldy      |                           1727,9 |               26 |               -0,2 |     0 |         0 | чисто       |
+| all:ui5        | ui5        |                            550,3 |               88 |               -0,1 |     0 |         0 | чисто       |
+| all:vaadin     | soldy      |                           1750,4 |               26 |               -0,2 |     0 |         0 | чисто       |
+| all:vaadin     | vaadin     |                            134,1 |               30 |                6,3 |     0 |         0 | куча растёт |
+| all:webawesome | soldy      |                           1026,6 |               17 |               -0,6 |     0 |         0 | чисто       |
+| all:webawesome | webawesome |                            137,4 |               24 |                0,1 |     0 |         0 | чисто       |
+
+| Страница    | soldy, gzip / brotli | carbon, gzip / brotli | spectrum, gzip / brotli | ui5, gzip / brotli | vaadin, gzip / brotli | webawesome, gzip / brotli |
+| ----------- | -------------------: | --------------------: | ----------------------: | -----------------: | --------------------: | ------------------------: |
+| button      |            192 / 155 |               23 / 20 |                 56 / 45 |            61 / 51 |               23 / 20 |                   50 / 41 |
+| input       |            192 / 155 |               19 / 16 |                 56 / 45 |            84 / 71 |               28 / 25 |                   50 / 41 |
+| check-box   |            192 / 155 |               18 / 16 |                 48 / 39 |            59 / 50 |               29 / 25 |                   45 / 37 |
+| switch      |            192 / 155 |               20 / 18 |                 48 / 39 |            59 / 50 |                     — |                   32 / 26 |
+| select      |            193 / 155 |               87 / 55 |                110 / 93 |          139 / 120 |               50 / 44 |                         — |
+| tabs        |            193 / 156 |               80 / 62 |                 56 / 46 |          125 / 107 |               27 / 23 |                   55 / 46 |
+| dialog      |            192 / 155 |               83 / 66 |                 98 / 83 |            98 / 83 |               43 / 38 |                   61 / 50 |
+| tooltip     |            192 / 155 |               49 / 42 |                 60 / 49 |                  — |               35 / 31 |                   65 / 54 |
+| menu        |            193 / 155 |               51 / 44 |                 88 / 70 |          121 / 103 |               45 / 39 |                   70 / 58 |
+| date-picker |            192 / 155 |               39 / 34 |                       — |          153 / 132 |               54 / 48 |                         — |
+| all         |            195 / 157 |             224 / 160 |               163 / 136 |          220 / 190 |              102 / 90 |                   93 / 78 |
+
+### Наблюдения
+
+- **Вес копии.** soldy тяжелее каждого соседа на каждой странице: на простых контролах в 2–10 раз
+  (button 9 КБ против 1,6–5 КБ), на составных — на порядок (menu 432 КБ против 12–201 КБ,
+  date-picker 442 КБ против 9–103 КБ, select 168 КБ против 9–54 КБ). Соседи строят оверлеи и
+  панели лениво или один раз на документ; soldy держит экземпляры ядра на каждую часть.
+- **Размер сборки.** У soldy каждая страница весит ~192 КБ gzip — столько же, сколько `all`:
+  `@soldy-ui/webc` регистрирует все элементы при импорте пакета (нет `sideEffects` и
+  точек входа на компонент), и дерево сборки не трясётся. Соседи импортируются по компоненту, и
+  страница несёт только своё (Carbon button 23 КБ, Vaadin 23 КБ). На `all` soldy в общем ряду
+  (Carbon 224, UI5 220, Spectrum 163, Vaadin 102, Web Awesome 93 КБ gzip).
+- **Утечки.** soldy — чисто везде. UI5 select — **утечка**: +2,6 МБ кучи, +87 тыс. узлов и
+  +80 тыс. слушателей за цикл; вероятно, панель комбобокса остаётся в статической области UI5
+  после снятия — не разбирали, утверждать причину нельзя. «Куча растёт» — у Vaadin на большинстве
+  страниц (date-picker 28 КБ/цикл), у Spectrum на select, dialog, tooltip, menu, у UI5 на dialog и
+  menu, у Carbon на tooltip.
+- **Монтирование** — второстепенно (платформы и участники шли параллельно). UI5 date-picker
+  монтируется 3,7 с: с `Assets.js` поле даты грузит данные локали при первом монтировании.
+- **Ограничения.** Сценарии соседей нажимают узлы в их теневых деревьях (там слушают
+  компоненты); Spectrum требует у Escape `code`, поэтому у него своя `escape()`; Carbon
+  закрывает календарь Escape только с поля. В dialog и menu Web Awesome и Spectrum между копиями
+  ждут конца анимации — число действий от этого не меняется, время сценария — да.

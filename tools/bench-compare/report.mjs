@@ -52,7 +52,7 @@ function median(values) {
 const COUNTERS = ['nodes', 'listeners', 'components', 'emitters']
 
 /** Figures and verdict of a measured page; `empty` — the participant's empty page. */
-function figures(page, empty) {
+function figures(page, empty, copies) {
 	const measured = page.cycles.slice(WARM)
 	const heapSlope = slope(measured.map((c) => c.after.heap))
 	const emptySlope = empty ? slope(empty.cycles.slice(WARM).map((c) => c.after.heap)) : 0
@@ -66,7 +66,7 @@ function figures(page, empty) {
 	const heap = heapSlope > Math.max(3 * emptySlope, 4096)
 
 	return {
-		weight: (measured[0].mounted.heap - measured[0].before.heap) / run.n,
+		weight: (measured[0].mounted.heap - measured[0].before.heap) / copies,
 		mount: median(measured.map((c) => c.time)),
 		heapSlope,
 		grown,
@@ -84,7 +84,7 @@ lines.push(
 	'',
 )
 lines.push(
-	'| Страница | Участник | Вес копии, КБ | Монтирование, мс | Рост кучи, КБ/цикл | Узлы | Слушатели | Итог |',
+	'| Страница | Участник | Вес копии (у `all` — набора), КБ | Монтирование, мс | Рост кучи, КБ/цикл | Узлы | Слушатели | Итог |',
 	'| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |',
 )
 
@@ -96,7 +96,7 @@ for (const key of pageKeys) {
 
 		if (!page) continue
 
-		const f = figures(page, run.participants[p].pages.empty)
+		const f = figures(page, run.participants[p].pages.empty, key.startsWith('all') ? 1 : run.n)
 		const mark = mismatched.has(`${p}:${key}`) ? ' (действий не поровну)' : ''
 
 		lines.push(

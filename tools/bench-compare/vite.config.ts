@@ -109,7 +109,7 @@ export default defineConfig({
 	},
 	build: {
 		target: 'esnext',
-		outDir: SIZE ? `dist-size/${SIZE}` : ONLY ? `dist/${ONLY}/neighbors` : 'dist',
+		outDir: SIZE ? `dist-size/${SIZE}` : `dist/${ONLY ?? 'all'}/neighbors`,
 		emptyOutDir: true,
 		manifest: Boolean(SIZE),
 		rollupOptions: {
