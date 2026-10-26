@@ -184,15 +184,23 @@ export interface IDatePicker
 	endName: string
 	/** Можно ли сейчас открыть панель: не `disabled` и не `readonly` */
 	readonly openable: boolean
-	/** Поле одной даты — экземпляр `TDateInput`, которым владеет DatePicker */
+	/**
+	 * The single date's field — a `TDateInput` the picker owns. Created with
+	 * the single mode or on first read, and kept
+	 */
 	readonly field: IDateInput
-	/** Поле начала диапазона */
+	/** The range start's field — created with the range mode or on first read */
 	readonly start: IDateInput
-	/** Поле конца диапазона */
+	/** The range end's field — created with the range mode or on first read */
 	readonly end: IDateInput
 	/** Календарь панели — экземпляр `TCalendar`, которым владеет DatePicker */
 	readonly calendar: ICalendar
-	/** Движок коллекции календаря: по нему DatePicker зовёт команды выбора и фокуса */
+	/**
+	 * The engine of the calendar's collection: the picker calls the selection and
+	 * focus commands on it. The calendar becomes its owner on the first opening
+	 * or mode change; until then there are no days, and commands such as
+	 * `selection.chooseDate()` do nothing
+	 */
 	readonly engine: TCalendarCollection
 	/**
 	 * Набор кнопки календаря: `aria-haspopup="dialog"`, `aria-expanded` —

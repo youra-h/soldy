@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TDatePicker, TClearable, isSwipeable } from '@soldy-ui/core'
+import { queryObjects } from 'node:v8'
+import {
+	TCalendarCollectionFacade,
+	TCalendarItem,
+	TClearable,
+	TDateInput,
+	TDatePicker,
+	TListBox,
+	TPopover,
+	isSwipeable,
+} from '@soldy-ui/core'
 import type {
 	IDateInput,
 	IDatePickerProps,
@@ -74,12 +84,12 @@ describe('без аргументов', () => {
 		expect(target.triggerDataset).toEqual({ 'data-selected': 'false' })
 	})
 
-	it('экземпляры — на всю жизнь, движок — календаря', () => {
+	it('экземпляры — на всю жизнь; календаря в движке, пока панель не открывали, нет', () => {
 		const target = picker()
 
 		expect(target.field).toBe(target.field)
-		expect(target.engine.options.get('owner')).toBe(target.calendar)
 		expect(target.engine.extensions.selection.mode).toBe('single')
+		expect(target.engine.options.get('owner')).toBeUndefined()
 	})
 })
 
@@ -126,6 +136,8 @@ describe('общее — полям и календарю', () => {
 
 	it('смена свойства доходит до всех, кому оно нужно', () => {
 		const target = picker()
+		// The range ends exist once read: read first, the change has to reach made fields
+		const inputs = [target.field, target.start, target.end]
 
 		target.disabled = true
 		target.size = 'sm'
@@ -139,7 +151,7 @@ describe('общее — полям и календарю', () => {
 		target.timeZone = 'UTC'
 		target.name = 'when'
 
-		for (const input of [target.field, target.start, target.end]) {
+		for (const input of inputs) {
 			expect(input.disabled).toBe(true)
 			expect(input.size).toBe('sm')
 			expect(input.locale).toBe('de-DE')
@@ -216,7 +228,7 @@ describe('значение', () => {
 	})
 
 	it('выбор дня в календаре — значение и поле', () => {
-		const target = picker()
+		const target = picker({ open: true })
 		const changes = values(target)
 
 		target.engine.extensions.selection.chooseDate('2026-09-12')
@@ -227,7 +239,7 @@ describe('значение', () => {
 	})
 
 	it('диапазон из календаря: первый день значения не трогает, второй пишет пару в поля', () => {
-		const target = picker({ mode: 'range' })
+		const target = picker({ mode: 'range', open: true })
 		const changes = values(target)
 		const { selection } = target.engine.extensions
 
@@ -304,13 +316,13 @@ describe('значение', () => {
 	})
 
 	it('отменённый выбор в календаре: календарь получает обратно принятое', () => {
-		const target = picker({ value: '2026-09-10' })
+		const target = picker({ value: '2026-09-10', open: true })
 
 		target.events.on('change:value:before', (e: TChangeEvent<TDatePickerValue>) =>
 			e.preventDefault(),
 		)
 
-		target.engine.extensions.selection.chooseDate('2026-09-12')
+		expect(target.engine.extensions.selection.chooseDate('2026-09-12')).toBe(true)
 
 		expect(target.value).toBe('2026-09-10')
 		expect(target.calendar.value).toBe('2026-09-10')
@@ -596,6 +608,262 @@ describe('панель', () => {
 		target.open = false
 
 		expect(selection.anchor).toBeUndefined()
+	})
+})
+
+/**
+ * The calendar goes into the engine when the picker first gives the
+ * collection work — on opening and on a mode change. The days and the month
+ * pickers are built for the owner only, so a picker nobody opened holds none;
+ * the value and the mode live without it.
+ */
+describe('календарь в движке — с первого открытия', () => {
+	it('не открывали — календаря в движке нет: ни дней, ни сеток, ни панелей выбора месяца', () => {
+		const target = picker({ value: '2026-09-10' })
+		const { batch, view, picker: places } = target.engine.extensions
+
+		expect(target.engine.options.get('owner')).toBeUndefined()
+		expect(batch.items).toHaveLength(0)
+		expect(view.grids).toEqual([])
+		expect(places.pickers).toEqual([])
+		// The value is the calendar's all the same
+		expect(target.calendar.value).toBe('2026-09-10')
+	})
+
+	it('открыли — календарь владелец движка: сетка месяца значения с днями, фокус на старте', () => {
+		const target = picker({ value: '2026-09-10' })
+		const { batch, view, focus, picker: places } = target.engine.extensions
+
+		target.open = true
+
+		const chosen = batch.items.find((day) => day.date === '2026-09-10')
+
+		expect(target.engine.options.get('owner')).toBe(target.calendar)
+		expect(view.grids.map((grid) => grid.key)).toEqual(['2026-09-01'])
+		expect(batch.items).toHaveLength(30)
+		expect(chosen?.aria.get('aria-selected')).toBe('true')
+		expect(focus.focusedDate).toBe('2026-09-10')
+		expect(places.pickers).toHaveLength(1)
+	})
+
+	it('закрытие календарь в движке оставляет, повторное открытие наблюдателей не будит', () => {
+		const target = picker()
+		const owners: unknown[] = []
+
+		target.engine.options.watch('owner', (owner) => owners.push(owner))
+
+		target.open = true
+		target.open = false
+		target.open = true
+
+		expect(owners).toEqual([undefined, target.calendar])
+	})
+
+	/**
+	 * A Calendar mounted over the picker's engine releases the owner when it is
+	 * unmounted; the next opening gives the calendar back to the engine.
+	 */
+	it('снятый календарь отпустил движок — следующее открытие возвращает его', () => {
+		const target = picker()
+		const facade = new TCalendarCollectionFacade(
+			{},
+			{ engine: target.engine, owner: target.calendar },
+		)
+
+		target.open = true
+		facade.bindOwner()
+		facade.releaseOwner()
+
+		expect(target.engine.options.get('owner')).toBeUndefined()
+
+		target.open = false
+		target.open = true
+
+		expect(target.engine.options.get('owner')).toBe(target.calendar)
+		expect(target.engine.extensions.batch.items).not.toHaveLength(0)
+	})
+
+	it('смена режима до первого открытия — календарь в движке, значение в форме режима', () => {
+		const target = picker({ value: '2026-09-10' })
+
+		target.mode = 'range'
+
+		expect(target.engine.options.get('owner')).toBe(target.calendar)
+		expect(target.calendar.value).toEqual(['2026-09-10', '2026-09-10'])
+		expect(target.value).toEqual(['2026-09-10', '2026-09-10'])
+		expect([target.start.value, target.end.value]).toEqual(['2026-09-10', '2026-09-10'])
+	})
+
+	it('команды календаря до первого открытия ничего не делают; открыли — выбор доходит до значения', () => {
+		const target = picker()
+		const { selection } = target.engine.extensions
+
+		expect(selection.chooseDate('2026-09-12')).toBe(false)
+		expect(target.value).toBeUndefined()
+
+		target.open = true
+
+		expect(selection.chooseDate('2026-09-12')).toBe(true)
+		expect(target.value).toBe('2026-09-12')
+	})
+})
+
+/**
+ * A field is created when its mode needs it — the mode's strategy takes it —
+ * or when its getter is read, and it stays for the picker's life. A field made
+ * later gets the shared state as it is by then, the end — against the start.
+ */
+describe('поля — по режиму', () => {
+	it('поля режима — с режимом, и живут дальше: вернулся режим — те же экземпляры', () => {
+		const target = picker()
+		const field = target.field
+
+		target.mode = 'range'
+
+		const { start, end } = target
+
+		target.mode = 'single'
+		expect(target.field).toBe(field)
+
+		target.mode = 'range'
+		expect(target.start).toBe(start)
+		expect(target.end).toBe(end)
+	})
+
+	it('позднее поле получает текущее общее: выключен, только чтение, размер, локаль, границы, ошибка, правило, имя', () => {
+		const unavailable: TCalendarUnavailable = (date) => date === '2026-09-15'
+		const target = picker()
+
+		target.disabled = true
+		target.readonly = true
+		target.required = true
+		target.size = 'lg'
+		target.locale = 'ru-RU'
+		target.min = '2026-09-01'
+		target.max = '2026-09-30'
+		target.unavailable = unavailable
+		target.validate = true
+		target.invalid = true
+		target.startName = 'from'
+		target.endName = 'to'
+
+		// One date: the range ends are made only now, by the mode
+		target.mode = 'range'
+
+		for (const input of [target.start, target.end]) {
+			expect(input.disabled).toBe(true)
+			expect(input.readonly).toBe(true)
+			expect(input.required).toBe(true)
+			expect(input.size).toBe('lg')
+			expect(input.locale).toBe('ru-RU')
+			expect(input.max).toBe('2026-09-30')
+			expect(input.validate).toBe(true)
+			expect(input.invalid).toBe(true)
+		}
+
+		expect(target.start.min).toBe('2026-09-01')
+		expect(target.start.unavailable).toBe(unavailable)
+		expect(target.start.name).toBe('from')
+		expect(target.end.min).toBe('2026-09-01')
+		expect(target.end.unavailable?.('2026-09-15', undefined)).toBe(true)
+		expect(target.end.name).toBe('to')
+	})
+
+	it('конец, созданный после набранного начала, сверяется с ним: min и правило с якорем', () => {
+		const rule = vi.fn<TCalendarUnavailable>(
+			(date, anchor) => anchor !== undefined && nights(anchor, date) > 3,
+		)
+		const target = picker({ unavailable: rule })
+
+		// One date: reading the start makes it; typing into it is not the value
+		target.start.paste('2026-09-20')
+		expect(target.value).toBeUndefined()
+
+		const { end } = target
+
+		expect(end.min).toBe('2026-09-20')
+
+		end.paste('2026-09-25')
+
+		expect(end.invalid).toBe(true)
+		expect(rule).toHaveBeenCalledWith('2026-09-25', '2026-09-20')
+	})
+})
+
+/**
+ * What a closed picker holds: `queryObjects` from `node:v8` collects garbage
+ * itself and counts live instances of a class (see `item-buses.spec.ts`). The
+ * counters are global to the worker, so the spec counts `2N` pickers against
+ * `N`: that cancels whatever is created once, with the first instance.
+ */
+describe('вес закрытого DatePicker', () => {
+	const COUNT = 20
+
+	/** Live fields, days, lists and popovers right now. */
+	function census() {
+		return {
+			fields: queryObjects(TDateInput, { format: 'count' }),
+			days: queryObjects(TCalendarItem, { format: 'count' }),
+			lists: queryObjects(TListBox, { format: 'count' }),
+			popovers: queryObjects(TPopover, { format: 'count' }),
+		}
+	}
+
+	type TCensus = ReturnType<typeof census>
+
+	/** What `count` pickers built by `build` add while they are alive. */
+	function added(count: number, build: () => TDatePicker): TCensus {
+		const before = census()
+		const held = Array.from({ length: count }, build)
+		const after = census()
+
+		expect(held).toHaveLength(count)
+
+		return {
+			fields: after.fields - before.fields,
+			days: after.days - before.days,
+			lists: after.lists - before.lists,
+			popovers: after.popovers - before.popovers,
+		}
+	}
+
+	/** The price of `COUNT` pickers: `2N` against `N`. */
+	function perCount(build: () => TDatePicker): TCensus {
+		const once = added(COUNT, build)
+		const twice = added(2 * COUNT, build)
+
+		return {
+			fields: twice.fields - once.fields,
+			days: twice.days - once.days,
+			lists: twice.lists - once.lists,
+			popovers: twice.popovers - once.popovers,
+		}
+	}
+
+	it('одна дата — по полю на копию, ни одного дня, списка и поповера', () => {
+		expect(perCount(() => picker({ value: '2026-09-10' }))).toEqual({
+			fields: COUNT,
+			days: 0,
+			lists: 0,
+			popovers: 0,
+		})
+	})
+
+	it('диапазон — по два поля на копию, без поля одной даты и без календаря', () => {
+		expect(perCount(() => picker({ mode: 'range' }))).toEqual({
+			fields: 2 * COUNT,
+			days: 0,
+			lists: 0,
+			popovers: 0,
+		})
+	})
+
+	it('открытая — дни месяца и панель выбора месяца появляются', () => {
+		const days = perCount(() => picker({ value: '2026-09-10', open: true }))
+
+		expect(days.days).toBe(30 * COUNT)
+		expect(days.lists).toBe(COUNT)
+		expect(days.popovers).toBe(COUNT)
 	})
 })
 

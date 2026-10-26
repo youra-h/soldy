@@ -17,8 +17,8 @@ export class TRangeFields implements IDatePickerFields {
 	private readonly _end: IDateInput
 
 	constructor(set: TDatePickerFieldSet) {
-		this._start = set.start
-		this._end = set.end
+		this._start = set.start()
+		this._end = set.end()
 	}
 
 	includes(input: IDateInput): boolean {

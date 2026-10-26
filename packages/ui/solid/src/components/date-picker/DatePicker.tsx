@@ -85,7 +85,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 		<DateInput
 			embedded="date-picker.field"
 			class="so-date-picker__field"
-			ctrl={binding.field}
+			ctrl={ctrl.field}
 			aria_label={props.aria_label}
 			aria_labelledBy={props.aria_labelledBy}
 			aria_describedBy={props.aria_describedBy}
@@ -101,7 +101,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 			<DateInput
 				embedded="date-picker.start"
 				class="so-date-picker__start"
-				ctrl={binding.start}
+				ctrl={ctrl.start}
 				aria_label={state.names_start}
 			/>
 			<span class="so-date-picker__dash" aria-hidden="true">
@@ -110,7 +110,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 			<DateInput
 				embedded="date-picker.end"
 				class="so-date-picker__end"
-				ctrl={binding.end}
+				ctrl={ctrl.end}
 				aria_label={state.names_end}
 			/>
 			{clearSlot()}

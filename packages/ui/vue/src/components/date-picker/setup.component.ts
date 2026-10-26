@@ -10,18 +10,22 @@ import {
 import BaseDatePicker, { type DatePickerProps } from './base.component'
 
 /**
- * Логики здесь нет: общее полям и календарю, значение, открытость и
- * подтверждение выбора держит ядро DatePicker, очищает его команда `clear`,
- * кнопку календаря и Alt+↓ ловит плагин открытия, нажатие мимо —
- * `TDismissPlugin`, фокус панели — плагин фокуса, жест — `TSwipePlugin`.
- * Разметка раскладывает то, что они отдали.
+ * No logic here: the shared state of the fields and the calendar, the value,
+ * openness and choice confirmation are held by the DatePicker core, its
+ * `clear` command clears it, the opening plugin catches the calendar button
+ * and Alt+↓, `TDismissPlugin` — a press outside, the focus plugin — the
+ * panel's focus, `TSwipePlugin` — the swipe. The markup lays out what they
+ * gave.
  *
- * Поля, календарь и движок его коллекции — экземпляры ядра на всю жизнь
- * DatePicker, а не пропсы: их отдаём инстансами, как `field` у Select, — и
- * компоненты берут их целиком (`:ctrl`, `:engine`).
+ * The fields, the calendar and its collection's engine are core instances
+ * living as long as the DatePicker, not props: they go out as instances, as
+ * Select's `field` does, and components take them whole (`:ctrl`, `:engine`).
+ * The calendar and the engine come from setup; a mode's fields the template
+ * reads from the instance in that mode's branch — the core creates a field
+ * when its mode needs it, and the other mode's fields are never built.
  *
- * Поле формы `Field` над DatePicker связывается с ним, а не с его полями:
- * поля — детали его разметки (`embedded`), и связку поля формы они не берут.
+ * A form `Field` above the DatePicker links with it, not with its fields: the
+ * fields are details of its markup (`embedded`) and take no form-field link.
  */
 export default {
 	name: '_DatePicker',
@@ -38,15 +42,12 @@ export default {
 			// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
 			...useAdapter(adapter, props, emit),
 			/**
-			 * Инстанс — для кнопок подвала при `confirmable`: «OK» принимает
-			 * выбор (`confirm`), «Отмена» закрывает панель, а черновик сбрасывает
-			 * само закрытие. Возврат фокуса — забота плагина, разметка о нём не
-			 * знает.
+			 * The instance — for the mode's fields and the footer buttons with
+			 * `confirmable`: «OK» accepts the choice (`confirm`), «Cancel» closes
+			 * the panel, and the closing itself drops the draft. Returning the
+			 * focus is the plugin's business; the markup knows nothing of it.
 			 */
 			picker,
-			field: picker.field,
-			start: picker.start,
-			end: picker.end,
 			calendar: picker.calendar,
 			engine: picker.engine,
 			clearIconTag: roleIcon('close'),
