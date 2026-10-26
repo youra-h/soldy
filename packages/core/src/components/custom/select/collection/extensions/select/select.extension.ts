@@ -91,14 +91,24 @@ export class TSelectExtension<
 	private _text = ''
 
 	/**
-	 * Подписки на переименование опций, которые сейчас в списке.
+	 * A selected option was renamed. Its text is part of the selected text
+	 * (`text`), and the renaming has to reach `text`, through it the field if
+	 * the field shows the selected text (`_syncText`), and the option's tag:
+	 * `change:selection` does not come on a rename, so the tags are asked to
+	 * rebuild from here, while the `tags` extension still writes them. The mode
+	 * is not checked — outside `multiple` there are no tags, and the call does
+	 * nothing.
 	 *
-	 * Обработчик у каждой опции свой: ему нужна опция, а событие несёт только
-	 * значение. Поэтому он хранится до удаления опции — иначе снять подписку
-	 * было бы нечем. `WeakMap` — чтобы запись не удерживала опцию, если движок
-	 * выбросят, не удалив из него опции.
+	 * One handler for all options: the event carries only the value, and which
+	 * option it was does not matter — `text` and the tags are rebuilt from the
+	 * selection. Only selected options are listened to (`_watchSelected`), so an
+	 * unselected one changes neither the text nor the tags: during a server
+	 * search the application updates option texts right while the user types.
 	 */
-	private readonly _textWatchers = new WeakMap<TItem, () => void>()
+	private readonly _onSelectedRenamed = (): void => {
+		this._syncText()
+		this._tags?.syncTags()
+	}
 
 	constructor(options?: IBaseOwnerItemExtensionOptions<TItem, ISelectItemExtension<TItem>>) {
 		super(TSelectItemExtension, options)
@@ -143,18 +153,18 @@ export class TSelectExtension<
 		// Тем опциям `item:added` уже не придёт
 		ctx.driver.valueOf().forEach((item) => this._onItemAdded(item as TItem))
 
-		// Переименование опции слушается от добавления (`_onItemAdded`) до
-		// удаления. Очистка шлёт `item:removed` каждой опции перед `reset` —
-		// отдельной подписки на неё не нужно
-		ctx.driver.events.on('item:removed', (e) => this._unwatchText(e.item))
-
 		// Патч пишет элементу своё из данных — свойства владельца поверх
 		ctx.driver.events.on('item:updated', (e) => this._inheritOwner(e.item as TItem))
 
 		const selection = this._selection
 
 		if (selection) {
-			selection.events.on('change:selection', () => this._onSelectionChanged())
+			// The second argument names the options whose mark changed, removed
+			// selected ones included, and the rename subscriptions follow it
+			selection.events.on('change:selection', (_selected, changed) => {
+				this._watchSelected(changed, selection)
+				this._onSelectionChanged()
+			})
 			selection.events.on('change:mode', () => this._onModeChanged())
 
 			// Добавленной — только ей: пачка шлёт `item:added` на каждую опцию
@@ -172,9 +182,12 @@ export class TSelectExtension<
 		// на `change:selection` уже отработала раньше нашей (см. `_onSelectionChanged`).
 		this._tags?.events.on('change:tags', () => this._syncFieldPlaceholder())
 
-		// Догон выбора: к нашей подписке выбор уже мог сложиться — `_.selected`
-		// движка, собранного снаружи, применяет `selection` при установке.
-		// `aria-selected` и текст выбранного от владельца не зависят
+		// Catch-up of the selection: it may have formed before our subscription —
+		// `selection` applies the `_.selected` marks of an engine built outside on
+		// install. The rename subscriptions of the selected options,
+		// `aria-selected` and the selected text do not depend on the owner
+		if (selection) this._watchSelected(selection.selected, selection)
+
 		this._onSelectionChanged()
 
 		// Владелец — опция движка: приходит и уходит после сборки. Подписки на
@@ -346,52 +359,24 @@ export class TSelectExtension<
 
 		this._applyContentFit(item)
 		this._applyIndicator(item)
-
-		this._watchText(item)
 	}
 
 	/**
-	 * Слушать переименование опции. Повторный вызов для той же опции второй
-	 * подписки не заводит: без `trackBy` состав пересобирается через очистку, и
-	 * те же инстансы добавляются заново.
+	 * Listen to the renaming of selected options, and only of them: `text` and
+	 * the tags are made of the selected ones, and an option nobody selected
+	 * holds no subscription — under the `Virtual` window that is most options
+	 * of a large list. `items` are the options whose mark changed, as
+	 * `change:selection` names them, removed selected ones included (AGENTS.md,
+	 * «Удаление выбранного — смена выбора»), or, on install, the options already
+	 * selected: a selected one is listened to, the others are not. A bus keeps
+	 * one subscription per handler, so an option named again while listened to
+	 * keeps the one it has.
 	 */
-	private _watchText(item: TItem): void {
-		if (this._textWatchers.has(item)) return
-
-		const watcher = (): void => this._onItemRenamed(item)
-
-		this._textWatchers.set(item, watcher)
-		item.events.on('change:text', watcher)
-	}
-
-	/**
-	 * Удалённую опцию Select больше не слушает: в его тексте её нет, а подписка
-	 * удерживала бы Select, пока жива сама опция.
-	 */
-	private _unwatchText(item: TItem): void {
-		const watcher = this._textWatchers.get(item)
-
-		if (!watcher) return
-
-		item.events.off('change:text', watcher)
-		this._textWatchers.delete(item)
-	}
-
-	/**
-	 * Текст опции входит в текст выбранного (`text`), только пока она выбрана.
-	 * Переименование выбранной обязано дойти до `text`, а через него — до
-	 * поля, если оно показывает текст выбранного (`_syncText`), и до её тега:
-	 * `change:selection` на переименование не приходит, поэтому теги просим
-	 * пересобраться отсюда, а пишет их по-прежнему расширение `tags`. Режим
-	 * не проверяется — вне `multiple` тегов нет, и вызов ничего не делает.
-	 * Невыбранная не меняет ни текста, ни тегов: при серверном поиске
-	 * приложение обновляет тексты опций прямо во время ввода.
-	 */
-	private _onItemRenamed(item: TItem): void {
-		if (!this._selection?.isSelected(item)) return
-
-		this._syncText()
-		this._tags?.syncTags()
+	private _watchSelected(items: Iterable<TItem>, selection: ISelectionExtension<TItem>): void {
+		for (const item of items) {
+			if (selection.isSelected(item)) item.events.on('change:text', this._onSelectedRenamed)
+			else item.events.off('change:text', this._onSelectedRenamed)
+		}
 	}
 
 	/**

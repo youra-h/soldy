@@ -17,6 +17,7 @@ import {
 	TSelectItemCollectionFacade,
 	TItemContextRegistry,
 	TInput,
+	createEngineSelection,
 	isSwipeable,
 } from '@soldy-ui/core'
 import type {
@@ -476,12 +477,13 @@ describe('text — что показывает поле', () => {
  */
 describe('переименование опции', () => {
 	/**
-	 * Сколько подписок на `change:text` висит на опции — считая с вызова, поэтому
-	 * ставится до того, как опция попадёт в список.
+	 * How many `change:text` subscriptions the option holds, counted from the
+	 * call: it is set before the option is selected — the Select listens to
+	 * selected options only.
 	 *
-	 * Удаление и возврат проверяются числом подписок, а не итоговым
-	 * `field.value`: переименование опции вне выбора поле не трогает, и утечку
-	 * поле не показало бы.
+	 * Removal and return are checked by the number of subscriptions rather than
+	 * by the resulting `field.value`: renaming an option out of the selection
+	 * does not touch the field, and the field would not show a leak.
 	 */
 	function watchTextListeners(item: ISelectItem): () => number {
 		const on = vi.spyOn(item.events, 'on')
@@ -512,47 +514,218 @@ describe('переименование опции', () => {
 		expect(owner.field.value).toBe('typed')
 	})
 
-	it('удалённую опцию Select больше не слушает', () => {
-		const { facade, items } = createSelect(['a'])
-		const late = new TSelectItem({ value: 'z', text: 'Z' })
-		const listeners = watchTextListeners(late)
-
-		facade.items = [...items, late]
-
-		expect(listeners()).toBe(1)
-
-		facade.engine.extensions.batch.remove([late])
-
-		expect(listeners()).toBe(0)
-	})
-
-	it('после очистки списка опции не слушаются', () => {
-		const { facade, items } = createSelect(['a'])
-		const late = new TSelectItem({ value: 'z', text: 'Z' })
-		const listeners = watchTextListeners(late)
-
-		facade.items = [...items, late]
-		facade.engine.extensions.batch.clear()
-
-		expect(listeners()).toBe(0)
-	})
-
 	/**
-	 * Без `trackBy` состав пересобирается через очистку: опции уходят и
-	 * возвращаются теми же инстансами. Раньше каждое возвращение добавляло
-	 * опции ещё одну подписку.
+	 * Select listens to the renaming of selected options only: the selected
+	 * text and the tags are made of them. An option nobody selected holds no
+	 * subscription — under the `Virtual` window that is most options of a large
+	 * list (`item-buses.spec.ts`).
 	 */
-	it('возврат в список второй подписки не заводит', () => {
-		const { facade, items } = createSelect(['a'])
-		const late = new TSelectItem({ value: 'z', text: 'Z' })
-		const listeners = watchTextListeners(late)
-		const all = [...items, late]
+	describe('слушается только выбранная', () => {
+		it('невыбранную Select не слушает', () => {
+			const { facade, items } = createSelect(['a'])
+			const late = new TSelectItem({ value: 'z', text: 'Z' })
+			const listeners = watchTextListeners(late)
 
-		facade.items = all
-		facade.items = [...all]
-		facade.items = [...all]
+			facade.items = [...items, late]
 
-		expect(listeners()).toBe(1)
+			expect(listeners()).toBe(0)
+		})
+
+		it('выбор по value заводит подписку, смена value снимает', () => {
+			const { owner, facade, items, select } = createSelect(['a'])
+			const late = new TSelectItem({ value: 'z', text: 'Z' })
+			const listeners = watchTextListeners(late)
+
+			facade.items = [...items, late]
+			owner.value = 'z'
+
+			expect(listeners()).toBe(1)
+
+			late.text = 'Z2'
+
+			expect(select.text).toBe('Z2')
+			expect(owner.field.value).toBe('Z2')
+
+			owner.value = 'a'
+
+			expect(listeners()).toBe(0)
+		})
+
+		it('выбор из данных (_: { selected: true }) заводит подписку', () => {
+			const { owner, facade, select } = createSelect([])
+
+			facade.items = [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B', _: { selected: true } },
+			]
+
+			const [first, second] = facade.items
+
+			second.text = 'B2'
+
+			expect(select.text).toBe('B2')
+			expect(owner.field.value).toBe('B2')
+
+			first.text = 'A2'
+
+			expect(select.text).toBe('B2')
+		})
+
+		/**
+		 * An engine built outside comes to the Select already holding a
+		 * selection: `select` is installed after it and listens to the selected
+		 * options from its install, with no `change:selection` to tell it.
+		 */
+		it('движок с выбором, собранный снаружи, — выбранную Select слушает с установки', () => {
+			const options = [
+				new TSelectItem({ value: 'a', text: 'A' }),
+				new TSelectItem({ value: 'b', text: 'B' }),
+			]
+			const listeners = options.map(watchTextListeners)
+			const engine = createEngineSelection<ISelectItem>({ items: options })
+
+			engine.extensions.selection.select(options[1])
+
+			const facade = new TSelectCollectionFacade({}, { owner: new TSelect(), engine })
+
+			expect(listeners.map((count) => count())).toEqual([0, 1])
+
+			options[1].text = 'B2'
+
+			expect(facade.engine.extensions.select.text).toBe('B2')
+		})
+
+		it('снятую с выбора не слушает, и её переименование не меняет ни text, ни теги', () => {
+			const { facade, items, facadeFor, select } = createSelect(['a', 'b'])
+			const listeners = watchTextListeners(items[0])
+
+			facade.mode = 'multiple'
+			facadeFor(0).choose()
+			facadeFor(1).choose()
+
+			expect(listeners()).toBe(1)
+
+			facadeFor(0).choose() // a repeated choice in multiple deselects
+
+			const engine = tagsEngine(facade)
+			const changed = vi.fn()
+
+			engine.extensions.plain.events.on('change:items', changed)
+			items[0].text = 'Другое'
+
+			expect(listeners()).toBe(0)
+			expect(select.text).toBe('B')
+			expect(engine.extensions.batch.items.map((item) => item.text)).toEqual(['B'])
+			expect(changed).not.toHaveBeenCalled()
+		})
+
+		it('выбор другой в single снимает подписку прежней', () => {
+			const { items, facadeFor, select } = createSelect(['a', 'b'])
+			const listeners = items.map(watchTextListeners)
+
+			facadeFor(0).choose()
+			facadeFor(1).choose()
+
+			expect(listeners.map((count) => count())).toEqual([0, 1])
+
+			items[0].text = 'Другое'
+
+			expect(select.text).toBe('B')
+		})
+
+		/** `multiple -> single` resets the selection as a whole. */
+		it('смена режима, снявшая выбор, снимает и подписки', () => {
+			const { facade, items, facadeFor } = createSelect(['a', 'b'])
+			const listeners = items.map(watchTextListeners)
+
+			facade.mode = 'multiple'
+			facadeFor(0).choose()
+			facadeFor(1).choose()
+
+			expect(listeners.map((count) => count())).toEqual([1, 1])
+
+			facade.mode = 'single'
+
+			expect(listeners.map((count) => count())).toEqual([0, 0])
+		})
+
+		/**
+		 * A removed selected option leaves the selection, and the selection
+		 * announces the loss with `change:selection` — the subscription goes
+		 * with it.
+		 */
+		it.each(REMOVE_FIRST_OPTION)(
+			'выбранную, убранную из списка %s, Select больше не слушает',
+			(_name, removeFirst) => {
+				const { facade, items, facadeFor } = createSelect(['a', 'b'])
+				const listeners = watchTextListeners(items[0])
+
+				facadeFor(0).choose()
+
+				expect(listeners()).toBe(1)
+
+				removeFirst(facade, items)
+
+				expect(listeners()).toBe(0)
+			},
+		)
+
+		it('после очистки списка выбранная не слушается', () => {
+			const { owner, facade, items } = createSelect(['a'])
+			const late = new TSelectItem({ value: 'z', text: 'Z' })
+			const listeners = watchTextListeners(late)
+
+			facade.items = [...items, late]
+			owner.value = 'z'
+
+			expect(listeners()).toBe(1)
+
+			facade.engine.extensions.batch.clear()
+
+			expect(listeners()).toBe(0)
+		})
+
+		/**
+		 * Without `trackBy` the list is rebuilt by clearing it: the previous
+		 * selected option leaves the selection, and `value` selects the new
+		 * option with its key.
+		 */
+		it('состав, заменённый без trackBy: прежнюю выбранную не слушает, новую по value — слушает', () => {
+			const { owner, facade, items, facadeFor, select } = createSelect(['a', 'b'])
+			const previous = watchTextListeners(items[0])
+			const next = new TSelectItem({ value: 'a', text: 'A' })
+			const listeners = watchTextListeners(next)
+
+			facadeFor(0).choose()
+			facade.items = [next, new TSelectItem({ value: 'b', text: 'B' })]
+
+			expect(owner.value).toBe('a')
+			expect(previous()).toBe(0)
+			expect(listeners()).toBe(1)
+
+			next.text = 'A2'
+
+			expect(select.text).toBe('A2')
+		})
+
+		/**
+		 * Without `trackBy` the list is rebuilt by clearing it: the options
+		 * leave and come back as the same instances, and `value` selects the
+		 * selected one again. Each return used to add one more subscription.
+		 */
+		it('возврат выбранной в список второй подписки не заводит', () => {
+			const { owner, facade, items } = createSelect(['a'])
+			const late = new TSelectItem({ value: 'z', text: 'Z' })
+			const listeners = watchTextListeners(late)
+			const all = [...items, late]
+
+			facade.items = all
+			owner.value = 'z'
+			facade.items = [...all]
+			facade.items = [...all]
+
+			expect(listeners()).toBe(1)
+		})
 	})
 
 	it('выбранная опция, вернувшаяся в список, слушается снова', () => {

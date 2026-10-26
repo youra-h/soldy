@@ -13,38 +13,36 @@ import type { ISelectTagsExtension, TSelectTagsExtensionEvents } from './types'
 import type { TSelectEngineOptions } from '../select'
 
 /**
- * TSelectTagsExtension — теги в поле Select при множественном выборе.
+ * TSelectTagsExtension — the tags in the Select field under multiple selection.
  *
- * Второй компонент со своей коллекцией, а не разметка: связка «опция ⇄ тег»
- * должна жить в одном месте, а не повторяться в шести адаптерах.
+ * A second component with its own collection, not markup: the "option ⇄ tag"
+ * link has to live in one place rather than repeat in six adapters.
  *
- * Источник истины один — выбор Select. Тег появляется и пропадает вслед за
- * `change:selection` и `item:removed` (владелец → теги), закрытие тега снимает
- * выбор с опции по совпадению `value` (теги → владелец); эти два пути не
- * должны разойтись, поэтому оба живут здесь.
+ * The source of truth is one — the Select's selection. A tag appears and goes
+ * after `change:selection` (owner → tags), and closing a tag deselects the
+ * option with the same `value` (tags → owner); the two paths must not diverge,
+ * so both live here.
  *
- * `item:removed` слушается отдельно, потому что выбранную опцию, убранную из
- * списка, `TSelectionExtension` снимает с выбора молча, без
- * `change:selection`. Тот же приём у `TSelectExtension`. Иначе тег убранной
- * опции то оставался, то пропадал — в зависимости от того, сколько опций
- * выбрано и появились ли в выдаче новые: `change:selection` доходил случайно,
- * побочным эффектом сброса выбора в `TValueSelectionExtension`. Оставшийся тег
- * было нечем закрыть: `value` опцию помнит, а в списке её нет, и снимать выбор
- * не с кого. `value` ждёт возвращения опции — так же, как текст выбранного в
- * `single`; вернётся опция в выдачу — вернётся и её тег.
+ * A selected option removed from the list leaves the selection, and the
+ * selection announces it with the same `change:selection` (AGENTS.md,
+ * «Удаление выбранного — смена выбора»), so the option's tag goes too.
+ * `value` remembers the option and waits for it to come back, like the
+ * selected text in `single`: when the option is back in the list, its tag is
+ * back as well.
  *
- * Текст тега следует и за переименованием выбранной опции, хотя
- * `change:selection` на него не приходит. Переименование слушает
- * `TSelectExtension` — подписка на опцию у Select одна — и просит теги
- * пересобраться (`syncTags`), а пишет в коллекцию тегов по-прежнему только
- * это расширение. Патч по `value` меняет текст существующего тега на месте,
- * а не пересоздаёт тег.
+ * The tag text also follows the renaming of a selected option, though
+ * `change:selection` does not come on it. The renaming is listened to by
+ * `TSelectExtension`, which subscribes to each selected option once and asks
+ * the tags to rebuild (`syncTags`), while only this extension writes to the
+ * tag collection. A patch by `value` changes the text of the existing tag in
+ * place rather than recreating it.
  *
- * Инстанс `TTags` существует только в `multiple` — у `single`/`none` в поле
- * показывается текст, а не теги, второй набор был бы лишним состоянием.
+ * The `TTags` instance exists only in `multiple`: in `single` and `none` the
+ * field shows text, not tags, and a second set would be extra state.
  *
- * `disabled`, `size` и `variant` тегов — Select'а. Select — опция движка
- * (`owner`): он приходит и уходит после сборки, и расширение наблюдает его.
+ * `disabled`, `size` and `variant` of the tags are the Select's. The Select is
+ * an engine option (`owner`): it comes and goes after assembly, and the
+ * extension watches it.
  */
 export class TSelectTagsExtension<
 	TOwner extends ISelect = ISelect,
