@@ -1418,3 +1418,50 @@ describe('корень внутри обёртки: окно таблицы', ()
 		expect(viewport.style.color).toBe('red')
 	})
 })
+
+/**
+ * Host of the layout probe: a property the layout of the root does not read
+ * (`text`) and one it does (`disabled` — `data-disabled` of the dataset).
+ */
+@Component({
+	selector: 'probe-layout',
+	standalone: true,
+	imports: [TButtonComponent],
+	template: `<button so-button [text]="text()" [disabled]="disabled()"></button>`,
+})
+class LayoutProbe {
+	readonly text = signal('Сохранить')
+	readonly disabled = signal(false)
+}
+
+/**
+ * The layout of the root is one effect: it rereads the state on every change
+ * and writes a layer only when the node is new or a value the layer is built
+ * from is another object — the binding replaces a value only when its content
+ * changes. The caption of a button is no layer's value, and its change leaves
+ * the root alone.
+ */
+describe('раскладка корня пишет только сменившиеся слои', () => {
+	it('смена свойства, которого раскладка не читает (text), корень не трогает', () => {
+		const fixture = mountHost(LayoutProbe)
+		const button = findIn(fixture, '[so-button]', HTMLElement)
+		const observer = new MutationObserver(() => {})
+
+		observer.observe(button, { attributes: true })
+		fixture.componentInstance.text.set('Отменить')
+		fixture.detectChanges()
+
+		expect(observer.takeRecords()).toEqual([])
+		expect(button.textContent).toContain('Отменить')
+
+		// A value the layout reads reaches the root: the observer does see writes
+		fixture.componentInstance.disabled.set(true)
+		fixture.detectChanges()
+
+		expect(observer.takeRecords().map(({ attributeName }) => attributeName)).toContain(
+			'data-disabled',
+		)
+
+		observer.disconnect()
+	})
+})

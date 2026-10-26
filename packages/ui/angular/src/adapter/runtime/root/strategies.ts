@@ -5,21 +5,26 @@
  */
 
 import { computed, signal, type Signal } from '@angular/core'
-import type { TStateSnapshot } from '@soldy-ui/setup'
 import { applyStyles, type TRootStyles } from '../root-attributes'
 import { teleportRoot } from '../teleport'
 import { clearInputAttributes, forwardRegistry, forwardTo, hostElement } from './host-element'
-import { NO_APPLIED_STYLES, hideCompanion, paintRoot, type TNode } from './paint'
+import {
+	NO_APPLIED_STYLES,
+	NO_STATE,
+	hideCompanion,
+	paintRoot,
+	type TStateRead,
+	type TNode,
+} from './paint'
 import type { TRootHost, TRootPaint, TRootSpec, TRootTeleport } from './spec'
 
-/** Что стратегии нужно от базы. Сигналы читаются лениво, после конструктора. */
+/** What a strategy needs from the base. The signals are read lazily, after the constructor. */
 export type TRootContext = {
-	/** `ctrl` и имена входов. */
+	/** `ctrl` and the input names. */
 	readonly own: readonly string[]
-	readonly state: Signal<TStateSnapshot>
-	/** Что база рисует на корне: у слоя не на своём месте — ничего. */
-	readonly drawn: Signal<TStateSnapshot>
-	/** Внешний узел компонента скрыт. */
+	/** State of the component; before the assembly — nothing. */
+	readonly state: TStateRead
+	/** The outer node of the component is hidden. */
 	readonly hidden: Signal<boolean>
 	/** Узлы шаблона `#root`, `#control`, `#companion`. */
 	readonly root: TNode
@@ -67,7 +72,7 @@ function hostRoot(spec: TRootHost, ctx: TRootContext): TRoot {
 	const placed = spec.teleport ? teleport(target, spec.teleport, ctx) : IN_PLACE
 
 	clearInputAttributes(host, ctx.own)
-	paintRoot(target, spec, ctx.drawn)
+	paintRoot(target, spec, spec.teleport ? drawnIn(placed, ctx.state) : ctx.state)
 
 	if (registry) forwardTo(registry, host, ctx.control, ctx.own)
 
@@ -89,7 +94,7 @@ function wrappedRoot(ctx: TRootContext): TRoot {
 
 	clearInputAttributes(wrapper, ctx.own)
 	forwardTo(registry, wrapper, ctx.root, ctx.own)
-	paintRoot(ctx.root, WRAPPED_PAINT, ctx.drawn)
+	paintRoot(ctx.root, WRAPPED_PAINT, ctx.state)
 
 	return {
 		tag: undefined,
@@ -115,7 +120,7 @@ function layeredRoot(names: TRootTeleport, ctx: TRootContext): TRoot {
 	forwardTo(registry, wrapper, ctx.root, ctx.own, { boxless: true })
 	// Статика потребителя уже снята: поверх своей коробки ничего не осталось
 	applyStyles(wrapper, BOXLESS, NO_APPLIED_STYLES)
-	paintRoot(ctx.root, WRAPPED_PAINT, ctx.drawn, ctx.hidden)
+	paintRoot(ctx.root, WRAPPED_PAINT, drawnIn(placed, ctx.state), ctx.hidden)
 
 	return {
 		tag: undefined,
@@ -139,6 +144,11 @@ function viewRoot(ctx: TRootContext): TRoot {
 		shownBy: undefined,
 		layer: false,
 	}
+}
+
+/** What the base draws on a layer: its state in its place, nothing away from it. */
+function drawnIn(placed: Signal<boolean>, state: TStateRead): TStateRead {
+	return () => (placed() ? state() : NO_STATE)
 }
 
 /** Слой: цель и «на месте» — из состояния по именам выходов, которые назвал компонент. */

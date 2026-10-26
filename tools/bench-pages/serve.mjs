@@ -12,9 +12,11 @@ const TYPES = {
 	'.woff2': 'font/woff2',
 }
 
-/** Сервер собранной страницы (`dist`) на свободном порту; адрес — в `base`. */
-export function serve() {
-	const dist = path.resolve(import.meta.dirname, 'dist')
+/**
+ * Server of the built page on a free port, its address in `base`. `dist` — the
+ * build folder: the page run serves `dist`, the heap snapshot — `dist-prof`.
+ */
+export function serve(dist = path.resolve(import.meta.dirname, 'dist')) {
 	const server = http
 		.createServer((req, res) => {
 			const p = req.url.split('?')[0]

@@ -12,7 +12,7 @@
  * `root-attributes.spec.ts`.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { flushSync, type Component } from 'svelte'
 import { createAttachmentKey, type Attachment } from 'svelte/attachments'
 import { TButton } from '@soldy-ui/core'
@@ -240,6 +240,39 @@ describe('гидратация: стиль сервера на узле — св
 		expect(node.style.width).toBe('20px')
 		expect(outside(node)).toBe('1')
 
+		attached.detach()
+	})
+})
+
+/**
+ * The root style is one effect: it reruns on a change of any layer, and the
+ * consumer's style string is parsed again — by the browser, on a detached node
+ * — only when the string itself changed.
+ */
+describe('стиль потребителя разбирается заново только со сменой строки', () => {
+	it('смена других слоёв строку не разбирает, смена строки — разбирает', () => {
+		const node = document.createElement('div')
+		const attached = attachRootStyle(node, {
+			below: { width: '10px' },
+			forward: 'color: red',
+			above: {},
+		})
+		const parse = vi.spyOn(document, 'createElement')
+
+		attached.layers = { below: { width: '20px' }, forward: 'color: red', above: {} }
+		flushSync()
+
+		expect(parse).not.toHaveBeenCalled()
+		expect(node.style.width).toBe('20px')
+		expect(node.style.color).toBe('red')
+
+		attached.layers = { below: { width: '20px' }, forward: 'color: blue', above: {} }
+		flushSync()
+
+		expect(parse).toHaveBeenCalledTimes(1)
+		expect(node.style.color).toBe('blue')
+
+		parse.mockRestore()
 		attached.detach()
 	})
 })

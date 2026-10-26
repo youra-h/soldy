@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Замер страниц компонентов soldy: вес страницы и утечки памяти по циклам, см. benchmarks/pages/README.md в корне",
   "scripts": {
-    "bench": "node run.mjs"
+    "bench": "node run.mjs",
+    "heap": "node --max-old-space-size=8192 heap.mjs"
   }
 }
