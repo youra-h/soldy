@@ -41,19 +41,27 @@ function drawCell(props: CalendarProps, cell: TCalendarCell): ReactElement {
 	)
 }
 
-/** Карточка панели выбора: список в DOM раньше шапки — фокус при открытии встаёт на него. */
+/**
+ * The picker's card: the list comes before the header in the DOM — focus on opening lands on it.
+ * The place gets its list with the first opening of the popover; the list is keyed by its instance.
+ */
 function drawCard(picker: TCalendarPicker, size: TSize): ReactNode {
+	const { list } = picker
+
 	return (
 		<div className="so-calendar__picker">
-			<ListBox
-				embedded="calendar.picker-list"
-				className="so-calendar__picker-list"
-				ctrl={picker.list}
-				engine={picker.engine}
-				size={size}
-				indicator="none"
-				aria_labelledBy={picker.labelledBy}
-			/>
+			{list ? (
+				<ListBox
+					key={list.ctrl.uid}
+					embedded="calendar.picker-list"
+					className="so-calendar__picker-list"
+					ctrl={list.ctrl}
+					engine={list.engine}
+					size={size}
+					indicator="none"
+					aria_labelledBy={picker.labelledBy}
+				/>
+			) : null}
 			<div className="so-calendar__picker-header">
 				<Button
 					embedded="calendar.picker-heading"

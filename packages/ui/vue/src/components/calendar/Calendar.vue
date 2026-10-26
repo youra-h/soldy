@@ -111,25 +111,32 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					</template>
 
 					<!--
-						Содержимое панели — карточка: список и шапка. Список — ListBox
-						места: месяцы года или годы страницы, по 12; раскладку в 4 колонки
-						по 3 строки даёт тема. Выбор в нём ловит расширение `picker` —
-						событием списка, а не обработчиком здесь. Подпись шире плитки
-						список переносит между словами — имя месяца в несколько слов (у
-						`vi-VN` — «Tháng 10») и подпись года (у `th-TH` — с эрой,
-						«พ.ศ. 2569»). `contentFit` списку ставит то же расширение, когда
-						создаёт список, и разметка его не передаёт.
+						The panel's content is a card: the list and the header. The list is
+						the place's ListBox: the months of a year or the years of a page, 12
+						each; the theme lays them out in 4 columns by 3 rows. The `picker`
+						extension catches the choice in it — by the list's event, not by a
+						handler here. A label wider than its tile wraps between words — a
+						month's name of several words (`vi-VN` — "Tháng 10") and a year's
+						label (with an era at `th-TH`, "พ.ศ. 2569"). The same extension sets
+						the list's `contentFit` when it creates the list, and the markup does
+						not pass it.
 
-						Список в DOM раньше шапки: фокус при открытии встаёт на первую
-						остановку панели — на список с выбранным месяцем, а не на кнопку
-						года. Наверх шапку ставит тема, как кнопки в ряд заголовка Dialog.
+						The place gets its list with the first opening of the popover — the
+						`change:open` that mounts this content — so the ListBox is drawn by the
+						presence of `list` and takes `ctrl` and `engine` from it.
+
+						The list comes before the header in the DOM: focus on opening lands on
+						the panel's first stop — the list with the selected month, not the year
+						button. The theme puts the header on top, like the buttons in the row
+						of the Dialog's title.
 					-->
 					<div class="so-calendar__picker">
 						<ListBox
+							v-if="pickers[index].list"
 							embedded="calendar.picker-list"
 							class="so-calendar__picker-list"
-							:ctrl="pickers[index].list"
-							:engine="pickers[index].engine"
+							:ctrl="pickers[index].list.ctrl"
+							:engine="pickers[index].list.engine"
 							:size="size"
 							indicator="none"
 							:aria_labelledBy="pickers[index].labelledBy"

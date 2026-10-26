@@ -229,22 +229,23 @@ function tableBuses(engine: TTableCollection): TEvented<any>[] {
 }
 
 /**
- * Шины мест панелей выбора месяца и года: поповер, список и его движок места
- * заводит расширение `picker` движка календаря, и живут они вместе с ним —
- * дольше монтирования. Компоненты места собираются над ними, как над `ctrl` и
- * движком снаружи.
+ * The buses of the month and year picker places: the `picker` extension of
+ * the calendar's engine makes the popover of a place, and with its first
+ * opening the list and the list's engine; they live with the engine — longer
+ * than a mounting. The place's components are assembled over them, as over a
+ * `ctrl` and an engine from outside.
  */
 function placeBuses(engine: TCalendarCollection): TEvented<any>[] {
-	return engine.extensions.picker.pickers.flatMap((place) => [
-		place.popover.events,
-		place.list.events,
-		...engineBuses(place.engine),
+	return engine.extensions.picker.pickers.flatMap(({ popover, list }) => [
+		popover.events,
+		...(list ? [list.ctrl.events, ...engineBuses(list.engine)] : []),
 	])
 }
 
 /**
- * Открыть панель первого места: открытый поповер подписывает фокус и нажатие
- * мимо, а содержимое — список места — монтируется только с первым открытием.
+ * Opens the first place's panel: an open popover subscribes the focus and the
+ * press outside, and its content — the place's list — comes only with the
+ * first opening.
  */
 function openFirstPlace(engine: TCalendarCollection): void {
 	const [place] = engine.extensions.picker.pickers

@@ -12,12 +12,7 @@ import type { TCalendarDate } from '../../../../../../common'
 import { TPopover } from '../../../../popover'
 import type { IPopover } from '../../../../popover'
 import { TListBox, createEngineListBox } from '../../../../list-box'
-import type {
-	IListBox,
-	IListBoxItem,
-	IListBoxItemProps,
-	TListBoxCollection,
-} from '../../../../list-box'
+import type { IListBoxItem, IListBoxItemProps } from '../../../../list-box'
 import { calendarBounds } from '../../../dates'
 import type { ICalendarItem } from '../../../item/types'
 import type { ICalendar } from '../../../types'
@@ -28,6 +23,7 @@ import type {
 	TCalendarPicker,
 	TCalendarPickerEvents,
 	TCalendarPickerLevel,
+	TCalendarPickerList,
 	TCalendarPickerSets,
 } from './types'
 
@@ -42,54 +38,62 @@ const LAST_YEAR = 9999
 const MONTHS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 /**
- * Место панели: что она показывает и её экземпляры. Уровень, год и страница
- * — память места, а не владельца: у каждой сетки панель своя.
+ * A panel's place: what the panel shows and its instances. The level, the
+ * year and the page are the place's memory rather than the owner's: every
+ * grid has a panel of its own.
  */
 type TPlace = {
 	readonly popover: IPopover
-	readonly list: IListBox
-	readonly engine: TListBoxCollection
+	/** The list with its engine — from the first opening of the popover */
+	list: TCalendarPickerList | undefined
 	readonly sets: TCalendarPickerSets
 	level: TCalendarPickerLevel
-	/** Год месяцев — что показывает уровень месяцев */
+	/** The months' year — what the months level shows */
 	year: number
-	/** Первый год страницы — что показывает уровень лет */
+	/** The page's first year — what the years level shows */
 	page: number
 }
 
 /**
- * Панели выбора месяца и года: заголовок сетки открывает поповер со списком
- * месяцев, шапка с годом меняет месяцы на годы, выбор года возвращает
- * месяцы, выбор месяца показывает его в сетке и закрывает панель.
+ * Month and year pickers: the grid's heading opens a popover with a list of
+ * months, the header with the year switches the months to years, choosing a
+ * year brings the months back, choosing a month shows it in the grid and
+ * closes the panel.
  *
- * Расширение коллекции, а не разметка: панели нужны и владелец — локаль,
- * границы, выключенность, — и вид — месяц сетки и
- * `showMonth`. Связки «выбрали месяц → показать и закрыть» и «выбрали год →
- * снова месяцы» решаются здесь один раз, а не в разметке каждого адаптера.
+ * A collection extension rather than markup: the panels need both the owner —
+ * the locale, the bounds, being disabled — and the view — the grid's month and
+ * `showMonth`. The links "a month chosen → show it and close" and "a year
+ * chosen → the months again" are made here once, not in the markup of every
+ * adapter.
  *
- * **Экземпляры — готовые, как теги у Select.** На место сетки — `TPopover`
- * и `TListBox` с его движком. Создаёт и слушает их
- * расширение, разметка отдаёт их компонентам. Список — ListBox и его
- * коллекция: своего выбора над месяцами у календаря нет. Выбранным в списке
- * стоит то, что сейчас показано: месяц сетки на уровне месяцев, год панели
- * на уровне лет. Выбор пользователя приходит событием `choose` списка — по
- * `change:selection` его не отличить от снятия выбора: в `single` повторное
- * нажатие на выбранный выбор снимает.
+ * **Ready instances, like the tags of Select.** A grid place gets a
+ * `TPopover`, and with the popover's first opening a `TListBox` with its
+ * engine. The extension creates and listens to them, the markup hands them to
+ * components. The popover comes with the place: it is the trigger of the
+ * grid's heading. The list waits for the first opening: the picker is opened
+ * rarely, and without the wait every shown calendar would hold a list with
+ * its collection per grid. The list is ListBox and its collection: the
+ * calendar has no selection of its own over the months. Selected in the list
+ * is what is shown now: the grid's month on the months level, the panel's
+ * year on the years level. The user's choice comes with the list's `choose`
+ * event — by `change:selection` it cannot be told from a deselection: in
+ * `single` pressing the selected item again deselects it.
  *
- * **Место, а не месяц.** Панель у сетки, как наборы заголовка у вида
- * (`gridSets`): листание меняет месяц сетки, а заголовок и его панель
- * остаются. Мест столько, сколько сеток; место, которого больше нет, свою
- * панель закрывает.
+ * **The place, not the month.** The panel belongs to the grid, like the
+ * heading sets of the view (`gridSets`): paging changes the grid's month,
+ * while the heading and its panel stay. There are as many places as grids; a
+ * place left without a grid closes its panel.
  *
- * **Состав списка — при открытии.** Открытая панель начинает с месяцев года
- * своей сетки. Пока она закрыта, список не пересобирается: содержимое панели
- * не смонтировано до первого открытия (`lazyMount`), а потом спрятано.
- * Открытая — пересобирается на смену месяца сетки, локали и границ.
+ * **The list's items — on opening.** An opened panel starts with the months
+ * of its grid's year. While it is closed, the list is not rebuilt: the
+ * panel's content is not mounted until the first opening (`lazyMount`), and
+ * hidden afterwards. An open one is rebuilt on a change of the grid's month,
+ * the locale and the bounds.
  *
- * **Страницы лет — по 12 подряд от `0001`** (`0001–0012`, …, `2017–2028`),
- * а не вокруг текущего года: страница не зависит от того, с какого года
- * начали листать. Годы вне `min`/`max` выключены, за `9999` элементов нет —
- * последняя страница короче.
+ * **Pages of years — 12 in a row from `0001`** (`0001–0012`, …,
+ * `2017–2028`), not around the current year: a page does not depend on the
+ * year paging started from. Years outside `min`/`max` are disabled, there are
+ * no items past `9999` — the last page is shorter.
  */
 export class TCalendarPickerExtension
 	extends TBaseExtension<ICalendarItem, TCalendarPickerEvents, TCalendarEngineOptions>
@@ -147,7 +151,7 @@ export class TCalendarPickerExtension
 	toggleLevel(index: number): void {
 		const place = this._places[index]
 
-		if (!place) return
+		if (!place?.list) return
 
 		if (place.level === 'months') {
 			place.level = 'years'
@@ -183,25 +187,22 @@ export class TCalendarPickerExtension
 	/* Внутреннее                                                         */
 	/* ------------------------------------------------------------------ */
 
-	/** Место `index`; его ещё нет — заводится со своими экземплярами. */
+	/**
+	 * Place `index`; when there is none yet, it is set up with its popover and
+	 * sets. The list waits for the first opening of the popover (`_list`).
+	 */
 	private _place(index: number): TPlace {
 		const existing = this._places[index]
 
 		if (existing) return existing
 
-		// Без кнопки закрытия: крестик в углу небольшой панели — шум. Закрывают
-		// её выбор месяца, нажатие мимо, Escape, повторное нажатие на заголовок,
-		// нажатие по подложке (`close`) и жест за полосу — панель смахивают
-		// к её краю, вверх (край задаёт разметка). Содержимое не монтируется
-		// до первого открытия
+		// No close button: a cross in the corner of a small panel is noise. The
+		// panel is closed by choosing a month, a press outside, Escape, pressing
+		// the heading again, a press on the backdrop (`close`) and the gesture
+		// past the handle — the panel is swiped towards its edge, up (the
+		// markup sets the edge). The content is not mounted until the first
+		// opening
 		const popover = new TPopover({ closable: false, lazyMount: true, swipe: 'handle' })
-		// Подпись шире плитки список переносит между словами — на обоих
-		// уровнях. Имя месяца бывает в несколько слов (`vi-VN` — «Tháng 10»),
-		// подпись года — с эрой (`th-TH` — «พ.ศ. 2569»), и многоточие срезало
-		// бы номер — то, чем плитки и различаются. Слово шире плитки переносить
-		// некуда: его режет тема, у края плитки
-		const list = new TListBox({ contentFit: 'wrap' })
-		const engine = createEngineListBox({ owner: list })
 		const month = this._gridMonth(index)
 		const year = month === undefined ? FIRST_YEAR : yearOf(month)
 		const sets = { heading: new TAria(), prev: new TAria(), next: new TAria() }
@@ -215,32 +216,49 @@ export class TCalendarPickerExtension
 
 		const place: TPlace = {
 			popover,
-			list,
-			engine,
+			list: undefined,
 			sets,
 			level: 'months',
 			year,
 			page: pageOf(year),
 		}
 
-		// Состав сверяется по значению: пересборка того же года не пересоздаёт
-		// элементы, и подсветка клавиатуры остаётся на месте
-		engine.extensions.batch.trackBy = (item) => item.value
-
-		// Экземпляры места — свои, живут вместе с расширением: подписки прямые
+		// The place's instances are its own and live with the extension: the
+		// subscriptions are direct
 		popover.events.on('change:open', (open: boolean) => {
 			if (open) this._open(place, index)
 		})
-		engine.extensions.list.events.on('choose', (item: IListBoxItem) =>
-			this._choose(place, index, item),
-		)
 
 		this._places[index] = place
 
 		return place
 	}
 
-	/** Панель открылась — с месяцев года своей сетки. */
+	/**
+	 * The list of a place and its engine — with the first opening of its
+	 * popover, by the same `change:open` that fills the list. They live as
+	 * long as the place, and so does the subscription to the list's choice.
+	 */
+	private _list(place: TPlace, index: number): TCalendarPickerList {
+		// A label wider than its tile wraps between words — on both levels. A
+		// month's name can be several words (`vi-VN` — "Tháng 10"), a year's
+		// label carries an era (`th-TH` — "พ.ศ. 2569"), and an ellipsis would
+		// cut the number — the very thing the tiles differ by. A word wider
+		// than the tile has nowhere to wrap: the theme cuts it at the tile's edge
+		const ctrl = new TListBox({ contentFit: 'wrap' })
+		const engine = createEngineListBox({ owner: ctrl })
+
+		// The items are matched by value: rebuilding the same year does not
+		// recreate them, and the keyboard highlight stays in place
+		engine.extensions.batch.trackBy = (item) => item.value
+		engine.extensions.list.events.on('choose', (item: IListBoxItem) =>
+			this._choose(place, index, item),
+		)
+
+		return { ctrl, engine }
+	}
+
+	/** The panel opened — with the months of its grid's year; the first opening makes the list. */
 	private _open(place: TPlace, index: number): void {
 		const month = this._gridMonth(index)
 
@@ -248,6 +266,7 @@ export class TCalendarPickerExtension
 
 		place.level = 'months'
 		place.page = pageOf(place.year)
+		place.list ??= this._list(place, index)
 
 		this._fill(place, index)
 		this._notify()
@@ -279,12 +298,15 @@ export class TCalendarPickerExtension
 		this._notify()
 	}
 
-	/** Стрелка: на месяцах — год, на годах — страница; дальше листать некуда — ничего. */
+	/**
+	 * An arrow: a year on months, a page on years. Nowhere further to page, or
+	 * a place without a list — nothing.
+	 */
 	private _page(index: number, step: -1 | 1): void {
 		const place = this._places[index]
 		const owner = this._ctx.options.get('owner')
 
-		if (!place || !owner) return
+		if (!place?.list || !owner) return
 
 		const snapshot = this._snapshot(owner, place)
 
@@ -321,15 +343,18 @@ export class TCalendarPickerExtension
 	}
 
 	/**
-	 * Состав списка по уровню и что в нём выбрано — то, что сейчас показано:
-	 * месяц сетки среди месяцев, год панели среди лет. Значение списка
-	 * пишется после состава: расширение `value` сводит его с выбором по
-	 * значениям элементов.
+	 * The list's items by level and what is selected in it — what is shown
+	 * now: the grid's month among the months, the panel's year among the
+	 * years. The list's value is written after the items: the `value`
+	 * extension matches it with the selection by the items' values. A place
+	 * without a list — nothing: there is nothing to fill before the first
+	 * opening.
 	 */
 	private _fill(place: TPlace, index: number): void {
 		const owner = this._ctx.options.get('owner')
+		const list = place.list
 
-		if (!owner) return
+		if (!owner || !list) return
 
 		const locale = calendarLocale(owner.locale)
 		const bounds = this._yearBounds(owner)
@@ -349,8 +374,8 @@ export class TCalendarPickerExtension
 			})
 			const shown = this._gridMonth(index)
 
-			place.engine.extensions.batch.update(sources)
-			place.list.value =
+			list.engine.extensions.batch.update(sources)
+			list.ctrl.value =
 				shown !== undefined && yearOf(shown) === place.year ? shown : undefined
 
 			return
@@ -368,8 +393,8 @@ export class TCalendarPickerExtension
 			})
 		}
 
-		place.engine.extensions.batch.update(sources)
-		place.list.value =
+		list.engine.extensions.batch.update(sources)
+		list.ctrl.value =
 			place.year >= place.page && place.year < place.page + PAGE_SIZE ? place.year : undefined
 	}
 
@@ -384,7 +409,6 @@ export class TCalendarPickerExtension
 		return {
 			popover: place.popover,
 			list: place.list,
-			engine: place.engine,
 			level: place.level,
 			heading: months
 				? locale.yearTitle(dateFromParts(place.year, 1, 1))
