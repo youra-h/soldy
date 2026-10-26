@@ -58,10 +58,10 @@ let depth = 0
  * set appears with the second one and goes with the last. Most buses are
  * listened to with one event and one handler: a collection item that has never
  * been drawn is listened to only by its collection (`change:contentFit` of a
- * ListBox item, `change:text` of a Select option, `change:disabled` of a table
- * row). The attribute sets `aria`, `classes` and `dataset` used to be such
- * buses too, before they lost theirs (`TAttributes`), and a map with a set for
- * each was almost half of the subscriptions of a table row.
+ * ListBox item, `change:disabled` of a table row, `change:text` of a selected
+ * Select option). The attribute sets `aria`, `classes` and `dataset` used to be
+ * such buses too, before they lost theirs (`TAttributes`), and a map with a set
+ * for each was almost half of the subscriptions of a table row.
  *
  * The emit semantics are those of iterating a set (`Set.forEach`): handlers run
  * in subscription order, one removed during an emit is not called in it, one
