@@ -1,4 +1,15 @@
-<!-- Содержимое неактивной панели в документ не вставляется. -->
+<!--
+	The content of an inactive panel is not in the document. A projection is created right away by
+	the template that wrote it, and `@if` only keeps it out of the document; the `default` template
+	is created here, so an inactive panel creates nothing, and leaving the tab removes it, as `v-if`
+	does in Vue. Given, it is drawn instead of the projection.
+-->
 @if (state()['active']) {
-	<ng-content />
+	@if (slot('default'); as content) {
+		<ng-container [ngTemplateOutlet]="content" />
+	} @else {
+		<ng-content />
+	}
 }
+<!-- The sink of slot templates: the panel draws them itself, they are not projected. -->
+<ng-content select="ng-template[slot]" />

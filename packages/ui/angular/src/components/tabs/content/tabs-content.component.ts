@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core'
+import { NgTemplateOutlet } from '@angular/common'
 import type { ITabsContent } from '@soldy-ui/core'
 import { TTabsContentSurface } from '../../../generated/tabs-content.metadata'
 import { setupTabsContent } from './setup.component'
@@ -9,6 +10,7 @@ import { setupTabsContent } from './setup.component'
  */
 @Component({
 	selector: 'div[so-tabs-content], [so-tabs-content]',
+	imports: [NgTemplateOutlet],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	templateUrl: './tabs-content.component.html',
 })
