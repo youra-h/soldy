@@ -91,16 +91,17 @@ export function ToastsItem(props: ToastsItemProps): JSX.Element {
 							{content() ?? <Dynamic component={render()} toast={ctrl} />}
 						</div>
 					</div>
-					<Button
-						embedded="toasts.close"
-						type="button"
-						class="so-toasts-item__close"
-						rendered={state.closable}
-						onClick={() => ctrl.close()}
-						{...state.closeAria}
-					>
-						{closeIcon() ?? <Icon embedded="toasts.close-icon" tag={CLOSE} />}
-					</Button>
+					<Show when={state.closable}>
+						<Button
+							embedded="toasts.close"
+							type="button"
+							class="so-toasts-item__close"
+							onClick={() => ctrl.close()}
+							{...state.closeAria}
+						>
+							{closeIcon() ?? <Icon embedded="toasts.close-icon" tag={CLOSE} />}
+						</Button>
+					</Show>
 				</div>
 			</Root>
 		</Show>

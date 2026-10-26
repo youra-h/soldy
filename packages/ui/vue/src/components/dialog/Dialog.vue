@@ -88,20 +88,22 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 				<div class="so-dialog__footer"><slot name="footer" /></div>
 
 				<!--
-					Кнопка разворота — переключатель: имя одно, состояние в
-					`aria-pressed`. Иконок две, видна одна — по состоянию окна,
-					как отметка у CheckBox: «развернуть», пока окно не развёрнуто,
-					и «вернуть размер» — когда развёрнуто.
+					The maximize button is a toggle: one name, the state in
+					`aria-pressed`. Two icons, one shown — by the window state,
+					like the CheckBox mark: "maximize" while the window is not
+					maximized, and "restore size" once it is.
 
-					Кнопки шапки прячутся `rendered`, а не `visible`: тема
-					опирается на их отсутствие в DOM. Вида и размера у них нет —
-					кнопки красит тема по контексту.
+					The header buttons are mounted only while on (`v-if`), not
+					hidden with `visible`: the theme relies on their absence from
+					the DOM, and a hidden button would still assemble its instance
+					and plugins in every dialog. They have no view and no size —
+					the theme paints them by context.
 				-->
 				<Button
+					v-if="maximizable"
 					embedded="dialog.maximize"
 					type="button"
 					class="so-dialog__maximize"
-					:rendered="maximizable"
 					@click="dialog.toggleMaximized()"
 					v-bind="maximizeAria"
 				>
@@ -119,10 +121,10 @@ export default { ...SetupDialog, inheritAttrs: false, components: { Button, Icon
 					`close:before`. Куда вернуть фокус, решает плагин фокуса.
 				-->
 				<Button
+					v-if="closable"
 					embedded="dialog.close"
 					type="button"
 					class="so-dialog__close"
-					:rendered="closable"
 					@click="dialog.requestClose('button')"
 					v-bind="closeAria"
 				>

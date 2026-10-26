@@ -62,25 +62,27 @@ export function TagsItem(props: TagsItemProps): ReactElement | null {
 				{renderSlot(props.children, { text: text ?? '', selected: selected ?? false }) ??
 					text}
 			</ItemRow>
-			<Button
-				embedded="tags.close"
-				type="button"
-				rendered={tag_closable === true}
-				className="so-tags-item__close"
-				disabled={disabled}
-				size={size}
-				{...toAriaProps(closeAria)}
-				// Гасит нативное событие: синтетическое уже прошло бы `TActionPlugin` тега
-				// и набора, и поле Select открыло бы панель по клику на крестик
-				onActionClick={(event) => {
-					event.stopPropagation()
-					context?.adapters.tags.close()
-				}}
-			>
-				{renderSlot(props['close-icon']) ?? (
-					<Icon embedded="tags.close-icon" tag={CloseIcon} size={size} />
-				)}
-			</Button>
+			{tag_closable === true ? (
+				<Button
+					embedded="tags.close"
+					type="button"
+					className="so-tags-item__close"
+					disabled={disabled}
+					size={size}
+					{...toAriaProps(closeAria)}
+					// Stops the native event: the synthetic one would already have passed the
+					// tag and set `TActionPlugin`, and the Select field would open its panel
+					// on a click on the cross
+					onActionClick={(event) => {
+						event.stopPropagation()
+						context?.adapters.tags.close()
+					}}
+				>
+					{renderSlot(props['close-icon']) ?? (
+						<Icon embedded="tags.close-icon" tag={CloseIcon} size={size} />
+					)}
+				</Button>
+			) : null}
 		</Tag>
 	)
 }

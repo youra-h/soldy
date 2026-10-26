@@ -1549,7 +1549,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 - `useAdapter(adapter, props, emit)` - Main hook over the exchange `adapter.connect(VueProfile)`; дженерики не пишутся: инстанс и выходы плагинов — из контракта контекста, `TProps` — из `props`
   - Returns `TBinding`: `ctrl`, `plugins`, props refs and plugin outputs; `rootElement` — only when the bundle has `TElementPlugin`
   - Core → Vue: a ref per property with triggers. `state.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
-  - Vue → core: one `watch` over all inputs (`inputs.pick(props)`) → `inputs.full(props)`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
+  - Vue → core: `onBeforeUpdate` → `inputs.full(props)` when the parent handed the component a new vnode — a parent pass that changed the props; a render of the component's own state keeps the vnode and skips the inputs. Changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления». No `watch` over the props: reading every input for tracking created a `Dep` and a `Link` per key and an effect on every component (benchmarks/pages/vue.md, 869fmhuag)
   - Events: `events.listen` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
   - `rootElement` watch → `adapter.bindElement`
   - На `onUnmounted`: снимает подписки связки, затем `adapter.destroy()`
@@ -3928,7 +3928,7 @@ setup(props, { emit }) {
      ↓
      - adapter.connect(VueProfile): the exchange (TExchange)
      - state.subscribe: every property, then each change → Vue refs
-     - one watch over inputs.pick(props) → inputs.full(props) (changes only)
+     - onBeforeUpdate with a new vnode from the parent → inputs.full(props) (changes only)
      - events.listen → emit, update:<prop> for v-model included
      - rootElement watch → adapter.bindElement → TElementPlugin
      - onUnmounted: unsubscribe, adapter.destroy()

@@ -76,9 +76,9 @@ export default { ...SetupTabsItem, components: { Icon, Button } }
 			и разметка библиотеки их не знает. Обе части тема красит по контексту.
 		-->
 		<Button
+			v-if="tab_closable"
 			embedded="tabs.close"
 			type="button"
-			:rendered="!!tab_closable"
 			class="so-tabs-item__close"
 			:disabled="disabled"
 			:size="size"

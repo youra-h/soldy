@@ -72,34 +72,36 @@ export function Dialog(props: DialogProps): ReactElement | null {
 					{renderSlot(props.children)}
 				</div>
 				<div className="so-dialog__footer">{renderSlot(props.footer)}</div>
-				<Button
-					embedded="dialog.maximize"
-					type="button"
-					className="so-dialog__maximize"
-					rendered={maximizable}
-					onClick={() => ctrl.toggleMaximized()}
-					{...toAriaProps(maximizeAria)}
-				>
-					{maximized
-						? (renderSlot(props['restore-icon']) ?? (
-								<Icon embedded="dialog.restore-icon" tag={RestoreIcon} />
-							))
-						: (renderSlot(props['maximize-icon']) ?? (
-								<Icon embedded="dialog.maximize-icon" tag={MaximizeIcon} />
-							))}
-				</Button>
-				<Button
-					embedded="dialog.close"
-					type="button"
-					className="so-dialog__close"
-					rendered={closable}
-					onClick={() => ctrl.requestClose('button')}
-					{...toAriaProps(closeAria)}
-				>
-					{renderSlot(props['close-icon']) ?? (
-						<Icon embedded="dialog.close-icon" tag={CloseIcon} />
-					)}
-				</Button>
+				{maximizable ? (
+					<Button
+						embedded="dialog.maximize"
+						type="button"
+						className="so-dialog__maximize"
+						onClick={() => ctrl.toggleMaximized()}
+						{...toAriaProps(maximizeAria)}
+					>
+						{maximized
+							? (renderSlot(props['restore-icon']) ?? (
+									<Icon embedded="dialog.restore-icon" tag={RestoreIcon} />
+								))
+							: (renderSlot(props['maximize-icon']) ?? (
+									<Icon embedded="dialog.maximize-icon" tag={MaximizeIcon} />
+								))}
+					</Button>
+				) : null}
+				{closable ? (
+					<Button
+						embedded="dialog.close"
+						type="button"
+						className="so-dialog__close"
+						onClick={() => ctrl.requestClose('button')}
+						{...toAriaProps(closeAria)}
+					>
+						{renderSlot(props['close-icon']) ?? (
+							<Icon embedded="dialog.close-icon" tag={CloseIcon} />
+						)}
+					</Button>
+				) : null}
 			</Tag>
 		</Teleport>
 	)

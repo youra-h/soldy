@@ -108,9 +108,9 @@ export default { ...SetupTagsItem, components: { Icon, Button, ItemRow } }
 			(`.so-tags-item`).
 		-->
 		<Button
+			v-if="tag_closable"
 			embedded="tags.close"
 			type="button"
-			:rendered="!!tag_closable"
 			class="so-tags-item__close"
 			:disabled="disabled"
 			:size="size"

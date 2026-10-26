@@ -58,25 +58,26 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 			>
 				{renderSlot(props.children, { text: text ?? '', active: active ?? false }) ?? text}
 			</Button>
-			<Button
-				embedded="tabs.close"
-				type="button"
-				rendered={tab_closable === true}
-				className="so-tabs-item__close"
-				disabled={disabled}
-				size={size}
-				{...toAriaProps(closeAria)}
-				onActionClick={(event) => {
-					// Нативное событие: синтетическое к этому времени уже прошло корни таба и
-					// набора, и их `TActionPlugin` отдал бы `action:press` на клик по крестику
-					event.stopPropagation()
-					context?.adapters.tabs.close()
-				}}
-			>
-				{renderSlot(props['close-icon']) ?? (
-					<Icon embedded="tabs.close-icon" tag={roleIcon('close')} size={size} />
-				)}
-			</Button>
+			{tab_closable === true ? (
+				<Button
+					embedded="tabs.close"
+					type="button"
+					className="so-tabs-item__close"
+					disabled={disabled}
+					size={size}
+					{...toAriaProps(closeAria)}
+					onActionClick={(event) => {
+						// The native event: by now the synthetic one has passed the tab and set
+						// roots, and their `TActionPlugin` would give `action:press` on the cross click
+						event.stopPropagation()
+						context?.adapters.tabs.close()
+					}}
+				>
+					{renderSlot(props['close-icon']) ?? (
+						<Icon embedded="tabs.close-icon" tag={roleIcon('close')} size={size} />
+					)}
+				</Button>
+			) : null}
 		</Tag>
 	)
 }

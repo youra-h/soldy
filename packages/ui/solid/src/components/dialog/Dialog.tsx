@@ -75,35 +75,39 @@ export function Dialog(props: DialogProps): JSX.Element {
 						{renderSlot(props.children)}
 					</div>
 					<div class="so-dialog__footer">{renderSlot(props.footer)}</div>
-					<Button
-						embedded="dialog.maximize"
-						type="button"
-						class="so-dialog__maximize"
-						rendered={state.maximizable}
-						onClick={() => ctrl.toggleMaximized()}
-						{...state.maximizeAria}
-					>
-						<Show
-							when={state.maximized}
-							fallback={
-								maximizeIcon() ?? (
-									<Icon embedded="dialog.maximize-icon" tag={MAXIMIZE} />
-								)
-							}
+					<Show when={state.maximizable}>
+						<Button
+							embedded="dialog.maximize"
+							type="button"
+							class="so-dialog__maximize"
+							onClick={() => ctrl.toggleMaximized()}
+							{...state.maximizeAria}
 						>
-							{restoreIcon() ?? <Icon embedded="dialog.restore-icon" tag={RESTORE} />}
-						</Show>
-					</Button>
-					<Button
-						embedded="dialog.close"
-						type="button"
-						class="so-dialog__close"
-						rendered={state.closable}
-						onClick={() => ctrl.requestClose('button')}
-						{...state.closeAria}
-					>
-						{closeIcon() ?? <Icon embedded="dialog.close-icon" tag={CLOSE} />}
-					</Button>
+							<Show
+								when={state.maximized}
+								fallback={
+									maximizeIcon() ?? (
+										<Icon embedded="dialog.maximize-icon" tag={MAXIMIZE} />
+									)
+								}
+							>
+								{restoreIcon() ?? (
+									<Icon embedded="dialog.restore-icon" tag={RESTORE} />
+								)}
+							</Show>
+						</Button>
+					</Show>
+					<Show when={state.closable}>
+						<Button
+							embedded="dialog.close"
+							type="button"
+							class="so-dialog__close"
+							onClick={() => ctrl.requestClose('button')}
+							{...state.closeAria}
+						>
+							{closeIcon() ?? <Icon embedded="dialog.close-icon" tag={CLOSE} />}
+						</Button>
+					</Show>
 				</Root>
 			</Teleport>
 		</Show>

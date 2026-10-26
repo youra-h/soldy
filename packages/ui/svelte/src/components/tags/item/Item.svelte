@@ -64,10 +64,9 @@
 			{:else}
 				{state.text}
 			{/if}
-		</ItemRow><Button
+		</ItemRow>{#if state.tag_closable === true}<Button
 			embedded="tags.close"
 			type="button"
-			rendered={state.tag_closable === true}
 			class="so-tags-item__close"
 			disabled={state.disabled}
 			size={state.size}
@@ -79,6 +78,6 @@
 			{:else}
 				<Icon embedded="tags.close-icon" tag={CLOSE} size={state.size} />
 			{/if}
-		</Button>
+		</Button>{/if}
 	</Dynamic>
 {/if}

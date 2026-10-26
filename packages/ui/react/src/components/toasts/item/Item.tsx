@@ -86,18 +86,19 @@ export function ToastsItem(props: ToastsItemProps): ReactElement | null {
 						{renderSlot(props.content) ?? (Render ? <Render toast={ctrl} /> : null)}
 					</div>
 				</div>
-				<Button
-					embedded="toasts.close"
-					type="button"
-					className="so-toasts-item__close"
-					rendered={closable}
-					onClick={() => ctrl.close()}
-					{...toAriaProps(closeAria)}
-				>
-					{renderSlot(props['close-icon']) ?? (
-						<Icon embedded="toasts.close-icon" tag={CLOSE} />
-					)}
-				</Button>
+				{closable ? (
+					<Button
+						embedded="toasts.close"
+						type="button"
+						className="so-toasts-item__close"
+						onClick={() => ctrl.close()}
+						{...toAriaProps(closeAria)}
+					>
+						{renderSlot(props['close-icon']) ?? (
+							<Icon embedded="toasts.close-icon" tag={CLOSE} />
+						)}
+					</Button>
+				) : null}
 			</div>
 		</Tag>
 	)

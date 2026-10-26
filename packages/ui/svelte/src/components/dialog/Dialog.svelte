@@ -22,10 +22,12 @@
 </script>
 
 <!--
-	Подложка и панель — соседи, подложка раньше: слой у них один, и панель поверх просто порядком.
-	Порядок в панели — заголовок, тело, подвал, кнопки: крестик — последняя остановка Tab. Кнопки
-	прячутся `rendered`: тема опирается на их отсутствие в DOM. Узлы стоят вплотную: пробел Svelte
-	оставил бы текстом, а пустые заголовок и подвал тема сворачивает по `:empty`.
+	The backdrop and the panel are siblings, the backdrop first: they share one layer, and the panel
+	is on top just by order. Order in the panel — title, body, footer, buttons: the cross is the last
+	Tab stop. The buttons are mounted only while on (`{#if}`): the theme relies on their absence
+	from the DOM, and a hidden button would still assemble its instance and plugins. The nodes are
+	glued: Svelte would keep a space as text, and the theme collapses an empty title and footer by
+	`:empty`.
 -->
 {#if state.rendered}
 	<Teleport to={state.target}>
@@ -45,40 +47,42 @@
 			<h2 class="so-dialog__title" {...state.titleAria}>{@render props.title?.()}</h2>
 			<div class="so-dialog__body" {...state.bodyAria}>{@render props.children?.()}</div>
 			<div class="so-dialog__footer">{@render props.footer?.()}</div>
-			<Button
-				embedded="dialog.maximize"
-				type="button"
-				class="so-dialog__maximize"
-				rendered={state.maximizable}
-				onclick={() => ctrl.toggleMaximized()}
-				{...state.maximizeAria}
-			>
-				{#if state.maximized}
-					{#if props['restore-icon']}
-						{@render props['restore-icon']()}
+			{#if state.maximizable}
+				<Button
+					embedded="dialog.maximize"
+					type="button"
+					class="so-dialog__maximize"
+					onclick={() => ctrl.toggleMaximized()}
+					{...state.maximizeAria}
+				>
+					{#if state.maximized}
+						{#if props['restore-icon']}
+							{@render props['restore-icon']()}
+						{:else}
+							<Icon embedded="dialog.restore-icon" tag={RESTORE} />
+						{/if}
+					{:else if props['maximize-icon']}
+						{@render props['maximize-icon']()}
 					{:else}
-						<Icon embedded="dialog.restore-icon" tag={RESTORE} />
+						<Icon embedded="dialog.maximize-icon" tag={MAXIMIZE} />
 					{/if}
-				{:else if props['maximize-icon']}
-					{@render props['maximize-icon']()}
-				{:else}
-					<Icon embedded="dialog.maximize-icon" tag={MAXIMIZE} />
-				{/if}
-			</Button>
-			<Button
-				embedded="dialog.close"
-				type="button"
-				class="so-dialog__close"
-				rendered={state.closable}
-				onclick={() => ctrl.requestClose('button')}
-				{...state.closeAria}
-			>
-				{#if props['close-icon']}
-					{@render props['close-icon']()}
-				{:else}
-					<Icon embedded="dialog.close-icon" tag={CLOSE} />
-				{/if}
-			</Button>
+				</Button>
+			{/if}
+			{#if state.closable}
+				<Button
+					embedded="dialog.close"
+					type="button"
+					class="so-dialog__close"
+					onclick={() => ctrl.requestClose('button')}
+					{...state.closeAria}
+				>
+					{#if props['close-icon']}
+						{@render props['close-icon']()}
+					{:else}
+						<Icon embedded="dialog.close-icon" tag={CLOSE} />
+					{/if}
+				</Button>
+			{/if}
 		</Dynamic>
 	</Teleport>
 {/if}

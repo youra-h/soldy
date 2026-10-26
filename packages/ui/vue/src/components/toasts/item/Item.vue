@@ -83,18 +83,18 @@ export default { ...SetupToastsItem, components: { Icon, Button, ProgressSpinner
 			</div>
 
 			<!--
-				Крестик — последним в DOM: последняя остановка Tab в тосте.
-				Прячется `rendered` (`closable`). Имя — из локали вместе с текстом
-				тоста (`closeAria`). Вида и размера у него нет: квадрат и вид
-				`plain` даёт тема по контексту. Иконка — роль `close`.
-				`type="button"` — как у каждой кнопки-детали: в форме она форму не
-				отправляет.
+				The cross is last in the DOM: the last Tab stop in the toast. It
+				is mounted only while `closable` (`v-if`). The name comes from the
+				locale together with the toast text (`closeAria`). It has no view
+				and no size: the theme gives the square and the `plain` look by
+				context. The icon is the `close` role. `type="button"` — like
+				every detail button: inside a form it does not submit it.
 			-->
 			<Button
+				v-if="closable"
 				embedded="toasts.close"
 				type="button"
 				class="so-toasts-item__close"
-				:rendered="closable"
 				@click="toast.close()"
 				v-bind="closeAria"
 			>

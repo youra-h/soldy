@@ -62,16 +62,17 @@ export function Popover(props: PopoverProps): JSX.Element {
 					<div class="so-popover__content">
 						<Show when={state.contentRendered}>{renderSlot(props.children)}</Show>
 					</div>
-					<Button
-						embedded="popover.close"
-						type="button"
-						class="so-popover__close"
-						rendered={state.closable}
-						onClick={close}
-						{...state.closeAria}
-					>
-						{closeIcon() ?? <Icon embedded="popover.close-icon" tag={CLOSE} />}
-					</Button>
+					<Show when={state.closable}>
+						<Button
+							embedded="popover.close"
+							type="button"
+							class="so-popover__close"
+							onClick={close}
+							{...state.closeAria}
+						>
+							{closeIcon() ?? <Icon embedded="popover.close-icon" tag={CLOSE} />}
+						</Button>
+					</Show>
 				</Frame>
 			</Root>
 		</Show>

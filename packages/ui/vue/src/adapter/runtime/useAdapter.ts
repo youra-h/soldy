@@ -8,7 +8,15 @@
  * 4. Вызывает adapter.destroy() при анмаунте компонента
  */
 
-import { ref, shallowRef, watch, onUnmounted, type Ref } from 'vue'
+import {
+	ref,
+	shallowRef,
+	watch,
+	onUnmounted,
+	onBeforeUpdate,
+	getCurrentInstance,
+	type Ref,
+} from 'vue'
 import { TElementPlugin } from '@soldy-ui/plugins'
 import { type IAdapterContext, type IComponentContract, type TInstanceState } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
@@ -103,18 +111,29 @@ export function useAdapterParts(
 		}),
 	)
 
-	// 2. Vue → Core: один `watch` на все входы компонента. Геттер читает каждый
-	// вход — так Vue следит за ними, — а сменился любой — входы отдаются полным
-	// набором. Входы без изменений ничего не пишут: повтор гасит память входов.
-	// Раньше `watch` был на каждый проп — и с ним эффект, планировщик и
-	// пять замыканий Vue; у строки таблицы с чекбоксом их выходило по 26. Начальные
-	// значения применила сборка контекста, здесь — только изменения
-	offs.push(
-		watch(
-			() => link.inputs.pick(props),
-			() => link.inputs.full(props),
-		),
-	)
+	// 2. Vue → core: the inputs go to the core as a full set before a render
+	// that brought a new vnode from the parent. A parent pass that changed the
+	// props updates the component, and Vue calls `onBeforeUpdate` with the new
+	// props already in place and before the render; a render of the
+	// component's own state keeps the vnode and leaves the inputs alone.
+	// Unchanged inputs write nothing: the input memory swallows a repeat. The
+	// starting values were applied by the context assembly, so only changes
+	// go here.
+	//
+	// Not a `watch` over the props: to have Vue track the inputs its getter
+	// read every one of them, and each read of the props proxy creates a `Dep`
+	// and a `Link` for its key, present or not, on top of the effect with its
+	// scheduler and closures — on every component. That was a tenth of a
+	// button and a seventh of a Select page (benchmarks/pages/vue.md, 869fmhuag)
+	const instance = getCurrentInstance()
+	let vnode = instance?.vnode
+
+	onBeforeUpdate(() => {
+		if (!instance || instance.vnode === vnode) return
+
+		vnode = instance.vnode
+		link.inputs.full(props)
+	})
 
 	// 3. Эмиты: события ядра и `update:<prop>` для v-model — его обмен шлёт по
 	// профилю, сразу после события ядра

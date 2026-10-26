@@ -107,10 +107,10 @@ export default { ...SetupPopover, components: { Frame, Button, Icon } }
 				плагин фокуса.
 			-->
 			<Button
+				v-if="closable"
 				embedded="popover.close"
 				type="button"
 				class="so-popover__close"
-				:rendered="closable"
 				@click="popover.open = false"
 				v-bind="closeAria"
 			>

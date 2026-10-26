@@ -55,20 +55,21 @@
 			<div class="so-popover__content">
 				{#if state.contentRendered}{@render props.children?.()}{/if}
 			</div>
-			<Button
-				embedded="popover.close"
-				type="button"
-				class="so-popover__close"
-				rendered={state.closable}
-				onclick={close}
-				{...state.closeAria}
-			>
-				{#if props['close-icon']}
-					{@render props['close-icon']()}
-				{:else}
-					<Icon embedded="popover.close-icon" tag={CLOSE} />
-				{/if}
-			</Button>
+			{#if state.closable}
+				<Button
+					embedded="popover.close"
+					type="button"
+					class="so-popover__close"
+					onclick={close}
+					{...state.closeAria}
+				>
+					{#if props['close-icon']}
+						{@render props['close-icon']()}
+					{:else}
+						<Icon embedded="popover.close-icon" tag={CLOSE} />
+					{/if}
+				</Button>
+			{/if}
 		</Frame>
 	</Dynamic>
 {/if}
