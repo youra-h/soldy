@@ -363,9 +363,10 @@ describe('хост Web Components · коллекции', () => {
 		expect(document.querySelector('.so-select__panel')).toBeNull()
 
 		const grouped = stage()
+		// Options from data are drawn from the panel's first opening on
 		const data = host.mount(grouped, {
 			component: 'select',
-			props: { items: [{ value: 'x', text: 'Икс' }] },
+			props: { items: [{ value: 'x', text: 'Икс' }], open: true },
 		})
 
 		await flush()
@@ -440,6 +441,17 @@ describe('хост Web Components · коллекции', () => {
 		expect(virtual?.hasAttribute('is')).toBe(false)
 		expect(virtual?.querySelectorAll('.so-list-box-item')).toHaveLength(50)
 		expect(virtual?.querySelector('.so-select')).not.toBeNull()
+
+		// Options from data are drawn from the panel's first opening on: open the
+		// Select by its arrow and close it again
+		const arrow = find(node, '.so-select .so-select__arrow')
+
+		await nextFrame()
+		arrow.click()
+		await flush()
+		arrow.click()
+		await flush()
+
 		expect(document.querySelectorAll('.so-select__list .so-select-item')).toHaveLength(50)
 		expect(virtual?.querySelectorAll('.so-table-row')).toHaveLength(50)
 

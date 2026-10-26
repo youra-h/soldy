@@ -140,27 +140,34 @@
 		внутри списка: пустой `listbox` для скринридера — тупик.
 	-->
 	<div class="so-select__list" [so-attributes]="state()['listAria']">
+		<!--
+			Options from data — from the panel's first opening on (`contentRendered`). The branch is
+			inside the fallback content, not around `<ng-content>`: options in markup are the
+			projection, and they enter the collection only mounted.
+		-->
 		<ng-content>
-			@for (
-				section of state()['drawnSections'] ?? [];
-				track section.key;
-				let first = $first
-			) {
-				@if (state()['groupSeparators'] && !first) {
-					<div class="so-select__separator" aria-hidden="true"></div>
-				}
-				@if (section.group; as group) {
-					<div so-select-group [label]="group.label">
+			@if (state()['contentRendered']) {
+				@for (
+					section of state()['drawnSections'] ?? [];
+					track section.key;
+					let first = $first
+				) {
+					@if (state()['groupSeparators'] && !first) {
+						<div class="so-select__separator" aria-hidden="true"></div>
+					}
+					@if (section.group; as group) {
+						<div so-select-group [label]="group.label">
+							<ng-container
+								[ngTemplateOutlet]="entries"
+								[ngTemplateOutletContext]="{ $implicit: section.entries }"
+							/>
+						</div>
+					} @else {
 						<ng-container
 							[ngTemplateOutlet]="entries"
 							[ngTemplateOutletContext]="{ $implicit: section.entries }"
 						/>
-					</div>
-				} @else {
-					<ng-container
-						[ngTemplateOutlet]="entries"
-						[ngTemplateOutletContext]="{ $implicit: section.entries }"
-					/>
+					}
 				}
 			}
 		</ng-content>

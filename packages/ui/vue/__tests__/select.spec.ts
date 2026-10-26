@@ -267,6 +267,81 @@ describe('опции', () => {
 })
 
 /**
+ * Options from data are mounted from the panel's first opening on: a closed
+ * Select nobody opened is its field and an empty list. The closed field needs
+ * none of their nodes — the selected text comes from the collection, and the
+ * field refers to the list, which is always there. Closing only hides them.
+ * Options in markup enter the collection only mounted — they are there from
+ * the start.
+ */
+describe('опции из данных — с первого открытия', () => {
+	const CITIES = [
+		{ value: 'msk', text: 'Москва' },
+		{ value: 'tver', text: 'Тверь' },
+	]
+
+	const renderData = (props: Record<string, unknown> = {}) => {
+		wrapper = mount(Select, { props: { items: CITIES, ...props }, attachTo: document.body })
+
+		return wrapper
+	}
+
+	const texts = () => options().map((option) => option.textContent?.trim())
+
+	it('закрытый — текст выбранного и список с id без опций; открыли — опции есть, закрыли — те же', async () => {
+		const select = renderData({ value: 'tver' })
+
+		await nextFrame()
+
+		const input = select.find('input')
+		const list = panel()
+
+		if (!list) throw new Error('списка нет')
+
+		expect((input.element as HTMLInputElement).value).toBe('Тверь')
+		expect(list.id).not.toBe('')
+		expect(input.attributes('aria-controls')).toBe(list.id)
+		expect(options()).toHaveLength(0)
+
+		await input.trigger('click')
+		await nextTick()
+
+		const drawn = options()
+
+		expect(isOpen()).toBe(true)
+		expect(texts()).toEqual(['Москва', 'Тверь'])
+
+		await input.trigger('click')
+		await nextTick()
+
+		expect(isOpen()).toBe(false)
+		expect(options()).toHaveLength(2)
+		expect(options().every((option, index) => option === drawn[index])).toBe(true)
+	})
+
+	it('опции разметкой — и до первого открытия', () => {
+		render()
+
+		expect(isOpen()).toBe(false)
+		expect(options()).toHaveLength(3)
+	})
+
+	it('↓ на закрытом поле открывает панель; ссылка — на подсвеченную, когда опции нарисованы', async () => {
+		const select = renderData()
+
+		await nextFrame()
+		await select.find('input').trigger('keydown', { key: 'ArrowDown' })
+		await nextTick()
+
+		const id = select.find('input').attributes('aria-activedescendant') ?? ''
+
+		expect(isOpen()).toBe(true)
+		expect(id).not.toBe('')
+		expect(document.getElementById(id)?.textContent?.trim()).toBe('Москва')
+	})
+})
+
+/**
  * Кнопку очистки рисует поле — `Input` внутри Select (`.so-input__clear`):
  * `clearable` Select отдаёт полю, имя кнопке пишет плагин имён самого поля,
  * и своей кнопки у Select нет.

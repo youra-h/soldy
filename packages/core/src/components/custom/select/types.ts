@@ -144,6 +144,11 @@ export interface ISelect<
 	extends IInputControl<TSelectValue, TProps, TEvents>, IList, ISwipeable {
 	/** Открыта ли панель со списком */
 	open: boolean
+	/**
+	 * Whether the panel's options from data are mounted: from the first opening
+	 * on. Options in markup are mounted from the start
+	 */
+	readonly contentRendered: boolean
 	/** Текст поля, пока ничего не выбрано */
 	placeholder: string
 	/** Закрывать ли панель после выбора */

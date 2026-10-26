@@ -200,6 +200,20 @@ async function open(): Promise<void> {
 	await nextFrame()
 }
 
+/**
+ * Options from data are drawn from the panel's first opening on: open the
+ * panel with its arrow — it opens in `editable` too — and close it again. The
+ * Select is closed, as before, and its options are in the document.
+ */
+async function openOnce(): Promise<void> {
+	const arrow = find(document, '.so-select__arrow', HTMLElement)
+
+	click(arrow)
+	await nextFrame()
+	click(arrow)
+	await nextFrame()
+}
+
 /** Движок из `engine:create`: его колбэк — проп компонента. */
 function engineProbe(): {
 	readonly onEngineCreate: (engine: TEngineView) => void
@@ -546,7 +560,12 @@ describe('узлы — те же', () => {
 		await nextFrame()
 
 		const input = field()
+
+		await openOnce()
+
 		const nodes = [...document.querySelectorAll('.so-select-item')]
+
+		expect(nodes).toHaveLength(4)
 
 		await open()
 		click(optionAt(2))
@@ -575,6 +594,64 @@ describe('узлы — те же', () => {
 		expect(document.querySelectorAll('.so-select__tags .so-tags-item')).toHaveLength(2)
 		expect(field()).toBe(input)
 		expect(find(document, '.so-select__tags', HTMLElement)).toBe(row)
+	})
+})
+
+/**
+ * Options from data are mounted from the panel's first opening on: a closed
+ * Select nobody opened is its field and an empty list. The closed field needs
+ * none of their nodes — the selected text comes from the collection, and the
+ * field refers to the list, which is always there. Closing only hides them.
+ * Options in markup enter the collection only mounted — they are there from
+ * the start.
+ */
+describe('опции из данных — с первого открытия', () => {
+	const CITY_ITEMS = [
+		{ value: 'msk', text: 'Москва' },
+		{ value: 'tver', text: 'Тверь' },
+	]
+
+	it('закрытый — текст выбранного и список с id без опций; открыли — опции есть, закрыли — те же', async () => {
+		mount(<Select items={CITY_ITEMS} value="tver" />)
+		await nextFrame()
+
+		expect(field().value).toBe('Тверь')
+		expect(list().id).not.toBe('')
+		expect(field().getAttribute('aria-controls')).toBe(list().id)
+		expect(options()).toHaveLength(0)
+
+		await open()
+
+		const drawn = options()
+
+		expect(isOpen()).toBe(true)
+		expect(texts()).toEqual(['Москва', 'Тверь'])
+
+		await open()
+
+		expect(isOpen()).toBe(false)
+		expectNodes(options(), drawn)
+	})
+
+	it('опции разметкой — и до первого открытия', () => {
+		draw()
+
+		expect(isOpen()).toBe(false)
+		expect(texts()).toEqual(['Москва', 'Тверь', 'Тула'])
+	})
+
+	it('↓ на закрытом поле открывает панель; ссылка — на подсвеченную, когда опции нарисованы', async () => {
+		mount(<Select items={CITY_ITEMS} />)
+		await nextFrame()
+
+		press('ArrowDown')
+		await nextFrame()
+
+		const id = field().getAttribute('aria-activedescendant') ?? ''
+
+		expect(isOpen()).toBe(true)
+		expect(id).not.toBe('')
+		expect(document.getElementById(id)?.textContent?.trim()).toBe('Москва')
 	})
 })
 
@@ -1282,6 +1359,7 @@ describe('отбор опций из items', () => {
 		mount(<Select items={ITEMS} onEngineCreate={probe.onEngineCreate} {...props} />)
 		await flush()
 		await nextFrame()
+		await openOnce()
 
 		return probe.engine()
 	}
@@ -1316,6 +1394,7 @@ describe('отбор опций из items', () => {
 	it('отбор по тексту, а не по значению — поле сравнения ставит Select', async () => {
 		const engine = await renderSelect()
 
+		expect(options()).toHaveLength(4)
 		expect(engine.extensions.filter.fields).toEqual(['text'])
 
 		// 'a' — это value первой опции, но по значению не ищем
@@ -1327,6 +1406,7 @@ describe('отбор опций из items', () => {
 	it('пустой отбор показывает слот empty внутри списка', async () => {
 		const engine = await renderSelect({ empty: <p className="probe-empty">Пусто</p> })
 
+		expect(options()).toHaveLength(4)
 		expect(document.querySelector('.probe-empty')).toBeNull()
 
 		query(engine, 'ничего такого нет')
@@ -1390,6 +1470,7 @@ describe('ввод в поле', () => {
 	it('без editable ввод не слушается вовсе', async () => {
 		const engine = await renderSelect({ editableMode: 'filter' })
 
+		await openOnce()
 		type('тре')
 
 		expect(engine.extensions.filter.query).toBe('')
@@ -1506,11 +1587,13 @@ describe('опции разметки под отбором', () => {
 	})
 })
 
+// Options from data are drawn from the panel's first opening on: the panel is
+// open from the start
 describe('готовая коллекция', () => {
 	it('рисует опции движка уровня 1, добавленное в него — тоже', () => {
 		const engine = createEngine<{ value: string; text: string }>({ items: ITEMS.slice(0, 2) })
 
-		mount(<Select engine={engine} />)
+		mount(<Select engine={engine} open />)
 
 		expect(options()).toHaveLength(2)
 
@@ -1533,7 +1616,7 @@ describe('готовая коллекция', () => {
 		engine.extensions.plain.events.on('reset', () => resets++)
 		engine.extensions.plain.events.on('item:added', () => added++)
 
-		mount(<Select engine={engine} items={ITEMS} />)
+		mount(<Select engine={engine} items={ITEMS} open />)
 
 		expect(resets).toBe(0)
 		expect(added).toBe(ITEMS.length)
@@ -1596,10 +1679,14 @@ describe('отметка выбранной опции', () => {
  * scope слота опции плюс сама опция.
  */
 describe('слоты опций', () => {
+	// Options from data are drawn from the panel's first opening on: the panel
+	// is open from the start
+
 	it('item получает text и selected опции, selected следует за выбором', async () => {
 		mount(
 			<Select
 				items={ITEMS.slice(0, 2)}
+				open
 				item={({ item, text, selected }: TItemRowScope) =>
 					`${String(item.value)}:${text}:${String(selected)}`
 				}
@@ -1622,6 +1709,7 @@ describe('слоты опций', () => {
 		mount(
 			<Select
 				items={ITEMS.slice(0, 2)}
+				open
 				item={(scope: TItemRowScope) => (
 					<b className="probe">
 						{String(scope.item.value)}:{String(scope.selected)}
@@ -1643,6 +1731,7 @@ describe('слоты опций', () => {
 		mount(
 			<Select
 				items={ITEMS.slice(0, 2)}
+				open
 				item-leading={({ item }: TItemScope) => (
 					<u className="lead">{String(item.value)}</u>
 				)}
@@ -1670,6 +1759,7 @@ describe('слоты опций', () => {
 		mount(
 			<Select
 				items={ITEMS.slice(0, 2)}
+				open
 				mode="multiple"
 				indicator="end"
 				item-indicator-icon={({ item, selected }: TItemScope & { selected: boolean }) =>
@@ -1765,8 +1855,11 @@ describe('группы из данных', () => {
 			.getElementById(field().getAttribute('aria-activedescendant') ?? '')
 			?.textContent?.trim()
 
+	// Options from data are drawn from the panel's first opening on: the panel
+	// is open from the start where the test looks at them without opening it
+
 	it('группы с подписью, без группы — последними; разделителей по умолчанию нет', async () => {
-		mount(<Select items={MIXED} groups={GROUPS} />)
+		mount(<Select items={MIXED} groups={GROUPS} open />)
 		await nextFrame()
 
 		expect(parts()).toEqual(SECTIONS)
@@ -1784,14 +1877,14 @@ describe('группы из данных', () => {
 
 	it('groupSeparators — немой разделитель только между соседними секциями, и на лету; узлы опций те же', () => {
 		const { render: rerender } = mount(
-			<Select items={MIXED} groups={GROUPS} groupSeparators={false} />,
+			<Select items={MIXED} groups={GROUPS} groupSeparators={false} open />,
 		)
 
 		expect(parts()).toEqual(SECTIONS)
 
 		const before = [...document.querySelectorAll('.so-select-item')]
 
-		rerender(<Select items={MIXED} groups={GROUPS} groupSeparators />)
+		rerender(<Select items={MIXED} groups={GROUPS} groupSeparators open />)
 
 		expect(parts()).toEqual(SEPARATED)
 		expect(
@@ -1800,7 +1893,7 @@ describe('группы из данных', () => {
 			),
 		).toEqual(['true', 'true'])
 
-		rerender(<Select items={MIXED} groups={GROUPS} groupSeparators={false} />)
+		rerender(<Select items={MIXED} groups={GROUPS} groupSeparators={false} open />)
 
 		expect(parts()).toEqual(SECTIONS)
 		expectNodes([...document.querySelectorAll('.so-select-item')], before)

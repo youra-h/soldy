@@ -138,12 +138,17 @@ afterEach(() => {
 })
 
 describe('окно списка панели', () => {
-	it('до первого открытия в закрытой панели — не больше 50 опций', async () => {
+	/**
+	 * Options from data are drawn from the panel's first opening on. Then the
+	 * window draws its first entries, and the plugin measures it once the first
+	 * of them enters the document: `drawn` does not change then — the tests
+	 * below open the panel for the first time and see the window measured.
+	 */
+	it('до первого открытия опций в закрытой панели нет', async () => {
 		await mount()
 
 		expect(getComputedStyle(panel()).display).toBe('none')
-		expect(drawn().length).toBeGreaterThan(0)
-		expect(drawn().length).toBeLessThanOrEqual(50)
+		expect(drawn()).toHaveLength(0)
 	})
 
 	it('открыта — в документе только окно, а список прокручивается во всю высоту опций', async () => {

@@ -65,7 +65,14 @@
 		<Select.Item value="tver" text="Тверь" />
 	</Select>
 {:else if props.case === 'indicator'}
-	<Select items={ITEMS} mode="multiple" indicator="end" item-indicator-icon={indicatorIcon} />
+	<!-- Options from data are drawn from the panel's first opening on: open from the start -->
+	<Select
+		items={ITEMS}
+		open
+		mode="multiple"
+		indicator="end"
+		item-indicator-icon={indicatorIcon}
+	/>
 {:else if props.case === 'locale' && props.locale}
 	<LocaleProvider locale={props.locale}>
 		<Select name="Город" clearable />

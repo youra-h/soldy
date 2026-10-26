@@ -169,9 +169,9 @@ describe('ListBox в окне', () => {
 })
 
 /**
- * Select в окне: список панели — телепортированной в `body` — рисует только
- * видимые опции. Панель закрыта: она в документе всегда, открытость — её
- * `display`, и опции в ней смонтированы с первой отрисовки.
+ * Select in the window: the list of its panel — teleported into `body` — draws
+ * only the visible options. Options from data are drawn from the panel's first
+ * opening on, so the panel is open from the start.
  */
 describe('Select в окне', () => {
 	const selectOptions = () => [...document.querySelectorAll('.so-select__list .so-select-item')]
@@ -189,21 +189,23 @@ describe('Select в окне', () => {
 	}
 
 	it('без обёртки — все опции, распорок нет', async () => {
-		await render(() => h(Select, { items: items(80) }))
+		await render(() => h(Select, { items: items(80), open: true }))
 
 		expect(selectOptions()).toHaveLength(80)
 		expect(selectFillers()).toEqual([])
 	})
 
 	it('в обёртке — до замера первые 50 опций из 80, без распорок', async () => {
-		await render(() => h(Virtual, () => h(Select, { items: items(80) })))
+		await render(() => h(Virtual, () => h(Select, { items: items(80), open: true })))
 
 		expect(selectOptions()).toHaveLength(50)
 		expect(selectFillers()).toEqual([])
 	})
 
 	it('`enabled: false` — все опции', async () => {
-		await render(() => h(Virtual, { enabled: false }, () => h(Select, { items: items(80) })))
+		await render(() =>
+			h(Virtual, { enabled: false }, () => h(Select, { items: items(80), open: true })),
+		)
 
 		expect(selectOptions()).toHaveLength(80)
 	})
@@ -211,7 +213,7 @@ describe('Select в окне', () => {
 	it('по замеру — распорки в списке панели: скрыты, высотой в опции; нарисованным — место в наборе', async () => {
 		const engine = createEngineSelect({ items: items(200) })
 
-		await render(() => h(Virtual, () => h(Select, { engine })))
+		await render(() => h(Virtual, () => h(Select, { engine, open: true })))
 
 		// Видны места 100–109: с запасом — 90–119
 		engine.extensions.draw.notifyViewport({ top: 3000, bottom: 3300, step: 30 })

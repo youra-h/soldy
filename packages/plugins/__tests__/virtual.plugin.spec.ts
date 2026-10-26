@@ -90,6 +90,12 @@ type TMountOptions = {
 	container?: boolean
 	/** Высоты элементов по порядку; по умолчанию все — `STEP`. */
 	heights?: number[]
+	/**
+	 * The markup draws the items later than the plugin starts — `drawItems` of
+	 * the result does it, as the panel of a Select builds its options from data
+	 * on its first opening: `drawn` does not change then.
+	 */
+	deferred?: boolean
 }
 
 /**
@@ -127,24 +133,41 @@ async function mountOver(
 	parent.append(root)
 	document.body.append(outside)
 
-	let top = LIST_TOP
 	const items: TDrawable[] = engine.extensions.batch.shown
 	const heights = options.heights ?? items.map(() => STEP)
 
-	items.forEach((item, index) => {
-		const node = document.createElement('div')
-		const row = document.createElement('div')
-		const itemBundle = new TPluginBundle(item).use(TElementPlugin)
+	/**
+	 * Nodes of the items, as the adapter draws them: the item's node and its
+	 * bundle in the registry. `bundleFirst` registers the bundle before the
+	 * node is bound — the order is the adapter's.
+	 */
+	const drawItems = (bundleFirst = false) => {
+		let top = LIST_TOP
 
-		row.tabIndex = -1
-		node.append(row)
-		list.append(node)
-		place(node, top, heights[index])
-		top += heights[index]
-		bundles.push(itemBundle)
-		pluginOf(itemBundle, TElementPlugin).element = node
-		pluginOf(bundle, TCollectionBundlesPlugin).register(itemBundle, item)
-	})
+		items.forEach((item, index) => {
+			const node = document.createElement('div')
+			const row = document.createElement('div')
+			const itemBundle = new TPluginBundle(item).use(TElementPlugin)
+			const bind = () => {
+				pluginOf(itemBundle, TElementPlugin).element = node
+			}
+
+			row.tabIndex = -1
+			node.append(row)
+			list.append(node)
+			place(node, top, heights[index])
+			top += heights[index]
+			bundles.push(itemBundle)
+
+			if (!bundleFirst) bind()
+
+			pluginOf(bundle, TCollectionBundlesPlugin).register(itemBundle, item)
+
+			if (bundleFirst) bind()
+		})
+	}
+
+	if (!options.deferred) drawItems()
 
 	const viewport = vi.spyOn(engine.extensions.draw, 'notifyViewport')
 	const pin = vi.spyOn(engine.extensions.draw, 'pin')
@@ -163,8 +186,24 @@ async function mountOver(
 	}
 
 	const registry = pluginOf(bundle, TCollectionBundlesPlugin)
+	const element = pluginOf(bundle, TElementPlugin)
+	const elements = pluginOf(bundle, TCollectionElements)
 
-	return { engine, root, list, outside, parent, items, registry, rowOf, viewport, pin }
+	return {
+		engine,
+		root,
+		list,
+		outside,
+		parent,
+		items,
+		registry,
+		element,
+		elements,
+		rowOf,
+		viewport,
+		pin,
+		drawItems,
+	}
 }
 
 /** Таблица из трёх строк: корень `table`, строки — в теле. */
@@ -290,6 +329,52 @@ describe('замер', () => {
 		window.dispatchEvent(new Event('scroll'))
 		await nextFrame()
 
+		expect(viewport).not.toHaveBeenCalled()
+	})
+})
+
+/**
+ * The markup draws the window's entries later than the plugin starts — the
+ * panel of a Select builds its options from data on its first opening, and
+ * `drawn` does not change then. The plugin waits for the first drawn node and
+ * measures; without it the window would stay at its first entries, without
+ * fillers.
+ */
+describe('нарисованное пришло в документ после старта', () => {
+	it.each([
+		['узел, потом набор', false],
+		['набор, потом узел', true],
+	])('без смены drawn — замер, когда пришёл первый узел (%s)', async (_order, bundleFirst) => {
+		const { engine, drawItems, viewport } = await mountTable({ deferred: true })
+		const drawn = vi.fn()
+
+		// Nothing in the document yet — nothing to measure
+		expect(viewport).not.toHaveBeenCalled()
+
+		engine.extensions.draw.events.on('change:drawn', drawn)
+		drawItems(bundleFirst)
+		// The node is announced a frame later, the measurement — the next frame
+		await nextFrame()
+		await nextFrame()
+
+		expect(drawn).not.toHaveBeenCalled()
+		expect(viewport).toHaveBeenLastCalledWith({
+			top: -LIST_TOP,
+			bottom: window.innerHeight - LIST_TOP,
+			step: STEP,
+		})
+	})
+
+	it('корень сняли, пока ждали, — ожидания нет: нарисованное плагин не ищет', async () => {
+		const { element, elements, drawItems, viewport } = await mountTable({ deferred: true })
+		const lookup = vi.spyOn(elements, 'getElementByItem')
+
+		element.element = null
+		drawItems()
+		await nextFrame()
+		await nextFrame()
+
+		expect(lookup).not.toHaveBeenCalled()
 		expect(viewport).not.toHaveBeenCalled()
 	})
 })

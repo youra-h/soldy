@@ -68,6 +68,19 @@ async function renderSelect(
 	return { wrapper: mounted, engine }
 }
 
+/**
+ * Options from data are drawn from the panel's first opening on: open the
+ * panel with its arrow and close it again — the Select is closed, as before,
+ * and its options are in the document.
+ */
+async function openOnce(select: TWrapper): Promise<void> {
+	await nextFrame()
+	await select.find('.so-select__arrow').trigger('click')
+	await nextTick()
+	await select.find('.so-select__arrow').trigger('click')
+	await nextTick()
+}
+
 describe('Select под отбором', () => {
 	it('движок доезжает до теста и содержит filter', async () => {
 		const { engine } = await renderSelect()
@@ -77,7 +90,9 @@ describe('Select под отбором', () => {
 	})
 
 	it('сужает список на экране', async () => {
-		const { engine } = await renderSelect()
+		const { wrapper, engine } = await renderSelect()
+
+		await openOnce(wrapper)
 
 		expect(options().length).toBe(4)
 
@@ -88,8 +103,9 @@ describe('Select под отбором', () => {
 	})
 
 	it('скрытые опции остаются в коллекции — размонтирование их не удаляет', async () => {
-		const { engine } = await renderSelect()
+		const { wrapper, engine } = await renderSelect()
 
+		await openOnce(wrapper)
 		engine.extensions.filter.query = 'тре'
 		await nextTick()
 
@@ -99,8 +115,9 @@ describe('Select под отбором', () => {
 	})
 
 	it('снятие отбора возвращает весь список', async () => {
-		const { engine } = await renderSelect()
+		const { wrapper, engine } = await renderSelect()
 
+		await openOnce(wrapper)
 		engine.extensions.filter.query = 'тре'
 		await nextTick()
 		expect(options().length).toBe(1)
@@ -112,8 +129,11 @@ describe('Select под отбором', () => {
 	})
 
 	it('отбор по тексту, а не по значению — поле сравнения ставит Select', async () => {
-		const { engine } = await renderSelect()
+		const { wrapper, engine } = await renderSelect()
 
+		await openOnce(wrapper)
+
+		expect(options().length).toBe(4)
 		expect(engine.extensions.filter.fields).toEqual(['text'])
 
 		// 'a' — это value первой опции, но по значению не ищем
@@ -124,7 +144,11 @@ describe('Select под отбором', () => {
 	})
 
 	it('пустой отбор показывает слот empty', async () => {
-		const { engine } = await renderSelect()
+		const { wrapper, engine } = await renderSelect()
+
+		await openOnce(wrapper)
+
+		expect(options().length).toBe(4)
 
 		engine.extensions.filter.query = 'ничего такого нет'
 		await nextTick()
@@ -134,7 +158,9 @@ describe('Select под отбором', () => {
 	})
 
 	it('выбор скрытой опции не теряется', async () => {
-		const { engine } = await renderSelect({ value: 'a' })
+		const { wrapper, engine } = await renderSelect({ value: 'a' })
+
+		await openOnce(wrapper)
 
 		expect(engine.extensions.selection.selectedCount).toBe(1)
 
@@ -198,7 +224,7 @@ describe('ввод в поле под отбором', () => {
 	it('без editable ввод не слушается вовсе', async () => {
 		const { wrapper, engine } = await renderSelect({ editableMode: 'filter' })
 
-		await nextFrame()
+		await openOnce(wrapper)
 		await type(wrapper, 'тре')
 
 		expect(engine.extensions.filter.query).toBe('')

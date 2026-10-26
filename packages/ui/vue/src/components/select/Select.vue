@@ -208,82 +208,92 @@ export default {
 						переходит из блока в блок. Проброс слотов записан у опций группы
 						и у опций без неё: обёртка у них разная.
 					-->
-					<template v-for="(section, index) in drawnSections" :key="section.key">
-						<div
-							v-if="groupSeparators && index > 0"
-							class="so-select__separator"
-							aria-hidden="true"
-						></div>
-						<SelectGroup v-if="section.group" :label="section.group.label">
-							<template v-for="entry in section.entries" :key="entry.key">
-								<div
-									v-if="entry.kind === 'filler'"
-									class="so-select__filler"
-									aria-hidden="true"
-									:style="entry.style"
-								></div>
-								<SelectItem v-else :ctrl="entry.item">
-									<template #leading>
-										<slot name="item-leading" :item="entry.item" />
-									</template>
-									<template #default="{ text, selected }">
-										<slot
-											name="item"
-											:item="entry.item"
-											:text="text"
-											:selected="selected"
-										/>
-									</template>
-									<template #trailing>
-										<slot name="item-trailing" :item="entry.item" />
-									</template>
-									<template
-										v-if="$slots['item-indicator-icon']"
-										#indicator-icon="{ selected }"
-									>
-										<slot
-											name="item-indicator-icon"
-											:item="entry.item"
-											:selected="selected"
-										/>
-									</template>
-								</SelectItem>
-							</template>
-						</SelectGroup>
-						<template v-else>
-							<template v-for="entry in section.entries" :key="entry.key">
-								<div
-									v-if="entry.kind === 'filler'"
-									class="so-select__filler"
-									aria-hidden="true"
-									:style="entry.style"
-								></div>
-								<SelectItem v-else :ctrl="entry.item">
-									<template #leading>
-										<slot name="item-leading" :item="entry.item" />
-									</template>
-									<template #default="{ text, selected }">
-										<slot
-											name="item"
-											:item="entry.item"
-											:text="text"
-											:selected="selected"
-										/>
-									</template>
-									<template #trailing>
-										<slot name="item-trailing" :item="entry.item" />
-									</template>
-									<template
-										v-if="$slots['item-indicator-icon']"
-										#indicator-icon="{ selected }"
-									>
-										<slot
-											name="item-indicator-icon"
-											:item="entry.item"
-											:selected="selected"
-										/>
-									</template>
-								</SelectItem>
+					<!--
+						Options from data are mounted from the panel's first opening on
+						(`contentRendered`): a closed Select nobody opened builds its
+						field and an empty list. Closing hides the panel and keeps them.
+						The slot itself is not conditional: options in markup enter the
+						collection only mounted, and without them the closed field would
+						lose the selected text and the value.
+					-->
+					<template v-if="contentRendered">
+						<template v-for="(section, index) in drawnSections" :key="section.key">
+							<div
+								v-if="groupSeparators && index > 0"
+								class="so-select__separator"
+								aria-hidden="true"
+							></div>
+							<SelectGroup v-if="section.group" :label="section.group.label">
+								<template v-for="entry in section.entries" :key="entry.key">
+									<div
+										v-if="entry.kind === 'filler'"
+										class="so-select__filler"
+										aria-hidden="true"
+										:style="entry.style"
+									></div>
+									<SelectItem v-else :ctrl="entry.item">
+										<template #leading>
+											<slot name="item-leading" :item="entry.item" />
+										</template>
+										<template #default="{ text, selected }">
+											<slot
+												name="item"
+												:item="entry.item"
+												:text="text"
+												:selected="selected"
+											/>
+										</template>
+										<template #trailing>
+											<slot name="item-trailing" :item="entry.item" />
+										</template>
+										<template
+											v-if="$slots['item-indicator-icon']"
+											#indicator-icon="{ selected }"
+										>
+											<slot
+												name="item-indicator-icon"
+												:item="entry.item"
+												:selected="selected"
+											/>
+										</template>
+									</SelectItem>
+								</template>
+							</SelectGroup>
+							<template v-else>
+								<template v-for="entry in section.entries" :key="entry.key">
+									<div
+										v-if="entry.kind === 'filler'"
+										class="so-select__filler"
+										aria-hidden="true"
+										:style="entry.style"
+									></div>
+									<SelectItem v-else :ctrl="entry.item">
+										<template #leading>
+											<slot name="item-leading" :item="entry.item" />
+										</template>
+										<template #default="{ text, selected }">
+											<slot
+												name="item"
+												:item="entry.item"
+												:text="text"
+												:selected="selected"
+											/>
+										</template>
+										<template #trailing>
+											<slot name="item-trailing" :item="entry.item" />
+										</template>
+										<template
+											v-if="$slots['item-indicator-icon']"
+											#indicator-icon="{ selected }"
+										>
+											<slot
+												name="item-indicator-icon"
+												:item="entry.item"
+												:selected="selected"
+											/>
+										</template>
+									</SelectItem>
+								</template>
 							</template>
 						</template>
 					</template>

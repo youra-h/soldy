@@ -644,6 +644,17 @@ export function describeSmoke(framework: string): void {
 			async (framework) => {
 				const wrapper = await openPage(framework, 'select')
 				const row = rowOf(wrapper, 'groupSeparators')
+
+				// The panel's options from data are drawn with its first opening: open
+				// and close the Select of each column by its arrow, the options stay
+				for (const stage of stagesOf(row)) {
+					for (let click = 0; click < 2; click++) {
+						await stage.get('.so-select__arrow').trigger('click')
+						await nextTick()
+						await nextFrame()
+					}
+				}
+
 				const sections = () =>
 					stagesOf(row).map((stage) =>
 						sectionsIn(

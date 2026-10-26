@@ -66,6 +66,11 @@ async function scrollThrough(engine: TWindowed, content: () => VNode): Promise<n
 
 	app.unmount()
 	host.remove()
+	// The selector engine of jsdom keeps the node of its last query
+	// (`closest`, `querySelector`), and through its `__vnode` the whole unmounted
+	// tree: an open panel's plugins query the panel's nodes. A query on the
+	// document lets it go — a browser keeps no such node
+	document.querySelector('body')
 
 	return alive
 }
@@ -82,7 +87,10 @@ describe('строки — только у нарисованных', () => {
 
 	it('Select: пролистанный до конца — строк не больше окна, снятый — ни одной', async () => {
 		const engine = createEngineSelect({ items: items(COUNT) })
-		const alive = await scrollThrough(engine, () => h(Virtual, () => h(Select, { engine })))
+		// Options from data are drawn from the panel's first opening on
+		const alive = await scrollThrough(engine, () =>
+			h(Virtual, () => h(Select, { engine, open: true })),
+		)
 
 		expect(alive).toBeGreaterThan(0)
 		expect(alive).toBeLessThanOrEqual(WINDOW)

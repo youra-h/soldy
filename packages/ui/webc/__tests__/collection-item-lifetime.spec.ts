@@ -89,6 +89,10 @@ function isMenu(node: Element): node is TMenuElementProps {
 	return node instanceof TMenuElement
 }
 
+function isSelect(node: Element): node is TSelectElementProps {
+	return node instanceof TSelectElement
+}
+
 /**
  * Где элементы коллекции владельца: в нём самом, а у меню и Select — в
  * панели, увезённой в `body`.
@@ -175,8 +179,9 @@ describe.each(COLLECTIONS)(
 
 			await flush()
 
-			// The menu draws its items from the panel's first opening on
-			if (isMenu(el)) {
+			// The menu and Select draw their items from data from the panel's first
+			// opening on
+			if (isMenu(el) || isSelect(el)) {
 				el.open = true
 				await flush()
 				el.open = false
