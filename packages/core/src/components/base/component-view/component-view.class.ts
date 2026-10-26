@@ -56,29 +56,17 @@ export default class TComponentView<
 
 		this._direction = props.direction ?? ctor.defaultValues.direction
 
+		// Each set reports its change to a subscriber (`TSubscribable`), not a
+		// bus of its own: a bus per set cost every collection item four emitters
 		this._classes = new TClasses(ctor.baseClass)
-
-		this._classes.events.on('change', () =>
-			this._sink.emit('change:classes', this._classes.toArray()),
-		)
-
+		this._classes.subscribe(() => this._sink.emit('change:classes', this._classes.toArray()))
 		this._aria = new TAria()
-
-		this._aria.events.on('change', () => this._sink.emit('change:aria', this._aria.toObject()))
-
+		this._aria.subscribe(() => this._sink.emit('change:aria', this._aria.toObject()))
 		this._dataset = new TDataset()
-
-		this._dataset.events.on('change', () =>
-			this._sink.emit('change:dataset', this._dataset.toObject()),
-		)
-
+		this._dataset.subscribe(() => this._sink.emit('change:dataset', this._dataset.toObject()))
 		this._attrs = new TAttributes()
+		this._attrs.subscribe(() => this._sink.emit('change:attrs', this._attrs.toObject()))
 
-		this._attrs.events.on('change', () =>
-			this._sink.emit('change:attrs', this._attrs.toObject()),
-		)
-
-		this.events.on('change:direction', () => this._syncDir())
 		this._syncDir()
 	}
 
@@ -239,8 +227,23 @@ export default class TComponentView<
 		if (this._tag === value) return
 
 		this._tag = value
+		this._syncTag()
 		this._sink.emit('change:tag', value)
 	}
+
+	/**
+	 * Recomputes what the sets take from the root tag. The `tag` setter calls it
+	 * after the write and before `change:tag`, the way the first handler of
+	 * `change:tag` used to: its subscribers and the adapter exchange already see
+	 * the sets written from the new tag, and the nested `change:attrs` and
+	 * `change:aria` reach the exchange before `change:tag`. A setter, not a
+	 * subscription to its own event: a subscription kept an emitter on every
+	 * instance, a collection item that is never drawn included.
+	 *
+	 * Empty in the base: the view writes nothing from its tag. `TControl`
+	 * writes the native `disabled` and `aria-disabled` here.
+	 */
+	protected _syncTag(): void {}
 
 	get direction(): TDirection {
 		return this._direction
@@ -249,16 +252,18 @@ export default class TComponentView<
 		if (this._direction === value) return
 
 		this._direction = value
+		this._syncDir()
 		this._sink.emit('change:direction', value)
 	}
 
 	/**
-	 * Пишет `dir` в общий набор нативных атрибутов рядом с `disabled`
-	 * (`TControl._syncDisabled`) — один путь в разметку вместо отдельного
-	 * пропа `dir`, который раньше вычисляли в шести адаптерах.
+	 * Writes `dir` to the shared set of native attributes next to `disabled`
+	 * (`TControl._syncDisabled`) — one path to the markup instead of a separate
+	 * `dir` prop that six adapters used to compute.
 	 *
-	 * `'inherit'` → `null`: атрибут не ставится, направление наследуется от
-	 * предка.
+	 * `'inherit'` → `null`: the attribute is not set, the direction is inherited
+	 * from an ancestor. The constructor calls it for the initial value and the
+	 * `direction` setter after the write, before `change:direction`.
 	 */
 	private _syncDir(): void {
 		this._attrs.add('dir', this._direction === 'inherit' ? null : this._direction)

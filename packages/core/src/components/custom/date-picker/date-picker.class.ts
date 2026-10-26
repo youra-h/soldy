@@ -280,14 +280,14 @@ export class TDatePicker
 
 		// Набор кнопки: `dialog`, а не `true` — `true` у ARIA значит `menu`
 		this._triggerAria = new TAria()
-		this._triggerAria.events.on('change', () =>
+		this._triggerAria.subscribe(() =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 		this._triggerAria.add('aria-haspopup', 'dialog')
 
 		// Набор панели: диалог, модальный для клавиатуры и скринридера
 		this._panelAria = new TAria()
-		this._panelAria.events.on('change', () =>
+		this._panelAria.subscribe(() =>
 			this.events.emit('change:panelAria', this._panelAria.toObject()),
 		)
 		this._panelAria.add('role', 'dialog')

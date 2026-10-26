@@ -6,8 +6,3 @@
  * поставить его в пустую строку.
  */
 export type TAttributesMap = Record<string, string | null>
-
-export type TAttributesEvents = {
-	/** change — набор атрибутов изменился */
-	change: () => void
-}

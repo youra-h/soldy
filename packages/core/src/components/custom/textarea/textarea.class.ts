@@ -73,8 +73,7 @@ export default class TTextarea
 		this._counter = props.counter ?? ctor.defaultValues.counter
 
 		this._counterAria = new TAria()
-
-		this._counterAria.events.on('change', () =>
+		this._counterAria.subscribe(() =>
 			this.events.emit('change:counterAria', this._counterAria.toObject()),
 		)
 

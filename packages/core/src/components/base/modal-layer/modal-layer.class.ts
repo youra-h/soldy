@@ -89,14 +89,12 @@ export default class TModalLayer<
 		this._aria.add('aria-modal', 'true')
 
 		this._titleAria = new TAria()
-
-		this._titleAria.events.on('change', () =>
+		this._titleAria.subscribe(() =>
 			this._sink.emit('change:titleAria', this._titleAria.toObject()),
 		)
 
 		this._closeAria = new TAria()
-
-		this._closeAria.events.on('change', () =>
+		this._closeAria.subscribe(() =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 	}

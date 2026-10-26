@@ -52,8 +52,7 @@ export default class TAccordionItem<
 		this._arrowPlacement = customProps.arrowPlacement ?? ctor.defaultValues.arrowPlacement
 
 		this._contentAria = new TAria()
-
-		this._contentAria.events.on('change', () =>
+		this._contentAria.subscribe(() =>
 			this._sink.emit('change:contentAria', this._contentAria.toObject()),
 		)
 

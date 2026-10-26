@@ -85,8 +85,7 @@ export default class TTooltip
 		this._aria.add('role', 'tooltip')
 
 		this._triggerAria = new TAria()
-
-		this._triggerAria.events.on('change', () =>
+		this._triggerAria.subscribe(() =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 	}

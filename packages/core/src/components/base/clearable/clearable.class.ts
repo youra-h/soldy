@@ -59,7 +59,7 @@ export default class TClearable<
 		this._applyClearable(props.clearable ?? ctor.defaultValues.clearable)
 
 		this._clearAria = new TAria()
-		this._clearAria.events.on('change', () =>
+		this._clearAria.subscribe(() =>
 			this._sink.emit('change:clearAria', this._clearAria.toObject()),
 		)
 	}

@@ -13,10 +13,10 @@ describe('TClasses', () => {
 		expect(c.toArray()).toContain('so-dynamic')
 	})
 
-	it('add/remove эмитят change и управляют статическими классами', () => {
-		const c = new TClasses('so-test')
+	it('add/remove зовут подписчика и управляют статическими классами', () => {
 		const handler = vi.fn()
-		c.events.on('change', handler)
+		const c = new TClasses('so-test')
+		c.subscribe(handler)
 
 		c.add('--x', true)
 		expect(c.toArray()).toContain('so-test--x')
@@ -26,9 +26,38 @@ describe('TClasses', () => {
 		expect(c.toArray()).not.toContain('so-test--x')
 		expect(handler).toHaveBeenCalledTimes(2)
 
-		// повторное удаление не эмитит change
+		// A repeated removal does not report a change
 		c.remove('--x', true)
 		expect(handler).toHaveBeenCalledTimes(2)
+	})
+
+	it('динамическая запись зовёт подписчика', () => {
+		const handler = vi.fn()
+		const c = new TClasses('so-test')
+		c.subscribe(handler)
+
+		c.add(() => 'so-dynamic')
+		c.add(() => null)
+		expect(c.toArray()).toEqual(['so-test', 'so-dynamic'])
+		expect(handler).toHaveBeenCalledTimes(2)
+	})
+
+	it('начальные классы подписчика не зовут', () => {
+		const handler = vi.fn()
+		const c = new TClasses('so-test', ['static1'])
+		c.subscribe(handler)
+
+		expect(c.has('static1', false)).toBe(true)
+		expect(handler).not.toHaveBeenCalled()
+	})
+
+	it('пустой набор — только базовый класс', () => {
+		const c = new TClasses('so-test')
+
+		expect(c.toArray()).toEqual(['so-test'])
+		expect(c.has('--x')).toBe(false)
+		expect(c.get('--x')).toBeUndefined()
+		expect('events' in c).toBe(false)
 	})
 
 	it('toggle управляет классом по булевому значению', () => {
@@ -74,16 +103,16 @@ describe('TClasses', () => {
 		expect(c.toArray()).toEqual(['so-test'])
 	})
 
-	it('setBase обновляет базовый класс и эмитит change', () => {
-		const c = new TClasses('a')
+	it('setBase обновляет базовый класс и зовёт подписчика', () => {
 		const handler = vi.fn()
-		c.events.on('change', handler)
+		const c = new TClasses('a')
+		c.subscribe(handler)
 
 		c.setBase('b')
 		expect(c.base).toBe('b')
 		expect(handler).toHaveBeenCalledTimes(1)
 
-		// тот же базовый — change не эмитится
+		// The same base — no change reported
 		c.setBase('b')
 		expect(handler).toHaveBeenCalledTimes(1)
 	})

@@ -67,8 +67,7 @@ export default class TMenuSubmenu
 
 		// Блок — панели меню: панель подменю выглядит так же, как его
 		this._panelClasses = new TClasses(`${TMenu.baseClass}__panel`)
-
-		this._panelClasses.events.on('change', () =>
+		this._panelClasses.subscribe(() =>
 			this.events.emit('change:panelClasses', this._panelClasses.toArray()),
 		)
 

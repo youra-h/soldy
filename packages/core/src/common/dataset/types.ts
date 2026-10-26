@@ -15,5 +15,3 @@ export type TDatasetAttributes = TAttributesMap
  * это преобразование не повторялось в шаблоне каждого адаптера.
  */
 export type TDatasetValue = string | boolean | number | null | undefined
-
-export type { TAttributesEvents as TDatasetEvents } from '../attributes'

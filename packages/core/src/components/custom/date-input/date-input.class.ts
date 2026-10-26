@@ -367,8 +367,11 @@ export class TDateInput
 
 		const sets: TDateInputSegmentSets = { aria: new TAria(), attrs: new TAttributes() }
 
-		sets.aria.events.on('change', () => this.events.emit('change:segments'))
-		sets.attrs.events.on('change', () => this.events.emit('change:segments'))
+		// Both sets report one `change:segments`, without a snapshot
+		const changed = () => this.events.emit('change:segments')
+
+		sets.aria.subscribe(changed)
+		sets.attrs.subscribe(changed)
 
 		this._segmentSets.set(part, sets)
 

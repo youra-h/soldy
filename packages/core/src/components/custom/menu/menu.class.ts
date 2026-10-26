@@ -91,16 +91,14 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 		this._aria.add('role', 'menu')
 
 		this._triggerAria = new TAria()
-
-		this._triggerAria.events.on('change', () =>
+		this._triggerAria.subscribe(() =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 
 		// Блок панели — свой: модификаторы ставят его методы, как модификаторы
 		// корня ставит `TStylable`
 		this._panelClasses = new TClasses(`${ctor.baseClass}__panel`)
-
-		this._panelClasses.events.on('change', () =>
+		this._panelClasses.subscribe(() =>
 			this.events.emit('change:panelClasses', this._panelClasses.toArray()),
 		)
 

@@ -62,11 +62,10 @@ describe('TDataset · сам набор', () => {
 		expect(dataset.has('selected')).toBe(false)
 	})
 
-	it('change эмитится только при настоящем изменении', () => {
-		const dataset = new TDataset()
+	it('подписчик зовётся только при настоящем изменении', () => {
 		let count = 0
-
-		dataset.events.on('change', () => count++)
+		const dataset = new TDataset()
+		dataset.subscribe(() => count++)
 
 		dataset.add('selected', true)
 		dataset.add('selected', true)

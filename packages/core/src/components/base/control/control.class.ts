@@ -38,20 +38,8 @@ export default class TControl<
 		this._disabled = props.disabled ?? ctor.defaultValues.disabled
 		this._focused = props.focused ?? ctor.defaultValues.focused
 
-		this.events.on('change:disabled', () => this._syncDisabled())
-		this.events.on('change:tag', () => this._syncDisabled())
-
+		// The initial state; later the `disabled` and `tag` setters write it
 		this._syncDisabled()
-
-		// `data-disabled` — то же состояние для темы. Отдельной подпиской, а не
-		// в `_syncDisabled`: тот пересчитывается и на `change:tag`, потому что
-		// каждая его запись зависит от тега своего элемента — нативный
-		// `disabled` есть только у части тегов, `aria-disabled` ставится только
-		// на остальных. Теме нужно одно значение на любом теге, иначе её
-		// селектор переезжал бы вместе с атрибутом. Булево уходит как есть:
-		// префикс и строку делает `TDataset`, `false` остаётся `"false"`.
-		this.events.on('change:disabled', () => this._dataset.add('disabled', this.disabled))
-
 		this._dataset.add('disabled', this.disabled)
 	}
 
@@ -76,6 +64,15 @@ export default class TControl<
 		if (e.defaultPrevented || e.value === this._disabled) return
 
 		this._disabled = e.value
+		this._syncDisabled()
+		// `data-disabled` is the same state for the theme. Written here and not
+		// in `_syncDisabled`: that one is recomputed on a tag change too,
+		// because each of its entries depends on the tag of its element — only
+		// some tags have a native `disabled`, `aria-disabled` goes only on the
+		// rest. The theme needs one value on any tag, or its selector would move
+		// along with the attribute. The boolean goes as is: `TDataset` adds the
+		// prefix and the string, `false` stays `"false"`.
+		this._dataset.add('disabled', e.value)
 		this._sink.emit('change:disabled', e.value)
 	}
 
@@ -91,6 +88,11 @@ export default class TControl<
 
 		super.tag = value
 		this._labelableChanged(before)
+	}
+
+	/** The native `disabled` and `aria-disabled` depend on the tag: recomputed before `change:tag`. */
+	protected override _syncTag(): void {
+		this._syncDisabled()
 	}
 
 	get focused(): boolean {
@@ -110,16 +112,17 @@ export default class TControl<
 	}
 
 	/**
-	 * Тег элемента, на который разметка биндит `aria`.
+	 * The tag of the element the markup binds `aria` to.
 	 *
-	 * По умолчанию это корень — `tag`: у Button `aria` и `attrs` стоят на одном
-	 * элементе. Наследник, который выводит `aria` на вложенный контрол
-	 * фиксированного тега, возвращает тег этого контрола (`TInput`,
-	 * `TCheckBox`, `TSwitch` — `input`). Тогда ARIA-половина правил решается
-	 * по элементу, на котором её прочтёт скринридер, а не по корню.
+	 * By default it is the root — `tag`: on a Button `aria` and `attrs` sit on
+	 * the same element. A subclass that renders `aria` onto a nested control of
+	 * a fixed tag returns the tag of that control (`TInput`, `TCheckBox`,
+	 * `TSwitch` — `input`). Then the ARIA half of the rules is decided by the
+	 * element where a screen reader reads it, not by the root.
 	 *
-	 * Пересчёт идёт на `change:disabled` и `change:tag`: хук, зависящий от
-	 * чего-то ещё, потребует своей подписки.
+	 * The `disabled` and `tag` setters recompute what depends on it
+	 * (`_syncDisabled`): a hook that depends on anything else recomputes on that
+	 * dependency itself.
 	 */
 	protected get _ariaTag(): string | object {
 		return this.tag
@@ -156,24 +159,27 @@ export default class TControl<
 	}
 
 	/**
-	 * У тегов с собственным `disabled` (`NATIVE_DISABLED_TAGS`) состояние
-	 * передаётся нативным атрибутом — он и блокирует фокус, и исключает
-	 * элемент из отправки формы, чего `aria-disabled` не умеет. У остальных
-	 * тегов `aria-disabled` — единственный способ сообщить об этом
-	 * скринридеру, а дублировать его нативным атрибутом было бы неверно: тега
-	 * с таким атрибутом нет.
+	 * On tags with their own `disabled` (`NATIVE_DISABLED_TAGS`) the state goes
+	 * through the native attribute — it both blocks focus and excludes the
+	 * element from form submission, which `aria-disabled` cannot do. On the
+	 * other tags `aria-disabled` is the only way to tell a screen reader, and
+	 * duplicating it with the native attribute would be wrong: such a tag has
+	 * no such attribute.
 	 *
-	 * Наборы биндятся к своим элементам, поэтому каждую половину решает тег её
-	 * элемента: `disabled` в `attrs` — тег корня (`tag`), `aria-disabled` в
-	 * `aria` — тег элемента с `aria` (`_ariaTag`). «Никогда оба» значит
-	 * «никогда оба на одном элементе». У Button это один и тот же элемент. У
-	 * Input, CheckBox и Switch `aria` стоит на вложенном `<input>`: его
-	 * нативный `disabled` проводит разметка, поэтому ARIA-дубль ядро ему не
-	 * пишет, а у корня-`div` нативного `disabled` нет вовсе.
+	 * The sets are bound to their own elements, so each half is decided by the
+	 * tag of its element: `disabled` in `attrs` — by the root tag (`tag`),
+	 * `aria-disabled` in `aria` — by the tag of the element with `aria`
+	 * (`_ariaTag`). "Never both" means "never both on one element". On a Button
+	 * it is one and the same element. On Input, CheckBox and Switch `aria` sits
+	 * on the nested `<input>`: its native `disabled` comes from the markup, so
+	 * the core writes no ARIA duplicate for it, and the root `div` has no native
+	 * `disabled` at all.
 	 *
-	 * Зависит и от `disabled`, и от `tag`, поэтому пересчитывается на оба
-	 * события. Раньше это был геттер и пересчёт получался сам; плата за общий
-	 * набор — такие правила приходится проводить явно.
+	 * It depends on both `disabled` and `tag`, so both setters call it — after
+	 * the write and before their event (`_syncTag` for the tag); the
+	 * constructor calls it for the initial state. It used to be a getter, and
+	 * the recomputation came by itself; the price of a shared set is that such
+	 * rules have to be wired explicitly.
 	 */
 	protected _syncDisabled(): void {
 		// Непустая строка: '' React не поставит атрибут вовсе, а 'false' в DOM

@@ -186,9 +186,8 @@ export default class TField extends TStylable<IFieldProps, TFieldEvents> impleme
 
 	/** Живой набор части: о записи в него сообщает своё событие. */
 	private _partAria(event: 'change:labelAria' | 'change:helperAria' | 'change:errorAria'): TAria {
-		const aria = new TAria()
-
-		aria.events.on('change', () => this._sink.emit(event, aria.toObject()))
+		const aria: TAria = new TAria()
+		aria.subscribe(() => this._sink.emit(event, aria.toObject()))
 
 		return aria
 	}

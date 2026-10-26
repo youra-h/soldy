@@ -171,17 +171,17 @@ export default class TTableColumn<
 		this._disabled = props.disabled ?? ctor.defaultValues.disabled
 
 		this._resizerAria = new TAria()
-		this._resizerAria.events.on('change', () =>
+		this._resizerAria.subscribe(() =>
 			this._sink.emit('change:resizerAria', this._resizerAria.toObject()),
 		)
 
 		this._textAria = new TAria()
-		this._textAria.events.on('change', () =>
+		this._textAria.subscribe(() =>
 			this._sink.emit('change:textAria', this._textAria.toObject()),
 		)
 
 		this._sortAria = new TAria()
-		this._sortAria.events.on('change', () =>
+		this._sortAria.subscribe(() =>
 			this._sink.emit('change:sortAria', this._sortAria.toObject()),
 		)
 

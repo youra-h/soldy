@@ -58,8 +58,7 @@ export default class TItemGroup<
 		this._aria.add('role', 'group')
 
 		this._labelAria = new TAria()
-
-		this._labelAria.events.on('change', () =>
+		this._labelAria.subscribe(() =>
 			this._sink.emit('change:labelAria', this._labelAria.toObject()),
 		)
 	}

@@ -98,8 +98,7 @@ export default class TPopover
 		this._aria.add('role', 'dialog')
 
 		this._triggerAria = new TAria()
-
-		this._triggerAria.events.on('change', () =>
+		this._triggerAria.subscribe(() =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 
@@ -107,8 +106,7 @@ export default class TPopover
 		this._triggerAria.add('aria-haspopup', 'dialog')
 
 		this._closeAria = new TAria()
-
-		this._closeAria.events.on('change', () =>
+		this._closeAria.subscribe(() =>
 			this.events.emit('change:closeAria', this._closeAria.toObject()),
 		)
 
