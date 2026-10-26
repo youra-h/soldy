@@ -75,14 +75,6 @@ export class TInputPort {
 		this._given = _lines.map((line) => pick(buildProps, line))
 	}
 
-	/**
-	 * Значения входов в пропсах фреймворка — для фреймворка, который следит за
-	 * чтением пропсов (Vue): читает каждый, а сменилось ли что, решает `full`.
-	 */
-	pick(props: object): unknown[] {
-		return this._lines.map((line) => pick(props, line))
-	}
-
 	/** Полный набор на каждом проходе: React, Solid, Svelte, Vue. В ядро уходит только то, что фреймворк сменил. */
 	full(props: object): void {
 		for (let index = 0; index < this._lines.length; index++) {

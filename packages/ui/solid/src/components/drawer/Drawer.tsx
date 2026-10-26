@@ -62,16 +62,17 @@ export function Drawer(props: DrawerProps): JSX.Element {
 					</h2>
 					<div class="so-drawer__body">{renderSlot(props.children)}</div>
 					<div class="so-drawer__footer">{renderSlot(props.footer)}</div>
-					<Button
-						embedded="drawer.close"
-						type="button"
-						class="so-drawer__close"
-						rendered={state.closable}
-						onClick={() => ctrl.requestClose('button')}
-						{...state.closeAria}
-					>
-						{closeIcon() ?? <Icon embedded="drawer.close-icon" tag={CLOSE} />}
-					</Button>
+					<Show when={state.closable}>
+						<Button
+							embedded="drawer.close"
+							type="button"
+							class="so-drawer__close"
+							onClick={() => ctrl.requestClose('button')}
+							{...state.closeAria}
+						>
+							{closeIcon() ?? <Icon embedded="drawer.close-icon" tag={CLOSE} />}
+						</Button>
+					</Show>
 				</Root>
 			</Teleport>
 		</Show>

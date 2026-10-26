@@ -20,10 +20,12 @@
 </script>
 
 <!--
-	Подложка и панель — соседи, подложка раньше: слой у них один, и панель поверх просто порядком.
-	Порядок в панели — полоса жеста, заголовок, тело, подвал, крестик: он последняя остановка Tab.
-	Крестик прячется `rendered`: тема опирается на его отсутствие в DOM. Узлы стоят вплотную:
-	пробел Svelte оставил бы текстом, а пустые заголовок и подвал тема сворачивает по `:empty`.
+	The backdrop and the panel are siblings, the backdrop first: they share one layer, and the panel
+	is on top just by order. Order in the panel — gesture handle, title, body, footer, cross: it is
+	the last Tab stop. The cross is mounted only while on (`{#if}`): the theme relies on its
+	absence from the DOM, and a hidden button would still assemble its instance and plugins. The
+	nodes are glued: Svelte would keep a space as text, and the theme collapses an empty title and
+	footer by `:empty`.
 -->
 {#if state.rendered}
 	<Teleport to={state.target} disabled={state.contained}>
@@ -46,20 +48,21 @@
 			<h2 class="so-drawer__title" {...state.titleAria}>{@render props.title?.()}</h2>
 			<div class="so-drawer__body">{@render props.children?.()}</div>
 			<div class="so-drawer__footer">{@render props.footer?.()}</div>
-			<Button
-				embedded="drawer.close"
-				type="button"
-				class="so-drawer__close"
-				rendered={state.closable}
-				onclick={() => ctrl.requestClose('button')}
-				{...state.closeAria}
-			>
-				{#if props['close-icon']}
-					{@render props['close-icon']()}
-				{:else}
-					<Icon embedded="drawer.close-icon" tag={CLOSE} />
-				{/if}
-			</Button>
+			{#if state.closable}
+				<Button
+					embedded="drawer.close"
+					type="button"
+					class="so-drawer__close"
+					onclick={() => ctrl.requestClose('button')}
+					{...state.closeAria}
+				>
+					{#if props['close-icon']}
+						{@render props['close-icon']()}
+					{:else}
+						<Icon embedded="drawer.close-icon" tag={CLOSE} />
+					{/if}
+				</Button>
+			{/if}
 		</Dynamic>
 	</Teleport>
 {/if}

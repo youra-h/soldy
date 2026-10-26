@@ -67,18 +67,19 @@ export function Drawer(props: DrawerProps): ReactElement | null {
 				</h2>
 				<div className="so-drawer__body">{renderSlot(props.children)}</div>
 				<div className="so-drawer__footer">{renderSlot(props.footer)}</div>
-				<Button
-					embedded="drawer.close"
-					type="button"
-					className="so-drawer__close"
-					rendered={closable}
-					onClick={() => ctrl.requestClose('button')}
-					{...toAriaProps(closeAria)}
-				>
-					{renderSlot(props['close-icon']) ?? (
-						<Icon embedded="drawer.close-icon" tag={CloseIcon} />
-					)}
-				</Button>
+				{closable ? (
+					<Button
+						embedded="drawer.close"
+						type="button"
+						className="so-drawer__close"
+						onClick={() => ctrl.requestClose('button')}
+						{...toAriaProps(closeAria)}
+					>
+						{renderSlot(props['close-icon']) ?? (
+							<Icon embedded="drawer.close-icon" tag={CloseIcon} />
+						)}
+					</Button>
+				) : null}
 			</Tag>
 		</Teleport>
 	)

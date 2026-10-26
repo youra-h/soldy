@@ -62,20 +62,21 @@ export function Popover(props: PopoverProps): ReactElement | null {
 				<div className="so-popover__content">
 					{contentRendered ? renderSlot(props.children) : null}
 				</div>
-				<Button
-					embedded="popover.close"
-					type="button"
-					className="so-popover__close"
-					rendered={closable}
-					onClick={() => {
-						ctrl.open = false
-					}}
-					{...toAriaProps(closeAria)}
-				>
-					{renderSlot(props['close-icon']) ?? (
-						<Icon embedded="popover.close-icon" tag={CloseIcon} />
-					)}
-				</Button>
+				{closable ? (
+					<Button
+						embedded="popover.close"
+						type="button"
+						className="so-popover__close"
+						onClick={() => {
+							ctrl.open = false
+						}}
+						{...toAriaProps(closeAria)}
+					>
+						{renderSlot(props['close-icon']) ?? (
+							<Icon embedded="popover.close-icon" tag={CloseIcon} />
+						)}
+					</Button>
+				) : null}
 			</Frame>
 		</Tag>
 	)

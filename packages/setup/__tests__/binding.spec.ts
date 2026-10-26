@@ -25,7 +25,6 @@ import {
 	createAdapterContext,
 	defineComponent,
 	definePlugin,
-	TName,
 	TSurface,
 } from '@soldy-ui/setup'
 import type { IAdapterProfile, TEventSink, TStateListener } from '@soldy-ui/setup'
@@ -198,15 +197,15 @@ describe('связка · ядро ↔ фреймворк', () => {
 	})
 
 	it('проп читается по имени фреймворка и по сырому имени', () => {
-		const context = createAdapterContext(ButtonDescriptor(), {})
-		const binding = context.connect(CallbackProfile)
-		const index = binding.lines
-			.filter((line) => line.writable)
-			.findIndex((line) => line.spec.name.getName() === new TName('label', 'aria').getName())
+		const { ctrl, binding } = bindButton()
 
-		expect(index).not.toBe(-1)
-		expect(binding.inputs.pick({ aria_label: 'Закрыть' })[index]).toBe('Закрыть')
-		expect(binding.inputs.pick({ label: 'Закрыть' })[index]).toBe('Закрыть')
+		binding.inputs.full({ aria_label: 'Закрыть' })
+
+		expect(ctrl.aria.get('aria-label')).toBe('Закрыть')
+
+		binding.inputs.full({ label: 'Открыть' })
+
+		expect(ctrl.aria.get('aria-label')).toBe('Открыть')
 	})
 })
 

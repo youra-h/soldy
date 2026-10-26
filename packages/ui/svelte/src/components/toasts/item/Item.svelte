@@ -76,20 +76,21 @@
 					{/if}
 				</div>
 			</div>
-			<Button
-				embedded="toasts.close"
-				type="button"
-				class="so-toasts-item__close"
-				rendered={state.closable}
-				onclick={() => ctrl.close()}
-				{...state.closeAria}
-			>
-				{#if props['close-icon']}
-					{@render props['close-icon']()}
-				{:else}
-					<Icon embedded="toasts.close-icon" tag={CLOSE} />
-				{/if}
-			</Button>
+			{#if state.closable}
+				<Button
+					embedded="toasts.close"
+					type="button"
+					class="so-toasts-item__close"
+					onclick={() => ctrl.close()}
+					{...state.closeAria}
+				>
+					{#if props['close-icon']}
+						{@render props['close-icon']()}
+					{:else}
+						<Icon embedded="toasts.close-icon" tag={CLOSE} />
+					{/if}
+				</Button>
+			{/if}
 		</div>
 	</Dynamic>
 {/if}

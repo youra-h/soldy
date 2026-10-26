@@ -88,18 +88,19 @@ export default { ...SetupDrawer, inheritAttrs: false, components: { Button, Icon
 				<div class="so-drawer__footer"><slot name="footer" /></div>
 
 				<!--
-					Кнопка закрытия — в углу шапки со стороны конца строки. Она
-					просит панель закрыться: отменить закрытие может подписчик
-					`close:before`. Куда вернуть фокус, решает плагин фокуса.
-					Прячется `rendered`, а не `visible`: тема опирается на её
-					отсутствие в DOM. Вида и размера у неё нет — кнопку красит
-					тема по контексту.
+					The close button sits in the header corner on the line-end
+					side. It asks the drawer to close: a `close:before` subscriber
+					can cancel that. Where focus returns is up to the focus
+					plugin. It is mounted only while on (`v-if`), not hidden with
+					`visible`: the theme relies on its absence from the DOM, and a
+					hidden button would still assemble its instance and plugins.
+					It has no view and no size — the theme paints it by context.
 				-->
 				<Button
+					v-if="closable"
 					embedded="drawer.close"
 					type="button"
 					class="so-drawer__close"
-					:rendered="closable"
 					@click="drawer.requestClose('button')"
 					v-bind="closeAria"
 				>

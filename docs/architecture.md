@@ -105,7 +105,7 @@ TEntity (uid, getProps, assign, toJSON)
 - **TRouting**: the route table of a type — one per surface × composition of member descriptions, shared by all mounts. It holds the lines of the composition (`lines`, `readable` for the state, `writable` for the inputs — one rule for the exchange and the assembly's initial values) and says what to do with a member's event: which state values to re-read, which surface event and which models to send. The publisher of an event is the first member that declares it
 - **TTap**: one listener of all events (`TEvented.listen`) on each member's bus, shared by the state and the events of the exchange — set by the first of `state.subscribe` / `events.listen`, removed by the last one to leave (by reference, `unlisten`: a disposer per bus would hold one more closure with its own scope). The exchange has no `on` subscriptions at all. The order is one rule for all six adapters: the bus hands the event to the listener after its `on` handlers (the framework hears after the core subscribers), and inside the exchange the state is refreshed before the event and its model go out. Within one bus only: an event a facade got through `relayAll` reaches the framework before the source's own subscribers
 - **TStateStore** (core → framework): a value list, one per property with triggers, created on the first read; `subscribe` / `getSnapshot` (methods — React binds them in `TStableSnapshot`); holds the member listener while there is at least one subscriber; a change is decided by `sameValue` against the stored value
-- **TInputPort** (framework → core): a value list, one per writable prop, seeded with the build props. `full(props)` / `delta(changes)` differ only in what counts as a change: a changed value or the mere presence of the key; `pick(props)` reads the inputs for a framework that tracks reads (Vue). The initial values are written by the static `TInputPort.seed(members, surface, buildProps)` — the same props reading, no memory: the assembly (`createAdapterContext`, step 5) and external plugins call it, and the assembly builds no exchange for that
+- **TInputPort** (framework → core): a value list, one per writable prop, seeded with the build props. `full(props)` / `delta(changes)` differ only in what counts as a change: a changed value or the mere presence of the key. The initial values are written by the static `TInputPort.seed(members, surface, buildProps)` — the same props reading, no memory: the assembly (`createAdapterContext`, step 5) and external plugins call it, and the assembly builds no exchange for that
 - **TEventRelay** (events out): the surface event of a route and right after it its `v-model` event; holds the member listener while there is at least one sink
 - **TExchange**: the members' owners (`owners`), the type's lines plus the three ports — everything an adapter sees (`adapter.connect(profile)`)
 
@@ -1549,7 +1549,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
 - `useAdapter(adapter, props, emit)` - Main hook over the exchange `adapter.connect(VueProfile)`; дженерики не пишутся: инстанс и выходы плагинов — из контракта контекста, `TProps` — из `props`
   - Returns `TBinding`: `ctrl`, `plugins`, props refs and plugin outputs; `rootElement` — only when the bundle has `TElementPlugin`
   - Core → Vue: a ref per property with triggers. `state.subscribe` hands every property over through the same call a trigger uses — that is how the refs are created; later it calls only on a change
-  - Vue → core: one `watch` over all inputs (`inputs.pick(props)`) → `inputs.full(props)`, changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления»
+  - Vue → core: `onBeforeUpdate` → `inputs.full(props)` when the parent handed the component a new vnode — a parent pass that changed the props; a render of the component's own state keeps the vnode and skips the inputs. Changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления». No `watch` over the props: reading every input for tracking created a `Dep` and a `Link` per key and an effect on every component (benchmarks/pages/vue.md, 869fmhuag)
   - Events: `events.listen` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
   - `rootElement` watch → `adapter.bindElement`
   - На `onUnmounted`: снимает подписки связки, затем `adapter.destroy()`
@@ -3928,7 +3928,7 @@ setup(props, { emit }) {
      ↓
      - adapter.connect(VueProfile): the exchange (TExchange)
      - state.subscribe: every property, then each change → Vue refs
-     - one watch over inputs.pick(props) → inputs.full(props) (changes only)
+     - onBeforeUpdate with a new vnode from the parent → inputs.full(props) (changes only)
      - events.listen → emit, update:<prop> for v-model included
      - rootElement watch → adapter.bindElement → TElementPlugin
      - onUnmounted: unsubscribe, adapter.destroy()
