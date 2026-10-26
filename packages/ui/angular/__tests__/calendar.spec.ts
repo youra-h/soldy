@@ -26,6 +26,7 @@ import { Component, signal, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import {
 	TCalendar,
+	TListBox,
 	createEngineCalendar,
 	type TCalendarCollection,
 	type TCalendarDate,
@@ -36,6 +37,7 @@ import {
 } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import { LocaleProviderDirective, SlotDirective, TCalendarComponent } from '@soldy-ui/angular'
+import { countAssemblies, type TAssemblyProbe } from './assemblies'
 import { find, nextFrame } from './mount'
 
 /** Смонтированный хост теста — его перепроверяют действия. */
@@ -919,6 +921,51 @@ describe('выбор месяца и года', () => {
 		await render(Page, (page) => page.disabled.set(true))
 
 		expect(title().hasAttribute('disabled')).toBe(true)
+	})
+
+	/**
+	 * The card is the `default` template of the place popover: with its
+	 * `lazyMount` the ListBox comes with the first open of the panel of its
+	 * place, not with every month, and closing does not tear it down. The list
+	 * is a detail of library markup, so the probe counts with `scope: 'all'`.
+	 */
+	describe('список панели', () => {
+		let probe: TAssemblyProbe
+
+		beforeEach(() => {
+			probe = countAssemblies(TListBox, { scope: 'all' })
+		})
+
+		afterEach(() => probe.dispose())
+
+		it('собирается с первым открытием своего места, закрытие его не снимает', async () => {
+			await render(Page, (page) => page.months.set(['2026-09-01', '2026-10-01']))
+
+			expect(probe.counts).toEqual({ install: 0, destroy: 0 })
+			expect(document.querySelector('.so-calendar__picker-list')).toBeNull()
+
+			await openPicker()
+
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+			expect(options()).toHaveLength(12)
+
+			await pressOn(node('.so-popover__panel'))
+
+			expect(title().getAttribute('aria-expanded')).toBe('false')
+
+			await openPicker()
+
+			expect(title().getAttribute('aria-expanded')).toBe('true')
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+
+			// The second place builds its own list with its own first open
+			const [, second] = nodes('.so-calendar__title')
+
+			second?.click()
+			await settle()
+
+			expect(probe.counts).toEqual({ install: 2, destroy: 0 })
+		})
 	})
 })
 

@@ -1,5 +1,5 @@
 <!--
-	Текст строки — слот `header`, а не `default`: `default` — содержимое панели.
+	The row text is the `header` slot, not `default`: `default` is the panel content.
 -->
 <div
 	so-item-row
@@ -41,7 +41,10 @@
 	</span>
 </div>
 <!--
-	`lazyMount` действует только на проекцию: обёртка остаётся, панель не размонтируется.
+	`lazyMount` holds back only the content: the wrapper stays, and the panel never unmounts.
+	A projection is created right away by the template that wrote it, and `@if` only keeps it
+	out of the document; the `default` template is created here, so with `lazyMount` its
+	components come with the first open. Given, it is drawn instead of the projection.
 -->
 <div
 	so-frame
@@ -56,7 +59,11 @@
 >
 	<div class="so-menu-item__content">
 		@if (state()['contentRendered']) {
-			<ng-content />
+			@if (slot('default'); as content) {
+				<ng-container [ngTemplateOutlet]="content" />
+			} @else {
+				<ng-content />
+			}
 		}
 	</div>
 </div>

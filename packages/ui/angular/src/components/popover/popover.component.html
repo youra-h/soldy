@@ -34,12 +34,20 @@
 		<div class="so-popover__handle" aria-hidden="true"></div>
 	}
 	<!--
-		Содержимое раньше крестика: фокус при открытии встаёт на первый элемент содержимого,
-		крестик — последняя остановка Tab. `lazyMount` действует только на проекцию.
+		Content comes before the close button: focus on open lands on the first element of the
+		content, and the close button is the last Tab stop. `lazyMount` holds back only the
+		content. A projection is created right away by the template that wrote it, and `@if`
+		only keeps it out of the document; the `default` template is created here, so with
+		`lazyMount` its components come with the first open. Given, it is drawn instead of
+		the projection.
 	-->
 	<div class="so-popover__content">
 		@if (state()['contentRendered']) {
-			<ng-content />
+			@if (slot('default'); as content) {
+				<ng-container [ngTemplateOutlet]="content" />
+			} @else {
+				<ng-content />
+			}
 		}
 	</div>
 	<!-- `@if`, а не `rendered` кнопки: скрытая кнопка с плагинами стояла бы в каждой панели. -->
