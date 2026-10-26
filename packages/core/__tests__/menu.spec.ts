@@ -83,6 +83,31 @@ describe('TMenu · умолчания', () => {
 	})
 })
 
+/**
+ * Items of a panel are mounted from its first opening on: a menu nobody opened
+ * builds only its trigger and an empty panel. Closing keeps them.
+ */
+describe.each([
+	['TMenu', (open = false) => new TMenu({ open })],
+	['TMenuSubmenu', (open = false) => new TMenuSubmenu({ open })],
+])('%s · пункты — с первого открытия', (_name, create) => {
+	it('закрытый пунктов не монтирует; открытие монтирует, закрытие их оставляет', () => {
+		const owner = create()
+
+		expect(owner.contentRendered).toBe(false)
+
+		owner.open = true
+		expect(owner.contentRendered).toBe(true)
+
+		owner.open = false
+		expect(owner.contentRendered).toBe(true)
+	})
+
+	it('открытый со старта — пункты уже смонтированы', () => {
+		expect(create(true).contentRendered).toBe(true)
+	})
+})
+
 /** Событие свойства, которое проверяют сторожа владельцев ниже. */
 type TGroupSeparatorsEvents = { 'change:groupSeparators': (value: boolean) => void }
 

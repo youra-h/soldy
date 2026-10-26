@@ -158,6 +158,16 @@ async function click(target: HTMLElement): Promise<void> {
 }
 
 /**
+ * First opening and closing by the calendar button: the panel's calendar is
+ * mounted from its first opening on (`contentRendered`), and the test reads it
+ * in the closed picker, as a closed picker that was opened before shows it.
+ */
+async function openOnce(): Promise<void> {
+	await click(trigger())
+	await click(trigger())
+}
+
+/**
  * DatePicker: значение и открытость — по-настоящему, потребитель возвращает их
  * входами, как `v-model` и `v-model:open`. Входы — сигналы: хост `OnPush`, и
  * смена входа — смена сигнала; неопределённый сигнал — вход не задан. Клики,
@@ -380,6 +390,32 @@ describe('одна дата', () => {
 		expect(root().dataset['open']).toBe('true')
 	})
 
+	/**
+	 * The panel's calendar is mounted from its first opening on
+	 * (`contentRendered`): the never-opened picker keeps an empty panel — the
+	 * one `aria-controls` points to. Closing hides the calendar and keeps the
+	 * same nodes.
+	 */
+	it('календарь — с первого открытия панели, закрытие его не снимает', async () => {
+		await render(Page)
+
+		expect(trigger().getAttribute('aria-controls')).toBe(panel().id)
+		expect(document.querySelector('.so-date-picker__calendar')).toBeNull()
+		expect(document.querySelectorAll('.so-calendar-item')).toHaveLength(0)
+
+		await click(trigger())
+
+		const calendar = node('.so-date-picker__calendar')
+		const day = dayCell('2026-09-10')
+
+		await click(trigger())
+
+		expect(isOpen()).toBe(false)
+		expect(node('.so-date-picker__calendar')).toBe(calendar)
+		expect(dayCell('2026-09-10')).toBe(day)
+		expect(day.isConnected).toBe(true)
+	})
+
 	it('выбор дня — выход soChangeValue, дата в поле, панель закрывается', async () => {
 		const fixture = await render(Page)
 		const page = fixture.componentInstance
@@ -397,6 +433,8 @@ describe('одна дата', () => {
 
 	it('набор в поле — выход soChangeValue и выбранный день в календаре', async () => {
 		const fixture = await render(Page)
+
+		await openOnce()
 
 		// en-US: месяц, день, год
 		node('.so-date-input__segment[data-type="month"]').focus()
@@ -578,6 +616,8 @@ describe('выбор с подтверждением', () => {
 
 		await render(Page, (page) => page.ctrl.set(ctrl))
 
+		await openOnce()
+
 		expect(footer()).toBeNull()
 
 		ctrl.confirmable = true
@@ -596,6 +636,8 @@ describe('выбор с подтверждением', () => {
 
 	it('текст кнопок — от локали поддерева', async () => {
 		await render(RussianHost, (page) => page.confirmable.set(true))
+
+		await openOnce()
 
 		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
 		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
@@ -934,6 +976,8 @@ describe('экземпляры ядра', () => {
 
 		await render(Page, (page) => page.ctrl.set(ctrl))
 
+		await openOnce()
+
 		expect(ctrl.engine.options.get('owner')).toBe(ctrl.calendar)
 		expect(dayCell('2026-09-10').dataset['selected']).toBe('true')
 
@@ -956,17 +1000,23 @@ describe('слоты', () => {
 	it('item уходит в дни календаря со scope { item }', async () => {
 		await render(ItemHost)
 
+		await openOnce()
+
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('«10»')
 	})
 
 	it('item получает и номер дня — scope слота календаря целиком', async () => {
 		await render(ItemTextHost)
 
+		await openOnce()
+
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('10·09-10')
 	})
 
 	it('без слота item день рисует свой номер', async () => {
 		await render(Page)
+
+		await openOnce()
 
 		expect(dayCell('2026-09-10').textContent).toBe('10')
 	})
@@ -1001,6 +1051,8 @@ describe('жест', () => {
 		const ctrl = new TDatePicker()
 
 		await render(Page, (page) => page.ctrl.set(ctrl))
+
+		await openOnce()
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset['swiping']).toBe('false')

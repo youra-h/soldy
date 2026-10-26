@@ -153,6 +153,8 @@ export interface IDatePicker
 	mode: TDatePickerMode
 	/** Открыта ли панель с календарём */
 	open: boolean
+	/** Whether the panel's calendar is mounted: from the first opening on */
+	readonly contentRendered: boolean
 	/** Закрывать ли панель после выбора; при `confirmable` не действует */
 	closeOnSelect: boolean
 	/** Выбор подтверждают кнопкой «OK»: до неё он — черновик календаря */

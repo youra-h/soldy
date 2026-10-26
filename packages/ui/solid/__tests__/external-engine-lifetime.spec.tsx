@@ -440,6 +440,10 @@ describe('Menu над движком и владельцем снаружи', ()
 
 		expect(submenus).toHaveLength(1)
 
+		// Open, as the submenu: their items are mounted from the panel's first opening on
+		owner.open = true
+		submenus[0].ctrl.open = true
+
 		for (let i = 0; i < 3; i++) {
 			const { destroy } = mount(() => <Menu ctrl={owner} engine={engine} />)
 

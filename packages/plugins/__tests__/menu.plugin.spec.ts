@@ -65,14 +65,19 @@ const ACTIONS: TEntry[] = [
 	{ value: 'remove', text: 'Удалить' },
 ]
 
-async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {}) {
+/**
+ * `mounted: false` — the panel's items are not there yet, as on a menu's first
+ * opening: the test mounts them itself (`mountItems`), as the adapter draws
+ * them after the opening.
+ */
+async function setup(
+	entries: TEntry[] = ACTIONS,
+	props: Partial<IMenuProps> = {},
+	{ mounted = true }: { mounted?: boolean } = {},
+) {
 	const owner = new TMenu(props)
 	const engine = createEngineMenu({ owner })
-	const items = entries.map(({ checkbox, ...props }) =>
-		engine.extensions.plain.push(
-			checkbox ? new TMenuCheckboxItem(props) : new TMenuItem(props),
-		),
-	)
+	const items: IMenuItem[] = []
 
 	const root = document.createElement('span')
 	const panel = document.createElement('div')
@@ -103,7 +108,19 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 	/** Пункты, к которым докрутил список, — `value` по порядку вызовов `scrollIntoView`. */
 	const intoView: unknown[] = []
 
-	for (const item of items) {
+	/** Items into the engine, their nodes into the panel and their bundles into the registry. */
+	const mountItems = () => {
+		for (const { checkbox, ...props } of entries) {
+			const item = engine.extensions.plain.push(
+				checkbox ? new TMenuCheckboxItem(props) : new TMenuItem(props),
+			)
+
+			items.push(item)
+			mountItem(item)
+		}
+	}
+
+	const mountItem = (item: IMenuItem) => {
 		const node = document.createElement('div')
 		const row = document.createElement('div')
 
@@ -123,6 +140,8 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 		pluginOf(itemBundle, TElementPlugin).element = node
 		bundles.register(itemBundle, item)
 	}
+
+	if (mounted) mountItems()
 
 	bundles.bindEngine(engine)
 	pluginOf(bundle, TElementPlugin).element = root
@@ -192,6 +211,7 @@ async function setup(entries: TEntry[] = ACTIONS, props: Partial<IMenuProps> = {
 		lit,
 		find,
 		intoView,
+		mountItems,
 	}
 }
 
@@ -259,6 +279,52 @@ describe('клавиши триггера', () => {
 		await nextFrame()
 
 		expect(focused()).toBe('save')
+	})
+
+	/**
+	 * The panel's items are mounted with its first opening: at the key there is
+	 * nothing to highlight yet. The edge item is highlighted on the next frame,
+	 * once the adapter has drawn the items.
+	 */
+	it.each([
+		['ArrowDown', 'edit'],
+		['ArrowUp', 'remove'],
+	])(
+		'%s на первом открытии — крайний пункт кадром позже, когда пункты нарисованы',
+		async (key, edge) => {
+			const { owner, trigger, press, focused, lit, mountItems } = await setup(
+				ACTIONS,
+				{},
+				{ mounted: false },
+			)
+
+			trigger.focus()
+			press(trigger, key)
+
+			expect(owner.open).toBe(true)
+			expect(lit()).toEqual([])
+
+			mountItems()
+			await nextFrame()
+
+			expect(lit()).toEqual([edge])
+			expect(focused()).toBe(edge)
+		},
+	)
+
+	it('закрытие до кадра снимает ожидание: пункт не подсвечен', async () => {
+		const { owner, trigger, press, lit, mountItems } = await setup(
+			ACTIONS,
+			{},
+			{ mounted: false },
+		)
+
+		press(trigger, 'ArrowDown')
+		owner.open = false
+		mountItems()
+		await nextFrame()
+
+		expect(lit()).toEqual([])
 	})
 
 	it('прочие клавиши триггера меню не трогают', async () => {

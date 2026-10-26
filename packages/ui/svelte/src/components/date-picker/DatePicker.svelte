@@ -145,14 +145,17 @@
 					class="so-date-picker__handle"
 					aria-hidden="true"
 				></div>{/if}<div class="so-date-picker__content">
-				<Calendar
-					embedded="date-picker.calendar"
-					class="so-date-picker__calendar"
-					ctrl={ctrl.calendar}
-					engine={ctrl.engine}
-					item={props.item}
-					footer={state.confirmable ? footer : undefined}
-				/>
+				<!-- The calendar from the panel's first opening on (`contentRendered`) -->
+				{#if state.contentRendered}
+					<Calendar
+						embedded="date-picker.calendar"
+						class="so-date-picker__calendar"
+						ctrl={ctrl.calendar}
+						engine={ctrl.engine}
+						item={props.item}
+						footer={state.confirmable ? footer : undefined}
+					/>
+				{/if}
 			</div>
 		</Frame>
 	</Dynamic>

@@ -128,6 +128,9 @@ type TProbeProps = {
 
 const COLUMNS: TTableColumnSource[] = [{ field: 'name', text: 'Имя', rowHeader: true }]
 
+/** The menu's items are mounted from its first opening on: parts are drawn in an open menu. */
+const OPENED = { open: true }
+
 /**
  * Компонент со своим корнем, как его рисовать, узел, который получает `ref`
  * потребителя, и узел, с которым приходит `element:ready`. Это один узел — у
@@ -251,19 +254,19 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	['Menu', (props) => h(Menu, props), '.so-menu', '.so-menu'],
 	[
 		'Menu.Item',
-		(props) => h(Menu, null, () => h(MenuItem, { value: 'a', text: 'A', ...props })),
+		(props) => h(Menu, OPENED, () => h(MenuItem, { value: 'a', text: 'A', ...props })),
 		'.so-menu-item',
 		'.so-menu-item',
 	],
 	[
 		'Menu.CheckboxItem',
-		(props) => h(Menu, null, () => h(MenuCheckboxItem, { value: 'a', text: 'A', ...props })),
+		(props) => h(Menu, OPENED, () => h(MenuCheckboxItem, { value: 'a', text: 'A', ...props })),
 		'.so-menu-item',
 		'.so-menu-item',
 	],
 	[
 		'Menu.RadioItem',
-		(props) => h(Menu, null, () => h(MenuRadioItem, { value: 'a', text: 'A', ...props })),
+		(props) => h(Menu, OPENED, () => h(MenuRadioItem, { value: 'a', text: 'A', ...props })),
 		'.so-menu-item',
 		'.so-menu-item',
 	],
@@ -271,7 +274,7 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	[
 		'Menu.Submenu',
 		(props) =>
-			h(Menu, null, () => h(MenuSubmenu, { value: 'share', text: 'Поделиться', ...props })),
+			h(Menu, OPENED, () => h(MenuSubmenu, { value: 'share', text: 'Поделиться', ...props })),
 		'.so-menu-item',
 		'.so-menu-item',
 	],
@@ -279,25 +282,25 @@ const ROOTS: ReadonlyArray<readonly [string, (props: TProbeProps) => VNode, stri
 	[
 		'Menu.PopoverItem',
 		(props) =>
-			h(Menu, null, () => h(MenuPopoverItem, { value: 'due', text: 'Срок', ...props })),
+			h(Menu, OPENED, () => h(MenuPopoverItem, { value: 'due', text: 'Срок', ...props })),
 		'.so-menu-item',
 		'.so-menu-item',
 	],
 	[
 		'Menu.Group',
-		(props) => h(Menu, null, () => h(MenuGroup, { label: 'Вид', ...props })),
+		(props) => h(Menu, OPENED, () => h(MenuGroup, { label: 'Вид', ...props })),
 		'.so-menu-group',
 		'.so-menu-group',
 	],
 	[
 		'Menu.RadioGroup',
-		(props) => h(Menu, null, () => h(MenuRadioGroup, { label: 'Сортировка', ...props })),
+		(props) => h(Menu, OPENED, () => h(MenuRadioGroup, { label: 'Сортировка', ...props })),
 		'.so-menu-group',
 		'.so-menu-group',
 	],
 	[
 		'Menu.Separator',
-		(props) => h(Menu, null, () => h(MenuSeparator, props)),
+		(props) => h(Menu, OPENED, () => h(MenuSeparator, props)),
 		'.so-menu-separator',
 		'.so-menu-separator',
 	],

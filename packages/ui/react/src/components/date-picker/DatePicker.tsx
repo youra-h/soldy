@@ -49,6 +49,7 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 		panelAria,
 		panelDataset,
 		handleRendered,
+		contentRendered,
 		confirmable,
 		confirmDisabled,
 		names_start,
@@ -176,16 +177,19 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 					{handleRendered ? (
 						<div className="so-date-picker__handle" aria-hidden="true" />
 					) : null}
+					{/* The calendar from the panel's first opening on (`contentRendered`) */}
 					<div className="so-date-picker__content">
-						<Calendar
-							key={calendar.uid}
-							embedded="date-picker.calendar"
-							className="so-date-picker__calendar"
-							ctrl={calendar}
-							engine={engine}
-							item={props.item}
-							footer={footer}
-						/>
+						{contentRendered ? (
+							<Calendar
+								key={calendar.uid}
+								embedded="date-picker.calendar"
+								className="so-date-picker__calendar"
+								ctrl={calendar}
+								engine={engine}
+								item={props.item}
+								footer={footer}
+							/>
+						) : null}
 					</div>
 				</Frame>
 			</Elevate>

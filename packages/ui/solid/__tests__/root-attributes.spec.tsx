@@ -284,12 +284,14 @@ function ListBoxItemProbe(props: ListBoxItemProps): JSX.Element {
 }
 
 /**
- * Пункты меню — в меню: без него у пункта нет коллекции, а строке `tabindex`
- * пишет она. Панель меню телепортирована, и пункт ищется по документу.
+ * Menu items live in a menu: without it an item has no collection, and the
+ * collection writes the row's `tabindex`. The menu's panel is teleported, so the
+ * item is looked up in the document. The menu is open: its items are mounted
+ * from the panel's first opening on.
  */
 function MenuItemProbe(props: MenuItemProps): JSX.Element {
 	return (
-		<Menu>
+		<Menu open>
 			<Menu.Item value="a" text="A" {...props} />
 		</Menu>
 	)
@@ -297,7 +299,7 @@ function MenuItemProbe(props: MenuItemProps): JSX.Element {
 
 function MenuCheckboxItemProbe(props: MenuCheckboxItemProps): JSX.Element {
 	return (
-		<Menu>
+		<Menu open>
 			<Menu.CheckboxItem value="a" text="A" {...props} />
 		</Menu>
 	)
@@ -305,7 +307,7 @@ function MenuCheckboxItemProbe(props: MenuCheckboxItemProps): JSX.Element {
 
 function MenuRadioItemProbe(props: MenuRadioItemProps): JSX.Element {
 	return (
-		<Menu>
+		<Menu open>
 			<Menu.RadioGroup value="a">
 				<Menu.RadioItem value="a" text="A" {...props} />
 			</Menu.RadioGroup>
@@ -316,7 +318,7 @@ function MenuRadioItemProbe(props: MenuRadioItemProps): JSX.Element {
 /** Пункт с подменю: `id` строке пишет плагин связок — ссылка на панель. */
 function MenuSubmenuProbe(props: MenuSubmenuProps): JSX.Element {
 	return (
-		<Menu>
+		<Menu open>
 			<Menu.Submenu value="share" text="Поделиться" {...props} />
 		</Menu>
 	)
@@ -325,7 +327,7 @@ function MenuSubmenuProbe(props: MenuSubmenuProps): JSX.Element {
 /** Пункт с панелью: `id` строке пишет плагин связок, как у подменю. */
 function MenuPopoverItemProbe(props: MenuPopoverItemProps): JSX.Element {
 	return (
-		<Menu>
+		<Menu open>
 			<Menu.PopoverItem value="due" text="Срок" {...props} />
 		</Menu>
 	)
@@ -951,7 +953,7 @@ const ROOTS: ReadonlyArray<
 	[
 		'Menu.Group',
 		(props) => (
-			<Menu>
+			<Menu open>
 				<Menu.Group label="Вид" {...props} />
 			</Menu>
 		),
@@ -961,7 +963,7 @@ const ROOTS: ReadonlyArray<
 	[
 		'Menu.RadioGroup',
 		(props) => (
-			<Menu>
+			<Menu open>
 				<Menu.RadioGroup label="Сортировка" {...props} />
 			</Menu>
 		),
@@ -971,7 +973,7 @@ const ROOTS: ReadonlyArray<
 	[
 		'Menu.Separator',
 		(props) => (
-			<Menu>
+			<Menu open>
 				<Menu.Separator {...props} />
 			</Menu>
 		),

@@ -181,6 +181,36 @@ async function open(): Promise<void> {
 	check()
 }
 
+/**
+ * First opening of the menu and of every submenu under it, then closing: a
+ * panel's items are mounted from its first opening on (`contentRendered`), and
+ * the test reads them in the closed menu, as a closed menu that was opened
+ * before shows them. Items with a panel (`aria-haspopup="dialog"`) are not
+ * opened — their content has its own `lazyMount`.
+ */
+async function openPanels(): Promise<void> {
+	await open()
+
+	const opened = new Set<Element>()
+
+	for (;;) {
+		const row = [...document.querySelectorAll<HTMLElement>('[aria-haspopup="menu"]')].find(
+			(candidate) => candidate !== triggerNode() && !opened.has(candidate),
+		)
+
+		if (!row) break
+
+		opened.add(row)
+		click(row)
+		await nextFrame()
+		check()
+	}
+
+	click(triggerNode())
+	await nextFrame()
+	check()
+}
+
 /** Панель по `id` — так на неё ссылается `aria-controls`. */
 const panelOf = (target: HTMLElement): HTMLElement =>
 	node(`#${target.getAttribute('aria-controls') ?? ''}`)
@@ -282,6 +312,8 @@ describe('разметка', () => {
 	it('пункты из данных — действия: строка с ролью и вне обхода Tab', async () => {
 		await render(ItemsPage)
 
+		await openPanels()
+
 		expect(rows().map((row) => row.textContent?.trim())).toEqual(['Изменить', 'Удалить'])
 		expect(rows().map((row) => row.getAttribute('role'))).toEqual(['menuitem', 'menuitem'])
 		expect(rows().map((row) => row.getAttribute('tabindex'))).toEqual(['-1', '-1'])
@@ -293,6 +325,8 @@ describe('разметка', () => {
 			page.size.set('lg')
 			page.variant.set('brand')
 		})
+
+		await openPanels()
 
 		expect(panel().classList).toContain('so-frame')
 		expect(panel().classList).toContain('so-menu__panel--size-lg')
@@ -309,6 +343,8 @@ describe('разметка', () => {
 
 	it('пустые значок и подсказка — без содержимого: тема прячет их по :empty', async () => {
 		await render(ItemsPage)
+
+		await openPanels()
 
 		for (const row of rows()) {
 			expect(node('.so-menu-item__icon', row).textContent).toBe('')
@@ -339,6 +375,8 @@ describe('разметка', () => {
 
 	it('слоты пункта из данных пробрасываются с пунктом в scope', async () => {
 		await render(SlotsPage)
+
+		await openPanels()
 
 		const [edit, remove] = rows()
 
@@ -510,6 +548,8 @@ describe('нажатие пунктов', () => {
 	it('отметка рисуется только у отмеченного флажка, обёртка — у всех флажков', async () => {
 		await render(CheckboxesPage)
 
+		await openPanels()
+
 		const indicator = (text: string) => rowOf(text).querySelector('.so-menu-item__indicator')
 
 		expect(indicator('Сетка')?.getAttribute('aria-hidden')).toBe('true')
@@ -535,6 +575,8 @@ describe('нажатие пунктов', () => {
 
 	it('слот отметки флажка подменяет иконку, scope — отмечен ли флажок', async () => {
 		await render(CheckboxMarkPage)
+
+		await openPanels()
 
 		expect(node('.so-test-mark', rowOf('Сетка')).dataset['mark']).toBe('true')
 		expect(rowOf('Сетка').querySelector('.so-menu-item__indicator .so-icon')).toBeNull()
@@ -606,6 +648,8 @@ describe('переключатели', () => {
 	it('группа — group с именем от подписи, переключатели — menuitemradio вне обхода Tab', async () => {
 		await render(SortPage)
 
+		await openPanels()
+
 		const group = node('.so-menu-group')
 		const label = node('.so-menu-group__label', group)
 
@@ -644,7 +688,10 @@ describe('переключатели', () => {
 
 	it('значение из приложения отмечает свой переключатель, без него — ни один', async () => {
 		const fixture = await render(SortPage, (page) => page.sort.set('date'))
+
 		const page = fixture.componentInstance
+
+		await openPanels()
 
 		expect(checked()).toEqual(['false', 'true', 'true'])
 
@@ -692,7 +739,10 @@ describe('переключатели', () => {
 
 	it('selected у переключателя — его отметка: значение группы и сосед за ней', async () => {
 		const fixture = await render(RadioSelectedPage)
+
 		const page = fixture.componentInstance
+
+		await openPanels()
 
 		page.date.set(true)
 		check()
@@ -704,6 +754,8 @@ describe('переключатели', () => {
 
 	it('точка рисуется только у отмеченного, обёртка отметки — у всех переключателей', async () => {
 		await render(SortPage, (page) => page.sort.set('name'))
+
+		await openPanels()
 
 		const indicator = (text: string) => node('.so-menu-item__indicator', rowOf(text))
 
@@ -767,6 +819,8 @@ describe('переключатели', () => {
 	it('слот отметки подменяет точку, scope — отмечен ли переключатель', async () => {
 		await render(RadioMarkPage)
 
+		await openPanels()
+
 		expect(node('.so-test-mark', rowOf('По имени')).dataset['mark']).toBe('true')
 		expect(rowOf('По имени').querySelector('.so-menu-item__dot')).toBeNull()
 	})
@@ -798,6 +852,8 @@ describe('группа и разделитель', () => {
 
 	it('группа — group с именем от подписи, пункты в ней — пункты меню', async () => {
 		await render(GroupsPage)
+
+		await openPanels()
 
 		const [labelled, bare] = [...panel().querySelectorAll<HTMLElement>('.so-menu-group')]
 		const label = node('.so-menu-group__label', labelled)
@@ -864,6 +920,8 @@ describe('группы из данных', () => {
 	it('группы с подписью, разделитель — только между секциями, без группы — последними', async () => {
 		await render(ItemsPage, grouped)
 
+		await openPanels()
+
 		expect(parts()).toEqual(['группа Правка', '—', 'группа Вид', '—', 'Переименовать'])
 		expect(rows().map((row) => row.textContent?.trim())).toEqual([
 			'Вырезать',
@@ -913,6 +971,8 @@ describe('группы из данных', () => {
 
 	it('смена подписи в groups перерисовывает подписи групп', async () => {
 		const fixture = await render(ItemsPage, grouped)
+
+		await openPanels()
 
 		fixture.componentInstance.groups.set([
 			{ key: 'edit', label: 'Edit' },
@@ -977,6 +1037,8 @@ describe('группы из данных', () => {
 			page.groups.set([{ key: 'danger', label: 'Опасное' }])
 		})
 
+		await openPanels()
+
 		expect(parts()).toEqual(['группа Опасное', '—', 'Изменить'])
 	})
 
@@ -987,6 +1049,8 @@ describe('группы из данных', () => {
 			page.items.set(undefined)
 			page.engine = engine
 		})
+
+		await openPanels()
 
 		expect(parts()).toEqual(['Изменить', 'Удалить'])
 
@@ -1000,6 +1064,8 @@ describe('группы из данных', () => {
 	it('без группировки — ни групп, ни разделителей: пункты прямо в списке', async () => {
 		await render(ItemsPage)
 
+		await openPanels()
+
 		expect(parts()).toEqual(['Изменить', 'Удалить'])
 		expect(panel().querySelector('.so-menu-group, .so-menu-separator')).toBeNull()
 	})
@@ -1010,6 +1076,8 @@ describe('группы из данных', () => {
 			page.separators.set(false)
 		})
 
+		await openPanels()
+
 		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
 		expect(panel().querySelector('.so-menu-separator')).toBeNull()
 	})
@@ -1019,7 +1087,10 @@ describe('группы из данных', () => {
 			grouped(page)
 			page.separators.set(false)
 		})
+
 		const page = fixture.componentInstance
+
+		await openPanels()
 
 		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
 
@@ -1049,6 +1120,8 @@ describe('группы из данных', () => {
 
 	it('ручной разделитель разметки свойство не трогает', async () => {
 		await render(ManualSeparatorPage)
+
+		await openPanels()
 
 		expect(parts()).toEqual(['Изменить', '—', 'Удалить'])
 	})
@@ -1341,6 +1414,8 @@ describe('подменю', () => {
 	it('строка — пункт меню, панель подменю — меню с именем от строки, в body и скрыта', async () => {
 		await render(SharePage)
 
+		await openPanels()
+
 		const row = shareRow()
 
 		expect(row.getAttribute('role')).toBe('menuitem')
@@ -1382,6 +1457,8 @@ describe('подменю', () => {
 
 		const fixture = await render(ShareIdPage)
 
+		await openPanels()
+
 		expect(shareRow().id).toBe('menu-share')
 		expect(subPanel().getAttribute('aria-labelledby')).toBe('menu-share')
 		expect(shareRow().getAttribute('aria-controls')).toBe(subPanel().id)
@@ -1397,6 +1474,8 @@ describe('подменю', () => {
 
 	it('пункт входит в меню над ним, его пункты — в его собственное меню', async () => {
 		await render(SharePage)
+
+		await openPanels()
 
 		expect(texts(rootPanel())).toEqual(['Изменить', 'Поделиться', 'Удалить'])
 		expect(texts(subPanel())).toEqual(['Ссылка', 'Почта'])
@@ -1506,6 +1585,8 @@ describe('подменю', () => {
 	it('размер меню — у панели подменю и у его пунктов', async () => {
 		await render(SharePage, (page) => page.size.set('lg'))
 
+		await openPanels()
+
 		expect(subPanel().classList).toContain('so-menu__panel')
 		expect(subPanel().classList).toContain('so-menu__panel--size-lg')
 		expect(rowIn(subPanel(), 'Ссылка').parentElement?.classList).toContain(
@@ -1521,7 +1602,10 @@ describe('подменю', () => {
 	 */
 	it('вариант меню — у панели подменю, свой вариант подменю сильнее; смена на лету', async () => {
 		const fixture = await render(SharePage, (page) => page.variant.set('brand'))
+
 		const page = fixture.componentInstance
+
+		await openPanels()
 
 		expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
 		expect(variantsOf(shareRow().parentElement)).toEqual([])
@@ -1642,6 +1726,8 @@ describe('подменю', () => {
 	it('пункты подменю данными (items) — с группами и пробросом слотов, как у меню', async () => {
 		await render(SubmenuItemsPage)
 
+		await openPanels()
+
 		expect(texts(subPanel())).toEqual(['Почта…', 'Ссылка…'])
 		expect(node('.so-menu-group__label', subPanel()).textContent).toBe('Отправить')
 	})
@@ -1652,6 +1738,8 @@ describe('подменю', () => {
 	 */
 	it('разделители секций подменю — свои: по умолчанию есть, groupSeparators снимает их только у него', async () => {
 		const fixture = await render(SubmenuItemsPage)
+
+		await openPanels()
 
 		// Меню своих разделителей не просит, а подменю — по своему умолчанию
 		expect(subPanel().querySelectorAll('.so-menu-separator')).toHaveLength(1)
@@ -1711,6 +1799,8 @@ describe('подменю', () => {
 				page.variant.set('brand')
 			})
 
+			await openPanels()
+
 			const messengers = () => panelOf(submenuRow('Мессенджеры'))
 
 			expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
@@ -1725,6 +1815,8 @@ describe('подменю', () => {
 
 		it('пункт с items — подменю: строка объявляет меню, панель — его пункты, третий уровень — тоже', async () => {
 			await render(ItemsPage, withData)
+
+			await openPanels()
 
 			const messengers = submenuRow('Мессенджеры')
 
@@ -1741,6 +1833,48 @@ describe('подменю', () => {
 			expect(subPanel().contains(messengers)).toBe(true)
 			expect(texts(panelOf(messengers))).toEqual(['Telegram'])
 			expect(panelOf(messengers).getAttribute('aria-labelledby')).toBe(messengers.id)
+		})
+
+		/**
+		 * A panel's items are mounted from its first opening on
+		 * (`contentRendered`): the never-opened menu keeps an empty panel — the
+		 * one `aria-controls` points to — and a submenu builds its items only
+		 * when it opens itself. Closing hides them and keeps the same nodes.
+		 */
+		it('пункты — с первого открытия своей панели, закрытие их не снимает', async () => {
+			await render(ItemsPage, withData)
+
+			const menuRows = () => [...rootPanel().querySelectorAll('[role^="menuitem"]')]
+
+			expect(triggerNode().getAttribute('aria-controls')).toBe(rootPanel().id)
+			expect(menuRows()).toEqual([])
+			expect(document.querySelectorAll('.so-menu-item')).toHaveLength(0)
+
+			await open()
+
+			const first = menuRows()
+
+			expect(texts(rootPanel())).toEqual(['Изменить', 'Поделиться', 'Удалить'])
+			// The submenu's own items wait for its own opening
+			expect(texts(subPanel())).toEqual([])
+
+			click(shareRow())
+			await nextFrame()
+			check()
+
+			const links = [...subPanel().querySelectorAll('[role^="menuitem"]')]
+
+			expect(texts(subPanel())).toEqual(['Ссылка', 'Почта', 'Мессенджеры'])
+			expect(texts(panelOf(submenuRow('Мессенджеры')))).toEqual([])
+
+			click(triggerNode())
+			await nextFrame()
+			check()
+
+			expect(shown(rootPanel())).toBe(false)
+			expect(menuRows()).toEqual(first)
+			expect(first.every((row) => row.isConnected)).toBe(true)
+			expect([...subPanel().querySelectorAll('[role^="menuitem"]')]).toEqual(links)
 		})
 
 		it('клик по строке открывает подменю из данных, повторный его не закрывает', async () => {
@@ -1824,6 +1958,8 @@ describe('подменю', () => {
 				page.trackBy.set((item: { value?: unknown }) => item.value)
 			})
 
+			await openPanels()
+
 			const row = shareRow()
 			const panel = subPanel()
 			const link = rowIn(panel, 'Ссылка')
@@ -1874,6 +2010,8 @@ describe('подменю', () => {
 
 		it('слоты пунктов из данных — одни на все уровни: значок, текст, строка и стрелка подменю', async () => {
 			await render(DataSlotsPage)
+
+			await openPanels()
 
 			const messengers = submenuRow('Мессенджеры')
 			const label = (row: HTMLElement) => node('.so-button__text', row).textContent
@@ -1960,6 +2098,8 @@ describe('подменю', () => {
 					page.size.set('lg')
 				})
 				const page = fixture.componentInstance
+
+				await openPanels()
 
 				const share = submenuOf(engine, 'share')
 				const row = shareRow()
@@ -2062,6 +2202,8 @@ describe('подменю', () => {
 
 			it('пункты одного подменю разметкой, у другого — пусто: стрелки и выбор идут по пунктам шаблона', async () => {
 				const fixture = await render(ItemContentPage)
+
+				await openPanels()
 				const { engine, chosen } = fixture.componentInstance
 
 				expect(texts(subPanel())).toEqual([])
@@ -2091,7 +2233,10 @@ describe('подменю', () => {
 			 */
 			it('шаблон снят — подменю снова рисуют свои пункты из данных; задан снова — его пункты', async () => {
 				const fixture = await render(ItemContentPage)
+
 				const page = fixture.componentInstance
+
+				await openPanels()
 				const exported = submenuOf(page.engine, 'export').engine
 
 				page.custom.set(false)
@@ -2134,6 +2279,8 @@ describe('подменю', () => {
 			 */
 			it('новое в scope — пункты шаблона те же узлы и те же пункты подменю', async () => {
 				const fixture = await render(ItemContentScopePage)
+
+				await openPanels()
 				const exported = submenuOf(fixture.componentInstance.engine, 'export')
 				const panel = panelOf(exportRow())
 				const row = rowIn(panel, 'Экспорт в PDF')
@@ -2182,7 +2329,10 @@ describe('подменю', () => {
 				const fixture = await render(ItemContentPatchPage, (page) => {
 					page.engine.extensions.batch.trackBy = (item) => item.value
 				})
+
 				const page = fixture.componentInstance
+
+				await openPanels()
 				const exported = submenuOf(page.engine, 'export')
 
 				expect(values(exported.engine)).toEqual(['pdf', 'png'])
@@ -2218,13 +2368,19 @@ describe('подменю', () => {
 			 */
 			it('замена items без trackBy — подменю новое, пункты шаблона в его коллекции: стрелки и выбор идут по ним', async () => {
 				const fixture = await render(ItemContentPatchPage)
+
 				const page = fixture.componentInstance
+
+				await openPanels()
 				const replaced = submenuOf(page.engine, 'export')
 
 				expect(values(replaced.engine)).toEqual(['pdf', 'png'])
 
 				page.items.set([{ value: 'export', text: 'Выгрузка', items: [] }])
 				check()
+
+				// The new submenu mounts its items from its own first opening on
+				await openPanels()
 
 				// Новый пункт и новый движок; пункты шаблона — в нём, прежний пуст
 				const row = submenuRow('Выгрузка')
@@ -2288,7 +2444,10 @@ describe('подменю', () => {
 
 			it('группа переключателей в шаблоне: ключ группы — у её переключателей, отмечен один', async () => {
 				const fixture = await render(ItemContentRadioPage)
+
 				const page = fixture.componentInstance
+
+				await openPanels()
 				const view = submenuOf(page.engine, 'view').engine
 				const panel = panelOf(submenuRow('Вид'))
 				const checked = () =>
@@ -2352,6 +2511,8 @@ describe('подменю', () => {
 
 			it('подменю разметкой отдаёт свой item-content подменю из данных: scope — их пункт', async () => {
 				const fixture = await render(SubmenuItemContentPage)
+
+				await openPanels()
 				const { engine } = fixture.componentInstance
 
 				expect(texts(subPanel())).toEqual(['Экспорт'])
@@ -2434,6 +2595,8 @@ describe('пункт с панелью', () => {
 
 	it('строка — пункт меню, панель — диалог с именем от строки, в body и скрыта', async () => {
 		await render(DuePage)
+
+		await openPanels()
 
 		const row = dueRow()
 
@@ -2590,6 +2753,8 @@ describe('пункт с панелью', () => {
 	it('lazyMount: содержимое — с первого открытия, закрытие его не снимает', async () => {
 		await render(DuePage, (page) => page.lazyMount.set(true))
 
+		await openPanels()
+
 		expect(duePanel().querySelector('.so-test-earlier')).toBeNull()
 		expect(duePanel().querySelector('.so-menu-item__content')).not.toBeNull()
 
@@ -2707,6 +2872,8 @@ describe('пункт с панелью', () => {
 		it('без lazyMount собран сразу, до открытия', async () => {
 			await render(DueTemplatePage)
 
+			await openPanels()
+
 			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
 			expect(content().contains(node('.so-test-check'))).toBe(true)
 			expect(shown(duePanel())).toBe(false)
@@ -2714,6 +2881,8 @@ describe('пункт с панелью', () => {
 
 		it('рядом с проекцией — рисуется шаблон', async () => {
 			await render(DueTemplateProjectionPage)
+
+			await openPanels()
 
 			expect(content().contains(node('.so-test-earlier'))).toBe(true)
 			expect(document.querySelector('.so-test-projected')).toBeNull()
@@ -2798,6 +2967,8 @@ describe('пункт с панелью', () => {
 	it('слоты строки: значок, свой текст со scope и своя стрелка', async () => {
 		await render(DueSlotsPage)
 
+		await openPanels()
+
 		const row = dueRow()
 
 		expect(row.querySelector('.so-menu-item__icon .so-test-icon')).not.toBeNull()
@@ -2812,6 +2983,8 @@ describe('пункт с панелью', () => {
 			page.size.set('lg')
 			page.variant.set('danger')
 		})
+
+		await openPanels()
 
 		const item = dueRow().parentElement
 
@@ -2895,6 +3068,8 @@ describe('Angular', () => {
 
 	it('класс и стиль — корню пункта, остальное, что написано на пункте, — строке', async () => {
 		await render(ItemAttrsPage)
+
+		await openPanels()
 
 		const row = rowOf('Изменить')
 		const item = row.parentElement

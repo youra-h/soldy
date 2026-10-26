@@ -678,6 +678,17 @@ export function describeSmoke(framework: string): void {
 			async (framework) => {
 				const wrapper = await openPage(framework, 'menu')
 				const row = rowOf(wrapper, 'groupSeparators')
+
+				// The panel's items are drawn with its first opening: open and close
+				// the menu of each column, the items stay
+				for (const stage of stagesOf(row)) {
+					for (let click = 0; click < 2; click++) {
+						await stage.get('.so-button').trigger('click')
+						await nextTick()
+						await nextFrame()
+					}
+				}
+
 				const sections = () =>
 					stagesOf(row).map((stage) =>
 						sectionsIn(

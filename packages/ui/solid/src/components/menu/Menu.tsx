@@ -50,11 +50,14 @@ export function Menu(props: MenuProps): JSX.Element {
 						{...state.aria}
 						{...state.dismiss_ownerAttribute}
 					>
+						{/* Items from the panel's first opening on (`contentRendered`) */}
 						<div class="so-menu__list">
-							<ResolvedSlot
-								content={props.children}
-								fallback={drawItems(state, props)}
-							/>
+							<Show when={state.contentRendered}>
+								<ResolvedSlot
+									content={props.children}
+									fallback={drawItems(state, props)}
+								/>
+							</Show>
 						</div>
 					</Frame>
 				</Elevate>

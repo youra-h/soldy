@@ -77,6 +77,12 @@ const trigger = () => find('.so-date-picker__trigger')
 const panel = () => find('.so-date-picker__panel')
 const isOpen = () => panel().style.display !== 'none'
 
+/** Open the panel with its button: the calendar is mounted from the first opening on. */
+async function openPanel(): Promise<void> {
+	trigger().click()
+	await settle()
+}
+
 /** Нажатие клавиши с узла, как у пользователя: событие всплывает до корня. */
 function press(from: Element, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
 	const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init })
@@ -118,6 +124,31 @@ describe('одна дата', () => {
 		expect(panel().getAttribute('aria-modal')).toBe('true')
 		expect(panel().getAttribute('aria-label')).toBe('Choose date')
 		expect(isOpen()).toBe(false)
+	})
+
+	it('календарь — с первого открытия панели, закрытие его не снимает', async () => {
+		const ctrl = new TDatePicker()
+		const calendar = () => panel().querySelector('.so-date-picker__calendar')
+
+		await render(() => h(DatePicker, { ctrl }))
+
+		// Never opened: the panel is there for the button's link, the calendar is not
+		expect(trigger().getAttribute('aria-controls')).toBe(panel().id)
+		expect(calendar()).toBeNull()
+		expect(document.querySelector('.so-calendar-item')).toBeNull()
+
+		await openPanel()
+
+		const drawn = calendar()
+
+		expect(drawn).not.toBeNull()
+		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
+
+		ctrl.open = false
+		await settle()
+
+		expect(isOpen()).toBe(false)
+		expect(calendar()).toBe(drawn)
 	})
 
 	it('кнопка — связка с панелью по id и вид «нажат», пока панель открыта', async () => {
@@ -187,6 +218,7 @@ describe('одна дата', () => {
 		find('.so-date-input__segment[data-type="month"]').focus()
 		await type('09122026')
 		await settle()
+		await openPanel()
 
 		expect(value.value).toBe('2026-09-12')
 		expect(dayCell('2026-09-12').dataset.selected).toBe('true')
@@ -309,6 +341,7 @@ describe('выбор с подтверждением', () => {
 		const ctrl = new TDatePicker()
 
 		await render(() => h(DatePicker, { ctrl }))
+		await openPanel()
 
 		expect(footer()).toBeNull()
 
@@ -332,6 +365,7 @@ describe('выбор с подтверждением', () => {
 		await render(() =>
 			h(LocaleProvider, { locale: ruRU }, () => h(DatePicker, { confirmable: true })),
 		)
+		await openPanel()
 
 		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
 		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
@@ -711,6 +745,7 @@ describe('экземпляры ядра', () => {
 		const ctrl = new TDatePicker({ value: '2026-09-10' })
 
 		await render(() => h(DatePicker, { ctrl }))
+		await openPanel()
 
 		expect(ctrl.engine.options.get('owner')).toBe(ctrl.calendar)
 		expect(dayCell('2026-09-10').dataset.selected).toBe('true')
@@ -743,6 +778,7 @@ describe('слоты', () => {
 					h('span', { class: 'so-test-day' }, `«${item.text}»`),
 			}),
 		)
+		await openPanel()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('«10»')
 	})
@@ -754,12 +790,14 @@ describe('слоты', () => {
 					h('span', { class: 'so-test-day' }, `${text}·${item.date.slice(5)}`),
 			}),
 		)
+		await openPanel()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('10·09-10')
 	})
 
 	it('без слота item день рисует свой номер', async () => {
 		await render(() => h(DatePicker))
+		await openPanel()
 
 		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
 	})
@@ -794,6 +832,7 @@ describe('жест', () => {
 		const ctrl = new TDatePicker()
 
 		await render(() => h(DatePicker, { ctrl }))
+		await openPanel()
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset.swiping).toBe('false')

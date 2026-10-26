@@ -70,6 +70,8 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 	}
 
 	protected _open!: boolean
+	/** Whether the panel has ever been open — from then on its items stay mounted. */
+	protected _opened = false
 	protected _placement: TMenuPlacement
 	protected _openOn: TMenuOpenOn
 	protected _groupSeparators: boolean
@@ -269,8 +271,22 @@ export class TMenu extends TStylable<IMenuProps, TMenuEvents> implements IMenu {
 		return this.variant
 	}
 
+	/**
+	 * Whether the panel's items are mounted: from the first opening on. A menu
+	 * that was never opened builds only its root and an empty panel — on a page
+	 * with a menu in every table row, items nobody has seen would outweigh the
+	 * rest of the page. Closing does not unmount them: openness is the panel's
+	 * `visible`, not `rendered`, and unmounting would clear the collection and
+	 * the selection in it.
+	 */
+	get contentRendered(): boolean {
+		return this._opened
+	}
+
 	protected _applyOpen(value: boolean): void {
 		this._open = value
+
+		if (value) this._opened = true
 
 		this._syncTriggerAria()
 

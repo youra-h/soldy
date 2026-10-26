@@ -1,21 +1,24 @@
 /**
- * DatePicker в Svelte — проводка на настоящей разметке.
+ * DatePicker in Svelte — wiring on real markup.
  *
- * Сценарии — те же, что у Vue (`date-picker.spec.ts`) и Solid. Модель — общее
- * полям и календарю, одно значение на две стороны, открытость — проверяет
- * ядро, фокус панели и то, что её открывает, — тест плагинов, раскладку и
- * фокус в браузере — `playground/vue/browser/date-picker.spec.ts`. Здесь
- * важно, что экземпляры ядра доезжают до компонентов (`ctrl`, `engine`),
- * наборы — на свои узлы, а выбор дня и набор в поле на настоящей разметке
- * возвращаются колбэками (`onChangeValue`, `onChangeOpen`).
+ * The scenarios are the same as Vue's (`date-picker.spec.ts`) and Solid's.
+ * The model — what the fields and the calendar share, one value for both
+ * sides, openness — is checked by the core; the panel's focus and what opens
+ * it — by the plugin tests; layout and focus in a browser —
+ * `playground/vue/browser/date-picker.spec.ts`. What matters here is that the
+ * core instances reach the components (`ctrl`, `engine`), the sets land on
+ * their nodes, and a day choice and typing in the field on real markup come
+ * back through callbacks (`onChangeValue`, `onChangeOpen`).
  *
- * Своё у Svelte — панель и сниппеты. Панель телепортирована в обёртку
- * `Teleport` в `body`, а закрытая — скрыта, но смонтирована вместе с
- * календарём. Сниппет непрозрачен: подвал календарю и очистку полю DatePicker
- * отдаёт, только когда в них есть что рисовать. Серверную разметку —
- * DatePicker полем с кнопкой, без панели — проверяет `ssr.server.spec.ts`.
+ * Svelte's own are the panel and snippets. The panel is teleported into the
+ * `Teleport` wrapper in `body`; the calendar in it is mounted from the
+ * panel's first opening on (`contentRendered`), and a closed panel is hidden,
+ * not unmounted. A snippet is opaque: DatePicker hands the footer to the
+ * calendar and the clear button to the field only when there is something to
+ * draw in them. Server markup — DatePicker as a field with a button, without a
+ * panel — is checked by `ssr.server.spec.ts`.
  *
- * Сегодня во всех тестах — суббота 2026-09-26, как в тестах ядра.
+ * Today in all tests is Saturday 2026-09-26, as in the core tests.
  */
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
@@ -125,6 +128,15 @@ const panel = () => node('.so-date-picker__panel')
 /** Открыта ли панель: она всегда в документе и скрывается через `display: none`. */
 const isOpen = () => panel().style.display !== 'none'
 
+/**
+ * Open the panel with the button and wait for a frame: the calendar is mounted
+ * from the panel's first opening on.
+ */
+async function openPanel(): Promise<void> {
+	trigger().click()
+	await nextFrame()
+}
+
 /** Значения скрытых полей формы по порядку. */
 const hiddenValues = (scope: string) =>
 	[...document.querySelectorAll(`${scope} input[type="hidden"]`)].map((input) =>
@@ -180,6 +192,33 @@ describe('DatePicker · одна дата', () => {
 		expect(isOpen()).toBe(false)
 	})
 
+	/**
+	 * A picker nobody opened is a field with a button: the panel is in the
+	 * document, empty. The first opening mounts the calendar, and closing keeps
+	 * it — the same nodes.
+	 */
+	it('календарь — с первого открытия, закрытие его не снимает', async () => {
+		await render()
+
+		expect(document.body.contains(panel())).toBe(true)
+		expect(document.querySelector('.so-date-picker__calendar')).toBeNull()
+		expect(document.querySelector('.so-calendar-item')).toBeNull()
+
+		await openPanel()
+
+		const calendar = node('.so-date-picker__calendar')
+		const day = dayCell('2026-09-10')
+
+		expect(node('.so-date-picker__content').contains(calendar)).toBe(true)
+
+		press(panel(), 'Escape')
+		await nextFrame()
+
+		expect(isOpen()).toBe(false)
+		expect(node('.so-date-picker__calendar')).toBe(calendar)
+		expect(dayCell('2026-09-10')).toBe(day)
+	})
+
 	it('кнопка — связка с панелью по id и вид «нажат», пока панель открыта', async () => {
 		await render()
 
@@ -224,6 +263,9 @@ describe('DatePicker · одна дата', () => {
 		await nextFrame()
 
 		expect(value()).toBe('2026-09-12')
+
+		await openPanel()
+
 		expect(dayCell('2026-09-12').dataset['selected']).toBe('true')
 	})
 
@@ -325,6 +367,7 @@ describe('DatePicker · выбор с подтверждением', () => {
 		const ctrl = new TDatePicker()
 
 		await render({ ctrl })
+		await openPanel()
 
 		expect(footer()).toBeNull()
 
@@ -345,6 +388,7 @@ describe('DatePicker · выбор с подтверждением', () => {
 
 	it('текст кнопок — от локали поддерева', async () => {
 		await renderIn(ruRU, { confirmable: true })
+		await openPanel()
 
 		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
 		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
@@ -699,6 +743,7 @@ describe('DatePicker · экземпляры ядра', () => {
 		const ctrl = new TDatePicker({ value: '2026-09-10' })
 
 		await render({ ctrl })
+		await openPanel()
 
 		expect(ctrl.engine.options.get('owner')).toBe(ctrl.calendar)
 		expect(dayCell('2026-09-10').dataset['selected']).toBe('true')
@@ -725,6 +770,7 @@ describe('DatePicker · слоты', () => {
 					`<span class="so-test-day">«${scope.item.text}»</span>`,
 			),
 		})
+		await openPanel()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('«10»')
 	})
@@ -736,12 +782,14 @@ describe('DatePicker · слоты', () => {
 					`<span class="so-test-day">${scope.text}·${scope.item.date.slice(5)}</span>`,
 			),
 		})
+		await openPanel()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('10·09-10')
 	})
 
 	it('без слота item день рисует свой номер', async () => {
 		await render()
+		await openPanel()
 
 		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
 	})
@@ -778,6 +826,7 @@ describe('DatePicker · жест', () => {
 		const ctrl = new TDatePicker()
 
 		await render({ ctrl })
+		await openPanel()
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset['swiping']).toBe('false')

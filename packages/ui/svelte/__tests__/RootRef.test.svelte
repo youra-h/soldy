@@ -226,37 +226,38 @@
 	{:else if kind === 'Menu'}
 		<Menu bind:ref={get, set} {onElementReady} />
 	{:else if kind === 'Menu.Item'}
-		<Menu>
+		<!-- Open: menu parts are mounted from the panel's first opening on -->
+		<Menu open>
 			<Menu.Item value="a" text="A" bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Menu.CheckboxItem'}
-		<Menu>
+		<Menu open>
 			<Menu.CheckboxItem value="a" text="A" bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Menu.RadioItem'}
-		<Menu>
+		<Menu open>
 			<Menu.RadioGroup value="a">
 				<Menu.RadioItem value="a" text="A" bind:ref={get, set} {onElementReady} />
 			</Menu.RadioGroup>
 		</Menu>
 	{:else if kind === 'Menu.Submenu'}
-		<Menu>
+		<Menu open>
 			<Menu.Submenu value="share" text="Поделиться" bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Menu.PopoverItem'}
-		<Menu>
+		<Menu open>
 			<Menu.PopoverItem value="due" text="Срок" bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Menu.Group'}
-		<Menu>
+		<Menu open>
 			<Menu.Group label="Вид" bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Menu.RadioGroup'}
-		<Menu>
+		<Menu open>
 			<Menu.RadioGroup label="Сортировка" bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Menu.Separator'}
-		<Menu>
+		<Menu open>
 			<Menu.Separator bind:ref={get, set} {onElementReady} />
 		</Menu>
 	{:else if kind === 'Dialog'}

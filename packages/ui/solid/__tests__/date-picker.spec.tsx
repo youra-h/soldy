@@ -1,18 +1,20 @@
 /**
- * DatePicker в Solid — проводка на настоящей разметке.
+ * DatePicker in Solid — wiring on real markup.
  *
- * Сценарии — те же, что у Vue (`date-picker.spec.ts`). Модель — общее полям и
- * календарю, одно значение на две стороны, открытость — проверяет ядро, фокус
- * панели и то, что её открывает, — тест плагинов, раскладку и фокус в
- * браузере — `playground/vue/browser/date-picker.spec.ts`. Здесь важно, что
- * экземпляры ядра доезжают до компонентов (`ctrl`, `engine`), наборы — на
- * свои узлы, а выбор дня и набор в поле на настоящей разметке возвращаются
- * колбэками (`onChangeValue`, `onChangeOpen`).
+ * The scenarios are Vue's (`date-picker.spec.ts`). The model shared by the
+ * fields and the calendar, one value for both sides and openness are checked
+ * by the core; the panel's focus and what opens it — by the plugin tests;
+ * layout and focus in a browser — by `playground/vue/browser/date-picker.spec.ts`.
+ * What matters here is that the core's instances reach the components
+ * (`ctrl`, `engine`), the sets land on their nodes, and picking a day and
+ * typing in the field on real markup come back through the callbacks
+ * (`onChangeValue`, `onChangeOpen`).
  *
- * Своё у Solid — панель: она телепортирована в обёртку портала в `body`, а
- * закрытая — скрыта, но смонтирована вместе с календарём.
+ * Solid's own part is the panel: it is teleported into the portal's wrapper in
+ * `body`, and the closed one is hidden; its calendar is mounted from the first
+ * opening on and stays mounted after closing.
  *
- * Сегодня во всех тестах — суббота 2026-09-26, как в тестах ядра.
+ * Today is Saturday 2026-09-26 in every test, as in the core's tests.
  */
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
@@ -86,6 +88,17 @@ const trigger = () => node('.so-date-picker__trigger')
 const panel = () => node('.so-date-picker__panel')
 /** Открыта ли панель: она всегда в документе и скрывается через `display: none`. */
 const isOpen = () => panel().style.display !== 'none'
+
+/**
+ * Open the panel with the button and close it again: the calendar is mounted
+ * from the panel's first opening on, and closing keeps it.
+ */
+async function openOnce(): Promise<void> {
+	trigger().click()
+	await nextFrame()
+	trigger().click()
+	await nextFrame()
+}
 
 /** Значения скрытых полей формы по порядку. */
 const hiddenValues = (scope: string) =>
@@ -175,6 +188,8 @@ describe('DatePicker · одна дата', () => {
 	it('набор в поле — onChangeValue и выбранный день в календаре', async () => {
 		const { value } = await bound(undefined)
 
+		await openOnce()
+
 		// en-US: месяц, день, год
 		node('.so-date-input__segment[data-type="month"]').focus()
 		type('09122026')
@@ -198,6 +213,28 @@ describe('DatePicker · одна дата', () => {
 		expect(root().dataset['probe']).toBe('1')
 		expect(root().title).toBe('Срок')
 		expect(node('.so-date-picker__field').hasAttribute('data-probe')).toBe(false)
+	})
+})
+
+describe('DatePicker · календарь с первого открытия', () => {
+	it('не открывали — календаря нет; первое открытие его монтирует, закрытие оставляет те же узлы', async () => {
+		await render(() => <DatePicker />)
+
+		expect(node('.so-date-picker__content').childElementCount).toBe(0)
+		expect(document.querySelector('.so-calendar')).toBeNull()
+
+		trigger().click()
+		await nextFrame()
+
+		const calendar = node('.so-date-picker__calendar')
+		const day = dayCell('2026-09-10')
+
+		trigger().click()
+		await nextFrame()
+
+		expect(isOpen()).toBe(false)
+		expect(node('.so-date-picker__calendar')).toBe(calendar)
+		expect(dayCell('2026-09-10')).toBe(day)
 	})
 })
 
@@ -277,6 +314,7 @@ describe('DatePicker · выбор с подтверждением', () => {
 		const ctrl = new TDatePicker()
 
 		await render(() => <DatePicker ctrl={ctrl} />)
+		await openOnce()
 
 		expect(footer()).toBeNull()
 
@@ -300,6 +338,7 @@ describe('DatePicker · выбор с подтверждением', () => {
 				<DatePicker confirmable />
 			</LocaleProvider>
 		))
+		await openOnce()
 
 		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
 		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
@@ -666,6 +705,7 @@ describe('DatePicker · экземпляры ядра', () => {
 		const ctrl = new TDatePicker({ value: '2026-09-10' })
 
 		await render(() => <DatePicker ctrl={ctrl} />)
+		await openOnce()
 
 		expect(ctrl.engine.options.get('owner')).toBe(ctrl.calendar)
 		expect(dayCell('2026-09-10').dataset['selected']).toBe('true')
@@ -693,6 +733,7 @@ describe('DatePicker · слоты', () => {
 				)}
 			/>
 		))
+		await openOnce()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('«10»')
 	})
@@ -705,12 +746,14 @@ describe('DatePicker · слоты', () => {
 				)}
 			/>
 		))
+		await openOnce()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('10·09-10')
 	})
 
 	it('без слота item день рисует свой номер', async () => {
 		await render(() => <DatePicker />)
+		await openOnce()
 
 		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
 	})
@@ -745,6 +788,7 @@ describe('DatePicker · жест', () => {
 		const ctrl = new TDatePicker()
 
 		await render(() => <DatePicker ctrl={ctrl} />)
+		await openOnce()
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset['swiping']).toBe('false')

@@ -379,11 +379,13 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			}
 		}),
 
-		// Подвал у календаря — свет к построению: смена `confirmable` строит календарь заново
-		bind('confirmable', (ctx) => {
+		// The footer is the calendar's light at build time: a change of `confirmable`
+		// builds the calendar anew. The calendar is drawn from the panel's first
+		// opening on (`contentRendered`)
+		bind(['confirmable', 'contentRendered'], (ctx) => {
 			const own = parts.get(ctx.root)
 
-			if (!own || !ctx.ctrl) return
+			if (!own || !ctx.ctrl || ctx.state.contentRendered !== true) return
 
 			const confirmable = ctx.state.confirmable === true
 			const drawn = calendars.get(ctx.root)
