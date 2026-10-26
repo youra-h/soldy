@@ -1,15 +1,24 @@
 import type { IDateInput } from '../../date-input'
 import type { TDatePickerMode, TDatePickerValue } from '../types'
 
-/** Поля DatePicker: одной даты и концов диапазона — экземпляры на всю его жизнь. */
+/**
+ * The picker's fields by role. A field is created on its first call — from the
+ * picker's current state — and lives as long as the picker: the strategy of a
+ * mode takes its own fields, and a mode coming back gets the same instances.
+ * Fields no mode has needed are never created: a single date holds no range
+ * ends.
+ */
 export type TDatePickerFieldSet = {
-	/** Поле одной даты */
-	readonly field: IDateInput
-	/** Поле начала диапазона */
-	readonly start: IDateInput
-	/** Поле конца диапазона */
-	readonly end: IDateInput
+	/** The single date's field */
+	readonly field: () => IDateInput
+	/** The range start's field */
+	readonly start: () => IDateInput
+	/** The range end's field */
+	readonly end: () => IDateInput
 }
+
+/** A field's role: the single date or an end of the range. */
+export type TDatePickerFieldRole = keyof TDatePickerFieldSet
 
 /**
  * Поля режима — стратегия DatePicker, как режим выбора у календаря: из каких
@@ -33,7 +42,11 @@ export interface IDatePickerFields {
 	clear(): void
 }
 
-/** Конструктор стратегии: DatePicker заводит её на режим над своими полями. */
+/**
+ * The strategy's constructor: the picker builds it for a mode over its field
+ * set, and the strategy takes the fields of its mode right away — by
+ * `change:mode` they exist.
+ */
 export type TDatePickerFieldsCtor = new (set: TDatePickerFieldSet) => IDatePickerFields
 
 /** Стратегия на каждый режим. */

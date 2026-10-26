@@ -53,7 +53,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			v-if="mode === 'single'"
 			embedded="date-picker.field"
 			class="so-date-picker__field"
-			:ctrl="field"
+			:ctrl="picker.field"
 			:aria_label="aria_label"
 			:aria_labelledBy="aria_labelledBy"
 			:aria_describedBy="aria_describedBy"
@@ -128,14 +128,14 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 			<DateInput
 				embedded="date-picker.start"
 				class="so-date-picker__start"
-				:ctrl="start"
+				:ctrl="picker.start"
 				:aria_label="names_start"
 			/>
 			<span class="so-date-picker__dash" aria-hidden="true">–</span>
 			<DateInput
 				embedded="date-picker.end"
 				class="so-date-picker__end"
-				:ctrl="end"
+				:ctrl="picker.end"
 				:aria_label="names_end"
 			/>
 			<!--

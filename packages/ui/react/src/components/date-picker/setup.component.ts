@@ -3,7 +3,9 @@ import { useComponent, useRootElement } from '../../adapter'
 import type { DatePickerProps } from './base.component'
 
 /**
- * Поля, календарь и движок — экземпляры ядра текущей сборки, разметка отдаёт их целиком:
+ * The calendar and its engine are core instances of the current assembly; the
+ * markup hands them over whole and reads a mode's fields from the instance in
+ * that mode's branch — the core creates a field when its mode needs it:
  * AGENTS.md (React), «Пересобранный инстанс и `key`».
  */
 export function useSetupDatePicker(props: DatePickerProps) {
@@ -20,9 +22,6 @@ export function useSetupDatePicker(props: DatePickerProps) {
 	return {
 		...binding,
 		rootElement: useRootElement(binding.root),
-		field: picker.field,
-		start: picker.start,
-		end: picker.end,
 		calendar: picker.calendar,
 		engine: picker.engine,
 	}

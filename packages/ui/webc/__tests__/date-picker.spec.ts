@@ -449,14 +449,25 @@ describe('DatePicker · диапазон', () => {
 	 */
 	it('режим вернулся — поле над тем же экземпляром, кнопка снова в его слоте', async () => {
 		const el = await mount('<div is="so-date-picker" value="2026-09-10"></div>')
-		const field = node('.so-date-picker__field')
+		const field = find(document, '.so-date-picker__field', TDateInputElement)
+		const instance = field.ctrl
+
+		expect(instance).toBe(el.ctrl?.field)
 
 		el.mode = 'range'
 		await settle()
+
+		// The range ends get their instances with the mode
+		expect(find(document, '.so-date-picker__start', TDateInputElement).ctrl).toBe(
+			el.ctrl?.start,
+		)
+		expect(find(document, '.so-date-picker__end', TDateInputElement).ctrl).toBe(el.ctrl?.end)
+
 		el.mode = 'single'
 		await settle()
 
 		expect(node('.so-date-picker__field')).toBe(field)
+		expect(field.ctrl).toBe(instance)
 		expect(findAll('.so-date-picker__start')).toHaveLength(0)
 		expect(findAll('.so-date-picker__dash')).toHaveLength(0)
 		expect(field.querySelector('.so-date-input__trailing .so-date-picker__trigger')).toBe(
