@@ -51,8 +51,8 @@ export type TTemplateRef = 'root' | 'control' | 'companion'
 
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
-/** Пустое состояние — его база рисует на слое не на своём месте. */
-const NO_STATE: TStateSnapshot = Object.freeze({})
+/** State before the assembly: nothing — the same object on every read. */
+const NO_BINDING_STATE = Object.freeze({})
 
 @Directive({
 	// `hostDirectives` наследник получает, а `providers` — нет
@@ -92,25 +92,33 @@ export abstract class TComponentBase<
 
 	private readonly _boundRoot = signal<Element | null>(null)
 
-	/** Узел, который база отдала `TElementPlugin`: `null` на сервере, до отрисовки и у снятого корня. */
-	protected readonly rootElement: Signal<Element | null> = this._boundRoot.asReadonly()
+	/**
+	 * The node the base gave `TElementPlugin`: `null` on the server, before the
+	 * render and while the root is removed. A method reading the signal, as
+	 * `state()`, `instance()` and `facade()`: a `computed` or a read-only copy
+	 * of a signal on every instance only forwarded it.
+	 */
+	protected rootElement(): Element | null {
+		return this._boundRoot()
+	}
 
 	/** В его контексте заводятся эмиттеры и идёт сборка. */
 	private readonly _injector = inject(Injector)
 
-	/** Состояние ядра с выходами плагинов и свойствами фасадов. */
-	readonly state = computed<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>>(
-		() => this._binding()?.state() ?? {},
-	)
+	/** State of the core with plugin outputs and facade properties — the signal of the binding. */
+	state(): TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade> {
+		return this._binding()?.state() ?? NO_BINDING_STATE
+	}
 
-	protected readonly instance = computed<TInstance | undefined>(() => this._binding()?.ctrl)
+	/** The core instance: the outer `ctrl` or the one assembled in `ngOnInit`. */
+	protected instance(): TInstance | undefined {
+		return this._binding()?.ctrl
+	}
 
-	/** Фасад коллекции: через его контекст шаблон зовёт команды коллекции. */
-	protected readonly facade = computed<TFacade | undefined>(() => this._binding()?.facade)
-
-	private readonly _drawn = computed<TStateSnapshot>(() =>
-		this.placed() ? this.state() : NO_STATE,
-	)
+	/** The collection facade: through its context the template calls collection commands. */
+	protected facade(): TFacade | undefined {
+		return this._binding()?.facade
+	}
 
 	/** Внешний узел скрыт. Инстанса база не знает и читает состояние по именам. */
 	private readonly _hidden = computed(() => {
@@ -160,8 +168,7 @@ export abstract class TComponentBase<
 
 		this._root = createRoot(spec, {
 			own: ['ctrl', ...inputNames],
-			state: this.state,
-			drawn: this._drawn,
+			state: () => this.state(),
 			hidden: this._hidden,
 			root: () => this.templateNode('root'),
 			control: () => this.templateNode('control'),

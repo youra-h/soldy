@@ -93,19 +93,25 @@ export type TCollectionBinding<TFacade = any> = TExchange<TInstanceState<TFacade
 	readonly facade: TFacade
 }
 
+/** State before the subscription delivered the first snapshot. */
+const NO_SNAPSHOT: TStateSnapshot = Object.freeze({})
+
 function useExchange<C extends IComponentContract>(
 	adapter: IAdapterContext<C>,
 ): TExchange<TAdapterState<C>> {
 	const binding = adapter.connect(AngularProfile)
-	const values = signal<TStateSnapshot>({})
-	const unsubscribe = binding.state.subscribe(() => values.set(binding.state.getSnapshot()))
+	// The signal itself is the state: a `computed` over it only forwarded the snapshot
+	const state = signal(toInstanceState<C>(NO_SNAPSHOT))
+	const unsubscribe = binding.state.subscribe(() =>
+		state.set(toInstanceState<C>(binding.state.getSnapshot())),
+	)
 
 	// Связку заводит `ngOnInit`, и на сервере тоже: хуки идут в порядке
 	// шаблона, и элементы разметки входят в коллекцию в порядке DOM
 	adapter.attach()
 
 	return {
-		state: computed(() => toInstanceState<C>(values())),
+		state,
 
 		// Дельта, а не `full`: тот сбросил бы к умолчанию остальные входы
 		syncInputs(inputs: object): void {
