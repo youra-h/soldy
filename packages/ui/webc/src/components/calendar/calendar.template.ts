@@ -12,6 +12,7 @@ import type {
 	TCalendarCollectionFacade,
 	TCalendarGrid,
 	TCalendarPicker,
+	TCalendarPickerList,
 	TCalendarWeekday,
 } from '@soldy-ui/core'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
@@ -83,7 +84,10 @@ type THeading = {
 	readonly instance: IPopover
 	readonly title: TButtonElementProps
 	readonly titleText: HTMLElement
-	readonly list: TListBoxElementProps
+	readonly card: HTMLElement
+	readonly header: HTMLElement
+	/** The list detail — once the place has its list: from the first opening of the popover. */
+	list: TListBoxElementProps | null
 	readonly heading: TButtonElementProps
 	readonly prev: TIconButton
 	readonly next: TIconButton
@@ -124,7 +128,10 @@ const cellLoops = new WeakMap<
 	TKeyedLoop<TCalendarCell, TCellKey, HTMLElement>
 >()
 
-/** Экземпляры места — до вставки: сборка берёт их при подключении. */
+/**
+ * The place's popover — before insertion: the assembly takes it on connection. The list
+ * comes later, with the place's list (`listDetailOf`).
+ */
 function headingOf(owner: Document, picker: TCalendarPicker): THeading {
 	const popover = createDetail(owner, TPopoverDivElement, { embedded: 'calendar.picker' })
 	const title = createDetail(owner, TButtonElement, {
@@ -133,7 +140,6 @@ function headingOf(owner: Document, picker: TCalendarPicker): THeading {
 	})
 	const titleText = owner.createElement('span')
 	const card = owner.createElement('div')
-	const list = createDetail(owner, TListBoxElement, { embedded: 'calendar.picker-list' })
 	const header = owner.createElement('div')
 	const heading = createDetail(owner, TButtonElement, {
 		embedded: 'calendar.picker-heading',
@@ -149,22 +155,45 @@ function headingOf(owner: Document, picker: TCalendarPicker): THeading {
 	title.className = 'so-calendar__title'
 	titleText.className = 'so-calendar__title-text'
 	card.className = 'so-calendar__picker'
-	list.className = 'so-calendar__picker-list'
-	list.ctrl = picker.list
-	list.engine = picker.engine
-	list.indicator = 'none'
 	header.className = 'so-calendar__picker-header'
 	heading.className = 'so-calendar__picker-heading'
 
-	// Части в детали до поповера: в документ входят одной вставкой и собираются
-	// по разу. Список раньше шапки: фокус при открытии встаёт на него
+	// The parts go into the details before the popover: they enter the document in one
+	// insertion and are assembled once
 	lend(title, DEFAULT_SLOT, titleText)
 	header.append(heading, prev.button, next.button)
-	card.append(list, header)
+	card.append(header)
 	lend(popover, 'trigger', title)
 	lend(popover, DEFAULT_SLOT, card)
 
-	return { popover, instance: picker.popover, title, titleText, list, heading, prev, next }
+	return {
+		popover,
+		instance: picker.popover,
+		title,
+		titleText,
+		card,
+		header,
+		list: null,
+		heading,
+		prev,
+		next,
+	}
+}
+
+/**
+ * The list detail over the place's list and its engine — the place gets them with the first
+ * opening of its popover. The detail takes them before insertion: the assembly takes them on
+ * connection.
+ */
+function listDetailOf(owner: Document, list: TCalendarPickerList): TListBoxElementProps {
+	const detail = createDetail(owner, TListBoxElement, { embedded: 'calendar.picker-list' })
+
+	detail.className = 'so-calendar__picker-list'
+	detail.ctrl = list.ctrl
+	detail.engine = list.engine
+	detail.indicator = 'none'
+
+	return detail
 }
 
 function syncHeading(
@@ -175,7 +204,9 @@ function syncHeading(
 ): void {
 	const { size } = ctx.state
 	const disabled = ctx.state.disabled === true
-	const { popover, title, titleText, list } = heading
+	const { popover, title, titleText } = heading
+	const list =
+		heading.list ?? (picker.list ? listDetailOf(ctx.root.ownerDocument, picker.list) : null)
 
 	patch(title, { size, disabled })
 
@@ -184,7 +215,15 @@ function syncHeading(
 
 	patch(titleText, { textContent: grid.title })
 	patch(popover, { aria_labelledBy: picker.labelledBy })
-	patch(list, { size, aria_labelledBy: picker.labelledBy })
+
+	if (list) patch(list, { size, aria_labelledBy: picker.labelledBy })
+
+	// A new list goes in with its props, before the header: focus on opening lands on it
+	if (list && !heading.list) {
+		heading.card.insertBefore(list, heading.header)
+		heading.list = list
+	}
+
 	patch(heading.heading, { size, text: picker.heading })
 
 	ownerAttributes(heading.heading, picker.headingAria)

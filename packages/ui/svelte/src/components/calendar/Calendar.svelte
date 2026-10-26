@@ -75,18 +75,20 @@
 							trigger={title}
 							><div class="so-calendar__picker">
 								<!--
-									Список раньше шапки: фокус при открытии встаёт на него, а
-									шапку наверх ставит тема.
+									The list comes before the header: focus on opening lands on it,
+									and the theme puts the header on top. The place gets its list
+									with the first opening of the popover — a block by its presence:
+									ListBox takes `ctrl` and `engine` once.
 								-->
-								<ListBox
-									embedded="calendar.picker-list"
-									class="so-calendar__picker-list"
-									ctrl={picker.list}
-									engine={picker.engine}
-									size={state.size}
-									indicator="none"
-									aria_labelledBy={picker.labelledBy}
-								/><div class="so-calendar__picker-header">
+								{#if picker.list}<ListBox
+										embedded="calendar.picker-list"
+										class="so-calendar__picker-list"
+										ctrl={picker.list.ctrl}
+										engine={picker.list.engine}
+										size={state.size}
+										indicator="none"
+										aria_labelledBy={picker.labelledBy}
+									/>{/if}<div class="so-calendar__picker-header">
 									<Button
 										embedded="calendar.picker-heading"
 										type="button"

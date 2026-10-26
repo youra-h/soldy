@@ -858,11 +858,12 @@ describe('вес закрытого DatePicker', () => {
 		})
 	})
 
-	it('открытая — дни месяца и панель выбора месяца появляются', () => {
+	it('открытая — дни месяца и поповер места появляются, а список месяцев — нет', () => {
 		const days = perCount(() => picker({ value: '2026-09-10', open: true }))
 
 		expect(days.days).toBe(30 * COUNT)
-		expect(days.lists).toBe(COUNT)
+		// The month picker's list waits for the first opening of its own popover
+		expect(days.lists).toBe(0)
 		expect(days.popovers).toBe(COUNT)
 	})
 })
