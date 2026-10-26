@@ -1022,8 +1022,8 @@ DatePicker, её полоса и закрытая панель встали в `
 `--so-slider-gap`, `--so-slider-tick-size` и `--so-slider-halo-size`,
 `--so-rating-star-size`, `--so-progress-linear-thickness`,
 `--so-progress-spinner-size`, `--so-pagination-cell` и `--so-pagination-gap`,
-`--so-calendar-day`, `--so-calendar-cell`, `--so-calendar-head` и
-`--so-calendar-gap`, `--so-date-input-height`, `--so-date-input-indent` и
+`--so-calendar-day`, `--so-calendar-cell`, `--so-calendar-column`,
+`--so-calendar-inset`, `--so-calendar-head` и `--so-calendar-gap`, `--so-date-input-height`, `--so-date-input-indent` и
 `--so-date-input-slot-row`, `--so-date-picker-height`,
 `--so-date-picker-slot-row` и `--so-date-picker-button`, `--so-toasts-lift`
 и `--so-toasts-peek-sign`, `--so-table-button`, `--so-table-button-inline`,
