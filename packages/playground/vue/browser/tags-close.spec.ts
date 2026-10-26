@@ -220,10 +220,12 @@ const placeHarness = (place: number, size: (typeof COMPONENT_SIZES)[number]) =>
  * than that of a Button of the same size and of the text of a Select field of
  * that size — in a set and in the field itself
  * (`themes/base/src/components/tags.css`). The `normal` Button and field take
- * the font of their place, so the check runs in two places: a `normal` tag
- * fixed in `rem` equalled them at a 14px place.
+ * the font of their place, so the check runs in the places of
+ * `place-font.spec.ts`, 14px, 16px and 18px: a `normal` tag fixed in `rem`
+ * equalled them at a 14px place. That spec holds a `normal` tag halfway between
+ * the place and a tag at `sm`.
  */
-describe.each([14, 16])('место %ipx: тег мельче Button и текста поля Select', (place) => {
+describe.each([14, 16, 18])('место %ipx: тег мельче Button и текста поля Select', (place) => {
 	it.each(COMPONENT_SIZES)('размер %s', async (size) => {
 		render(placeHarness(place, size))
 
