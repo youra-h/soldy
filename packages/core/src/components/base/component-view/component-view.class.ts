@@ -2,7 +2,7 @@ import { TComponent } from '../component'
 import type { TDefaultValues } from '../component'
 import type { IComponentView, IComponentViewProps, TComponentViewEvents, TDirection } from './types'
 import { TClasses, TAria, TDataset, TAttributes, TActionEvent, TChangeEvent } from '../../../common'
-import type { TEventSink } from '../../../common'
+import type { TEventSink, TSubscribable } from '../../../common'
 
 /**
  * Визуальный слой: всё, что связано с отображением.
@@ -57,15 +57,30 @@ export default class TComponentView<
 		this._direction = props.direction ?? ctor.defaultValues.direction
 
 		// Each set reports its change to a subscriber (`TSubscribable`), not a
-		// bus of its own: a bus per set cost every collection item four emitters
+		// bus of its own: a bus per set cost every collection item four
+		// emitters. The subscriber is one for the four sets and picks the event
+		// by the set it receives: a function per set cost every collection item
+		// three closures more
+		const changed = (set: TSubscribable): void => {
+			if (set === this._classes) {
+				this._sink.emit('change:classes', this._classes.toArray())
+			} else if (set === this._aria) {
+				this._sink.emit('change:aria', this._aria.toObject())
+			} else if (set === this._dataset) {
+				this._sink.emit('change:dataset', this._dataset.toObject())
+			} else if (set === this._attrs) {
+				this._sink.emit('change:attrs', this._attrs.toObject())
+			}
+		}
+
 		this._classes = new TClasses(ctor.baseClass)
-		this._classes.subscribe(() => this._sink.emit('change:classes', this._classes.toArray()))
+		this._classes.subscribe(changed)
 		this._aria = new TAria()
-		this._aria.subscribe(() => this._sink.emit('change:aria', this._aria.toObject()))
+		this._aria.subscribe(changed)
 		this._dataset = new TDataset()
-		this._dataset.subscribe(() => this._sink.emit('change:dataset', this._dataset.toObject()))
+		this._dataset.subscribe(changed)
 		this._attrs = new TAttributes()
-		this._attrs.subscribe(() => this._sink.emit('change:attrs', this._attrs.toObject()))
+		this._attrs.subscribe(changed)
 
 		this._syncDir()
 	}

@@ -88,6 +88,30 @@ describe('TComponentView', () => {
 		expect(classesHandler).toHaveBeenCalled()
 	})
 
+	/**
+	 * The four sets share one subscriber, and it picks the event by the set it
+	 * receives (`TSubscribable`): each set still gives its own event with its
+	 * own snapshot, and only that one.
+	 */
+	it('каждый набор — своё событие со своим снимком, и только оно', () => {
+		const p = new TComponentView()
+		const heard: [string, unknown][] = []
+
+		p.events.listen((event, args) => heard.push([String(event), args[0]]))
+
+		p.classes.add('--x')
+		p.aria.add('role', 'group')
+		p.dataset.add('open', true)
+		p.attrs.add('dir', 'rtl')
+
+		expect(heard).toEqual([
+			['change:classes', ['so-component-view', 'so-component-view--x']],
+			['change:aria', { role: 'group' }],
+			['change:dataset', { 'data-open': 'true' }],
+			['change:attrs', { dir: 'rtl' }],
+		])
+	})
+
 	it('direction: по умолчанию inherit, сеттер эмитит change:direction', () => {
 		const p = new TComponentView()
 		expect(p.direction).toBe('inherit')

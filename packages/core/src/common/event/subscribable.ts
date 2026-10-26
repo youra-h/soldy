@@ -1,15 +1,29 @@
-/** A listener of {@link TSubscribable}: the object has changed, read it anew. */
-export type TSubscriber = () => void
+/**
+ * A listener of {@link TSubscribable}: it receives the object that has changed
+ * and reads it anew.
+ *
+ * The object comes as the base `TSubscribable`, not as the type of the set: a
+ * listener typed by the set itself (`this`) would set the kinds of sets apart,
+ * and a `TDataset`, whose listeners would take only a `TDataset`, would stop
+ * being a `TAttributes`. Whoever listens to several objects tells them apart
+ * by identity.
+ */
+export type TSubscriber = (source: TSubscribable) => void
 
 /**
  * A plain object that reports its change — the base of the attribute and
  * class sets (`TAttributes`, `TClasses`).
  *
- * It is not a bus: there are no event names, no arguments, no middlewares or
- * relays. There is one fact — "changed" — and whoever listens reads the object
- * itself. That is all a set needs, and a bus per set (`TEvented`) cost every
- * collection item four emitters with a subscription each, even an item that is
- * never drawn.
+ * It is not a bus: there are no event names, no middlewares or relays. There
+ * is one fact — "changed" — and the listener receives the object itself to
+ * read it anew. That is all a set needs, and a bus per set (`TEvented`) cost
+ * every collection item four emitters with a subscription each, even an item
+ * that is never drawn.
+ *
+ * **The object is the argument, so one listener serves several of them**: a
+ * component listens to its four sets with one function and picks the event by
+ * the set (`TComponentView`), where a function per set cost every collection
+ * item three closures more.
  *
  * **It pays for a subscription, not for being created.** The only listener
  * lives in a field as is, the list appears with the second one and goes back
@@ -57,18 +71,18 @@ export class TSubscribable {
 		this._subscribers = rest.length === 1 ? rest[0] : rest
 	}
 
-	/** Reports the change to every listener. */
+	/** Reports the change to every listener, handing it the object. */
 	protected _notify(): void {
 		const current = this._subscribers
 
 		if (current === undefined) return
 
 		if (typeof current === 'function') {
-			current()
+			current(this)
 
 			return
 		}
 
-		for (const subscriber of current) subscriber()
+		for (const subscriber of current) subscriber(this)
 	}
 }

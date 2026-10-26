@@ -60,6 +60,48 @@ describe('TClasses', () => {
 		expect('events' in c).toBe(false)
 	})
 
+	/**
+	 * The static classes are an array of exact length, not a `Set`, and keep
+	 * what the set gave: no duplicates, the initial ones included, and the
+	 * order of adding.
+	 */
+	it('повтор в начальных классах — один класс', () => {
+		const c = new TClasses('so-test', ['a', 'b', 'a'])
+
+		expect(c.toArray()).toEqual(['so-test', 'a', 'b'])
+	})
+
+	it('снятие среднего класса не трогает соседей, снятый и возвращённый встаёт в конец', () => {
+		const handler = vi.fn()
+		const c = new TClasses('so-test', ['a', 'b', 'c'])
+		c.subscribe(handler)
+
+		c.remove('b', false)
+		expect(c.toArray()).toEqual(['so-test', 'a', 'c'])
+		expect(c.has('b', false)).toBe(false)
+		expect(handler).toHaveBeenCalledTimes(1)
+
+		c.add('b', false)
+		expect(c.toArray()).toEqual(['so-test', 'a', 'c', 'b'])
+		expect(handler).toHaveBeenCalledTimes(2)
+	})
+
+	it('после снятия последнего класса — только базовый, и набор заполняется снова', () => {
+		const c = new TClasses('so-test')
+
+		c.add('--size-normal')
+		c.remove('--size-normal')
+
+		expect(c.toArray()).toEqual(['so-test'])
+		expect(c.has('--size-normal')).toBe(false)
+		expect(c.get('--size-normal')).toBeUndefined()
+
+		c.add('--size-large')
+
+		expect(c.toArray()).toEqual(['so-test', 'so-test--size-large'])
+		expect(c.get('--size-large')).toBe('so-test--size-large')
+	})
+
 	it('toggle управляет классом по булевому значению', () => {
 		const c = new TClasses('so-test')
 		c.toggle('--active', true)

@@ -1,7 +1,7 @@
 /**
  * A collection item that has never been drawn holds one bus — its own
  * `events` — and at most one emitter on it, for the collection that listens
- * to the item.
+ * to the item, and not a single `Map` or `Set`.
  *
  * Under the `Virtual` window most items of a large list are never drawn: no
  * row, no DOM node, no item adapter. What such an item weighs is the price of
@@ -21,11 +21,18 @@
  * text and the tags are made of them — and an option nobody selected holds no
  * emitter at all.
  *
+ * The sets keep their entries in arrays of exact length, not in a `Map` or a
+ * `Set` (`TAttributes`, `TClasses`): a map gets its hash table with room for
+ * four entries from the first one, and the two to four entries of an item's
+ * set cost less than half of it in an array. So the census counts maps and
+ * sets too: one per item would mean a set went back to a hash table.
+ *
  * `queryObjects` from `node:v8` collects garbage itself and counts the
  * reachable instances of a class (see `ui/vue/__tests__/virtual-rows.spec.ts`).
- * The counters are global to the worker, so the spec counts the difference: a
- * bare item — against nothing, a collection — `2N` items against `N`, which
- * cancels what the collection itself holds.
+ * The counters are global to the worker, so the spec counts the difference —
+ * `2N` items against `N`: for a collection it cancels what the collection
+ * itself holds, and for a bare item whatever is created once, with the first
+ * instance.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -44,29 +51,52 @@ import {
 	createEngineTable,
 } from '@soldy-ui/core'
 
-/** Items per measurement; the larger collection holds twice as many. */
+/** Items per measurement; the larger set of items holds twice as many. */
 const COUNT = 200
 
-/** Live buses and emitters right now. */
-function census(): { buses: number; emitters: number } {
+/** What the census counts. */
+type TCensus = { buses: number; emitters: number; maps: number; sets: number }
+
+/** Live buses, emitters, maps and sets right now. */
+function census(): TCensus {
 	return {
 		buses: queryObjects(TEvented, { format: 'count' }),
 		emitters: queryObjects(TEventEmitter, { format: 'count' }),
+		maps: queryObjects(Map, { format: 'count' }),
+		sets: queryObjects(Set, { format: 'count' }),
 	}
 }
 
 /**
- * How many buses and emitters `build` adds while what it returns is alive.
- * The result is held until after the second count.
+ * How many buses, emitters, maps and sets `build` adds while what it returns
+ * is alive. The result is held until after the second count.
  */
-function added(build: () => unknown): { buses: number; emitters: number } {
+function added(build: () => unknown): TCensus {
 	const before = census()
 	const held = build()
 	const after = census()
 
 	expect(held).toBeDefined()
 
-	return { buses: after.buses - before.buses, emitters: after.emitters - before.emitters }
+	return {
+		buses: after.buses - before.buses,
+		emitters: after.emitters - before.emitters,
+		maps: after.maps - before.maps,
+		sets: after.sets - before.sets,
+	}
+}
+
+/** What `2N` items add over `N`: the price of `N` items. */
+function perCount(build: (count: number) => unknown): TCensus {
+	const once = added(() => build(COUNT))
+	const twice = added(() => build(2 * COUNT))
+
+	return {
+		buses: twice.buses - once.buses,
+		emitters: twice.emitters - once.emitters,
+		maps: twice.maps - once.maps,
+		sets: twice.sets - once.sets,
+	}
 }
 
 /** A bare item: created outside any collection. */
@@ -80,10 +110,17 @@ const bareCases: TBareCase[] = [
 
 describe.each(bareCases)('$name · голый элемент', ({ create }) => {
 	it('одна шина — своя, и ни одного эмиттера', () => {
-		const { buses, emitters } = added(() => Array.from({ length: COUNT }, create))
+		const { buses, emitters } = perCount((count) => Array.from({ length: count }, create))
 
 		expect(buses).toBe(COUNT)
 		expect(emitters).toBe(0)
+	})
+
+	it('ни одной карты и ни одного множества: наборы держат записи массивами', () => {
+		const { maps, sets } = perCount((count) => Array.from({ length: count }, create))
+
+		expect(maps).toBe(0)
+		expect(sets).toBe(0)
 	})
 })
 
@@ -123,11 +160,17 @@ const cases: TCase[] = [
 
 describe.each(cases)('$name · элемент, который ни разу не рисовался', ({ fill }) => {
 	it('на элемент — одна шина и не больше одного эмиттера', () => {
-		const once = added(() => fill(COUNT))
-		const twice = added(() => fill(2 * COUNT))
+		const { buses, emitters } = perCount(fill)
 
-		expect(twice.buses - once.buses).toBe(COUNT)
-		expect(twice.emitters - once.emitters).toBeLessThanOrEqual(COUNT)
+		expect(buses).toBe(COUNT)
+		expect(emitters).toBeLessThanOrEqual(COUNT)
+	})
+
+	it('ни одной карты и ни одного множества на элемент', () => {
+		const { maps, sets } = perCount(fill)
+
+		expect(maps).toBe(0)
+		expect(sets).toBe(0)
 	})
 })
 
@@ -154,6 +197,13 @@ describe('Select · опция, которая ни разу не рисовал
 
 		expect(twice.buses - once.buses).toBe(COUNT)
 		expect(twice.emitters - once.emitters).toBe(0)
+	})
+
+	it('ни одной карты и ни одного множества на опцию', () => {
+		const { maps, sets } = perCount((count) => fillSelect(count))
+
+		expect(maps).toBe(0)
+		expect(sets).toBe(0)
 	})
 
 	/** The same list with one option selected, against none: what that option adds. */
