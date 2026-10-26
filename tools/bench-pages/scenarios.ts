@@ -10,20 +10,20 @@
  */
 export type TScenario = (scope: HTMLElement, act: number) => Promise<number>
 
-function frame(): Promise<void> {
+export function frame(): Promise<void> {
 	return new Promise((resolve) => requestAnimationFrame(() => resolve()))
 }
 
-async function frames(count = 2): Promise<void> {
+export async function frames(count = 2): Promise<void> {
 	for (let index = 0; index < count; index++) await frame()
 }
 
-function wait(ms: number): Promise<void> {
+export function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /** Событие указателя в центре узла. */
-function pointer(element: Element, type: string, at = 0.5): void {
+export function pointer(element: Element, type: string, at = 0.5): void {
 	const box = element.getBoundingClientRect()
 	const init: PointerEventInit = {
 		bubbles: true,
@@ -44,7 +44,7 @@ function pointer(element: Element, type: string, at = 0.5): void {
 }
 
 /** Нажатие мышью: указатель, фокус и клик, как у настоящего нажатия. */
-async function press(element: Element | null | undefined, at = 0.5): Promise<number> {
+export async function press(element: Element | null | undefined, at = 0.5): Promise<number> {
 	if (!(element instanceof HTMLElement)) return 0
 
 	pointer(element, 'pointerdown', at)
@@ -59,7 +59,7 @@ async function press(element: Element | null | undefined, at = 0.5): Promise<num
 }
 
 /** Клавиша на узле: `keydown` и `keyup`. */
-async function key(element: Element | null | undefined, name: string): Promise<number> {
+export async function key(element: Element | null | undefined, name: string): Promise<number> {
 	if (!element) return 0
 
 	const init: KeyboardEventInit = { key: name, bubbles: true, cancelable: true, composed: true }
@@ -75,14 +75,14 @@ async function key(element: Element | null | undefined, name: string): Promise<n
  * Escape — узлу под фокусом, как с клавиатуры. Фокус ушёл из открытой панели
  * — самой панели: Escape слушает слой, а не документ.
  */
-function escape(panel?: HTMLElement | null): Promise<number> {
+export function escape(panel?: HTMLElement | null): Promise<number> {
 	const focused = document.activeElement
 
 	return key(panel && !panel.contains(focused) ? panel : (focused ?? document.body), 'Escape')
 }
 
 /** Набор в поле: фокус и вставка текста, потом уход фокуса. */
-async function type(element: Element | null | undefined, text: string): Promise<number> {
+export async function type(element: Element | null | undefined, text: string): Promise<number> {
 	if (!(element instanceof HTMLElement)) return 0
 
 	element.focus({ preventScroll: true })
@@ -94,7 +94,7 @@ async function type(element: Element | null | undefined, text: string): Promise<
 }
 
 /** Первые `act` узлов по селектору — у каждой копии свой. */
-function first<T extends Element = HTMLElement>(
+export function first<T extends Element = HTMLElement>(
 	scope: Element,
 	selector: string,
 	act: number,
@@ -103,26 +103,26 @@ function first<T extends Element = HTMLElement>(
 }
 
 /** Открытая панель слоя по классу — их телепортирует слой в конец документа. */
-function open(selector: string): HTMLElement | null {
+export function open(selector: string): HTMLElement | null {
 	return document.querySelector<HTMLElement>(`${selector}[data-open="true"]`)
 }
 
 /** Нажать кнопку с подписью внутри узла. */
-function button(scope: Element, text: string): HTMLElement | undefined {
+export function button(scope: Element, text: string): HTMLElement | undefined {
 	return [...scope.querySelectorAll<HTMLElement>('.so-button')].find(
 		(node) => node.textContent?.trim() === text,
 	)
 }
 
 /** Первые `act` кнопок с подписью — по кнопке у каждой копии. */
-function labelled(scope: Element, text: string, act: number): HTMLElement[] {
+export function labelled(scope: Element, text: string, act: number): HTMLElement[] {
 	return [...scope.querySelectorAll<HTMLElement>('.so-button')]
 		.filter((node) => node.textContent?.trim() === text)
 		.slice(0, act)
 }
 
 /** Сценарий на каждую из `act` копий: сумма действий. */
-function each(selector: string, run: (copy: HTMLElement) => Promise<number>): TScenario {
+export function each(selector: string, run: (copy: HTMLElement) => Promise<number>): TScenario {
 	return async (scope, act) => {
 		let done = 0
 
@@ -133,7 +133,7 @@ function each(selector: string, run: (copy: HTMLElement) => Promise<number>): TS
 }
 
 /** Открыть оверлей кнопкой, сделать внутри и закрыть Escape. */
-async function overlay(
+export async function overlay(
 	opener: Element | null | undefined,
 	panel: string,
 	inside?: (node: HTMLElement) => Promise<number>,

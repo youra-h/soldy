@@ -1,0 +1,32 @@
+{
+  // The Angular program of `angular.html` and of the Angular size entries —
+  // compiled by the Angular plugin of the developer stand (`vite.config.ts`):
+  // the page, the libraries' components and, through `paths`, the adapter and
+  // its neighbors from sources. Angular and rxjs are the stand's single copy,
+  // as in the build (`dedupe`).
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [],
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "paths": {
+      "@soldy-ui/core": ["../../packages/core/src"],
+      "@soldy-ui/plugins": ["../../packages/plugins/src"],
+      "@soldy-ui/setup": ["../../packages/setup/index.ts"],
+      "@soldy-ui/angular": ["../../packages/ui/angular/src/index.ts"],
+      "@soldy-ui/icons-material": ["../../packages/icons/material/src"],
+      "@soldy-ui/theme-oren/setup": ["../../packages/themes/oren/setup/index.ts"],
+      "@soldy-ui/theme-base/setup": ["../../packages/themes/base/setup/index.ts"],
+      "@angular/*": ["./node_modules/@angular/*"],
+      "rxjs": ["./node_modules/rxjs"],
+      "rxjs/*": ["./node_modules/rxjs/*"]
+    }
+  },
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "include": ["angular.ts", "libs/angular/**/*.ts", "size/angular/**/*.ts"]
+}
