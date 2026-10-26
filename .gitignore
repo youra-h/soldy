@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-ssr/
 dist-prof/
+dist-size/
 lib/
 coverage/
 *.tsbuildinfo
@@ -31,3 +32,7 @@ test-results/
 # до подмены, `restore` возвращает из неё оба файла и убирает каталог
 # (docs/agents/build.md, «Версии пакетов»).
 .min-peers/
+
+# Size entries of the comparison stand: `tools/bench-compare/size.mjs` writes
+# them before every size build.
+tools/bench-compare/size/

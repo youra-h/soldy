@@ -94,14 +94,17 @@ function place(): HTMLElement {
  * шум самого замера; `leak` — кнопки с подставной утечкой. Отдаёт время
  * монтирования, мс: от вызова хоста до второго кадра, к которому плагины
  * получили узлы.
+ *
+ * `only` narrows `all` to the listed components — the ones a neighbor library
+ * has too (`tools/bench-compare`).
  */
-async function mount(page: string, count: number): Promise<number> {
+async function mount(page: string, count: number, only?: string[]): Promise<number> {
 	if (mounted.length) throw new Error('[bench-pages] страница уже стоит')
 
 	const start = performance.now()
 
 	if (page === 'all') {
-		mounted = pages.map((id) =>
+		mounted = (only ?? pages).map((id) =>
 			host.mount(place(), { component: id, props: previewProps(id), count: 1 }),
 		)
 	} else {
@@ -141,8 +144,8 @@ async function unmount(): Promise<void> {
 }
 
 /** Сценарий страницы: действия на её копиях. `all` — сценарии всех компонентов по очереди. */
-async function scenario(page: string, act: number): Promise<number> {
-	const ids = page === 'all' ? pages : [page === 'leak' ? 'button' : page]
+async function scenario(page: string, act: number, only?: string[]): Promise<number> {
+	const ids = page === 'all' ? (only ?? pages) : [page === 'leak' ? 'button' : page]
 
 	if (page === 'empty') return 0
 	let done = 0
