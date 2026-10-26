@@ -1,3 +1,6 @@
+import '@soldy-ui/webc/button'
+import '@soldy-ui/webc/dialog'
+import '@soldy-ui/webc/input'
 import { h, slotted, so } from '../dom'
 
 function closing(text: string): HTMLElement {

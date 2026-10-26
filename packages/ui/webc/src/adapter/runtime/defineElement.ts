@@ -6,6 +6,10 @@
  * микрозадач оживления. AGENTS.md (Web Components), «Регистрация и полифил».
  */
 
+// First: the polyfill of built-ins (Safari) replaces `customElements.define`
+// and the native classes, so it comes before any registration — the locale
+// provider registers without the element base
+import '@ungap/custom-elements'
 import { TPlaceContext } from '../context'
 import { TDeferral } from './deferral'
 

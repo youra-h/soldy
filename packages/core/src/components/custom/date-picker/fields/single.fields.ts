@@ -13,7 +13,7 @@ export class TSingleFields implements IDatePickerFields {
 	private readonly _field: IDateInput
 
 	constructor(set: TDatePickerFieldSet) {
-		this._field = set.field
+		this._field = set.field()
 	}
 
 	includes(input: IDateInput): boolean {

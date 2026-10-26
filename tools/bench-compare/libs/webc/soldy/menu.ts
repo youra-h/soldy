@@ -1,3 +1,6 @@
+import '@soldy-ui/webc/button'
+import '@soldy-ui/webc/calendar'
+import '@soldy-ui/webc/menu'
 import { h, slotted, so } from '../dom'
 
 const part = (is: string, props: Record<string, unknown> = {}, children: Node[] = []) =>

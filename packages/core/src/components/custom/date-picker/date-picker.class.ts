@@ -20,11 +20,16 @@ import type {
 	TCalendarValue,
 } from '../calendar'
 import { TDateInput } from '../date-input'
-import type { IDateInput } from '../date-input'
+import type { IDateInput, IDateInputProps } from '../date-input'
 import { TConfirmCommit, TInstantCommit } from './commit'
 import type { IDatePickerCommit, IDatePickerCommitHost } from './commit'
 import { TRangeFields, TSingleFields } from './fields'
-import type { IDatePickerFields, TDatePickerFieldSet, TDatePickerFieldsMap } from './fields'
+import type {
+	IDatePickerFields,
+	TDatePickerFieldRole,
+	TDatePickerFieldSet,
+	TDatePickerFieldsMap,
+} from './fields'
 import type {
 	IDatePicker,
 	IDatePickerProps,
@@ -49,79 +54,93 @@ function commitOf(confirmable: boolean, host: IDatePickerCommitHost): IDatePicke
 }
 
 /**
- * Поле даты и календарь в панели, как Select — поле и список.
+ * A date field and a calendar in a panel, as Select is a field and a list.
  *
- * **Экземпляры — на всю жизнь DatePicker.** Поля (`field` — одна дата,
- * `start` и `end` — концы диапазона), календарь и движок его коллекции
- * создаёт он сам и отдаёт разметке целиком, как Select — `field`, а расширение
- * `picker` календаря — ListBox панели месяцев. Подписки на них прямые. Движок
- * DatePicker держит, потому что зовёт команды его расширений и слушает их:
- * открытие ставит фокус сетки на старт (`resetFocus`), закрытие снимает
- * начатый диапазон (`cancelRange`), выбор пользователя (`choose`) закрывает
- * панель, а якорь выключает «OK» (`confirmDisabled`).
+ * **The instances are the picker's for its whole life, each built when first
+ * needed.** The fields (`field` — the single date, `start` and `end` — the
+ * range ends), the calendar and its collection's engine are the picker's own,
+ * and the markup hands them to components whole, as Select hands over its
+ * `field` and the calendar's `picker` extension the ListBox of the month
+ * panel. Subscriptions to them are direct. The calendar and the engine exist
+ * from the start. A field is created when its mode needs it — the mode's
+ * strategy takes it — or when its getter is read, and it stays: a mode coming
+ * back gets the same instance, and a single date holds no range ends. The
+ * calendar becomes the engine's owner when the picker first gives the
+ * collection work — on opening and on a mode change (`_bindCalendar`): the
+ * days and the month pickers are built for the owner only, so a closed picker
+ * nobody opened is a field with a button in memory too. The picker holds the
+ * engine because it calls its extensions' commands and listens to them:
+ * opening puts the grid's focus on the start (`resetFocus`), closing drops a
+ * begun range (`cancelRange`), the user's choice (`choose`) closes the panel,
+ * and the anchor disables «OK» (`confirmDisabled`).
  *
- * **Общее — вниз, от ядра.** `disabled`, `size`, `variant`, `locale`, `min`,
- * `max` и `unavailable` DatePicker отдаёт полям и календарю, `readonly`,
- * `required`, `invalid` и `validate` — полям, `weekStart` и `timeZone` —
- * календарю, `name` — полю одной даты, `startName` и `endName` — полям концов,
- * режим — выбору коллекции. Разметка эти значения не пробрасывает: второй путь
- * к тем же данным разошёлся бы с первым. Строк библиотеки DatePicker не строит
- * и вниз не раздаёт: имя кнопки календаря (оно же имя панели) в наборы
- * `triggerAria` и `panelAria`, имя кнопки очистки в `clearAria` и имена полей
- * концов диапазона даёт его плагин имён (`TDatePickerNamesPlugin`), а поля и
- * календарь, смонтированные своими компонентами, получают имена от своих
- * плагинов имён, как поле Select.
+ * **Shared state goes down, from the core.** `disabled`, `size`, `variant`,
+ * `locale`, `min`, `max` and `unavailable` go to the fields and the calendar,
+ * `readonly`, `required`, `invalid` and `validate` — to the fields, `weekStart`
+ * and `timeZone` — to the calendar, `name` — to the single date's field,
+ * `startName` and `endName` — to the range ends, the mode — to the collection's
+ * selection. A field created later gets all of it as it is by then. The markup
+ * does not pass these values on: a second path to the same data would part
+ * from the first. The picker builds no library strings and hands none down:
+ * the name of the calendar button (the panel's name too) in `triggerAria` and
+ * `panelAria`, the name of the clear button in `clearAria` and the names of the
+ * range ends come from its names plugin (`TDatePickerNamesPlugin`), and the
+ * fields and the calendar, mounted by their own components, get names from
+ * their own names plugins, as Select's field does.
  *
- * **Поле помечает ошибкой то, что не даст выбрать календарь**, и набранное не
- * прижимает: дату вне границ и недоступную, а конец диапазона — ещё и раньше
- * начала. Конец сверяется с набранным началом, как второй день в календаре —
- * с якорем: начало — его `min`, а правило недоступности он получает с якорем
- * «начало». Сменились начало, правило или границы — сверка конца пересобрана.
+ * **A field marks as an error what the calendar would not let choose**, and
+ * does not clamp what was typed: a date out of bounds or unavailable, and the
+ * range end — also one earlier than the start. The end is checked against the
+ * typed start, as the second day in the calendar is against the anchor: the
+ * start is its `min`, and it gets the unavailability rule with the anchor
+ * «start». The start, the rule or the bounds changed — the end's check is
+ * rebuilt.
  *
- * **Значение одно, сторон две** — календарь и поля режима (`IDatePickerFields`,
- * стратегия на режим, как выбор у календаря). Своё значение уходит на обе
- * стороны, правка одной — через него на другую. В сторону-источник оно не
- * возвращается: недонабранный конец диапазона значения не даёт, но и
- * набранного не стирает. Отменили или поправили запись в
- * `change:value:before` — источник получает обратно то, что принято. Дат
- * DatePicker не считает: старт фокуса, выбор, предпросмотр и форма значения по
- * режиму — расширения календаря.
+ * **One value, two sides** — the calendar and the mode's fields
+ * (`IDatePickerFields`, a strategy per mode, like the calendar's selection).
+ * The own value goes to both sides, an edit of one reaches the other through
+ * it. It does not return to the side it came from: a range end typed halfway
+ * gives no value, but does not erase what was typed either. A write cancelled
+ * or corrected in `change:value:before` — the source gets back what was
+ * accepted. The picker counts no dates: the focus start, the choice, the
+ * preview and the value's form per mode are the calendar's extensions.
  *
- * **Открытость — как у Select:** `open`, `toggleOpen()`, `openable` (не
- * `disabled` и не `readonly`), события `open` и `close`, `data-open`. Открывают
- * панель кнопка календаря и Alt+↓ на поле — плагин; ввод в поле её не
- * открывает. Выбор закрывает её при `closeOnSelect` — в диапазоне второй день,
- * — если его не подтверждают кнопкой.
+ * **Openness — as Select's:** `open`, `toggleOpen()`, `openable` (neither
+ * `disabled` nor `readonly`), events `open` and `close`, `data-open`. The
+ * calendar button and Alt+↓ on the field open the panel — a plugin; typing into
+ * the field does not. A choice closes it with `closeOnSelect` — in a range the
+ * second day, — unless choices are confirmed with a button.
  *
- * **Выбор подтверждают кнопкой, если `confirmable`.** Когда правка календаря
- * становится значением, решает политика фиксации (`commit/`, стратегия, её
- * меняет сеттер `confirmable`): сразу — по умолчанию — или по «OK». По «OK»
- * выбор в календаре — черновик, и хранит его сам календарь: второй копии
- * значения нет. `confirm()` переносит его в значение и закрывает панель,
- * любое другое закрытие возвращает календарю значение DatePicker. Пока
- * диапазон выбран наполовину, «OK» выключена (`confirmDisabled`).
+ * **A choice is confirmed with a button if `confirmable`.** When an edit of the
+ * calendar becomes the value is decided by the commit policy (`commit/`, a
+ * strategy the `confirmable` setter changes): at once — by default — or on
+ * «OK». On «OK» the choice in the calendar is a draft, and the calendar itself
+ * keeps it: there is no second copy of the value. `confirm()` moves it into the
+ * value and closes the panel, any other closing gives the calendar the picker's
+ * value back. While a range is half chosen, «OK» is disabled
+ * (`confirmDisabled`).
  *
- * **Кнопка очистки — DatePicker как поле** (база `TClearable`, третья форма поля
- * рядом с Input и DateInput): `clearable`, набор кнопки `clearAria` и команда
- * `clear`. Кнопка одна на значение: у диапазона — одна на период, а не по
- * кнопке у конца, как одна у него рамка и одна кнопка календаря. Полям
- * `clearable` не уходит: очищает DatePicker весь свой режим, у диапазона —
- * оба конца, и набранные не до конца, у которых значения нет. Поэтому и
- * событие `clear` у DatePicker одно на оба режима.
+ * **The clear button — the picker as a field** (base `TClearable`, the third
+ * form of a field next to Input and DateInput): `clearable`, the button's set
+ * `clearAria` and the command `clear`. One button per value: a range has one
+ * for the period, not a button per end, as it has one frame and one calendar
+ * button. `clearable` does not go to the fields: the picker clears its whole
+ * mode — both ends of a range, those typed halfway too, which have no value.
+ * Hence the picker's `clear` event is one for both modes.
  *
- * Паттерн доступности — APG Date Picker Dialog: поле и отдельная кнопка, у
- * панели `role="dialog"` и `aria-modal`. У одной даты группа частей — само
- * поле, у диапазона — корень (`rootAria`) с полями концов внутри. Модификатор
- * режима (`--single`, `--range`) — для темы: коробку диапазона она строит на
- * корне.
+ * The accessibility pattern is APG Date Picker Dialog: a field and a separate
+ * button, the panel has `role="dialog"` and `aria-modal`. For a single date the
+ * group of parts is the field itself, for a range — the root (`rootAria`) with
+ * the ends' fields inside. The mode modifier (`--single`, `--range`) is for the
+ * theme: it builds the range's box on the root.
  *
- * **Жест** (`swipe`, по умолчанию выключен) — смахнуть панель, чтобы закрыть:
- * DatePicker — смахиваемый слой (`ISwipeable`), как Select. Панель уходит от
- * поля — вниз, если стоит под ним, и вверх, если над ним; сторону решает flip
- * плагина якоря, поэтому `swipeSide` — всегда `null`. Признак «тянут»
- * (`swiping`) панель получает набором `panelDataset`, рядом с `panelAria`.
- * Закрывает жест записью `open`, как Escape, и фокус возвращается туда, откуда
- * открыли.
+ * **Swipe** (`swipe`, off by default) — swipe the panel away to close it: the
+ * picker is a swipeable layer (`ISwipeable`), as Select. The panel leaves away
+ * from the field — down if it stands below it, up if above; the anchor
+ * plugin's flip decides the side, so `swipeSide` is always `null`. The panel
+ * gets the «being dragged» sign (`swiping`) in the `panelDataset` set, next to
+ * `panelAria`. The swipe closes by writing `open`, as Escape, and the focus
+ * returns where the panel was opened from.
  */
 export class TDatePicker
 	extends TClearable<TDatePickerValue, IDatePickerProps, TDatePickerEvents>
@@ -180,16 +199,40 @@ export class TDatePicker
 	protected _endName: string
 	protected _swipe: TSwipe
 	protected _swiping = false
-	protected readonly _field: IDateInput
-	protected readonly _start: IDateInput
-	protected readonly _end: IDateInput
+	/** The single date's field — until its mode or its getter needs it, there is none */
+	protected _field: IDateInput | undefined = undefined
+	/** The range start's field — created with the range or by its getter */
+	protected _start: IDateInput | undefined = undefined
+	/** The range end's field — created with the range or by its getter */
+	protected _end: IDateInput | undefined = undefined
 	protected readonly _calendar: ICalendar
 	protected readonly _engine: TCalendarCollection
 	protected readonly _triggerAria: TAria
 	protected readonly _panelAria: TAria
-	/** Поля — одной даты и концов: всем им DatePicker отдаёт общее */
-	private readonly _inputs: readonly IDateInput[]
-	private readonly _fieldSet: TDatePickerFieldSet
+	/** The fields created so far — the single date's and the ends': the shared state goes to them */
+	private readonly _inputs: IDateInput[] = []
+	/**
+	 * The fields by role: a field is created on its first call and kept. The
+	 * mode's strategy takes its own; the start re-checks the end before the
+	 * sides hear its edit (`_listenStart`).
+	 */
+	private readonly _fieldSet: TDatePickerFieldSet = {
+		field: () => (this._field ??= this._adopt(this._createField('field'))),
+		start: () => (this._start ??= this._adopt(this._listenStart(this._createField('start')))),
+		end: () => (this._end ??= this._adopt(this._createField('end'))),
+	}
+	/**
+	 * What a field of each role gets on top of the shared state: its name in a
+	 * form, and the end — `min` and the rule from the start, as `_syncEnd` keeps
+	 * them.
+	 */
+	private readonly _roleProps: Readonly<
+		Record<TDatePickerFieldRole, () => Partial<IDateInputProps>>
+	> = {
+		field: () => ({ name: this.name, unavailable: this._unavailable }),
+		start: () => ({ name: this._startName, unavailable: this._unavailable }),
+		end: () => ({ name: this._endName, min: this._endMin(), unavailable: this._endRule() }),
+	}
 	/** Поля режима: из каких полей собирается значение */
 	private _fields: IDatePickerFields
 	/** Сторона, откуда пришло значение, которое сейчас пишется: в неё оно не вернётся */
@@ -237,48 +280,32 @@ export class TDatePicker
 		this._endName = props.endName ?? ctor.defaultValues.endName
 		this._swipe = props.swipe ?? ctor.defaultValues.swipe
 
-		// Общее полям и календарю — с самого начала, конструктором
-		const shared = {
+		// The fields of the mode — its strategy creates them from the shared state
+		// (`_createField`); the other mode's fields wait for it
+		this._fields = new FIELDS[this._mode](this._fieldSet)
+
+		// The calendar has no value yet: the selection mode is set earlier, and
+		// the value is not rewritten into its form but goes to the calendar as is
+		this._calendar = new TCalendar({
 			disabled: this.disabled,
 			size: this.size,
 			variant: this.variant,
 			locale: this._locale,
 			min: this._min,
 			max: this._max,
-		}
-		const input = {
-			...shared,
-			readonly: this.readonly,
-			required: this.required,
-			validate: this._validate,
-		}
-		// Правило недоступности — полю одной даты и началу как есть; концу — с
-		// якорем «начало», когда начало разложено (`_syncEnd`)
-		const ruled = { ...input, unavailable: this._unavailable }
-
-		this._field = new TDateInput({ ...ruled, name: this.name })
-		this._start = new TDateInput({ ...ruled, name: this._startName })
-		this._end = new TDateInput({ ...input, name: this._endName })
-		this._inputs = [this._field, this._start, this._end]
-		this._fieldSet = { field: this._field, start: this._start, end: this._end }
-		this._fields = new FIELDS[this._mode](this._fieldSet)
-
-		// Календарь — без значения: режим выбора ставится раньше, и значение не
-		// переписывается в его форму, а уходит календарю как есть
-		this._calendar = new TCalendar({
-			...shared,
 			unavailable: this._unavailable,
 			weekStart: this._weekStart,
 			timeZone: this._timeZone,
 		})
-		this._engine = createEngineCalendar({ owner: this._calendar })
+		// Without an owner: the calendar goes into the engine when the picker
+		// first gives the collection work (`_bindCalendar`)
+		this._engine = createEngineCalendar()
 		this._engine.extensions.selection.mode = this._mode
 		this._classes.add(`--${this._mode}`)
 
+		// The end is checked against the start as the fields are laid out: the
+		// start re-checks it on its own edit (`_listenStart`)
 		for (const side of SIDES) this._write(side)
-
-		// Конец — от начала, которое только что разложено
-		this._syncEnd()
 
 		// Набор кнопки: `dialog`, а не `true` — `true` у ARIA значит `menu`
 		this._triggerAria = new TAria()
@@ -298,9 +325,7 @@ export class TDatePicker
 		this._applyOpen(props.open ?? ctor.defaultValues.open)
 
 		this._listenOwn()
-		// Раньше сторон: к `change:value` DatePicker конец уже сверен с новым началом
-		this._listenStart()
-		this._listenSides()
+		this._listenCalendar()
 		this._listenChoice()
 		this._syncOpenable()
 	}
@@ -309,16 +334,23 @@ export class TDatePicker
 	/* Экземпляры                                                         */
 	/* ------------------------------------------------------------------ */
 
+	/**
+	 * The single date's field. Reading creates it, if the single mode has not
+	 * yet: the field is the picker's either way, and a DateInput given no
+	 * `ctrl` would build its own.
+	 */
 	get field(): IDateInput {
-		return this._field
+		return this._fieldSet.field()
 	}
 
+	/** The range start's field — created by the range or on first read, as `field`. */
 	get start(): IDateInput {
-		return this._start
+		return this._fieldSet.start()
 	}
 
+	/** The range end's field — created by the range or on first read, as `field`. */
 	get end(): IDateInput {
-		return this._end
+		return this._fieldSet.end()
 	}
 
 	get calendar(): ICalendar {
@@ -338,12 +370,15 @@ export class TDatePicker
 	}
 
 	/**
-	 * Поля — нового режима, значение — в его форме. Форму пишет выбор
-	 * коллекции: он переписывает значение календаря, и DatePicker берёт его
-	 * оттуда при любой политике фиксации — по «OK» правка календаря значением
-	 * сама не становится. Черновик сбрасывается раньше: форму нового режима
-	 * получает значение DatePicker, а не начатый выбор. Значение уже в форме
-	 * режима — раскладывается по полям нового режима здесь.
+	 * The fields of the new mode — its strategy creates them on the first
+	 * switch, — and the value in its form. The form is written by the
+	 * collection's selection: it rewrites the calendar's value, and the picker
+	 * takes it from there under any commit policy — on «OK» an edit of the
+	 * calendar does not become the value by itself. So the calendar goes into
+	 * the engine first (`_bindCalendar`): without an owner the selection has
+	 * nowhere to write. The draft is reset earlier still: the new mode's form
+	 * is given to the picker's value, not to a begun choice. A value already in
+	 * the mode's form is laid out over the new mode's fields here.
 	 */
 	set mode(value: TDatePickerMode) {
 		if (this._mode === value) return
@@ -352,6 +387,7 @@ export class TDatePicker
 		this._mode = value
 		this._fields = new FIELDS[value](this._fieldSet)
 		this._write('calendar')
+		this._bindCalendar()
 		this._engine.extensions.selection.mode = value
 		this._acceptCalendar()
 		this._write('fields')
@@ -390,9 +426,9 @@ export class TDatePicker
 	 * Whether the panel's calendar is mounted: from the first opening on. A
 	 * closed picker nobody opened is a field with a button — a month of days
 	 * built for every date field of a form would outweigh the form itself. The
-	 * calendar's instance and engine are the picker's and live regardless;
-	 * only its markup waits. Closing does not unmount it: openness is the
-	 * panel's `visible`, not `rendered`.
+	 * same opening gives the engine its calendar (`_bindCalendar`), so such a
+	 * picker holds no days in the core either. Closing does not unmount the
+	 * calendar: openness is the panel's `visible`, not `rendered`.
 	 */
 	get contentRendered(): boolean {
 		return this._opened
@@ -471,8 +507,7 @@ export class TDatePicker
 		if (this._min === value) return
 
 		this._min = value
-		this._field.min = value
-		this._start.min = value
+		this._unanchored.forEach((input) => (input.min = value))
 		this._syncEndMin()
 		this._calendar.min = value
 		this.events.emit('change:min', value)
@@ -505,8 +540,7 @@ export class TDatePicker
 		if (this._unavailable === value) return
 
 		this._unavailable = value
-		this._field.unavailable = value
-		this._start.unavailable = value
+		this._unanchored.forEach((input) => (input.unavailable = value))
 		this._syncEndRule()
 		this._calendar.unavailable = value
 		this.events.emit('change:unavailable', value)
@@ -578,7 +612,7 @@ export class TDatePicker
 		if (this._startName === value) return
 
 		this._startName = value
-		this._start.name = value
+		if (this._start) this._start.name = value
 		this.events.emit('change:startName', value)
 	}
 
@@ -591,7 +625,7 @@ export class TDatePicker
 		if (this._endName === value) return
 
 		this._endName = value
-		this._end.name = value
+		if (this._end) this._end.name = value
 		this.events.emit('change:endName', value)
 	}
 
@@ -760,7 +794,12 @@ export class TDatePicker
 	protected _applyOpen(value: boolean): void {
 		this._open = value
 
-		if (value) this._opened = true
+		if (value) {
+			this._opened = true
+			// On every opening: the focus start needs the calendar in the engine,
+			// and an unmounted Calendar may have released it since the last one
+			this._bindCalendar()
+		}
 
 		// Закрытую панель не тянут: жест кончается вместе с ней
 		if (!value) this._setSwiping(false)
@@ -781,6 +820,71 @@ export class TDatePicker
 
 		this._swiping = value
 		this.events.emit('change:swiping', value)
+	}
+
+	/**
+	 * The calendar into the engine — when the picker gives its collection work:
+	 * opening (the grid's focus starts on the chosen date) and a mode change (the
+	 * selection writes the value in the new mode's form). The days and the month
+	 * pickers are built for the owner only (`view` and `picker` watch it), so a
+	 * closed picker nobody opened holds none. The same owner wakes no watcher, a
+	 * mounted Calendar binds the same one, and closing does not release it.
+	 * Until then the rest lives without it: the value is the calendar's, the
+	 * mode and the anchor are the selection's, and `cancelRange` and
+	 * `confirmDisabled` have no anchor to see.
+	 */
+	private _bindCalendar(): void {
+		this._engine.options.set({ owner: this._calendar })
+	}
+
+	/**
+	 * A field of the role from the picker's current state — one place for every
+	 * role: the shared state, the role's own (`_roleProps`) and the form field's
+	 * error. A field created after the picker gets the same as one created with
+	 * it.
+	 */
+	private _createField(role: TDatePickerFieldRole): IDateInput {
+		const input = new TDateInput({
+			disabled: this.disabled,
+			size: this.size,
+			variant: this.variant,
+			locale: this._locale,
+			min: this._min,
+			max: this._max,
+			readonly: this.readonly,
+			required: this.required,
+			validate: this._validate,
+			...this._roleProps[role](),
+		})
+
+		// An instance property, not a prop: written as `change:invalid` writes it
+		input.invalid = this.invalid
+
+		return input
+	}
+
+	/**
+	 * A created field joins the picker: the shared state goes to it from now on,
+	 * and an edit in it becomes the value while it is a field of the mode.
+	 */
+	private _adopt(input: IDateInput): IDateInput {
+		this._inputs.push(input)
+
+		input.events.on('change:value', () => {
+			if (this._writing !== 'fields' && this._fields.includes(input)) {
+				this._accept('fields', this._fields.compose())
+			}
+		})
+
+		return input
+	}
+
+	/**
+	 * The created fields that take `min` and the rule as they are — the single
+	 * date's and the range start. The end takes them with the start (`_syncEnd`).
+	 */
+	private get _unanchored(): IDateInput[] {
+		return [this._field, this._start].filter((input) => input !== undefined)
 	}
 
 	/** Свои свойства из базы — полям и календарю. */
@@ -816,12 +920,20 @@ export class TDatePicker
 				this._calendar.variant = payload.newValue
 			},
 		)
-		this.events.on('change:name', (value: string) => (this._field.name = value))
+		this.events.on('change:name', (value: string) => {
+			if (this._field) this._field.name = value
+		})
 	}
 
-	/** Начало сменилось — конец сверяется с ним заново. */
-	private _listenStart(): void {
-		this._start.events.on('change:value', () => this._syncEnd())
+	/**
+	 * The start changed — the end is checked against it anew. Subscribed before
+	 * the sides (`_adopt`): by the picker's `change:value` the end is already
+	 * checked against the new start.
+	 */
+	private _listenStart(start: IDateInput): IDateInput {
+		start.events.on('change:value', () => this._syncEnd())
+
+		return start
 	}
 
 	/**
@@ -834,51 +946,53 @@ export class TDatePicker
 		this._syncEndRule()
 	}
 
-	/**
-	 * `min` конца — начало, когда оно позже `min` DatePicker и не за `max`.
-	 * Начало за `max` конец не поднимает: граница раньше `min` у поля
-	 * схлопывается в `min`, и конец, равный такому началу, прошёл бы проверку,
-	 * оставаясь за `max`. Ошибку тогда показывает начало, а конец сверяется со
-	 * своими границами.
-	 */
+	/** `min` of the end from the start (`_endMin`) — if there is an end. */
 	private _syncEndMin(): void {
-		this._end.min = endMinOf(this._min, this._max, this._startDate)
+		if (this._end) this._end.min = this._endMin()
+	}
+
+	/** The end's rule against the start (`_endRule`) — if there is an end. */
+	private _syncEndRule(): void {
+		if (this._end) this._end.unavailable = this._endRule()
 	}
 
 	/**
-	 * Правило конца — правило DatePicker с якорем «начало»: так «не дольше N
-	 * ночей» и «не через занятые дни» проверяются и у набранного конца.
-	 * Пересобирается на смену правила и начала — новая функция, и поле
-	 * пересчитывает ошибку.
+	 * `min` of the end — the start, when it is later than the picker's `min` and
+	 * not past `max`. A start past `max` does not raise the end: a bound earlier
+	 * than `min` collapses into `min` at the field, and an end equal to such a
+	 * start would pass the check while staying past `max`. The start shows the
+	 * error then, and the end is checked against its own bounds.
 	 */
-	private _syncEndRule(): void {
+	private _endMin(): TCalendarDate | undefined {
+		return endMinOf(this._min, this._max, this._startDate)
+	}
+
+	/**
+	 * The end's rule — the picker's rule with the anchor «start»: so «no longer
+	 * than N nights» and «not through booked days» are checked at a typed end
+	 * too. A new function on every call: the end gets one on a change of the
+	 * rule and of the start, and the field recounts its error.
+	 */
+	private _endRule(): TCalendarUnavailable | undefined {
 		const rule = this._unavailable
 		const anchor = this._startDate
 
-		this._end.unavailable = rule === undefined ? undefined : (date) => rule(date, anchor)
+		return rule === undefined ? undefined : (date) => rule(date, anchor)
 	}
 
-	/** Набранное начало диапазона; не набрано или не дата — `undefined`. */
+	/** The typed range start; not typed, not a date or no start field — `undefined`. */
 	private get _startDate(): TCalendarDate | undefined {
-		return parseDate(this._start.value)
+		return parseDate(this._start?.value)
 	}
 
 	/**
-	 * Правка сторон. Правка поля — сразу в своё значение, правка календаря — в
-	 * политику фиксации: сразу или черновиком до «OK».
+	 * An edit of the calendar goes to the commit policy: at once or as a draft
+	 * until «OK». An edit of a field becomes the value at once (`_adopt`).
 	 */
-	private _listenSides(): void {
+	private _listenCalendar(): void {
 		this._calendar.events.on('change:value', () => {
 			if (this._writing !== 'calendar') this._commit.edit()
 		})
-
-		for (const input of this._inputs) {
-			input.events.on('change:value', () => {
-				if (this._writing !== 'fields' && this._fields.includes(input)) {
-					this._accept('fields', this._fields.compose())
-				}
-			})
-		}
 	}
 
 	/**

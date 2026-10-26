@@ -14,6 +14,11 @@
  * элемента».
  */
 
+// First: an element class extends the native class of its tag, and Safari
+// extends built-ins only with the polyfill, which replaces those classes. Every
+// entry of the package reaches it here or through the registration, before the
+// first class of an element. Where the browser supports them, it does nothing
+import '@ungap/custom-elements'
 import type { IComponent, IComponentProps } from '@soldy-ui/core'
 import {
 	TSurface,

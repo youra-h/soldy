@@ -77,11 +77,31 @@ A theme and an icon pack are separate packages — pick the ones you want.
 
 ## Usage
 
-Importing the package defines the elements:
+Importing the package defines every element:
 
 ```ts
 import '@soldy-ui/webc'
 ```
+
+A page that uses a few components can import just theirs. Every element has an entry of its own,
+named as the element without `so-`; importing it defines the element with its parts, the elements
+its markup draws (a select brings its field, panel and tags) and the locale provider, and the
+application's bundle carries only those:
+
+```ts
+import '@soldy-ui/webc/button' // <button is="so-button">
+import '@soldy-ui/webc/check-box' // <span is="so-check-box">
+import '@soldy-ui/webc/tabs' // <div is="so-tabs"> with so-tabs-item and so-tabs-content
+import { toastsOf } from '@soldy-ui/webc/toasts' // <so-toasts> and the queue of its toasts
+import { TLocaleProviderElement } from '@soldy-ui/webc/locale-provider'
+```
+
+An element you write without importing its entry is not an error: the browser says nothing about
+an unknown `is`, so `<button is="so-button">` stays a plain `<button>` — no classes, no behavior.
+That is why the package root, where there is nothing to forget, is the default, and the entries are
+a choice for size. Take the values of an element from its entry as well — `TButtonElement` from
+`@soldy-ui/webc/button`, `toastsOf` from `@soldy-ui/webc/toasts`, `roleIcon` from
+`@soldy-ui/webc/icon`: the same name from the root brings every element along.
 
 ```html
 <button is="so-button" text="Save" class="toolbar-action"><i slot="leading">★</i></button>

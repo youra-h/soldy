@@ -248,16 +248,13 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 	},
 
 	bindings: [
-		// Экземпляры — деталям на каждое подключение: детали собираются после
-		// DatePicker, и переставленный с другим `ctrl` отдаёт новые раньше их пересборки
+		// The calendar to its detail on every connection: details are built after
+		// the DatePicker, and one moved in with another `ctrl` hands over the new
+		// instance before the detail is rebuilt. The fields go with their mode, below
 		bind([], ({ root, ctrl }) => {
 			const own = parts.get(root)
 
 			if (!own || !ctrl) return
-
-			patch(own.field, { ctrl: ctrl.field })
-			patch(own.start, { ctrl: ctrl.start })
-			patch(own.end, { ctrl: ctrl.end })
 
 			const calendar = calendars.get(root)?.node
 
@@ -276,15 +273,21 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 			}
 		}),
 
-		// У диапазона кнопки — после поля конца, а не в его слоте: они работают со всем периодом
+		// A range has its buttons after the end field, not in its slot: they work with the
+		// whole period. The mode's fields get their instances before they are placed — on
+		// every connection, as the calendar above: the core creates a field when its mode
+		// needs it, and the other mode's details get theirs when that mode comes
 		bind(['mode', 'clearable'], (ctx) => {
 			const own = parts.get(ctx.root)
+			const picker = ctx.ctrl
 
-			if (!own) return
+			if (!own || !picker) return
 
 			const clear = clearNodes(ctx)
 
 			if (ctx.state.mode === 'range') {
+				patch(own.start, { ctrl: picker.start })
+				patch(own.end, { ctrl: picker.end })
 				own.field.remove()
 				placeBefore(
 					ctx.root,
@@ -295,6 +298,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 				return
 			}
 
+			patch(own.field, { ctrl: picker.field })
 			own.start.remove()
 			own.dash.remove()
 			own.end.remove()

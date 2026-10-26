@@ -14,5 +14,8 @@ export default libConfig({
 	name: '@soldy-ui/webc',
 	root: import.meta.dirname,
 	entry: 'src/index.ts',
+	// The entries of the elements (`@soldy-ui/webc/button`) are entries of the
+	// build: the modules of the root, each keeping every export of its own
+	subpaths: true,
 	external: ['@ungap/custom-elements'],
 })

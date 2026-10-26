@@ -12,23 +12,14 @@ const CloseMark = roleIcon('close')
 const CalendarMark = roleIcon('calendar')
 
 /**
- * DatePicker — поле даты и календарь в панели: docs/agents/dates.md, «Даты». Ключи полей и
- * календаря — AGENTS.md (React), «Пересобранный инстанс и `key`».
+ * DatePicker — a date field and a calendar in a panel: docs/agents/dates.md, «Даты». A mode's
+ * fields are read from the instance in that mode's branch: the core creates a field when its
+ * mode needs it. The keys of the fields and the calendar — AGENTS.md (React), «Пересобранный
+ * инстанс и `key`».
  */
 export function DatePicker(props: DatePickerProps): ReactElement | null {
-	const {
-		ctrl,
-		ref,
-		forwardProps,
-		state,
-		layer,
-		rootElement,
-		field,
-		start,
-		end,
-		calendar,
-		engine,
-	} = useSetupDatePicker(props)
+	const { ctrl, ref, forwardProps, state, layer, rootElement, calendar, engine } =
+		useSetupDatePicker(props)
 
 	const {
 		rendered,
@@ -128,10 +119,10 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 			<Elevate layer={layer}>
 				{mode === 'single' ? (
 					<DateInput
-						key={field.uid}
+						key={ctrl.field.uid}
 						embedded="date-picker.field"
 						className="so-date-picker__field"
-						ctrl={field}
+						ctrl={ctrl.field}
 						aria_label={props.aria_label}
 						aria_labelledBy={props.aria_labelledBy}
 						aria_describedBy={props.aria_describedBy}
@@ -142,20 +133,20 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 				) : (
 					<>
 						<DateInput
-							key={start.uid}
+							key={ctrl.start.uid}
 							embedded="date-picker.start"
 							className="so-date-picker__start"
-							ctrl={start}
+							ctrl={ctrl.start}
 							aria_label={names_start}
 						/>
 						<span className="so-date-picker__dash" aria-hidden="true">
 							–
 						</span>
 						<DateInput
-							key={end.uid}
+							key={ctrl.end.uid}
 							embedded="date-picker.end"
 							className="so-date-picker__end"
-							ctrl={end}
+							ctrl={ctrl.end}
 							aria_label={names_end}
 						/>
 						{clear}
