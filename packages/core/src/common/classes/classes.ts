@@ -6,19 +6,26 @@ import type { TClassEntry } from './types'
  *
  * Like the attribute sets (`TAttributes`), it reports a change without a bus
  * of its own (`TSubscribable`): a listener given to `subscribe` is called on
- * every real change, without arguments. The static set and the list of dynamic entries appear with their first entry.
+ * every real change and receives the classes. The static classes and the list
+ * of dynamic entries appear with their first entry.
+ *
+ * The static classes are an array of exact length, not a `Set`, by the rule of
+ * the attribute sets: a set gets its hash table with room for four classes
+ * from the first one, and a collection item usually holds one class, the size
+ * modifier of `TStylable`.
  */
 export class TClasses extends TSubscribable {
 	/** Базовый класс (всегда первый в списке). */
 	private _base: string
-	/** Static classes added with `add(string)` — from the first one. */
-	private _statics?: Set<string>
+	/** Static classes added with `add(string)` — from the first one, without duplicates, in the order they were added. */
+	private _statics?: string[]
 	/** Dynamic classes — functions computed on every `toArray()` call; from the first one. */
 	private _dynamics?: Array<() => string | null | undefined | false>
 
 	/**
 	 * @param base — the base CSS class of the component
-	 * @param initial — the starting static classes; they are not a change
+	 * @param initial — the starting static classes; they are not a change, and
+	 * a repeated one is kept once
 	 */
 	constructor(base: string, initial?: string[]) {
 		super()
@@ -27,14 +34,28 @@ export class TClasses extends TSubscribable {
 
 		if (initial === undefined) return
 
-		for (const cls of initial) {
-			this._staticSet().add(cls)
-		}
+		for (const cls of initial) this._addStatic(cls)
 	}
 
-	/** The static set, created by the first static class. */
-	private _staticSet(): Set<string> {
-		return (this._statics ??= new Set())
+	/**
+	 * Adds a static class; `true` if it was not there. A new class builds a new
+	 * array one class longer, of exact length, as the attribute sets do
+	 * (`TAttributes._write`).
+	 */
+	private _addStatic(cls: string): boolean {
+		const statics = this._statics
+
+		if (statics === undefined) {
+			this._statics = [cls]
+
+			return true
+		}
+
+		if (statics.includes(cls)) return false
+
+		this._statics = statics.concat(cls)
+
+		return true
 	}
 
 	/** Базовый CSS-класс. */
@@ -82,13 +103,8 @@ export class TClasses extends TSubscribable {
 			else this._dynamics = [entry]
 
 			this._notify()
-		} else {
-			const cls = this.resolve(entry, { withBase })
-
-			if (!this._statics?.has(cls)) {
-				this._staticSet().add(cls)
-				this._notify()
-			}
+		} else if (this._addStatic(this.resolve(entry, { withBase }))) {
+			this._notify()
 		}
 
 		return this
@@ -96,12 +112,25 @@ export class TClasses extends TSubscribable {
 
 	/**
 	 * Removes a static class. Reports the change if the class was there.
+	 *
+	 * The static classes are rebuilt without it, of exact length, as
+	 * `_addStatic` builds them; without the last class there is no array.
 	 * @param withBase — if `true`, the string is prefixed with the base class
 	 */
 	remove(entry: string, withBase = true): this {
-		const cls = this.resolve(entry, { withBase })
+		const statics = this._statics
 
-		if (this._statics?.delete(cls)) this._notify()
+		if (statics === undefined) return this
+
+		const index = statics.indexOf(this.resolve(entry, { withBase }))
+
+		if (index === -1) return this
+
+		this._statics =
+			statics.length === 1
+				? undefined
+				: statics.slice(0, index).concat(statics.slice(index + 1))
+		this._notify()
 
 		return this
 	}
@@ -166,15 +195,16 @@ export class TClasses extends TSubscribable {
 	}
 
 	/**
-	 * Поиск по классум. Проверяет только статические классы, динамические игнорирует.
-	 * @param suffix — текст для поиска. Если `withBase === true`, строка автоматически предваряется базовым классом
-	 * @param withBase — если `true`, строка автоматически предваряется базовым классом
-	 * @return `true` если класс присутствует, `false` если нет
+	 * Whether the class is there. Only the static classes are searched, the
+	 * dynamic ones are ignored.
+	 * @param suffix — the text to look for. If `withBase === true`, it is prefixed with the base class
+	 * @param withBase — if `true`, the string is prefixed with the base class
+	 * @return `true` if the class is there, `false` otherwise
 	 */
 	has(suffix: string, withBase = true): boolean {
 		const cls = this.resolve(suffix, { withBase })
 
-		return this._statics?.has(cls) ?? false
+		return this._statics?.includes(cls) ?? false
 	}
 
 	/**

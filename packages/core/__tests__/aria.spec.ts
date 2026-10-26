@@ -93,6 +93,82 @@ describe('TAria · сам набор', () => {
 		expect(aria.has('role')).toBe(false)
 		expect(aria.get('role')).toBeUndefined()
 	})
+
+	/**
+	 * The entries are a flat array `[name, value, …]` (`TAttributes`), and it
+	 * keeps the order of a `Map`: a new value is written in place, and the
+	 * entry keeps its position in `names` and in the snapshot.
+	 */
+	it('смена значения оставляет запись на её месте', () => {
+		const aria = new TAria({ role: 'tab', tabindex: '0', 'aria-selected': 'false' })
+
+		aria.add('tabindex', '-1')
+
+		expect(aria.names).toEqual(['role', 'tabindex', 'aria-selected'])
+		expect(Object.entries(aria.toObject())).toEqual([
+			['role', 'tab'],
+			['tabindex', '-1'],
+			['aria-selected', 'false'],
+		])
+	})
+
+	it('снятая и поставленная снова запись встаёт в конец', () => {
+		const aria = new TAria({ role: 'tab', tabindex: '0', 'aria-selected': 'false' })
+
+		aria.remove('role')
+		aria.add('role', 'option')
+
+		expect(aria.names).toEqual(['tabindex', 'aria-selected', 'role'])
+		expect(Object.entries(aria.toObject())).toEqual([
+			['tabindex', '0'],
+			['aria-selected', 'false'],
+			['role', 'option'],
+		])
+	})
+
+	it('снятие средней записи не трогает соседей', () => {
+		let count = 0
+		const aria = new TAria({ role: 'tab', tabindex: '0', 'aria-selected': 'false' })
+		aria.subscribe(() => count++)
+
+		aria.remove('tabindex')
+
+		expect(count).toBe(1)
+		expect(aria.names).toEqual(['role', 'aria-selected'])
+		expect(aria.has('tabindex')).toBe(false)
+		expect(aria.get('role')).toBe('tab')
+		expect(aria.get('aria-selected')).toBe('false')
+	})
+
+	/** Names and values share one array: a value is never taken for a name. */
+	it('значение, равное чужому имени, не находят ни has, ни get', () => {
+		const aria = new TAria({ 'aria-controls': 'role' })
+
+		expect(aria.has('role')).toBe(false)
+		expect(aria.get('role')).toBeUndefined()
+
+		// Not found, so not removed: the value stays as it was
+		aria.remove('role')
+		expect(aria.toObject()).toEqual({ 'aria-controls': 'role' })
+
+		// A new entry, not a write over the value
+		aria.add('role', 'tab')
+		expect(aria.toObject()).toEqual({ 'aria-controls': 'role', role: 'tab' })
+	})
+
+	it('после снятия последней записи — пустой снимок, и набор заполняется снова', () => {
+		const aria = new TAria({ role: 'tab' })
+
+		aria.remove('role')
+
+		expect(aria.toObject()).toEqual({})
+		expect(aria.names).toEqual([])
+		expect(aria.has('role')).toBe(false)
+
+		aria.add('tabindex', '0')
+
+		expect(aria.toObject()).toEqual({ tabindex: '0' })
+	})
 })
 
 describe('TComponentView.aria', () => {

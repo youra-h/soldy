@@ -8,7 +8,7 @@ class TProbe extends TSubscribable {
 }
 
 describe('TSubscribable', () => {
-	it('подписчик зовётся на каждое изменение, без аргументов', () => {
+	it('подписчик зовётся на каждое изменение и получает сам объект', () => {
 		const probe = new TProbe()
 		const subscriber = vi.fn()
 
@@ -17,7 +17,32 @@ describe('TSubscribable', () => {
 		probe.change()
 
 		expect(subscriber).toHaveBeenCalledTimes(2)
-		expect(subscriber).toHaveBeenCalledWith()
+		expect(subscriber).toHaveBeenNthCalledWith(1, probe)
+		expect(subscriber).toHaveBeenNthCalledWith(2, probe)
+		expect(subscriber.mock.calls[0][0]).toBe(probe)
+	})
+
+	/**
+	 * The object is the argument so that one listener can serve several of them
+	 * and tell them apart by identity — the way `TComponentView` listens to its
+	 * four sets with one function.
+	 */
+	it('один подписчик на несколько объектов узнаёт источник по аргументу', () => {
+		const first = new TProbe()
+		const second = new TProbe()
+		const sources: TSubscribable[] = []
+		const subscriber = (source: TSubscribable): void => {
+			sources.push(source)
+		}
+
+		first.subscribe(subscriber)
+		second.subscribe(subscriber)
+		second.change()
+		first.change()
+
+		expect(sources).toHaveLength(2)
+		expect(sources[0]).toBe(second)
+		expect(sources[1]).toBe(first)
 	})
 
 	it('без подписчиков изменение никого не зовёт', () => {
@@ -117,9 +142,14 @@ describe('TSubscribable', () => {
 
 		dataset.subscribe(owner)
 		dataset.subscribe(consumer)
+		classes.subscribe(owner)
 		dataset.add('open', true)
+		classes.add('--open')
 
-		expect(owner).toHaveBeenCalledTimes(1)
+		expect(owner).toHaveBeenCalledTimes(2)
+		expect(owner.mock.calls[0][0]).toBe(dataset)
+		expect(owner.mock.calls[1][0]).toBe(classes)
 		expect(consumer).toHaveBeenCalledTimes(1)
+		expect(consumer.mock.calls[0][0]).toBe(dataset)
 	})
 })

@@ -75,6 +75,49 @@ describe('TDataset · сам набор', () => {
 	})
 
 	/**
+	 * One entry per canonical name, as a `Map` gave: `selected` and
+	 * `data-selected` are one attribute, the last value wins, and the entry
+	 * stays where the name came first.
+	 */
+	it('имя с префиксом и без в начальных записях — одна запись, побеждает последняя', () => {
+		const dataset = new TDataset({ selected: 'true', open: 'true', 'data-selected': 'false' })
+
+		expect(dataset.names).toEqual(['data-selected', 'data-open'])
+		expect(dataset.get('selected')).toBe('false')
+		expect(Object.entries(dataset.toObject())).toEqual([
+			['data-selected', 'false'],
+			['data-open', 'true'],
+		])
+	})
+
+	/** The prefix goes to the name looked for, not to the values: a value is never taken for a name. */
+	it('значение, равное чужому имени с префиксом, не находят ни has, ни get', () => {
+		const dataset = new TDataset({ placement: 'data-open' })
+
+		expect(dataset.has('open')).toBe(false)
+		expect(dataset.get('data-open')).toBeUndefined()
+	})
+
+	it('смена значения на месте, снятие и возврат — порядок тот же, что давала карта', () => {
+		const dataset = new TDataset()
+			.add('disabled', false)
+			.add('selected', false)
+			.add('indicator', 'none')
+
+		dataset.add('selected', true)
+		expect(dataset.names).toEqual(['data-disabled', 'data-selected', 'data-indicator'])
+
+		dataset.remove('disabled')
+		dataset.add('disabled', true)
+		expect(dataset.names).toEqual(['data-selected', 'data-indicator', 'data-disabled'])
+		expect(Object.entries(dataset.toObject())).toEqual([
+			['data-selected', 'true'],
+			['data-indicator', 'none'],
+			['data-disabled', 'true'],
+		])
+	})
+
+	/**
 	 * Контракт границы core → ui: адаптер узнаёт об изменении по смене
 	 * идентичности, поэтому наружу обязан уходить новый объект.
 	 */
