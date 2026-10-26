@@ -26,7 +26,6 @@ import {
 	TemplateRef,
 	afterRenderEffect,
 	computed,
-	contentChildren,
 	inject,
 	runInInjectionContext,
 	signal,
@@ -36,7 +35,7 @@ import type { IEntity } from '@soldy-ui/core'
 import type { TStateSnapshot } from '@soldy-ui/setup'
 import { createRoot, type TRoot } from './root/strategies'
 import type { TRootSpec } from './root/spec'
-import { SlotDirective } from './slot.directive'
+import type { SlotDirective } from './slot.directive'
 import { SUBTREE_PRESENT, SubtreeDirective } from './subtree.directive'
 import type { TBinding, TBindingState } from './useAdapter'
 
@@ -53,6 +52,9 @@ const VIEW_ROOT: TRootSpec = { strategy: 'view' }
 
 /** State before the assembly: nothing — the same object on every read. */
 const NO_BINDING_STATE = Object.freeze({})
+
+/** No slot templates: the component reads no slots. */
+const NO_SLOTS: readonly SlotDirective[] = Object.freeze([])
 
 @Directive({
 	// `hostDirectives` наследник получает, а `providers` — нет
@@ -137,8 +139,6 @@ export abstract class TComponentBase<
 		!this._root.hidesRoot && this._hidden() ? 'none' : undefined,
 	)
 
-	private readonly _slots = contentChildren(SlotDirective)
-
 	/**
 	 * Узел шаблона по ссылке — `#root`, `#control`, `#companion`; ссылки нет —
 	 * `null`. Запросы объявляет сгенерированная поверхность, и только на
@@ -150,9 +150,19 @@ export abstract class TComponentBase<
 		return null
 	}
 
-	/** Шаблон слота по имени из контракта. */
+	/**
+	 * Slot templates of the component (`<ng-template slot>`). The query is
+	 * declared by the generated surface, and only where the component reads
+	 * slots (`slot()`): a content query costs every instance, and an item row
+	 * or an icon inside every element of a collection reads none.
+	 */
+	protected slotTemplates(): readonly SlotDirective[] {
+		return NO_SLOTS
+	}
+
+	/** The template of a slot by its name from the contract. */
 	protected slot(name: string): TemplateRef<unknown> | null {
-		return this._slots().find((slot) => slot.name === name)?.template ?? null
+		return this.slotTemplates().find((slot) => slot.name === name)?.template ?? null
 	}
 
 	constructor(
