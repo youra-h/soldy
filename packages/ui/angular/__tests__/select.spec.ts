@@ -170,6 +170,21 @@ async function open(): Promise<void> {
 	check()
 }
 
+/**
+ * Options from data are drawn from the panel's first opening on: open the
+ * panel with its arrow — it opens in `editable` too — and close it again. The
+ * Select is closed, as before, and its options are in the document.
+ */
+async function openOnce(): Promise<void> {
+	const arrow = find(document, '.so-select__arrow', HTMLElement)
+
+	click(arrow)
+	await nextFrame()
+	click(arrow)
+	await nextFrame()
+	check()
+}
+
 /** Узлы сверяются по ссылке: `toEqual` сравнил бы узлы по разметке. */
 function expectNodes(actual: readonly Element[], expected: readonly Element[]): void {
 	expect(actual).toHaveLength(expected.length)
@@ -288,6 +303,7 @@ class Page {
 		[editableMode]="editableMode()"
 		[groups]="groups()"
 		[groupSeparators]="groupSeparators()"
+		[open]="opened()"
 		(soEngineCreate)="engines.push($event)"
 	></div>`,
 })
@@ -299,6 +315,7 @@ class DataPage {
 	readonly editableMode = signal<TSelectEditableMode | undefined>(undefined)
 	readonly groups = signal<TGroup[] | undefined>(undefined)
 	readonly groupSeparators = signal<boolean | undefined>(undefined)
+	readonly opened = signal<boolean | undefined>(undefined)
 	readonly engines: TEngineView[] = []
 }
 
@@ -669,7 +686,12 @@ describe('узлы — те же', () => {
 		})
 
 		const input = field()
+
+		await openOnce()
+
 		const nodes = [...document.querySelectorAll('.so-select-item')]
+
+		expect(nodes).toHaveLength(4)
 
 		await open()
 		click(optionAt(2))
@@ -698,6 +720,66 @@ describe('узлы — те же', () => {
 		expect(document.querySelectorAll('.so-select__tags .so-tags-item')).toHaveLength(2)
 		expect(field()).toBe(input)
 		expect(find(document, '.so-select__tags', HTMLElement)).toBe(row)
+	})
+})
+
+/**
+ * Options from data are mounted from the panel's first opening on: a closed
+ * Select nobody opened is its field and an empty list. The closed field needs
+ * none of their nodes — the selected text comes from the collection, and the
+ * field refers to the list, which is always there. Closing only hides them.
+ * Options in markup are the projection: they enter the collection only
+ * mounted and are there from the start.
+ */
+describe('опции из данных — с первого открытия', () => {
+	const CITY_ITEMS = [
+		{ value: 'msk', text: 'Москва' },
+		{ value: 'tver', text: 'Тверь' },
+	]
+
+	it('закрытый — текст выбранного и список с id без опций; открыли — опции есть, закрыли — те же', async () => {
+		await render(DataPage, (page) => {
+			page.items.set(CITY_ITEMS)
+			page.value.set('tver')
+		})
+
+		expect(field().value).toBe('Тверь')
+		expect(list().id).not.toBe('')
+		expect(field().getAttribute('aria-controls')).toBe(list().id)
+		expect(options()).toHaveLength(0)
+
+		await open()
+
+		const drawn = options()
+
+		expect(isOpen()).toBe(true)
+		expect(texts()).toEqual(['Москва', 'Тверь'])
+
+		await open()
+
+		expect(isOpen()).toBe(false)
+		expectNodes(options(), drawn)
+	})
+
+	it('опции разметкой — и до первого открытия', () => {
+		draw(Page)
+
+		expect(isOpen()).toBe(false)
+		expect(texts()).toEqual(['Москва', 'Тверь', 'Тула'])
+	})
+
+	it('↓ на закрытом поле открывает панель; ссылка — на подсвеченную, когда опции нарисованы', async () => {
+		await render(DataPage, (page) => page.items.set(CITY_ITEMS))
+
+		press('ArrowDown')
+		await nextFrame()
+		check()
+
+		const id = field().getAttribute('aria-activedescendant') ?? ''
+
+		expect(isOpen()).toBe(true)
+		expect(id).not.toBe('')
+		expect(document.getElementById(id)?.textContent?.trim()).toBe('Москва')
 	})
 })
 
@@ -1524,8 +1606,11 @@ describe('жест', () => {
 describe('отбор опций из items', () => {
 	async function renderSelect(prepare?: (page: DataPage) => void) {
 		const fixture = await render(DataPage, prepare)
+		const engine = await engineOf(fixture.componentInstance.engines)
 
-		return engineOf(fixture.componentInstance.engines)
+		await openOnce()
+
+		return engine
 	}
 
 	/** Запрос отбора из кода: он перерисовывает список. */
@@ -1558,6 +1643,7 @@ describe('отбор опций из items', () => {
 	it('отбор по тексту, а не по значению — поле сравнения ставит Select', async () => {
 		const engine = await renderSelect()
 
+		expect(options()).toHaveLength(4)
 		expect(engine.extensions.filter.fields).toEqual(['text'])
 
 		// 'a' — это value первой опции, но по значению не ищем
@@ -1582,6 +1668,9 @@ describe('отбор опций из items', () => {
 		const fixture = await render(EmptyPage)
 		const engine = await engineOf(fixture.componentInstance.engines)
 
+		await openOnce()
+
+		expect(options()).toHaveLength(4)
 		expect(document.querySelector('.probe-empty')).toBeNull()
 
 		query(engine, 'ничего такого нет')
@@ -1648,6 +1737,7 @@ describe('ввод в поле', () => {
 	it('без editable ввод не слушается вовсе', async () => {
 		const engine = await renderSelect((page) => page.editableMode.set('filter'))
 
+		await openOnce()
 		type('тре')
 
 		expect(engine.extensions.filter.query).toBe('')
@@ -1778,11 +1868,13 @@ describe('опции разметки под отбором', () => {
 	})
 })
 
+// Options from data are drawn from the panel's first opening on: the panel is
+// open from the start
 describe('готовая коллекция', () => {
 	@Component({
 		selector: 'probe-select-engine',
 		imports: [TSelectComponent],
-		template: `<div so-select [engine]="engine" [items]="items"></div>`,
+		template: `<div so-select [engine]="engine" [items]="items" open></div>`,
 	})
 	class EnginePage {
 		engine = createEngine<{ value: string; text: string }>()
@@ -1884,11 +1976,14 @@ describe('отметка выбранной опции', () => {
 describe('слоты опций', () => {
 	const TWO = ITEMS.slice(0, 2)
 
+	// Options from data are drawn from the panel's first opening on: the panel
+	// is open from the start
+
 	it('item получает text и selected опции, selected следует за выбором', async () => {
 		@Component({
 			selector: 'probe-select-item-slot',
 			imports: [TSelectComponent, SlotDirective],
-			template: `<div so-select [items]="items">
+			template: `<div so-select [items]="items" open>
 				<ng-template slot="item" let-item="item" let-text="text" let-selected="selected"
 					>{{ item.value }}:{{ text }}:{{ selected }}</ng-template
 				>
@@ -1915,7 +2010,7 @@ describe('слоты опций', () => {
 		@Component({
 			selector: 'probe-select-item-nodes',
 			imports: [TSelectComponent, SlotDirective],
-			template: `<div so-select [items]="items">
+			template: `<div so-select [items]="items" open>
 				<ng-template slot="item" let-item="item" let-selected="selected">
 					<b class="probe">{{ item.value }}:{{ selected }}</b>
 				</ng-template>
@@ -1939,7 +2034,7 @@ describe('слоты опций', () => {
 		@Component({
 			selector: 'probe-select-item-edges',
 			imports: [TSelectComponent, SlotDirective],
-			template: `<div so-select [items]="items">
+			template: `<div so-select [items]="items" open>
 				<ng-template slot="item-leading" let-item="item"
 					><u class="lead">{{ item.value }}</u></ng-template
 				>
@@ -1972,7 +2067,7 @@ describe('слоты опций', () => {
 		@Component({
 			selector: 'probe-select-indicator-slot',
 			imports: [TSelectComponent, SlotDirective],
-			template: `<div so-select [items]="items" mode="multiple" indicator="end">
+			template: `<div so-select [items]="items" open mode="multiple" indicator="end">
 				<ng-template slot="item-indicator-icon" let-item="item" let-selected="selected">
 					@if (item.value === 'a') {
 						<b class="probe">{{ selected }}</b>
@@ -2082,8 +2177,14 @@ describe('группы из данных', () => {
 			.getElementById(field().getAttribute('aria-activedescendant') ?? '')
 			?.textContent?.trim()
 
+	// Options from data are drawn from the panel's first opening on: the panel
+	// is open from the start where the test looks at them without opening it
+
 	it('группы с подписью, без группы — последними; разделителей по умолчанию нет', async () => {
-		await render(DataPage, prepare)
+		await render(DataPage, (page) => {
+			prepare(page)
+			page.opened.set(true)
+		})
 
 		expect(parts()).toEqual(SECTIONS)
 		expect(list().querySelector('.so-select__separator')).toBeNull()
@@ -2102,6 +2203,7 @@ describe('группы из данных', () => {
 		const fixture = draw(DataPage, (page) => {
 			prepare(page)
 			page.groupSeparators.set(false)
+			page.opened.set(true)
 		})
 
 		expect(parts()).toEqual(SECTIONS)

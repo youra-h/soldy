@@ -177,16 +177,19 @@ export function Select(props: SelectProps): JSX.Element {
 						<Show when={state.handleRendered}>
 							<div class="so-select__handle" aria-hidden="true" />
 						</Show>
+						{/* Options from data from the panel's first opening on (`contentRendered`) */}
 						<div class="so-select__list" {...listAria()}>
 							<ResolvedSlot
 								content={props.children}
 								fallback={
-									<KeyedFor
-										each={state.drawnSections}
-										by={(section) => section.key}
-									>
-										{drawSection}
-									</KeyedFor>
+									<Show when={state.contentRendered}>
+										<KeyedFor
+											each={state.drawnSections}
+											by={(section) => section.key}
+										>
+											{drawSection}
+										</KeyedFor>
+									</Show>
 								}
 							/>
 							<Show when={state.shown?.length === 0}>{renderSlot(props.empty)}</Show>

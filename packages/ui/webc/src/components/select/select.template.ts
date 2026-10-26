@@ -246,7 +246,11 @@ export const selectTemplate: ITemplate<ISelect, TSelectCollectionFacade, TSelect
 			if (list) ownerAttributes(list, state.listAria)
 		}),
 
-		bind(['drawnSections', 'groupSeparators'], (ctx) => {
+		// Options from data from the panel's first opening on (`contentRendered`): a
+		// closed Select nobody opened draws an empty list
+		bind(['drawnSections', 'groupSeparators', 'contentRendered'], (ctx) => {
+			if (ctx.state.contentRendered !== true) return
+
 			parts
 				.get(ctx.root)
 				?.rows?.draw(ctx, ctx.state.drawnSections, ctx.state.groupSeparators === true)

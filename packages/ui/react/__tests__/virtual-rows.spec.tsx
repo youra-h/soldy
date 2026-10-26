@@ -79,10 +79,11 @@ describe('строки — только у нарисованных', () => {
 
 	it('Select: пролистанный до конца — строк не больше окна, снятый — ни одной', async () => {
 		const engine = createEngineSelect({ items: items(COUNT) })
+		// Options from data are drawn from the panel's first opening on
 		const alive = await scrollThrough(
 			engine,
 			<Virtual>
-				<Select engine={engine} />
+				<Select engine={engine} open />
 			</Virtual>,
 		)
 

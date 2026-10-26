@@ -174,6 +174,47 @@ describe('когда панель открывать нельзя', () => {
 	})
 })
 
+/**
+ * Options from data are mounted from the panel's first opening on: a closed
+ * Select nobody opened builds its field and an empty list. Closing keeps them.
+ */
+describe('опции из данных — с первого открытия', () => {
+	it('закрытый их не монтирует; открытие монтирует, закрытие их оставляет', () => {
+		const select = new TSelect()
+
+		expect(select.contentRendered).toBe(false)
+
+		select.open = true
+		expect(select.contentRendered).toBe(true)
+
+		select.open = false
+		expect(select.contentRendered).toBe(true)
+	})
+
+	it('открытый со старта — опции уже смонтированы', () => {
+		expect(new TSelect({ open: true }).contentRendered).toBe(true)
+	})
+
+	it('отказ в открытии признак не ставит', () => {
+		const select = new TSelect({ disabled: true })
+
+		select.open = true
+
+		expect(select.open).toBe(false)
+		expect(select.contentRendered).toBe(false)
+	})
+
+	it('признак сменился вместе с открытостью — до её события', () => {
+		const select = new TSelect()
+		const seen: boolean[] = []
+
+		select.events.on('change:open', () => seen.push(select.contentRendered))
+		select.open = true
+
+		expect(seen).toEqual([true])
+	})
+})
+
 describe('TSelectItem', () => {
 	it('объявляет себя как option', () => {
 		expect(new TSelectItem().aria.get('role')).toBe('option')

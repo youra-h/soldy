@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { flushSync, type Component } from 'svelte'
+import { flushSync } from 'svelte'
 import { TEvented, TListBox, createEngine, createEngineListBox } from '@soldy-ui/core'
 import type { TCollectionEngine } from '@soldy-ui/core'
 import { Accordion, ListBox, Menu, RadioGroup, Select, Tabs, Tags } from '@soldy-ui/svelte'
@@ -54,20 +54,20 @@ function watchSubscriptions(engine: TCollectionEngine<any, any>): () => number {
 }
 
 /** Коллекции адаптера: все берут движок снаружи пропом `engine`. */
-const COLLECTIONS: ReadonlyArray<
-	readonly [string, Component<{ engine: TCollectionEngine<any, any> }>]
-> = [
-	['ListBox', ListBox],
-	['Tabs', Tabs],
-	['Accordion', Accordion],
-	['RadioGroup', RadioGroup],
-	['Tags', Tags],
-	// Опции и пункты — в панели, которую Teleport монтирует отдельным корнем
-	['Select', Select],
-	['Menu', Menu],
-]
+const COLLECTIONS: ReadonlyArray<readonly [string, (engine: TCollectionEngine<any, any>) => void]> =
+	[
+		['ListBox', (engine) => mount(ListBox, { engine })],
+		['Tabs', (engine) => mount(Tabs, { engine })],
+		['Accordion', (engine) => mount(Accordion, { engine })],
+		['RadioGroup', (engine) => mount(RadioGroup, { engine })],
+		['Tags', (engine) => mount(Tags, { engine })],
+		// Options and items are in the panel Teleport mounts as its own root. From
+		// data they are drawn from the panel's first opening on: open from the start
+		['Select', (engine) => mount(Select, { engine, open: true })],
+		['Menu', (engine) => mount(Menu, { engine, open: true })],
+	]
 
-describe.each(COLLECTIONS)('%s: фильтр прячет и показывает элемент', (_name, component) => {
+describe.each(COLLECTIONS)('%s: фильтр прячет и показывает элемент', (_name, draw) => {
 	it('подписок на движке не прибавляется с каждым показом', () => {
 		const engine = createEngine<TItem>({ items: ITEMS })
 		const { driver } = engine.getCore()
@@ -78,7 +78,7 @@ describe.each(COLLECTIONS)('%s: фильтр прячет и показывае�
 			if (hidden) e.items = e.items.filter((item) => item.value !== 'b')
 		})
 
-		mount(component, { engine })
+		draw(engine)
 
 		const live = watchSubscriptions(engine)
 

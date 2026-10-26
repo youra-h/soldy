@@ -542,13 +542,15 @@ describe('хост Angular · превью своим шаблоном', () => {
 	})
 
 	/**
-	 * Окно — директива на `<ng-container>`, а директиву хост сам не строит:
-	 * превью своим шаблоном. Своего узла у окна нет — ряд стоит прямо в
-	 * разметке превью, — и окно подхватывают все три коллекции ряда: до замера
-	 * каждая рисует первые 50 из тысячи, у Select — в списке панели. Выходы хост
-	 * слушает у окна в разметке превью, а пропа без входа не глушит.
+	 * The window is a directive on `<ng-container>`, and the host does not build
+	 * a directive itself: the preview has its own template. The window has no
+	 * node of its own — the row stands right in the preview's markup — and all
+	 * three collections of the row pick it up: before a measurement each draws
+	 * the first 50 of a thousand, the Select — in the list of its panel, from the
+	 * panel's first opening on. The host listens to the outputs at the window in
+	 * the preview's markup and does not mute a prop without an input.
 	 */
-	it('окно: ряд — прямо в разметке превью, окно у списка, Select и таблицы', () => {
+	it('окно: ряд — прямо в разметке превью, окно у списка, Select и таблицы', async () => {
 		const node = stage()
 		const handle = host.mount(node, {
 			component: 'virtual',
@@ -568,6 +570,18 @@ describe('хост Angular · превью своим шаблоном', () => {
 		expect(row.querySelector(':scope > div > .so-select')).not.toBe(null)
 		expect(row.querySelector(':scope > div > .so-table__viewport')).not.toBe(null)
 		expect(all(node, '.so-list-box-item')).toHaveLength(50)
+
+		// Open the Select by its arrow and close it again
+		const arrow = row.querySelector('.so-select .so-select__arrow')
+
+		if (!(arrow instanceof HTMLElement)) throw new Error('стрелки Select нет')
+
+		await nextFrame()
+		arrow.click()
+		await nextFrame()
+		arrow.click()
+		await nextFrame()
+
 		expect(all(document.body, '.so-select__list > .so-select-item')).toHaveLength(50)
 		expect(all(node, '.so-table-row')).toHaveLength(50)
 		expect(() => handle.update({ nothing: true })).toThrow('нет входов: nothing')

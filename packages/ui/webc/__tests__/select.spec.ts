@@ -198,6 +198,20 @@ async function type(input: HTMLInputElement, value: string): Promise<void> {
 	await settle()
 }
 
+/**
+ * Options from data are drawn from the panel's first opening on: open the
+ * panel with its arrow — it opens in `editable` too — and close it again. The
+ * Select is closed, as before, and its options are in the document.
+ */
+async function openOnce(el: Element): Promise<void> {
+	const arrow = find(el, '.so-select__arrow', HTMLElement)
+
+	await click(arrow)
+	await nextFrame()
+	await click(arrow)
+	await nextFrame()
+}
+
 /** Текст, на который ссылается `aria-activedescendant` поля. */
 const active = (el?: Element) =>
 	document
@@ -384,6 +398,66 @@ describe('опции', () => {
 		expect(row.dataset['selected']).toBe('true')
 		expect(optionOf('Тверь').dataset['selected']).toBe('false')
 		expect(row.className).not.toMatch(/--view-/)
+	})
+})
+
+/**
+ * Options from data are mounted from the panel's first opening on: a closed
+ * Select nobody opened is its field and an empty list. The closed field needs
+ * none of their nodes — the selected text comes from the collection, and the
+ * field refers to the list, which is always there. Closing only hides them.
+ * Options in markup are the consumer's light: they enter the collection only
+ * connected and are there from the start.
+ */
+describe('опции из данных — с первого открытия', () => {
+	const CITY_ITEMS = [
+		{ value: 'msk', text: 'Москва' },
+		{ value: 'tver', text: 'Тверь' },
+	]
+
+	const texts = () => options().map((row) => row.textContent?.trim())
+
+	it('закрытый — текст выбранного и список с id без опций; открыли — опции есть, закрыли — те же', async () => {
+		const el = await mountSelect({ items: CITY_ITEMS, value: 'tver' })
+
+		expect(fieldOf(el).value).toBe('Тверь')
+		expect(list().id).not.toBe('')
+		expect(fieldOf(el).getAttribute('aria-controls')).toBe(list().id)
+		expect(options()).toHaveLength(0)
+
+		await click(fieldOf(el))
+
+		const drawn = options()
+
+		expect(isOpen()).toBe(true)
+		expect(texts()).toEqual(['Москва', 'Тверь'])
+
+		await click(fieldOf(el))
+
+		expect(isOpen()).toBe(false)
+		expect(options()).toHaveLength(2)
+		expect(options().every((row, index) => row === drawn[index])).toBe(true)
+	})
+
+	it('опции разметкой — и до первого открытия', async () => {
+		await render()
+
+		expect(isOpen()).toBe(false)
+		expect(texts()).toEqual(['Москва', 'Тверь', 'Тула'])
+	})
+
+	it('↓ на закрытом поле открывает панель; ссылка — на подсвеченную, когда опции нарисованы', async () => {
+		const el = await mountSelect({ items: CITY_ITEMS })
+
+		await press(fieldOf(el), 'ArrowDown')
+		await nextFrame()
+		await settle()
+
+		const id = fieldOf(el).getAttribute('aria-activedescendant') ?? ''
+
+		expect(isOpen()).toBe(true)
+		expect(id).not.toBe('')
+		expect(document.getElementById(id)?.textContent?.trim()).toBe('Москва')
 	})
 })
 
@@ -1134,6 +1208,8 @@ describe('отбор', () => {
 		await settle()
 		await nextFrame()
 
+		if (items) await openOnce(el)
+
 		if (!engine) throw new Error('so:engine:create не пришёл')
 
 		return { el, engine }
@@ -1165,6 +1241,7 @@ describe('отбор', () => {
 	it('отбор по тексту, а не по значению — поле сравнения ставит Select', async () => {
 		const { engine } = await renderFiltered()
 
+		expect(options()).toHaveLength(4)
 		expect(engine.extensions.filter.fields).toEqual(['text'])
 
 		engine.extensions.filter.query = 'a'
@@ -1176,6 +1253,7 @@ describe('отбор', () => {
 	it('пустой отбор показывает слот empty — в списке, вместо опций', async () => {
 		const { engine } = await renderFiltered({}, '<p slot="empty" class="probe">Пусто</p>')
 
+		expect(options()).toHaveLength(4)
 		expect(document.querySelector('.probe')).toBeNull()
 
 		engine.extensions.filter.query = 'ничего такого нет'
@@ -1357,6 +1435,8 @@ describe('empty', () => {
 	it('пока опций нет — слот empty в списке; появились — уходит из документа', async () => {
 		const el = await mountSelect({ items: [] }, '<p slot="empty" class="probe">Пусто</p>')
 
+		await openOnce(el)
+
 		expect([...list().children].map((node) => node.className)).toEqual(['probe'])
 
 		el.items = [{ value: 'a', text: 'A' }]
@@ -1418,8 +1498,11 @@ describe('группы', () => {
 			items.map((item) => item.value),
 		])
 
+	// Options from data are drawn from the panel's first opening on: the panel
+	// is open from the start where the test looks at them without opening it
+
 	it('группы с подписью, без группы — последними; разделителей по умолчанию нет', async () => {
-		await mountSelect({ items: MIXED, groups: GROUPS })
+		await mountSelect({ items: MIXED, groups: GROUPS, open: true })
 
 		expect(parts()).toEqual(SECTIONS)
 
@@ -1435,7 +1518,12 @@ describe('группы', () => {
 	})
 
 	it('groupSeparators — немой разделитель между соседними секциями, на лету', async () => {
-		const el = await mountSelect({ items: MIXED, groups: GROUPS, groupSeparators: true })
+		const el = await mountSelect({
+			items: MIXED,
+			groups: GROUPS,
+			groupSeparators: true,
+			open: true,
+		})
 
 		expect(parts()).toEqual(SEPARATED)
 		expect(
@@ -1528,12 +1616,15 @@ describe('образцы и отметка', () => {
 		)
 
 	it('образцы item-* — копия в каждой опции из данных, в её слоте', async () => {
+		// Options from data are drawn from the panel's first opening on
 		const el = await mountSelect(
-			{ items: ITEMS },
+			{ items: ITEMS, open: true },
 			`<template slot="item"><b class="own">Свой</b></template>
 			<template slot="item-leading"><u class="lead">до</u></template>
 			<template slot="item-trailing"><s class="trail">после</s></template>`,
 		)
+
+		expect(options()).toHaveLength(2)
 
 		for (const row of options()) {
 			const text = find(row, '.so-button__text', HTMLElement)
@@ -1549,9 +1640,10 @@ describe('образцы и отметка', () => {
 	it('отметка — обёртка у каждой опции, иконка роли check — у выбранной', async () => {
 		const el = await mountSelect({ items: ITEMS, indicator: 'start', mode: 'multiple' })
 
+		await click(fieldOf(el))
+
 		expect(marks()).toEqual(['empty', 'empty'])
 
-		await click(fieldOf(el))
 		await click(optionOf('Второй'))
 
 		expect(marks()).toEqual(['empty', 'icon'])
@@ -1566,7 +1658,12 @@ describe('образцы и отметка', () => {
 	})
 
 	it('start ставит отметку первой в строке, end — последней, none убирает', async () => {
-		const el = await mountSelect({ items: ITEMS.slice(0, 1), indicator: 'start', value: 'a' })
+		const el = await mountSelect({
+			items: ITEMS.slice(0, 1),
+			indicator: 'start',
+			value: 'a',
+			open: true,
+		})
 
 		expect(options()[0].firstElementChild?.className).toBe('so-select-item__indicator')
 
@@ -1594,7 +1691,7 @@ describe('образцы и отметка', () => {
 	})
 
 	it('опция из данных без embedded, её события не всплывают до Select', async () => {
-		const el = await mountSelect({ items: ITEMS })
+		const el = await mountSelect({ items: ITEMS, open: true })
 		const bubbled: unknown[] = []
 
 		el.addEventListener('so:element:ready', ({ target }) => {
@@ -1603,6 +1700,7 @@ describe('образцы и отметка', () => {
 
 		await nextFrame()
 
+		expect(document.querySelectorAll('.so-select-item')).toHaveLength(2)
 		expect(
 			[...document.querySelectorAll('.so-select-item')].some((node) =>
 				node.hasAttribute('embedded'),

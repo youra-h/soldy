@@ -123,9 +123,10 @@
 			{#if state.handleRendered}
 				<div class="so-select__handle" aria-hidden="true"></div>
 			{/if}<div class="so-select__list" {...state.listAria}>
+				<!-- Options from data from the panel's first opening on (`contentRendered`) -->
 				{#if props.children}
 					{@render props.children()}
-				{:else}
+				{:else if state.contentRendered}
 					{#each state.drawnSections ?? [] as section, index (section.key)}
 						{#if state.groupSeparators && index > 0}<div
 								class="so-select__separator"

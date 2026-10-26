@@ -126,6 +126,7 @@ export function Select(props: SelectProps): ReactElement | null {
 		autoFitWidth,
 		panelDataset,
 		handleRendered,
+		contentRendered,
 		listAria,
 		drawnSections,
 		groupSeparators,
@@ -185,16 +186,19 @@ export function Select(props: SelectProps): ReactElement | null {
 					{handleRendered ? (
 						<div className="so-select__handle" aria-hidden="true" />
 					) : null}
+					{/* Options from data from the panel's first opening on (`contentRendered`) */}
 					<div className="so-select__list" {...toAriaProps(listAria)}>
 						{hasSlot(props.children)
 							? renderSlot(props.children)
-							: drawnSections?.flatMap((section, index) =>
-									drawSection(
-										props,
-										section,
-										groupSeparators === true && index > 0,
-									),
-								)}
+							: contentRendered
+								? drawnSections?.flatMap((section, index) =>
+										drawSection(
+											props,
+											section,
+											groupSeparators === true && index > 0,
+										),
+									)
+								: null}
 						{shown?.length === 0 ? renderSlot(props.empty) : null}
 					</div>
 				</Frame>

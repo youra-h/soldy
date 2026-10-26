@@ -1,20 +1,14 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core'
-import { TSelectComponent, TSelectItemComponent } from '@soldy-ui/angular'
+import { TSelectComponent } from '@soldy-ui/angular'
 import { COLLECTION_ITEMS } from '../../../data'
 
-/** The preview of `packages/playground/vue/src/hosts/angular/` with `PREVIEW_PROPS`. */
+/** The preview of `packages/playground/vue/src/hosts/angular/` with `PREVIEW_PROPS`, options as data. */
 @Component({
 	selector: 'bench-select',
-	imports: [TSelectComponent, TSelectItemComponent],
+	imports: [TSelectComponent],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
-	template: `
-		<div so-select placeholder="Выберите" editable>
-			@for (item of items; track item.value) {
-				<div so-select-item [value]="item.value" [text]="item.text"></div>
-			}
-		</div>
-	`,
+	template: `<div so-select placeholder="Выберите" editable [items]="items"></div>`,
 })
 export default class SelectPage {
 	protected readonly items = COLLECTION_ITEMS
