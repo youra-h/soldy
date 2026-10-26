@@ -24,6 +24,7 @@ export function Menu(props: MenuProps): ReactElement | null {
 		triggerAria,
 		triggerDataset,
 		panelClasses,
+		contentRendered,
 		dismiss_ownerAttribute,
 	} = state
 
@@ -51,10 +52,13 @@ export function Menu(props: MenuProps): ReactElement | null {
 					{...toAriaProps(aria)}
 					{...toAriaProps(dismiss_ownerAttribute)}
 				>
+					{/* Items from the panel's first opening on (`contentRendered`) */}
 					<div className="so-menu__list">
-						{hasSlot(props.children)
-							? renderSlot(props.children)
-							: drawItems(state, props)}
+						{!contentRendered
+							? null
+							: hasSlot(props.children)
+								? renderSlot(props.children)
+								: drawItems(state, props)}
 					</div>
 				</Frame>
 			</Elevate>

@@ -1,23 +1,26 @@
 /**
- * DatePicker в React — проводка на настоящей разметке.
+ * DatePicker in React — the wiring on real markup.
  *
- * Сценарии — те же, что у Vue (`date-picker.spec.ts`). Модель — общее полям и
- * календарю, одно значение на две стороны, открытость — проверяет ядро, фокус
- * панели и то, что её открывает, — тест плагинов, раскладку и фокус в
- * браузере — `playground/vue/browser/date-picker.spec.ts`. Здесь важно, что
- * экземпляры ядра доезжают до компонентов (`ctrl`, `engine`), наборы — на
- * свои узлы, а выбор дня и набор в поле на настоящей разметке возвращаются
- * колбэками (`onChangeValue`, `onChangeOpen`).
+ * The scenarios are Vue's (`date-picker.spec.ts`). The model — what the fields
+ * and the calendar share, one value for both sides, openness — is checked by
+ * the core, the panel's focus and what opens it — by the plugin tests, layout
+ * and focus in a browser — by `playground/vue/browser/date-picker.spec.ts`.
+ * What matters here is that the core instances reach the components (`ctrl`,
+ * `engine`), the sets land on their nodes, and a day choice and typing into
+ * the field on real markup come back through the callbacks (`onChangeValue`,
+ * `onChangeOpen`).
  *
- * Своё у React — панель и пересборка. Панель телепортирована в обёртку
- * портала в `body`, а закрытая — скрыта, но смонтирована вместе с
- * календарём; на сервере портала нет, и панель с календарём появляются после
- * гидратации. Поля и календарь ключуются своими экземплярами: DatePicker без
- * `ctrl` StrictMode пересобирает с новыми полями, календарём и движком, и
- * компоненты встают над новыми. Отсюда группа «React». Обновления — внутри
- * `act`: событие, сменившее состояние мимо него, роняет тест сторожем консоли.
+ * React's own are the panel and reassembly. The panel is teleported into the
+ * portal's wrapper in `body`; the calendar in it is mounted from the first
+ * opening on (`contentRendered`), and a closed panel is hidden with it. The
+ * server has no portal, and the panel appears after hydration. The fields and
+ * the calendar are keyed by their instances: StrictMode reassembles a
+ * DatePicker without `ctrl` with new fields, calendar and engine, and the
+ * components stand over the new ones. Hence the «React» group. Updates go
+ * inside `act`: an event that changed state outside it fails the test through
+ * the console guard.
  *
- * Сегодня во всех тестах — суббота 2026-09-26, как в тестах ядра.
+ * Today in every test is Saturday 2026-09-26, as in the core tests.
  */
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
@@ -144,6 +147,12 @@ function press(from: Element, key: string, init: KeyboardEventInit = {}): Keyboa
 	return event
 }
 
+/** Open the panel with its button and wait for the focus model's frame: the calendar mounts with the first opening. */
+async function openPanel(): Promise<void> {
+	click(trigger())
+	await nextFrame()
+}
+
 /** Набрать строку с узла под фокусом документа. */
 function type(keys: string): void {
 	for (const key of keys) {
@@ -223,7 +232,35 @@ describe('DatePicker · одна дата', () => {
 		await nextFrame()
 
 		expect(seen.value).toBe('2026-09-12')
+
+		await openPanel()
+
 		expect(dayCell('2026-09-12').dataset['selected']).toBe('true')
+	})
+
+	it('календарь — с первого открытия, закрытие его не снимает', async () => {
+		const ctrl = new TDatePicker()
+
+		await render(<DatePicker ctrl={ctrl} />)
+
+		// Never opened: the panel is in the document, the calendar is not
+		expect(panel().querySelector('.so-calendar')).toBeNull()
+
+		await openPanel()
+
+		const calendar = node('.so-date-picker__calendar')
+
+		expect(calendar.parentElement).toBe(node('.so-date-picker__content'))
+		expect(dayCell('2026-09-10')).toBeInstanceOf(HTMLElement)
+
+		act(() => {
+			ctrl.open = false
+		})
+		await nextFrame()
+
+		// Closing hides the panel and keeps the very same calendar
+		expect(isOpen()).toBe(false)
+		expect(node('.so-date-picker__calendar')).toBe(calendar)
 	})
 
 	it('выключенный — кнопка выключена, панель не открывается', async () => {
@@ -318,6 +355,7 @@ describe('DatePicker · выбор с подтверждением', () => {
 		const ctrl = new TDatePicker()
 
 		await render(<DatePicker ctrl={ctrl} />)
+		await openPanel()
 
 		expect(footer()).toBeNull()
 
@@ -349,6 +387,7 @@ describe('DatePicker · выбор с подтверждением', () => {
 				<DatePicker confirmable />
 			</LocaleProvider>,
 		)
+		await openPanel()
 
 		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
 		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
@@ -716,6 +755,7 @@ describe('DatePicker · экземпляры ядра', () => {
 		const ctrl = new TDatePicker({ value: '2026-09-10' })
 
 		await render(<DatePicker ctrl={ctrl} />)
+		await openPanel()
 
 		expect(ctrl.engine.options.get('owner')).toBe(ctrl.calendar)
 		expect(dayCell('2026-09-10').dataset['selected']).toBe('true')
@@ -745,6 +785,7 @@ describe('DatePicker · слоты', () => {
 				)}
 			/>,
 		)
+		await openPanel()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('«10»')
 	})
@@ -757,12 +798,14 @@ describe('DatePicker · слоты', () => {
 				)}
 			/>,
 		)
+		await openPanel()
 
 		expect(dayCell('2026-09-10').querySelector('.so-test-day')?.textContent).toBe('10·09-10')
 	})
 
 	it('без слота item день рисует свой номер', async () => {
 		await render(<DatePicker />)
+		await openPanel()
 
 		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
 	})
@@ -799,6 +842,7 @@ describe('DatePicker · жест', () => {
 		const ctrl = new TDatePicker()
 
 		await render(<DatePicker ctrl={ctrl} />)
+		await openPanel()
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset['swiping']).toBe('false')
@@ -852,12 +896,13 @@ describe('DatePicker · жест', () => {
 })
 
 /**
- * Своё у React: пересборка под StrictMode и сервер. Без `ctrl` пересобранный
- * DatePicker — новый инстанс с новыми полями, календарём и движком, и поле и
- * календарь, ключённые своими экземплярами, встают над новыми: набор в поле
- * доходит до значения, а выбор дня — до поля. Портала на сервере нет:
- * сервер рисует корень, поле и кнопку календаря, а панель с календарём
- * появляется после гидратации.
+ * React's own: reassembly under StrictMode and the server. Without `ctrl` the
+ * reassembled DatePicker is a new instance with new fields, calendar and
+ * engine, and the field and the calendar, keyed by their instances, stand over
+ * the new ones: typing into the field reaches the value, and a day choice
+ * reaches the field. The server has no portal: it draws the root, the field and
+ * the calendar button; the panel appears after hydration, and the calendar in
+ * it with the first opening.
  */
 describe('DatePicker · React', () => {
 	const strict = (element: ReactElement) => <StrictMode>{element}</StrictMode>
@@ -870,6 +915,9 @@ describe('DatePicker · React', () => {
 		await nextFrame()
 
 		expect(seen.value).toBe('2026-09-12')
+
+		await openPanel()
+
 		expect(dayCell('2026-09-12').dataset['selected']).toBe('true')
 		expect(nodes('.so-date-picker__field')).toHaveLength(1)
 		expect(nodes('.so-date-picker__panel')).toHaveLength(1)

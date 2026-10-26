@@ -85,8 +85,13 @@ export default {
 				а не здесь: фокус без подсветки держит панель, и узел с ролью и
 				фокусом должен быть один.
 			-->
+			<!--
+				Items are mounted from the panel's first opening on
+				(`contentRendered`): a menu nobody opened builds only its trigger
+				and an empty panel. Closing hides the panel and keeps them.
+			-->
 			<div class="so-menu__list">
-				<slot>
+				<slot v-if="contentRendered">
 					<!--
 						Пункты из `items` — действия и подменю: флажки ставят
 						разметкой. Петля — по секциям показанных пунктов

@@ -616,7 +616,7 @@ describe('хост Angular · превью своим шаблоном', () => {
 	 * панели меню и в панелях подменю, увезённых в `body`, — а снятое превью
 	 * уносит все панели.
 	 */
-	it('меню: пункты разметкой — в панелях меню и подменю, пропсы — меню, выходы — у него', () => {
+	it('меню: пункты разметкой — в панелях меню и подменю, пропсы — меню, выходы — у него', async () => {
 		const node = stage()
 		const events: string[] = []
 		const handle = host.mount(node, {
@@ -626,12 +626,23 @@ describe('хост Angular · превью своим шаблоном', () => {
 		})
 		const trigger = triggerIn(node, '.so-menu')
 		const panel = linked(trigger, 'aria-controls')
-		const [share] = all(panel, '[aria-haspopup="menu"]')
 
 		expect(trigger.textContent?.trim()).toBe('Действия')
 		expect(panel.parentElement).toBe(document.body)
 		expect(panel.classList).toContain('so-menu__panel--size-lg')
 		expect(panel.style.display).toBe('none')
+		// Items are inserted with the panel's first opening
+		expect(all(panel, '[role^="menuitem"]')).toHaveLength(0)
+
+		handle.update({ size: 'lg', open: true })
+
+		expect(panel.style.display).toBe('')
+		expect(trigger.getAttribute('aria-expanded')).toBe('true')
+		expect(events).toContain('change:open')
+
+		const [share] = all(panel, '[aria-haspopup="menu"]')
+		const submenu = linked(share, 'aria-controls')
+
 		expect(textsOf(panel, '.so-menu-group__label')).toEqual(['Вид', 'Сортировка'])
 		expect(textsOf(panel, '[role^="menuitem"] .so-button__text')).toEqual([
 			'Сетка',
@@ -645,17 +656,13 @@ describe('хост Angular · превью своим шаблоном', () => {
 			'В архив',
 			'Удалить',
 		])
-		expect(textsOf(linked(share, 'aria-controls'), '[role="menuitem"]')).toEqual([
-			'Ссылка',
-			'Почта',
-			'Мессенджеры',
-		])
+		// The submenu's items — with its own first opening
+		expect(all(submenu, '[role="menuitem"]')).toHaveLength(0)
 
-		handle.update({ size: 'lg', open: true })
+		share.click()
+		await nextFrame()
 
-		expect(panel.style.display).toBe('')
-		expect(trigger.getAttribute('aria-expanded')).toBe('true')
-		expect(events).toContain('change:open')
+		expect(textsOf(submenu, '[role="menuitem"]')).toEqual(['Ссылка', 'Почта', 'Мессенджеры'])
 		expect(() => handle.update({ nothing: true })).toThrow('нет входов: nothing')
 
 		handle.unmount()
@@ -677,10 +684,13 @@ describe('хост Angular · превью своим шаблоном', () => {
 		const handle = host.mount(node, { component: 'menu', props: preset })
 		const panel = linked(triggerIn(node, '.so-menu'), 'aria-controls')
 
+		// Items from data are drawn with the panel's first opening
+		handle.update({ ...preset, open: true })
+
 		expect(textsOf(panel, '.so-menu-group__label')).toEqual(['Фрукты', 'Овощи'])
 		expect(all(panel, '.so-menu-separator')).toHaveLength(2)
 
-		handle.update({ ...preset, groupSeparators: false })
+		handle.update({ ...preset, open: true, groupSeparators: false })
 
 		expect(all(panel, '.so-menu-separator')).toHaveLength(0)
 

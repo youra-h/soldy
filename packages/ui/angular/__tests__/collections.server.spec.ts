@@ -1142,7 +1142,7 @@ describe('Menu · гидратация', () => {
 		leavePage()
 	})
 
-	it('тот же триггер и та же панель — в body, с пунктами в коллекции; id сходятся, ошибок нет', async () => {
+	it('тот же триггер и та же панель — в body, пункты в коллекции — с первого открытия; id сходятся, ошибок нет', async () => {
 		const error = vi.spyOn(console, 'error')
 		const warn = vi.spyOn(console, 'warn')
 
@@ -1164,6 +1164,17 @@ describe('Menu · гидратация', () => {
 		expect(triggers.map((trigger) => trigger.getAttribute('aria-controls'))).toEqual(links)
 		expect(triggers.map((trigger) => menuPanel(document, trigger))).toEqual(panels)
 		expect(panels.map((panel) => panel.parentElement)).toEqual([document.body, document.body])
+		// Items are mounted from the panel's first opening on (`contentRendered`)
+		expect(panels.map((panel) => all(panel, '[role="menuitem"]'))).toEqual([[], []])
+
+		for (const trigger of triggers) {
+			trigger.click()
+			await app.whenStable()
+			await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+			trigger.click()
+			await app.whenStable()
+		}
+
 		expect(
 			panels.map((panel) =>
 				all(panel, '[role="menuitem"]').map((row) => row.textContent?.trim()),

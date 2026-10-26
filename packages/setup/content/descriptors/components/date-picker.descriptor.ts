@@ -131,6 +131,8 @@ export const DatePickerDescriptor = defineDescriptor(() =>
 				 * без экземпляра формулу не повторяет.
 				 */
 				handleRendered: { type: Boolean, protected: true, triggers: ['change:swipe'] },
+				/** Whether the panel's calendar is mounted: from the first opening on. */
+				contentRendered: { type: Boolean, protected: true, triggers: ['change:open'] },
 				/**
 				 * Набор корня: у диапазона корень — группа полей концов со своим
 				 * именем, у одной даты группа — само поле. Перечитывается на смену

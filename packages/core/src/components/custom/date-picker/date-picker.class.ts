@@ -165,6 +165,8 @@ export class TDatePicker
 
 	protected _mode: TDatePickerMode
 	protected _open!: boolean
+	/** Whether the panel has ever been open — from then on the calendar stays mounted. */
+	protected _opened = false
 	protected _closeOnSelect: boolean
 	protected _confirmable: boolean
 	protected _min: TCalendarDate | undefined
@@ -382,6 +384,18 @@ export class TDatePicker
 
 		this.events.emit('change:open', value)
 		this.events.emit(value ? 'open' : 'close')
+	}
+
+	/**
+	 * Whether the panel's calendar is mounted: from the first opening on. A
+	 * closed picker nobody opened is a field with a button — a month of days
+	 * built for every date field of a form would outweigh the form itself. The
+	 * calendar's instance and engine are the picker's and live regardless;
+	 * only its markup waits. Closing does not unmount it: openness is the
+	 * panel's `visible`, not `rendered`.
+	 */
+	get contentRendered(): boolean {
+		return this._opened
 	}
 
 	/** Можно ли сейчас открыть панель: выключенный и только для чтения — нельзя. */
@@ -745,6 +759,8 @@ export class TDatePicker
 
 	protected _applyOpen(value: boolean): void {
 		this._open = value
+
+		if (value) this._opened = true
 
 		// Закрытую панель не тянут: жест кончается вместе с ней
 		if (!value) this._setSwiping(false)

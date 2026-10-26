@@ -116,6 +116,33 @@ async function open(): Promise<void> {
 	await nextFrame()
 }
 
+/** The next submenu row not opened yet — on any level, in document order. */
+const unopenedSubmenuRow = (opened: ReadonlySet<HTMLElement>): HTMLElement | undefined =>
+	[...document.querySelectorAll<HTMLElement>('[role="menuitem"][aria-haspopup="menu"]')].find(
+		(row) => !opened.has(row),
+	)
+
+/**
+ * First opening of the menu and of every submenu in it, then closing with the
+ * trigger: items are mounted from their panel's first opening on, and closing
+ * keeps them. Items with a panel are not opened — their content follows
+ * `lazyMount`.
+ */
+async function openOnce(): Promise<void> {
+	const opened = new Set<HTMLElement>()
+
+	await open()
+
+	for (let row = unopenedSubmenuRow(opened); row; row = unopenedSubmenuRow(opened)) {
+		opened.add(row)
+		click(row)
+		await nextFrame()
+	}
+
+	click(triggerNode())
+	await nextFrame()
+}
+
 /** Панель по `id` — так на неё ссылается `aria-controls`. */
 const panelOf = (target: HTMLElement): HTMLElement =>
 	node(`#${target.getAttribute('aria-controls') ?? ''}`)
@@ -179,6 +206,7 @@ describe('разметка', () => {
 
 	it('пункты из данных — действия: строка с ролью и вне обхода Tab', async () => {
 		await render(() => <Menu items={ITEMS} trigger={trigger} />)
+		await openOnce()
 
 		expect(rows().map((row) => row.textContent?.trim())).toEqual(['Изменить', 'Удалить'])
 		expect(rows().map((row) => row.getAttribute('role'))).toEqual(['menuitem', 'menuitem'])
@@ -188,6 +216,7 @@ describe('разметка', () => {
 
 	it('размер и вариант меню — модификаторами панели, свой вариант — у пункта', async () => {
 		await render(() => <Menu items={ITEMS} size="lg" variant="brand" trigger={trigger} />)
+		await openOnce()
 
 		expect(panel().classList).toContain('so-frame')
 		expect(panel().classList).toContain('so-menu__panel--size-lg')
@@ -231,6 +260,7 @@ describe('разметка', () => {
 				}
 			/>
 		))
+		await openOnce()
 
 		const [edit, remove] = rows()
 
@@ -242,11 +272,82 @@ describe('разметка', () => {
 
 	it('пустые значок и подсказка — без содержимого: тема прячет их по :empty', async () => {
 		await render(() => <Menu items={ITEMS} trigger={trigger} />)
+		await openOnce()
 
 		for (const row of rows()) {
 			expect(node('.so-menu-item__icon', row).childNodes).toHaveLength(0)
 			expect(node('.so-menu-item__shortcut', row).childNodes).toHaveLength(0)
 		}
+	})
+})
+
+describe('пункты с первого открытия', () => {
+	it('не открывали — пунктов нет ни в панели, ни в коллекции; первое открытие их монтирует, закрытие оставляет те же узлы', async () => {
+		const engine = createEngineMenu()
+
+		await render(() => (
+			<Menu engine={engine} trigger={trigger}>
+				<Menu.Item value="edit" text="Изменить" />
+				<Menu.Item value="remove" text="Удалить" />
+			</Menu>
+		))
+
+		expect(node('.so-menu__list').childElementCount).toBe(0)
+		expect(engine.extensions.batch.items).toEqual([])
+
+		await open()
+
+		const before = rows()
+
+		expect(before.map((row) => row.textContent?.trim())).toEqual(['Изменить', 'Удалить'])
+		expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(['edit', 'remove'])
+
+		click(triggerNode())
+		await nextFrame()
+
+		expect(isOpen()).toBe(false)
+		expect(rows()).toEqual(before)
+		expect(engine.extensions.batch.items).toHaveLength(2)
+	})
+
+	it('↓ на триггере у меню, которое не открывали, — меню открыто на первом пункте', async () => {
+		await render(() => <Menu items={ITEMS} trigger={trigger} />)
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		expect(isOpen()).toBe(true)
+		expect(document.activeElement).toBe(rowOf('Изменить'))
+	})
+
+	it('пункты подменю — с его первого открытия, а не с открытия меню', async () => {
+		const engine = createEngineMenu()
+
+		await render(() => (
+			<Menu trigger={trigger}>
+				<Menu.Submenu value="share" text="Поделиться" engine={engine}>
+					<Menu.Item value="link" text="Ссылка" />
+				</Menu.Submenu>
+			</Menu>
+		))
+		await open()
+
+		const share = rowOf('Поделиться')
+
+		expect(panelOf(share).querySelector('[role^="menuitem"]')).toBeNull()
+		expect(engine.extensions.batch.items).toEqual([])
+
+		click(share)
+		await nextFrame()
+
+		const link = rowIn(panelOf(share), 'Ссылка')
+
+		expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(['link'])
+
+		click(triggerNode())
+		await nextFrame()
+
+		expect(rowIn(panelOf(share), 'Ссылка')).toBe(link)
 	})
 })
 
@@ -442,6 +543,7 @@ describe('нажатие пунктов', () => {
 				<Menu.Item value="edit" text="Изменить" />
 			</Menu>
 		))
+		await openOnce()
 
 		const indicator = (text: string) => rowOf(text).querySelector('.so-menu-item__indicator')
 
@@ -464,6 +566,7 @@ describe('нажатие пунктов', () => {
 				/>
 			</Menu>
 		))
+		await openOnce()
 
 		expect(node('.so-test-mark', rowOf('Сетка')).dataset.mark).toBe('true')
 		expect(rowOf('Сетка').querySelector('.so-menu-item__indicator .so-icon')).toBeNull()
@@ -512,6 +615,7 @@ describe('переключатели', () => {
 				<Menu.CheckboxItem value="grid" text="Сетка" selected />
 			</Menu>
 		))
+		await openOnce()
 
 		return { sort, setSort }
 	}
@@ -601,6 +705,7 @@ describe('переключатели', () => {
 				</Menu.RadioGroup>
 			</Menu>
 		))
+		await openOnce()
 
 		setDateChecked(true)
 
@@ -661,6 +766,7 @@ describe('переключатели', () => {
 				</Menu.RadioGroup>
 			</Menu>
 		))
+		await openOnce()
 
 		expect(node('.so-test-mark', rowOf('По имени')).dataset.mark).toBe('true')
 		expect(rowOf('По имени').querySelector('.so-menu-item__dot')).toBeNull()
@@ -680,6 +786,7 @@ describe('группа и разделитель', () => {
 				</Menu.Group>
 			</Menu>
 		))
+		await openOnce()
 
 		const [labelled, bare] = [...panel().querySelectorAll<HTMLElement>('.so-menu-group')]
 		const label = node('.so-menu-group__label', labelled)
@@ -739,6 +846,7 @@ describe('группы из данных', () => {
 
 	it('группы с подписью, разделитель — только между секциями, без группы — последними', async () => {
 		await render(() => <Menu items={GROUPED} groups={GROUPS} trigger={trigger} />)
+		await openOnce()
 
 		expect(parts()).toEqual(['группа Правка', '—', 'группа Вид', '—', 'Переименовать'])
 		expect(rows().map((row) => row.textContent?.trim())).toEqual([
@@ -791,6 +899,7 @@ describe('группы из данных', () => {
 		const [groups, setGroups] = createSignal(GROUPS)
 
 		await render(() => <Menu items={GROUPED} groups={groups()} trigger={trigger} />)
+		await openOnce()
 
 		setGroups([
 			{ key: 'edit', label: 'Edit' },
@@ -859,6 +968,7 @@ describe('группы из данных', () => {
 				trigger={trigger}
 			/>
 		))
+		await openOnce()
 
 		expect(parts()).toEqual(['группа Опасное', '—', 'Изменить'])
 	})
@@ -867,6 +977,7 @@ describe('группы из данных', () => {
 		const engine = createEngineMenu({ items: ITEMS })
 
 		await render(() => <Menu engine={engine} trigger={trigger} />)
+		await openOnce()
 
 		expect(parts()).toEqual(['Изменить', 'Удалить'])
 
@@ -878,6 +989,7 @@ describe('группы из данных', () => {
 
 	it('без группировки — ни групп, ни разделителей: пункты прямо в списке', async () => {
 		await render(() => <Menu items={ITEMS} trigger={trigger} />)
+		await openOnce()
 
 		expect(parts()).toEqual(['Изменить', 'Удалить'])
 		expect(panel().querySelector('.so-menu-group, .so-menu-separator')).toBeNull()
@@ -887,6 +999,7 @@ describe('группы из данных', () => {
 		await render(() => (
 			<Menu items={GROUPED} groups={GROUPS} groupSeparators={false} trigger={trigger} />
 		))
+		await openOnce()
 
 		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
 		expect(panel().querySelector('.so-menu-separator')).toBeNull()
@@ -898,6 +1011,7 @@ describe('группы из данных', () => {
 		await render(() => (
 			<Menu items={GROUPED} groups={GROUPS} groupSeparators={separated()} trigger={trigger} />
 		))
+		await openOnce()
 
 		expect(parts()).toEqual(['группа Правка', 'группа Вид', 'Переименовать'])
 
@@ -918,6 +1032,7 @@ describe('группы из данных', () => {
 				<Menu.Item value="remove" text="Удалить" />
 			</Menu>
 		))
+		await openOnce()
 
 		expect(parts()).toEqual(['Изменить', '—', 'Удалить'])
 	})
@@ -951,6 +1066,7 @@ describe('группы разметки', () => {
 				<Menu.Item value="close" text="Закрыть" />
 			</Menu>
 		))
+		await openOnce()
 
 		return engine
 	}
@@ -1168,6 +1284,7 @@ describe('подменю', () => {
 
 	it('строка — пункт меню, панель подменю — меню с именем от строки, в body и скрыта', async () => {
 		const { container } = await render(() => markup())
+		await openOnce()
 
 		const row = shareRow()
 
@@ -1190,6 +1307,7 @@ describe('подменю', () => {
 
 	it('пункт входит в меню над ним, его пункты — в его собственное меню', async () => {
 		await render(() => markup())
+		await openOnce()
 
 		expect(texts(rootPanel())).toEqual(['Изменить', 'Поделиться', 'Удалить'])
 		expect(texts(subPanel())).toEqual(['Ссылка', 'Почта'])
@@ -1315,6 +1433,7 @@ describe('подменю', () => {
 
 	it('размер меню — у панели подменю и у его пунктов', async () => {
 		await render(() => markup(() => ({ size: 'lg' })))
+		await openOnce()
 
 		expect(subPanel().classList).toContain('so-menu__panel')
 		expect(subPanel().classList).toContain('so-menu__panel--size-lg')
@@ -1339,6 +1458,7 @@ describe('подменю', () => {
 				() => ({ variant: own() }),
 			),
 		)
+		await openOnce()
 
 		expect(variantsOf(subPanel())).toEqual(['so-menu__panel--variant-brand'])
 		expect(variantsOf(shareRow().parentElement)).toEqual([])
@@ -1378,6 +1498,7 @@ describe('подменю', () => {
 				/>
 			</Menu>
 		))
+		await openOnce()
 
 		expect(texts(subPanel())).toEqual(['Почта…', 'Ссылка…'])
 		expect(node('.so-menu-group__label', subPanel()).textContent).toBe('Отправить')
@@ -1404,6 +1525,7 @@ describe('подменю', () => {
 				/>
 			</Menu>
 		))
+		await openOnce()
 
 		// Меню своих разделителей не просит, а подменю — по своему умолчанию
 		expect(subPanel().querySelectorAll('.so-menu-separator')).toHaveLength(1)
@@ -1457,6 +1579,7 @@ describe('подменю', () => {
 			const [variant, setVariant] = createSignal<TComponentVariant>('brand')
 
 			await render(() => <Menu items={DATA} variant={variant()} trigger={trigger} />)
+			await openOnce()
 
 			const messengers = () => panelOf(submenuRow('Мессенджеры'))
 
@@ -1471,6 +1594,7 @@ describe('подменю', () => {
 
 		it('пункт с items — подменю: строка объявляет меню, панель — его пункты, третий уровень — тоже', async () => {
 			await render(() => <Menu items={DATA} trigger={trigger} />)
+			await openOnce()
 
 			const messengers = submenuRow('Мессенджеры')
 
@@ -1583,6 +1707,7 @@ describe('подменю', () => {
 					trigger={trigger}
 				/>
 			))
+			await openOnce()
 
 			const row = shareRow()
 			const share = subPanel()
@@ -1625,6 +1750,7 @@ describe('подменю', () => {
 					)}
 				/>
 			))
+			await openOnce()
 
 			const messengers = submenuRow('Мессенджеры')
 			const label = (row: HTMLElement) => node('.so-button__text', row).textContent
@@ -1681,6 +1807,7 @@ describe('подменю', () => {
 					}
 				/>
 			))
+			await openOnce()
 
 			const exportRow = submenuRow('Экспорт')
 
@@ -1732,6 +1859,7 @@ describe('подменю', () => {
 					)}
 				/>
 			))
+			await openOnce()
 
 			const replaced = submenuOf(engine, 'export')
 
@@ -1739,6 +1867,8 @@ describe('подменю', () => {
 
 			setItems([{ value: 'export', text: 'Выгрузка', items: [] }])
 			await nextFrame()
+			// The new submenu mounts its items from its own first opening on
+			await openOnce()
 
 			// Новый пункт и новый движок; пункты шаблона — в нём, прежний пуст
 			const row = submenuRow('Выгрузка')
@@ -1833,6 +1963,7 @@ describe('подменю', () => {
 						trigger={trigger}
 					/>
 				))
+				await openOnce()
 
 				const share = submenuOf(engine, 'share')
 				const row = shareRow()
@@ -1917,6 +2048,7 @@ describe('пункт с панелью', () => {
 
 	it('строка — пункт меню, панель — диалог с именем от строки, в body и скрыта', async () => {
 		const { container } = await render(() => markup())
+		await openOnce()
 
 		const row = dueRow()
 
@@ -2088,6 +2220,7 @@ describe('пункт с панелью', () => {
 				() => ({ lazyMount: true }),
 			),
 		)
+		await openOnce()
 
 		expect(duePanel().querySelector('.so-test-earlier')).toBeNull()
 		expect(duePanel().querySelector('.so-menu-item__content')).not.toBeNull()
@@ -2139,6 +2272,7 @@ describe('пункт с панелью', () => {
 				</Menu.PopoverItem>
 			</Menu>
 		))
+		await openOnce()
 
 		const row = dueRow()
 
@@ -2156,6 +2290,7 @@ describe('пункт с панелью', () => {
 				() => ({ variant: 'danger' }),
 			),
 		)
+		await openOnce()
 
 		const item = dueRow().parentElement
 

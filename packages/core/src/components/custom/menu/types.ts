@@ -158,4 +158,6 @@ export interface IMenu extends IStylable<IMenuProps, TMenuEvents>, IMenuOwner<TM
 	 * телепортированной панели модификаторы корня не доходят
 	 */
 	readonly panelClasses: TClasses
+	/** Whether the panel's items are mounted: from the first opening on */
+	readonly contentRendered: boolean
 }

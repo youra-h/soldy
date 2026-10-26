@@ -40,4 +40,10 @@ export interface IMenuPopupItem<
 	 * `id` и `aria-labelledby` на строку пункта пишет плагин связок
 	 */
 	readonly panelAria: TAria
+	/**
+	 * Whether the panel's content is mounted: the submenu's items from the
+	 * first opening on; the content of an item with a panel — always, and with
+	 * `lazyMount` from the first opening on
+	 */
+	readonly contentRendered: boolean
 }

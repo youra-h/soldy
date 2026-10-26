@@ -116,44 +116,47 @@
 		Шаблон `item` — календарю, только заданный; подвал — только при `confirmable`.
 	-->
 	<div class="so-date-picker__content">
-		<div
-			so-calendar
-			embedded="date-picker.calendar"
-			class="so-date-picker__calendar"
-			[ctrl]="instance()?.calendar"
-			[engine]="instance()?.engine"
-		>
-			@if (slot('item'); as content) {
-				<ng-template slot="item" let-item="item" let-text="text">
-					<ng-container
-						[ngTemplateOutlet]="content"
-						[ngTemplateOutletContext]="{ item, text }"
-					/>
-				</ng-template>
-			}
-			@if (state()['confirmable']) {
-				<ng-template slot="footer">
-					<button
-						so-button
-						embedded="date-picker.cancel"
-						type="button"
-						class="so-date-picker__cancel"
-						[size]="state()['size']"
-						[text]="state()['names_cancel']"
-						(click)="close()"
-					></button>
-					<button
-						so-button
-						embedded="date-picker.confirm"
-						type="button"
-						class="so-date-picker__confirm"
-						[size]="state()['size']"
-						[disabled]="state()['confirmDisabled']"
-						[text]="state()['names_confirm']"
-						(click)="instance()?.confirm()"
-					></button>
-				</ng-template>
-			}
-		</div>
+		<!-- The calendar from the panel's first opening on (`contentRendered`) -->
+		@if (state()['contentRendered']) {
+			<div
+				so-calendar
+				embedded="date-picker.calendar"
+				class="so-date-picker__calendar"
+				[ctrl]="instance()?.calendar"
+				[engine]="instance()?.engine"
+			>
+				@if (slot('item'); as content) {
+					<ng-template slot="item" let-item="item" let-text="text">
+						<ng-container
+							[ngTemplateOutlet]="content"
+							[ngTemplateOutletContext]="{ item, text }"
+						/>
+					</ng-template>
+				}
+				@if (state()['confirmable']) {
+					<ng-template slot="footer">
+						<button
+							so-button
+							embedded="date-picker.cancel"
+							type="button"
+							class="so-date-picker__cancel"
+							[size]="state()['size']"
+							[text]="state()['names_cancel']"
+							(click)="close()"
+						></button>
+						<button
+							so-button
+							embedded="date-picker.confirm"
+							type="button"
+							class="so-date-picker__confirm"
+							[size]="state()['size']"
+							[disabled]="state()['confirmDisabled']"
+							[text]="state()['names_confirm']"
+							(click)="instance()?.confirm()"
+						></button>
+					</ng-template>
+				}
+			</div>
+		}
 	</div>
 </div>

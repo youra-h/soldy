@@ -25,6 +25,4 @@ export interface IMenuPopoverItem extends IMenuPopupItem<
 > {
 	/** Не монтировать содержимое панели до первого открытия */
 	lazyMount: boolean
-	/** Смонтировано ли содержимое панели: без `lazyMount` — всегда */
-	readonly contentRendered: boolean
 }

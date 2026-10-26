@@ -54,6 +54,17 @@ async function settle(): Promise<void> {
 	await nextFrame()
 }
 
+/**
+ * Open the panel once and close it again: the calendar is built from the
+ * panel's first opening on and stays.
+ */
+async function firstOpening(el: TDatePickerElementProps): Promise<void> {
+	el.open = true
+	await settle()
+	el.open = false
+	await settle()
+}
+
 beforeEach(() => {
 	vi.useFakeTimers({ toFake: ['Date'] })
 	vi.setSystemTime(new Date(2026, 8, 26, 12))
@@ -312,6 +323,9 @@ describe('DatePicker · одна дата', () => {
 
 	it('набор в поле — so:change:value и выбранный день в календаре', async () => {
 		const el = await mount()
+
+		await firstOpening(el)
+
 		const state = model(el)
 
 		// en-US: месяц, день, год
@@ -333,6 +347,36 @@ describe('DatePicker · одна дата', () => {
 		await settle()
 
 		expect(isOpen()).toBe(false)
+	})
+})
+
+/**
+ * The calendar is built from the panel's first opening on (`contentRendered`):
+ * a picker nobody opened is a field with a button and an empty panel. Closing
+ * keeps the same calendar.
+ */
+describe('DatePicker · календарь с первого открытия', () => {
+	it('до открытия календаря нет, открытие строит его в панели, закрытие оставляет тот же узел', async () => {
+		const el = await mount('<div is="so-date-picker" value="2026-09-10"></div>')
+
+		expect(node('.so-date-picker__content').parentElement).toBe(panel())
+		expect(document.querySelector('.so-date-picker__calendar')).toBeNull()
+		expect(document.querySelector('.so-calendar-item')).toBeNull()
+
+		trigger().click()
+		await settle()
+
+		const calendar = node('.so-date-picker__calendar')
+
+		expect(calendar.parentElement).toBe(node('.so-date-picker__content'))
+		expect(dayCell('2026-09-10').dataset['selected']).toBe('true')
+
+		el.open = false
+		await settle()
+
+		expect(isOpen()).toBe(false)
+		expect(node('.so-date-picker__calendar')).toBe(calendar)
+		expect(dayCell('2026-09-10').dataset['selected']).toBe('true')
 	})
 })
 
@@ -446,10 +490,11 @@ describe('DatePicker · выбор с подтверждением', () => {
 
 	it('без confirmable подвала нет; с ним — «Отмена», потом «OK», в подвале календаря', async () => {
 		const ctrl = new TDatePicker()
-
-		await mount(undefined, (el) => {
-			el.ctrl = ctrl
+		const el = await mount(undefined, (picker) => {
+			picker.ctrl = ctrl
 		})
+
+		await firstOpening(el)
 
 		expect(footer()).toBeNull()
 
@@ -473,7 +518,9 @@ describe('DatePicker · выбор с подтверждением', () => {
 	})
 
 	it('текст кнопок — от локали поддерева', async () => {
-		await mount('<div is="so-date-picker" confirmable></div>', undefined, ruRU)
+		const el = await mount('<div is="so-date-picker" confirmable></div>', undefined, ruRU)
+
+		await firstOpening(el)
 
 		expect(cancel().textContent?.trim()).toBe(ruRU.translations.datePicker.cancel)
 		expect(confirm().textContent?.trim()).toBe(ruRU.translations.datePicker.confirm)
@@ -860,10 +907,11 @@ describe('DatePicker · форма', () => {
 describe('DatePicker · экземпляры ядра', () => {
 	it('внешний ctrl: поля, календарь и движок — его', async () => {
 		const ctrl = new TDatePicker({ value: '2026-09-10' })
-
-		await mount(undefined, (el) => {
-			el.ctrl = ctrl
+		const el = await mount(undefined, (picker) => {
+			picker.ctrl = ctrl
 		})
+
+		await firstOpening(el)
 
 		const calendar = node('.so-date-picker__calendar')
 
@@ -918,9 +966,11 @@ describe('DatePicker · слоты', () => {
 	 * календарь копирует его в каждый день; данные копия берёт у элемента дня.
 	 */
 	it('item — образец: копия в каждом дне календаря панели', async () => {
-		await mount(`<div is="so-date-picker">
+		const el = await mount(`<div is="so-date-picker">
 			<template slot="item"><span class="so-test-day"></span></template>
 		</div>`)
+
+		await firstOpening(el)
 
 		const day = dayCell('2026-09-10')
 
@@ -930,7 +980,7 @@ describe('DatePicker · слоты', () => {
 	})
 
 	it('без слота item день рисует свой номер', async () => {
-		await mount()
+		await firstOpening(await mount())
 
 		expect(dayCell('2026-09-10').textContent?.trim()).toBe('10')
 	})
@@ -970,10 +1020,11 @@ describe('DatePicker · жест', () => {
 
 	it('без жеста полосы нет; с жестом — первая в панели, немая; календарь — в содержимом', async () => {
 		const ctrl = new TDatePicker()
-
-		await mount(undefined, (el) => {
-			el.ctrl = ctrl
+		const el = await mount(undefined, (picker) => {
+			picker.ctrl = ctrl
 		})
+
+		await firstOpening(el)
 
 		expect(handle()).toBeNull()
 		expect(panel().dataset['swiping']).toBe('false')

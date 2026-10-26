@@ -655,6 +655,14 @@ describe('хост Web Components · оверлеи', () => {
 		expect(trigger.textContent?.trim()).toBe('Действия')
 		expect(panel.parentElement).toBe(document.body)
 		expect(panel.getAttribute('role')).toBe('menu')
+		// Items come with the panel's first opening
+		expect(panel.querySelector('[role^="menuitem"]')).toBeNull()
+
+		await nextFrame()
+		trigger.click()
+		await flush()
+		await nextFrame()
+
 		expect(texts(panel.querySelectorAll('.so-menu-group__label'))).toEqual([
 			'Вид',
 			'Сортировка',
@@ -667,10 +675,6 @@ describe('хост Web Components · оверлеи', () => {
 			'Ctrl+E',
 		)
 
-		await nextFrame()
-		trigger.click()
-		await flush()
-		await nextFrame()
 		events.length = 0
 
 		const edit = row('Изменить')
@@ -931,7 +935,8 @@ describe('хост Web Components · даты', () => {
 
 		expect(find(picker, '.so-date-picker__field').getAttribute('aria-label')).toBe('Дата')
 		expect(trigger.getAttribute('aria-controls')).toBe(panel.id)
-		expect(panel.querySelector('.so-date-picker__calendar .so-calendar__grid')).not.toBeNull()
+		// The calendar comes with the panel's first opening
+		expect(panel.querySelector('.so-date-picker__calendar')).toBeNull()
 		expect(panel.style.display).toBe('none')
 
 		await nextFrame()
@@ -941,7 +946,10 @@ describe('хост Web Components · даты', () => {
 
 		expect(events).toContain('change:open')
 		expect(panel.style.display).toBe('')
+		expect(panel.querySelector('.so-date-picker__calendar .so-calendar__grid')).not.toBeNull()
 
+		// The days' plugins get their nodes a frame after the calendar is built
+		await nextFrame()
 		dayOf(panel, '12').click()
 		await flush()
 

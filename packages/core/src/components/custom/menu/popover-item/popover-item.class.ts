@@ -34,8 +34,6 @@ export default class TMenuPopoverItem
 	}
 
 	protected _lazyMount: boolean
-	/** Открывали ли панель хоть раз — после этого `lazyMount` содержимое не прячет. */
-	protected _opened: boolean
 
 	constructor(props: Partial<IMenuPopoverItemProps> = {}) {
 		super(props)
@@ -46,9 +44,6 @@ export default class TMenuPopoverItem
 		this._declarePopup('dialog')
 
 		this._lazyMount = props.lazyMount ?? ctor.defaultValues.lazyMount
-		// Поля наследника встают после конструктора базы, а открытость с
-		// первой сборки база уже приняла: открытую со старта панель открывали
-		this._opened = this._open
 	}
 
 	/**
@@ -69,17 +64,12 @@ export default class TMenuPopoverItem
 	}
 
 	/**
-	 * Смонтировано ли содержимое панели: без `lazyMount` — всегда, с ним —
-	 * после первого открытия.
+	 * Whether the panel's content is mounted: without `lazyMount` — always (the
+	 * item itself is mounted with the menu's first opening), with it — from the
+	 * panel's own first opening on.
 	 */
-	get contentRendered(): boolean {
-		return !this._lazyMount || this._opened
-	}
-
-	protected override _applyOpen(value: boolean): void {
-		super._applyOpen(value)
-
-		if (value) this._opened = true
+	override get contentRendered(): boolean {
+		return !this._lazyMount || super.contentRendered
 	}
 
 	override getProps(): IMenuPopoverItemProps {

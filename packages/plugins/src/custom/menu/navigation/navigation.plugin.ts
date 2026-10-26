@@ -68,6 +68,8 @@ export abstract class TMenuNavigationPlugin<
 	/** Панель со слушателем клавиш — пока меню открыто. */
 	private _panel: IDomEventTarget | null = null
 	private readonly _typeahead = new TTypeahead()
+	/** Frame that highlights the edge item once the panel's first opening has drawn the items. */
+	private _edgeFrame: number | null = null
 
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
@@ -89,6 +91,7 @@ export abstract class TMenuNavigationPlugin<
 
 			// Закрытое меню подсветку не держит; фокус не трогается — его
 			// возвращает модель фокуса
+			this._cancelEdgeFrame()
 			this._typeahead.reset()
 			this.clearHighlight()
 		})
@@ -96,6 +99,7 @@ export abstract class TMenuNavigationPlugin<
 
 	override destroy(): void {
 		this._unlistenPanel()
+		this._cancelEdgeFrame()
 
 		// Владельца нет — снятие подсветки в `destroy()` базы фокус не двигает
 		this._owner = null
@@ -129,10 +133,17 @@ export abstract class TMenuNavigationPlugin<
 	}
 
 	/**
-	 * Открыть меню и подсветить крайний пункт — фокус уйдёт на его строку.
-	 * Так открывают клавишей: кнопку — ↓, Enter, пробел и ↑, контекстное меню —
-	 * его клавиша и Shift+F10, подменю — стрелка к концу строки, Enter и
-	 * пробел на его строке.
+	 * Open the menu and highlight its edge item — focus goes to that item's
+	 * row. This is how a key opens it: the button — ↓, Enter, Space and ↑, the
+	 * context menu — its key and Shift+F10, a submenu — the arrow towards the
+	 * end of the line, Enter and Space on its row.
+	 *
+	 * The panel's items are mounted with its first opening
+	 * (`contentRendered`): on that opening the collection is still empty, and
+	 * the adapter draws the items after this call. The edge is then
+	 * highlighted on the next frame — every adapter has drawn them by then,
+	 * and their rows are in the document. A closing before that frame cancels
+	 * it.
 	 */
 	openAt(edge: TListEdge): void {
 		const owner = this._owner
@@ -140,7 +151,19 @@ export abstract class TMenuNavigationPlugin<
 		if (!owner) return
 
 		owner.open = true
-		this.highlightEdge(edge)
+		this._cancelEdgeFrame()
+
+		if (this.items().length > 0) {
+			this.highlightEdge(edge)
+
+			return
+		}
+
+		this._edgeFrame = requestAnimationFrame(() => {
+			this._edgeFrame = null
+
+			if (this._owner?.open) this.highlightEdge(edge)
+		})
 	}
 
 	/**
@@ -187,6 +210,13 @@ export abstract class TMenuNavigationPlugin<
 
 		this._panel = panel
 		panel.addEventListener('keydown', this._onPanelKeyDown)
+	}
+
+	private _cancelEdgeFrame(): void {
+		if (this._edgeFrame === null) return
+
+		cancelAnimationFrame(this._edgeFrame)
+		this._edgeFrame = null
 	}
 
 	private _unlistenPanel(): void {

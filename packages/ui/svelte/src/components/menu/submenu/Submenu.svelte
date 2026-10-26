@@ -165,11 +165,14 @@
 			{...state.panelAria}
 			{...state.dismiss_ownerAttribute}
 		>
+			<!-- Items from the panel's first opening on (`contentRendered`) -->
 			<div class="so-menu__list">
-				{#if props.children}
-					{@render props.children()}
-				{:else}
-					{@render drawItems(state, props)}
+				{#if state.contentRendered}
+					{#if props.children}
+						{@render props.children()}
+					{:else}
+						{@render drawItems(state, props)}
+					{/if}
 				{/if}
 			</div>
 		</Frame>

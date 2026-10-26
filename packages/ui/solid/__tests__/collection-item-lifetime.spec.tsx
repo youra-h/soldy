@@ -198,7 +198,8 @@ const MARKUP: ReadonlyArray<
 		'Menu',
 		createEngineMenu,
 		(engine) => (
-			<Menu engine={engine}>
+			// Open: items are mounted from the panel's first opening on
+			<Menu engine={engine} open>
 				<Menu.Item class="probe" value="a" text="A" />
 			</Menu>
 		),
@@ -207,8 +208,8 @@ const MARKUP: ReadonlyArray<
 		'Menu.Submenu',
 		createEngineMenu,
 		(engine) => (
-			<Menu>
-				<Menu.Submenu value="share" text="Поделиться" engine={engine}>
+			<Menu open>
+				<Menu.Submenu value="share" text="Поделиться" engine={engine} open>
 					<Menu.Item class="probe" value="a" text="A" />
 				</Menu.Submenu>
 			</Menu>

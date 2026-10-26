@@ -165,15 +165,18 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 						<Show when={state.handleRendered}>
 							<div class="so-date-picker__handle" aria-hidden="true" />
 						</Show>
+						{/* The calendar from the panel's first opening on (`contentRendered`) */}
 						<div class="so-date-picker__content">
-							<Calendar
-								embedded="date-picker.calendar"
-								class="so-date-picker__calendar"
-								ctrl={binding.calendar}
-								engine={binding.engine}
-								item={props.item}
-								footer={state.confirmable && footer()}
-							/>
+							<Show when={state.contentRendered}>
+								<Calendar
+									embedded="date-picker.calendar"
+									class="so-date-picker__calendar"
+									ctrl={binding.calendar}
+									engine={binding.engine}
+									item={props.item}
+									footer={state.confirmable && footer()}
+								/>
+							</Show>
 						</div>
 					</Frame>
 				</Elevate>

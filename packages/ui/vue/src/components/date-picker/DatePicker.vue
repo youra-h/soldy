@@ -223,8 +223,14 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 				дня — слот `item` DatePicker, отданный календарю под тем же именем,
 				с его scope `{ item, text }`.
 			-->
+			<!--
+				The calendar is mounted from the panel's first opening on
+				(`contentRendered`): a picker nobody opened is a field with a
+				button. Closing hides the panel and keeps the calendar.
+			-->
 			<div class="so-date-picker__content">
 				<Calendar
+					v-if="contentRendered"
 					embedded="date-picker.calendar"
 					class="so-date-picker__calendar"
 					:ctrl="calendar"

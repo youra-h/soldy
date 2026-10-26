@@ -85,6 +85,10 @@ function isTabs(node: Element): node is TTabsElementProps {
 	return node instanceof TTabsElement
 }
 
+function isMenu(node: Element): node is TMenuElementProps {
+	return node instanceof TMenuElement
+}
+
 /**
  * Где элементы коллекции владельца: в нём самом, а у меню и Select — в
  * панели, увезённой в `body`.
@@ -170,6 +174,14 @@ describe.each(COLLECTIONS)(
 			const el = mountOver(tag, is, guard, items)
 
 			await flush()
+
+			// The menu draws its items from the panel's first opening on
+			if (isMenu(el)) {
+				el.open = true
+				await flush()
+				el.open = false
+				await flush()
+			}
 
 			const live = watchSubscriptions(items)
 			const shown = () => scope(el).querySelectorAll(`[class~="${is}-item"]`).length

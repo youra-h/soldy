@@ -135,8 +135,12 @@ export default { ...SetupMenuSubmenu, components }
 				пункт; `default` подменю — `item-content`, а свои `item` и
 				`item-*` подменю отдаёт следующему уровню под теми же именами.
 			-->
+			<!--
+				Items are mounted from the panel's first opening on
+				(`contentRendered`), as the menu's.
+			-->
 			<div class="so-menu__list">
-				<slot>
+				<slot v-if="contentRendered">
 					<template v-for="(section, index) in sections" :key="section.key">
 						<MenuSeparator v-if="groupSeparators && index > 0" />
 						<MenuGroup v-if="section.group" :label="section.group.label">

@@ -130,6 +130,8 @@ export const MenuDescriptor = defineDescriptor(() =>
 					protected: true,
 					triggers: ['change:panelClasses'],
 				},
+				/** Whether the panel's items are mounted: from the first opening on. */
+				contentRendered: { type: Boolean, protected: true, triggers: ['change:open'] },
 			},
 		},
 

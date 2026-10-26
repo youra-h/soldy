@@ -106,7 +106,16 @@ export const menuTemplate: ITemplate<IMenu, TMenuCollectionFacade, TMenuOutputs>
 			if (trigger) ownerAttributes(trigger, { ...state.triggerAria, ...state.triggerDataset })
 		}),
 
-		bind(['sections', 'submenus', 'groupSeparators'], (ctx) => {
+		// Items from the panel's first opening on (`contentRendered`): markup
+		// items stay out of the document and are not assembled until then
+		bind('contentRendered', ({ state, showSlot }) => {
+			showSlot(DEFAULT_SLOT, state.contentRendered === true)
+		}),
+
+		// Items from data — likewise drawn from the first opening on
+		bind(['sections', 'submenus', 'groupSeparators', 'contentRendered'], (ctx) => {
+			if (ctx.state.contentRendered !== true) return
+
 			drawItems(
 				ctx,
 				ctx.state.sections,

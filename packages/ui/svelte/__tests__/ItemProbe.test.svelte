@@ -63,25 +63,26 @@
 		<Select.Item value="a" text="A" {...part} />
 	</Select>
 {:else if kind === 'menu-item'}
-	<Menu>
+	<!-- Open: menu items are mounted from the panel's first opening on -->
+	<Menu open>
 		<Menu.Item value="a" text="A" {...part} />
 	</Menu>
 {:else if kind === 'menu-checkbox-item'}
-	<Menu>
+	<Menu open>
 		<Menu.CheckboxItem value="a" text="A" {...part} />
 	</Menu>
 {:else if kind === 'menu-radio-item'}
-	<Menu>
+	<Menu open>
 		<Menu.RadioGroup value="a">
 			<Menu.RadioItem value="a" text="A" {...part} />
 		</Menu.RadioGroup>
 	</Menu>
 {:else if kind === 'menu-submenu'}
-	<Menu>
+	<Menu open>
 		<Menu.Submenu value="share" text="Поделиться" {...part} />
 	</Menu>
 {:else if kind === 'menu-popover-item'}
-	<Menu>
+	<Menu open>
 		<Menu.PopoverItem value="due" text="Срок" {...part} />
 	</Menu>
 {:else}

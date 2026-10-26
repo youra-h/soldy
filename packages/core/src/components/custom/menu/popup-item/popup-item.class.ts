@@ -40,6 +40,8 @@ export default abstract class TMenuPopupItem<
 	}
 
 	protected _open!: boolean
+	/** Whether the panel has ever been open — from then on its content stays mounted. */
+	protected _opened = false
 	protected _panelAria: TAria
 
 	constructor(props: Partial<TProps> = {}) {
@@ -88,6 +90,16 @@ export default abstract class TMenuPopupItem<
 	}
 
 	/**
+	 * Whether the panel's content is mounted: from the first opening on, as the
+	 * menu's items (`TMenu.contentRendered`) — submenu items nobody has seen
+	 * are not built. Closing does not unmount it: openness is the panel's
+	 * `visible`, not `rendered`.
+	 */
+	get contentRendered(): boolean {
+		return this._opened
+	}
+
+	/**
 	 * Что за панель у пункта — зовёт конструктор наследника. Одно слово на обе
 	 * стороны связки: `aria-haspopup` строки и роль панели.
 	 */
@@ -98,6 +110,8 @@ export default abstract class TMenuPopupItem<
 
 	protected _applyOpen(value: boolean): void {
 		this._open = value
+
+		if (value) this._opened = true
 
 		this._aria.add('aria-expanded', String(value))
 

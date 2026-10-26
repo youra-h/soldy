@@ -509,6 +509,20 @@ describe('панель', () => {
 		expect(closed).toHaveBeenCalledTimes(1)
 	})
 
+	it('календарь — с первого открытия: закрытие его оставляет, открытая со старта — сразу', () => {
+		const target = picker()
+
+		expect(target.contentRendered).toBe(false)
+
+		target.open = true
+		expect(target.contentRendered).toBe(true)
+
+		target.open = false
+		expect(target.contentRendered).toBe(true)
+
+		expect(picker({ open: true }).contentRendered).toBe(true)
+	})
+
 	it('выключенный и только для чтения не открываются; выключение закрывает', () => {
 		const target = picker({ disabled: true })
 

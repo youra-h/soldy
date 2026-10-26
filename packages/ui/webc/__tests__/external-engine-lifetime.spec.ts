@@ -326,6 +326,11 @@ describe('Menu над движком и владельцем снаружи', ()
 	it('переставленное трижды и снятое — на шинах владельца и движка ничего', async () => {
 		const owner = new TMenu()
 		const engine = createEngineMenu({ owner, items: ITEMS })
+
+		// Opened once: every assembly draws the items from then on
+		owner.open = true
+		owner.open = false
+
 		const extensions = Object.values(engine.extensions).flatMap((extension) =>
 			extension ? [extension.events] : [],
 		)
@@ -677,6 +682,11 @@ describe('Calendar над движком и владельцем снаружи'
 describe('DatePicker над владельцем снаружи', () => {
 	it('переставленный трижды и снятый — на шинах владельца, полей, календаря и движка ничего', async () => {
 		const owner = new TDatePicker({ value: '2026-09-10' })
+
+		// Opened once: every assembly builds the calendar from then on
+		owner.open = true
+		owner.open = false
+
 		const live = watchBuses([
 			owner.events,
 			owner.field.events,
