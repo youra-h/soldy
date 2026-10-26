@@ -1,26 +1,27 @@
 /**
- * Группы ListBox и Select в настоящем браузере: раскладка подписи и
- * разделителя, порядок стрелок на экране и предел строк вместе с группами.
- * Подпись группы у них и у Menu одна: кегль и поля — в общем слое тем
- * (`themes/base/src/group.css` и файлы блоков), регистр и цвет — в теме
- * (`mixins/_group.scss`). Её вид — регистр, кегль, начертание, цвет и поля —
- * сверяется у всех троих.
+ * Groups of ListBox and Select in a real browser: the layout of the label and
+ * the separator, the order of the arrows on screen and the row limit together
+ * with groups. The group label is one for them and Menu: its font and fields
+ * are in the common theme layer (`themes/base/src/group.css` and the files of
+ * the blocks), its case and colour in the theme (`mixins/_group.scss`). Its
+ * look — case, font, weight, colour and fields — is checked at all three.
  *
- * Модель — `core/__tests__/list-groups.spec.ts`, разметка секций и ARIA —
- * `ui/vue/__tests__/list-groups.spec.ts`. Здесь — то, чего jsdom не видит:
- * где подпись стоит относительно строк, какого она кегля, что разделитель —
- * видимая линия во всю ширину списка, что стрелки идут сверху вниз по экрану и
- * что предел строк (`maxRows`) режет список по низу последней из первых
- * строк, с подписями и разделителями между ними.
+ * The model is `core/__tests__/list-groups.spec.ts`, the markup of sections and
+ * ARIA `ui/vue/__tests__/list-groups.spec.ts`. Here is what jsdom does not see:
+ * where the label stands against the rows, what font it has, that the
+ * separator is a visible line across the whole list, that the arrows go top to
+ * bottom on screen and that the row limit (`maxRows`) cuts the list at the
+ * bottom of the last of the first rows, with labels and separators between
+ * them.
  *
- * Разделитель рисуется, пока его просит компонент (`groupSeparators`: у
- * ListBox и Select по умолчанию нет, у Menu — есть). Без него место линии
- * остаётся пустым: секции стоят там же, где за линией, и не слипаются — у
- * всех троих.
+ * The separator is drawn while the component asks for it (`groupSeparators`:
+ * off by default at ListBox and Select, on at Menu). Without it the place of
+ * the line stays empty: sections stand where they stand behind the line and do
+ * not stick together — at all three.
  *
- * Подпись — справка над строками: заглавными, начертания и цвета подсказки
- * Field, а кегль — на ступень мельче её кегля того же размера. Чисел темы тест
- * не знает: мера — сама подсказка.
+ * The label is a note above the rows: in capitals, of the weight and colour of
+ * a Field helper, and of its font at the same size. The test knows no numbers
+ * of the theme: the helper itself is the measure.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -211,40 +212,18 @@ async function fieldHelper(size: TComponentSize = 'normal'): Promise<HTMLElement
 	return find('.so-field__helper', container)
 }
 
-/** Подсказки Field: того же размера и на размер ниже — у `sm` её нет. */
-type THelpers = { readonly same: HTMLElement; readonly below: HTMLElement | null }
-
-async function helpersOf(size: TComponentSize): Promise<THelpers> {
-	const index = COMPONENT_SIZES.indexOf(size)
-
-	return {
-		same: await fieldHelper(size),
-		below: index > 0 ? await fieldHelper(COMPONENT_SIZES[index - 1]) : null,
-	}
-}
-
 /**
- * Текст подписи — заглавными, начертания подсказки Field, а кегль — на ступень
- * мельче её кегля. Выше `sm` ступень мельче — кегль подсказки на размер ниже,
- * с её интерлиньяжем. У `sm` размера ниже нет, и ступень мельче `text-xs` —
- * своя у темы: подпись мельче подсказки, а интерлиньяж у неё задан ступенью,
- * а не `normal`.
+ * The text of a label is in capitals, of the weight of a Field helper, and of
+ * its font and line height at the same size: a step smaller than the rows.
  */
-function expectLabelText(label: HTMLElement, { same, below }: THelpers): void {
+function expectLabelText(label: HTMLElement, helper: HTMLElement): void {
 	const own = getComputedStyle(label)
-	const helper = getComputedStyle(same)
+	const note = getComputedStyle(helper)
 
 	expect(own.textTransform).toBe('uppercase')
-	expect(own.fontWeight).toBe(helper.fontWeight)
-	expect(parseFloat(own.fontSize)).toBeLessThan(parseFloat(helper.fontSize))
-	expect(parseFloat(own.lineHeight)).toBeGreaterThan(parseFloat(own.fontSize))
-
-	if (!below) return
-
-	const lower = getComputedStyle(below)
-
-	expect(own.fontSize).toBe(lower.fontSize)
-	expect(own.lineHeight).toBe(lower.lineHeight)
+	expect(own.fontWeight).toBe(note.fontWeight)
+	expect(own.fontSize).toBe(note.fontSize)
+	expect(own.lineHeight).toBe(note.lineHeight)
 }
 
 /**
@@ -347,13 +326,13 @@ describe('ListBox', () => {
 	)
 
 	it.each(COMPONENT_SIZES)(
-		'%s: подпись — заглавными, начертания подсказки Field, кегль на ступень мельче её',
+		'%s: подпись — заглавными, начертания подсказки Field, кегль и интерлиньяж её',
 		async (size) => {
-			const helpers = await helpersOf(size)
+			const helper = await fieldHelper(size)
 
 			await show({ size })
 
-			expectLabelText(find('.so-list-box-group__label', list()), helpers)
+			expectLabelText(find('.so-list-box-group__label', list()), helper)
 		},
 	)
 
@@ -522,13 +501,13 @@ describe('Select', () => {
 	})
 
 	it.each(COMPONENT_SIZES)(
-		'%s: подпись — заглавными, начертания подсказки Field, кегль на ступень мельче её',
+		'%s: подпись — заглавными, начертания подсказки Field, кегль и интерлиньяж её',
 		async (size) => {
-			const helpers = await helpersOf(size)
+			const helper = await fieldHelper(size)
 
 			await open({ size })
 
-			expectLabelText(find('.so-select-group__label', list()), helpers)
+			expectLabelText(find('.so-select-group__label', list()), helper)
 		},
 	)
 
@@ -634,13 +613,13 @@ describe('Menu', () => {
 	}
 
 	it.each(COMPONENT_SIZES)(
-		'%s: подпись — заглавными, начертания подсказки Field, кегль на ступень мельче её',
+		'%s: подпись — заглавными, начертания подсказки Field, кегль и интерлиньяж её',
 		async (size) => {
-			const helpers = await helpersOf(size)
+			const helper = await fieldHelper(size)
 
 			await open({ size })
 
-			expectLabelText(find('.so-menu-group__label', panel()), helpers)
+			expectLabelText(find('.so-menu-group__label', panel()), helper)
 		},
 	)
 

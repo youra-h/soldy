@@ -1,38 +1,32 @@
-/* ─── Группы элементов ───────────────────────────────────────
- * Секции группировки Menu, ListBox и Select — группы с подписью и элементы без
- * группы — и линия разделителя между ними.
+/* ─── Groups of items ───────────────────────────────────────
+ * Sections of grouping in Menu, ListBox and Select — groups with a label and
+ * items without a group — and the separator line between them.
  *
- * Подпись группы — справка над элементами, а не элемент: одной строкой, с
- * многоточием, а пустая места не занимает (группа без подписи её узла не
- * рисует). Кегль — по размеру строк группы, на ступень мельче справки при
- * контроле того же размера (шкала подписи, `caption.css`): справка над
- * строками тише справки при контроле. Ступени мельче справки `sm` у шкалы
- * подписи нет, и у подписи `sm` она своя — переменная корня документа. Поле
- * по строке — поле строки по шкале Button того же размера: подпись встаёт
- * там, где у строк начинается первая колонка. Поля сверху и снизу — у блока.
+ * The label of a group is a note above the items, not an item: one line, with
+ * an ellipsis, and an empty one takes no room (a group without a label renders
+ * no node for it). Its font is the note at a control of the size of the rows
+ * of the group (the caption scale, `caption.css`): a step smaller than the
+ * rows, as a helper is a step smaller than its field. The field along the line
+ * is the field of a row on the Button scale of the same size: the label stands
+ * where the first column of the rows begins. Fields above and below belong to
+ * the block.
  *
- * Размер подписи — размер строк. Модификатор размера несёт строка — Button
- * внутри элемента, — и у ListBox и Select подпись читает его у строк своей
- * группы (`:has`): панель Select телепортирована, и модификатора размера
- * Select у неё нет, а строки его несут всегда. Дочерние комбинаторы держат
- * правило в своей группе — у списка в слоте элемента группы свои. У Menu
- * размер несёт панель, а группа стоит в ней.
+ * The size of the label is the size of the rows. The size modifier is carried
+ * by the row — the Button inside the item — and in ListBox and Select the
+ * label reads it at the rows of its own group (`:has`): the panel of Select is
+ * teleported and has no size modifier of Select, while its rows always carry
+ * one. Child combinators keep the rule in its own group — a list in the slot
+ * of an item of the group has its own. In Menu the panel carries the size, and
+ * the group stands in it.
  *
- * Разделитель — линия во всю ширину списка между секциями. Рисует её тема и
- * толщину задаёт она (`--so-group-separator-width`, контракт; без темы — 0): от
- * толщины считается место секции без разделителя (правило соседства в файле
- * блока). Здесь — то, что у разделителя одно: в столбце списка он не
- * сжимается.
+ * The separator is a line across the whole list between sections. The theme
+ * draws it and sets its thickness (`--so-group-separator-width`, contract; 0
+ * without a theme): the place of a section without a separator counts from it
+ * (the sibling rule in the file of the block). Here is what a separator has in
+ * common: it does not shrink in the column of the list.
  *
- * Облик — заглавные и цвет подписи, цвет линии — рисует тема. */
-
-:root {
-	/* A step below the `sm` note, from the font of the place: 6px smaller — 10px
-	 * at a 16px place, 8px at 14px. `em` resolves on the label, against its
-	 * group, that is the place. */
-	--so-group-label-font-size-sm: calc(1em - 0.375rem);
-	--so-group-label-line-height-sm: calc(0.875 / 0.625);
-}
+ * The look — capitals and colour of the label, colour of the line — is drawn by
+ * the theme. */
 
 .so-list-box-group__label,
 .so-select-group__label,
@@ -53,40 +47,40 @@
 .so-select-group:has(> .so-select-item > .so-button--size-sm) > .so-select-group__label,
 .so-menu__panel--size-sm .so-menu-group__label {
 	padding-inline: var(--so-button-padding-sm);
-	font-size: var(--so-group-label-font-size-sm);
-	line-height: var(--so-group-label-line-height-sm);
+	font-size: var(--so-caption-note-font-size-sm);
+	line-height: var(--so-caption-note-line-height-sm);
 }
 
 .so-list-box-group:has(> .so-list-box-item > .so-button--size-normal) > .so-list-box-group__label,
 .so-select-group:has(> .so-select-item > .so-button--size-normal) > .so-select-group__label,
 .so-menu__panel--size-normal .so-menu-group__label {
 	padding-inline: var(--so-button-padding-normal);
-	font-size: var(--so-caption-note-font-size-sm);
-	line-height: var(--so-caption-note-line-height-sm);
+	font-size: var(--so-caption-note-font-size-normal);
+	line-height: var(--so-caption-note-line-height-normal);
 }
 
 .so-list-box-group:has(> .so-list-box-item > .so-button--size-lg) > .so-list-box-group__label,
 .so-select-group:has(> .so-select-item > .so-button--size-lg) > .so-select-group__label,
 .so-menu__panel--size-lg .so-menu-group__label {
 	padding-inline: var(--so-button-padding-lg);
-	font-size: var(--so-caption-note-font-size-normal);
-	line-height: var(--so-caption-note-line-height-normal);
+	font-size: var(--so-caption-note-font-size-lg);
+	line-height: var(--so-caption-note-line-height-lg);
 }
 
 .so-list-box-group:has(> .so-list-box-item > .so-button--size-xl) > .so-list-box-group__label,
 .so-select-group:has(> .so-select-item > .so-button--size-xl) > .so-select-group__label,
 .so-menu__panel--size-xl .so-menu-group__label {
 	padding-inline: var(--so-button-padding-xl);
-	font-size: var(--so-caption-note-font-size-lg);
-	line-height: var(--so-caption-note-line-height-lg);
+	font-size: var(--so-caption-note-font-size-xl);
+	line-height: var(--so-caption-note-line-height-xl);
 }
 
 .so-list-box-group:has(> .so-list-box-item > .so-button--size-2xl) > .so-list-box-group__label,
 .so-select-group:has(> .so-select-item > .so-button--size-2xl) > .so-select-group__label,
 .so-menu__panel--size-2xl .so-menu-group__label {
 	padding-inline: var(--so-button-padding-2xl);
-	font-size: var(--so-caption-note-font-size-xl);
-	line-height: var(--so-caption-note-line-height-xl);
+	font-size: var(--so-caption-note-font-size-2xl);
+	line-height: var(--so-caption-note-line-height-2xl);
 }
 
 .so-list-box__separator,
