@@ -66,7 +66,8 @@ export default class TMenuSubmenu
 		this._declarePopup('menu')
 
 		// Блок — панели меню: панель подменю выглядит так же, как его
-		this._panelClasses = new TClasses(`${TMenu.baseClass}__panel`, () =>
+		this._panelClasses = new TClasses(`${TMenu.baseClass}__panel`)
+		this._panelClasses.subscribe(() =>
 			this.events.emit('change:panelClasses', this._panelClasses.toArray()),
 		)
 

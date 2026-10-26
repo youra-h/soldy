@@ -1,3 +1,4 @@
+import { TSubscribable } from '../event/subscribable'
 import type { TAttributesMap } from './types'
 
 /**
@@ -18,13 +19,12 @@ import type { TAttributesMap } from './types'
  * the prop triggers. Here the trigger is single and fires exactly when the set
  * has really changed.
  *
- * **The set reports to its owner, it has no bus of its own.** The owner passes
- * the "set changed" callback to the constructor, and the set calls it on every
- * real change, without arguments. What to emit and whether with a snapshot is
- * the owner's call: a component emits `change:<set>` with the snapshot, while
- * the two sets of a date input part give one `change:segments` without it. A
- * set without a callback reports to no one. A bus per set cost every
- * collection item four emitters, even an item that is never drawn.
+ * **The set reports a change, it has no bus of its own** (`TSubscribable`):
+ * a listener given to `subscribe` is called on every real change, without
+ * arguments. What to emit and whether with a snapshot is the owner's call: a
+ * component emits `change:<set>` with the snapshot, while the two sets of a
+ * date input part give one `change:segments` without it. A bus per set cost
+ * every collection item four emitters, even an item that is never drawn.
  *
  * The storage map appears with the first entry: an empty set (`attrs` of a
  * list item, `headerAria` of a table row before mounting) holds no map.
@@ -33,19 +33,16 @@ import type { TAttributesMap } from './types'
  * — exceptions like `role` and `tabindex` that belong to the set without
  * starting with `aria-`.
  */
-export class TAttributes {
+export class TAttributes extends TSubscribable {
 	/** Entries — from the first one. */
 	protected _map?: Map<string, string>
 
-	/** The owner's "set changed" callback. */
-	private readonly _changed?: () => void
-
 	/**
-	 * @param changed — called on every real change of the set, not for `initial`
-	 * @param initial — the starting entries; `null` ones are skipped
+	 * @param initial — the starting entries; `null` ones are skipped, and they
+	 * are not a change
 	 */
-	constructor(changed?: () => void, initial?: TAttributesMap) {
-		this._changed = changed
+	constructor(initial?: TAttributesMap) {
+		super()
 
 		if (initial === undefined) return
 
@@ -84,7 +81,7 @@ export class TAttributes {
 		if (this._map?.get(key) === value) return this
 
 		this._entries().set(key, value)
-		this._changed?.()
+		this._notify()
 
 		return this
 	}
@@ -93,7 +90,7 @@ export class TAttributes {
 	remove(name: string): this {
 		if (!this._map?.delete(this.resolve(name))) return this
 
-		this._changed?.()
+		this._notify()
 
 		return this
 	}

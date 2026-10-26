@@ -65,7 +65,8 @@ export default class TTagsItem<
 
 		this._closable = customProps.closable ?? ctor.defaultValues.closable
 
-		this._closeAria = new TAria(() =>
+		this._closeAria = new TAria()
+		this._closeAria.subscribe(() =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 

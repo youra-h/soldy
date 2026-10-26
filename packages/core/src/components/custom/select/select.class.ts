@@ -196,7 +196,8 @@ export class TSelect<
 		this._field.aria.add('role', 'combobox')
 		this._field.aria.add('aria-haspopup', 'listbox')
 
-		this._listAria = new TAria(() =>
+		this._listAria = new TAria()
+		this._listAria.subscribe(() =>
 			this._sink.emit('change:listAria', this._listAria.toObject()),
 		)
 

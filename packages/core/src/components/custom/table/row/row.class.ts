@@ -48,7 +48,8 @@ export default class TTableRow<
 
 		this._data = props.data ?? ctor.defaultValues.data
 
-		this._headerAria = new TAria(() =>
+		this._headerAria = new TAria()
+		this._headerAria.subscribe(() =>
 			this._sink.emit('change:headerAria', this._headerAria.toObject()),
 		)
 	}

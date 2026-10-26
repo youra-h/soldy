@@ -33,16 +33,17 @@ describe('TAria · сам набор', () => {
 	it('null и undefined снимают атрибут', () => {
 		// Позволяет писать add('aria-disabled', disabled ? 'true' : null)
 		// вместо ветвления на каждом вызове
-		const aria = new TAria(undefined, { role: 'tab' })
+		const aria = new TAria({ role: 'tab' })
 
 		aria.add('role', null)
 
 		expect(aria.has('role')).toBe(false)
 	})
 
-	it('функция владельца зовётся только при настоящем изменении', () => {
+	it('подписчик зовётся только при настоящем изменении', () => {
 		let count = 0
-		const aria = new TAria(() => count++)
+		const aria = new TAria()
+		aria.subscribe(() => count++)
 
 		aria.add('role', 'tab')
 		aria.add('role', 'tab')
@@ -51,9 +52,10 @@ describe('TAria · сам набор', () => {
 		expect(count).toBe(1)
 	})
 
-	it('remove зовёт функцию владельца, только если атрибут был', () => {
+	it('remove зовёт подписчика, только если атрибут был', () => {
 		let count = 0
-		const aria = new TAria(() => count++, { role: 'tab' })
+		const aria = new TAria({ role: 'tab' })
+		aria.subscribe(() => count++)
 
 		aria.remove('role')
 		aria.remove('role')
@@ -65,19 +67,20 @@ describe('TAria · сам набор', () => {
 	 * The initial entries are not a change: the owner builds the set in its own
 	 * constructor, and there is no one to report to yet.
 	 */
-	it('начальный набор функцию владельца не зовёт', () => {
+	it('начальный набор подписчика не зовёт', () => {
 		let count = 0
-		const aria = new TAria(() => count++, { role: 'tab' })
+		const aria = new TAria({ role: 'tab' })
+		aria.subscribe(() => count++)
 
 		expect(aria.get('role')).toBe('tab')
 		expect(count).toBe(0)
 	})
 
 	it('начальный набор пропускает null', () => {
-		expect(new TAria(undefined, { role: 'tab', 'aria-disabled': null }).names).toEqual(['role'])
+		expect(new TAria({ role: 'tab', 'aria-disabled': null }).names).toEqual(['role'])
 	})
 
-	/** The set has no bus of its own: it reports a change to the owner through the callback. */
+	/** The set has no bus of its own: it reports a change to its subscribers (`TSubscribable`). */
 	it('своей шины у набора нет', () => {
 		expect('events' in new TAria()).toBe(false)
 	})

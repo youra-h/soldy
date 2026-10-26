@@ -10,8 +10,8 @@
  * owner subscribed to it, and the item subscribed to its own `change:disabled`,
  * `change:tag` and `change:direction`: five emitters per item, about 2 KB, of
  * which three lists of 1000 items held 6 MB on the components page
- * (benchmarks/pages, `virtual`). Now a set reports to its owner through the
- * callback given to its constructor, and the setters recompute what depends on
+ * (benchmarks/pages, `virtual`). Now a set reports to its owner, subscribed
+ * with `subscribe` (`TSubscribable`), and the setters recompute what depends on
  * the property — the item keeps no emitter of its own.
  *
  * What is left on the item's bus is the collection's subscription: the content

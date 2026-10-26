@@ -3,7 +3,7 @@ import { TClasses } from '@soldy-ui/core'
 
 describe('TClasses', () => {
 	it('toArray возвращает base + statics + dynamics', () => {
-		const c = new TClasses('so-test', undefined, ['static1'])
+		const c = new TClasses('so-test', ['static1'])
 		expect(c.toArray()).toEqual(['so-test', 'static1'])
 
 		c.add('--mod', true)
@@ -13,9 +13,10 @@ describe('TClasses', () => {
 		expect(c.toArray()).toContain('so-dynamic')
 	})
 
-	it('add/remove зовут функцию владельца и управляют статическими классами', () => {
+	it('add/remove зовут подписчика и управляют статическими классами', () => {
 		const handler = vi.fn()
-		const c = new TClasses('so-test', handler)
+		const c = new TClasses('so-test')
+		c.subscribe(handler)
 
 		c.add('--x', true)
 		expect(c.toArray()).toContain('so-test--x')
@@ -30,9 +31,10 @@ describe('TClasses', () => {
 		expect(handler).toHaveBeenCalledTimes(2)
 	})
 
-	it('динамическая запись зовёт функцию владельца', () => {
+	it('динамическая запись зовёт подписчика', () => {
 		const handler = vi.fn()
-		const c = new TClasses('so-test', handler)
+		const c = new TClasses('so-test')
+		c.subscribe(handler)
 
 		c.add(() => 'so-dynamic')
 		c.add(() => null)
@@ -40,9 +42,10 @@ describe('TClasses', () => {
 		expect(handler).toHaveBeenCalledTimes(2)
 	})
 
-	it('начальные классы функцию владельца не зовут', () => {
+	it('начальные классы подписчика не зовут', () => {
 		const handler = vi.fn()
-		const c = new TClasses('so-test', handler, ['static1'])
+		const c = new TClasses('so-test', ['static1'])
+		c.subscribe(handler)
 
 		expect(c.has('static1', false)).toBe(true)
 		expect(handler).not.toHaveBeenCalled()
@@ -100,9 +103,10 @@ describe('TClasses', () => {
 		expect(c.toArray()).toEqual(['so-test'])
 	})
 
-	it('setBase обновляет базовый класс и зовёт функцию владельца', () => {
+	it('setBase обновляет базовый класс и зовёт подписчика', () => {
 		const handler = vi.fn()
-		const c = new TClasses('a', handler)
+		const c = new TClasses('a')
+		c.subscribe(handler)
 
 		c.setBase('b')
 		expect(c.base).toBe('b')

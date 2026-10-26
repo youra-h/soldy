@@ -56,16 +56,16 @@ export default class TComponentView<
 
 		this._direction = props.direction ?? ctor.defaultValues.direction
 
-		// Each set reports its change through the callback, not a bus of its
-		// own: a bus per set cost every collection item four emitters
-		this._classes = new TClasses(ctor.baseClass, () =>
-			this._sink.emit('change:classes', this._classes.toArray()),
-		)
-		this._aria = new TAria(() => this._sink.emit('change:aria', this._aria.toObject()))
-		this._dataset = new TDataset(() =>
-			this._sink.emit('change:dataset', this._dataset.toObject()),
-		)
-		this._attrs = new TAttributes(() => this._sink.emit('change:attrs', this._attrs.toObject()))
+		// Each set reports its change to a subscriber (`TSubscribable`), not a
+		// bus of its own: a bus per set cost every collection item four emitters
+		this._classes = new TClasses(ctor.baseClass)
+		this._classes.subscribe(() => this._sink.emit('change:classes', this._classes.toArray()))
+		this._aria = new TAria()
+		this._aria.subscribe(() => this._sink.emit('change:aria', this._aria.toObject()))
+		this._dataset = new TDataset()
+		this._dataset.subscribe(() => this._sink.emit('change:dataset', this._dataset.toObject()))
+		this._attrs = new TAttributes()
+		this._attrs.subscribe(() => this._sink.emit('change:attrs', this._attrs.toObject()))
 
 		this._syncDir()
 	}

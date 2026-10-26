@@ -62,9 +62,10 @@ describe('TDataset · сам набор', () => {
 		expect(dataset.has('selected')).toBe(false)
 	})
 
-	it('функция владельца зовётся только при настоящем изменении', () => {
+	it('подписчик зовётся только при настоящем изменении', () => {
 		let count = 0
-		const dataset = new TDataset(() => count++)
+		const dataset = new TDataset()
+		dataset.subscribe(() => count++)
 
 		dataset.add('selected', true)
 		dataset.add('selected', true)

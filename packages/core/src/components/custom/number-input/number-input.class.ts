@@ -143,29 +143,31 @@ export class TNumberInput
 
 		// Кнопки шага — не остановки Tab: число меняют ↑/↓ во вводе, а кнопки —
 		// для указателя и скринридера
-		this._decrementAria = new TAria(
-			() => this.events.emit('change:decrementAria', this._decrementAria.toObject()),
-			{ tabindex: '-1' },
+		this._decrementAria = new TAria({ tabindex: '-1' })
+		this._decrementAria.subscribe(() =>
+			this.events.emit('change:decrementAria', this._decrementAria.toObject()),
 		)
-		this._incrementAria = new TAria(
-			() => this.events.emit('change:incrementAria', this._incrementAria.toObject()),
-			{ tabindex: '-1' },
+		this._incrementAria = new TAria({ tabindex: '-1' })
+		this._incrementAria.subscribe(() =>
+			this.events.emit('change:incrementAria', this._incrementAria.toObject()),
 		)
 
-		this._decrementDataset = new TDataset(() =>
+		this._decrementDataset = new TDataset()
+		this._decrementDataset.subscribe(() =>
 			this.events.emit('change:decrementDataset', this._decrementDataset.toObject()),
 		)
-		this._incrementDataset = new TDataset(() =>
+		this._incrementDataset = new TDataset()
+		this._incrementDataset.subscribe(() =>
 			this.events.emit('change:incrementDataset', this._incrementDataset.toObject()),
 		)
+
+		this._inputSets = { aria: new TAria(), attrs: new TAttributes() }
 
 		// Both sets of the input report one `change:inputSets`, without a snapshot
 		const inputSetsChanged = () => this.events.emit('change:inputSets')
 
-		this._inputSets = {
-			aria: new TAria(inputSetsChanged),
-			attrs: new TAttributes(inputSetsChanged),
-		}
+		this._inputSets.aria.subscribe(inputSetsChanged)
+		this._inputSets.attrs.subscribe(inputSetsChanged)
 	}
 
 	/* ------------------------------------------------------------------ */

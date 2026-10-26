@@ -105,7 +105,8 @@ export default class TToastsItem<
 		this._alert = own.alert ?? ctor.defaultValues.alert
 		this._render = own.render ?? ctor.defaultValues.render
 
-		this._closeAria = new TAria(() =>
+		this._closeAria = new TAria()
+		this._closeAria.subscribe(() =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 

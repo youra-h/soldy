@@ -54,7 +54,8 @@ export default class TTabsItem<
 		// событию активации.
 		this._aria.add('role', 'tab')
 
-		this._closeAria = new TAria(() =>
+		this._closeAria = new TAria()
+		this._closeAria.subscribe(() =>
 			this._sink.emit('change:closeAria', this._closeAria.toObject()),
 		)
 

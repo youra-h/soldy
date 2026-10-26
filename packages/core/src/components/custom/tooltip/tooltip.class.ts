@@ -84,7 +84,8 @@ export default class TTooltip
 		// режима панель не зависит
 		this._aria.add('role', 'tooltip')
 
-		this._triggerAria = new TAria(() =>
+		this._triggerAria = new TAria()
+		this._triggerAria.subscribe(() =>
 			this.events.emit('change:triggerAria', this._triggerAria.toObject()),
 		)
 	}

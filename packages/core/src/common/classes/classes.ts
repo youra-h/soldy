@@ -1,14 +1,14 @@
+import { TSubscribable } from '../event/subscribable'
 import type { TClassEntry } from './types'
 
 /**
  * Manages the CSS classes of a component: the base one, static and dynamic ones.
  *
- * Like the attribute sets (`TAttributes`), it reports to its owner without a
- * bus of its own: the owner passes the "set changed" callback to the
- * constructor, and the set calls it on every real change, without arguments.
- * The static set and the list of dynamic entries appear with their first entry.
+ * Like the attribute sets (`TAttributes`), it reports a change without a bus
+ * of its own (`TSubscribable`): a listener given to `subscribe` is called on
+ * every real change, without arguments. The static set and the list of dynamic entries appear with their first entry.
  */
-export class TClasses {
+export class TClasses extends TSubscribable {
 	/** Базовый класс (всегда первый в списке). */
 	private _base: string
 	/** Static classes added with `add(string)` — from the first one. */
@@ -16,17 +16,14 @@ export class TClasses {
 	/** Dynamic classes — functions computed on every `toArray()` call; from the first one. */
 	private _dynamics?: Array<() => string | null | undefined | false>
 
-	/** The owner's "set changed" callback. */
-	private readonly _changed?: () => void
-
 	/**
 	 * @param base — the base CSS class of the component
-	 * @param changed — called on every real change of the set, not for `initial`
-	 * @param initial — the starting static classes
+	 * @param initial — the starting static classes; they are not a change
 	 */
-	constructor(base: string, changed?: () => void, initial?: string[]) {
+	constructor(base: string, initial?: string[]) {
+		super()
+
 		this._base = base
-		this._changed = changed
 
 		if (initial === undefined) return
 
@@ -50,7 +47,7 @@ export class TClasses {
 		if (this._base === base) return this
 
 		this._base = base
-		this._changed?.()
+		this._notify()
 
 		return this
 	}
@@ -84,13 +81,13 @@ export class TClasses {
 			if (this._dynamics) this._dynamics.push(entry)
 			else this._dynamics = [entry]
 
-			this._changed?.()
+			this._notify()
 		} else {
 			const cls = this.resolve(entry, { withBase })
 
 			if (!this._statics?.has(cls)) {
 				this._staticSet().add(cls)
-				this._changed?.()
+				this._notify()
 			}
 		}
 
@@ -104,7 +101,7 @@ export class TClasses {
 	remove(entry: string, withBase = true): this {
 		const cls = this.resolve(entry, { withBase })
 
-		if (this._statics?.delete(cls)) this._changed?.()
+		if (this._statics?.delete(cls)) this._notify()
 
 		return this
 	}

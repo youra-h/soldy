@@ -53,11 +53,13 @@ export default class TDialog extends TModalLayer<IDialogProps, TDialogEvents> im
 
 		const ctor = new.target as typeof TDialog
 
-		this._bodyAria = new TAria(() =>
+		this._bodyAria = new TAria()
+		this._bodyAria.subscribe(() =>
 			this.events.emit('change:bodyAria', this._bodyAria.toObject()),
 		)
 
-		this._maximizeAria = new TAria(() =>
+		this._maximizeAria = new TAria()
+		this._maximizeAria.subscribe(() =>
 			this.events.emit('change:maximizeAria', this._maximizeAria.toObject()),
 		)
 

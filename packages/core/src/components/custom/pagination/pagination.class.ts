@@ -78,11 +78,13 @@ export default class TPagination
 		this._middleCount = props.middleCount ?? ctor.defaultValues.middleCount
 		this._locale = props.locale ?? ctor.defaultValues.locale
 
-		this._prevAria = new TAria(() =>
+		this._prevAria = new TAria()
+		this._prevAria.subscribe(() =>
 			this.events.emit('change:prevAria', this._prevAria.toObject()),
 		)
 
-		this._nextAria = new TAria(() =>
+		this._nextAria = new TAria()
+		this._nextAria.subscribe(() =>
 			this.events.emit('change:nextAria', this._nextAria.toObject()),
 		)
 	}
