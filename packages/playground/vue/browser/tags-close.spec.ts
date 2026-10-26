@@ -194,6 +194,58 @@ describe.each(COMPONENT_SIZES)('размер %s: крестик на месте 
 	})
 })
 
+/**
+ * A place with its own font: a set with one tag, a Button and a Select field
+ * with a tag in its slot — all of one size.
+ */
+const placeHarness = (place: number, size: (typeof COMPONENT_SIZES)[number]) =>
+	defineComponent({
+		render() {
+			return h('div', { style: `font-size: ${place}px; width: 640px` }, [
+				h(Tags, { class: 'so-test-tags', size }, () => [
+					h(TagsItem, { key: 'a', value: 'a', text: 'Настройки' }),
+				]),
+				h(Button, { class: 'so-test-button', size, text: 'Сохранить' }),
+				h(
+					Select,
+					{ mode: 'multiple', editable: true, value: ['0'], size },
+					{ default: () => [h(SelectItem, { key: '0', value: '0', text: 'Москва' })] },
+				),
+			])
+		},
+	})
+
+/**
+ * A tag is a label in a row, not an action: at every size its font is smaller
+ * than that of a Button of the same size and of the text of a Select field of
+ * that size — in a set and in the field itself
+ * (`themes/base/src/components/tags.css`). The `normal` Button and field take
+ * the font of their place, so the check runs in two places: a `normal` tag
+ * fixed in `rem` equalled them at a 14px place.
+ */
+describe.each([14, 16])('место %ipx: тег мельче Button и текста поля Select', (place) => {
+	it.each(COMPONENT_SIZES)('размер %s', async (size) => {
+		render(placeHarness(place, size))
+
+		await expect
+			.poll(() => document.querySelectorAll('.so-select__field .so-tags-item').length)
+			.toBe(1)
+
+		const fontOf = (element: Element) => px(style(element).fontSize)
+		const button = fontOf(find('.so-test-button'))
+		const field = fontOf(find('.so-select__field input'))
+		const tags = {
+			'тег в наборе': fontOf(rowOf(find('.so-test-tags .so-tags-item'))),
+			'тег в поле': fontOf(rowOf(find('.so-select__field .so-tags-item'))),
+		}
+
+		for (const [name, font] of Object.entries(tags)) {
+			expect(font, `${name} — Button`).toBeLessThan(button)
+			expect(font, `${name} — текст поля`).toBeLessThan(field)
+		}
+	})
+})
+
 describe('направление письма', () => {
 	it('в RTL крестик слева от текста: зазор и паддинг зеркальны', () => {
 		render(harness({}, 'rtl'))

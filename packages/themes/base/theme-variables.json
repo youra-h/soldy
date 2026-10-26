@@ -128,7 +128,7 @@
     "--so-tags-item-height-2xl": "шкала тега, размер 2xl: высота пилюли",
     "--so-tags-item-font-size-sm": "шкала тега, размер sm: кегль строки и крестика тега",
     "--so-tags-item-line-height-sm": "шкала тега, размер sm: интерлиньяж тега",
-    "--so-tags-item-font-size-normal": "шкала тега, размер normal: кегль тега",
+    "--so-tags-item-font-size-normal": "шкала тега, размер normal: кегль тега, в em — на ступень мельче кегля места",
     "--so-tags-item-line-height-normal": "шкала тега, размер normal: интерлиньяж тега",
     "--so-tags-item-font-size-lg": "шкала тега, размер lg: кегль тега",
     "--so-tags-item-line-height-lg": "шкала тега, размер lg: интерлиньяж тега",
