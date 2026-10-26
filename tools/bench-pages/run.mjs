@@ -206,13 +206,13 @@ async function measureFramework(fw) {
 	}
 
 	// Warm-up: every component page once, then the run's other pages, without
-	// measuring — whatever `--pages` lists, so a page's result does not depend
-	// on which pages share the run. Without it the first page of the run would
-	// carry the engine warming up — compiling the shared adapter and plugin
-	// code — in its growth, and the others would not. Warming only the run's
-	// own pages is not enough: `all` holds a single copy of each component per
-	// cycle and kept warming up through its own measured cycles (~33 KB/cycle
-	// with every counter in place)
+	// measuring — whatever `--pages` lists, so every page starts its cycles
+	// from the same warm-up whichever pages share the run. Without it the first
+	// page of the run would carry the engine warming up — compiling the shared
+	// adapter and plugin code — in its growth, and the others would not.
+	// Warming only the run's own pages is not enough: `all` holds a single copy
+	// of each component per cycle and kept warming up through its own measured
+	// cycles (~33 KB/cycle with every counter in place)
 	const warmup = [...all, ...pages.filter((id) => !all.includes(id))]
 	const warmStart = performance.now()
 
