@@ -76,9 +76,11 @@ import type { TFixture } from './fixtures'
  */
 
 /**
- * Popover: триггер — Button, связку с панелью и вид «нажат» он кладёт на себя
- * директивой набора. В содержимом есть кнопка: на неё при открытии уходит
- * фокус.
+ * Popover: the trigger is a Button that puts the link to the panel and the
+ * pressed look on itself with the set directive. The content has a button:
+ * focus goes to it on open. The content is the `default` template, as the
+ * slot of the Vue preview: a projection would be created right away, and the
+ * `lazyMount` row would only keep it out of the document.
  */
 @Component({
 	selector: 'pg-popover-preview',
@@ -115,8 +117,10 @@ import type { TFixture } from './fixtures'
 					[so-attributes]="{ ...triggerAria, ...triggerDataset }"
 				></button>
 			</ng-template>
-			<p style="margin: 0 0 8px">Произвольное содержимое: текст, поля, кнопки</p>
-			<button so-button text="Действие"></button>
+			<ng-template slot="default">
+				<p style="margin: 0 0 8px">Произвольное содержимое: текст, поля, кнопки</p>
+				<button so-button text="Действие"></button>
+			</ng-template>
 		</span>
 	`,
 })
@@ -318,7 +322,7 @@ const MENU_TRIGGER = `
 				</div>
 			</div>
 			<div so-menu-popover-item value="due" text="Срок" lazyMount>
-				<div so-calendar></div>
+				<ng-template slot="default"><div so-calendar></div></ng-template>
 			</div>
 			<div so-menu-item value="archive" text="В архив" disabled></div>
 			<div so-menu-separator></div>

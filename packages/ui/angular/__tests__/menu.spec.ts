@@ -34,10 +34,11 @@
  * более: место панелей у якоря — `playground/vue/browser/angular-host.spec.ts`.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { Component, signal, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import {
+	TCheckBox,
 	createEngineMenu,
 	type IMenuItem,
 	type IMenuItemSource,
@@ -49,6 +50,7 @@ import {
 	AttributesDirective,
 	SlotDirective,
 	TButtonComponent,
+	TCheckBoxComponent,
 	TMenuCheckboxItemComponent,
 	TMenuComponent,
 	TMenuGroupComponent,
@@ -59,6 +61,7 @@ import {
 	TMenuSeparatorComponent,
 	TMenuSubmenuComponent,
 } from '@soldy-ui/angular'
+import { countAssemblies, type TAssemblyProbe } from './assemblies'
 import { find, nextFrame } from './mount'
 
 /**
@@ -2599,6 +2602,135 @@ describe('пункт с панелью', () => {
 
 		expect(shown(duePanel())).toBe(false)
 		expect(duePanel().querySelector('.so-test-earlier')).not.toBeNull()
+	})
+
+	/**
+	 * The panel content as the `default` template: the item creates it, so with
+	 * `lazyMount` its components come with the first open, as the slot content
+	 * of the other adapters. A projection Angular creates right away, in the
+	 * template that wrote it, and `lazyMount` only keeps it out of the document.
+	 * The probe counts checkboxes — there is no other on the page: a button
+	 * would count the trigger too.
+	 */
+	describe('шаблон default', () => {
+		/** An action and the item with a panel: its content is the template, `lazyMount` a signal. */
+		@Component({
+			selector: 'probe-menu-due-template',
+			standalone: true,
+			imports: [...BASE, TMenuItemComponent, TMenuPopoverItemComponent, TCheckBoxComponent],
+			template: `<span so-menu>
+				${TRIGGER}
+				<div so-menu-item value="edit" text="Изменить"></div>
+				<div so-menu-popover-item value="due" text="Срок" [lazyMount]="lazyMount()">
+					<ng-template slot="default">
+						<button class="so-test-earlier">Раньше</button>
+						<span so-check-box class="so-test-check"></span>
+					</ng-template>
+				</div>
+			</span>`,
+		})
+		class DueTemplatePage {
+			readonly lazyMount = signal<TMenuPopoverItemComponent['lazyMount']>(undefined)
+		}
+
+		/** The template next to a projection: the template replaces it. */
+		@Component({
+			selector: 'probe-menu-due-template-projection',
+			standalone: true,
+			imports: [...BASE, TMenuPopoverItemComponent],
+			template: `<span so-menu>
+				${TRIGGER}
+				<div so-menu-popover-item value="due" text="Срок">
+					<ng-template slot="default"
+						><button class="so-test-earlier">Шаблон</button></ng-template
+					>
+					<button class="so-test-projected">Проекция</button>
+				</div>
+			</span>`,
+		})
+		class DueTemplateProjectionPage {}
+
+		/** A projection with `lazyMount`: the checkbox the probe counts. */
+		@Component({
+			selector: 'probe-menu-due-lazy-projection',
+			standalone: true,
+			imports: [...BASE, TMenuPopoverItemComponent, TCheckBoxComponent],
+			template: `<span so-menu>
+				${TRIGGER}
+				<div so-menu-popover-item value="due" text="Срок" lazyMount>
+					<button class="so-test-earlier">Раньше</button>
+					<span so-check-box class="so-test-check"></span>
+				</div>
+			</span>`,
+		})
+		class DueLazyProjectionPage {}
+
+		/** The panel content wrapper of the item. */
+		const content = () => node('.so-menu-item__content', duePanel())
+
+		let probe: TAssemblyProbe
+
+		beforeEach(() => {
+			probe = countAssemblies(TCheckBox)
+		})
+
+		afterEach(() => probe.dispose())
+
+		it('с lazyMount собран с первым открытием, фокус — на первом элементе шаблона; закрытие его не снимает', async () => {
+			await render(DueTemplatePage, (page) => page.lazyMount.set(true))
+
+			expect(probe.counts).toEqual({ install: 0, destroy: 0 })
+			expect(document.querySelector('.so-test-check')).toBeNull()
+
+			await openOnDue()
+			await press(dueRow(), 'ArrowRight')
+
+			expect(shown(duePanel())).toBe(true)
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+			expect(content().contains(node('.so-test-check'))).toBe(true)
+			expect(document.activeElement).toBe(node('.so-test-earlier'))
+
+			const box = node('.so-test-check')
+
+			await press(node('.so-test-earlier'), 'Escape')
+
+			expect(shown(duePanel())).toBe(false)
+
+			await press(dueRow(), 'ArrowRight')
+
+			// Closing only hides the panel: the same checkbox, assembled once
+			expect(shown(duePanel())).toBe(true)
+			expect(node('.so-test-check')).toBe(box)
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		})
+
+		it('без lazyMount собран сразу, до открытия', async () => {
+			await render(DueTemplatePage)
+
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+			expect(content().contains(node('.so-test-check'))).toBe(true)
+			expect(shown(duePanel())).toBe(false)
+		})
+
+		it('рядом с проекцией — рисуется шаблон', async () => {
+			await render(DueTemplateProjectionPage)
+
+			expect(content().contains(node('.so-test-earlier'))).toBe(true)
+			expect(document.querySelector('.so-test-projected')).toBeNull()
+		})
+
+		it('проекция с lazyMount собрана сразу, а в документ встаёт с первым открытием', async () => {
+			await render(DueLazyProjectionPage)
+
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+			expect(document.querySelector('.so-test-check')).toBeNull()
+
+			await open()
+			click(dueRow())
+
+			expect(content().contains(node('.so-test-check'))).toBe(true)
+			expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		})
 	})
 
 	it('open входом и (soChangeOpen) — в обе стороны', async () => {

@@ -224,6 +224,24 @@ template given to the owner renders in every item in place of its own. A tab pan
 active stays in place hidden, its content not inserted; a markup tab closed with its close button
 is hidden the same way — the element is yours.
 
+A tab panel takes its content as is or as a template, `<ng-template slot="default">`, and a given
+template is drawn instead. Write heavy content — a table, a calendar, a form — as a template: the
+panel creates it when its tab is chosen and removes it when the tab is left, so an inactive panel
+holds nothing. Content written as is Angular creates right away, with the template that wrote it:
+the components of every panel live as long as the tabs do, an inactive panel only keeps them out of
+the document.
+
+```ts
+template: `<div so-tabs>
+  <div so-tabs-item value="a" text="General" active></div>
+  <div so-tabs-item value="b" text="History"></div>
+  <div so-tabs-content slot="content" value="a">…</div>
+  <div so-tabs-content slot="content" value="b">
+    <ng-template slot="default"><div so-table [items]="rows" [columns]="columns"></div></ng-template>
+  </div>
+</div>`
+```
+
 A tag set, `<div so-tags>`, is the row itself: your markup stays on it, next to its role. Tags are
 `<div so-tags-item>` parts or come from `items`; with `mode` they become selectable, and with
 `closable` every tag gets a close button. To lay the shown tags out yourself — in a scroller strip,
@@ -349,18 +367,21 @@ and, for a popover, `triggerDataset` with the pressed look — and you put it on
 with the `[so-attributes]` directive. Import `SlotDirective` and `AttributesDirective` along with
 the component. The trigger stays the same node as the panel opens and closes, so focus stays on
 it. The content of a popover is its panel's content, next to a close button (`closable`, the
-`close-icon` template); the content of a tooltip is its text. `lazyMount` keeps a popover's content
-out of the document until it first opens, although Angular creates the components in it right
-away: they belong to the template that wrote them. `rendered` set to `false` hides the panel along
-with your element. Like a Frame, the panel exists only in the browser: on the server it is an empty
-hidden element inside yours, and the trigger already links to it.
+`close-icon` template); the content of a tooltip is its text. A popover takes its content as is
+or as a template, `<ng-template slot="default">`, and a given template is drawn instead. Write it
+as a template when it should not be created right away: the popover creates the template itself,
+and with `lazyMount` its components come with the first open of the panel. Content written as is
+Angular creates right away, with the template that wrote it, and `lazyMount` only keeps it out of
+the document until the first open. `rendered` set to `false` hides the panel along with your
+element. Like a Frame, the panel exists only in the browser: on the server it is an empty hidden
+element inside yours, and the trigger already links to it.
 
 ```ts
-template: `<span so-popover aria_label="Filters" (soChangeOpen)="opened.set($event)">
+template: `<span so-popover aria_label="Filters" lazyMount (soChangeOpen)="opened.set($event)">
   <ng-template slot="trigger" let-triggerAria="triggerAria" let-triggerDataset="triggerDataset">
     <button so-button text="Filters" [so-attributes]="{ ...triggerAria, ...triggerDataset }"></button>
   </ng-template>
-  …
+  <ng-template slot="default">…</ng-template>
 </span>
 <span so-tooltip>
   <ng-template slot="trigger" let-triggerAria="triggerAria">
@@ -377,7 +398,9 @@ elements: `<div so-menu-item>` (an action — `(soChoose)` on the menu tells whi
 `<div so-menu-checkbox-item>`, `<div so-menu-radio-item>` inside `<div so-menu-radio-group>`
 (the group's `[value]` and `(soChangeValue)`), `<div so-menu-group label="…">`,
 `<div so-menu-separator>`, `<div so-menu-submenu>` with items of its own and
-`<div so-menu-popover-item>` with any content in its own side panel. A checkbox or a radio item is
+`<div so-menu-popover-item>` with any content in its own side panel — as in a popover, a
+`<ng-template slot="default">` with `lazyMount` is created with the first open of the panel, and
+the row text is the `header` template. A checkbox or a radio item is
 checked with `[selected]` and `(soChangeSelected)`. Without items in the markup, the menu draws them
 from `[items]`: an item with nested `items` is a submenu, groups come from `_.group` or `groupBy`,
 and the item slots are templates — `item`, `item-leading`, `item-trailing`, `item-header` and
@@ -396,6 +419,9 @@ template: `<span so-menu (soChoose)="run($event.value)">
   <div so-menu-submenu value="share" text="Share">
     <div so-menu-item value="link" text="Link"></div>
     <div so-menu-item value="mail" text="Mail"></div>
+  </div>
+  <div so-menu-popover-item value="due" text="Due date" lazyMount>
+    <ng-template slot="default"><div so-calendar></div></ng-template>
   </div>
   <div so-menu-separator></div>
   <div so-menu-item value="remove" text="Delete"></div>

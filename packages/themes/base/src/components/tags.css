@@ -36,7 +36,13 @@
 
 	--so-tags-item-font-size-sm: 0.75rem;
 	--so-tags-item-line-height-sm: calc(1 / 0.75);
-	--so-tags-item-font-size-normal: 0.875rem;
+	/* A `normal` tag is one step smaller than the font of its place, as the
+	 * `normal` Button and field take that font itself: `em` resolves where the
+	 * variable is read — on the tag's row and close button, against the tag.
+	 * At a 16px place that is 14px, at a 14px place 12.25px; a fixed `0.875rem`
+	 * equalled a `normal` Button at a 14px place. The other steps stay absolute,
+	 * as those of Button and the field do. */
+	--so-tags-item-font-size-normal: 0.875em;
 	--so-tags-item-line-height-normal: calc(1.25 / 0.875);
 	--so-tags-item-font-size-lg: 1rem;
 	--so-tags-item-line-height-lg: 1.5;
