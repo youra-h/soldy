@@ -24,22 +24,24 @@
  * триггер). Остальное — `playground/vue/browser/popover.spec.ts`.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { Component, signal, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
-import { TPopover, type TSwipe } from '@soldy-ui/core'
+import { TCheckBox, TPopover, type TSwipe } from '@soldy-ui/core'
 import { ruRU } from '@soldy-ui/plugins'
 import {
 	AttributesDirective,
 	LocaleProviderDirective,
 	SlotDirective,
 	TButtonComponent,
+	TCheckBoxComponent,
 	TDialogComponent,
 	TPopoverComponent,
 	TSelectComponent,
 	TSelectItemComponent,
 } from '@soldy-ui/angular'
 import { TELEPORT_ANCHOR } from '../src/adapter/runtime/teleport'
+import { countAssemblies, type TAssemblyProbe } from './assemblies'
 import { find, nextFrame } from './mount'
 
 /**
@@ -1032,11 +1034,114 @@ describe('Select внутри', () => {
 })
 
 /**
- * Содержимое до первого открытия в документ не вставлено. Компоненты в нём
- * Angular создаёт всё равно — их создаёт тот, кто написал содержимое, как в
- * панели таба, — а в документ они попадают с первым открытием.
+ * The content is the `default` template: a button that takes focus on open
+ * and a checkbox the probe counts — there is no other checkbox on the page.
+ * `lazyMount` is a signal.
+ */
+@Component({
+	selector: 'probe-popover-template',
+	standalone: true,
+	imports: [
+		TPopoverComponent,
+		TButtonComponent,
+		TCheckBoxComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<span so-popover [lazyMount]="lazyMount()">
+		<ng-template
+			slot="trigger"
+			let-triggerAria="triggerAria"
+			let-triggerDataset="triggerDataset"
+		>
+			<button
+				so-button
+				text="Открыть"
+				class="so-test-trigger"
+				[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+			></button>
+		</ng-template>
+		<ng-template slot="default">
+			<button class="so-test-first">Первая</button>
+			<span so-check-box class="so-test-check"></span>
+		</ng-template>
+	</span>`,
+})
+class TemplatePage {
+	readonly lazyMount = signal<boolean | undefined>(undefined)
+}
+
+/** The `default` template next to a projection: the template replaces it. */
+@Component({
+	selector: 'probe-popover-template-projection',
+	standalone: true,
+	imports: [TPopoverComponent, TButtonComponent, SlotDirective, AttributesDirective],
+	template: `<span so-popover>
+		<ng-template
+			slot="trigger"
+			let-triggerAria="triggerAria"
+			let-triggerDataset="triggerDataset"
+		>
+			<button
+				so-button
+				text="Открыть"
+				class="so-test-trigger"
+				[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+			></button>
+		</ng-template>
+		<ng-template slot="default"><button class="so-test-first">Шаблон</button></ng-template>
+		<button class="so-test-projected">Проекция</button>
+	</span>`,
+})
+class TemplateProjectionPage {}
+
+/** A projection with `lazyMount`: a checkbox the probe counts. */
+@Component({
+	selector: 'probe-popover-lazy-projection',
+	standalone: true,
+	imports: [
+		TPopoverComponent,
+		TButtonComponent,
+		TCheckBoxComponent,
+		SlotDirective,
+		AttributesDirective,
+	],
+	template: `<span so-popover lazyMount>
+		<ng-template
+			slot="trigger"
+			let-triggerAria="triggerAria"
+			let-triggerDataset="triggerDataset"
+		>
+			<button
+				so-button
+				text="Открыть"
+				class="so-test-trigger"
+				[so-attributes]="{ ...triggerAria, ...triggerDataset }"
+			></button>
+		</ng-template>
+		<button class="so-test-first">Первая</button>
+		<span so-check-box class="so-test-check"></span>
+	</span>`,
+})
+class LazyProjectionPage {}
+
+/**
+ * Until the first open the content is not in the document. The components of
+ * the `default` template are created by the popover, so with `lazyMount` they
+ * come with the first open, as the slot content of the other adapters. A
+ * projection Angular creates right away, in the template that wrote it, as in
+ * a tab panel, and `lazyMount` only keeps it out of the document.
  */
 describe('lazyMount', () => {
+	/** Assemblies of the checkboxes: the page has no other checkbox. */
+	let probe: TAssemblyProbe
+
+	beforeEach(() => {
+		probe = countAssemblies(TCheckBox)
+	})
+
+	afterEach(() => probe.dispose())
+
 	it('содержимое вставляется при первом открытии и остаётся после закрытия', async () => {
 		await render(Page, (page) => page.lazyMount.set(true))
 
@@ -1056,6 +1161,66 @@ describe('lazyMount', () => {
 		await render(Page)
 
 		expect(document.querySelector('.so-test-first')).not.toBeNull()
+	})
+
+	it('шаблон default с lazyMount собирается с первым открытием, закрытие его не снимает', async () => {
+		await render(TemplatePage, (page) => page.lazyMount.set(true))
+
+		expect(probe.counts).toEqual({ install: 0, destroy: 0 })
+		expect(document.querySelector('.so-test-check')).toBeNull()
+		expect(document.querySelector('.so-popover__content')).not.toBeNull()
+
+		await open()
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(node('.so-popover__content', panel()).contains(node('.so-test-check'))).toBe(true)
+		// Focus on open lands on the first element of the template
+		expect(document.activeElement).toBe(node('.so-test-first'))
+
+		const box = node('.so-test-check')
+
+		press('Escape')
+
+		expect(isOpen()).toBe(false)
+
+		await open()
+
+		// Closing only hides the panel: the same checkbox, assembled once
+		expect(isOpen()).toBe(true)
+		expect(node('.so-test-check')).toBe(box)
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+	})
+
+	it('шаблон default без lazyMount собран сразу, до открытия', async () => {
+		await render(TemplatePage)
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(node('.so-popover__content', panel()).contains(node('.so-test-check'))).toBe(true)
+		expect(isOpen()).toBe(false)
+	})
+
+	it('шаблон default рядом с проекцией — рисуется шаблон', async () => {
+		await render(TemplateProjectionPage)
+
+		expect(node('.so-popover__content', panel()).contains(node('.so-test-first'))).toBe(true)
+		expect(document.querySelector('.so-test-projected')).toBeNull()
+
+		await open()
+
+		expect(document.activeElement).toBe(node('.so-test-first'))
+		expect(document.querySelector('.so-test-projected')).toBeNull()
+	})
+
+	it('проекция с lazyMount собрана сразу, а в документ встаёт с первым открытием', async () => {
+		await render(LazyProjectionPage)
+
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(document.querySelector('.so-test-check')).toBeNull()
+
+		await open()
+
+		expect(node('.so-popover__content', panel()).contains(node('.so-test-check'))).toBe(true)
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
 	})
 })
 

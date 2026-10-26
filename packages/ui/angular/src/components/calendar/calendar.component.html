@@ -8,9 +8,11 @@
 	@for (grid of state()['grids'] ?? []; track $index; let index = $index) {
 		<div class="so-calendar__month">
 			<!--
-				Блок места — по наличию записи, а не по ней: запись новая на каждую смену, а Popover
-				и ListBox берут `ctrl` и `engine` только при сборке. Корень поповера — `div`:
-				блочной панели внутри `span` не место.
+				The place block is keyed by the presence of the record, not by the record: the
+				record is new on every change, while Popover takes `ctrl` only when it is
+				assembled, and so does ListBox with `ctrl` and `engine`, assembled with the first
+				open of the panel. The popover's root is a `div`: a block panel has no place inside
+				a `span`.
 			-->
 			@if (state()['pickers']?.[index]; as picker) {
 				<div
@@ -44,64 +46,69 @@
 						</button>
 					</ng-template>
 					<!--
-						Список в DOM раньше шапки: фокус при открытии встаёт на него,
-						а наверх шапку ставит тема.
+						The card is the popover's `default` template, not its projection: the place
+						popover has `lazyMount`, and the template's ListBox and buttons come with the
+						first open of the panel, not with every month. The list comes before the
+						header in the DOM: focus on open lands on it, and the theme puts the header
+						on top.
 					-->
-					<div class="so-calendar__picker">
-						<div
-							so-list-box
-							embedded="calendar.picker-list"
-							class="so-calendar__picker-list"
-							indicator="none"
-							[ctrl]="picker.list"
-							[engine]="picker.engine"
-							[size]="state()['size']"
-							[aria_labelledBy]="picker.labelledBy"
-						></div>
-						<div class="so-calendar__picker-header">
-							<button
-								so-button
-								embedded="calendar.picker-heading"
-								type="button"
-								class="so-calendar__picker-heading"
+					<ng-template slot="default">
+						<div class="so-calendar__picker">
+							<div
+								so-list-box
+								embedded="calendar.picker-list"
+								class="so-calendar__picker-list"
+								indicator="none"
+								[ctrl]="picker.list"
+								[engine]="picker.engine"
 								[size]="state()['size']"
-								[text]="picker.heading"
-								[so-attributes]="picker.headingAria"
-							></button>
-							<button
-								so-button
-								embedded="calendar.picker-prev"
-								type="button"
-								class="so-calendar__picker-prev"
-								[size]="state()['size']"
-								[disabled]="picker.prevDisabled"
-								[so-attributes]="picker.prevAria"
-							>
-								<svg
-									so-icon
-									embedded="calendar.picker-prev-icon"
-									so-role-icon="arrowRight"
+								[aria_labelledBy]="picker.labelledBy"
+							></div>
+							<div class="so-calendar__picker-header">
+								<button
+									so-button
+									embedded="calendar.picker-heading"
+									type="button"
+									class="so-calendar__picker-heading"
 									[size]="state()['size']"
-								></svg>
-							</button>
-							<button
-								so-button
-								embedded="calendar.picker-next"
-								type="button"
-								class="so-calendar__picker-next"
-								[size]="state()['size']"
-								[disabled]="picker.nextDisabled"
-								[so-attributes]="picker.nextAria"
-							>
-								<svg
-									so-icon
-									embedded="calendar.picker-next-icon"
-									so-role-icon="arrowRight"
+									[text]="picker.heading"
+									[so-attributes]="picker.headingAria"
+								></button>
+								<button
+									so-button
+									embedded="calendar.picker-prev"
+									type="button"
+									class="so-calendar__picker-prev"
 									[size]="state()['size']"
-								></svg>
-							</button>
+									[disabled]="picker.prevDisabled"
+									[so-attributes]="picker.prevAria"
+								>
+									<svg
+										so-icon
+										embedded="calendar.picker-prev-icon"
+										so-role-icon="arrowRight"
+										[size]="state()['size']"
+									></svg>
+								</button>
+								<button
+									so-button
+									embedded="calendar.picker-next"
+									type="button"
+									class="so-calendar__picker-next"
+									[size]="state()['size']"
+									[disabled]="picker.nextDisabled"
+									[so-attributes]="picker.nextAria"
+								>
+									<svg
+										so-icon
+										embedded="calendar.picker-next-icon"
+										so-role-icon="arrowRight"
+										[size]="state()['size']"
+									></svg>
+								</button>
+							</div>
 						</div>
-					</div>
+					</ng-template>
 				</div>
 			}
 			<!--

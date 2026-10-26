@@ -17,7 +17,9 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { TButton, TListBox, createEngine } from '@soldy-ui/core'
+import { TButton, TCalendar, TListBox, createEngine } from '@soldy-ui/core'
+import { TBasePlugin, type IPluginContext } from '@soldy-ui/plugins'
+import { usePlugins } from '@soldy-ui/setup'
 import {
 	COLLECTION_ITEMS,
 	TABLE_COLUMNS,
@@ -722,6 +724,86 @@ describe('хост Angular · превью своим шаблоном', () => {
 
 		expect(node.childNodes).toHaveLength(0)
 		expect(panel.isConnected).toBe(false)
+	})
+})
+
+/**
+ * The panel content of the popover preview and the calendar of the menu item
+ * with a panel are `default` templates, as the slots of the Vue previews: with
+ * `lazyMount` their components come with the first open of the panel. A
+ * projection Angular creates right away, and `lazyMount` would only keep it
+ * out of the document — the page would weigh what Vue does not. Whether a
+ * component is created, a probe plugin on its class sees: it counts its own
+ * `install`.
+ */
+describe('хост Angular · содержимое панели с lazyMount', () => {
+	/** Registrations of the probe — cancelled after the test. */
+	const disposals: (() => void)[] = []
+
+	afterEach(() => {
+		for (const dispose of disposals.splice(0)) dispose()
+	})
+
+	/** Count the assemblies of the components of `type` from now on. */
+	function countAssemblies(type: Parameters<typeof usePlugins>[0]): () => number {
+		let installed = 0
+
+		class TAssemblyProbePlugin extends TBasePlugin {
+			override install(ctx: IPluginContext, options?: unknown): void {
+				super.install(ctx, options)
+
+				installed++
+			}
+		}
+
+		disposals.push(usePlugins(type, [TAssemblyProbePlugin]))
+
+		return () => installed
+	}
+
+	it('поповер: кнопка содержимого собирается с первым открытием', () => {
+		// The trigger and the button of the content; the close button is a detail
+		const assembled = countAssemblies(TButton)
+		const node = stage()
+		const handle = host.mount(node, { component: 'popover', props: { lazyMount: true } })
+		const panel = linked(triggerIn(node, '.so-popover'), 'aria-controls')
+
+		expect(assembled()).toBe(1)
+		expect(textsOf(panel, '.so-popover__content > *')).toEqual([])
+
+		handle.update({ lazyMount: true, open: true })
+
+		expect(assembled()).toBe(2)
+		expect(textsOf(panel, '.so-popover__content > *')).toEqual([
+			'Произвольное содержимое: текст, поля, кнопки',
+			'Действие',
+		])
+
+		handle.unmount()
+	})
+
+	it('меню: календарь пункта с панелью собирается с первым открытием панели', async () => {
+		const assembled = countAssemblies(TCalendar)
+		const node = stage()
+		const handle = host.mount(node, { component: 'menu', props: { open: true } })
+		const panel = linked(triggerIn(node, '.so-menu'), 'aria-controls')
+		const [due] = all(panel, '[aria-haspopup="dialog"]')
+
+		if (!due) throw new Error('строки пункта с панелью нет')
+
+		const duePanel = linked(due, 'aria-controls')
+
+		expect(assembled()).toBe(0)
+		expect(duePanel.querySelector('.so-calendar')).toBe(null)
+
+		// The application checks its own state on its own tick
+		due.click()
+		await nextFrame()
+
+		expect(assembled()).toBe(1)
+		expect(duePanel.querySelector('.so-calendar')).not.toBe(null)
+
+		handle.unmount()
 	})
 })
 
