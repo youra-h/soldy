@@ -125,7 +125,7 @@ export function useAdapterParts(
 	//
 	// A new key — the values handed over inside `subscribe()` — is defined on
 	// the plain record, past the proxy: nobody has read it yet, and the proxy's
-	// `set` with a trigger on every key cost a page about 6% of its mount
+	// `set` with a trigger on every key cost a page about 5% of its mount
 	// (benchmarks/pages/vue.md, 869fmjnaq). Defined, not assigned: assigning
 	// new keys by name turns a record of more than a dozen keys into a
 	// dictionary, while defining keeps it a fast object whose shape every mount
