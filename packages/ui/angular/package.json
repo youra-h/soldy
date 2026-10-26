@@ -24,6 +24,7 @@
     "access": "public"
   },
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/fesm2022/soldy-ui-angular.mjs",
   "types": "./dist/types/soldy-ui-angular.d.ts",
   "files": [

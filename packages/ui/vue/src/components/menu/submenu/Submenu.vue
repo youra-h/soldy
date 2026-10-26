@@ -8,22 +8,29 @@ import { MenuSeparator } from '../separator'
 import Submenu from './Submenu.vue'
 import SetupMenuSubmenu from './setup.component'
 
-const components = { Frame, Icon, ItemRow, MenuGroup, MenuItem, MenuSeparator }
-
 /**
- * Подменю из данных в подменю — третий уровень и ниже — рисует оно само:
- * `<Submenu>` в разметке — этот компонент, импортом своего модуля.
+ * Submenus from data inside a submenu — the third level and below — are drawn
+ * by the submenu itself: `<Submenu>` in the markup is this component, through
+ * the import of its own module.
  *
- * - Регистрация, а не одно имя файла: по имени файла Vue находит компонент
- *   после глобальных компонентов приложения, и чужой `Submenu` подменил бы
- *   уровень.
- * - Геттер: ссылку на себя читает отрисовка, а пока модуль исполняется, его
- *   экспорта ещё нет.
- * - Свойство встаёт после объекта, а не в нём: тип разметки vue-tsc берёт у
- *   `components`, и ссылка на себя замкнула бы тип компонента на себя. Тип
- *   `<Submenu>` vue-tsc выводит сам — по имени файла, это он и есть.
+ * - Registered, not just a file name: Vue finds a component by its file name
+ *   after the application's global components, and someone else's `Submenu`
+ *   would replace the level.
+ * - A getter: rendering reads the reference to itself, and while the module
+ *   runs, its export does not exist yet.
+ * - The property is defined over the object, not written in it: vue-tsc takes
+ *   the markup's types from `components`, and the reference to itself would
+ *   close the component's type on itself. vue-tsc infers the type of
+ *   `<Submenu>` by the file name — which is this very component.
+ * - In the initializer, not a statement of its own: the package declares its
+ *   modules free of side effects (`sideEffects: false`), and at its top level a
+ *   module only declares.
  */
-Object.defineProperty(components, 'Submenu', { enumerable: true, get: () => Submenu })
+const components = Object.defineProperty(
+	{ Frame, Icon, ItemRow, MenuGroup, MenuItem, MenuSeparator },
+	'Submenu',
+	{ enumerable: true, get: () => Submenu },
+)
 
 /**
  * Пункт с подменю: строка пункта в меню над ним и своя панель с пунктами.

@@ -27,6 +27,7 @@
     "test:solid": "npm run test --workspace=@soldy-ui/solid",
     "test:eslint": "vitest run --root tools/eslint",
     "test:min-peers": "vitest run --root tools/min-peers",
+    "test:side-effects": "vitest run --root tools/side-effects",
     "check:published-imports": "vitest run --root tools/published-imports",
     "lint": "eslint . --fix",
     "lint:ci": "eslint .",

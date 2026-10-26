@@ -23,6 +23,9 @@
     "access": "public"
   },
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "style": "./src/index.css",
   "exports": {
     ".": "./src/index.css",
