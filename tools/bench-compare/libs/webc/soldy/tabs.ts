@@ -1,3 +1,4 @@
+import '@soldy-ui/webc/tabs'
 import { COLLECTION_ITEMS } from '../../../data'
 import { h, slotted, so } from '../dom'
 

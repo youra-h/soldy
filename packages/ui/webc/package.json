@@ -32,6 +32,154 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./accordion": {
+      "types": "./dist/components/accordion/index.d.ts",
+      "default": "./dist/components/accordion/index.js"
+    },
+    "./button": {
+      "types": "./dist/components/button/index.d.ts",
+      "default": "./dist/components/button/index.js"
+    },
+    "./calendar": {
+      "types": "./dist/components/calendar/index.d.ts",
+      "default": "./dist/components/calendar/index.js"
+    },
+    "./check-box": {
+      "types": "./dist/components/check-box/index.d.ts",
+      "default": "./dist/components/check-box/index.js"
+    },
+    "./component-view": {
+      "types": "./dist/components/component-view/index.d.ts",
+      "default": "./dist/components/component-view/index.js"
+    },
+    "./date-input": {
+      "types": "./dist/components/date-input/index.d.ts",
+      "default": "./dist/components/date-input/index.js"
+    },
+    "./date-picker": {
+      "types": "./dist/components/date-picker/index.d.ts",
+      "default": "./dist/components/date-picker/index.js"
+    },
+    "./dialog": {
+      "types": "./dist/components/dialog/index.d.ts",
+      "default": "./dist/components/dialog/index.js"
+    },
+    "./drag-and-drop": {
+      "types": "./dist/components/drag-and-drop/index.d.ts",
+      "default": "./dist/components/drag-and-drop/index.js"
+    },
+    "./drawer": {
+      "types": "./dist/components/drawer/index.d.ts",
+      "default": "./dist/components/drawer/index.js"
+    },
+    "./field": {
+      "types": "./dist/components/field/index.d.ts",
+      "default": "./dist/components/field/index.js"
+    },
+    "./frame": {
+      "types": "./dist/components/frame/index.d.ts",
+      "default": "./dist/components/frame/index.js"
+    },
+    "./icon": {
+      "types": "./dist/components/icon/index.d.ts",
+      "default": "./dist/components/icon/index.js"
+    },
+    "./input": {
+      "types": "./dist/components/input/index.d.ts",
+      "default": "./dist/components/input/index.js"
+    },
+    "./label": {
+      "types": "./dist/components/label/index.d.ts",
+      "default": "./dist/components/label/index.js"
+    },
+    "./list-box": {
+      "types": "./dist/components/list-box/index.d.ts",
+      "default": "./dist/components/list-box/index.js"
+    },
+    "./locale-provider": {
+      "types": "./dist/adapter/locale/index.d.ts",
+      "default": "./dist/adapter/locale/index.js"
+    },
+    "./menu": {
+      "types": "./dist/components/menu/index.d.ts",
+      "default": "./dist/components/menu/index.js"
+    },
+    "./number-input": {
+      "types": "./dist/components/number-input/index.d.ts",
+      "default": "./dist/components/number-input/index.js"
+    },
+    "./pagination": {
+      "types": "./dist/components/pagination/index.d.ts",
+      "default": "./dist/components/pagination/index.js"
+    },
+    "./popover": {
+      "types": "./dist/components/popover/index.d.ts",
+      "default": "./dist/components/popover/index.js"
+    },
+    "./progress-linear": {
+      "types": "./dist/components/progress-linear/index.d.ts",
+      "default": "./dist/components/progress-linear/index.js"
+    },
+    "./progress-spinner": {
+      "types": "./dist/components/progress-spinner/index.d.ts",
+      "default": "./dist/components/progress-spinner/index.js"
+    },
+    "./radio-group": {
+      "types": "./dist/components/radio-group/index.d.ts",
+      "default": "./dist/components/radio-group/index.js"
+    },
+    "./rating": {
+      "types": "./dist/components/rating/index.d.ts",
+      "default": "./dist/components/rating/index.js"
+    },
+    "./scroller": {
+      "types": "./dist/components/scroller/index.d.ts",
+      "default": "./dist/components/scroller/index.js"
+    },
+    "./select": {
+      "types": "./dist/components/select/index.d.ts",
+      "default": "./dist/components/select/index.js"
+    },
+    "./skeleton": {
+      "types": "./dist/components/skeleton/index.d.ts",
+      "default": "./dist/components/skeleton/index.js"
+    },
+    "./slider": {
+      "types": "./dist/components/slider/index.d.ts",
+      "default": "./dist/components/slider/index.js"
+    },
+    "./switch": {
+      "types": "./dist/components/switch/index.d.ts",
+      "default": "./dist/components/switch/index.js"
+    },
+    "./table": {
+      "types": "./dist/components/table/index.d.ts",
+      "default": "./dist/components/table/index.js"
+    },
+    "./tabs": {
+      "types": "./dist/components/tabs/index.d.ts",
+      "default": "./dist/components/tabs/index.js"
+    },
+    "./tags": {
+      "types": "./dist/components/tags/index.d.ts",
+      "default": "./dist/components/tags/index.js"
+    },
+    "./textarea": {
+      "types": "./dist/components/textarea/index.d.ts",
+      "default": "./dist/components/textarea/index.js"
+    },
+    "./toasts": {
+      "types": "./dist/components/toasts/index.d.ts",
+      "default": "./dist/components/toasts/index.js"
+    },
+    "./tooltip": {
+      "types": "./dist/components/tooltip/index.d.ts",
+      "default": "./dist/components/tooltip/index.js"
+    },
+    "./virtual": {
+      "types": "./dist/components/virtual/index.d.ts",
+      "default": "./dist/components/virtual/index.js"
     }
   },
   "files": [

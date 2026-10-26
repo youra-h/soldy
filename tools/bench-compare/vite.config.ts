@@ -6,6 +6,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import fs from 'node:fs'
 import path from 'node:path'
 import { angular } from '../../packages/playground/vue/src/vite-angular.ts'
+import { subpathSources } from '../vite/lib.config.ts'
 
 /**
  * The comparison stand (benchmarks/compare/README.md in the root): the
@@ -104,6 +105,12 @@ export default defineConfig({
 			'@soldy-ui/angular': path.join(pk, 'ui/angular/src/index.ts'),
 			'@soldy-ui/svelte': path.join(pk, 'ui/svelte/src/index.ts'),
 			'@soldy-ui/solid': path.join(pk, 'ui/solid/src/index.ts'),
+			// The entries of the elements, before the root of the package
+			...subpathSources({
+				name: '@soldy-ui/webc',
+				root: path.join(pk, 'ui/webc'),
+				entry: 'src/index.ts',
+			}),
 			'@soldy-ui/webc': path.join(pk, 'ui/webc/src/index.ts'),
 		},
 	},

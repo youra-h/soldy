@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { join, posix, resolve } from 'node:path'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, posix, relative, resolve } from 'node:path'
 import { build } from 'esbuild'
 import type { Metafile, Plugin } from 'esbuild'
 import { parse } from '@vue/compiler-sfc'
 import { compile } from 'svelte/compiler'
+import { subpathSources } from '../../vite/lib.config'
 import { findModuleEffects, keepsForEffect } from '../side-effects'
 
 /**
@@ -14,7 +15,10 @@ import { findModuleEffects, keepsForEffect } from '../side-effects'
  * modules of a package declared free of side effects really are, and the
  * declaration does what it promises in a real bundler — an application with
  * one button gets neither Table nor Calendar, and a bare import of a package
- * with effects keeps every module that has them.
+ * with effects keeps every module that has them. Web Components defines its
+ * elements on import, so one button there is the entry of the element: the
+ * package has one for each element its modules define, and each entry brings
+ * the polyfill of built-ins before the first class of an element.
  *
  * A stylesheet is checked against the patterns only: webpack drops the one
  * `sideEffects` does not cover, while esbuild and Vite keep CSS whatever the
@@ -80,9 +84,14 @@ function readLibrary(): TLibraryPackage[] {
 	})
 }
 
+/** The adapter of Web Components, from the repository root. */
+const WEBC = 'packages/ui/webc'
+
 /**
  * The source of every JS entry point of a library package — the entry of its
  * build. A new entry point fails the first test below until it is listed here.
+ * The entries of the Web Components elements come by the rule of its build:
+ * a target in `dist` is built from the same path in `src`.
  */
 const SOURCES: Readonly<Record<string, string>> = {
 	'@soldy-ui/core': 'packages/core/src/index.ts',
@@ -97,16 +106,35 @@ const SOURCES: Readonly<Record<string, string>> = {
 	'@soldy-ui/solid': 'packages/ui/solid/src/index.ts',
 	'@soldy-ui/svelte': 'packages/ui/svelte/src/index.ts',
 	'@soldy-ui/angular': 'packages/ui/angular/src/index.ts',
-	'@soldy-ui/webc': 'packages/ui/webc/src/index.ts',
+	'@soldy-ui/webc': `${WEBC}/src/index.ts`,
+	...Object.fromEntries(
+		Object.entries(
+			subpathSources({
+				name: '@soldy-ui/webc',
+				root: join(ROOT, WEBC),
+				entry: 'src/index.ts',
+			}),
+		).map(([path, source]) => [path, normalize(relative(ROOT, source))]),
+	),
 }
 
-/** How an application takes one button from each adapter whose modules can be dropped. */
+/** An application takes a button by name from the root of a framework adapter. */
+function named(path: string, name: string): string {
+	return `import { ${name} } from '${path}'\nconsole.log(${name})`
+}
+
+/**
+ * How an application takes one button from each adapter: by name from a
+ * framework adapter, by the entry of the element from Web Components — the
+ * root of that package defines every element.
+ */
 const BUTTONS: Readonly<Record<string, string>> = {
-	'@soldy-ui/vue': 'Button',
-	'@soldy-ui/react': 'Button',
-	'@soldy-ui/solid': 'Button',
-	'@soldy-ui/svelte': 'Button',
-	'@soldy-ui/angular': 'TButtonComponent',
+	'@soldy-ui/vue': named('@soldy-ui/vue', 'Button'),
+	'@soldy-ui/react': named('@soldy-ui/react', 'Button'),
+	'@soldy-ui/solid': named('@soldy-ui/solid', 'Button'),
+	'@soldy-ui/svelte': named('@soldy-ui/svelte', 'Button'),
+	'@soldy-ui/angular': named('@soldy-ui/angular', 'TButtonComponent'),
+	'@soldy-ui/webc/button': "import '@soldy-ui/webc/button'",
 }
 
 /** Every string target of an `exports` value, however deep the conditions go. */
@@ -303,17 +331,107 @@ describe('sideEffects библиотечных пакетов', () => {
 
 	it.each(Object.entries(BUTTONS))(
 		'%s: сборка одной кнопки не содержит Table и Calendar',
-		async (path, name) => {
-			const kept = modulesKept(
-				await bundle(
-					`import { ${name} } from '${path}'\nconsole.log(${name})`,
-					Object.keys(SOURCES),
-				),
-			)
+		async (_path, application) => {
+			const kept = modulesKept(await bundle(application, Object.keys(SOURCES)))
 
 			// Not idle: the button is there
 			expect(kept).toContain('packages/core/src/components/custom/button/button.class.ts')
 			expect(kept.filter((file) => /\/(table|calendar)\//.test(file))).toEqual([])
+		},
+	)
+})
+
+/** The polyfill of built-ins (Safari): the adapter of Web Components takes it as a package. */
+const POLYFILL = '@ungap/custom-elements'
+
+/** Entry points of Web Components: the root and the entries of the elements. */
+const WEBC_ENTRIES = Object.keys(SOURCES).filter(
+	(path) => path === '@soldy-ui/webc' || path.startsWith('@soldy-ui/webc/'),
+)
+
+/** Components of Web Components whose module of an element defines elements on import. */
+function definingComponents(): string[] {
+	const components = `${WEBC}/src/components`
+
+	return readdirSync(join(ROOT, components), { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map(({ name }) => name)
+		.filter((name) =>
+			readdirSync(join(ROOT, components, name))
+				.filter((file) => file.endsWith('.element.ts'))
+				.some((file) => effectsOf([`${components}/${name}/${file}`]).length > 0),
+		)
+}
+
+/** Modules `start` imports, directly or not: their code runs before its own. */
+function importedBy(metafile: Metafile, start: string): Set<string> {
+	const inputs = new Map(
+		Object.entries(metafile.inputs).map(([file, input]) => [normalize(file), input]),
+	)
+	const seen = new Set<string>()
+	const visit = (file: string): void => {
+		for (const { path, kind } of inputs.get(file)?.imports ?? []) {
+			const next = normalize(path)
+
+			if (kind !== 'import-statement' || seen.has(next)) continue
+
+			seen.add(next)
+			visit(next)
+		}
+	}
+
+	visit(start)
+
+	return seen
+}
+
+let webcGraph: Promise<Metafile> | undefined
+
+/** One bundle of every entry of Web Components: the graph of its modules. */
+function webcMetafile(): Promise<Metafile> {
+	webcGraph ??= bundle(
+		WEBC_ENTRIES.map((path) => `import '${path}'`).join('\n'),
+		Object.keys(SOURCES),
+	)
+
+	return webcGraph
+}
+
+describe('входы элементов Web Components', () => {
+	it('вход — у каждого компонента, чей модуль элемента определяет элементы при импорте, и у провайдера локали', () => {
+		expect(
+			Object.fromEntries(
+				WEBC_ENTRIES.filter((path) => path !== '@soldy-ui/webc').map((path) => [
+					path,
+					SOURCES[path],
+				]),
+			),
+		).toEqual({
+			...Object.fromEntries(
+				definingComponents().map((name) => [
+					`@soldy-ui/webc/${name}`,
+					`${WEBC}/src/components/${name}/index.ts`,
+				]),
+			),
+			'@soldy-ui/webc/locale-provider': `${WEBC}/src/adapter/locale/index.ts`,
+		})
+	})
+
+	// The imports of a module run before its code, whatever their order, and
+	// the build of the package reorders them: Vite puts the external ones after
+	// the package's own. So the polyfill holds as an import below every module of
+	// an element, not as the first line of an entry
+	it.each(WEBC_ENTRIES)(
+		'%s: полифил встроенных элементов — в импортах каждого модуля элемента',
+		async (path) => {
+			const metafile = await webcMetafile()
+			const elements = [...importedBy(metafile, SOURCES[path] ?? path)].filter((file) =>
+				file.endsWith('.element.ts'),
+			)
+
+			// Not idle: the entry brings elements
+			expect(elements.length).toBeGreaterThan(0)
+			expect(elements.filter((file) => !importedBy(metafile, file).has(POLYFILL))).toEqual([])
 		},
 	)
 })
