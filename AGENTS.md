@@ -344,10 +344,13 @@ dismiss.events.on('dismiss', () => {
 
 С «В адаптере не должно быть логики» это не спорит: там — поведение
 компонента (что делать), здесь — как довезти выданное до фреймворка. Пример:
-адаптер Vue держит состояние в `shallowRef`, а не в `ref`
-(`ui/vue/src/adapter/runtime/useAdapter.ts`) — ядро отдаёт значения, и
-глубокие прокси на каждой ячейке таблицы были лишней работой фреймворка. Это
-решено в адаптере, ядро не менялось. Так же в React: он читает состояние
+адаптер Vue держит состояние контекста одной неглубокой записью
+(`shallowReactive`, `ui/vue/src/adapter/runtime/useAdapter.ts`), а не
+глубоким `ref` и не рефом на каждое свойство. Ядро отдаёт значения, и
+глубокие прокси на каждой ячейке таблицы были лишней работой фреймворка, а
+реф на свойство стоил `RefImpl` и `Dep` и тем свойствам, которых разметка не
+читает: у записи `Dep` заводит только чтение отрисовки. Это решено в адаптере,
+ядро не менялось. Так же в React: он читает состояние
 дважды — на рендере и при подписке, — а ядро собирает составное значение
 заново на каждое чтение, и строка таблицы со всеми ячейками рисовалась при
 монтировании второй раз. Адаптер отдаёт React снимок через `TStableSnapshot`
@@ -421,7 +424,13 @@ Vue-компоненты снимают Vue-прокси с `ctrl`/`engine` не
 через `createVueAdapterContext` (`packages/ui/vue/src/adapter/common/`), она
 и вызывает `toRaw`. Сторож — блок eslint `soldy/vue-components-no-framework`
 (`eslint.config.ts`): запрещает импорт `'vue'` и `createAdapterContext` из
-`@soldy-ui/setup` в `packages/ui/vue/src/components/**`.
+`@soldy-ui/setup` в `packages/ui/vue/src/components/**`. Связку Vue-компонент
+отдаёт шаблону целиком — видом, который вернул `useAdapter`: фасады с ним
+сводит `joinBindings`, свои значения добавляет `extendBinding`
+(`ui/vue/src/adapter/runtime/view.ts`). Спред связки прочёл бы состояние один
+раз, в `setup()`, и отвязал разметку от ядра. Сторож —
+`ui/vue/__tests__/setup-spread.spec.ts`: спред в `setup.component.ts` —
+только `...useSplitAttrs()`.
 
 Тот же контроль для Solid, Svelte и Angular, у которых такого eslint-блока
 нет: `packages/setup/__tests__/framework-mechanisms-components.spec.ts`

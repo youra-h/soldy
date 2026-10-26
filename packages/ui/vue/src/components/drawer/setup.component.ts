@@ -1,6 +1,7 @@
 import { DrawerDescriptor } from '@soldy-ui/setup'
 import {
 	exposeRoot,
+	extendBinding,
 	useAdapter,
 	useExpose,
 	roleIcon,
@@ -32,8 +33,7 @@ export default {
 		// Корень шаблона — телепорт: `$el` потребителю — панель, а не его якорь
 		exposeRoot(expose, binding.rootElement)
 
-		return {
-			...binding,
+		return extendBinding(binding, {
 			/**
 			 * Инстанс — для кнопки закрытия: она просит панель закрыться
 			 * (`requestClose`). Возврат фокуса — забота плагина, разметка о нём
@@ -41,6 +41,6 @@ export default {
 			 */
 			drawer: adapter.instance,
 			closeIconTag: roleIcon('close'),
-		}
+		})
 	},
 }

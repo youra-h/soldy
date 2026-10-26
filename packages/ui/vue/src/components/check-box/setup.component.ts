@@ -1,6 +1,7 @@
 import { CheckBoxDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
 	useExpose,
 	roleIcon,
 	useSplitAttrs,
@@ -22,11 +23,10 @@ export default {
 			props,
 		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
-		return {
-			...useAdapter(adapter, props, emit),
+		return extendBinding(useAdapter(adapter, props, emit), {
 			defaultIconTag: roleIcon('check'),
 			defaultIndeterminateIconTag: roleIcon('checkIndeterminate'),
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

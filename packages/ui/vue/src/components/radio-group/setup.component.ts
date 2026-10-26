@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	joinBindings,
 	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
@@ -48,6 +49,6 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return { ...refs, ...refsCollection }
+		return joinBindings(refs, refsCollection)
 	},
 }

@@ -5,6 +5,9 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
+	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
 	useSplitAttrs,
@@ -14,11 +17,11 @@ import {
 import BaseMenuItem, { type MenuItemProps } from './base.component'
 
 /**
- * Два контекста, как у элемента ListBox: собственный (текст и значение
- * пункта) и коллекционный (вход в коллекцию меню).
+ * Two contexts, as a ListBox item has: its own (the item's text and value) and
+ * the collection one (joining the menu's collection).
  *
- * `context` отдаётся в шаблон явно: нажатие — метод item-адаптера, а рефами
- * методы не пробрасываются.
+ * `context` goes to the template explicitly: the press is a method of the
+ * item adapter, and the state carries no methods.
  */
 export default {
 	name: '_MenuItem',
@@ -40,14 +43,12 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)
 
-		return {
-			...itemBinding,
-			...ownerBinding,
+		return extendBinding(joinBindings(ownerBinding, itemBinding), {
 			context: itemAdapter.instance.context,
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

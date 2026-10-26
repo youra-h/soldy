@@ -6,6 +6,9 @@ import {
 } from '@soldy-ui/setup'
 import {
 	isToastRender,
+	extendBinding,
+	joinBindings,
+	useCollectionAdapter,
 	useAdapter,
 	useExpose,
 	roleIcon,
@@ -40,12 +43,10 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)
 
-		return {
-			...itemBinding,
-			...ownerBinding,
+		return extendBinding(joinBindings(ownerBinding, itemBinding), {
 			/**
 			 * Инстанс — для крестика (`toast.close()`) и своего содержимого: тост
 			 * приходит ему пропом `toast`, и кнопка внутри может его закрыть.
@@ -68,6 +69,6 @@ export default {
 			notificationIconTag: roleIcon('notification'),
 			/** Своё содержимое рисуется, только когда это компонент Vue */
 			isToastRender,
-		}
+		})
 	},
 }

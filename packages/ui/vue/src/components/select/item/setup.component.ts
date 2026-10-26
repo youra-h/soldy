@@ -5,6 +5,9 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
+	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
 	roleIcon,
@@ -15,11 +18,11 @@ import {
 import BaseSelectItem, { type SelectItemProps } from './base.component'
 
 /**
- * Два контекста, как у элемента Tabs: собственный (текст и значение опции) и
- * коллекционный (выбранность и порядок).
+ * Two contexts, as a Tabs item has: its own (the option's text and value) and
+ * the collection one (selection and order).
  *
- * `context` отдаётся в шаблон явно: выбор — метод item-адаптера, а рефами
- * методы не пробрасываются.
+ * `context` goes to the template explicitly: choosing is a method of the
+ * item adapter, and the state carries no methods.
  */
 export default {
 	name: '_SelectItem',
@@ -41,15 +44,13 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)
 
-		return {
-			...itemBinding,
-			...ownerBinding,
+		return extendBinding(joinBindings(ownerBinding, itemBinding), {
 			context: itemAdapter.instance.context,
 			indicatorIconTag: roleIcon('check'),
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

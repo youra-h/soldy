@@ -6,6 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	exposeRoot,
+	joinBindings,
 	useAdapter,
 	useExpose,
 	useCollectionAdapter,
@@ -56,6 +57,6 @@ export default {
 		// `$el` потребителю — регион, а не начало фрагмента
 		exposeRoot(expose, refs.rootElement)
 
-		return { ...refs, ...refsCollection }
+		return joinBindings(refs, refsCollection)
 	},
 }

@@ -7,6 +7,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
 	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
@@ -18,19 +20,20 @@ import {
 import BaseMenuSubmenu, { type MenuSubmenuProps } from './base.component'
 
 /**
- * Три контекста на одном наборе: собственный (текст, открытость, наборы
- * панели), фасад пункта — вход в коллекцию меню над ним — и фасад меню —
- * свои пункты. Пункт с подменю — пункт меню, в котором стоит, и меню своих
- * пунктов: лифт отдаёт ему коллекцию меню над ним, а его пунктам — его
- * собственную.
+ * Three contexts on one bundle: its own (text, openness, the panel's sets),
+ * the item facade — joining the menu's collection above it — and the menu
+ * facade — its own items. An item with a submenu is an item of the menu it
+ * stands in and a menu of its own items: the elevator hands it the collection
+ * of the menu above it, and its items — its own.
  *
- * `context` отдаётся в шаблон явно: нажатие строки — метод item-адаптера, а
- * рефами методы не пробрасываются.
+ * `context` goes to the template explicitly: the press of the row is a method
+ * of the item adapter, and the state carries no methods.
  *
- * Логики здесь нет: открытие клавишами — `TMenuSubmenuKeyboardPlugin`,
- * наведением — `TMenuHoverPlugin` меню над подменю, фокус, Escape и Tab —
- * `TMenuSubmenuFocusPlugin`, нажатие и уход фокуса мимо — `TDismissPlugin`,
- * координаты панели у строки — `TAnchorPlugin` её Frame.
+ * No logic here: opening by keys is `TMenuSubmenuKeyboardPlugin`, by hover —
+ * `TMenuHoverPlugin` of the menu above the submenu, focus, Escape and Tab —
+ * `TMenuSubmenuFocusPlugin`, a press and focus leaving past it —
+ * `TDismissPlugin`, the panel's coordinates at the row — `TAnchorPlugin` of
+ * its Frame.
  */
 export default {
 	name: '_MenuSubmenu',
@@ -64,18 +67,15 @@ export default {
 			{ bundle: adapter.bundle },
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
 		const ownerBinding = useAdapter(adapter, props, emit)
 		const collectionBinding = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return {
-			...itemBinding,
-			...ownerBinding,
-			...collectionBinding,
+		return extendBinding(joinBindings(ownerBinding, itemBinding, collectionBinding), {
 			context: itemAdapter.instance.context,
 			arrowIconTag: roleIcon('arrowRight'),
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

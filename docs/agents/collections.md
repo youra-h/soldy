@@ -1013,16 +1013,17 @@ webc) типизируется по инстансу: `TInstanceState<TInstance>
 плагина раскладки (`layout_styles`), шаблон таблицы — то же имя
 (`names_selectAll`).
 
-Vue отдаёт шаблону не `state`, а рефы (`TBinding`: пропы `TProps`, свойства
-инстанса и выходы плагинов контракта), и граница у него своя —
-`toBindingState` (`ui/vue/src/adapter/runtime/useAdapter.ts`). Рефы связки
-собраны по тому же дескриптору, связь их имён с типом держит он, поэтому
-внутри обычный `as` из `Readonly<Record<string, unknown>>`. Через неё проходят
-и `useAdapter`, и `useCollectionAdapter`; `ctrl`, `plugins` и `rootElement`
-добавляются к результату без приведения. Дженерики компонент не пишет ни в
-одном адаптере: `useAdapter(adapter, props)` берёт инстанс и выходы из
-контракта контекста, а `TProps` — из самих `props`. В `TProps` выходы не
-кладутся: это не пропсы.
+Vue отдаёт шаблону не `state`, а вид связки (`TBinding`: пропы `TProps`,
+свойства инстанса и выходы плагинов контракта; `ui/vue/src/adapter/runtime/view.ts`),
+и граница у него своя — `toBindingState`
+(`ui/vue/src/adapter/runtime/useAdapter.ts`). Запись состояния собрана по тому
+же дескриптору, связь её имён с типом держит он, поэтому внутри обычный `as`
+из `Readonly<Record<string, unknown>>`. Через неё проходят и `useAdapter`, и
+`useCollectionAdapter`; поля `ctrl`, `plugins` и `rootElement` вид читает
+раньше состояния, и его тип — их пересечение с состоянием (`bindingOf`).
+Дженерики компонент не пишет ни в одном адаптере: `useAdapter(adapter, props)`
+берёт инстанс и выходы из контракта контекста, а `TProps` — из самих `props`.
+В `TProps` выходы не кладутся: это не пропсы.
 
 Тип выхода в шаблоне Vue и в контексте `createVueAdapterContext` сторожит
 `ui/vue/__tests__/plugin-outputs.spec.ts`, в контексте `createAdapterContext` —

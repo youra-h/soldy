@@ -1,16 +1,21 @@
 /**
- * useAdapter — единственный Vue-хук на весь проект.
+ * useAdapter — the one Vue hook of the project.
  *
- * 1. Связывает компонент с Vue через обмен `adapter.connect()` из setup: рефы
- *    свойств, входные пропсы, события и `update:<prop>` для v-model
- * 2. Принимает компонент — adapter.attach() в setup
- * 3. Привязывает DOM-элемент корня к TElementPlugin через контекст
- * 4. Вызывает adapter.destroy() при анмаунте компонента
+ * 1. Binds the component to Vue through the exchange `adapter.connect()` in
+ *    `setup()`: the state record, the inputs, the events and `update:<prop>`
+ *    for `v-model`
+ * 2. Accepts the component — `adapter.attach()` in `setup()`
+ * 3. Binds the root DOM element to `TElementPlugin` through the context
+ * 4. Calls `adapter.destroy()` when the component unmounts
+ *
+ * The template gets a view of the binding (`./view.ts`): a component with
+ * facades joins them with `joinBindings`, and adds its own values with
+ * `extendBinding`.
  */
 
 import {
 	ref,
-	shallowRef,
+	shallowReactive,
 	watch,
 	onUnmounted,
 	onBeforeUpdate,
@@ -21,6 +26,7 @@ import { TElementPlugin } from '@soldy-ui/plugins'
 import { type IAdapterContext, type IComponentContract, type TInstanceState } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { VueProfile } from '../common'
+import { bindingOf } from './view'
 
 /**
  * Вспомогательный тип: извлекает публичные свойства и геттеры из контроллера (TInstance),
@@ -32,82 +38,85 @@ export type TExtractControllerState<TInstance> = {
 	]: TInstance[K]
 }
 
-/**
- * Тип реактивных рефов, которые `useAdapter` собирает по обмену `adapter.connect()`
- * и возвращает в ...refs.
- * Во Vue setup() автоматизирует unref для всех Ref в шаблоне.
- */
+/** Props as the template sees them: refs among them are unwrapped, as a `setup()` result's are. */
 export type TUnwrapRefs<T> = {
 	[K in keyof T]: T[K] extends Ref<infer U> ? U : T[K]
 }
 
 /**
- * Итоговый тип, который возвращает useAdapter и который видит Vue-шаблон:
- * - ctrl: сам инстанс контроллера TInstance
- * - plugins: бандл плагинов
- * - rootElement: ссылка на DOM-узел
- * - refs: динамические пропсы компонента
- * - выходы плагинов из контракта `C` — того же вида, что у остальных
- *   адаптеров (`TInstanceState`): снимок, только чтение, необязательный ключ
+ * What `useAdapter` returns and the template sees:
+ * - `ctrl` — the controller instance
+ * - `plugins` — the plugin bundle
+ * - `rootElement` — the ref of the root, when the bundle has `TElementPlugin`
+ * - the state (`TBindingState`)
  */
-export type TBinding<C extends IComponentContract, TProps> = {
+export type TBinding<C extends IComponentContract, TProps> = TBindingFields<C> &
+	TBindingState<C, TProps>
+
+/** The fields of a component's view: read before its state. */
+export type TBindingFields<C extends IComponentContract> = {
 	ctrl: C['instance']
 	plugins: IPluginBundle | null
 	rootElement?: Ref<Element | null>
-} & TBindingState<C, TProps>
+}
 
-/** Рефы адаптера в типах: пропы `TProps`, свойства инстанса и выходы плагинов контракта. */
+/**
+ * The state in types: the props `TProps`, the instance properties and the
+ * plugin outputs of the contract — the latter of the same kind as in the other
+ * adapters (`TInstanceState`): a snapshot, read-only, an optional key.
+ */
 export type TBindingState<C extends IComponentContract, TProps> = TUnwrapRefs<TProps> &
 	TExtractControllerState<C['instance']> &
 	TInstanceState<C['plugins']['outputs']>
 
 /**
- * Типизированный вид на рефы адаптера (`TBindingState`).
+ * The typed state record (`TBindingState`).
  *
- * Граница между рантаймом и типом, одна на `useAdapter` и
- * `useCollectionAdapter` — как `toInstanceState` у остальных адаптеров. Рефы
- * связки собраны по дескриптору из того же инстанса и тех же плагинов, что
- * описывает контракт `C`, но по именам свойств — эту связь держит дескриптор,
- * TypeScript её не видит. В значениях лежат `Ref`, а тип уже развёрнут: рефы
- * из результата `setup()` шаблон разворачивает сам.
+ * The boundary between runtime and type, one for `useAdapter` and
+ * `useCollectionAdapter` — as `toInstanceState` in the other adapters. The
+ * record is filled by the descriptor from the same instance and the same
+ * plugins the contract `C` describes, but by property names — the descriptor
+ * holds that link, TypeScript does not see it.
  */
 export function toBindingState<C extends IComponentContract, TProps>(
-	refs: Readonly<Record<string, unknown>>,
+	record: Readonly<Record<string, unknown>>,
 ): TBindingState<C, TProps> {
-	return refs as TBindingState<C, TProps>
+	return record as TBindingState<C, TProps>
 }
 
 /**
- * Общая часть `useAdapter` и `useCollectionAdapter`: подписки, DOM-биндинг и
- * очистка. Отдаёт то, из чего каждый хук собирает свой результат.
+ * What `useAdapter` and `useCollectionAdapter` share: the subscriptions, the
+ * acceptance and the cleanup. Returns the state record of the context.
  */
 export function useAdapterParts(
 	adapter: IAdapterContext,
 	props: object,
 	emit?: (event: string, ...args: unknown[]) => void,
-): { refs: Readonly<Record<string, Ref<unknown>>>; rootElement: Ref<Element | null> | null } {
+): Readonly<Record<string, unknown>> {
 	const link = adapter.connect(VueProfile)
 	const offs: Array<() => void> = []
 
-	// 1. Core → Vue: реф на каждое свойство с триггерами. Подписка сразу отдаёт
-	// значение каждого — тем же вызовом, что и срабатывание триггера: так рефы
-	// и заводятся.
+	// 1. Core → Vue: one shallow reactive record per context. The subscription
+	// hands every property with triggers over at once — through the same call
+	// a trigger uses: that is how the record gets its keys, all of them before
+	// the first render.
 	//
-	// Реф мелкий (`shallowRef`): ядро отдаёт значения, а не ручки на живое
-	// состояние, и о смене сообщает новым значением (AGENTS.md, «Контракт
-	// границы core → ui»). Глубокий `ref` оборачивал бы в прокси всё
-	// составное — массив ячеек строки таблицы, каждую ячейку, её `aria` и
-	// `dataset`, элементы коллекции — с зависимостью Vue на каждый прочитанный
-	// ключ, и следить за ними незачем: на месте их никто не меняет. В таблице
-	// это была почти пятая часть памяти строки (benchmarks/table/history.md, 869fekb4g)
-	const refs: Record<string, Ref<unknown>> = {}
+	// Vue creates a `Dep` for a key when an effect reads it — the render, — so
+	// a property the markup does not read costs a slot of the record: a
+	// `shallowRef` per property cost a `RefImpl` and a `Dep` on every one of
+	// them (benchmarks/pages/vue.md, 869fmjnaq). The record is shallow: the
+	// core hands values, not handles on live state, and reports a change with a
+	// new value (AGENTS.md, «Контракт границы core → ui»). A deep record would
+	// wrap everything composite — the cell array of a table row, every cell,
+	// its `aria` and `dataset`, the collection items — in proxies with a
+	// dependency per read key, and nobody changes them in place: in the table
+	// that was almost a fifth of a row's memory (benchmarks/table/history.md,
+	// 869fekb4g)
+	const state = shallowReactive<Record<string, unknown>>({})
 
 	offs.push(
 		link.state.subscribe((name, value) => {
-			const target = refs[name]
-
-			if (target) target.value = value
-			else refs[name] = shallowRef(value)
+			state[name] = value
 		}),
 	)
 
@@ -135,52 +144,61 @@ export function useAdapterParts(
 		link.inputs.full(props)
 	})
 
-	// 3. Эмиты: события ядра и `update:<prop>` для v-model — его обмен шлёт по
-	// профилю, сразу после события ядра
+	// 3. Events: the core's events and `update:<prop>` for `v-model` — the
+	// exchange sends it by the profile, right after the core event
 	if (emit) {
 		offs.push(link.events.listen((name, args) => emit(name, ...args)))
 	}
 
-	// 4. Компонент принят: у Vue это сама `setup()`, повторов и отброшенных
-	// сборок не бывает. Здесь же, а не в `onMounted`: `setup()` идёт и на
-	// сервере, и элемент коллекции должен войти в неё к серверной разметке
+	// 4. The component is accepted: in Vue that is `setup()` itself, with no
+	// repeats and no discarded assemblies. Here, not in `onMounted`: `setup()`
+	// runs on the server too, and a collection item has to join the collection
+	// before the server markup
 	adapter.attach()
 
-	// 5. DOM-биндинг. Ссылка на корень нужна только там, где её есть куда
-	// привязать: у headless-слоёв и фасада коллекции `TElementPlugin` нет, и
-	// `rootElement` в результат не попадает.
-	const rootElement = adapter.bundle?.get(TElementPlugin) ? ref<Element | null>(null) : null
-
-	if (rootElement) {
-		watch(rootElement, (el) => adapter.bindElement(el ?? null), { flush: 'post' })
-	}
-
-	// 6. Очистка. Отписка обязательна: при внешнем `ctrl`, переживающем компонент,
-	// adapter.destroy() не трогает instance.events — хендлеры копились бы с каждым
-	// монтированием.
+	// 5. Cleanup. Unsubscribing is a must: with an external `ctrl` that
+	// outlives the component, `adapter.destroy()` leaves `instance.events`
+	// alone — the handlers would pile up with every mount
 	onUnmounted(() => {
 		offs.forEach((off) => off())
 		adapter.destroy()
 	})
 
-	return { refs, rootElement }
+	return state
 }
 
 /**
- * Дженерики компонент не пишет: инстанс и выходы плагинов — из контракта в типе
- * контекста (его выводит `createVueAdapterContext`), пропы — из самих `props`.
+ * The ref of the root bound to `TElementPlugin` — only where the bundle has
+ * the plugin: headless layers do not. A facade shares the component's bundle
+ * and has no node of its own, so `useCollectionAdapter` does not call this.
+ */
+function useRootElement(adapter: IAdapterContext): Ref<Element | null> | undefined {
+	if (!adapter.bundle?.get(TElementPlugin)) return undefined
+
+	const rootElement = ref<Element | null>(null)
+
+	watch(rootElement, (el) => adapter.bindElement(el ?? null), { flush: 'post' })
+
+	return rootElement
+}
+
+/**
+ * The binding of a component: its fields and its state.
+ *
+ * The component writes no generics: the instance and the plugin outputs come
+ * from the contract in the context type (`createVueAdapterContext` infers it),
+ * the props from `props` themselves.
  */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
 	emit?: (event: string, ...args: unknown[]) => void,
 ): TBinding<C, TProps> {
-	const { refs, rootElement } = useAdapterParts(adapter, props, emit)
+	const state = toBindingState<C, TProps>(useAdapterParts(adapter, props, emit))
+	const rootElement = useRootElement(adapter)
+	const fields: TBindingFields<C> = rootElement
+		? { ctrl: adapter.instance, plugins: adapter.bundle, rootElement }
+		: { ctrl: adapter.instance, plugins: adapter.bundle }
 
-	return {
-		ctrl: adapter.instance,
-		plugins: adapter.bundle,
-		...(rootElement ? { rootElement } : {}),
-		...toBindingState<C, TProps>(refs),
-	}
+	return bindingOf(fields, state)
 }
