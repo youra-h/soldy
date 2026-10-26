@@ -7,10 +7,10 @@
  * and the captions — is the place at `normal`, 2px smaller at `sm` and 2px,
  * 4px and 8px larger at `lg`, `xl` and `2xl`. The scales one step smaller than
  * the text next to them — Table cells and header labels, Calendar day numbers,
- * the notes at a control (Field helper, Slider mark labels, Textarea counter)
- * and tags — are the same ladder a step down. The weekday labels of Calendar
- * are a size below the day number (the same at `sm`), the group labels of
- * ListBox a size below the note.
+ * the notes at a control (Field helper, Slider mark labels, Textarea counter),
+ * tags and the group labels of ListBox — are the same ladder a step down. The
+ * weekday labels of Calendar are a size below the day number (the same at
+ * `sm`).
  *
  * Steps fixed in `rem` fitted a 16px place only: at 14px a `sm` Button was as
  * large as a `normal` one and a `lg` one 4px larger. So every check runs in
@@ -61,7 +61,6 @@ const LADDERS = {
 	text: { sm: -2, normal: 0, lg: 2, xl: 4, '2xl': 8 },
 	smaller: { sm: -4, normal: -2, lg: 0, xl: 2, '2xl': 4 },
 	weekday: { sm: -4, normal: -4, lg: -2, xl: 0, '2xl': 2 },
-	group: { sm: -6, normal: -4, lg: -2, xl: 0, '2xl': 2 },
 } as const satisfies Record<string, Record<TComponentSize, number>>
 
 type TLadder = keyof typeof LADDERS
@@ -195,7 +194,7 @@ const PARTS: readonly TPart[] = [
 		],
 		nodes: {
 			строка: ['.so-list-box-item > .so-button', 'text'],
-			'подпись группы': ['.so-list-box-group__label', 'group'],
+			'подпись группы': ['.so-list-box-group__label', 'smaller'],
 		},
 	},
 ]
