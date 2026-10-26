@@ -116,6 +116,8 @@ export class TSelect<
 	}
 
 	protected _open!: boolean
+	/** Whether the panel has ever been open — from then on the options from data stay mounted. */
+	protected _opened = false
 	protected _placeholder!: string
 	protected _closeOnSelect!: boolean
 	protected _clearable!: boolean
@@ -301,6 +303,21 @@ export class TSelect<
 	 */
 	toggleOpen(): void {
 		this.open = !this._open
+	}
+
+	/**
+	 * Whether the panel's options from data (`items`) are mounted: from the
+	 * first opening on. A closed Select nobody opened is a field — options
+	 * built for every Select of a form would outweigh the form, and the closed
+	 * field needs none of their nodes: the selected text and tags come from the
+	 * collection, a key on the closed field opens the panel before it looks
+	 * for an option, and the list the field refers to (`aria-controls`) is
+	 * there regardless. Options written in markup are mounted from the start:
+	 * they enter the collection only mounted. Closing does not unmount them:
+	 * openness is the panel's `visible`, not `rendered`.
+	 */
+	get contentRendered(): boolean {
+		return this._opened
 	}
 
 	get placeholder(): string {
@@ -596,6 +613,8 @@ export class TSelect<
 
 	protected _applyOpen(value: boolean): void {
 		this._open = value
+
+		if (value) this._opened = true
 
 		// Закрытую панель не тянут: жест кончается вместе с ней
 		if (!value) this._setSwiping(false)

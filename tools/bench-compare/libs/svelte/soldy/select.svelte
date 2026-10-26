@@ -3,8 +3,4 @@
 	import { COLLECTION_ITEMS } from '../../../data'
 </script>
 
-<Select placeholder="Выберите" editable>
-	{#each COLLECTION_ITEMS as item (item.value)}
-		<Select.Item {...item} />
-	{/each}
-</Select>
+<Select placeholder="Выберите" editable items={COLLECTION_ITEMS} />

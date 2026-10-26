@@ -344,6 +344,10 @@ describe('Select над движком и владельцем снаружи', 
 
 		expect(engine.extensions.tags.engine?.extensions.batch.items).toHaveLength(2)
 
+		// Opened once: every mount draws the options from data from then on
+		owner.open = true
+		owner.open = false
+
 		const live = watchBuses(selectBuses(owner, engine))
 
 		for (let i = 0; i < 3; i++) {

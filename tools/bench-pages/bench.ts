@@ -3,6 +3,7 @@ import * as material from '@soldy-ui/icons-material'
 import { TButton, TComponent, TEventEmitter } from '@soldy-ui/core'
 import { enUS, ruRU } from '@soldy-ui/plugins'
 import {
+	COLLECTION_ITEMS,
 	COMPONENTS,
 	isPreviewHostModule,
 	previewProps,
@@ -59,6 +60,16 @@ const pages = COMPONENTS.filter(
 	(entry) => entry.group !== 'layers' && host.previews.includes(entry.id),
 ).map((entry) => entry.id)
 
+/**
+ * Props of a component on the page — its preview's (`PREVIEW_PROPS`). Select
+ * gets its options as data (`items`), as the neighbors' pages get theirs
+ * (`tools/bench-compare`): the preview writes them in markup, and the hosts
+ * draw no markup options once `items` came.
+ */
+function propsOf(id: string): Readonly<Record<string, unknown>> {
+	return id === 'select' ? { ...previewProps(id), items: COLLECTION_ITEMS } : previewProps(id)
+}
+
 /** Смонтированное сейчас: корни страницы. */
 let mounted: IPreviewHandle[] = []
 
@@ -105,15 +116,13 @@ async function mount(page: string, count: number, only?: string[]): Promise<numb
 
 	if (page === 'all') {
 		mounted = (only ?? pages).map((id) =>
-			host.mount(place(), { component: id, props: previewProps(id), count: 1 }),
+			host.mount(place(), { component: id, props: propsOf(id), count: 1 }),
 		)
 	} else {
 		const component = page === 'leak' || page === 'empty' ? 'button' : page
 		const copies = page === 'empty' ? 0 : count
 
-		mounted = [
-			host.mount(place(), { component, props: previewProps(component), count: copies }),
-		]
+		mounted = [host.mount(place(), { component, props: propsOf(component), count: copies })]
 	}
 
 	await frames()

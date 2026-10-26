@@ -48,22 +48,25 @@
 					<!--
 						The card is the popover's `default` template, not its projection: the place
 						popover has `lazyMount`, and the template's ListBox and buttons come with the
-						first open of the panel, not with every month. The list comes before the
-						header in the DOM: focus on open lands on it, and the theme puts the header
-						on top.
+						first open of the panel, not with every month. The place's list instance comes
+						with that same first open, so ListBox stands in a branch by the presence of
+						the list. The list comes before the header in the DOM: focus on open lands on
+						it, and the theme puts the header on top.
 					-->
 					<ng-template slot="default">
 						<div class="so-calendar__picker">
-							<div
-								so-list-box
-								embedded="calendar.picker-list"
-								class="so-calendar__picker-list"
-								indicator="none"
-								[ctrl]="picker.list"
-								[engine]="picker.engine"
-								[size]="state()['size']"
-								[aria_labelledBy]="picker.labelledBy"
-							></div>
+							@if (picker.list; as list) {
+								<div
+									so-list-box
+									embedded="calendar.picker-list"
+									class="so-calendar__picker-list"
+									indicator="none"
+									[ctrl]="list.ctrl"
+									[engine]="list.engine"
+									[size]="state()['size']"
+									[aria_labelledBy]="picker.labelledBy"
+								></div>
+							}
 							<div class="so-calendar__picker-header">
 								<button
 									so-button

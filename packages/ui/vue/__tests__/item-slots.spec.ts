@@ -153,9 +153,12 @@ describe('Select', () => {
 	/** Строка опции — носитель роли; клик всплывает к корню опции, где выбор. */
 	const OPTION = '[role="option"]'
 
+	// Options from data are drawn from the panel's first opening on: the panel
+	// is open from the start
+
 	it('#item получает text и selected опции, selected следует за выбором', async () => {
 		wrapper = mount(Select, {
-			props: { items: ITEMS },
+			props: { items: ITEMS, open: true },
 			slots: { item: ITEM_PROBE('selected') },
 			attachTo: document.body,
 		})
@@ -171,7 +174,7 @@ describe('Select', () => {
 
 	it('item-indicator-icon подменяет отметку одной опции, у остальных — своя', async () => {
 		wrapper = mount(Select, {
-			props: { items: ITEMS, mode: 'multiple', indicator: 'end' },
+			props: { items: ITEMS, mode: 'multiple', indicator: 'end', open: true },
 			slots: {
 				'item-indicator-icon': `<template #item-indicator-icon="{ item, selected }"><b v-if="item.value === 'a'" class="probe">{{ selected }}</b></template>`,
 			},

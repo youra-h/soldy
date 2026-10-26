@@ -25,43 +25,49 @@ function hasBox(node: Element): boolean {
 }
 
 /**
- * TVirtualPlugin — окно коллекции в документе: замер видимой полосы и шага
- * элементов и элемент с DOM-фокусом.
+ * TVirtualPlugin — the collection's window in the document: it measures the
+ * visible band and the step of the items, and tracks the item with DOM focus.
  *
- * Что рисовать, решает рисование коллекции (`draw`), — плагин отдаёт ему то,
- * что знает только живой документ: какая часть списка видна
- * (`notifyViewport`) и в каком элементе фокус (закрепление `focus`). Ставит
- * плагин в набор коллекции обёртка `Virtual`, когда коллекция подхватывает её
- * окно: движок к этому времени привязан к реестру bundles, узлы элементов
- * плагин берёт у реестра узлов. Пока окна нет, плагин не слушает ничего.
+ * What to draw is decided by the collection's drawing (`draw`); the plugin
+ * gives it what only the live document knows: which part of the list is
+ * visible (`notifyViewport`) and which item holds focus (the `focus` pin). The
+ * `Virtual` wrapper puts the plugin into the collection's bundle when the
+ * collection picks up its window: by then the engine is bound to the bundles
+ * registry, and the plugin takes item nodes from the registry of nodes. While
+ * there is no window, the plugin listens to nothing.
  *
- * **Что прокручивает окно.** Родитель нарисованных элементов, если
- * прокручивается сам (ListBox с `maxRows`, список в панели Select), иначе
- * ближайший предок, который прокручивается по вертикали, иначе страница.
- * Пропа нет: блок с ограниченной высотой и страница работают без настройки.
- * Контейнер ищется заново, когда меняется размер списка или контейнера, — с
- * ним меняется и то, прокручивается ли контейнер.
+ * **What scrolls the window.** The parent of the drawn items if it scrolls
+ * itself (ListBox with `maxRows`, the list in the Select panel), otherwise the
+ * nearest ancestor that scrolls vertically, otherwise the page. There is no
+ * prop: a block of limited height and the page work without setup. The
+ * container is looked up again when the size of the list or the container
+ * changes — with it changes whether the container scrolls.
  *
- * **Замер — раз в кадр**, по прокрутке контейнера и страницы, по размеру
- * списка и контейнера и по смене того, что рисует коллекция. Полоса —
- * пересечение окна контейнера с окном браузера, от верха списка. Верх списка
- * — верх нарисованного элемента минус его место, умноженное на шаг: своей
- * разметки у списка может не быть вовсе (шапка и подвал ListBox, тело
- * таблицы), а элементы стоят от верха через шаг. Шаг — наименьшее расстояние
- * между верхами соседних нарисованных элементов: элемента ниже шага не
- * бывает, тема держит его высоту. Нарисован один — шаг прежний, а первым
- * замером — его высота; элементов в документе нет — замера нет. Нет и у
- * нарисованного коробки (список скрыт) — замера тоже нет: верх списка от
- * нулевых коробок съехал бы к началу, и окно, пока список скрыт, кадр за
- * кадром шло бы туда же, — а так стоит, где стояло.
+ * **One measurement a frame**, on scrolling of the container and the page, on
+ * resizing of the list and the container, on a change of what the collection
+ * draws, and when the first drawn item enters the document while none was in
+ * it: the markup may draw the entries later than the window has them — the
+ * Select panel builds its options from data on its first opening, and `drawn`
+ * does not change then. The band is the intersection of the container's
+ * window with the browser's, from the top of the list. The top of the list is
+ * the top of a drawn item minus its place times the step: the list may have no
+ * markup of its own at all (the header and footer of ListBox, the table
+ * body), and the items stand from its top a step apart. The step is the
+ * smallest distance between the tops of neighboring drawn items: no item is
+ * shorter than the step, the theme holds its height. With one item drawn — the
+ * previous step, and on the first measurement its height; no items in the
+ * document — no measurement. No box at the drawn item (the list is hidden) —
+ * no measurement either: from zero boxes the top of the list would slide to
+ * the start, and while the list is hidden the window would follow it frame
+ * after frame; this way it stays where it stood.
  *
- * **Высокий элемент.** Высота элементов в окне одна на все: элемент выше
- * шага сдвинет распорки, и прокрутка поедет. Такой элемент плагин находит при
- * замере и предупреждает в консоли — один раз за монтирование.
+ * **A tall item.** Items in the window share one height: an item taller than
+ * the step shifts the fillers, and scrolling drifts. The plugin finds such an
+ * item while measuring and warns in the console — once per mount.
  *
- * **Фокус.** Элемент, в который пришёл DOM-фокус, плагин закрепляет в окне:
- * прокрутка не уносит его из документа, пока фокус в нём. Фокус ушёл на узел
- * вне компонента — закрепления нет.
+ * **Focus.** The item DOM focus came into is pinned in the window: scrolling
+ * does not take it out of the document while focus is in it. Focus moved to a
+ * node outside the component — no pin.
  */
 export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 	private _root: Element | null = null
@@ -81,6 +87,8 @@ export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 	 */
 	private _containerStale = false
 	private _frame: number | null = null
+	/** Stops waiting for the first drawn node (`_awaitDrawn`); `null` — not waiting. */
+	private _waiting: (() => void) | null = null
 	private _listening = false
 	/** Последний шаг элементов: пока замерить нечем, полосу меряют им. */
 	private _step = 0
@@ -136,7 +144,12 @@ export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 
 		this._listening = true
 		this._resize ??= new ResizeObserver(this._onResize)
-		this._watchList(this._firstDrawn()?.node ?? null, true)
+
+		const first = this._firstDrawn()
+
+		this._watchList(first?.node ?? null, true)
+
+		if (!first) this._awaitDrawn()
 
 		const target: IDomEventTarget = root
 
@@ -153,6 +166,8 @@ export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 		const root = this._root
 
 		this._cancel()
+		this._waiting?.()
+		this._waiting = null
 
 		if (!this._listening) return
 
@@ -265,7 +280,13 @@ export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 		this._watchList(first?.node ?? null, this._containerStale)
 		this._containerStale = false
 
-		if (!first || !hasBox(first.node)) return
+		if (!first) {
+			this._awaitDrawn()
+
+			return
+		}
+
+		if (!hasBox(first.node)) return
 
 		const step = this._measureStep()
 
@@ -274,6 +295,28 @@ export class TVirtualPlugin extends TBasePlugin<any, TVirtualPluginEvents> {
 		const top = first.node.getBoundingClientRect().top - first.place * this._step
 
 		draw.notifyViewport({ top: band.top - top, bottom: band.bottom - top, step: this._step })
+	}
+
+	/**
+	 * Wait for the first drawn item to enter the document — its bundle
+	 * registered and its node bound, in either order
+	 * (`TCollectionElements.waitFor`), — and measure a frame later. The markup
+	 * may draw the window's entries later than the window has them: the panel of
+	 * a Select builds its options from data on its first opening, and `drawn`
+	 * does not change then. Without a node there is no list to watch the size
+	 * of, and nothing would schedule the measurement.
+	 */
+	private _awaitDrawn(): void {
+		if (this._waiting || !this._elements) return
+
+		this._waiting = this._elements.waitFor(() => {
+			if (!this._firstDrawn()) return false
+
+			this._waiting = null
+			this._schedule()
+
+			return true
+		})
 	}
 
 	/** Первый нарисованный элемент, у которого есть узел в документе. */

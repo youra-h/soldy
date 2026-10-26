@@ -87,18 +87,26 @@ export function Calendar(props: CalendarProps): JSX.Element {
 		)
 	}
 
-	/** Карточка панели выбора: список места, за ним — шапка. */
+	/**
+	 * The picker's card: the place's list, then the header. The list comes with the first
+	 * opening of the popover — a branch by its presence, and ListBox takes `ctrl` and `engine`
+	 * at assembly.
+	 */
 	const card = (picker: Accessor<TCalendarPicker>) => (
 		<div class="so-calendar__picker">
-			<ListBox
-				embedded="calendar.picker-list"
-				class="so-calendar__picker-list"
-				ctrl={picker().list}
-				engine={picker().engine}
-				size={state.size}
-				indicator="none"
-				aria_labelledBy={picker().labelledBy}
-			/>
+			<Show when={picker().list}>
+				{(list) => (
+					<ListBox
+						embedded="calendar.picker-list"
+						class="so-calendar__picker-list"
+						ctrl={list().ctrl}
+						engine={list().engine}
+						size={state.size}
+						indicator="none"
+						aria_labelledBy={picker().labelledBy}
+					/>
+				)}
+			</Show>
 			<div class="so-calendar__picker-header">
 				<Button
 					embedded="calendar.picker-heading"

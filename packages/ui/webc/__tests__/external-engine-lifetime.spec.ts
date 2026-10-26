@@ -378,6 +378,11 @@ describe('Select над движком и владельцем снаружи', 
 	it('переставленный трижды и снятый — на шинах владельца, поля и движка ничего', async () => {
 		const owner = new TSelect()
 		const engine = createEngineSelect({ owner, items: ITEMS })
+
+		// Opened once: every assembly draws the options from data from then on
+		owner.open = true
+		owner.open = false
+
 		const extensions = Object.values(engine.extensions).flatMap((extension) =>
 			extension ? [extension.events] : [],
 		)
@@ -645,23 +650,27 @@ describe('Calendar над движком и владельцем снаружи'
 		document.body.appendChild(el)
 		await flush()
 
-		const picker = engine.extensions.picker.pickers[0]
+		const popover = engine.extensions.picker.pickers[0]?.popover
 
-		if (!picker) throw new Error('панели места нет')
+		if (!popover) throw new Error('панели места нет')
 
-		// Панель открыта — список места собран: его подписки тоже в счёте
-		picker.popover.open = true
+		// The panel is open — the place has its list, and it is assembled: its subscriptions count too
+		popover.open = true
 		await flush()
+
+		const list = engine.extensions.picker.pickers[0]?.list
+
+		if (!list) throw new Error('у открытого места нет списка')
 
 		const live = watchBuses([
 			owner.events,
 			engine.events,
 			...extensionBuses(engine),
 			...engine.extensions.batch.items.map((day) => day.events),
-			picker.popover.events,
-			picker.list.events,
-			picker.engine.events,
-			...extensionBuses(picker.engine),
+			popover.events,
+			list.ctrl.events,
+			list.engine.events,
+			...extensionBuses(list.engine),
 		])
 
 		await moveThriceAndRemoveNode(el, live, () => {

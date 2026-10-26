@@ -80,12 +80,16 @@ describe.each([
 })
 
 describe('Select принимает готовую коллекцию', () => {
-	/** Опции Select лежат в телепортированной панели, поэтому ищем по документу. */
+	/**
+	 * Select's options stand in the teleported panel, so they are looked up in
+	 * the document. Options from data are drawn from the panel's first opening
+	 * on: the panel is open from the start.
+	 */
 	it('рисует опции движка уровня 1', async () => {
 		const engine = createEngine<TItem>({ items: ITEMS })
 
 		wrapper = mount(Select, {
-			props: { engine },
+			props: { engine, open: true },
 			attachTo: document.body,
 		})
 

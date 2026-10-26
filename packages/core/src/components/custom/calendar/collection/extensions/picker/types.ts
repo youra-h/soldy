@@ -22,38 +22,51 @@ export type TCalendarPickerSets = {
 }
 
 /**
- * Панель выбора месяца и года у сетки — выход для разметки, по одной на
- * место сетки.
+ * The list of a place's panel and its engine. They come together, with the
+ * first opening of the place's popover, and live as long as the place: the
+ * markup hands them to ListBox as `ctrl` and `engine`.
+ */
+export type TCalendarPickerList = {
+	/** The list of months or years */
+	readonly ctrl: IListBox
+	/** The list's engine */
+	readonly engine: TListBoxCollection
+}
+
+/**
+ * The month and year picker of a grid — the markup's output, one per grid
+ * place.
  *
- * Экземпляры (`popover`, `list`, `engine`) у места свои и живут, пока жив
- * движок календаря: разметка отдаёт их компонентам пропами `ctrl` и
- * `engine`. Остальное — снимок того, что панель показывает сейчас.
+ * The instances belong to the place and live as long as the calendar's
+ * engine; the markup hands them to components as `ctrl` and `engine`. The
+ * popover comes with the place: it is the trigger of the grid's heading. The
+ * list comes with the first opening of the popover — a shown calendar holds
+ * no list until its picker is opened, and the markup draws ListBox by the
+ * presence of `list`. The rest is a snapshot of what the panel shows now.
  */
 export type TCalendarPicker = {
-	/** Поповер панели; его триггер — заголовок сетки */
+	/** The panel's popover; its trigger is the grid's heading */
 	popover: IPopover
-	/** Список месяцев или лет */
-	list: IListBox
-	/** Движок списка — разметка отдаёт его списку вместе с `list` */
-	engine: TListBoxCollection
-	/** Что в списке: месяцы года или годы страницы */
+	/** The list of months or years with its engine; `undefined` until the first opening */
+	list: TCalendarPickerList | undefined
+	/** What the list holds: the months of a year or the years of a page */
 	level: TCalendarPickerLevel
-	/** Текст шапки: год на месяцах, отрезок страницы на годах */
+	/** The header text: the year on months, the page's span on years */
 	heading: string
-	/** Набор шапки: её `id` */
+	/** The header's set: its `id` */
 	headingAria: TAriaAttributes
 	/**
-	 * `id` шапки — им называются панель и список (`aria_labelledBy`).
-	 * Плагин связок его не записал — `undefined`
+	 * The header's `id` — it names the panel and the list (`aria_labelledBy`).
+	 * Until the ids plugin writes it — `undefined`
 	 */
 	labelledBy: string | undefined
-	/** Набор стрелки «назад»: имя по уровню — год или страница лет — пишет плагин имён */
+	/** The "back" arrow's set: the name by level — a year or a page of years — is written by the names plugin */
 	prevAria: TAriaAttributes
-	/** Набор стрелки «вперёд» */
+	/** The "forward" arrow's set */
 	nextAria: TAriaAttributes
-	/** Листать назад некуда: дальше только годы раньше `min` или `0001` */
+	/** Nowhere to page back: only years before `min` or `0001` lie behind */
 	prevDisabled: boolean
-	/** Листать вперёд некуда: дальше только годы позже `max` или `9999` */
+	/** Nowhere to page forward: only years after `max` or `9999` lie ahead */
 	nextDisabled: boolean
 }
 
@@ -77,11 +90,14 @@ export interface ICalendarPickerExtension extends IExtension<ICalendarItem, TCal
 	readonly pickers: TCalendarPicker[]
 	/** Наборы места `index`: пишут в них плагины связок и имён */
 	pickerSets(index: number): TCalendarPickerSets
-	/** Кнопка шапки: месяцы ⇄ годы */
+	/** The header button: months ⇄ years. A place whose panel was never opened has no list — nothing */
 	toggleLevel(index: number): void
-	/** Стрелка «назад»: на месяцах — год назад, на годах — страница из 12 лет */
+	/**
+	 * The "back" arrow: a year back on months, a page of 12 years on years. A
+	 * place whose panel was never opened — nothing
+	 */
 	showPrev(index: number): void
-	/** Стрелка «вперёд» */
+	/** The "forward" arrow */
 	showNext(index: number): void
 	/** Закрыть панель места — нажатие по её подложке. Места нет — ничего */
 	close(index: number): void
