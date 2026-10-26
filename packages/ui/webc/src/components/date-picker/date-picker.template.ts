@@ -276,7 +276,7 @@ export const datePickerTemplate: ITemplate<IDatePicker, unknown, TDatePickerOutp
 		// A range has its buttons after the end field, not in its slot: they work with the
 		// whole period. The mode's fields get their instances before they are placed — on
 		// every connection, as the calendar above: the core creates a field when its mode
-		// needs it, and the other mode's details stay without one
+		// needs it, and the other mode's details get theirs when that mode comes
 		bind(['mode', 'clearable'], (ctx) => {
 			const own = parts.get(ctx.root)
 			const picker = ctx.ctrl
