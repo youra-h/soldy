@@ -84,6 +84,16 @@ export function toBindingState<C extends IComponentContract, TProps>(
 	return record as TBindingState<C, TProps>
 }
 
+/** A new key of a plain record, as an assignment would make it, but keeping the record a fast object. */
+function define(record: Record<string, unknown>, name: string, value: unknown): void {
+	Object.defineProperty(record, name, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true,
+	})
+}
+
 /**
  * What `useAdapter` and `useCollectionAdapter` share: the subscriptions, the
  * acceptance and the cleanup. Returns the state record of the context.
@@ -111,12 +121,23 @@ export function useAdapterParts(
 	// its `aria` and `dataset`, the collection items — in proxies with a
 	// dependency per read key, and nobody changes them in place: in the table
 	// that was almost a fifth of a row's memory (benchmarks/table/history.md,
-	// 869fekb4g)
-	const state = shallowReactive<Record<string, unknown>>({})
+	// 869fekb4g).
+	//
+	// A new key — the values handed over inside `subscribe()` — is defined on
+	// the plain record, past the proxy: nobody has read it yet, and the proxy's
+	// `set` with a trigger on every key cost a page about 6% of its mount
+	// (benchmarks/pages/vue.md, 869fmjnaq). Defined, not assigned: assigning
+	// new keys by name turns a record of more than a dozen keys into a
+	// dictionary, while defining keeps it a fast object whose shape every mount
+	// of the type shares. A key the record has is a change and goes through
+	// the proxy, which notifies whoever read it
+	const record: Record<string, unknown> = {}
+	const state = shallowReactive(record)
 
 	offs.push(
 		link.state.subscribe((name, value) => {
-			state[name] = value
+			if (Object.hasOwn(record, name)) state[name] = value
+			else define(record, name, value)
 		}),
 	)
 
