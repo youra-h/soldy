@@ -412,6 +412,82 @@ function optionOf(command: string, ...names: readonly string[]): string | undefi
 	return undefined
 }
 
+/**
+ * The target a bundler takes by default for each key of `exports` — a path,
+ * or the `default` condition, however deep. Other conditions lead elsewhere:
+ * `types` to declarations, `solid` to the source with JSX that another step of
+ * the build writes into `dist`.
+ */
+function defaultTargetsOf(manifest: TManifest): Array<readonly [string, string]> {
+	const { exports } = manifest
+	const walk = (key: string, value: unknown): Array<readonly [string, string]> => {
+		if (typeof value === 'string') return [[key, value]]
+
+		return isRecord(value) ? walk(key, value.default) : []
+	}
+
+	return isRecord(exports)
+		? Object.entries(exports).flatMap(([key, value]) => walk(key, value))
+		: walk('.', exports)
+}
+
+/** Entries of a bundle: `lib.entry` is a path, a list or names to paths. */
+function bundleEntriesOf(build: Readonly<Record<string, unknown>>): string[] {
+	const entry = isRecord(build.lib) ? build.lib.entry : undefined
+	const entries = isRecord(entry) ? Object.values(entry) : [entry].flat()
+
+	return entries.filter((path) => typeof path === 'string')
+}
+
+/**
+ * Violations of the entries of a bundle; an empty list — every default JS
+ * target of `exports` in the output of the bundle is built from an entry of
+ * it. A module
+ * that is not an entry keeps only the exports other modules take from it: a
+ * subpath that re-exports a name the root takes by another path loses it, as
+ * `toastsOf` of `@soldy-ui/webc/toasts` did. An entry keeps every export of its
+ * own. The output of an entry is its path from the root of the kept modules,
+ * as `.js`, in `outDir`.
+ */
+function checkBundleEntries(
+	manifest: TManifest,
+	build: Readonly<Record<string, unknown>>,
+): string[] {
+	const rollupOptions = isRecord(build.rollupOptions) ? build.rollupOptions : {}
+	const output = isRecord(rollupOptions.output) ? rollupOptions.output : {}
+	const { outDir } = build
+	const { preserveModulesRoot } = output
+
+	if (typeof outDir !== 'string' || typeof preserveModulesRoot !== 'string') {
+		return ['у бандла нет outDir или preserveModulesRoot — выходов его входов не вывести']
+	}
+
+	const dir = normalizePath(outDir)
+	const built = new Set(
+		bundleEntriesOf(build).map((entry) =>
+			posix.join(
+				dir,
+				relative(preserveModulesRoot, entry)
+					.split('\\')
+					.join('/')
+					.replace(/\.[cm]?[jt]sx?$/, '.js'),
+			),
+		),
+	)
+
+	return defaultTargetsOf(manifest)
+		.filter(
+			([, target]) =>
+				target.endsWith('.js') &&
+				normalizePath(target).startsWith(`${dir}/`) &&
+				!built.has(normalizePath(target)),
+		)
+		.map(
+			([key, target]) =>
+				`exports["${key}"] ${JSON.stringify(target)} — не вход бандла: модуль, который не вход, держит только экспорты, которые у него берут другие модули`,
+		)
+}
+
 /** Условия `exports["."]` в порядке записи; нет их — пустой объект. */
 function rootExportOf(manifest: TManifest): TManifest {
 	const { exports } = manifest
@@ -797,6 +873,16 @@ describe('сборка пакетов', () => {
 			// Склеенный в один файл пакет теряет tree-shaking целиком
 			expect(output).toMatchObject({ preserveModules: true })
 		})
+
+		it('цель exports с кодом в выходе бандла — его вход', async () => {
+			const violations = checkBundleEntries(pkg.manifest, await buildSectionOf(pkg))
+
+			expect(
+				violations,
+				'Входы бандла разошлись с exports (AGENTS.md, «Сборка пакетов»):\n' +
+					violations.join('\n'),
+			).toEqual([])
+		})
 	})
 
 	describe.each(packagesOf(SVELTE_RECIPE))('рецепт Svelte · $name', (pkg) => {
@@ -850,6 +936,67 @@ describe('сторож рецептов', () => {
 		expect(recipesOf('tsc -p tsconfig.build.json')).toEqual([])
 		expect(recipesOf('vite build && svelte-package')).toEqual([LIB_RECIPE, SVELTE_RECIPE])
 		expect(recipesOf('vite build && ng-packagr')).toEqual([LIB_RECIPE, NG_PACKAGR_RECIPE])
+	})
+
+	describe('входы бандла', () => {
+		const SOURCES = resolve('/example/src')
+		const manifest = {
+			exports: {
+				'.': { types: './dist/index.d.ts', default: './dist/index.js' },
+				'./button': {
+					types: './dist/components/button/index.d.ts',
+					default: './dist/components/button/index.js',
+				},
+				'./theme.css': './dist/theme.css',
+			},
+		}
+
+		/** The section `build` of a bundle with these entries, its modules kept from `src`. */
+		const bundle = (entry: unknown) => ({
+			outDir: 'dist',
+			lib: { entry },
+			rollupOptions: { output: { preserveModules: true, preserveModulesRoot: SOURCES } },
+		})
+
+		const ROOT_ENTRY = join(SOURCES, 'index.ts')
+		const BUTTON_ENTRY = join(SOURCES, 'components/button/index.ts')
+
+		it('подпуть, собранный не входом, — нарушение; входом — нет', () => {
+			expect(checkBundleEntries(manifest, bundle(ROOT_ENTRY))).toEqual([
+				'exports["./button"] "./dist/components/button/index.js" — не вход бандла: модуль, который не вход, держит только экспорты, которые у него берут другие модули',
+			])
+			expect(checkBundleEntries(manifest, bundle([ROOT_ENTRY, BUTTON_ENTRY]))).toEqual([])
+			expect(
+				checkBundleEntries(manifest, bundle({ index: ROOT_ENTRY, button: BUTTON_ENTRY })),
+			).toEqual([])
+		})
+
+		// Declarations, styles and the source of Solid are no modules of the
+		// bundle, and a target outside its output belongs to another build
+		it('цели других условий, без кода и мимо выхода бандла не в счёт', () => {
+			const solid = {
+				exports: {
+					'.': {
+						types: './dist/index.d.ts',
+						solid: './dist/source/index.js',
+						default: './dist/index.js',
+					},
+				},
+			}
+			const setup = {
+				...bundle(resolve('/example/setup/index.ts')),
+				outDir: 'dist/setup',
+				rollupOptions: { output: { preserveModulesRoot: resolve('/example/setup') } },
+			}
+
+			expect(checkBundleEntries(solid, bundle(ROOT_ENTRY))).toEqual([])
+			expect(
+				checkBundleEntries(
+					{ exports: { '.': './dist/index.js', './setup': './dist/setup/index.js' } },
+					setup,
+				),
+			).toEqual([])
+		})
 	})
 
 	const NAME = '@soldy-ui/example'

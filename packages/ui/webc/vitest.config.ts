@@ -1,9 +1,17 @@
 import { defineConfig } from 'vitest/config'
 import path from 'node:path'
+import { subpathSources } from '../../../tools/vite/lib.config.ts'
 
 export default defineConfig({
 	resolve: {
 		alias: {
+			// The entries of the elements, before the package root: an alias is
+			// matched by prefix
+			...subpathSources({
+				name: '@soldy-ui/webc',
+				root: import.meta.dirname,
+				entry: 'src/index.ts',
+			}),
 			'@soldy-ui/core': path.resolve(import.meta.dirname, '../../core/src'),
 			'@soldy-ui/icons-material': path.resolve(
 				import.meta.dirname,

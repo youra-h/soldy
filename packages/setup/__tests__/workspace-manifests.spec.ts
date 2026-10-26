@@ -178,21 +178,28 @@ function selectLibrary(
 const ENTRY_FIELDS = ['main', 'types', 'style', 'exports'] as const
 
 /**
- * Игнорирует ли git путь от корня репозитория. Код 0 — игнорирует, 1 — нет;
- * любой другой исход (git не запустился, корень не репозиторий) — сбой, и он
- * роняет сторож, а не читается как «не игнорирует».
+ * The paths from the repository root that git ignores, in one run for all of
+ * them: a run per path took seconds on Windows once Web Components declared an
+ * entry per element. Code 0 — some are ignored, 1 — none; any other outcome
+ * (git did not start, the root is no repository) is a failure, and it fails the
+ * guard instead of reading as «not ignored».
  */
-function isGitIgnored(path: string): boolean {
-	const { status, error, stderr } = spawnSync('git', ['check-ignore', '--quiet', '--', path], {
+function gitIgnored(paths: readonly string[]): ReadonlySet<string> {
+	if (paths.length === 0) {
+		return new Set()
+	}
+
+	const { status, error, stderr, stdout } = spawnSync('git', ['check-ignore', '--stdin', '-z'], {
 		cwd: ROOT,
 		encoding: 'utf-8',
+		input: paths.join('\0'),
 	})
 
 	if (status !== 0 && status !== 1) {
-		throw new Error(`git check-ignore ${path}: ${error?.message ?? stderr}`)
+		throw new Error(`git check-ignore ${paths.join(' ')}: ${error?.message ?? stderr}`)
 	}
 
-	return status === 0
+	return new Set(stdout.split('\0').filter((path) => path !== ''))
 }
 
 /** Пакет собирается: у него есть скрипт `build`. */
@@ -243,7 +250,7 @@ function entryTargets({ dir, manifest }: TWorkspacePackage): TEntryTarget[] {
  * в чистом клоне нет. Пока точки входа показывают на исходники, собирать нечего.
  */
 function shipsBuildOutput(pkg: TWorkspacePackage): boolean {
-	return entryTargets(pkg).some(({ path }) => isGitIgnored(path))
+	return gitIgnored(entryTargets(pkg).map(({ path }) => path)).size > 0
 }
 
 /**
@@ -256,9 +263,11 @@ function shipsBuildOutput(pkg: TWorkspacePackage): boolean {
  */
 function checkEntryPoints(pkg: TWorkspacePackage): string[] {
 	const buildable = hasBuildScript(pkg)
+	const targets = entryTargets(pkg)
+	const ignored = gitIgnored(targets.map(({ path }) => path))
 
-	return entryTargets(pkg).flatMap(({ declared, path }) => {
-		if (isGitIgnored(path)) {
+	return targets.flatMap(({ declared, path }) => {
+		if (ignored.has(path)) {
 			return buildable
 				? []
 				: [`${declared} — выход сборки (игнорируется git), а скрипта build у пакета нет`]

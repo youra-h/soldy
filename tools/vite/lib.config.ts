@@ -1,4 +1,5 @@
 import { defineConfig, type PluginOption, type UserConfig } from 'vite'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 /**
@@ -28,6 +29,14 @@ export type TLibraryBuildOptions = {
 	 */
 	readonly outDir?: string
 	/**
+	 * Whether the subpaths of the manifest's `exports` are entries of the build
+	 * too, each from its source (`subpathSources`). A module that is not an
+	 * entry keeps only the exports other modules take from it, and a name the
+	 * root takes by another path is dropped from the subpath that re-exports
+	 * it; an entry keeps every export of its own.
+	 */
+	readonly subpaths?: boolean
+	/**
 	 * Чего не вбирать в бандл сверх соседей по скоупу: фреймворк адаптера и
 	 * прочие зависимости, которые ставит потребитель.
 	 */
@@ -50,7 +59,19 @@ function matches(specifier: string, pattern: string | RegExp): boolean {
 }
 
 export function libConfig(options: TLibraryBuildOptions): UserConfig {
-	const { name, root, entry, outDir = 'dist', external = [], plugins = [] } = options
+	const {
+		name,
+		root,
+		entry,
+		outDir = 'dist',
+		subpaths = false,
+		external = [],
+		plugins = [],
+	} = options
+	const main = path.resolve(root, entry)
+	const entries = subpaths
+		? [main, ...Object.values(subpathSources({ name, root, entry, outDir }))]
+		: main
 
 	return defineConfig({
 		// Корень задан явно: `outDir` Vite считает от него, а не от конфига, и
@@ -72,7 +93,7 @@ export function libConfig(options: TLibraryBuildOptions): UserConfig {
 			// («TAriaPlugin уже входит в состав TButton»)
 			minify: false,
 			lib: {
-				entry: path.resolve(root, entry),
+				entry: entries,
 				// Только ESM: второй формат дал бы в одном приложении две копии
 				// каждого класса, и `instanceof` реестров перестал бы совпадать
 				formats: ['es'],
@@ -95,4 +116,53 @@ export function libConfig(options: TLibraryBuildOptions): UserConfig {
 			},
 		},
 	})
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * The sources of a package's subpaths: the import path of every `exports` key
+ * but `.` → the module its target is built from. The factory lays the build
+ * out module for module from the folder of the entry, so the target
+ * `./dist/components/button/index.js` is built from
+ * `src/components/button/index.ts`.
+ *
+ * Tests and stands take a package from sources, its subpaths too
+ * (docs/agents/build.md, «Локальная разработка сборки не требует»). An alias
+ * is matched by prefix: these go before the alias of the package root.
+ */
+export function subpathSources(
+	options: Pick<TLibraryBuildOptions, 'name' | 'root' | 'entry' | 'outDir'>,
+): Record<string, string> {
+	const { name, root, entry, outDir = 'dist' } = options
+	const manifest: unknown = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf-8'))
+	const exports = isRecord(manifest) && isRecord(manifest.exports) ? manifest.exports : {}
+	const output = `./${outDir}/`
+	const sources: Record<string, string> = {}
+
+	for (const [subpath, conditions] of Object.entries(exports)) {
+		if (subpath === '.') continue
+
+		const target = isRecord(conditions) ? conditions.default : conditions
+		const source =
+			typeof target === 'string' && target.startsWith(output) && target.endsWith('.js')
+				? path.resolve(
+						root,
+						path.dirname(entry),
+						`${target.slice(output.length, -'.js'.length)}.ts`,
+					)
+				: undefined
+
+		if (source === undefined || !existsSync(source)) {
+			throw new Error(
+				`${name}: exports["${subpath}"] ${JSON.stringify(target)} — not a module built from ${path.dirname(entry)}`,
+			)
+		}
+
+		sources[path.posix.join(name, subpath)] = source
+	}
+
+	return sources
 }
