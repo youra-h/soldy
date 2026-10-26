@@ -6,6 +6,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
 	useExpose,
 	useCollectionAdapter,
 	useSplitAttrs,
@@ -62,9 +64,7 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return {
-			...refs,
-			...refsCollection,
+		return extendBinding(joinBindings(refs, refsCollection), {
 			...useSplitAttrs(),
 			/**
 			 * Чекбокс «выбрать все» — экземпляр, который держит таблица. Не проп
@@ -73,6 +73,6 @@ export default {
 			 * целиком.
 			 */
 			selectAll: collectionAdapter.instance.selectAll,
-		}
+		})
 	},
 }

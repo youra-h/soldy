@@ -5,6 +5,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	joinBindings,
+	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
 	createVueAdapterContext,
@@ -37,9 +39,9 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)
 
-		return { ...itemBinding, ...ownerBinding }
+		return joinBindings(ownerBinding, itemBinding)
 	},
 }

@@ -5,6 +5,9 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
+	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
 	roleIcon,
@@ -15,17 +18,18 @@ import {
 import BaseMenuPopoverItem, { type MenuPopoverItemProps } from './base.component'
 
 /**
- * Два контекста, как у пункта: собственный (текст, открытость, наборы
- * панели) и коллекционный (вход в коллекцию меню). Своей коллекции у пункта с
- * панелью нет: в панели лежит что угодно.
+ * Two contexts, as an item has: its own (text, openness, the panel's sets) and
+ * the collection one (joining the menu's collection). An item with a panel has
+ * no collection of its own: anything lies in the panel.
  *
- * `context` отдаётся в шаблон явно: нажатие строки — метод item-адаптера, а
- * рефами методы не пробрасываются.
+ * `context` goes to the template explicitly: the press of the row is a method
+ * of the item adapter, and the state carries no methods.
  *
- * Логики здесь нет: стрелка к концу строки — `TMenuPopoverItemKeyboardPlugin`,
- * фокус, Escape и Tab — `TMenuPopoverItemFocusPlugin`, нажатие и уход фокуса
- * мимо — `TDismissPlugin`, координаты панели у строки — `TAnchorPlugin` её
- * Frame, одна открытая панель на меню — коллекция меню.
+ * No logic here: the arrow towards the end of the row is
+ * `TMenuPopoverItemKeyboardPlugin`, focus, Escape and Tab —
+ * `TMenuPopoverItemFocusPlugin`, a press and focus leaving past it —
+ * `TDismissPlugin`, the panel's coordinates at the row — `TAnchorPlugin` of
+ * its Frame, one open panel per menu — the menu's collection.
  */
 export default {
 	name: '_MenuPopoverItem',
@@ -47,16 +51,14 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
 		const ownerBinding = useAdapter(adapter, props, emit)
 
-		return {
-			...itemBinding,
-			...ownerBinding,
+		return extendBinding(joinBindings(ownerBinding, itemBinding), {
 			context: itemAdapter.instance.context,
 			arrowIconTag: roleIcon('arrowRight'),
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

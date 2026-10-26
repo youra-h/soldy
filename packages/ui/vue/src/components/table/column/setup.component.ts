@@ -1,6 +1,7 @@
 import { TableColumnDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
 	useExpose,
 	roleIcon,
 	createVueAdapterContext,
@@ -28,14 +29,13 @@ export default {
 			props,
 		})
 
-		return {
-			...useAdapter(adapter, props, emit),
+		return extendBinding(useAdapter(adapter, props, emit), {
 			/**
-			 * Методы колонки рефами не пробрасываются — отдаём инстанс: кнопка
-			 * сортировки зовёт его `toggleSort()`.
+			 * The state carries no methods of the column — the instance goes out:
+			 * the sort button calls its `toggleSort()`.
 			 */
 			column: adapter.instance,
 			sortIconTag: roleIcon('arrowUpward'),
-		}
+		})
 	},
 }

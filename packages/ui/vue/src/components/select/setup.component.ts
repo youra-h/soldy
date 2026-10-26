@@ -7,6 +7,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
 	useExpose,
 	useCollectionAdapter,
 	VueElevatorFactory,
@@ -66,9 +68,7 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return {
-			...refs,
-			...refsCollection,
+		return extendBinding(joinBindings(refs, refsCollection), {
 			/**
 			 * Экземпляр `TInput`, которым владеет Select. Не проп (не меняется
 			 * за время жизни компонента), поэтому отдаём инстансом —
@@ -77,6 +77,6 @@ export default {
 			field: adapter.instance.field,
 			arrowIconTag: roleIcon('arrowDown'),
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

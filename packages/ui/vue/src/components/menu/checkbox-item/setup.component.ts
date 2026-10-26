@@ -5,6 +5,9 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
+	useCollectionAdapter,
 	useExpose,
 	VueElevatorFactory,
 	roleIcon,
@@ -15,11 +18,12 @@ import {
 import BaseMenuCheckboxItem, { type MenuCheckboxItemProps } from './base.component'
 
 /**
- * Два контекста, как у пункта: собственный (текст и значение флажка) и
- * коллекционный (вход в коллекцию меню и отметка — её выбор).
+ * Two contexts, as an item has: its own (the checkbox's text and value) and
+ * the collection one (joining the menu's collection, and the mark — its
+ * selection).
  *
- * `context` отдаётся в шаблон явно: нажатие — метод item-адаптера, а рефами
- * методы не пробрасываются.
+ * `context` goes to the template explicitly: the press is a method of the
+ * item adapter, and the state carries no methods.
  */
 export default {
 	name: '_MenuCheckboxItem',
@@ -41,15 +45,13 @@ export default {
 			elevator: VueElevatorFactory,
 		})
 
-		const itemBinding = useAdapter(itemAdapter, props, emit)
+		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)
 
-		return {
-			...itemBinding,
-			...ownerBinding,
+		return extendBinding(joinBindings(ownerBinding, itemBinding), {
 			context: itemAdapter.instance.context,
 			indicatorIconTag: roleIcon('check'),
 			...useSplitAttrs(),
-		}
+		})
 	},
 }

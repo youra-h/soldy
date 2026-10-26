@@ -1,6 +1,7 @@
 import { SwitchDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
 	useExpose,
 	useSplitAttrs,
 	VueElevatorFactory,
@@ -21,6 +22,6 @@ export default {
 			props,
 		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 
-		return { ...useAdapter(adapter, props, emit), ...useSplitAttrs() }
+		return extendBinding(useAdapter(adapter, props, emit), useSplitAttrs())
 	},
 }

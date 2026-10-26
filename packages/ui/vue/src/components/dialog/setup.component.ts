@@ -1,6 +1,7 @@
 import { DialogDescriptor } from '@soldy-ui/setup'
 import {
 	exposeRoot,
+	extendBinding,
 	useAdapter,
 	useExpose,
 	roleIcon,
@@ -32,8 +33,7 @@ export default {
 		// Корень шаблона — телепорт: `$el` потребителю — панель, а не его якорь
 		exposeRoot(expose, binding.rootElement)
 
-		return {
-			...binding,
+		return extendBinding(binding, {
 			/**
 			 * Инстанс — для кнопок шапки: крестик просит окно закрыться
 			 * (`requestClose`), разворот переключает `maximized`. Возврат фокуса
@@ -43,6 +43,6 @@ export default {
 			closeIconTag: roleIcon('close'),
 			maximizeIconTag: roleIcon('arrowsOutward'),
 			restoreIconTag: roleIcon('arrowsInward'),
-		}
+		})
 	},
 }

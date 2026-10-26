@@ -1,6 +1,7 @@
 import { PopoverDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
 	useExpose,
 	roleIcon,
 	createVueAdapterContext,
@@ -23,15 +24,14 @@ export default {
 			props,
 		})
 
-		return {
-			// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
-			...useAdapter(adapter, props, emit),
+		// The template spreads the output `dismiss_ownerAttribute` onto the panel
+		return extendBinding(useAdapter(adapter, props, emit), {
 			/**
 			 * Инстанс — для кнопки закрытия: она только ставит ему `open = false`.
 			 * Возврат фокуса — забота плагина, разметка о нём не знает.
 			 */
 			popover: adapter.instance,
 			closeIconTag: roleIcon('close'),
-		}
+		})
 	},
 }

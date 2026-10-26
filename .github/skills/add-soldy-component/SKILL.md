@@ -111,6 +111,12 @@ export default {
 }
 ```
 
+The binding is a live view of the state, so the setup returns it whole: own values (an icon tag,
+an inner instance, `useSplitAttrs()`) go through `extendBinding(useAdapter(adapter, props, emit), { … })`,
+facades are joined with `joinBindings` (see `references/collection-component.md`). A spread of
+the binding reads the state once and unties the markup from the core —
+`packages/ui/vue/__tests__/setup-spread.spec.ts` allows only `...useSplitAttrs()` in a setup.
+
 - `<Name>.vue`: `<script lang="ts">` re-exports `Setup<Name>`; template binds `ref="rootElement"`, `:is="tag"`, `v-if="rendered"`, `v-show="visible"`, `:class="classes"` and the three core attribute sets `v-bind="{ ...attrs, ...aria, ...dataset }"`.
 - `index.ts`: export `Base<Name>`, `props<Name>`, `emits<Name>`, and the `.vue` default.
 

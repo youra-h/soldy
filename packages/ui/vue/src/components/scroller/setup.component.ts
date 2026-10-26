@@ -1,6 +1,7 @@
 import { ScrollerDescriptor } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
 	useExpose,
 	roleIcon,
 	createVueAdapterContext,
@@ -26,13 +27,12 @@ export default {
 			props,
 		})
 
-		return {
-			...useAdapter(adapter, props, emit),
+		return extendBinding(useAdapter(adapter, props, emit), {
 			/**
 			 * Одна иконка на обе кнопки: роли «влево» в контракте иконок нет, и
 			 * ту стрелку, что смотрит в начало строки, зеркалит тема.
 			 */
 			arrowIconTag: roleIcon('arrowRight'),
-		}
+		})
 	},
 }

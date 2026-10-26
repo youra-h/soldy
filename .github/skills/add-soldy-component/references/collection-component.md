@@ -318,17 +318,15 @@ import {
   TabsDescriptor,
   TabsCollectionDescriptor,
 } from '@soldy-ui/setup'
-import { TTabsCollectionFacade } from '@soldy-ui/core'
-import type { ITabsCollectionProps } from '@soldy-ui/core'
 import {
   useAdapter,
   useCollectionAdapter,
+  joinBindings,
   VueElevatorFactory,
   createVueAdapterContext,
   type SetupContext,
 } from '../../adapter'
 import BaseTabs, { type TabsProps } from './base.component'
-import { type ITabsComponentProps, type ITabs } from '@soldy-ui/core'
 
 export default {
   name: '_Tabs',
@@ -339,7 +337,7 @@ export default {
       props,
     })
 
-    const refs = useAdapter<ITabsComponentProps, ITabs>(adapter, props, emit)
+    const refs = useAdapter(adapter, props, emit)
 
     const collectionAdapter = createVueAdapterContext(
       TabsCollectionDescriptor(),
@@ -349,33 +347,33 @@ export default {
       .use(TCollectionExtension, { elevator: VueElevatorFactory })
       .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
-    const refsCollection = useCollectionAdapter<ITabsCollectionProps, TTabsCollectionFacade>(
-      collectionAdapter,
-      props,
-      emit,
-    )
+    const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-    return { ...refs, ...refsCollection }
+    return joinBindings(refs, refsCollection)
   },
 }
 ```
 
 `useCollectionAdapter` (`packages/ui/vue/src/adapter/runtime/useCollectionAdapter.ts`) is
-built from the same parts as `useAdapter` (`useAdapterParts`) but leaves `ctrl` / `rootElement`
-out of its result: under the facade they'd mean the facade instance and its (nonexistent)
-root element rather than the component's — spreading them in `{ ...refs, ...refsCollection }`
-would depend on spread order, which is exactly what broke before this helper existed (see the
-JSDoc on `useCollectionAdapter`).
+built from the same parts as `useAdapter` (`useAdapterParts`) but has no `ctrl` and no
+`rootElement`: under the facade they'd mean the facade instance and its (nonexistent) root
+element rather than the component's. `useAdapter` creates the `rootElement` ref and watches it
+(the watch calls `adapter.bindElement`) **only when** the context's bundle has `TElementPlugin`;
+a facade context shares the component's bundle but has no node of its own, so
+`useCollectionAdapter` creates neither the ref nor the watch.
+
+The setup returns the bindings **whole** (`packages/ui/vue/src/adapter/runtime/view.ts`):
+`joinBindings(owner, ...facades)` builds one view — the owner's fields (`ctrl`, `plugins`,
+`rootElement`), then the states of all contexts, read on every access — and
+`extendBinding(binding, values)` adds the component's own values (icon tags, `useSplitAttrs()`),
+which win over a state property of the same name. Never spread a binding: a spread reads the
+state once, in `setup()`, and the markup stops following the core —
+`packages/ui/vue/__tests__/setup-spread.spec.ts` allows only `...useSplitAttrs()` in a setup.
 
 The item setup mirrors the two-context shape (`TabsItemDescriptor` +
-`TabsCollectionItemDescriptor`, shared bundle, `TCollectionItemExtension`), but calls plain `useAdapter` on both
-sides and spreads the item binding before the owner binding: both bindings carry `ctrl` and
-`rootElement`, and the owner's, spread last, win.
-
-`useAdapterParts` creates a `rootElement` ref and watches it **only when** the context's
-bundle has `TElementPlugin`; the watch calls `adapter.bindElement`. A facade context shares
-the component's bundle, so the parts give it a `rootElement` too: `useCollectionAdapter`
-drops it from the result, and in the item setup the owner binding overrides it.
+`TabsCollectionItemDescriptor`, shared bundle, `TCollectionItemExtension`): the facade through
+`useCollectionAdapter` first, then the component through `useAdapter` — `attach` and
+`onUnmounted` go by that order — and `joinBindings(ownerBinding, itemBinding)`.
 
 ## Key files
 

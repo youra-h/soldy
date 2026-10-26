@@ -1,57 +1,45 @@
 import type { IAdapterContext, IComponentContract } from '@soldy-ui/setup'
 import type { IPluginBundle } from '@soldy-ui/plugins'
 import { toBindingState, useAdapterParts, type TBindingState } from './useAdapter'
+import { bindingOf } from './view'
 
 /**
- * То же, что `TBinding`, но без `ctrl` и `rootElement`.
+ * The same as `TBinding`, without `ctrl` and `rootElement`.
  *
- * `TProps` — пропсы компонента, среди них коллекционные; инстанс контракта
- * `C` — фасад. Из них шаблон и получает типы `items`, `selected` и прочего,
- * что отдаёт коллекция.
+ * `TProps` are the component's props, the collection ones among them; the
+ * instance of the contract `C` is the facade. From them the template gets the
+ * types of `items`, `selected` and the rest the collection hands over.
  *
- * Собрано пересечением, а не через `Omit<TBinding, …>`: `Omit` схлопывает
- * пересечение в плоский тип, и `items` из объявленного пропа перестаёт
- * совмещаться с `items` фасада — шаблон видит union, у которого нет `uid`.
+ * Built as an intersection, not through `Omit<TBinding, …>`: `Omit` flattens
+ * the intersection, and `items` of the declared prop stops merging with
+ * `items` of the facade — the template sees a union without `uid`.
  */
 export type TCollectionBinding<C extends IComponentContract, TProps> = {
 	plugins: IPluginBundle | null
 } & TBindingState<C, TProps>
 
 /**
- * Адаптер фасада коллекции — всё то же, кроме того, что принадлежит компоненту.
+ * The adapter of a collection facade — the facade of the owner and of an item:
+ * everything `useAdapter` does except what belongs to the component.
  *
- * У коллекционного компонента адаптеров два: свой и фасада. Оба собираются из
- * одних частей (`useAdapterParts`), но `ctrl` и `rootElement` — имена
- * компонента, не фасада, и в результат фасада они не попадают:
+ * - `ctrl` of a facade would be the `T*CollectionFacade`, while the template
+ *   waits for the component under that name;
+ * - a facade has no root: it shares the component's bundle and has no node of
+ *   its own, so it gets neither a root ref nor a `watch` on it — a ref the
+ *   template never bound, on every item and owner of a collection.
  *
- * - `ctrl` у фасада это `T*CollectionFacade`, тогда как снаружи под этим именем
- *   ждут сам компонент;
- * - `rootElement` у фасада своего нет вовсе: он появляется только там, где в
- *   наборе есть `TElementPlugin`, а фасад делит набор компонента и своего узла
- *   не имеет.
+ * `plugins` stays: it is the **same** bundle for both contexts — the second
+ * one is created with `{ bundle: adapter.bundle }`.
  *
- * `plugins` остаётся: у обоих адаптеров это **один и тот же** bundle — второй
- * контекст создаётся с `{ bundle: adapter.bundle }`, — так что перекрытие
- * ничего не меняет.
- *
- * Пока спорные ключи отдавались, корректность держалась на **порядке спредов**
- * в `setup`, и порядок этот ничем не проверялся. Восемь компонентов сливают по
- * два адаптера; три owner'а порядок перепутали, а заметил это только Select —
- * на момент находки единственный, чей шаблон читал `ctrl` (`ctrl.toggleOpen()`
- * по клику), и потому сломался видимо. Его починили перестановкой, у него
- * одного. Клик с тех пор переехал в `TSelectPointerPlugin`, но вывод не
- * изменился: убрать лишние ключи в источнике надёжнее, чем помнить про порядок
- * в каждом новом коллекционном компоненте.
+ * The component joins its binding with the facades' in `joinBindings` — one
+ * view, its fields first, then the states in order.
  */
 export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
 	emit?: (event: string, ...args: unknown[]) => void,
 ): TCollectionBinding<C, TProps> {
-	const { refs } = useAdapterParts(adapter, props, emit)
+	const state = toBindingState<C, TProps>(useAdapterParts(adapter, props, emit))
 
-	return {
-		plugins: adapter.bundle,
-		...toBindingState<C, TProps>(refs),
-	}
+	return bindingOf({ plugins: adapter.bundle }, state)
 }

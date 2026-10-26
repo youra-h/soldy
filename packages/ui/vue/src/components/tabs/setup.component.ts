@@ -6,6 +6,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
 	useExpose,
 	useCollectionAdapter,
 	useSplitAttrs,
@@ -44,6 +46,6 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return { ...refs, ...refsCollection, ...useSplitAttrs() }
+		return extendBinding(joinBindings(refs, refsCollection), useSplitAttrs())
 	},
 }

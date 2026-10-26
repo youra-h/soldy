@@ -1,6 +1,7 @@
 import { DatePickerDescriptor, TFieldControlExtension } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
 	useExpose,
 	roleIcon,
 	VueElevatorFactory,
@@ -38,9 +39,8 @@ export default {
 		}).use(TFieldControlExtension, { elevator: VueElevatorFactory })
 		const picker = adapter.instance
 
-		return {
-			// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
-			...useAdapter(adapter, props, emit),
+		// The template spreads the output `dismiss_ownerAttribute` onto the panel
+		return extendBinding(useAdapter(adapter, props, emit), {
 			/**
 			 * The instance — for the mode's fields and the footer buttons with
 			 * `confirmable`: «OK» accepts the choice (`confirm`), «Cancel» closes
@@ -52,6 +52,6 @@ export default {
 			engine: picker.engine,
 			clearIconTag: roleIcon('close'),
 			calendarIconTag: roleIcon('calendar'),
-		}
+		})
 	},
 }

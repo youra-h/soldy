@@ -5,6 +5,8 @@ import {
 } from '@soldy-ui/setup'
 import {
 	useAdapter,
+	extendBinding,
+	joinBindings,
 	useExpose,
 	useCollectionAdapter,
 	roleIcon,
@@ -49,14 +51,12 @@ export default {
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
 
-		return {
-			...refs,
-			...refsCollection,
+		return extendBinding(joinBindings(refs, refsCollection), {
 			/**
 			 * Одна иконка на все стрелки: роли «влево» в контракте иконок нет, и
 			 * ту стрелку, что смотрит в начало строки, зеркалит тема.
 			 */
 			arrowIconTag: roleIcon('arrowRight'),
-		}
+		})
 	},
 }
