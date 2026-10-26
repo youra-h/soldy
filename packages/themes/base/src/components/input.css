@@ -42,14 +42,19 @@
 	--so-input-height-xl: 2.5rem;
 	--so-input-height-2xl: 2.75rem;
 
-	--so-input-font-size-sm: 0.875rem;
+	/* The text of a field counts from the font of the place, which `normal`
+	 * takes as is: `sm` is 2px smaller, `lg`, `xl` and `2xl` 2px, 4px and 8px
+	 * larger — 14 / 16 / 18 / 20 / 24px at a 16px place, 12 / 14 / 16 / 18 /
+	 * 22px at 14px. `em` resolves where the variable is read, against the
+	 * parent, that is the place the part stands in. */
+	--so-input-font-size-sm: calc(1em - 0.125rem);
 	--so-input-line-height-sm: calc(1.25 / 0.875);
 	--so-input-line-height-normal: 1.5;
-	--so-input-font-size-lg: 1.125rem;
+	--so-input-font-size-lg: calc(1em + 0.125rem);
 	--so-input-line-height-lg: calc(1.75 / 1.125);
-	--so-input-font-size-xl: 1.25rem;
+	--so-input-font-size-xl: calc(1em + 0.25rem);
 	--so-input-line-height-xl: calc(1.75 / 1.25);
-	--so-input-font-size-2xl: 1.5rem;
+	--so-input-font-size-2xl: calc(1em + 0.5rem);
 	--so-input-line-height-2xl: calc(2 / 1.5);
 
 	--so-input-indent-sm: 0.375rem;

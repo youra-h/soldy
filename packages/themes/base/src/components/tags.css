@@ -34,26 +34,21 @@
 	--so-tags-item-height-xl: 2.25rem;
 	--so-tags-item-height-2xl: 2.5rem;
 
-	--so-tags-item-font-size-sm: 0.75rem;
+	/* Tags are a step smaller than the text next to them, and every step counts
+	 * from the font of the place: 4px smaller at `sm`, 2px at `normal`, the font
+	 * of the place at `lg`, 2px and 4px larger at `xl` and `2xl` — 12 / 14 / 16
+	 * / 18 / 20px at a 16px place, 10 / 12 / 14 / 16 / 18px at 14px. `em`
+	 * resolves where the variable is read: on the row and the close button of a
+	 * tag, against the tag, that is the place — a set or the field of a Select. */
+	--so-tags-item-font-size-sm: calc(1em - 0.25rem);
 	--so-tags-item-line-height-sm: calc(1 / 0.75);
-	/* A `normal` tag sits halfway between the font of its place and the `sm`
-	 * step, 12px: 13px at a 14px place, 14px at 16px, 15px at 18px. The `normal`
-	 * Button and field take the font of the place themselves, and the step down
-	 * to the tag narrows as the place nears 12px: it stays quieter than them
-	 * without falling to `sm`. `em` resolves where the variable is read — on
-	 * the tag's row and close button, against the tag. A tag nested in a
-	 * smaller place, such as a table cell, gets closer to 12px instead of
-	 * shrinking with every level. A literal rather than `var()` on the `sm`
-	 * step: that substitution would happen on the document root, and an app
-	 * setting `sm` on its own ancestor would not move `normal`. The other steps
-	 * stay absolute, as those of Button and the field do. */
-	--so-tags-item-font-size-normal: calc(0.5em + 0.375rem);
+	--so-tags-item-font-size-normal: calc(1em - 0.125rem);
 	--so-tags-item-line-height-normal: calc(1.25 / 0.875);
-	--so-tags-item-font-size-lg: 1rem;
+	--so-tags-item-font-size-lg: 1em;
 	--so-tags-item-line-height-lg: 1.5;
-	--so-tags-item-font-size-xl: 1.125rem;
+	--so-tags-item-font-size-xl: calc(1em + 0.125rem);
 	--so-tags-item-line-height-xl: calc(1.75 / 1.125);
-	--so-tags-item-font-size-2xl: 1.25rem;
+	--so-tags-item-font-size-2xl: calc(1em + 0.25rem);
 	--so-tags-item-line-height-2xl: calc(1.75 / 1.25);
 
 	--so-tags-item-padding-sm: 0.375rem;
