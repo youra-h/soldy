@@ -162,6 +162,19 @@ export function angular({ tsconfig, include }: TAngularOptions): Plugin[] {
 				: {}),
 		}),
 
+		// Vitest keeps transformed modules on disk between runs (`fsModuleCache`,
+		// on by default) and keys a module by its source, the environment and the
+		// plugin names. The output of a module this plugin compiles depends on
+		// more: on the component's templates and on the whole program — a template
+		// compiles into the code of every component that uses it. A key from the
+		// output is out of reach: the generator is synchronous and runs before
+		// `transform`, while the program is still compiling in its thread. So
+		// these modules stay out of the disk cache (`false`), by the same check as
+		// `transform`, and the rest keep their usual key (`undefined`)
+		configureVitest({ defineCacheKeyGenerator }) {
+			defineCacheKeyGenerator(({ id }) => (compiled(fileOf(id)) ? false : undefined))
+		},
+
 		// Программа компилируется с запуска, в фоне, а не с первым модулем
 		// Angular: иначе её ждёт тот, кто первым открыл Angular, — в браузерном
 		// прогоне это первый тест хоста, и под нагрузкой ожидание выходило за

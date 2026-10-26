@@ -28,11 +28,16 @@ export default defineConfig({
 		testTimeout: 15_000,
 		server: {
 			deps: {
-				// Пакеты Angular — через Vite, а не мимо него, как прочие
-				// зависимости: они выпущены в частичной форме, и до полной их
-				// доводит линкер в плагине Angular (`src/vite-angular.ts`). Мимо
-				// него первый же импорт потребовал бы компилятор Angular в рантайме
-				inline: [/[\\/]node_modules[\\/]@angular[\\/]/],
+				// Angular packages go through Vite, not past it like the other
+				// dependencies: they are published in partial form, and the linker
+				// of the Angular plugin (`src/vite-angular.ts`) brings them to full
+				// form. Past it, the very first import would ask for the Angular
+				// compiler at runtime. The compiler CLI is no such package: it is
+				// the build tool the plugin imports, and the plugin's spec
+				// (`__tests__/vite-angular.spec.ts`) gets it from Node as is.
+				// Through Vite, its bundles and the Angular compiler went through
+				// the linker: seconds of a cold run and warnings on source maps
+				inline: [/[\\/]node_modules[\\/]@angular[\\/](?!compiler-cli[\\/])/],
 			},
 		},
 	},
