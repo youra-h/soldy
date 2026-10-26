@@ -55,8 +55,11 @@ function open(setup: TCalendarSetup, index = 0): TCalendarPicker {
 	return panel(setup, index)
 }
 
-/** The list of place `index` with its engine; before the first opening there is none, and the test fails here. */
-function listOf(setup: TCalendarSetup, index = 0): TCalendarPickerList {
+/**
+ * The list of place `index` with its engine; before the first opening there is
+ * none, and the test fails here.
+ */
+function pickerList(setup: TCalendarSetup, index = 0): TCalendarPickerList {
 	const found = panel(setup, index).list
 
 	if (!found) throw new Error(`у места ${index} нет списка`)
@@ -66,7 +69,7 @@ function listOf(setup: TCalendarSetup, index = 0): TCalendarPickerList {
 
 /** Элементы списка панели. */
 function options(setup: TCalendarSetup, index = 0): readonly IListBoxItem[] {
-	return listOf(setup, index).engine.extensions.batch.items
+	return pickerList(setup, index).engine.extensions.batch.items
 }
 
 /** Выбор пользователя в списке панели — по значению элемента. */
@@ -75,7 +78,7 @@ function choose(setup: TCalendarSetup, value: string | number, index = 0): boole
 
 	if (!item) throw new Error(`${value} нет в списке`)
 
-	return listOf(setup, index).engine.extensions.list.chooseItem(item)
+	return pickerList(setup, index).engine.extensions.list.chooseItem(item)
 }
 
 const values = (setup: TCalendarSetup, index = 0) => options(setup, index).map((item) => item.value)
@@ -113,10 +116,10 @@ describe('места', () => {
 		open(setup, 0)
 		open(setup, 1)
 
-		const list = listOf(setup, 0)
+		const list = pickerList(setup, 0)
 
-		expect(list.ctrl).not.toBe(listOf(setup, 1).ctrl)
-		expect(list.engine).not.toBe(listOf(setup, 1).engine)
+		expect(list.ctrl).not.toBe(pickerList(setup, 1).ctrl)
+		expect(list.engine).not.toBe(pickerList(setup, 1).engine)
 
 		setup.view.showNext()
 
@@ -177,7 +180,7 @@ describe('список места — с первого открытия', () =>
 		setup.facade.events.on('change:pickers', () => changes(panel(setup, 1).list))
 		open(setup, 1)
 
-		const list = listOf(setup, 1)
+		const list = pickerList(setup, 1)
 
 		// The snapshot that announces the opening already carries the list
 		expect(changes).toHaveBeenLastCalledWith(list)
@@ -192,7 +195,7 @@ describe('список места — с первого открытия', () =>
 
 		open(setup)
 
-		const list = listOf(setup)
+		const list = pickerList(setup)
 
 		panel(setup).popover.open = false
 
@@ -318,9 +321,9 @@ describe('месяцы', () => {
 				),
 			),
 		)
-		expect(listOf(setup).ctrl.value).toBe('2026-09-01')
+		expect(pickerList(setup).ctrl.value).toBe('2026-09-01')
 		expect(
-			listOf(setup).engine.extensions.selection.selected.map((item) => item.value),
+			pickerList(setup).engine.extensions.selection.selected.map((item) => item.value),
 		).toEqual(['2026-09-01'])
 	})
 
@@ -359,7 +362,7 @@ describe('месяцы', () => {
 		open(setup)
 		setup.view.showNext()
 
-		expect(listOf(setup).ctrl.value).toBe('2026-10-01')
+		expect(pickerList(setup).ctrl.value).toBe('2026-10-01')
 
 		setup.owner.locale = 'ru-RU'
 
@@ -385,7 +388,7 @@ describe('годы', () => {
 		expect(values(setup)).toEqual([
 			2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028,
 		])
-		expect(listOf(setup).ctrl.value).toBe(2026)
+		expect(pickerList(setup).ctrl.value).toBe(2026)
 		expect(picker.popover.open).toBe(true)
 	})
 
@@ -401,7 +404,7 @@ describe('годы', () => {
 		expect(picker.level).toBe('months')
 		expect(picker.heading).toBe(year(2028))
 		expect(values(setup)[0]).toBe('2028-01-01')
-		expect(listOf(setup).ctrl.value).toBeUndefined()
+		expect(pickerList(setup).ctrl.value).toBeUndefined()
 		expect(picker.popover.open).toBe(true)
 		expect(setup.owner.months).toEqual(['2026-09-01'])
 
@@ -419,7 +422,7 @@ describe('годы', () => {
 		choose(setup, 2026)
 
 		expect(panel(setup).level).toBe('months')
-		expect(listOf(setup).ctrl.value).toBe('2026-09-01')
+		expect(pickerList(setup).ctrl.value).toBe('2026-09-01')
 	})
 
 	it('кнопка шапки на годах возвращает месяцы того же года', () => {
@@ -430,7 +433,7 @@ describe('годы', () => {
 		setup.picker.toggleLevel(0)
 
 		expect(panel(setup).level).toBe('months')
-		expect(listOf(setup).ctrl.value).toBe('2026-09-01')
+		expect(pickerList(setup).ctrl.value).toBe('2026-09-01')
 	})
 
 	it('страницы — по 12 лет от 0001, а не вокруг года', () => {
@@ -478,12 +481,12 @@ describe('подпись шире плитки', () => {
 		// The list comes with the first opening, already wrapping
 		open(setup)
 
-		expect(listOf(setup).ctrl.contentFit).toBe('wrap')
+		expect(pickerList(setup).ctrl.contentFit).toBe('wrap')
 		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
 
 		setup.picker.toggleLevel(0)
 
-		expect(listOf(setup).ctrl.contentFit).toBe('wrap')
+		expect(pickerList(setup).ctrl.contentFit).toBe('wrap')
 		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
 
 		// Другая страница лет, и выбор года — снова месяцы
@@ -491,7 +494,7 @@ describe('подпись шире плитки', () => {
 		choose(setup, 2030)
 
 		expect(panel(setup).level).toBe('months')
-		expect(listOf(setup).ctrl.contentFit).toBe('wrap')
+		expect(pickerList(setup).ctrl.contentFit).toBe('wrap')
 		expect(new Set(fits(setup))).toEqual(new Set(['wrap']))
 	})
 })
@@ -505,7 +508,7 @@ describe('стрелки', () => {
 
 		expect(panel(setup).heading).toBe(year(2027))
 		expect(values(setup)[0]).toBe('2027-01-01')
-		expect(listOf(setup).ctrl.value).toBeUndefined()
+		expect(pickerList(setup).ctrl.value).toBeUndefined()
 
 		setup.picker.toggleLevel(0)
 		setup.picker.showNext(0)
@@ -646,7 +649,7 @@ describe('повторное открытие', () => {
 
 		expect(panel(setup).level).toBe('months')
 		expect(panel(setup).heading).toBe(year(2026))
-		expect(listOf(setup).ctrl.value).toBe('2026-09-01')
+		expect(pickerList(setup).ctrl.value).toBe('2026-09-01')
 	})
 })
 
