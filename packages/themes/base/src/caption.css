@@ -48,16 +48,7 @@
 
 	--so-caption-note-font-size-sm: 0.75rem;
 	--so-caption-note-line-height-sm: calc(1 / 0.75);
-	/* A `normal` note is one step smaller than the `normal` caption, and that is
-	 * the font of the place: `em` resolves where the variable is read — on the
-	 * helper and error of Field (against Field), the counter of Textarea
-	 * (against its root), the mark labels of Slider (inside the Slider) and the
-	 * group labels of `lg` rows (against the group). None of those sets a font
-	 * of its own, so the note is one step smaller than the place. At a 16px
-	 * place that is 14px, at a 14px place 12.25px; a fixed `0.875rem` equalled
-	 * the `normal` caption at a 14px place. The other steps stay absolute, as
-	 * those of the caption do. */
-	--so-caption-note-font-size-normal: 0.875em;
+	--so-caption-note-font-size-normal: 0.875rem;
 	--so-caption-note-line-height-normal: calc(1.25 / 0.875);
 	--so-caption-note-font-size-lg: 1rem;
 	--so-caption-note-line-height-lg: calc(1.5 / 1);
