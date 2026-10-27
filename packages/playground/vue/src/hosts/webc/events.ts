@@ -1,36 +1,34 @@
-import { TSurface } from '@soldy-ui/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { WebcProfile } from '@soldy-ui/webc'
-import type { TComponentEntry, TPreviewEventSink } from '@soldy-ui/playground-shared'
+import type { TPreviewEventSink } from '@soldy-ui/playground-shared'
 
-/** Слушатель события элемента: имя события DOM и обработчик. */
+/** A listener of an element's event: the DOM event's name and the handler. */
 export type TElementListener = {
 	readonly type: string
 	readonly listener: (event: Event) => void
 }
 
 /**
- * Слушатели всех событий компонента — в Web Components.
+ * Listeners of all the events of a component or a part — in Web Components.
  *
- * Список — поверхность компонента в профиле Web Components (`TSurface`): свои
- * события и триггеры пропов, у коллекций — ещё и фасада. По ней же элемент
- * шлёт события `CustomEvent`, поэтому слушатель есть ровно у того, что
- * компонент объявил. Добавили событие — оно появится на стенде само.
+ * The list is the surface of its descriptors (`componentDescriptors`, a
+ * part's — `TComponentEntry.parts`) in the Web Components profile
+ * (`TSurface`): own events and the props' triggers, of a collection — the
+ * facade's too. The element sends `CustomEvent`s by the same surface, so there
+ * is a listener for exactly what the component declared. An event added
+ * appears on the stand by itself.
  *
- * Имя события элемента — из той же поверхности: `so:` и полное имя ядра
- * (`so:change:text`, `so:show`). Приёмник получает полное имя ядра
- * (`change:text`), как от остальных хостов. Аргументы — то, что получил
- * потребитель элемента: один `detail`. Событие всплывает, и слушатель берёт
- * только события самого элемента — не те, что всплыли к нему от вложенных.
+ * The element's event name is from the same surface: `so:` and the full core
+ * name (`so:change:text`, `so:show`). The sink gets the full core name
+ * (`change:text`), as from the other hosts. The arguments are what the
+ * element's consumer got: one `detail`. An event bubbles, and a listener takes
+ * only the events of its own element — not those bubbled from the nested ones:
+ * a part's listeners stand on the part's element.
  */
 export function listenersOf(
-	entry: TComponentEntry,
+	descriptors: readonly IComponentDescriptor[],
 	sink: TPreviewEventSink,
 ): readonly TElementListener[] {
-	const descriptors = [
-		entry.descriptor(),
-		...(entry.collectionDescriptor ? [entry.collectionDescriptor()] : []),
-	]
-
 	return descriptors.flatMap((descriptor) =>
 		TSurface.of(descriptor, WebcProfile).events.map(({ name, exportName }) => ({
 			type: exportName,

@@ -1,6 +1,11 @@
 import { createComponent, createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
-import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
+import {
+	componentDescriptors,
+	findComponent,
+	partsOf,
+	type IPreviewHost,
+} from '@soldy-ui/playground-shared'
 import { PREVIEWS, type TPreview, type TPreviewProps } from './previews'
 import { FIXTURES } from './fixtures'
 import { listenersOf } from './events'
@@ -39,9 +44,12 @@ const host: IPreviewHost = {
 	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
-		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
+		const listeners = entry && onEvent ? listenersOf(componentDescriptors(entry), onEvent) : {}
+		// A fixture's markup is its own: its parts are not listened to
+		const parts =
+			entry && onEvent && fixture === undefined ? partsOf(entry, onEvent, listenersOf) : {}
 		const [bind, setBind] = createSignal<TPreviewProps>({ ...props, ...listeners })
-		const dispose = render(() => createComponent(Root, { preview, bind, count }), node)
+		const dispose = render(() => createComponent(Root, { preview, bind, parts, count }), node)
 
 		return {
 			update(next) {

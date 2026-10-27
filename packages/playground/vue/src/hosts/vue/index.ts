@@ -1,9 +1,14 @@
-import { createApp, h, shallowRef, type Component } from 'vue'
+import { createApp, h, shallowRef } from 'vue'
 import { enUS, type TLocale } from '@soldy-ui/plugins'
 import { LocaleProvider } from '@soldy-ui/vue'
-import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
-import { PREVIEW_COMPONENTS } from './previews'
-import { FIXTURE_COMPONENTS } from './fixtures'
+import {
+	componentDescriptors,
+	findComponent,
+	partsOf,
+	type IPreviewHost,
+} from '@soldy-ui/playground-shared'
+import { PREVIEWS, toComponent, type TPreview } from './previews'
+import { FIXTURES } from './fixtures'
 import { listenersOf } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
 
@@ -16,10 +21,9 @@ const locale = shallowRef<TLocale>(enUS)
 /** Сколько приложений превью смонтировано — номер в префиксе id следующего (см. `mount`). */
 let apps = 0
 
-/** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
-function drawing(component: string, fixture: string | undefined): Component {
-	const found =
-		fixture === undefined ? PREVIEW_COMPONENTS[component] : FIXTURE_COMPONENTS[fixture]
+/** What to draw with: a fixture by its key, without one — the component's preview. */
+function drawing(component: string, fixture: string | undefined): TPreview {
+	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
 
 	if (!found) throw new Error(`[playground] хост Vue не умеет рисовать «${fixture ?? component}»`)
 
@@ -47,13 +51,16 @@ function drawing(component: string, fixture: string | undefined): Component {
  * владельцами не повторяются» в `__tests__/smoke/suite.ts`.
  */
 const host: IPreviewHost = {
-	previews: Object.keys(PREVIEW_COMPONENTS),
-	fixtures: Object.keys(FIXTURE_COMPONENTS),
+	previews: Object.keys(PREVIEWS),
+	fixtures: Object.keys(FIXTURES),
 
 	mount(node, { component, fixture, props, onEvent, count = 1 }) {
-		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
-		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
+		const listeners = entry && onEvent ? listenersOf(componentDescriptors(entry), onEvent) : {}
+		// A fixture's markup is its own: its parts are not listened to
+		const parts =
+			entry && onEvent && fixture === undefined ? partsOf(entry, onEvent, listenersOf) : {}
+		const preview = toComponent(drawing(component, fixture), parts)
 		const bind = shallowRef(props)
 		const app = createApp({
 			render: () =>

@@ -1,4 +1,5 @@
 import {
+	Injector,
 	createComponent,
 	inputBinding,
 	reflectComponentType,
@@ -9,11 +10,19 @@ import {
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
 import { provideAttrs } from '@soldy-ui/angular'
-import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
+import {
+	componentDescriptors,
+	findComponent,
+	partsOf,
+	type IPreviewHost,
+} from '@soldy-ui/playground-shared'
 import { PREVIEWS, type TProps } from './previews'
 import { FIXTURES, type TFixture } from './fixtures'
-import { listen, listenersOf, type TOutputListener } from './events'
+import { PART_LISTENERS, listen, listenersOf, type TOutputListener } from './events'
 import { PreviewRootComponent, language } from './root.component'
+
+/** Listeners of the preview's parts, by part name (`partsOf`). */
+type TParts = Readonly<Record<string, readonly TOutputListener[]>>
 
 /** A preview in the root: new props and removal. */
 type TDrawn = {
@@ -49,12 +58,15 @@ const app = await createApplication({ providers: [provideAttrs()] })
  * returns the property to the declaration's default. The DI of the place goes
  * through the root's locale provider, and the assembly sees its locale. A prop
  * without an input is a mismatch of the adapter with the descriptor, and the
- * host does not mute it.
+ * host does not mute it. The listeners of the preview's parts go to the
+ * component's injector (`PART_LISTENERS`): the parts its markup marks
+ * `pg-part` take them there.
  */
 function insert<T extends object>(
 	outlet: ViewContainerRef,
 	component: Type<T>,
 	props: TProps,
+	parts: TParts,
 ): { ref: ComponentRef<T>; write: (props: TProps) => void } {
 	const inputs = new Set(
 		(reflectComponentType(component)?.inputs ?? []).map(({ templateName }) => templateName),
@@ -73,7 +85,10 @@ function insert<T extends object>(
 	const current = signal(checked(props))
 	const ref = createComponent(component, {
 		environmentInjector: app.injector,
-		elementInjector: outlet.injector,
+		elementInjector: Injector.create({
+			providers: [{ provide: PART_LISTENERS, useValue: parts }],
+			parent: outlet.injector,
+		}),
 		bindings: [...inputs].map((name) => inputBinding(name, () => current()[name])),
 	})
 
@@ -99,9 +114,10 @@ function drawTemplate(
 	type: Type<TFixture>,
 	props: TProps,
 	listeners: readonly TOutputListener[],
+	parts: TParts,
 	count: number,
 ): TDrawn {
-	const { ref, write } = insert(outlet, type, props)
+	const { ref, write } = insert(outlet, type, props, parts)
 
 	try {
 		ref.changeDetectorRef.detectChanges()
@@ -177,7 +193,10 @@ const host: IPreviewHost = {
 
 	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const entry = findComponent(component)
-		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : []
+		const listeners = entry && onEvent ? listenersOf(componentDescriptors(entry), onEvent) : []
+		// A fixture's markup is its own: its parts are not listened to
+		const parts =
+			entry && onEvent && fixture === undefined ? partsOf(entry, onEvent, listenersOf) : {}
 		const root = createComponent(PreviewRootComponent, { environmentInjector: app.injector })
 		const element: Element = root.location.nativeElement
 		const outlet = root.instance.outlet()
@@ -188,6 +207,7 @@ const host: IPreviewHost = {
 				fixture === undefined ? previewOf(component, next) : fixtureOf(fixture),
 				next,
 				listeners,
+				parts,
 				count,
 			)
 

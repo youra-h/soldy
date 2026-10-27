@@ -1,11 +1,19 @@
 import { enUS, type TLocale } from '@soldy-ui/plugins'
 import { DEFAULT_SLOT } from '@soldy-ui/setup'
 import { TLocaleProviderElement, isHostProp, toAttributeName } from '@soldy-ui/webc'
-import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
+import {
+	componentDescriptors,
+	findComponent,
+	partsOf,
+	type IPreviewHost,
+} from '@soldy-ui/playground-shared'
 import { FIXTURES } from './fixtures'
 import { PREVIEWS, type TContent, type TPreview, type TPreviewProps } from './previews'
 import { listenersOf, type TElementListener } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
+
+/** Listeners of the preview's parts, by part name (`partsOf`). */
+type TParts = Readonly<Record<string, readonly TElementListener[]>>
 
 /** Язык шапки — один на все корни хоста. */
 let locale: TLocale = enUS
@@ -75,12 +83,13 @@ function build(
 	preview: TPreview,
 	bind: TPreviewProps,
 	listeners: readonly TElementListener[],
+	parts: TParts,
 ): TBuilt {
 	const element = elementOf(preview)
 
 	if (bind.ctrl !== undefined) Reflect.set(element, 'ctrl', bind.ctrl)
 
-	fill(element, preview, propsOf(preview, bind), bind)
+	fill(element, preview, propsOf(preview, bind), bind, parts)
 
 	for (const { type, listener } of listeners) element.addEventListener(type, listener)
 
@@ -96,7 +105,7 @@ function build(
 
 	const outer = elementOf(wrapper)
 
-	fill(outer, wrapper, propsOf(wrapper, {}), {})
+	fill(outer, wrapper, propsOf(wrapper, {}), {}, parts)
 	applyStyle(outer, wrapper, bind)
 
 	if (opener !== undefined) outer.appendChild(openerOf(opener, element))
@@ -130,18 +139,23 @@ function applyStyle(element: HTMLElement, preview: TPreview, bind: TPreviewProps
 }
 
 /**
- * Ребёнок в слоте. Элемент soldy и разметку без компонента со своим
- * содержимым (ряд превью DragAndDrop) строит описание — тем же путём, что
- * обёртку, со стилем, но без пропсов строки; разметку без содержимого — её
- * функция.
+ * A child in a slot. A soldy element and markup without a component with its
+ * own content (the row of the DragAndDrop preview) are built by their
+ * description — the same way as the wrapper, with the style, but without the
+ * row's props; markup without content — by its function. A part
+ * (`TPreview.part`) gets its listeners before insertion, as the component.
  */
-function childOf(child: TContent): Node {
+function childOf(child: TContent, parts: TParts): Node {
 	if (typeof child === 'function') return child()
 
 	const node = elementOf(child)
 
-	fill(node, child, propsOf(child, {}), {})
+	fill(node, child, propsOf(child, {}), {}, parts)
 	applyStyle(node, child, {})
+
+	for (const { type, listener } of child.part === undefined ? [] : (parts[child.part] ?? [])) {
+		node.addEventListener(type, listener)
+	}
 
 	return node
 }
@@ -158,6 +172,7 @@ function fill(
 	preview: TPreview,
 	props: Map<string, unknown>,
 	bind: TPreviewProps,
+	parts: TParts,
 ): void {
 	for (const [name, value] of Object.entries(preview.attributes ?? {})) {
 		element.setAttribute(toAttributeName(name), value)
@@ -171,7 +186,7 @@ function fill(
 
 	for (const [slot, children] of Object.entries(slots ?? {})) {
 		for (const child of children) {
-			const node = childOf(child)
+			const node = childOf(child, parts)
 
 			if (slot !== DEFAULT_SLOT && node instanceof Element) node.setAttribute('slot', slot)
 
@@ -242,7 +257,10 @@ const host: IPreviewHost = {
 	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
-		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : []
+		const listeners = entry && onEvent ? listenersOf(componentDescriptors(entry), onEvent) : []
+		// A fixture's markup is its own: its parts are not listened to
+		const parts =
+			entry && onEvent && fixture === undefined ? partsOf(entry, onEvent, listenersOf) : {}
 		const root = new TLocaleProviderElement()
 
 		root.locale = locale
@@ -252,7 +270,7 @@ const host: IPreviewHost = {
 		let bind = props
 		// Копии — рядом в одном корне (`TPreviewMount.count`)
 		const buildAll = (next: TPreviewProps): TBuilt[] =>
-			Array.from({ length: count }, () => build(preview, next, listeners))
+			Array.from({ length: count }, () => build(preview, next, listeners, parts))
 		let copies = buildAll(bind)
 
 		for (const built of copies) root.appendChild(built.outer)

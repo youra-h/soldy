@@ -1,28 +1,33 @@
-import { TSurface } from '@soldy-ui/setup'
+import { createContext } from 'svelte'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { SvelteProfile } from '@soldy-ui/svelte'
-import type { TComponentEntry, TPreviewEventSink } from '@soldy-ui/playground-shared'
+import type { TPreviewEventSink } from '@soldy-ui/playground-shared'
+
+/** Listeners of a component in Svelte: callback props by name (`onChangeText`). */
+export type TListeners = Record<string, (...args: unknown[]) => void>
+
+/** Listeners of the preview's parts, by part name (`partsOf`). */
+export type TParts = Readonly<Record<string, TListeners>>
 
 /**
- * Слушатели всех событий компонента — в Svelte.
+ * Listeners of all the events of a component or a part — in Svelte.
  *
- * Список — поверхность компонента в профиле Svelte (`TSurface`): свои события
- * и триггеры пропов, у коллекций — ещё и фасада. По ней же компонент отдаёт
- * события колбэк-пропами, поэтому слушатель есть ровно у того, что компонент
- * объявил. Добавили событие — оно появится на стенде само.
+ * The list is the surface of its descriptors (`componentDescriptors`, a
+ * part's — `TComponentEntry.parts`) in the Svelte profile (`TSurface`): own
+ * events and the props' triggers, of a collection — the facade's too. The
+ * component sends its events as callback props by the same surface, so there
+ * is a listener for exactly what the component declared. An event added
+ * appears on the stand by itself.
  *
- * Имя колбэка — имя Svelte (`onChangeText`), а приёмник получает полное имя
- * ядра (`change:text`): журнал сценария и консоль страницы одни на все
- * фреймворки. `update:<prop>` — v-model Vue, в Svelte его нет.
+ * The callback's name is Svelte's (`onChangeText`), and the sink gets the full
+ * core name (`change:text`): the scenario journal and the page console are
+ * one for all frameworks. `update:<prop>` is Vue's v-model, Svelte has none.
  */
 export function listenersOf(
-	entry: TComponentEntry,
+	descriptors: readonly IComponentDescriptor[],
 	sink: TPreviewEventSink,
-): Record<string, (...args: unknown[]) => void> {
-	const descriptors = [
-		entry.descriptor(),
-		...(entry.collectionDescriptor ? [entry.collectionDescriptor()] : []),
-	]
-	const listeners: Record<string, (...args: unknown[]) => void> = {}
+): TListeners {
+	const listeners: TListeners = {}
 
 	for (const descriptor of descriptors) {
 		for (const { name, exportName } of TSurface.of(descriptor, SvelteProfile).events) {
@@ -32,3 +37,10 @@ export function listenersOf(
 
 	return listeners
 }
+
+/**
+ * The listeners of the preview's parts — from the host's root to the previews
+ * that place parts in markup. A context, not a prop: a prop the preview does
+ * not take would go on with the rest (`{...bind}`) to its component's root.
+ */
+export const [getParts, setParts] = createContext<TParts>()

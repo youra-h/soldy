@@ -243,12 +243,29 @@ export const SCENARIOS: Record<string, TScenario> = {
 	}),
 	'date-picker': each('.so-date-picker', async (copy) => {
 		const trigger = copy.querySelector('.so-date-picker__trigger')
+		const day = (index: number) =>
+			open('.so-date-picker__panel')?.querySelectorAll('.so-calendar-item')[index]
 		let done = await press(trigger)
 
 		await frames()
-		done += await press(
-			open('.so-date-picker__panel')?.querySelectorAll('.so-calendar-item')[9],
-		)
+		done += await press(day(9))
+
+		// Confirmable (the parity page's DatePicker): the choice is a draft until
+		// the footer's buttons — "Cancel" closes the panel and drops it, open
+		// again, choose and "Done" applies it. The page run's DatePicker has no
+		// footer, and its steps stay as they were
+		const cancel = open('.so-date-picker__panel')?.querySelector('.so-date-picker__cancel')
+
+		if (cancel) {
+			done += await press(cancel)
+			done += await press(trigger)
+			await frames()
+			done += await press(day(10))
+			done += await press(
+				open('.so-date-picker__panel')?.querySelector('.so-date-picker__confirm'),
+			)
+		}
+
 		done += await overlay(trigger, '.so-date-picker__panel')
 
 		return done

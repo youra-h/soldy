@@ -2,10 +2,12 @@
 	import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 	import { Button, Calendar, Menu } from '@soldy-ui/svelte'
 	import type { TPreviewProps } from './previews'
+	import { getParts } from './events'
 
 	type TTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 
 	const bind: TPreviewProps = $props()
+	const parts = getParts()
 </script>
 
 <!--
@@ -43,30 +45,30 @@
 {:else}
 	<Menu {...bind} {trigger}>
 		<Menu.Group label="Вид">
-			<Menu.CheckboxItem value="grid" text="Сетка" selected />
-			<Menu.CheckboxItem value="ruler" text="Линейка" />
+			<Menu.CheckboxItem value="grid" text="Сетка" selected {...parts.CheckboxItem} />
+			<Menu.CheckboxItem value="ruler" text="Линейка" {...parts.CheckboxItem} />
 		</Menu.Group>
 		<Menu.Separator />
 		<Menu.RadioGroup label="Сортировка" value="name">
-			<Menu.RadioItem value="name" text="По имени" />
-			<Menu.RadioItem value="date" text="По дате" />
+			<Menu.RadioItem value="name" text="По имени" {...parts.RadioItem} />
+			<Menu.RadioItem value="date" text="По дате" {...parts.RadioItem} />
 		</Menu.RadioGroup>
 		<Menu.Separator />
-		<Menu.Item value="edit" text="Изменить" trailing={edit} />
-		<Menu.Item value="copy" text="Дублировать" trailing={copy} />
-		<Menu.Submenu value="share" text="Поделиться">
-			<Menu.Item value="link" text="Ссылка" />
-			<Menu.Item value="mail" text="Почта" />
-			<Menu.Submenu value="messengers" text="Мессенджеры">
-				<Menu.Item value="telegram" text="Telegram" />
-				<Menu.Item value="whatsapp" text="WhatsApp" />
+		<Menu.Item value="edit" text="Изменить" trailing={edit} {...parts.Item} />
+		<Menu.Item value="copy" text="Дублировать" trailing={copy} {...parts.Item} />
+		<Menu.Submenu value="share" text="Поделиться" {...parts.Submenu}>
+			<Menu.Item value="link" text="Ссылка" {...parts.Item} />
+			<Menu.Item value="mail" text="Почта" {...parts.Item} />
+			<Menu.Submenu value="messengers" text="Мессенджеры" {...parts.Submenu}>
+				<Menu.Item value="telegram" text="Telegram" {...parts.Item} />
+				<Menu.Item value="whatsapp" text="WhatsApp" {...parts.Item} />
 			</Menu.Submenu>
 		</Menu.Submenu>
-		<Menu.PopoverItem value="due" text="Срок" lazyMount>
+		<Menu.PopoverItem value="due" text="Срок" lazyMount {...parts.PopoverItem}>
 			<Calendar />
 		</Menu.PopoverItem>
-		<Menu.Item value="archive" text="В архив" disabled />
+		<Menu.Item value="archive" text="В архив" disabled {...parts.Item} />
 		<Menu.Separator />
-		<Menu.Item value="remove" text="Удалить" variant="negative" trailing={remove} />
+		<Menu.Item value="remove" text="Удалить" variant="negative" trailing={remove} {...parts.Item} />
 	</Menu>
 {/if}

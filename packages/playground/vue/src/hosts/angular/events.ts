@@ -1,37 +1,34 @@
-import { EventEmitter } from '@angular/core'
-import { TSurface } from '@soldy-ui/setup'
+import { EventEmitter, InjectionToken } from '@angular/core'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { AngularProfile } from '@soldy-ui/angular'
-import type { TComponentEntry, TPreviewEventSink } from '@soldy-ui/playground-shared'
+import type { TPreviewEventSink } from '@soldy-ui/playground-shared'
 
-/** Слушатель выхода компонента: имя выхода и обработчик. */
+/** A listener of a component's output: the output's name and the handler. */
 export type TOutputListener = {
 	readonly output: string
 	readonly listener: (value: unknown) => void
 }
 
 /**
- * Слушатели всех событий компонента — в Angular.
+ * Listeners of all the events of a component or a part — in Angular.
  *
- * Список — поверхность компонента в профиле Angular (`TSurface`): свои события
- * и триггеры пропов, у коллекций — ещё и фасада. По ней же адаптер объявляет
- * выходы компонента, поэтому слушатель есть ровно у того, что компонент
- * объявил. Добавили событие — оно появится на стенде само.
+ * The list is the surface of its descriptors (`componentDescriptors`, a
+ * part's — `TComponentEntry.parts`) in the Angular profile (`TSurface`): own
+ * events and the props' triggers, of a collection — the facade's too. The
+ * adapter declares the component's outputs by the same surface, so there is a
+ * listener for exactly what the component declared. An event added appears on
+ * the stand by itself.
  *
- * Имя выхода — имя Angular (`soChangeText`), а приёмник получает полное имя
- * ядра (`change:text`): журнал сценария и консоль страницы одни на все
- * фреймворки. Аргумент — то, что получил потребитель выхода: первый аргумент
- * события ядра, его выход и шлёт. `update:<prop>` — v-model Vue, в Angular его
- * нет.
+ * The output's name is Angular's (`soChangeText`), and the sink gets the full
+ * core name (`change:text`): the scenario journal and the page console are one
+ * for all frameworks. The argument is what the output's consumer got: the
+ * first argument of the core event, the one its output sends. `update:<prop>`
+ * is Vue's v-model, Angular has none.
  */
 export function listenersOf(
-	entry: TComponentEntry,
+	descriptors: readonly IComponentDescriptor[],
 	sink: TPreviewEventSink,
 ): readonly TOutputListener[] {
-	const descriptors = [
-		entry.descriptor(),
-		...(entry.collectionDescriptor ? [entry.collectionDescriptor()] : []),
-	]
-
 	return descriptors.flatMap((descriptor) =>
 		TSurface.of(descriptor, AngularProfile).events.map(({ name, exportName }) => ({
 			output: exportName,
@@ -41,10 +38,11 @@ export function listenersOf(
 }
 
 /**
- * Подписать слушателей на выходы компонента — как привязки `(soChangeText)` в
- * шаблоне потребителя. Выход у адаптера — геттер, и эмиттер заводит его первое
- * чтение. Выхода, объявленного поверхностью, у компонента нет — это расхождение
- * адаптера с дескриптором, и оно не глушится. Отдаёт отписку.
+ * Subscribe the listeners to a component's outputs — as the bindings
+ * `(soChangeText)` in a consumer's template. An output of the adapter is a
+ * getter, and its first read creates the emitter. An output the surface
+ * declares and the component lacks is a mismatch of the adapter with the
+ * descriptor, and it is not muted. Returns the unsubscription.
  */
 export function listen(component: object, listeners: readonly TOutputListener[]): () => void {
 	const subscriptions = listeners.map(({ output, listener }) => {
@@ -61,3 +59,12 @@ export function listen(component: object, listeners: readonly TOutputListener[])
 		for (const subscription of subscriptions) subscription.unsubscribe()
 	}
 }
+
+/**
+ * Listeners of the preview's parts, by part name (`partsOf`): the host gives
+ * them to the injector of the preview, and the parts marked `pg-part` in its
+ * markup take theirs (`PartDirective`).
+ */
+export const PART_LISTENERS = new InjectionToken<
+	Readonly<Record<string, readonly TOutputListener[]>>
+>('PART_LISTENERS')

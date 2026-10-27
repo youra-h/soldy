@@ -116,6 +116,15 @@ export type TComponentEntry = {
 	 */
 	collectionDescriptor?: () => IComponentDescriptor
 	/**
+	 * Parts the preview places in markup, by export name (`Item` of
+	 * `Tabs.Item`): the descriptors whose events the part sends — its own and
+	 * its collection facade's, as the adapters declare them. A host listens to
+	 * them as to the component itself (`partsOf`). Parts the owner draws from
+	 * `items` (Tags, Pagination) are not here: the consumer has no hold on
+	 * them.
+	 */
+	parts?: Readonly<Record<string, () => readonly IComponentDescriptor[]>>
+	/**
 	 * Группа в меню. `layers` — слои наследования вроде `Control` или
 	 * `Stylable`: страница у них есть, на витрине их нет — это уровни
 	 * контракта, а не компоненты.

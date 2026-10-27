@@ -65,6 +65,7 @@ import {
 	useToasts,
 	type TToastRender,
 } from '@soldy-ui/vue'
+import type { TParts } from './events'
 
 /**
  * Как рисовать компонент на стенде — во Vue.
@@ -80,11 +81,15 @@ import {
  * же функция обслуживает обе колонки: в первой в `bind` лежат пропы, во второй
  * — `ctrl` с экземпляром ядра. Слушатели событий кладёт туда же хост.
  *
+ * The second argument is the listeners of the parts the preview places in
+ * markup, by part (`TComponentEntry.parts`): the preview spreads them on its
+ * parts, as the component's own lie in `bind`. Not asked for — empty.
+ *
  * Значений пропов самого компонента — подписи кнопки, плейсхолдера поля —
  * здесь нет: это данные, одни на все хосты (`PREVIEW_PROPS` в общем пакете), и
  * в `bind` их кладёт оболочка. Здесь — обёртка и содержимое.
  */
-export type TPreview = (bind: Record<string, unknown>) => unknown
+export type TPreview = (bind: Record<string, unknown>, parts: TParts) => unknown
 
 /** Scope слота `trigger` у Popover — из объявления слота в дескрипторе. */
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
@@ -106,21 +111,23 @@ const ITEMS = COLLECTION_ITEMS
  * активен сразу — иначе ни одна панель не смонтируется (`rendered && active`),
  * и стенд никогда не покажет содержимое.
  */
-const tabsSlots = () => ({
+const tabsSlots = (parts: TParts = {}) => ({
 	default: () =>
-		ITEMS.map((item, index) => h(Tabs.Item, { key: item.value, active: index === 0, ...item })),
+		ITEMS.map((item, index) =>
+			h(Tabs.Item, { key: item.value, active: index === 0, ...item, ...parts.Item }),
+		),
 	content: () =>
 		ITEMS.map((item) =>
-			h(Tabs.Content, { key: `c-${item.value}`, value: item.value }, () =>
+			h(Tabs.Content, { key: `c-${item.value}`, value: item.value, ...parts.Content }, () =>
 				h('div', { style: 'padding:12px' }, `Панель «${item.text}»`),
 			),
 		),
 })
 
 /** Секции разметкой, с содержимым, — у превью Accordion и DragAndDrop. */
-const accordionItems = () =>
+const accordionItems = (parts: TParts = {}) =>
 	ITEMS.map((item) =>
-		h(Accordion.Item, { key: item.value, ...item }, () =>
+		h(Accordion.Item, { key: item.value, ...item, ...parts.Item }, () =>
 			h('div', { style: 'padding:4px 0' }, `Содержимое «${item.text}»`),
 		),
 	)
@@ -131,35 +138,44 @@ const accordionItems = () =>
  * пункт с панелью — календарём, который монтируется с первым открытием, —
  * выключенное действие и «опасный» пункт своего варианта.
  */
-const menuItems = () => [
+const menuItems = (parts: TParts) => [
 	h(Menu.Group, { label: 'Вид' }, () => [
-		h(Menu.CheckboxItem, { value: 'grid', text: 'Сетка', selected: true }),
-		h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка' }),
+		h(Menu.CheckboxItem, {
+			value: 'grid',
+			text: 'Сетка',
+			selected: true,
+			...parts.CheckboxItem,
+		}),
+		h(Menu.CheckboxItem, { value: 'ruler', text: 'Линейка', ...parts.CheckboxItem }),
 	]),
 	h(Menu.Separator),
 	h(Menu.RadioGroup, { label: 'Сортировка', value: 'name' }, () => [
-		h(Menu.RadioItem, { value: 'name', text: 'По имени' }),
-		h(Menu.RadioItem, { value: 'date', text: 'По дате' }),
+		h(Menu.RadioItem, { value: 'name', text: 'По имени', ...parts.RadioItem }),
+		h(Menu.RadioItem, { value: 'date', text: 'По дате', ...parts.RadioItem }),
 	]),
 	h(Menu.Separator),
-	h(Menu.Item, { value: 'edit', text: 'Изменить' }, { trailing: () => 'Ctrl+E' }),
-	h(Menu.Item, { value: 'copy', text: 'Дублировать' }, { trailing: () => 'Ctrl+D' }),
-	h(Menu.Submenu, { value: 'share', text: 'Поделиться' }, () => [
-		h(Menu.Item, { value: 'link', text: 'Ссылка' }),
-		h(Menu.Item, { value: 'mail', text: 'Почта' }),
-		h(Menu.Submenu, { value: 'messengers', text: 'Мессенджеры' }, () => [
-			h(Menu.Item, { value: 'telegram', text: 'Telegram' }),
-			h(Menu.Item, { value: 'whatsapp', text: 'WhatsApp' }),
+	h(Menu.Item, { value: 'edit', text: 'Изменить', ...parts.Item }, { trailing: () => 'Ctrl+E' }),
+	h(
+		Menu.Item,
+		{ value: 'copy', text: 'Дублировать', ...parts.Item },
+		{ trailing: () => 'Ctrl+D' },
+	),
+	h(Menu.Submenu, { value: 'share', text: 'Поделиться', ...parts.Submenu }, () => [
+		h(Menu.Item, { value: 'link', text: 'Ссылка', ...parts.Item }),
+		h(Menu.Item, { value: 'mail', text: 'Почта', ...parts.Item }),
+		h(Menu.Submenu, { value: 'messengers', text: 'Мессенджеры', ...parts.Submenu }, () => [
+			h(Menu.Item, { value: 'telegram', text: 'Telegram', ...parts.Item }),
+			h(Menu.Item, { value: 'whatsapp', text: 'WhatsApp', ...parts.Item }),
 		]),
 	]),
-	h(Menu.PopoverItem, { value: 'due', text: 'Срок', lazyMount: true }, () =>
+	h(Menu.PopoverItem, { value: 'due', text: 'Срок', lazyMount: true, ...parts.PopoverItem }, () =>
 		h(Calendar as Component),
 	),
-	h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true }),
+	h(Menu.Item, { value: 'archive', text: 'В архив', disabled: true, ...parts.Item }),
 	h(Menu.Separator),
 	h(
 		Menu.Item,
-		{ value: 'remove', text: 'Удалить', variant: 'negative' },
+		{ value: 'remove', text: 'Удалить', variant: 'negative', ...parts.Item },
 		{ trailing: () => 'Del' },
 	),
 ]
@@ -386,10 +402,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 	rating: (bind) => h(Label, { text: 'Оценка', position: 'top' }, () => h(Rating, bind)),
 
 	// Подпись — слотом: текста у радио нет, оно голый контрол, как CheckBox
-	'radio-group': (bind) =>
+	'radio-group': (bind, parts) =>
 		h(RadioGroup as Component, bind, () =>
 			ITEMS.map((item) =>
-				h(RadioGroup.Item, { key: item.value, value: item.value }, () => item.text),
+				h(
+					RadioGroup.Item,
+					{ key: item.value, value: item.value, ...parts.Item },
+					() => item.text,
+				),
 			),
 		),
 
@@ -443,7 +463,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// действие и «опасный» пункт своего варианта. Пришли данными (`items`
 	// блока групп страницы) — из них: разметка заменила бы данные, а группы
 	// меню рисует из данных
-	menu: (bind) =>
+	menu: (bind, parts) =>
 		h(Menu as Component, bind, {
 			trigger: ({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
 				bind.openOn === 'contextmenu'
@@ -456,7 +476,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 							'Правая кнопка, долгое касание или Shift+F10',
 						)
 					: h(Button, { text: 'Действия', ...triggerAria, ...triggerDataset }),
-			...(bind.items ? {} : { default: menuItems }),
+			...(bind.items ? {} : { default: () => menuItems(parts) }),
 		}),
 
 	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
@@ -503,13 +523,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	// Элементы — разметкой, а пришли данными (`items` блока групп страницы) —
 	// из них: разметка заменила бы данные, а группы список рисует из данных
-	'list-box': (bind) =>
+	'list-box': (bind, parts) =>
 		h(
 			ListBox as Component,
 			bind,
 			bind.items
 				? undefined
-				: () => ITEMS.map((item) => h(ListBox.Item, { key: item.value, ...item })),
+				: () =>
+						ITEMS.map((item) =>
+							h(ListBox.Item, { key: item.value, ...item, ...parts.Item }),
+						),
 		),
 
 	/**
@@ -543,7 +566,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 			],
 		),
 
-	tabs: (bind) => h(Tabs as Component, bind, tabsSlots()),
+	tabs: (bind, parts) => h(Tabs as Component, bind, tabsSlots(parts)),
 
 	/**
 	 * Обёртка — граница ширины: ряд обязан быть ровно по ячейке, иначе
@@ -563,7 +586,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	tags: (bind) =>
 		h('div', { style: 'width:100%' }, [h(Tags as Component, { items: ITEMS, ...bind })]),
 
-	accordion: (bind) => h(Accordion as Component, bind, accordionItems),
+	accordion: (bind, parts) => h(Accordion as Component, bind, () => accordionItems(parts)),
 
 	icon: (bind) => h(Icon, { tag: ARROW_DOWN, ...bind }),
 
@@ -607,7 +630,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 					]),
 					h(ListBox as Component, { items: ITEMS, aria_label: 'Пункты' }),
 					h('div', { style: 'flex:1; min-width:200px' }, [
-						h(Accordion as Component, null, accordionItems),
+						h(Accordion as Component, null, () => accordionItems()),
 					]),
 				],
 			),
@@ -667,32 +690,25 @@ export const PREVIEWS: Record<string, TPreview> = {
 }
 
 /**
- * Функции отрисовки как компоненты — их рисует корень хоста.
+ * A render function as a component — the host's root draws it.
  *
- * Обёртки строятся один раз при загрузке модуля, а не на каждый рендер: новая
- * функция на каждом обращении — это новый тип компонента, и Vue пересоздавал бы
- * поддерево вместо обновления, теряя состояние и ломая анимации. Так же
- * обёрнуты и фикстуры сценариев.
+ * Built once per mount, not on every render: a new function on every access
+ * is a new component type, and Vue would recreate the subtree instead of
+ * updating it, losing state and breaking animations. The parts' listeners
+ * (`TPreview`) are the mount's, so the component closes over them.
  *
- * Пропы не объявлены намеренно: всё, что передали, попадает в `attrs`, и превью
- * получает набор целиком — от `size` до `ctrl`.
+ * Props are not declared on purpose: everything passed lands in `attrs`, and
+ * the preview gets the whole set — from `size` to `ctrl`.
  *
  * Without `inheritAttrs: false` Vue also hands a functional component's
  * listeners and class to its root: the wrapper (`Label` around CheckBox) got
  * the component's listeners, and the page journal showed the wrapper's events
  * and the native `input` bubbling to it as the component's.
  */
-export function toComponents(previews: Record<string, TPreview>): Record<string, Component> {
-	return Object.fromEntries(
-		Object.entries(previews).map(([id, render]) => {
-			const component: FunctionalComponent = (_props, { attrs }) => render(attrs)
+export function toComponent(render: TPreview, parts: TParts): Component {
+	const component: FunctionalComponent = (_props, { attrs }) => render(attrs, parts)
 
-			component.inheritAttrs = false
+	component.inheritAttrs = false
 
-			return [id, component]
-		}),
-	)
+	return component
 }
-
-/** Превью как компоненты. */
-export const PREVIEW_COMPONENTS: Record<string, Component> = toComponents(PREVIEWS)

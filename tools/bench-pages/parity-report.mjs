@@ -26,8 +26,16 @@ const results = path.resolve(import.meta.dirname, 'results')
 const read = (fw) => JSON.parse(fs.readFileSync(path.join(results, `parity-${fw}.json`), 'utf8'))
 
 /**
+ * The core name of a journal event: a part's event comes under the part's name
+ * (`Tabs.Item>action:press`, see `partsOf` of the playground), and the rules
+ * apply to it as to the component's own.
+ */
+const coreName = (event) => event.name.slice(event.name.indexOf('>') + 1)
+
+/**
  * Comparison rules — differences of the adapters' API and of the frameworks'
- * lifecycle, not of the component's behavior.
+ * lifecycle, not of the component's behavior. They apply to the parts' events
+ * too (`coreName`).
  *
  * - `vModel` — `update:<prop>` are v-model events of Vue; the other adapters
  *   have no v-model and do not send them.
@@ -38,7 +46,7 @@ const read = (fw) => JSON.parse(fs.readFileSync(path.join(results, `parity-${fw}
  *   Svelte and Web Components, see `TEARDOWN`.
  */
 const RULES = {
-	vModel: (event) => !event.name.startsWith('update:'),
+	vModel: (event) => !coreName(event).startsWith('update:'),
 	single: new Set(['webc', 'angular']),
 	removedBlur: new Set(['svelte', 'webc']),
 	ids: new Set([
@@ -115,7 +123,7 @@ const BLUR = new Set(['action:blur', 'change:focused'])
 function eventsOf(step, fw) {
 	if (step.label !== TEARDOWN || !RULES.removedBlur.has(fw)) return step.events
 
-	return step.events.filter((event) => !BLUR.has(event.name))
+	return step.events.filter((event) => !BLUR.has(coreName(event)))
 }
 
 const text = (event) => `${event.name} ${JSON.stringify(masked(event.args))}`

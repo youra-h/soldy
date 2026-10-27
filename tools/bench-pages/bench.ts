@@ -247,8 +247,18 @@ function comparable(value: unknown, depth = 0): unknown {
 }
 
 /**
- * Mount the page for the parity run: one copy, whose events go to the
- * journal.
+ * Props of a component on the parity page: the page run's (`propsOf`), and
+ * DatePicker with the footer's buttons (`confirmable`), which its scenario
+ * presses when they are there. The page run keeps its own: a footer would
+ * change what its journals measure.
+ */
+function recordedPropsOf(id: string): Readonly<Record<string, unknown>> {
+	return id === 'date-picker' ? { ...propsOf(id), confirmable: true } : propsOf(id)
+}
+
+/**
+ * Mount the page for the parity run: one copy, whose events — and its parts'
+ * in markup — go to the journal.
  */
 async function record(page: string): Promise<void> {
 	if (mounted.length) throw new Error('[bench-pages] страница уже стоит')
@@ -256,7 +266,7 @@ async function record(page: string): Promise<void> {
 	mounted = [
 		host.mount(place(), {
 			component: page,
-			props: propsOf(page),
+			props: recordedPropsOf(page),
 			count: 1,
 			onEvent: (name, args) =>
 				journal.push({ name, args: args.map((arg) => comparable(arg)) }),

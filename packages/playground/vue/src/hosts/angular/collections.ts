@@ -29,6 +29,7 @@ import {
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
 import { CopyDirective } from './copy.directive'
+import { PartDirective } from './part.directive'
 import type { TFixture } from './fixtures'
 
 /**
@@ -41,7 +42,8 @@ import type { TFixture } from './fixtures'
  * (`previews.ts`), it takes the shell's props as its inputs and binds them to
  * the collection in its markup; the parts' props are the preview's. The parts
  * enter the collection in markup order, and they see the lift layer of their
- * owner by the injector of the template, as in an application.
+ * owner by the injector of the template, as in an application. A part in
+ * markup is marked `pg-part`: the host listens to it (`PartDirective`).
  */
 
 /**
@@ -51,7 +53,7 @@ import type { TFixture } from './fixtures'
  */
 @Component({
 	selector: 'pg-radio-group-preview',
-	imports: [TRadioGroupComponent, TRadioGroupItemComponent, CopyDirective],
+	imports: [TRadioGroupComponent, TRadioGroupItemComponent, CopyDirective, PartDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
@@ -76,7 +78,7 @@ import type { TFixture } from './fixtures'
 				[items]="items()"
 			>
 				@for (item of entries; track item.value) {
-					<label so-radio-group-item [value]="item.value">{{ item.text }}</label>
+					<label so-radio-group-item pg-part [value]="item.value">{{ item.text }}</label>
 				}
 			</div>
 		</ng-template>
@@ -175,14 +177,14 @@ const LIST_BOX_BINDINGS = `
  */
 @Component({
 	selector: 'pg-list-box-preview',
-	imports: [TListBoxComponent, TListBoxItemComponent, CopyDirective],
+	imports: [TListBoxComponent, TListBoxItemComponent, CopyDirective, PartDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
 		<ng-template pg-copy>
 			<div so-list-box ${LIST_BOX_BINDINGS}>
 				@for (item of entries; track item.value) {
-					<div so-list-box-item [value]="item.value" [text]="item.text"></div>
+					<div so-list-box-item pg-part [value]="item.value" [text]="item.text"></div>
 				}
 			</div>
 		</ng-template>
@@ -499,7 +501,13 @@ export class TablePreview implements TFixture {
  */
 @Component({
 	selector: 'pg-tabs-preview',
-	imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent, CopyDirective],
+	imports: [
+		TTabsComponent,
+		TTabsItemComponent,
+		TTabsContentComponent,
+		CopyDirective,
+		PartDirective,
+	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
@@ -528,13 +536,14 @@ export class TablePreview implements TFixture {
 				@for (item of entries; track item.value; let first = $first) {
 					<div
 						so-tabs-item
+						pg-part
 						[active]="first"
 						[value]="item.value"
 						[text]="item.text"
 					></div>
 				}
 				@for (item of entries; track item.value) {
-					<div so-tabs-content slot="content" [value]="item.value">
+					<div so-tabs-content pg-part slot="content" [value]="item.value">
 						<div style="padding: 12px">Панель «{{ item.text }}»</div>
 					</div>
 				}
@@ -572,7 +581,7 @@ export class TabsPreview implements TFixture {
  */
 @Component({
 	selector: 'pg-accordion-preview',
-	imports: [TAccordionComponent, TAccordionItemComponent, CopyDirective],
+	imports: [TAccordionComponent, TAccordionItemComponent, CopyDirective, PartDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
@@ -596,7 +605,7 @@ export class TabsPreview implements TFixture {
 				[mode]="mode()"
 			>
 				@for (item of entries; track item.value) {
-					<div so-accordion-item [value]="item.value" [text]="item.text">
+					<div so-accordion-item pg-part [value]="item.value" [text]="item.text">
 						<div style="padding: 4px 0">Содержимое «{{ item.text }}»</div>
 					</div>
 				}

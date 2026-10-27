@@ -1,28 +1,32 @@
-import { TSurface } from '@soldy-ui/setup'
+import { TSurface, type IComponentDescriptor } from '@soldy-ui/setup'
 import { ReactProfile } from '@soldy-ui/react'
-import type { TComponentEntry, TPreviewEventSink } from '@soldy-ui/playground-shared'
+import type { TPreviewEventSink } from '@soldy-ui/playground-shared'
+
+/** Listeners of a component in React: callback props by name (`onChangeText`). */
+export type TListeners = Record<string, (...args: unknown[]) => void>
+
+/** Listeners of the preview's parts, by part name (`partsOf`). */
+export type TParts = Readonly<Record<string, TListeners>>
 
 /**
- * Слушатели всех событий компонента — в React.
+ * Listeners of all the events of a component or a part — in React.
  *
- * Список — поверхность компонента в профиле React (`TSurface`): свои события
- * и триггеры пропов, у коллекций — ещё и фасада. По ней же компонент отдаёт
- * события колбэк-пропами, поэтому слушатель есть ровно у того, что компонент
- * объявил. Добавили событие — оно появится на стенде само.
+ * The list is the surface of its descriptors (`componentDescriptors`, a
+ * part's — `TComponentEntry.parts`) in the React profile (`TSurface`): own
+ * events and the props' triggers, of a collection — the facade's too. The
+ * component sends its events as callback props by the same surface, so there
+ * is a listener for exactly what the component declared. An event added
+ * appears on the stand by itself.
  *
- * Имя колбэка — имя React (`onChangeText`), а приёмник получает полное имя
- * ядра (`change:text`): журнал сценария и консоль страницы одни на все
- * фреймворки. `update:<prop>` — v-model Vue, в React его нет.
+ * The callback's name is React's (`onChangeText`), and the sink gets the full
+ * core name (`change:text`): the scenario journal and the page console are
+ * one for all frameworks. `update:<prop>` is Vue's v-model, React has none.
  */
 export function listenersOf(
-	entry: TComponentEntry,
+	descriptors: readonly IComponentDescriptor[],
 	sink: TPreviewEventSink,
-): Record<string, (...args: unknown[]) => void> {
-	const descriptors = [
-		entry.descriptor(),
-		...(entry.collectionDescriptor ? [entry.collectionDescriptor()] : []),
-	]
-	const listeners: Record<string, (...args: unknown[]) => void> = {}
+): TListeners {
+	const listeners: TListeners = {}
 
 	for (const descriptor of descriptors) {
 		for (const { name, exportName } of TSurface.of(descriptor, ReactProfile).events) {

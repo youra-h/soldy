@@ -1,33 +1,37 @@
-import type { TComponentEntry, TPreviewEventSink } from '@soldy-ui/playground-shared'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
+import type { TPreviewEventSink } from '@soldy-ui/playground-shared'
 import { useEmits } from '@soldy-ui/vue'
 
+/** Listeners of a component in Vue: props `onChange:visible` by name. */
+export type TListeners = Record<string, (...args: unknown[]) => void>
+
+/** Listeners of the preview's parts, by part name (`partsOf`). */
+export type TParts = Readonly<Record<string, TListeners>>
+
 /**
- * Слушатели всех событий компонента — во Vue.
+ * Listeners of all the events of a component or a part — in Vue.
  *
- * Список — ровно тот, что компонент объявляет Vue в `emits`: `useEmits` его
- * дескриптора и, у коллекций, дескриптора фасада — так же склеивают его
- * `base.component.ts` коллекционных компонентов. Туда входят явные события,
- * триггеры пропов и `update:<prop>` для v-model. Добавили событие — оно
- * появится на стенде само.
+ * The list is exactly what the component declares to Vue in `emits`:
+ * `useEmits` of its descriptors (`componentDescriptors`, a part's —
+ * `TComponentEntry.parts`), as `base.component.ts` of the collection
+ * components joins them. It holds the explicit events, the props' triggers and
+ * `update:<prop>` of v-model. An event added appears on the stand by itself.
  *
- * Имя события во Vue и есть полное имя ядра (`change:visible`), и приёмник
- * получает его как есть. `update:<prop>` — v-model Vue: в приёмник он тоже
- * идёт, но у других фреймворков его нет. Куда отдавать, решает оболочка:
- * страница свойств печатает в консоль с пометкой колонки, сценарий пишет в
- * журнал своего прогона.
+ * An event's name in Vue is the full core name (`change:visible`), and the
+ * sink gets it as is. `update:<prop>` is Vue's v-model: it goes to the sink
+ * too, though the other frameworks have none. Where it goes is the shell's
+ * call: the props page prints it to the console with the column's mark, a
+ * scenario writes it to the journal of its run.
  */
 export function listenersOf(
-	entry: TComponentEntry,
+	descriptors: readonly IComponentDescriptor[],
 	sink: TPreviewEventSink,
-): Record<string, (...args: unknown[]) => void> {
-	const names = new Set([
-		...useEmits(entry.descriptor()),
-		...(entry.collectionDescriptor ? useEmits(entry.collectionDescriptor()) : []),
-	])
-	const listeners: Record<string, (...args: unknown[]) => void> = {}
+): TListeners {
+	const names = new Set(descriptors.flatMap((descriptor) => useEmits(descriptor)))
+	const listeners: TListeners = {}
 
 	for (const name of names) {
-		// Слушатель в разметке Vue — проп `onChange:visible`
+		// A listener in Vue markup is the prop `onChange:visible`
 		listeners[`on${name[0].toUpperCase()}${name.slice(1)}`] = (...args: unknown[]) =>
 			sink(name, args)
 	}

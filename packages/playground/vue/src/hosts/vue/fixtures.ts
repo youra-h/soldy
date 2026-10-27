@@ -1,6 +1,6 @@
 import { h, type Component } from 'vue'
 import { Button, CheckBox, Icon, Label, RadioGroup, Switch, roleIcon } from '@soldy-ui/vue'
-import { toComponents, type TPreview } from './previews'
+import type { TPreview } from './previews'
 
 /**
  * Разметка сценариев, которой нет у превью: содержимое слотов под проверку.
@@ -49,6 +49,3 @@ export const FIXTURES: Record<string, TPreview> = {
 			h(Label, bind, () => h(RadioGroup.Item, { value: 'a', tag: 'span' })),
 		),
 }
-
-/** Фикстуры как компоненты — как и превью (см. `toComponents`). */
-export const FIXTURE_COMPONENTS: Record<string, Component> = toComponents(FIXTURES)

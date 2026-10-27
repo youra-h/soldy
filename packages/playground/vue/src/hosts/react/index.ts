@@ -3,7 +3,12 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { enUS, type TLocale } from '@soldy-ui/plugins'
 import { LocaleProvider } from '@soldy-ui/react'
-import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
+import {
+	componentDescriptors,
+	findComponent,
+	partsOf,
+	type IPreviewHost,
+} from '@soldy-ui/playground-shared'
 import { PREVIEWS, type TPreview } from './previews'
 import { FIXTURES } from './fixtures'
 import { listenersOf } from './events'
@@ -59,7 +64,10 @@ const host: IPreviewHost = {
 	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
-		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
+		const listeners = entry && onEvent ? listenersOf(componentDescriptors(entry), onEvent) : {}
+		// A fixture's markup is its own: its parts are not listened to
+		const parts =
+			entry && onEvent && fixture === undefined ? partsOf(entry, onEvent, listenersOf) : {}
 		const root = createRoot(node, { identifierPrefix: `preview${++mounted}-` })
 		let bind = props
 
@@ -70,7 +78,11 @@ const host: IPreviewHost = {
 						LocaleProvider,
 						{ locale },
 						Array.from({ length: count }, (_, key) =>
-							createElement(Fragment, { key }, preview({ ...bind, ...listeners })),
+							createElement(
+								Fragment,
+								{ key },
+								preview({ ...bind, ...listeners }, parts),
+							),
 						),
 					),
 				),

@@ -2,6 +2,7 @@ import { createSignal, type Accessor, type JSX } from 'solid-js'
 import { enUS, type TLocale } from '@soldy-ui/plugins'
 import { LocaleProvider } from '@soldy-ui/solid'
 import type { TPreview, TPreviewProps } from './previews'
+import type { TParts } from './events'
 
 /**
  * Язык шапки — один на все корни хоста: сигнал, который читает провайдер
@@ -15,6 +16,8 @@ export type TRootProps = {
 	preview: TPreview
 	/** Пропсы превью с колбэками событий — сигнал, его меняет `update` хоста. */
 	bind: Accessor<TPreviewProps>
+	/** Listeners of the preview's parts (`TPreview`). */
+	parts: TParts
 	/** Сколько копий превью рядом (`TPreviewMount.count`). */
 	count: number
 }
@@ -28,7 +31,7 @@ export type TRootProps = {
 export function Root(props: TRootProps): JSX.Element {
 	return (
 		<LocaleProvider locale={language()}>
-			{Array.from({ length: props.count }, () => props.preview(props.bind))}
+			{Array.from({ length: props.count }, () => props.preview(props.bind, props.parts))}
 		</LocaleProvider>
 	)
 }

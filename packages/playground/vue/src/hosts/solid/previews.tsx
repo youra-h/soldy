@@ -65,6 +65,7 @@ import {
 	useToasts,
 	type TToastRender,
 } from '@soldy-ui/solid'
+import type { TParts } from './events'
 
 /** Пропсы превью: пропы строки, `ctrl` с экземпляром ядра и колбэки событий хоста. */
 export type TPreviewProps = Record<string, unknown>
@@ -87,10 +88,14 @@ export type TPreviewProps = Record<string, unknown>
  * на все хосты (`PREVIEW_PROPS` в общем пакете), и в `bind` их кладёт
  * оболочка. Здесь — обёртка и содержимое.
  *
+ * The second argument is the listeners of the parts the preview places in
+ * markup, by part (`TComponentEntry.parts`): the preview spreads them on its
+ * parts, as the component's own lie in `bind`. Not asked for — empty.
+ *
  * Слоёв и `frame` здесь нет: во Vue это ComponentView с чужими пропами, а в
  * Solid чужой проп ушёл бы атрибутом в корень.
  */
-export type TPreview = (bind: Accessor<TPreviewProps>) => JSX.Element
+export type TPreview = (bind: Accessor<TPreviewProps>, parts: TParts) => JSX.Element
 
 /** Scope слота триггера Popover — связка с панелью и вид «нажат». */
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
@@ -113,15 +118,17 @@ const ARROW_DOWN = roleIcon('arrowDown')
  * функции выражение в разметке владельца: Solid разворачивает его там, где
  * владелец развернул слот, — внутри слоя его лифта, — а не в теле превью.
  */
-const tabsItems = () => (
-	<For each={ITEMS}>{(item, index) => <Tabs.Item active={index() === 0} {...item} />}</For>
+const tabsItems = (parts: TParts = {}) => (
+	<For each={ITEMS}>
+		{(item, index) => <Tabs.Item active={index() === 0} {...item} {...parts.Item} />}
+	</For>
 )
 
 /** Панели табов — слотом `content`, вне списка табов. */
-const tabsPanels = () => (
+const tabsPanels = (parts: TParts = {}) => (
 	<For each={ITEMS}>
 		{(item) => (
-			<Tabs.Content value={item.value}>
+			<Tabs.Content value={item.value} {...parts.Content}>
 				<div style={{ padding: '12px' }}>Панель «{item.text}»</div>
 			</Tabs.Content>
 		)}
@@ -129,10 +136,10 @@ const tabsPanels = () => (
 )
 
 /** Секции разметкой, с содержимым. */
-const accordionItems = () => (
+const accordionItems = (parts: TParts = {}) => (
 	<For each={ITEMS}>
 		{(item) => (
-			<Accordion.Item {...item}>
+			<Accordion.Item {...item} {...parts.Item}>
 				<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
 			</Accordion.Item>
 		)}
@@ -145,34 +152,40 @@ const accordionItems = () => (
  * с подменю внутри, пункт с панелью — календарём, который монтируется с
  * первым открытием, — выключенное действие и «опасный» пункт своего варианта.
  */
-const menuItems = () => (
+const menuItems = (parts: TParts) => (
 	<>
 		<Menu.Group label="Вид">
-			<Menu.CheckboxItem value="grid" text="Сетка" selected />
-			<Menu.CheckboxItem value="ruler" text="Линейка" />
+			<Menu.CheckboxItem value="grid" text="Сетка" selected {...parts.CheckboxItem} />
+			<Menu.CheckboxItem value="ruler" text="Линейка" {...parts.CheckboxItem} />
 		</Menu.Group>
 		<Menu.Separator />
 		<Menu.RadioGroup label="Сортировка" value="name">
-			<Menu.RadioItem value="name" text="По имени" />
-			<Menu.RadioItem value="date" text="По дате" />
+			<Menu.RadioItem value="name" text="По имени" {...parts.RadioItem} />
+			<Menu.RadioItem value="date" text="По дате" {...parts.RadioItem} />
 		</Menu.RadioGroup>
 		<Menu.Separator />
-		<Menu.Item value="edit" text="Изменить" trailing="Ctrl+E" />
-		<Menu.Item value="copy" text="Дублировать" trailing="Ctrl+D" />
-		<Menu.Submenu value="share" text="Поделиться">
-			<Menu.Item value="link" text="Ссылка" />
-			<Menu.Item value="mail" text="Почта" />
-			<Menu.Submenu value="messengers" text="Мессенджеры">
-				<Menu.Item value="telegram" text="Telegram" />
-				<Menu.Item value="whatsapp" text="WhatsApp" />
+		<Menu.Item value="edit" text="Изменить" trailing="Ctrl+E" {...parts.Item} />
+		<Menu.Item value="copy" text="Дублировать" trailing="Ctrl+D" {...parts.Item} />
+		<Menu.Submenu value="share" text="Поделиться" {...parts.Submenu}>
+			<Menu.Item value="link" text="Ссылка" {...parts.Item} />
+			<Menu.Item value="mail" text="Почта" {...parts.Item} />
+			<Menu.Submenu value="messengers" text="Мессенджеры" {...parts.Submenu}>
+				<Menu.Item value="telegram" text="Telegram" {...parts.Item} />
+				<Menu.Item value="whatsapp" text="WhatsApp" {...parts.Item} />
 			</Menu.Submenu>
 		</Menu.Submenu>
-		<Menu.PopoverItem value="due" text="Срок" lazyMount>
+		<Menu.PopoverItem value="due" text="Срок" lazyMount {...parts.PopoverItem}>
 			<Calendar />
 		</Menu.PopoverItem>
-		<Menu.Item value="archive" text="В архив" disabled />
+		<Menu.Item value="archive" text="В архив" disabled {...parts.Item} />
 		<Menu.Separator />
-		<Menu.Item value="remove" text="Удалить" variant="negative" trailing="Del" />
+		<Menu.Item
+			value="remove"
+			text="Удалить"
+			variant="negative"
+			trailing="Del"
+			{...parts.Item}
+		/>
 	</>
 )
 
@@ -390,20 +403,24 @@ export const PREVIEWS: Record<string, TPreview> = {
 	),
 
 	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox
-	'radio-group': (bind) => (
+	'radio-group': (bind, parts) => (
 		<RadioGroup {...bind()}>
 			<For each={ITEMS}>
-				{(item) => <RadioGroup.Item value={item.value}>{item.text}</RadioGroup.Item>}
+				{(item) => (
+					<RadioGroup.Item value={item.value} {...parts.Item}>
+						{item.text}
+					</RadioGroup.Item>
+				)}
 			</For>
 		</RadioGroup>
 	),
 
 	// Элементы — разметкой, а пришли данными (`items` блока групп страницы) —
 	// из них: разметка заменила бы данные, а группы список рисует из данных
-	'list-box': (bind) => (
+	'list-box': (bind, parts) => (
 		<ListBox {...bind()}>
 			{bind().items ? undefined : (
-				<For each={ITEMS}>{(item) => <ListBox.Item {...item} />}</For>
+				<For each={ITEMS}>{(item) => <ListBox.Item {...item} {...parts.Item} />}</For>
 			)}
 		</ListBox>
 	),
@@ -504,7 +521,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 	// строки рисовала бы триггер заново. Пункты — разметкой, а пришли данными
 	// (`items` блока групп страницы) — из них, как у списка: разметка заменила
 	// бы данные, а группы меню рисует из данных
-	menu: (bind) => (
+	menu: (bind, parts) => (
 		<Menu
 			{...bind()}
 			trigger={(scope: TMenuTriggerScope) => (
@@ -527,7 +544,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				</Show>
 			)}
 		>
-			{bind().items ? undefined : menuItems()}
+			{bind().items ? undefined : menuItems(parts)}
 		</Menu>
 	),
 
@@ -569,13 +586,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</div>
 	),
 
-	tabs: (bind) => (
-		<Tabs {...bind()} content={tabsPanels()}>
-			{tabsItems()}
+	tabs: (bind, parts) => (
+		<Tabs {...bind()} content={tabsPanels(parts)}>
+			{tabsItems(parts)}
 		</Tabs>
 	),
 
-	accordion: (bind) => <Accordion {...bind()}>{accordionItems()}</Accordion>,
+	accordion: (bind, parts) => <Accordion {...bind()}>{accordionItems(parts)}</Accordion>,
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind()} />,
 

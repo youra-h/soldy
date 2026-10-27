@@ -2,17 +2,24 @@
 	import { LocaleProvider } from '@soldy-ui/svelte'
 	import { language, type TLive } from './live.svelte'
 	import type { TPreview, TPreviewProps } from './previews'
+	import { setParts, type TParts } from './events'
 
 	type TRootProps = {
 		/** Чем рисовать: превью компонента или фикстура сценария. */
 		preview: TPreview
 		/** Пропсы превью с колбэками событий — их меняет `update` хоста. */
 		bind: TLive<TPreviewProps>
+		/** Listeners of the preview's parts: the previews take them from the context. */
+		parts: TParts
 		/** Сколько копий превью рядом (`TPreviewMount.count`). */
 		count: number
 	}
 
-	const { preview: Preview, bind, count }: TRootProps = $props()
+	const { preview: Preview, bind, parts, count }: TRootProps = $props()
+
+	// A mount's parts do not change: the context takes them once
+	// svelte-ignore state_referenced_locally
+	setParts(parts)
 </script>
 
 <!--

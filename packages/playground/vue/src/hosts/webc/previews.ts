@@ -99,6 +99,13 @@ export type TPreview = {
 	 * стоять: корень превью — один узел.
 	 */
 	readonly opener?: string
+	/**
+	 * The part this element is in the component's markup — its name in the
+	 * registry (`TComponentEntry.parts`): `Item` of `<div is="so-tabs-item">`.
+	 * The host puts the part's listeners on it before insertion, as the
+	 * component's own on the component (`partsOf`).
+	 */
+	readonly part?: string
 }
 
 /** Пропсы элемента — свойствами, по имени. */
@@ -283,12 +290,21 @@ const contextArea = (): Node => {
 	return node
 }
 
-/** Пункт меню разметкой: элемент части со своими пропсами и детьми по слотам. */
+/** The menu's parts by element name — their names in the registry; groups and lines are not listened to. */
+const MENU_PARTS: Readonly<Record<string, string>> = {
+	'so-menu-item': 'Item',
+	'so-menu-checkbox-item': 'CheckboxItem',
+	'so-menu-radio-item': 'RadioItem',
+	'so-menu-submenu': 'Submenu',
+	'so-menu-popover-item': 'PopoverItem',
+}
+
+/** A menu item in markup: the part's element with its props and children by slot. */
 const menuPart = (
 	is: string,
 	props: TPreviewProps = {},
 	slots: Readonly<Record<string, readonly TContent[]>> = {},
-): TPreview => ({ tag: 'div', is, props, slots })
+): TPreview => ({ tag: 'div', is, props, slots, part: MENU_PARTS[is] })
 
 /**
  * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
@@ -435,11 +451,13 @@ const TABS: TPreview = {
 			tag: 'div',
 			is: 'so-tabs-item',
 			props: { active: index === 0, ...item },
+			part: 'Item',
 		})),
 		content: ITEMS.map((item) => ({
 			tag: 'div',
 			is: 'so-tabs-content',
 			props: { value: item.value },
+			part: 'Content',
 			slots: { default: [block('12px', `Панель «${item.text}»`)] },
 		})),
 	},
@@ -454,6 +472,7 @@ const ACCORDION: TPreview = {
 			tag: 'div',
 			is: 'so-accordion-item',
 			props: { ...item },
+			part: 'Item',
 			slots: { default: [block('4px 0', `Содержимое «${item.text}»`)] },
 		})),
 	},
@@ -545,6 +564,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				tag: 'label',
 				is: 'so-radio-group-item',
 				props: { value: item.value },
+				part: 'Item',
 				slots: { default: [text(item.text)] },
 			})),
 		},
@@ -664,6 +684,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 						tag: 'div',
 						is: 'so-list-box-item',
 						props: { ...item },
+						part: 'Item',
 					})),
 		}),
 	},
