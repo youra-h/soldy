@@ -1238,8 +1238,8 @@ describe('группы разметки', () => {
  */
 describe('шаблон default', () => {
 	/**
-	 * "Изменить · Сетка · Поделиться → (Ссылка, Линейка) · Сортировка (По
-	 * имени, По дате) · Удалить", each level as a template. One checkbox per
+	 * An action, a checkbox, a submenu (an action and a checkbox), a radio
+	 * group and another action, each level as a template. One checkbox per
 	 * level: the probe counts the assemblies of its class.
 	 */
 	@Component({
