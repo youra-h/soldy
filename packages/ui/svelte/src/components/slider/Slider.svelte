@@ -33,7 +33,7 @@
 			>
 				{#each state.shownMarks as mark, index (index)}
 					<span class="so-slider__mark" style={toStyleText(mark.style)} {...mark.dataset}>
-						<!-- Края подписи Svelte срезает: пустую тема прячет по `:empty`. -->
+						<!-- Svelte trims the edges of the label: the theme hides an empty one by `:empty`. -->
 						<span class="so-slider__mark-label">
 							{#if props.mark}
 								{@render props.mark({ value: mark.value, label: mark.label })}

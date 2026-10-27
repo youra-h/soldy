@@ -38,12 +38,12 @@
 >
 	<div class="so-calendar__months">
 		<!--
-			Ключ — место сетки, а не месяц: при листании кнопка заголовка, её поповер и
-			живая область остаются тем же узлом — фокус и объявление смены не теряются.
+			The key is the place of the grid, not the month: when paging, the title button, its
+			popover and the live region stay the same node — focus and the announcement are kept.
 		-->
 		{#each state.grids ?? [] as grid, index (index)}
 			{@const picker = state.pickers?.[index]}
-			<!-- Текст — во вложенном `span` с `titleAria`: живая область — текст. -->
+			<!-- The text is in a nested `span` with `titleAria`: the live region is the text. -->
 			{#snippet title({ triggerAria, triggerDataset }: TTriggerScope)}
 				<Button
 					embedded="calendar.title"
@@ -58,10 +58,11 @@
 				>
 			{/snippet}
 			<!--
-				Блок места — по наличию записи `picker`, а не по ней: Popover и ListBox берут
-				`ctrl` и `engine` один раз, а запись новая на каждую смену. Корень поповера —
-				`div`: в строчном `span` блочной разметке не место. Листание — одна пара у
-				первого месяца, сразу за заголовком: Tab идёт за глазом.
+				The block of the place is by the presence of the `picker` record, not by the record:
+				Popover and ListBox take `ctrl` and `engine` once, and the record is new on every
+				change. The root of the popover is a `div`: block markup has no place in an inline
+				`span`. Paging is one pair at the first month, right after the title: Tab follows
+				the eye.
 			-->
 			<div class="so-calendar__month">
 				{#if picker}<Popover
@@ -158,10 +159,10 @@
 					</thead>
 					<tbody>
 						<!--
-							Недели — по первой дате, ячейки — по дате: день, оставшийся при
-							листании, — тот же узел, с фокусом. День берёт `ctrl` при сборке —
-							отсюда `{#key}`. Проброс `item` — только когда слот задан: пустой
-							сниппет номеру не уступил бы.
+							Weeks are keyed by their first date, cells by the date: a day that stays
+							when paging is the same node, with focus. The day takes `ctrl` at
+							assembly — hence `{#key}`. `item` is relayed only when the slot is set:
+							an empty snippet would not give way to the number.
 						-->
 						{#each grid.weeks as week (week[0]?.date)}
 							<tr class="so-calendar__week">

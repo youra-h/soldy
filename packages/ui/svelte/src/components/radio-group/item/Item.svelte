@@ -18,8 +18,8 @@
 	возвращает поля к прежнему выбору, а сменившуюся в модели отметку Svelte пишет следом.
 -->
 <!--
-	Место в коллекции (`order`) корню не отдаётся — группа радио не раскладывает, номер увёл бы
-	радио по чужому флекс-ряду.
+	The place in the collection (`order`) is not given to the root: the radio group does not lay
+	out, and the number would move the radio along a foreign flex row.
 -->
 <Dynamic
 	rendered={state.rendered}

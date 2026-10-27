@@ -108,7 +108,7 @@
 	}}
 	attach={binding.attachElement}
 >
-	<!-- Имя — полю: оно и есть группа частей, так имя дойдёт и до частей. -->
+	<!-- The name goes to the field: it is the group of the parts, so the name reaches them too. -->
 	{#if state.mode === 'single'}<DateInput
 			embedded="date-picker.field"
 			class="so-date-picker__field"

@@ -53,7 +53,7 @@
 		{...toControlAttrs<InputAttributes>(binding.forwardProps)}
 		{...text}
 	/>{#if state.clearable || props.clear || props.trailing}
-		<!-- Кнопка очистки и `trailing` вплотную: пробел Svelte оставил бы текстом. -->
+		<!-- The clear button and `trailing` are glued: Svelte would keep a space as text. -->
 		<div class="so-input__trailing">
 			{#if props.clear}
 				{@render props.clear({ clear: ctrl.clear })}
