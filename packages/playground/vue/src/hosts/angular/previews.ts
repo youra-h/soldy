@@ -57,7 +57,7 @@ export type TProps = Readonly<Record<string, unknown>>
  * bindings of a template by name, so the preview has an input for every input
  * of the component the page can write, and `ctrl`; the props of a wrapper and
  * of parts are the preview's, as the neighbors' markup writes
- * `<Label text="Согласен">` and `<ListBox.Item {...item} />`.
+ * `<Label text="…">` and `<ListBox.Item {...item} />`.
  *
  * Markup, not a description the host builds with `createComponent`: the copies
  * of a preview (`count`) are views of one template (`CopyDirective`), and

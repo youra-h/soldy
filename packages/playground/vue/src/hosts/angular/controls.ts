@@ -32,7 +32,7 @@ import type { TFixture } from './fixtures'
  * for every input of the adapter component the page can write, and `ctrl` —
  * and binds them to the component in its markup. The props of a wrapper and of
  * content are the preview's, as the neighbors' markup writes
- * `<Label text="Согласен">`.
+ * `<Label text="…">`.
  */
 
 /**
