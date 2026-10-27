@@ -163,7 +163,10 @@ export type TCollectionStorageDriverEvents<TItem> = {
 	/** Вызывается при перемещении элемента */
 	'item:moved': (e: TMoveEvent<TItem>) => void
 
-	/** Системные изменения массива элементов */
+	/**
+	 * The storage composition changed. `items` is a snapshot: a listener may
+	 * keep it, and the next change does not alter it.
+	 */
 	'change:items': (items: readonly TItem[]) => void
 
 	/** Изменение количества элементов */

@@ -162,6 +162,28 @@ describe('TCollectionStorageDriver', () => {
 		expect(changeItems).toHaveBeenCalledTimes(1)
 	})
 
+	// A listener may keep the list it heard: storage changes it in place, so
+	// a live reference would shrink and grow under the listener with no event
+	it('change:items несёт снимок: сохранённый список не меняется со следующей записью', () => {
+		const first: Item = { id: 1 }
+		const driver = createEngine([first])
+		const heard: (readonly Item[])[] = []
+
+		driver.events.on('change:items', (items) => heard.push(items))
+
+		driver.execute(new TInsertCommand({ id: 2 }, 1))
+		driver.batch(() => {
+			driver.execute(new TInsertCommand({ id: 3 }, 2))
+		})
+		driver.execute(new TRemoveCommand(first))
+
+		expect(heard.map((items) => items.map(({ id }) => id))).toEqual([
+			[1, 2],
+			[1, 2, 3],
+			[2, 3],
+		])
+	})
+
 	// --- Порядок событий ---
 
 	it('события эмитятся в правильном порядке', () => {
