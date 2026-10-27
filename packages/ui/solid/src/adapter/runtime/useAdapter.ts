@@ -74,8 +74,9 @@ function useExchange(
 	props: object,
 ): { binding: TExchange; state: Readonly<Record<string, unknown>> } {
 	const binding = adapter.connect(SolidProfile)
-	const [state, write] = createShallowState()
+	const [state, write, updates] = createShallowState()
 
+	onCleanup(binding.updates.listen(updates))
 	onCleanup(binding.state.subscribe(write))
 
 	createEffect(() => binding.inputs.full(props))

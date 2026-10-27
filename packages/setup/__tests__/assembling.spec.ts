@@ -148,4 +148,44 @@ describe('TAssembling: сборка над инстансом атомарна �
 		)
 		first.off()
 	})
+
+	/**
+	 * The release is one update of the exchange: the whole state and the
+	 * notifications lie inside one pair of its bounds (binding.spec.ts,
+	 * «связка · такт»).
+	 */
+	it('выпуск после сборки — один такт: всё состояние и уведомления внутри', async () => {
+		const ctrl = new TPopover()
+		const first = mountOver(ctrl, 'a')
+
+		first.exchange.updates.listen({
+			begin: () => first.heard.push('begin'),
+			end: () => first.heard.push('end'),
+		})
+		createAdapterContext(PopoverDescriptor(), { ctrl, mountId: 'b' })
+		first.heard.length = 0
+
+		await Promise.resolve()
+
+		// Outermost updates of the release's microtask, by what each one held
+		const updates: string[][] = []
+		const outside: string[] = []
+		let depth = 0
+
+		for (const entry of first.heard) {
+			if (entry === 'begin') {
+				if (depth++ === 0) updates.push([])
+			} else if (entry === 'end') depth--
+			else if (depth === 0) outside.push(entry)
+			else updates.at(-1)?.push(entry)
+		}
+
+		const released = updates.filter((held) => held.some((entry) => entry.startsWith('state:')))
+
+		expect(depth).toBe(0)
+		expect(outside).toEqual([])
+		expect(released).toHaveLength(1)
+		expect(released[0]).toContain('event:change:aria')
+		first.off()
+	})
 })
