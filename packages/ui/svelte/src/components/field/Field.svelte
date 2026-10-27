@@ -35,22 +35,18 @@
 			{:else}
 				{state.label}
 			{/if}
-		</label>
-	{/if}
-	<div class="so-field__control">{@render props.children?.()}</div>
-	{#if state.helperRendered}
+		</label>{/if}<div class="so-field__control">{@render props.children?.()}</div>{#if state.helperRendered}
 		<div class="so-field__helper" {...state.helperAria}>
 			{#if props['helper-content']}
 				{@render props['helper-content']()}
 			{:else}
 				{state.helper}
 			{/if}
-		</div>
-	{/if}
-	{#if state.errorRendered}
+		</div>{/if}{#if state.errorRendered}
 		<div class="so-field__error" {...state.errorAria}>
-			<Icon embedded="field.error-icon" class="so-field__error-icon" tag={ERROR} />
-			<div class="so-field__error-text">
+			<Icon embedded="field.error-icon" class="so-field__error-icon" tag={ERROR} /><div
+				class="so-field__error-text"
+			>
 				{#if props['error-content']}
 					{@render props['error-content']()}
 				{:else}

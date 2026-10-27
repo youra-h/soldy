@@ -49,13 +49,11 @@
 		{...state.panelDataset}
 		{...state.dismiss_ownerAttribute}
 	>
-		{#if state.handleRendered}
-			<div class="so-popover__handle" aria-hidden="true"></div>
-		{/if}
-		<div class="so-popover__content">
+		{#if state.handleRendered}<div class="so-popover__handle" aria-hidden="true"></div>{/if}<div
+			class="so-popover__content"
+		>
 			{#if state.contentRendered}{@render props.children?.()}{/if}
-		</div>
-		{#if state.closable}
+		</div>{#if state.closable}
 			<Button
 				embedded="popover.close"
 				type="button"

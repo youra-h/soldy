@@ -65,9 +65,7 @@
 				>
 					<Icon embedded="date-input.clear-icon" tag={CLOSE} size={state.size} />
 				</Button>
-			{/if}{#if props.trailing}
-				{@render props.trailing({ ctrl })}
-			{/if}
+			{/if}{@render props.trailing?.({ ctrl })}
 		</div>{/if}<input
 		type="hidden"
 		name={state.name}

@@ -41,10 +41,7 @@
 	)}
 	attach={binding.attachElement}
 >
-	{#if props.leading}
-		<div class="so-input__leading">{@render props.leading({ ctrl })}</div>
-	{/if}
-	<input
+	{#if props.leading}<div class="so-input__leading">{@render props.leading({ ctrl })}</div>{/if}<input
 		type="text"
 		id={state.id}
 		name={state.name}
@@ -55,8 +52,7 @@
 		{...state.aria}
 		{...toControlAttrs<InputAttributes>(binding.forwardProps)}
 		{...text}
-	/>
-	{#if state.clearable || props.clear || props.trailing}
+	/>{#if state.clearable || props.clear || props.trailing}
 		<!-- Кнопка очистки и `trailing` вплотную: пробел Svelte оставил бы текстом. -->
 		<div class="so-input__trailing">
 			{#if props.clear}
@@ -73,9 +69,6 @@
 				>
 					<Icon embedded="input.clear-icon" tag={CLOSE} size={state.size} />
 				</Button>
-			{/if}{#if props.trailing}
-				{@render props.trailing({ ctrl })}
-			{/if}
-		</div>
-	{/if}
+			{/if}{@render props.trailing?.({ ctrl })}
+		</div>{/if}
 </Dynamic>

@@ -27,9 +27,10 @@
 	attach={binding.attachElement}
 >
 	<span class="so-slider__track">
-		<span class="so-slider__range" style={toStyleText(state.rangeStyle)}></span>
-		{#if state.shownMarks && state.shownMarks.length > 0}
-			<span class="so-slider__marks" aria-hidden="true">
+		<span class="so-slider__range" style={toStyleText(state.rangeStyle)}></span>{#if state.shownMarks && state.shownMarks.length > 0}<span
+				class="so-slider__marks"
+				aria-hidden="true"
+			>
 				{#each state.shownMarks as mark, index (index)}
 					<span class="so-slider__mark" style={toStyleText(mark.style)} {...mark.dataset}>
 						<!-- Края подписи Svelte срезает: пустую тема прячет по `:empty`. -->
@@ -42,9 +43,7 @@
 						</span>
 					</span>
 				{/each}
-			</span>
-		{/if}
-		{#each state.thumbs ?? [] as thumb, index}
+			</span>{/if}{#each state.thumbs ?? [] as thumb, index}
 			<span class="so-slider__thumb" style={toStyleText(thumb.style)} {...thumb.dataset}>
 				<input
 					class="so-slider__input"
@@ -56,16 +55,13 @@
 					name={state.name}
 					disabled={state.disabled}
 					{...thumb.aria}
-				/>
-				{#if state.tooltipRendered}
-					<span class="so-slider__tooltip" aria-hidden="true">
+				/>{#if state.tooltipRendered}<span class="so-slider__tooltip" aria-hidden="true">
 						{#if props.thumb}
 							{@render props.thumb({ value: thumb.value, index })}
 						{:else}
 							{thumb.value}
 						{/if}
-					</span>
-				{/if}
+					</span>{/if}
 			</span>
 		{/each}
 	</span>

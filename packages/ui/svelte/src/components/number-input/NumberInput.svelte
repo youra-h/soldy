@@ -47,10 +47,7 @@
 	)}
 	attach={binding.attachElement}
 >
-	{#if props.leading}
-		<div class="so-number-input__leading">{@render props.leading({ ctrl })}</div>
-	{/if}
-	<input
+	{#if props.leading}<div class="so-number-input__leading">{@render props.leading({ ctrl })}</div>{/if}<input
 		type="text"
 		class="so-number-input__input"
 		id={state.id}
@@ -65,8 +62,7 @@
 		{...state.inputAria}
 		{...toControlAttrs<NumberInputAttributes>(binding.forwardProps)}
 		{...text}
-	/>
-	{#if state.clearable || props.clear || props.trailing}
+	/>{#if state.clearable || props.clear || props.trailing}
 		<div class="so-number-input__trailing">
 			{#if props.clear}
 				{@render props.clear({ clear: ctrl.clear })}
@@ -82,12 +78,8 @@
 				>
 					<Icon embedded="number-input.clear-icon" tag={CLOSE} size={state.size} />
 				</Button>
-			{/if}{#if props.trailing}
-				{@render props.trailing({ ctrl })}
-			{/if}
-		</div>
-	{/if}
-	<div class="so-number-input__stepper">
+			{/if}{@render props.trailing?.({ ctrl })}
+		</div>{/if}<div class="so-number-input__stepper">
 		<Button
 			embedded="number-input.decrement"
 			type="button"
@@ -117,8 +109,7 @@
 				<Icon embedded="number-input.increment-icon" tag={PLUS} size={state.size} />
 			{/if}
 		</Button>
-	</div>
-	<input
+	</div><input
 		type="hidden"
 		name={state.name}
 		value={state.value === undefined ? '' : String(state.value)}

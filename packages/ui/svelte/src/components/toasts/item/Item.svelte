@@ -57,17 +57,16 @@
 					tag={state.type ? TYPE_ICONS[state.type] : NOTIFICATION}
 				/>
 			{/if}
-		</span>
-		<div class="so-toasts-item__body">
+		</span><div class="so-toasts-item__body">
 			<div class="so-toasts-item__text">
 				{#if props.children}
 					{@render props.children({ text: state.text ?? '' })}
 				{:else}
 					{state.text}
 				{/if}
-			</div>
-			<div class="so-toasts-item__description">{state.description}</div>
-			<div class="so-toasts-item__content">
+			</div><div class="so-toasts-item__description">{state.description}</div><div
+				class="so-toasts-item__content"
+			>
 				{#if props.content}
 					{@render props.content()}
 				{:else if isToastRender(state.render)}
@@ -75,8 +74,7 @@
 					<Render toast={ctrl} />
 				{/if}
 			</div>
-		</div>
-		{#if state.closable}
+		</div>{#if state.closable}
 			<Button
 				embedded="toasts.close"
 				type="button"

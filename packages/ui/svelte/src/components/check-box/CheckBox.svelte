@@ -48,8 +48,7 @@
 		{...toControlAttrs<CheckBoxAttributes>(binding.forwardProps)}
 		checked={state.value}
 		indeterminate={state.indeterminate}
-	/>
-	<span class="so-check-box__container" aria-hidden="true">
+	/><span class="so-check-box__container" aria-hidden="true">
 		{#if state.indeterminate}
 			{#if props['indeterminate-icon']}
 				{@render props['indeterminate-icon']({ value: state.value, indeterminate: true })}

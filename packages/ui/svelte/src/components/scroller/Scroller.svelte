@@ -44,15 +44,13 @@
 		{:else}
 			<Icon embedded="scroller.prev-icon" tag={ARROW} size={state.size} />
 		{/if}
-	</Button>
-	<div
+	</Button><div
 		class="so-scroller__viewport"
 		{...{ tabindex: state.viewportTabIndex }}
 		{...state.viewportAria}
 	>
 		{@render props.children?.()}
-	</div>
-	<Button
+	</div><Button
 		embedded="scroller.next"
 		type="button"
 		class="so-scroller__next"

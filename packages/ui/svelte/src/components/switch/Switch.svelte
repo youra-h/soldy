@@ -35,14 +35,9 @@
 		{...state.aria}
 		{...toControlAttrs<SwitchAttributes>(binding.forwardProps)}
 		checked={state.value}
-	/>
-	<span class="so-switch__track" aria-hidden="true">
+	/><span class="so-switch__track" aria-hidden="true">
 		<span class="so-switch__track--thumb">
-			{#if state.value}
-				{@render props.on?.({ value: state.value, ctrl })}
-			{:else}
-				{@render props.off?.({ value: state.value, ctrl })}
-			{/if}
+			{@render (state.value ? props.on : props.off)?.({ value: state.value, ctrl })}
 		</span>
 	</span>
 </Dynamic>

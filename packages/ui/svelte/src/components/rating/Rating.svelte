@@ -37,11 +37,9 @@
 	<span class="so-rating__track">
 		{#each state.stars ?? [] as star (star.value)}
 			<span class="so-rating__star" style={toStyleText(star.style)} aria-hidden="true">
-				{@render glyph(star.value, false)}
-				<span class="so-rating__star-fill">{@render glyph(star.value, true)}</span>
+				{@render glyph(star.value, false)}<span class="so-rating__star-fill">{@render glyph(star.value, true)}</span>
 			</span>
-		{/each}
-		<span class="so-rating__thumb">
+		{/each}<span class="so-rating__thumb">
 			<input
 				class="so-rating__input"
 				type="range"

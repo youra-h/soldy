@@ -20,6 +20,12 @@
 	пока нарисована, и окно `Virtual` держит их столько, сколько показывает.
 -->
 
+<!--
+	Slots render by a call, without a block around: a slot costs one block, set or not, and the
+	text falls back to `state.text` in the same block. The parts are glued: Svelte would keep a
+	space between them as text.
+-->
+{#snippet plain()}{state.text}{/snippet}
 <Dynamic
 	rendered={state.rendered}
 	tag={state.tag}
@@ -30,9 +36,7 @@
 	)}
 	attach={binding.attachElement}
 >
-	{#if props.leading}{@render props.leading()}{/if}
-	<span class="so-button__text">
-		{#if props.children}{@render props.children({ text: state.text ?? '' })}{:else}{state.text}{/if}
-	</span>
-	{#if props.trailing}{@render props.trailing()}{/if}
+	{@render props.leading?.()}<span class="so-button__text"
+		>{@render (props.children ?? plain)({ text: state.text ?? '' })}</span
+	>{@render props.trailing?.()}
 </Dynamic>

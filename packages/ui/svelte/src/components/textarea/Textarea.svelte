@@ -36,8 +36,7 @@
 		{...toControlAttrs<TextareaAttributes>(binding.forwardProps)}
 		{...text.attributes}
 		value={text.value}
-	></textarea>
-	{#if state.counter}
-		<div class="so-textarea__counter" {...state.counterAria}>{state.names_counter}</div>
-	{/if}
+	></textarea>{#if state.counter}<div class="so-textarea__counter" {...state.counterAria}>
+			{state.names_counter}
+		</div>{/if}
 </Dynamic>

@@ -45,10 +45,12 @@
 			)}
 			attach={binding.attachElement}
 		>
-			<h2 class="so-dialog__title" {...state.titleAria}>{@render props.title?.()}</h2>
-			<div class="so-dialog__body" {...state.bodyAria}>{@render props.children?.()}</div>
-			<div class="so-dialog__footer">{@render props.footer?.()}</div>
-			{#if state.maximizable}
+			<h2 class="so-dialog__title" {...state.titleAria}>{@render props.title?.()}</h2><div
+				class="so-dialog__body"
+				{...state.bodyAria}
+			>
+				{@render props.children?.()}
+			</div><div class="so-dialog__footer">{@render props.footer?.()}</div>{#if state.maximizable}
 				<Button
 					embedded="dialog.maximize"
 					type="button"
@@ -67,9 +69,7 @@
 					{:else}
 						<Icon embedded="dialog.maximize-icon" tag={MAXIMIZE} />
 					{/if}
-				</Button>
-			{/if}
-			{#if state.closable}
+				</Button>{/if}{#if state.closable}
 				<Button
 					embedded="dialog.close"
 					type="button"
@@ -82,8 +82,7 @@
 					{:else}
 						<Icon embedded="dialog.close-icon" tag={CLOSE} />
 					{/if}
-				</Button>
-			{/if}
+				</Button>{/if}
 		</Dynamic>
 	</Teleport>
 {/if}

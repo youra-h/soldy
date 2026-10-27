@@ -47,8 +47,7 @@
 		{:else}
 			<Icon embedded="pagination.prev-icon" tag={ARROW} size={state.size} />
 		{/if}
-	</Button>
-	<ol class="so-pagination__list">
+	</Button><ol class="so-pagination__list">
 		{#each state.cells ?? [] as cell (cell.key)}
 			{#if cell.kind === 'item'}
 				{@const page = cell.item}
@@ -60,8 +59,7 @@
 				<li class="so-pagination__ellipsis">…</li>
 			{/if}
 		{/each}
-	</ol>
-	<Button
+	</ol><Button
 		embedded="pagination.next"
 		type="button"
 		class="so-pagination__next"
