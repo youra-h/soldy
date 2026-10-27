@@ -2,6 +2,7 @@ import type { JSX } from 'solid-js'
 import {
 	Root,
 	Teleport,
+	clickAction,
 	createPartProps,
 	createRootProps,
 	renderSlot,
@@ -25,6 +26,7 @@ export function Drawer(props: DrawerProps): JSX.Element {
 	const binding = setupDrawer(props)
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const close = clickAction(() => ctrl.requestClose('button'))
 	const backdrop = createRootProps(() => ({
 		state: {
 			classes: BACKDROP,
@@ -67,7 +69,7 @@ export function Drawer(props: DrawerProps): JSX.Element {
 							embedded="drawer.close"
 							type="button"
 							class="so-drawer__close"
-							onClick={() => ctrl.requestClose('button')}
+							ref={close}
 							{...state.closeAria}
 						>
 							{closeIcon() ?? <Icon embedded="drawer.close-icon" tag={CLOSE} />}

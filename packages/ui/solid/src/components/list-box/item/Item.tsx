@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -41,17 +41,9 @@ export function ListBoxItem(props: ListBoxItemProps): JSX.Element {
 		() => ({ selected: state.selected ?? false }),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала выбор. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<ListBoxItemAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.list.choose(), onClick),
-		}
-	}
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<ListBoxItemAttributes>(binding.forwardProps())
+	const choose = clickAction(() => context?.adapters.list.choose())
 
 	/** Обёртка отметки — и у невыбранных: она резервирует место. */
 	const mark = () => (
@@ -76,6 +68,7 @@ export function ListBoxItem(props: ListBoxItemProps): JSX.Element {
 					{...state.aria}
 					{...state.dataset}
 					{...row()}
+					ref={choose}
 					leading={
 						<>
 							{state.indicator === 'start' ? mark() : null}

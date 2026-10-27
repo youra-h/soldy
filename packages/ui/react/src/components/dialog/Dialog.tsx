@@ -6,6 +6,7 @@ import {
 	toAriaProps,
 	toRootLayout,
 	toRootProps,
+	useClickAction,
 } from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
@@ -22,6 +23,8 @@ const RestoreIcon = roleIcon('arrowsInward')
  */
 export function Dialog(props: DialogProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state } = useSetupDialog(props)
+	const toggleMaximized = useClickAction(() => ctrl.toggleMaximized())
+	const close = useClickAction(() => ctrl.requestClose('button'))
 
 	const {
 		rendered,
@@ -77,7 +80,7 @@ export function Dialog(props: DialogProps): ReactElement | null {
 						embedded="dialog.maximize"
 						type="button"
 						className="so-dialog__maximize"
-						onClick={() => ctrl.toggleMaximized()}
+						ref={toggleMaximized}
 						{...toAriaProps(maximizeAria)}
 					>
 						{maximized
@@ -94,7 +97,7 @@ export function Dialog(props: DialogProps): ReactElement | null {
 						embedded="dialog.close"
 						type="button"
 						className="so-dialog__close"
-						onClick={() => ctrl.requestClose('button')}
+						ref={close}
 						{...toAriaProps(closeAria)}
 					>
 						{renderSlot(props['close-icon']) ?? (

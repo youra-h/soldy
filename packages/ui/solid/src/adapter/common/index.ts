@@ -4,6 +4,7 @@ export { createSolidAdapterContext } from './createSolidAdapterContext'
 export { renderSlot, hasSlot, resolveSlot, liveScope, relaySlot, type TSlotContent } from './slots'
 export { ResolvedSlot, type TResolvedSlotProps } from './ResolvedSlot'
 export { chainHandler, type THandlerUnion } from './handlers'
+export { clickAction } from './click-action'
 export {
 	createPartProps,
 	createRootProps,

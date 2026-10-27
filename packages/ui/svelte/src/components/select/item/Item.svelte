@@ -1,6 +1,6 @@
 <script lang="ts">
 	import {
-		chainHandler,
+		clickAction,
 		Dynamic,
 		roleIcon,
 		toControlAttrs,
@@ -18,6 +18,7 @@
 	const binding = setupSelectItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const choose = clickAction(() => context?.adapters.select.choose())
 
 	const CHECK = roleIcon('check')
 </script>
@@ -53,7 +54,7 @@
 		{...state.aria}
 		{...state.dataset}
 		{...toControlAttrs<SelectItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.select.choose(), binding.forwardProps.onclick)}
+		{@attach choose}
 	>
 		{#snippet leading()}
 			{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { chainHandler, Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { ItemRow } from '../../item-row'
 	import { setupMenuItem } from './setup.component'
 	import type { MenuItemAttributes, MenuItemProps } from './base.component'
@@ -10,6 +10,7 @@
 	const binding = setupMenuItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const choose = clickAction(() => context?.adapters.menu.choose())
 </script>
 
 <!-- Обёртки значка и сочетания — у каждого пункта, без пробелов: пустую тема прячет по `:empty`. -->
@@ -30,7 +31,7 @@
 		disabled={state.disabled}
 		{...state.aria}
 		{...toControlAttrs<MenuItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.menu.choose(), binding.forwardProps.onclick)}
+		{@attach choose}
 	>
 		{#snippet leading()}
 			<span class="so-menu-item__icon">{@render props.leading?.()}</span>

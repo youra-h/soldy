@@ -9,6 +9,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
@@ -22,6 +23,11 @@ const PlusMark = roleIcon('plus')
 /** NumberInput — поле числа с кнопками шага: docs/agents/patterns.md, «Готовые паттерны». */
 export function NumberInput(props: NumberInputProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer } = useSetupNumberInput(props)
+	const clear = useClickAction((event) => {
+		// Stopped at the button: the root of a select-only Select would open the panel
+		event.stopPropagation()
+		ctrl.clear()
+	})
 
 	const {
 		rendered,
@@ -89,11 +95,7 @@ export function NumberInput(props: NumberInputProps): ReactElement | null {
 								size={size}
 								disabled={disabled}
 								{...toAriaProps(clearAria)}
-								onActionClick={(event) => {
-									// Нативное событие: синтетический `stopPropagation` опоздал бы
-									event.stopPropagation()
-									ctrl.clear()
-								}}
+								ref={clear}
 							>
 								<Icon
 									embedded="number-input.clear-icon"

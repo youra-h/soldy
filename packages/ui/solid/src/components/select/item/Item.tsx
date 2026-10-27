@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -42,17 +42,9 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 		() => ({ selected: state.selected ?? false }),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала выбор. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<SelectItemAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.select.choose(), onClick),
-		}
-	}
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<SelectItemAttributes>(binding.forwardProps())
+	const choose = clickAction(() => context?.adapters.select.choose())
 
 	const mark = () => (
 		<span class="so-select-item__indicator" aria-hidden="true">
@@ -75,6 +67,7 @@ export function SelectItem(props: SelectItemProps): JSX.Element {
 					{...state.aria}
 					{...state.dataset}
 					{...row()}
+					ref={choose}
 					leading={
 						<>
 							{state.indicator === 'start' ? mark() : null}

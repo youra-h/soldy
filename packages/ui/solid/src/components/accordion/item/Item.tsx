@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createPartProps,
 	createRootProps,
 	renderSlot,
@@ -46,17 +46,9 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 		() => ({}),
 	)
 
-	/** Атрибуты заголовка — всё от потребителя, кроме класса и стиля; клик — сначала раскрытие. */
-	const header = () => {
-		const { onClick, ...attributes } = toControlAttrs<AccordionItemAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.selection.toggle(), onClick),
-		}
-	}
+	/** The header's attributes: all of the consumer's but the class and the style. */
+	const header = () => toControlAttrs<AccordionItemAttributes>(binding.forwardProps())
+	const toggle = clickAction(() => context?.adapters.selection.toggle())
 
 	/** Стрелка стороны: слот, а без него — иконка, если стрелка на этой стороне. */
 	const arrow = (side: 'start' | 'end', icon: Accessor<JSX.Element | undefined>) => (
@@ -80,6 +72,7 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 					variant={state.variant}
 					{...state.aria}
 					{...header()}
+					ref={toggle}
 					leading={
 						<>
 							{arrow('start', leadingIcon)}

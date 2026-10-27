@@ -6,6 +6,7 @@ import {
 	toAriaProps,
 	toRootLayout,
 	toRootProps,
+	useClickAction,
 } from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
@@ -20,6 +21,7 @@ const CloseIcon = roleIcon('close')
  */
 export function Drawer(props: DrawerProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state } = useSetupDrawer(props)
+	const close = useClickAction(() => ctrl.requestClose('button'))
 
 	const {
 		rendered,
@@ -72,7 +74,7 @@ export function Drawer(props: DrawerProps): ReactElement | null {
 						embedded="drawer.close"
 						type="button"
 						className="so-drawer__close"
-						onClick={() => ctrl.requestClose('button')}
+						ref={close}
 						{...toAriaProps(closeAria)}
 					>
 						{renderSlot(props['close-icon']) ?? (

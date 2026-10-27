@@ -6,6 +6,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
@@ -22,6 +23,7 @@ const ArrowIcon = roleIcon('arrowRight')
  */
 export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context, rootElement } = useSetupMenuPopoverItem(props)
+	const expand = useClickAction(() => context?.adapters.menu.open())
 
 	const {
 		rendered,
@@ -41,7 +43,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...row } = toControlAttrs<MenuPopoverItemAttributes>(forwardProps)
+	const row = toControlAttrs<MenuPopoverItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -52,10 +54,7 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 				disabled={disabled}
 				{...toAriaProps(aria)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.menu.open()
-					onClick?.(event)
-				}}
+				ref={expand}
 				leading={<span className="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 				trailing={
 					<span className="so-menu-item__arrow" aria-hidden="true">

@@ -1,5 +1,13 @@
 import type { ElementType, ReactElement } from 'react'
-import { Elevate, relaySlot, renderSlot, roleIcon, toAriaProps, toRootProps } from '../../adapter'
+import {
+	Elevate,
+	relaySlot,
+	renderSlot,
+	roleIcon,
+	toAriaProps,
+	toRootProps,
+	useClickAction,
+} from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { PaginationItem } from './item'
@@ -15,6 +23,8 @@ const Arrow = roleIcon('arrowRight')
  */
 export function Pagination(props: PaginationProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer } = useSetupPagination(props)
+	const prev = useClickAction(() => ctrl.prev())
+	const next = useClickAction(() => ctrl.next())
 
 	const {
 		rendered,
@@ -45,7 +55,7 @@ export function Pagination(props: PaginationProps): ReactElement | null {
 					size={size}
 					variant={variant}
 					disabled={prevDisabled}
-					onClick={() => ctrl.prev()}
+					ref={prev}
 					{...toAriaProps(prevAria)}
 				>
 					{renderSlot(props['prev-icon']) ?? (
@@ -74,7 +84,7 @@ export function Pagination(props: PaginationProps): ReactElement | null {
 					size={size}
 					variant={variant}
 					disabled={nextDisabled}
-					onClick={() => ctrl.next()}
+					ref={next}
 					{...toAriaProps(nextAria)}
 				>
 					{renderSlot(props['next-icon']) ?? (

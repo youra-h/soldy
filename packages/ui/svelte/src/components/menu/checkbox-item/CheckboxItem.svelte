@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupMenuCheckboxItem } from './setup.component'
@@ -11,6 +11,7 @@
 	const binding = setupMenuCheckboxItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const toggle = clickAction(() => context?.adapters.menu.toggle())
 
 	const CHECK = roleIcon('check')
 </script>
@@ -44,7 +45,7 @@
 		disabled={state.disabled}
 		{...state.aria}
 		{...toControlAttrs<MenuCheckboxItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.menu.toggle(), binding.forwardProps.onclick)}
+		{@attach toggle}
 	>
 		{#snippet leading()}
 			<span class="so-menu-item__indicator" aria-hidden="true">{@render mark()}</span><span

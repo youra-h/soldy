@@ -23,7 +23,7 @@
 </script>
 
 <script lang="ts">
-	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { ItemRow } from '../../item-row'
 	import { Frame } from '../../frame'
 	import { Icon } from '../../icon'
@@ -36,6 +36,7 @@
 	const binding = setupMenuSubmenu(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const expand = clickAction(() => context?.adapters.menu.open())
 
 	const ARROW = roleIcon('arrowRight')
 </script>
@@ -141,7 +142,7 @@
 		disabled={state.disabled}
 		{...state.aria}
 		{...toControlAttrs<MenuSubmenuAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.menu.open(), binding.forwardProps.onclick)}
+		{@attach expand}
 	>
 		{#snippet leading()}
 			<span class="so-menu-item__icon">{@render props.leading?.()}</span>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
 	import { setupTabsItem } from './setup.component'
@@ -14,13 +14,15 @@
 
 	const CLOSE = roleIcon('close')
 
+	const activate = clickAction(() => {
+		if (context) context.adapters.activation.active = true
+	})
 
-	// Нативный клик `TActionPlugin`, а не `onclick`: тот Svelte делегирует корню приложения, и
-	// событие прошло бы корни таба и набора — их `TActionPlugin` отдал бы `action:press`
-	function close(event: MouseEvent): void {
+	// Stopped at the cross: the roots of the tab and the set would give `action:press`
+	const close = clickAction((event) => {
 		event.stopPropagation()
 		context?.adapters.tabs.close()
-	}
+	})
 </script>
 
 <!--
@@ -47,9 +49,7 @@
 		trailing={props.trailing}
 		{...state.aria}
 		{...toControlAttrs<TabsItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => {
-			if (context) context.adapters.activation.active = true
-		}, binding.forwardProps.onclick)}
+		{@attach activate}
 	>
 		{#if props.children}
 			{@render props.children({ text: state.text ?? '', active: state.active ?? false })}
@@ -63,7 +63,7 @@
 		disabled={state.disabled}
 		size={state.size}
 		{...state.closeAria}
-		onActionClick={close}
+		{@attach close}
 	>
 		{#if props['close-icon']}
 			{@render props['close-icon']()}

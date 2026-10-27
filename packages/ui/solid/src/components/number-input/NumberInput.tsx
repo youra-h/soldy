@@ -2,6 +2,7 @@ import type { JSX } from 'solid-js'
 import {
 	Elevate,
 	Root,
+	clickAction,
 	createPartProps,
 	createRootProps,
 	fieldText,
@@ -22,9 +23,9 @@ const MinusGlyph = roleIcon('minus')
 const PlusGlyph = roleIcon('plus')
 
 /**
- * Поле числа: ввод, кнопки шага и скрытое поле формы с числом строкой.
- * Кнопка очистки гасит всплытие у самого события (`onActionClick`): `onClick`
- * Solid делегирует документу, а select-only Select открывает панель кликом по корню.
+ * A number field: the input, the step buttons and the hidden form field with the number as text.
+ * The clear button stops the click at itself: a select-only Select opens its panel on a click
+ * on the root.
  */
 export function NumberInput(props: NumberInputProps): JSX.Element {
 	const binding = setupNumberInput(props)
@@ -43,10 +44,10 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
 	)
 	const text = fieldText(() => state.text)
 
-	function clear(event: MouseEvent): void {
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 
 	function content(): JSX.Element {
 		const leadingSlot = resolveSlot(
@@ -110,7 +111,7 @@ export function NumberInput(props: NumberInputProps): JSX.Element {
 										size={state.size}
 										disabled={state.disabled}
 										{...state.clearAria}
-										onActionClick={clear}
+										ref={clear}
 									>
 										<Icon
 											embedded="number-input.clear-icon"

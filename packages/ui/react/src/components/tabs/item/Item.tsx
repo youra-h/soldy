@@ -6,6 +6,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
@@ -18,6 +19,14 @@ import type { TabsItemAttributes, TabsItemProps } from './base.component'
  */
 export function TabsItem(props: TabsItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupTabsItem(props)
+	const activate = useClickAction(() => {
+		if (context) context.adapters.activation.active = true
+	})
+	const close = useClickAction((event) => {
+		// Stopped at the cross: the roots of the tab and the set would give `action:press`
+		event.stopPropagation()
+		context?.adapters.tabs.close()
+	})
 
 	const {
 		rendered,
@@ -37,7 +46,7 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...row } = toControlAttrs<TabsItemAttributes>(forwardProps)
+	const row = toControlAttrs<TabsItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -49,10 +58,7 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 				variant={variant}
 				{...toAriaProps(aria)}
 				{...row}
-				onClick={(event) => {
-					if (context) context.adapters.activation.active = true
-					onClick?.(event)
-				}}
+				ref={activate}
 				leading={renderSlot(props.leading)}
 				trailing={renderSlot(props.trailing)}
 			>
@@ -66,12 +72,7 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 					disabled={disabled}
 					size={size}
 					{...toAriaProps(closeAria)}
-					onActionClick={(event) => {
-						// The native event: by now the synthetic one has passed the tab and set
-						// roots, and their `TActionPlugin` would give `action:press` on the cross click
-						event.stopPropagation()
-						context?.adapters.tabs.close()
-					}}
+					ref={close}
 				>
 					{renderSlot(props['close-icon']) ?? (
 						<Icon embedded="tabs.close-icon" tag={roleIcon('close')} size={size} />

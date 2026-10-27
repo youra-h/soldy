@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Root, createRootProps, resolveSlot } from '../../../adapter'
+import { Root, clickAction, createRootProps, resolveSlot } from '../../../adapter'
 import { Show } from '../../../adapter/runtime/flow'
 import { Button } from '../../button'
 import { setupPaginationItem } from './setup.component'
@@ -20,9 +20,9 @@ export function PaginationItem(props: PaginationItemProps): JSX.Element {
 		() => ({ text: state.text ?? '' }),
 	)
 
-	function activate(): void {
+	const activate = clickAction(() => {
 		if (context) context.adapters.activation.active = true
-	}
+	})
 
 	return (
 		<Show when={state.rendered}>
@@ -34,7 +34,7 @@ export function PaginationItem(props: PaginationItemProps): JSX.Element {
 					size={state.size}
 					variant={state.variant}
 					{...state.aria}
-					onClick={activate}
+					ref={activate}
 				>
 					{content() ?? state.text}
 				</Button>

@@ -34,7 +34,6 @@ const read = (fw) => JSON.parse(fs.readFileSync(path.join(results, `parity-${fw}
  * - `ids` — ids and list keys are compared by presence only, see `masked`.
  * - `single` — an output of Angular and a `CustomEvent` of Web Components
  *   carry one value, see `packed`.
- * - `delegated` — a framework handler runs at the root, see `delegated`.
  * - `teardown` — what a component sends while its framework takes it down
  *   is not compared: the unmount step's events are only counted, see
  *   `TEARDOWN`.
@@ -54,7 +53,6 @@ const RULES = {
 		'data-owner',
 		'key',
 	]),
-	delegated: new Set(['react', 'svelte', 'solid']),
 }
 
 /**
@@ -111,29 +109,6 @@ function packed(event, fw) {
 	return { name: event.name, args: [args.length > 1 ? args : (args[0] ?? none)] }
 }
 
-/** The owner's own reaction to a click, past the click's target. */
-const PRESS = /^action:(click|press) /
-
-/**
- * React, Svelte and Solid delegate a handler of the markup (`onClick` of an
- * item's row: activate the tab, choose the option, turn the page) to the root
- * of the document or the app, so it runs after the native listeners of the
- * ancestors — the owner's `action:click` and `action:press` come before what
- * the item's click does. Vue's `@click` listens on the node itself. A native
- * listener in place of the handler (`onActionClick`) would not hear a click
- * before the first frame — `TActionPlugin` takes the node with `ready`.
- * Accepted: the same events where only the owner's click and press moved.
- */
-function delegated(expected, actual, fw) {
-	if (!RULES.delegated.has(fw)) return false
-
-	const rest = (lines) => lines.filter((line) => !PRESS.test(line)).join('\n')
-
-	return (
-		rest(expected) === rest(actual) && [...expected].sort().join() === [...actual].sort().join()
-	)
-}
-
 const text = (event) => `${event.name} ${JSON.stringify(masked(event.args))}`
 
 /** Longest common subsequence of two line lists — the diff of two snapshots. */
@@ -174,7 +149,7 @@ function compareStep(vue, other, fw) {
 	const expected = ours.map((event) => text(packed(event, fw)))
 	const actual = other.events.map(text)
 
-	if (expected.join('\n') !== actual.join('\n') && !delegated(expected, actual, fw)) {
+	if (expected.join('\n') !== actual.join('\n')) {
 		const same = [...expected].sort().join('\n') === [...actual].sort().join('\n')
 
 		found.push({ kind: same ? 'order' : 'events', lines: diff(expected, actual) })

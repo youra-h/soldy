@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -31,17 +31,9 @@ export function MenuItem(props: MenuItemProps): JSX.Element {
 		() => ({ text: state.text ?? '' }),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала нажатие пункта. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<MenuItemAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.menu.choose(), onClick),
-		}
-	}
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<MenuItemAttributes>(binding.forwardProps())
+	const choose = clickAction(() => context?.adapters.menu.choose())
 
 	return (
 		<Show when={state.rendered}>
@@ -53,6 +45,7 @@ export function MenuItem(props: MenuItemProps): JSX.Element {
 					disabled={state.disabled}
 					{...state.aria}
 					{...row()}
+					ref={choose}
 					leading={<span class="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 					trailing={
 						<span class="so-menu-item__shortcut">{renderSlot(props.trailing)}</span>

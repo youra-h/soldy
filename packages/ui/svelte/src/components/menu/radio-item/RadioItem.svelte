@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { chainHandler, Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { ItemRow } from '../../item-row'
 	import { setupMenuRadioItem } from './setup.component'
 	import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
@@ -10,6 +10,7 @@
 	const binding = setupMenuRadioItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const check = clickAction(() => context?.adapters.menu.check())
 </script>
 
 <!--
@@ -41,7 +42,7 @@
 		disabled={state.disabled}
 		{...state.aria}
 		{...toControlAttrs<MenuRadioItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.menu.check(), binding.forwardProps.onclick)}
+		{@attach check}
 	>
 		{#snippet leading()}
 			<span class="so-menu-item__indicator" aria-hidden="true">{@render mark()}</span><span

@@ -4,6 +4,7 @@ import {
 	Elevate,
 	KeyedFor,
 	Root,
+	clickAction,
 	createPartProps,
 	createRootProps,
 	resolveSlot,
@@ -38,11 +39,11 @@ export function DateInput(props: DateInputProps): JSX.Element {
 	}))
 	const segmentsAttrs = createPartProps(() => state.segmentsAttrs)
 
-	/** Клик очистки не всплывает к предку, который слушает поле. */
-	function clear(event: MouseEvent): void {
+	/** The clear click does not bubble to an ancestor that listens to the field. */
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 
 	/** Часть или разделитель: тип у записи с одним ключом не меняется, ветка `Show` у узла одна. */
 	function segment(entry: Accessor<TDateInputSegment>): JSX.Element {
@@ -117,7 +118,7 @@ export function DateInput(props: DateInputProps): JSX.Element {
 										size={state.size}
 										disabled={state.disabled}
 										{...state.clearAria}
-										onActionClick={clear}
+										ref={clear}
 									>
 										<Icon
 											embedded="date-input.clear-icon"

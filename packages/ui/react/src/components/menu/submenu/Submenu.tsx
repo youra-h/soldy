@@ -11,6 +11,7 @@ import {
 	toPartClass,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
@@ -110,6 +111,7 @@ export function drawItems(state: TItemsState, slots: TItemSlots): ReactElement[]
  */
 export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 	const { ref, forwardProps, state, context, rootElement, layer } = useSetupMenuSubmenu(props)
+	const expand = useClickAction(() => context?.adapters.menu.open())
 
 	const {
 		rendered,
@@ -130,7 +132,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...row } = toControlAttrs<MenuSubmenuAttributes>(forwardProps)
+	const row = toControlAttrs<MenuSubmenuAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -141,10 +143,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 				disabled={disabled}
 				{...toAriaProps(aria)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.menu.open()
-					onClick?.(event)
-				}}
+				ref={expand}
 				leading={<span className="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 				trailing={
 					<span className="so-menu-item__arrow" aria-hidden="true">

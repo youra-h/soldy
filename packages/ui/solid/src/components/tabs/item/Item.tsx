@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -41,24 +41,16 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 		() => ({}),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала активация. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<TabsItemAttributes>(
-			binding.forwardProps(),
-		)
-		const activate = () => {
-			if (context) context.adapters.activation.active = true
-		}
-
-		return { ...attributes, onClick: chainHandler(activate, onClick) }
-	}
-
-	// Крестик — `onActionClick` со `stopPropagation`: `onClick` Solid делегирует документу,
-	// и гасить там поздно — корни таба и набора уже отдали бы `action:press`
-	function close(event: MouseEvent): void {
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<TabsItemAttributes>(binding.forwardProps())
+	const activate = clickAction(() => {
+		if (context) context.adapters.activation.active = true
+	})
+	// Stopped at the cross: the roots of the tab and the set would give `action:press`
+	const close = clickAction((event) => {
 		event.stopPropagation()
 		context?.adapters.tabs.close()
-	}
+	})
 
 	return (
 		<Show when={state.rendered}>
@@ -73,6 +65,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 					trailing={renderSlot(props.trailing)}
 					{...state.aria}
 					{...row()}
+					ref={activate}
 				>
 					{content() ?? state.text}
 				</Button>
@@ -84,7 +77,7 @@ export function TabsItem(props: TabsItemProps): JSX.Element {
 						disabled={state.disabled}
 						size={state.size}
 						{...state.closeAria}
-						onActionClick={close}
+						ref={close}
 					>
 						{closeIcon() ?? (
 							<Icon embedded="tabs.close-icon" tag={CLOSE} size={state.size} />

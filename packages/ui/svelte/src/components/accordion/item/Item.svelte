@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
-	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
 	import { setupAccordionItem } from './setup.component'
@@ -12,6 +12,7 @@
 	const binding = setupAccordionItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const toggle = clickAction(() => context?.adapters.selection.toggle())
 
 	const ARROW = roleIcon('arrowRight')
 </script>
@@ -53,7 +54,7 @@
 		variant={state.variant}
 		{...state.aria}
 		{...toControlAttrs<AccordionItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.selection.toggle(), binding.forwardProps.onclick)}
+		{@attach toggle}
 	>
 		{#snippet leading()}
 			{@render arrow('start', props['leading-icon'])}{@render props.leading?.()}

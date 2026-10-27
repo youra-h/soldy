@@ -7,6 +7,7 @@ import {
 	toAriaProps,
 	toRootProps,
 	type TRoleIconProps,
+	useClickAction,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
@@ -29,6 +30,7 @@ const CLOSE = roleIcon('close')
 /** ToastsItem — тост, внутренняя часть менеджера: рисует только регион `Toasts`. */
 export function ToastsItem(props: ToastsItemProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state } = useSetupToastsItem(props)
+	const close = useClickAction(() => ctrl.close())
 
 	const {
 		rendered,
@@ -91,7 +93,7 @@ export function ToastsItem(props: ToastsItemProps): ReactElement | null {
 						embedded="toasts.close"
 						type="button"
 						className="so-toasts-item__close"
-						onClick={() => ctrl.close()}
+						ref={close}
 						{...toAriaProps(closeAria)}
 					>
 						{renderSlot(props['close-icon']) ?? (

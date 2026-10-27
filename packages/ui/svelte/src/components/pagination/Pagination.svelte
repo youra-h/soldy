@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Dynamic, roleIcon, toRootProps } from '../../adapter'
+	import { clickAction, Dynamic, roleIcon, toRootProps } from '../../adapter'
 	import { Button } from '../button'
 	import { Icon } from '../icon'
 	import { PaginationItem } from './item'
@@ -12,6 +12,8 @@
 	const binding = setupPagination(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const prev = clickAction(() => ctrl.prev())
+	const next = clickAction(() => ctrl.next())
 
 	// Одна иконка на обе стрелки: роли «влево» нет, стрелку «назад» зеркалит тема
 	const ARROW = roleIcon('arrowRight')
@@ -39,7 +41,7 @@
 		size={state.size}
 		variant={state.variant}
 		disabled={state.prevDisabled}
-		onclick={() => ctrl.prev()}
+		{@attach prev}
 		{...state.prevAria}
 	>
 		{#if props['prev-icon']}
@@ -66,7 +68,7 @@
 		size={state.size}
 		variant={state.variant}
 		disabled={state.nextDisabled}
-		onclick={() => ctrl.next()}
+		{@attach next}
 		{...state.nextAria}
 	>
 		{#if props['next-icon']}

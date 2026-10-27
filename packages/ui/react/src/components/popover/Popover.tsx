@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, roleIcon, toAriaProps, toRootProps } from '../../adapter'
+import { renderSlot, roleIcon, toAriaProps, toRootProps, useClickAction } from '../../adapter'
 import { Button } from '../button'
 import { Frame } from '../frame'
 import { Icon } from '../icon'
@@ -14,6 +14,9 @@ const CloseIcon = roleIcon('close')
  */
 export function Popover(props: PopoverProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, rootElement } = useSetupPopover(props)
+	const close = useClickAction(() => {
+		ctrl.open = false
+	})
 
 	const {
 		rendered,
@@ -67,9 +70,7 @@ export function Popover(props: PopoverProps): ReactElement | null {
 						embedded="popover.close"
 						type="button"
 						className="so-popover__close"
-						onClick={() => {
-							ctrl.open = false
-						}}
+						ref={close}
 						{...toAriaProps(closeAria)}
 					>
 						{renderSlot(props['close-icon']) ?? (

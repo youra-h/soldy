@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Dynamic, TextSpan, roleIcon, toRootProps } from '../../adapter'
+	import { clickAction, Dynamic, TextSpan, roleIcon, toRootProps } from '../../adapter'
 	import { Button } from '../button'
 	import { Icon } from '../icon'
 	import { setupDateInput } from './setup.component'
@@ -14,10 +14,10 @@
 
 	const CLOSE = roleIcon('close')
 
-	function clear(event: MouseEvent): void {
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 </script>
 
 <!--
@@ -61,7 +61,7 @@
 					size={state.size}
 					disabled={state.disabled}
 					{...state.clearAria}
-					onActionClick={clear}
+					{@attach clear}
 				>
 					<Icon embedded="date-input.clear-icon" tag={CLOSE} size={state.size} />
 				</Button>

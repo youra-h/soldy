@@ -5,6 +5,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { useSetupMenuItem } from './setup.component'
@@ -13,14 +14,14 @@ import type { MenuItemAttributes, MenuItemProps } from './base.component'
 /** MenuItem — пункт-действие: корень по `tag` и строка — `ItemRow` на `div` с ARIA пункта. */
 export function MenuItem(props: MenuItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuItem(props)
+	const choose = useClickAction(() => context?.adapters.menu.choose())
 
 	const { rendered, tag, text, size, disabled, aria, dataset, attrs } = state
 
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	// Клик потребителя — после выбора меню, как у Vue, где слушатели складываются
-	const { onClick, ...row } = toControlAttrs<MenuItemAttributes>(forwardProps)
+	const row = toControlAttrs<MenuItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -31,10 +32,7 @@ export function MenuItem(props: MenuItemProps): ReactElement | null {
 				disabled={disabled}
 				{...toAriaProps(aria)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.menu.choose()
-					onClick?.(event)
-				}}
+				ref={choose}
 				leading={<span className="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 				trailing={
 					<span className="so-menu-item__shortcut">{renderSlot(props.trailing)}</span>
