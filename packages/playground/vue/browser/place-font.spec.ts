@@ -6,11 +6,11 @@
  * Two ladders, both in steps of 2px. The text — Button, Pagination, the fields
  * and the captions — is the place at `normal`, 2px smaller at `sm` and 2px,
  * 4px and 8px larger at `lg`, `xl` and `2xl`. The scales one step smaller than
- * the text next to them — Table cells and header labels, Calendar day numbers,
- * the notes at a control (Field helper, Slider mark labels, Textarea counter),
- * tags and the group labels of ListBox — are the same ladder a step down. The
- * weekday labels of Calendar are a size below the day number (the same at
- * `sm`).
+ * the text next to them — Table cells and header labels, the notes at a
+ * control (Field helper, Slider mark labels, Textarea counter), tags and the
+ * group labels of ListBox — are the same ladder a step down. Calendar day
+ * numbers and weekday labels are the place at `normal` and 2px a size around
+ * it.
  *
  * Steps fixed in `rem` fitted a 16px place only: at 14px a `sm` Button was as
  * large as a `normal` one and a `lg` one 4px larger. So every check runs in
@@ -60,7 +60,7 @@ const PLACES = [14, 16, 18] as const
 const LADDERS = {
 	text: { sm: -2, normal: 0, lg: 2, xl: 4, '2xl': 8 },
 	smaller: { sm: -4, normal: -2, lg: 0, xl: 2, '2xl': 4 },
-	weekday: { sm: -4, normal: -4, lg: -2, xl: 0, '2xl': 2 },
+	calendar: { sm: -2, normal: 0, lg: 2, xl: 4, '2xl': 6 },
 } as const satisfies Record<string, Record<TComponentSize, number>>
 
 type TLadder = keyof typeof LADDERS
@@ -166,8 +166,8 @@ const PARTS: readonly TPart[] = [
 		name: 'Calendar',
 		markup: (size) => [h(Calendar, { months: ['2026-09-01'], size })],
 		nodes: {
-			'номер дня': ['.so-calendar-item__day', 'smaller'],
-			'день недели': ['.so-calendar__weekday', 'weekday'],
+			'номер дня': ['.so-calendar-item__day', 'calendar'],
+			'день недели': ['.so-calendar__weekday', 'calendar'],
 			'заголовок месяца': ['.so-calendar__title', 'text'],
 		},
 	},
