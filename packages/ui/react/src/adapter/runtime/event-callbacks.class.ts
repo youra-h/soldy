@@ -9,6 +9,8 @@ import { isAccepting } from './accepting'
 
 export class TEventCallbacks {
 	private _props: object = {}
+	/** The subscription of the last `listen`. */
+	private _stop?: () => void
 
 	/** @param _adapter the context whose events the sink takes */
 	constructor(private readonly _adapter: IAdapterContext) {}
@@ -29,13 +31,27 @@ export class TEventCallbacks {
 	/**
 	 * Listen to the binding until the context's `detach` — from the teardown's
 	 * first moment or from the collection the component is an item of: the
-	 * consumer hears nothing from then on. Returns the unsubscription.
+	 * consumer hears nothing from then on. Returns the cleanup of the layout
+	 * effect (`release`).
 	 */
 	listen(binding: TExchange): () => void {
 		const stop = binding.events.listen(this.sink)
 
+		this._stop = stop
 		this._adapter.events.on('detach', stop)
 
-		return stop
+		return this.release
+	}
+
+	/**
+	 * The cleanup of the layout effect: the teardown's first moment — every
+	 * layout cleanup of a removed subtree comes before any passive one, and the
+	 * destruction is a passive cleanup (`useAdapterContext`). So it detaches
+	 * the context, and the subscription goes with it.
+	 */
+	readonly release = (): void => {
+		this._stop?.()
+		this._stop = undefined
+		this._adapter.detach()
 	}
 }

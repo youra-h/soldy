@@ -2,20 +2,12 @@
  * useAdapterContext — keeps the component's contexts between renders and
  * answers for their whole life: the assembly on the first render, the
  * acceptance at the commit, the reassembly when the effect is set again, the
- * detach and the destruction by the cleanups.
+ * destruction by the cleanup. The teardown's first moment, `detach`, is the
+ * layout cleanup of the consumer's subscription (`TEventCallbacks.release`).
  * AGENTS.md (React), «Срок жизни контекста».
  */
 
-import {
-	useContext,
-	useEffect,
-	useEffectEvent,
-	useId,
-	useLayoutEffect,
-	useMemo,
-	useReducer,
-	useRef,
-} from 'react'
+import { useContext, useEffect, useEffectEvent, useId, useMemo, useReducer, useRef } from 'react'
 import { createAdapterContext } from '@soldy-ui/setup'
 import type { IAdapterContext, TElevatorFactory } from '@soldy-ui/setup'
 import { ElevatorContext, type TElevatorLayer } from '../elevator/layer'
@@ -103,11 +95,6 @@ class TBuilt<T extends TAdapterContexts> {
 		accepting(this.contexts, () => attachAll(this.contexts))
 	}
 
-	/** The cleanup of a layout effect: the teardown's first moment, before any destruction. */
-	readonly detach = (): void => {
-		detachAll(this.contexts)
-	}
-
 	readonly destroy = (): void => {
 		destroyAll(this.contexts)
 		this._destroyed = true
@@ -173,12 +160,6 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 		return current.destroy
 	}, [source])
-
-	// Detached by a layout cleanup: every layout cleanup of a removed subtree
-	// comes before any passive one, so the consumers hear nothing once the
-	// teardown began, and the destruction — the passive cleanup above — comes
-	// after all of them
-	useLayoutEffect(() => built.detach, [built])
 
 	const layer = useMemo(() => built.scope.layerOver(parent), [built, parent])
 
