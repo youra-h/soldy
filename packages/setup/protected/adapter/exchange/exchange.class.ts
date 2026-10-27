@@ -1,36 +1,47 @@
 /**
- * TExchange — обмен значениями на время монтирования: владельцы участников и три порта над ними.
+ * TExchange — values exchanged for the time of a mount: the participants' owners and four ports over them.
  *
- * Это всё, что видит адаптер: `state` (куда положить значение — решает он),
- * `inputs` (каким способом доставки пользоваться — решает он) и `events` (как
- * отдать событие — решает он). Когда и в каком порядке — здесь и ниже.
+ * This is all the adapter sees: `state` (where to put a value is its call),
+ * `inputs` (which way of delivery to use is its call), `events` (how to
+ * hand an event over is its call) and `updates` (what to do at the bounds
+ * of an update is its call). When and in what order is decided here and below.
  *
- * Один и тот же класс обслуживает и компонент (профиль фреймворка, пропсы
- * фреймворка), и плагин, поставленный снаружи (общий профиль, мешок
- * `pluginProps`): второй реализации тех же правил для внешних плагинов нет.
+ * One class serves both a component (the framework's profile, the
+ * framework's props) and a plugin installed from outside (the common
+ * profile, the `pluginProps` bag): there is no second implementation of the
+ * same rules for external plugins.
  *
- * Что делать с событием участника, решает таблица маршрутов типа
- * (`TRouting`), а шины участников слушает один слушатель на шину (`TTap`) —
- * его делят состояние и события. Линии свойств — тоже строки таблицы. На
- * монтирование у обмена — владельцы участников, значения состояния и входов и
- * эти слушатели; объектов на свойство, маршрутов, подписок и замыканий на
- * каждое событие нет. Участников (`TMember`) обмен не держит: они нужны,
- * чтобы найти таблицу и владельцев.
+ * What to do with a participant's event is decided by the type's routing
+ * table (`TRouting`), and the participants' buses are listened to by one
+ * listener per bus (`TTap`), shared by the state and the events. The
+ * properties' lines are rows of the table too. Per mount the exchange holds
+ * the participants' owners, the values of the state and of the inputs and
+ * these listeners; there are no objects per property, no routes,
+ * subscriptions or closures per event. The exchange does not keep the
+ * participants (`TMember`): they are needed to find the table and the owners.
  *
- * Пока над кем-то из участников идёт сборка другого монтирования
- * (`TAssembling`), обмен отдаёт фреймворку итог сборки, а не каждый её шаг:
- * состояние и уведомления копятся и уходят одной микрозадачей после неё —
- * сначала состояние, потом уведомления в том порядке, в каком пришли.
- * Отменяемое событие (`TActionEvent`) — вопрос, ответ на который нужен
- * сейчас: оно уходит сразу, и `preventDefault` приёмника отменяет запись
- * сборки, как вне её. Пока очередь не выпущена, в неё встают и уведомления,
- * пришедшие после сборки, — иначе они обогнали бы накопленные. Уведомление
- * получают приёмники, слушавшие в момент события, даже если до выпуска они
- * отписались: прежнее монтирование снимается тем же проходом фреймворка, а
- * случилось событие при нём (`TEventRelay.later`).
+ * **An update** is the exchange's unit of work: one event of a participant
+ * (the state rereads the event's properties, then the event and its models
+ * go to the sinks) or one release of the queue (below). The exchange reports
+ * where each update begins and ends (`updates`, `TUpdatePort`), and nothing
+ * more: what a framework does at the bounds is decided in its adapter.
  *
- * Свойство, у которого нет участника, линии не получает: описание плагина,
- * которого нет в чужом наборе, молча пропускается.
+ * While an assembly of another mount runs over one of the participants
+ * (`TAssembling`), the exchange gives the framework the outcome of the
+ * assembly rather than each of its steps: the state and the notifications
+ * pile up and go in one microtask after it — the whole state first, then the
+ * notifications in the order they came. A cancelable event (`TActionEvent`)
+ * is a question whose answer is needed now: it goes at once, and the sink's
+ * `preventDefault` cancels the assembly's write, as outside it. Until the
+ * queue is released, the notifications that come after the assembly join it
+ * too — otherwise they would overtake those piled up. A notification reaches
+ * the sinks that listened at the moment of the event, even if they stopped
+ * before the release: the previous mount is taken down by the same pass of
+ * the framework, and the event happened while it was there
+ * (`TEventRelay.later`).
+ *
+ * A property with no participant gets no line: the description of a plugin
+ * missing from a foreign bundle is skipped silently.
  */
 
 import { TActionEvent } from '@soldy-ui/core'
@@ -43,6 +54,8 @@ import type { TMember } from './member.class'
 import { TRouting } from './routing.class'
 import { TStateStore } from './state-store.class'
 import { TTap } from './tap.class'
+import type { IRoute } from './types'
+import { TUpdatePort } from './update-port.class'
 
 /** Отменяемое событие: аргумент — `TActionEvent`, приёмник отвечает на него `preventDefault`. */
 function isCancelable(args: readonly unknown[]): boolean {
@@ -57,6 +70,7 @@ export class TExchange {
 	readonly state: TStateStore
 	readonly inputs: TInputPort
 	readonly events: TEventRelay
+	readonly updates = new TUpdatePort()
 
 	/** Доставки уведомлений, отложенных до конца чужой сборки, — пока очередь не выпущена. */
 	private _queue?: Array<() => void>
@@ -68,18 +82,13 @@ export class TExchange {
 	) {
 		const routing = TRouting.of(surface, members)
 		const owners = members.map((member) => member.owner)
-		// Порядок — правило обмена, а не очерёдность подписок: сначала состояние,
-		// потом событие и его модели
 		const tap = new TTap(owners, routing.routes, (route, args) => {
-			if (this._queue === undefined && !assembling.covers(owners)) {
-				this.state.refresh(route.cells)
-				this.events.publish(route, args)
-			} else if (isCancelable(args)) {
-				// Вопрос — сейчас; состояние перечитает выпуск очереди
-				this._defer()
-				this.events.publish(route, args)
-			} else {
-				this._defer().push(this.events.later(route, args))
+			this.updates.begin()
+
+			try {
+				this._receive(route, args)
+			} finally {
+				this.updates.end()
 			}
 		})
 
@@ -105,13 +114,37 @@ export class TExchange {
 		return this._queue
 	}
 
-	/** Выпуск после сборки: сначала состояние целиком, потом уведомления по порядку. */
+	/**
+	 * A participant's event outside another mount's assembly: the state first,
+	 * then the event and its models. The order is the exchange's rule, not the
+	 * order of subscriptions.
+	 */
+	private _receive(route: IRoute, args: readonly unknown[]): void {
+		if (this._queue === undefined && !assembling.covers(this.owners)) {
+			this.state.refresh(route.cells)
+			this.events.publish(route, args)
+		} else if (isCancelable(args)) {
+			// The question goes now; the queue's release rereads the state
+			this._defer()
+			this.events.publish(route, args)
+		} else {
+			this._defer().push(this.events.later(route, args))
+		}
+	}
+
+	/** The release after the assembly is one update: the whole state first, then the notifications in order. */
 	private _release(): void {
 		const queue = this._queue ?? []
 
 		this._queue = undefined
-		this.state.refreshAll()
+		this.updates.begin()
 
-		for (const deliver of queue) deliver()
+		try {
+			this.state.refreshAll()
+
+			for (const deliver of queue) deliver()
+		} finally {
+			this.updates.end()
+		}
 	}
 }

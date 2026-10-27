@@ -3,11 +3,13 @@ export { TMember } from './member.class'
 export type { TInputPort } from './input-port.class'
 export type { TStateStore } from './state-store.class'
 export type { TEventRelay } from './event-relay.class'
+export type { TUpdatePort } from './update-port.class'
 export type { TLine } from './line.class'
 export type {
 	IMemberSpec,
 	IModelRoute,
 	IRoute,
+	IUpdateListener,
 	TEventSink,
 	TStateListener,
 	TStateSnapshot,
