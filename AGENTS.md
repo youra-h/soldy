@@ -584,7 +584,10 @@ Solid, `@if`. Проп `rendered` детали для этого не годит
 
 Сторож — `packages/setup/__tests__/hidden-parts.spec.ts`: шаблоны
 `src/components/**` Vue, React, Svelte, Solid и Angular не передают
-вложенному компоненту `rendered`.
+вложенному компоненту `rendered`. Корень компонента — не часть: корень по
+`tag` адаптера Svelte (`Dynamic`) берёт `rendered` условием своих веток, чтобы
+не ставить блок `{#if}` вокруг себя в каждом шаблоне
+(packages/ui/svelte/AGENTS.md, «Корень по `tag`»).
 
 ## Структура `packages/setup`
 

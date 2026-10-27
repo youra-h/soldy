@@ -11,9 +11,10 @@
 </script>
 
 <!--
-	Slots render by a call, without a block around: a slot costs one block, set or not, and the
-	text falls back to `state.text` in the same block. The parts are glued: Svelte would keep a
-	space between them as text.
+	The content falls back to `state.text` in the block of the slot: owners (a tab, a section
+	header) hand their markup to the button always. `leading` and `trailing` are usually not set,
+	and a block by presence costs no branch then. The parts are glued: Svelte would keep a space
+	between them as text.
 -->
 {#snippet plain()}{state.text}{/snippet}
 <Dynamic
@@ -26,7 +27,7 @@
 	)}
 	attach={binding.attachElement}
 >
-	{@render props.leading?.()}<span class="so-button__text"
+	{#if props.leading}{@render props.leading()}{/if}<span class="so-button__text"
 		>{@render (props.children ?? plain)({ text: state.text ?? '' })}</span
-	>{@render props.trailing?.()}
+	>{#if props.trailing}{@render props.trailing()}{/if}
 </Dynamic>

@@ -21,9 +21,10 @@
 -->
 
 <!--
-	Slots render by a call, without a block around: a slot costs one block, set or not, and the
-	text falls back to `state.text` in the same block. The parts are glued: Svelte would keep a
-	space between them as text.
+	Slots render by a call, not by a block around: the owners (an option, a menu item) hand their
+	markup to all three slots of the row, and a set slot behind `{#if}` cost two blocks. The text
+	falls back to `state.text` in the block of the content. The parts are glued: Svelte would keep
+	a space between them as text.
 -->
 {#snippet plain()}{state.text}{/snippet}
 <Dynamic
