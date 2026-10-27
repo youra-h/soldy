@@ -1,21 +1,21 @@
 /**
- * Tags в Svelte — набор тегов с выбором по режиму, крестиками и переполнением.
+ * Tags in Svelte — a set of tags with the choice by mode, crosses and overflow.
  *
- * Сценарии — те же, что у Vue (`tags-close`, `tags-keyboard`,
- * `tags-overflow`, `tags-select`, `tags-variant`, Tags из `item-slots` и
- * `item-control-attrs`): разметка крестика, роли и остановка Tab по режиму,
- * клавиатура по APG Listbox, выбор по `press` строки, свой вариант тега, своя
- * раскладка показанных тегов в слоте `default`. Движок, расширения и плагины
- * перенесены без правок.
+ * The scenarios are Vue's (`tags-close`, `tags-keyboard`, `tags-overflow`,
+ * `tags-select`, `tags-variant`, Tags of `item-slots` and
+ * `item-control-attrs`): the cross's markup, the roles and the Tab stop by
+ * mode, the keyboard by APG Listbox, the choice by the row's `press`, the tag's
+ * own variant, the consumer's layout of the shown tags in the `default` slot.
+ * The engine, the extensions and the plugins moved over unchanged.
  *
- * Своё у Svelte — крестик. Клик разметки Svelte делегирует корню приложения,
- * и `stopPropagation` там нативные слушатели `TActionPlugin` на корнях тега и
- * набора уже не остановит. Поэтому крестик закрывает по нативному клику своего
- * плагина (`onActionClick`) и гасит всплытие у самого события, как у Tabs.
+ * Svelte's own is the cross. Svelte delegates a markup `onclick` to the app's
+ * root, past the native `TActionPlugin` listeners on the roots of the tag and
+ * the set. So the cross closes by a native listener of its node
+ * (`clickAction`) and stops the event there, as in Tabs.
  *
- * И слоты. Сниппет непрозрачен: что он нарисовал, тег не видит, поэтому
- * заданный набору крестик-проброс стоит у каждого тега вместо своей иконки —
- * даже там, где сниппет пуст. У Vue пустой слот уступает место иконке.
+ * And the slots. A snippet is opaque: the tag does not see what it drew, so a
+ * cross relay given to the set stands at every tag in place of its own icon —
+ * even where the snippet is empty. In Vue an empty slot gives way to the icon.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'

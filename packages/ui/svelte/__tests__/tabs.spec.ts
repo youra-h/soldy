@@ -1,21 +1,22 @@
 /**
- * Tabs в Svelte — вторая коллекция адаптера после ListBox.
+ * Tabs in Svelte — the adapter's second collection after ListBox.
  *
- * Сценарии — те же, что у React (`tabs.spec.tsx`) и Vue (`tabs-content`,
- * `tabs-close`, `tabs-keyboard`): панель по активному табу и ARIA-связка «таб
- * ↔ панель», кнопка закрытия, клавиатура по APG Tabs. Движок, расширения и
- * плагины перенесены без правок.
+ * The scenarios are React's (`tabs.spec.tsx`) and Vue's (`tabs-content`,
+ * `tabs-close`, `tabs-keyboard`): the panel by the active tab and the ARIA
+ * link «tab ↔ panel», the close button, the keyboard by APG Tabs. The engine,
+ * the extensions and the plugins moved over unchanged.
  *
- * Своё у Svelte — момент входа. Таб разметки входит в коллекцию при своей
- * инициализации, и панель, что стоит в документе после табов, находит его
- * уже в сборке (`TTabsContentBindingExtension`), а таб, вошедший позже, —
- * подпиской, которую ставит её `attach`. Сервер проверяет
- * `collections.server.spec.ts`.
+ * Svelte's own is the moment of entry. A markup tab enters the collection at
+ * its initialization, and a panel that stands after the tabs in the document
+ * finds it already at the assembly (`TTabsContentBindingExtension`), and a tab
+ * that entered later — by the subscription its `attach` sets. The server is
+ * checked by `collections.server.spec.ts`.
  *
- * И крестик. Клик разметки Svelte делегирует корню приложения, и
- * `stopPropagation` там нативные слушатели `TActionPlugin` на корнях таба и
- * набора уже не остановит. Поэтому крестик закрывает по нативному клику своего
- * плагина (`onActionClick`) и гасит всплытие у самого события, как React.
+ * And the clicks. Svelte delegates a markup `onclick` to the app's root, past
+ * the native `TActionPlugin` listeners on the roots of the tab and the set. So
+ * the row activates and the cross closes by a native listener of their own
+ * node (`clickAction`), as in React: the owner's `action:press` comes after
+ * the activation, and the cross stops the event before the roots.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'
@@ -455,6 +456,41 @@ describe('aria-selected', () => {
 })
 
 describe('таб из разметки', () => {
+	it('нажатие набора приходит, когда таб уже активен', async () => {
+		const order: string[] = []
+
+		mount(Harness, {
+			tabs: {
+				onItemActivated: () => order.push('activated'),
+				onActionPress: () => order.push('press'),
+			},
+			items: [
+				{ value: 'a', text: 'A', active: true },
+				{ value: 'b', text: 'B' },
+			],
+		})
+		// The set's `TActionPlugin` listens from `ready`
+		await nextFrame()
+		order.length = 0
+
+		click(tab('B'))
+
+		expect(order).toEqual(['activated', 'press'])
+	})
+
+	it('клик сразу после монтирования активирует таб', () => {
+		mount(Harness, {
+			items: [
+				{ value: 'a', text: 'A', active: true },
+				{ value: 'b', text: 'B' },
+			],
+		})
+
+		click(tab('B'))
+
+		expect(tab('B').getAttribute('aria-selected')).toBe('true')
+	})
+
 	it('клик потребителя по строке не отменяет активацию', () => {
 		const onclick = vi.fn()
 
@@ -693,12 +729,10 @@ describe('кнопка закрытия: разметка', () => {
 })
 
 describe('кнопка закрытия: поведение', () => {
-	it('клик закрывает таб и не активирует его', async () => {
+	it('клик закрывает таб и не активирует его', () => {
 		mount(Tabs, { closable: true, items: ITEMS })
 
-		// Крестик закрывает по клику своего TActionPlugin — он слушает узел с `ready`
-		await nextFrame()
-
+		// Right after the mount, before the first frame: the cross listens from the mount
 		click(closeOf('B'))
 
 		// Если бы клик сначала активировал «B», закрытие активного таба отдало

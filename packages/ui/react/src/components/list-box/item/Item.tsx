@@ -6,6 +6,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
@@ -18,6 +19,7 @@ import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
  */
 export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupListBoxItem(props)
+	const choose = useClickAction(() => context?.adapters.list.choose())
 
 	const {
 		rendered,
@@ -38,8 +40,7 @@ export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 	const chosen = selected ?? false
-	// Клик потребителя — после выбора, как у Vue, где слушатели складываются
-	const { onClick, ...row } = toControlAttrs<ListBoxItemAttributes>(forwardProps)
+	const row = toControlAttrs<ListBoxItemAttributes>(forwardProps)
 
 	const mark = (
 		<span className="so-list-box-item__indicator" aria-hidden="true">
@@ -62,10 +63,7 @@ export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 				{...toAriaProps(aria)}
 				{...toAriaProps(dataset)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.list.choose()
-					onClick?.(event)
-				}}
+				ref={choose}
 				leading={
 					<>
 						{indicator === 'start' ? mark : null}

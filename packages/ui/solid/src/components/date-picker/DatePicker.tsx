@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js'
-import { Elevate, ResolvedSlot, createRootProps, roleIcon } from '../../adapter'
+import { Elevate, ResolvedSlot, clickAction, createRootProps, roleIcon } from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Calendar } from '../calendar'
@@ -27,11 +27,15 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 		forward: binding.forwardProps(),
 	}))
 
-	/** Очистка — командой DatePicker'а; клик не всплывает к предку, который слушает поле. */
-	function clear(event: MouseEvent): void {
+	/** Clears by the DatePicker's command; the click does not bubble to an ancestor that listens to the field. */
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
+	const cancel = clickAction(() => {
+		ctrl.open = false
+	})
+	const confirm = clickAction(() => ctrl.confirm())
 
 	/** Встроенная кнопка очистки — по `clearable`. */
 	const clearButton = () => (
@@ -43,7 +47,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 				size={state.size}
 				disabled={state.disabled}
 				{...state.clearAria}
-				onActionClick={clear}
+				ref={clear}
 			>
 				<Icon embedded="date-picker.clear-icon" tag={CloseGlyph} size={state.size} />
 			</Button>
@@ -127,9 +131,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 				class="so-date-picker__cancel"
 				size={state.size}
 				text={state.names_cancel}
-				onClick={() => {
-					ctrl.open = false
-				}}
+				ref={cancel}
 			/>
 			<Button
 				embedded="date-picker.confirm"
@@ -138,7 +140,7 @@ export function DatePicker(props: DatePickerProps): JSX.Element {
 				size={state.size}
 				disabled={state.confirmDisabled}
 				text={state.names_confirm}
-				onClick={() => ctrl.confirm()}
+				ref={confirm}
 			/>
 		</>
 	)

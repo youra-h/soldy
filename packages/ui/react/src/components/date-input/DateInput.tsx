@@ -1,6 +1,14 @@
 import type { ElementType, ReactElement } from 'react'
 import type { TDateInputSegment } from '@soldy-ui/core'
-import { elevated, hasSlot, renderSlot, roleIcon, toAriaProps, toRootProps } from '../../adapter'
+import {
+	elevated,
+	hasSlot,
+	renderSlot,
+	roleIcon,
+	toAriaProps,
+	toRootProps,
+	useClickAction,
+} from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
 import { useSetupDateInput } from './setup.component'
@@ -42,6 +50,11 @@ function drawSegment(segment: TDateInputSegment): ReactElement {
 /** DateInput — поле даты из частей по формату локали: docs/agents/dates.md, «Даты». */
 export function DateInput(props: DateInputProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer } = useSetupDateInput(props)
+	const clear = useClickAction((event) => {
+		// Stopped at the button: the root of a select-only Select would open the panel
+		event.stopPropagation()
+		ctrl.clear()
+	})
 
 	const {
 		rendered,
@@ -86,11 +99,7 @@ export function DateInput(props: DateInputProps): ReactElement | null {
 								size={size}
 								disabled={disabled}
 								{...toAriaProps(clearAria)}
-								onActionClick={(event) => {
-									// Нативное событие: синтетический `stopPropagation` опоздал бы
-									event.stopPropagation()
-									ctrl.clear()
-								}}
+								ref={clear}
 							>
 								<Icon
 									embedded="date-input.clear-icon"

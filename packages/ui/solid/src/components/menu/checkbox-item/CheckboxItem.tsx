@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -40,17 +40,9 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 		() => ({ selected: state.selected ?? false }),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала отметка. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<MenuCheckboxItemAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.menu.toggle(), onClick),
-		}
-	}
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<MenuCheckboxItemAttributes>(binding.forwardProps())
+	const toggle = clickAction(() => context?.adapters.menu.toggle())
 
 	return (
 		<Show when={state.rendered}>
@@ -62,6 +54,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): JSX.Element {
 					disabled={state.disabled}
 					{...state.aria}
 					{...row()}
+					ref={toggle}
 					leading={
 						<>
 							<span class="so-menu-item__indicator" aria-hidden="true">

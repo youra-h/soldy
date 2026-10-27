@@ -1,7 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -32,17 +32,9 @@ export function MenuRadioItem(props: MenuRadioItemProps): JSX.Element {
 		() => ({ selected: state.selected ?? false }),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала отметка. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<MenuRadioItemAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.menu.check(), onClick),
-		}
-	}
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<MenuRadioItemAttributes>(binding.forwardProps())
+	const check = clickAction(() => context?.adapters.menu.check())
 
 	return (
 		<Show when={state.rendered}>
@@ -54,6 +46,7 @@ export function MenuRadioItem(props: MenuRadioItemProps): JSX.Element {
 					disabled={state.disabled}
 					{...state.aria}
 					{...row()}
+					ref={check}
 					leading={
 						<>
 							<span class="so-menu-item__indicator" aria-hidden="true">

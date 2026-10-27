@@ -3,6 +3,7 @@ import { Dynamic } from 'solid-js/web'
 import type { TToastsItemType } from '@soldy-ui/core'
 import {
 	Root,
+	clickAction,
 	createRootProps,
 	isToastRender,
 	resolveSlot,
@@ -39,6 +40,7 @@ export function ToastsItem(props: ToastsItemProps): JSX.Element {
 	const binding = setupToastsItem(props)
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const close = clickAction(() => ctrl.close())
 	// Состояние — поимённо, без `order` фасада; глубина — стиль-выходом
 	const root = createRootProps(() => ({
 		state: { classes: state.classes, visible: state.visible },
@@ -96,7 +98,7 @@ export function ToastsItem(props: ToastsItemProps): JSX.Element {
 							embedded="toasts.close"
 							type="button"
 							class="so-toasts-item__close"
-							onClick={() => ctrl.close()}
+							ref={close}
 							{...state.closeAria}
 						>
 							{closeIcon() ?? <Icon embedded="toasts.close-icon" tag={CLOSE} />}

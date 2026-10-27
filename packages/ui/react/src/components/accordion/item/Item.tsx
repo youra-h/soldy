@@ -7,6 +7,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
@@ -19,6 +20,7 @@ import type { AccordionItemAttributes, AccordionItemProps } from './base.compone
  */
 export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupAccordionItem(props)
+	const toggle = useClickAction(() => context?.adapters.selection.toggle())
 
 	const {
 		rendered,
@@ -39,7 +41,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 	if (!rendered) return null
 
 	const Tag = tag as ElementType
-	const { onClick, ...header } = toControlAttrs<AccordionItemAttributes>(forwardProps)
+	const header = toControlAttrs<AccordionItemAttributes>(forwardProps)
 
 	// Класс стрелки — на обёртке: тема поворачивает по нему и подменённую слотом иконку
 	const arrowAt = (side: 'start' | 'end', slot: ReactNode) =>
@@ -65,10 +67,7 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 				variant={variant}
 				{...toAriaProps(aria)}
 				{...header}
-				onClick={(event) => {
-					context?.adapters.selection.toggle()
-					onClick?.(event)
-				}}
+				ref={toggle}
 				leading={
 					<>
 						{arrowAt('start', props['leading-icon'])}

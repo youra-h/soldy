@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		clickAction,
 		Dynamic,
 		fieldText,
 		roleIcon,
@@ -26,10 +27,10 @@
 	const MINUS = roleIcon('minus')
 	const PLUS = roleIcon('plus')
 
-	function clear(event: MouseEvent): void {
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 </script>
 
 <!--
@@ -74,7 +75,7 @@
 					size={state.size}
 					disabled={state.disabled}
 					{...state.clearAria}
-					onActionClick={clear}
+					{@attach clear}
 				>
 					<Icon embedded="number-input.clear-icon" tag={CLOSE} size={state.size} />
 				</Button>

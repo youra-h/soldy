@@ -1,23 +1,24 @@
 /**
- * Tags в React — набор тегов с выбором по режиму, крестиками и переполнением.
+ * Tags in React — a set of tags with the choice by mode, crosses and overflow.
  *
- * Сценарии — те же, что у Vue (`tags-close`, `tags-keyboard`,
- * `tags-overflow`, `tags-select`, `tags-variant`, Tags из `item-slots` и
- * `item-control-attrs`) и Solid (`tags.spec.tsx`): разметка крестика, роли и
- * остановка Tab по режиму, клавиатура по APG Listbox, выбор по `press`
- * строки, свой вариант тега, своя раскладка показанных тегов в детях-функции.
- * Движок, расширения и плагины перенесены без правок.
+ * The scenarios are Vue's (`tags-close`, `tags-keyboard`, `tags-overflow`,
+ * `tags-select`, `tags-variant`, Tags of `item-slots` and
+ * `item-control-attrs`) and Solid's (`tags.spec.tsx`): the cross's markup,
+ * the roles and the Tab stop by mode, the keyboard by APG Listbox, the choice by
+ * the row's `press`, the tag's own variant, the consumer's layout of the shown
+ * tags in children as a function. The engine, the extensions and the plugins
+ * moved over unchanged.
  *
- * Своё у React — крестик и момент входа. `stopPropagation` синтетического
- * события нативные слушатели `TActionPlugin` на корнях тега и набора уже не
- * остановит: к нему событие прошло их. Поэтому крестик закрывает по нативному
- * клику своего плагина (`onActionClick`) и гасит всплытие у самого события,
- * как у Tabs. Теги разметки входят в коллекцию при коммите, а не на рендере:
- * серверная разметка тега из разметки — без того, что пишет ему коллекция,
- * гидратация сходится, после коммита всё на месте; набор из данных сервер
- * рисует полностью. Отсюда группа «React»: StrictMode, сервер и гидратация.
- * Обновления — внутри `act`: событие, сменившее состояние мимо него, роняет
- * тест сторожем консоли.
+ * React's own are the cross and the moment of entry. The cross closes by a
+ * native listener of its node (`useClickAction`) and stops the event there, as
+ * in Tabs: a synthetic `stopPropagation` comes after the native `TActionPlugin`
+ * listeners on the roots of the tag and the set. Markup tags enter the
+ * collection at the commit, not at the render: the server markup of a markup
+ * tag lacks what the collection writes to it, the hydration matches, after the
+ * commit everything is in place; a set of data the server draws in full. Hence
+ * the group «React»: StrictMode, the server and the hydration. Updates go
+ * inside `act`: an event that changed the state past it fails the test by the
+ * console guard.
  */
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'

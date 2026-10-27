@@ -1,5 +1,13 @@
 import type { JSX } from 'solid-js'
-import { Root, createRootProps, liveScope, renderSlot, resolveSlot, roleIcon } from '../../adapter'
+import {
+	Root,
+	clickAction,
+	createRootProps,
+	liveScope,
+	renderSlot,
+	resolveSlot,
+	roleIcon,
+} from '../../adapter'
 import { Show } from '../../adapter/runtime/flow'
 import { Button } from '../button'
 import { Frame } from '../frame'
@@ -32,10 +40,10 @@ export function Popover(props: PopoverProps): JSX.Element {
 		() => ({}),
 	)
 
-	/** Кнопка закрытия только закрывает поповер: возврат фокуса — забота плагина. */
-	const close = (): void => {
+	/** The close button only closes the popover: returning the focus is the plugin's job. */
+	const close = clickAction(() => {
 		ctrl.open = false
-	}
+	})
 
 	return (
 		<Show when={state.rendered}>
@@ -67,7 +75,7 @@ export function Popover(props: PopoverProps): JSX.Element {
 							embedded="popover.close"
 							type="button"
 							class="so-popover__close"
-							onClick={close}
+							ref={close}
 							{...state.closeAria}
 						>
 							{closeIcon() ?? <Icon embedded="popover.close-icon" tag={CLOSE} />}

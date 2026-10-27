@@ -6,6 +6,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
@@ -21,6 +22,7 @@ const CheckIcon = roleIcon('check')
  */
 export function SelectItem(props: SelectItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupSelectItem(props)
+	const choose = useClickAction(() => context?.adapters.select.choose())
 
 	const {
 		rendered,
@@ -40,7 +42,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 	const chosen = selected ?? false
-	const { onClick, ...row } = toControlAttrs<SelectItemAttributes>(forwardProps)
+	const row = toControlAttrs<SelectItemAttributes>(forwardProps)
 
 	const mark = (
 		<span className="so-select-item__indicator" aria-hidden="true">
@@ -60,10 +62,7 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 				{...toAriaProps(aria)}
 				{...toAriaProps(dataset)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.select.choose()
-					onClick?.(event)
-				}}
+				ref={choose}
 				leading={
 					<>
 						{indicator === 'start' ? mark : null}

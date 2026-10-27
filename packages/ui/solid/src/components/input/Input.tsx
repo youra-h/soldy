@@ -2,6 +2,7 @@ import type { JSX } from 'solid-js'
 import {
 	Elevate,
 	Root,
+	clickAction,
 	createPartProps,
 	createRootProps,
 	fieldText,
@@ -20,9 +21,9 @@ import type { InputAttributes, InputProps } from './base.component'
 const CloseGlyph = roleIcon('close')
 
 /**
- * Текстовое поле: `<input>` внутри корня, слоты — по сторонам, кнопка очистки — перед `trailing`.
- * Очистка гасит всплытие у самого события (`onActionClick`): `onClick` Solid
- * делегирует документу, а select-only Select открывает панель кликом по корню.
+ * A text field: `<input>` inside the root, the slots at the sides, the clear button before
+ * `trailing`. The clear button stops the click at itself: a select-only Select opens its panel
+ * on a click on the root.
  */
 export function Input(props: InputProps): JSX.Element {
 	const binding = setupInput(props)
@@ -37,10 +38,10 @@ export function Input(props: InputProps): JSX.Element {
 	const control = createPartProps(() => toControlAttrs<InputAttributes>(binding.forwardProps()))
 	const text = fieldText(() => state.value)
 
-	function clear(event: MouseEvent): void {
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 
 	function content(): JSX.Element {
 		const leadingSlot = resolveSlot(
@@ -93,7 +94,7 @@ export function Input(props: InputProps): JSX.Element {
 										size={state.size}
 										disabled={state.disabled}
 										{...state.clearAria}
-										onActionClick={clear}
+										ref={clear}
 									>
 										<Icon
 											embedded="input.clear-icon"

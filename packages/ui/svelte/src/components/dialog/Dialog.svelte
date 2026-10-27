@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TAttributesMap } from '@soldy-ui/core'
-	import { Dynamic, Teleport, roleIcon, toRootProps, toShownStyleText } from '../../adapter'
+	import { clickAction, Dynamic, Teleport, roleIcon, toRootProps, toShownStyleText } from '../../adapter'
 	import { Button } from '../button'
 	import { Icon } from '../icon'
 	import { setupDialog } from './setup.component'
@@ -12,6 +12,8 @@
 	const binding = setupDialog(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const toggleMaximized = clickAction(() => ctrl.toggleMaximized())
+	const close = clickAction(() => ctrl.requestClose('button'))
 
 	// Первым, под наборами ядра: фокус встаёт на панель, когда внутри нечего фокусировать
 	const PANEL: TAttributesMap = { tabindex: '-1' }
@@ -55,7 +57,7 @@
 					embedded="dialog.maximize"
 					type="button"
 					class="so-dialog__maximize"
-					onclick={() => ctrl.toggleMaximized()}
+					{@attach toggleMaximized}
 					{...state.maximizeAria}
 				>
 					{#if state.maximized}
@@ -74,7 +76,7 @@
 					embedded="dialog.close"
 					type="button"
 					class="so-dialog__close"
-					onclick={() => ctrl.requestClose('button')}
+					{@attach close}
 					{...state.closeAria}
 				>
 					{#if props['close-icon']}

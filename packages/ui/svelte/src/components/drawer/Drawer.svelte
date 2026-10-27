@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TAttributesMap } from '@soldy-ui/core'
-	import { Dynamic, Teleport, roleIcon, toRootProps, toShownStyleText } from '../../adapter'
+	import { clickAction, Dynamic, Teleport, roleIcon, toRootProps, toShownStyleText } from '../../adapter'
 	import { Button } from '../button'
 	import { Icon } from '../icon'
 	import { setupDrawer } from './setup.component'
@@ -12,6 +12,7 @@
 	const binding = setupDrawer(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const close = clickAction(() => ctrl.requestClose('button'))
 
 	// Первым, под наборами ядра: фокус встаёт на панель, когда внутри нечего фокусировать
 	const PANEL: TAttributesMap = { tabindex: '-1' }
@@ -54,7 +55,7 @@
 					embedded="drawer.close"
 					type="button"
 					class="so-drawer__close"
-					onclick={() => ctrl.requestClose('button')}
+					{@attach close}
 					{...state.closeAria}
 				>
 					{#if props['close-icon']}

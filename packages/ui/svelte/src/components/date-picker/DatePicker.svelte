@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Dynamic, roleIcon, toRootProps } from '../../adapter'
+	import { clickAction, Dynamic, roleIcon, toRootProps } from '../../adapter'
 	import { Button } from '../button'
 	import { Calendar } from '../calendar'
 	import { DateInput } from '../date-input'
@@ -18,19 +18,17 @@
 	const CLOSE = roleIcon('close')
 	const CALENDAR = roleIcon('calendar')
 
-	function clear(event: MouseEvent): void {
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 
-	/** Черновик выбора сбрасывает само закрытие. */
-	function cancel(): void {
+	/** Closing itself drops the draft of the choice. */
+	const cancel = clickAction(() => {
 		ctrl.open = false
-	}
+	})
 
-	function confirm(): void {
-		ctrl.confirm()
-	}
+	const confirm = clickAction(() => ctrl.confirm())
 </script>
 
 <!--
@@ -53,7 +51,7 @@
 			size={state.size}
 			disabled={state.disabled}
 			{...state.clearAria}
-			onActionClick={clear}
+			{@attach clear}
 		>
 			<Icon embedded="date-picker.clear-icon" tag={CLOSE} size={state.size} />
 		</Button>
@@ -84,7 +82,7 @@
 		class="so-date-picker__cancel"
 		size={state.size}
 		text={state.names_cancel}
-		onclick={cancel}
+		{@attach cancel}
 	/><Button
 		embedded="date-picker.confirm"
 		type="button"
@@ -92,7 +90,7 @@
 		size={state.size}
 		disabled={state.confirmDisabled}
 		text={state.names_confirm}
-		onclick={confirm}
+		{@attach confirm}
 	/>
 {/snippet}
 <Dynamic

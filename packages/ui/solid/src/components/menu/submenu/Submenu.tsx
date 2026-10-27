@@ -5,7 +5,7 @@ import {
 	KeyedFor,
 	ResolvedSlot,
 	Root,
-	chainHandler,
+	clickAction,
 	createRootProps,
 	relaySlot,
 	renderSlot,
@@ -131,17 +131,9 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 		() => ({}),
 	)
 
-	/** Атрибуты строки — всё от потребителя, кроме класса и стиля; клик — сначала открытие. */
-	const row = () => {
-		const { onClick, ...attributes } = toControlAttrs<MenuSubmenuAttributes>(
-			binding.forwardProps(),
-		)
-
-		return {
-			...attributes,
-			onClick: chainHandler(() => context?.adapters.menu.open(), onClick),
-		}
-	}
+	/** The row's attributes: all of the consumer's but the class and the style. */
+	const row = () => toControlAttrs<MenuSubmenuAttributes>(binding.forwardProps())
+	const expand = clickAction(() => context?.adapters.menu.open())
 
 	return (
 		<Show when={state.rendered}>
@@ -153,6 +145,7 @@ export function MenuSubmenu(props: MenuSubmenuProps): JSX.Element {
 					disabled={state.disabled}
 					{...state.aria}
 					{...row()}
+					ref={expand}
 					leading={<span class="so-menu-item__icon">{renderSlot(props.leading)}</span>}
 					trailing={
 						<span class="so-menu-item__arrow" aria-hidden="true">

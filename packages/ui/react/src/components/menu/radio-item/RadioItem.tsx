@@ -5,6 +5,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { useSetupMenuRadioItem } from './setup.component'
@@ -13,6 +14,7 @@ import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.compone
 /** MenuRadioItem — переключатель меню: строка пункта с точкой-отметкой в начале, как у флажка. */
 export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuRadioItem(props)
+	const check = useClickAction(() => context?.adapters.menu.check())
 
 	const { rendered, tag, text, size, disabled, selected, aria, dataset, attrs } = state
 
@@ -20,7 +22,7 @@ export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
 
 	const Tag = tag as ElementType
 	const checked = selected ?? false
-	const { onClick, ...row } = toControlAttrs<MenuRadioItemAttributes>(forwardProps)
+	const row = toControlAttrs<MenuRadioItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -31,10 +33,7 @@ export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
 				disabled={disabled}
 				{...toAriaProps(aria)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.menu.check()
-					onClick?.(event)
-				}}
+				ref={check}
 				leading={
 					<>
 						<span className="so-menu-item__indicator" aria-hidden="true">

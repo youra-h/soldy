@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Dynamic, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, toRootProps } from '../../../adapter'
 	import { Button } from '../../button'
 	import { setupPaginationItem } from './setup.component'
 	import type { PaginationItemProps } from './base.component'
@@ -11,9 +11,9 @@
 	const state = binding.state
 	const context = binding.context
 
-	function activate(): void {
+	const activate = clickAction(() => {
 		if (context) context.adapters.activation.active = true
-	}
+	})
 </script>
 
 <!--
@@ -32,7 +32,7 @@
 		disabled={state.disabled}
 		size={state.size}
 		variant={state.variant}
-		onclick={activate}
+		{@attach activate}
 		{...state.aria}
 	>
 		{#if props.children}

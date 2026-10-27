@@ -1,5 +1,5 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootProps } from '../../../adapter'
+import { renderSlot, toAriaProps, toRootProps, useClickAction } from '../../../adapter'
 import { Button } from '../../button'
 import { useSetupPaginationItem } from './setup.component'
 import type { PaginationItemProps } from './base.component'
@@ -7,6 +7,9 @@ import type { PaginationItemProps } from './base.component'
 /** PaginationItem — страница пагинации, внутренняя часть: её рисует только `Pagination`. */
 export function PaginationItem(props: PaginationItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupPaginationItem(props)
+	const activate = useClickAction(() => {
+		if (context) context.adapters.activation.active = true
+	})
 
 	const { rendered, tag, text, disabled, size, variant, aria, dataset, attrs } = state
 
@@ -22,9 +25,7 @@ export function PaginationItem(props: PaginationItemProps): ReactElement | null 
 				disabled={disabled}
 				size={size}
 				variant={variant}
-				onClick={() => {
-					if (context) context.adapters.activation.active = true
-				}}
+				ref={activate}
 				{...toAriaProps(aria)}
 			>
 				{renderSlot(props.children, { text: text ?? '' }) ?? text}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { chainHandler, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
+	import { clickAction, Dynamic, roleIcon, toControlAttrs, toRootForward, toRootProps } from '../../../adapter'
 	import { ItemRow } from '../../item-row'
 	import { Icon } from '../../icon'
 	import { setupListBoxItem } from './setup.component'
@@ -11,6 +11,7 @@
 	const binding = setupListBoxItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const context = binding.context
+	const choose = clickAction(() => context?.adapters.list.choose())
 
 	const CHECK = roleIcon('check')
 </script>
@@ -51,7 +52,7 @@
 		{...state.aria}
 		{...state.dataset}
 		{...toControlAttrs<ListBoxItemAttributes>(binding.forwardProps)}
-		onclick={chainHandler(() => context?.adapters.list.choose(), binding.forwardProps.onclick)}
+		{@attach choose}
 	>
 		{#snippet leading()}
 			{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}

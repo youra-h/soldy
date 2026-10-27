@@ -23,5 +23,6 @@ export {
 	type TWrappedRootAttributes,
 } from './root'
 export { chainHandler } from './handlers'
+export { clickAction } from './click-action'
 export { roleIcon, TRoleIcon } from './icon'
 export { default as RoleIcon } from './RoleIcon.svelte'

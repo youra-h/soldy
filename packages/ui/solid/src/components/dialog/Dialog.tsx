@@ -2,6 +2,7 @@ import type { JSX } from 'solid-js'
 import {
 	Root,
 	Teleport,
+	clickAction,
 	createPartProps,
 	createRootProps,
 	renderSlot,
@@ -30,6 +31,8 @@ export function Dialog(props: DialogProps): JSX.Element {
 	const binding = setupDialog(props)
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const toggleMaximized = clickAction(() => ctrl.toggleMaximized())
+	const close = clickAction(() => ctrl.requestClose('button'))
 	const backdrop = createRootProps(() => ({
 		state: {
 			classes: BACKDROP,
@@ -80,7 +83,7 @@ export function Dialog(props: DialogProps): JSX.Element {
 							embedded="dialog.maximize"
 							type="button"
 							class="so-dialog__maximize"
-							onClick={() => ctrl.toggleMaximized()}
+							ref={toggleMaximized}
 							{...state.maximizeAria}
 						>
 							<Show
@@ -102,7 +105,7 @@ export function Dialog(props: DialogProps): JSX.Element {
 							embedded="dialog.close"
 							type="button"
 							class="so-dialog__close"
-							onClick={() => ctrl.requestClose('button')}
+							ref={close}
 							{...state.closeAria}
 						>
 							{closeIcon() ?? <Icon embedded="dialog.close-icon" tag={CLOSE} />}

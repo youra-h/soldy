@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TToastsItemType } from '@soldy-ui/core'
-	import { Dynamic, isToastRender, roleIcon, toRootProps, type TRoleIcon } from '../../../adapter'
+	import { clickAction, Dynamic, isToastRender, roleIcon, toRootProps, type TRoleIcon } from '../../../adapter'
 	import { Button } from '../../button'
 	import { Icon } from '../../icon'
 	import { ProgressSpinner } from '../../progress-spinner'
@@ -13,6 +13,7 @@
 	const binding = setupToastsItem(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const close = clickAction(() => ctrl.close())
 
 	/** Значок у каждого вида свой: в режиме принудительных цветов вид различает только глиф. */
 	const TYPE_ICONS = {
@@ -79,7 +80,7 @@
 				embedded="toasts.close"
 				type="button"
 				class="so-toasts-item__close"
-				onclick={() => ctrl.close()}
+				{@attach close}
 				{...state.closeAria}
 			>
 				{#if props['close-icon']}

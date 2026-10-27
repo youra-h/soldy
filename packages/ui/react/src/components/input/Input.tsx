@@ -9,6 +9,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../adapter'
 import { Button } from '../button'
 import { Icon } from '../icon'
@@ -18,6 +19,11 @@ import type { InputAttributes, InputProps } from './base.component'
 /** Input — текстовое поле со слотами по сторонам: AGENTS.md (React), «Поля ввода». */
 export function Input(props: InputProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer } = useSetupInput(props)
+	const clear = useClickAction((event) => {
+		// Stopped at the button: the root of a select-only Select would open the panel
+		event.stopPropagation()
+		ctrl.clear()
+	})
 
 	const {
 		rendered,
@@ -72,11 +78,7 @@ export function Input(props: InputProps): ReactElement | null {
 								size={size}
 								disabled={disabled}
 								{...toAriaProps(clearAria)}
-								onActionClick={(event) => {
-									// Нативное событие: синтетический `stopPropagation` опоздал бы
-									event.stopPropagation()
-									ctrl.clear()
-								}}
+								ref={clear}
 							>
 								<Icon
 									embedded="input.clear-icon"

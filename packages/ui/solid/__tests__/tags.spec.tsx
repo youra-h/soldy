@@ -1,23 +1,25 @@
 /**
- * Tags в Solid — набор тегов с выбором по режиму, крестиками и переполнением.
+ * Tags in Solid — a set of tags with the choice by mode, crosses and overflow.
  *
- * Сценарии — те же, что у Vue (`tags-close`, `tags-keyboard`,
- * `tags-overflow`, `tags-select`, `tags-variant`, Tags из `item-slots` и
- * `item-control-attrs`) и Svelte (`tags.spec.ts`): разметка крестика, роли и
- * остановка Tab по режиму, клавиатура по APG Listbox, выбор по `press`
- * строки, свой вариант тега, своя раскладка показанных тегов в слоте
- * `default`. Движок, расширения и плагины перенесены без правок.
+ * The scenarios are Vue's (`tags-close`, `tags-keyboard`, `tags-overflow`,
+ * `tags-select`, `tags-variant`, Tags of `item-slots` and
+ * `item-control-attrs`) and Svelte's (`tags.spec.ts`): the cross's markup, the
+ * roles and the Tab stop by mode, the keyboard by APG Listbox, the choice by the
+ * row's `press`, the tag's own variant, the consumer's layout of the shown tags
+ * in the `default` slot. The engine, the extensions and the plugins moved over
+ * unchanged.
  *
- * Своё у Solid — крестик. `click` Solid делегирует документу, и
- * `stopPropagation` там нативные слушатели `TActionPlugin` на корнях тега и
- * набора уже не остановит. Поэтому крестик закрывает по нативному клику своего
- * плагина (`onActionClick`) и гасит всплытие у самого события, как у Tabs.
+ * Solid's own is the cross. Solid delegates `onClick` to the document, past the
+ * native `TActionPlugin` listeners on the roots of the tag and the set. So the
+ * cross closes by a native listener of its node (`clickAction`) and stops the
+ * event there, as in Tabs.
  *
- * И слоты. Слот со scope Solid зовёт с живым scope: прочитанное в разметке
- * слота следует за выбором на месте, и узлы слота его переживают. Своя
- * раскладка слота `default` развёрнута в слое лифта набора (`ResolvedSlot` со
- * scope), и теги в ней входят в его коллекцию. Пустое, что вернул проброс
- * набора, тег видит и рисует своё — иконку крестика, — как у Vue.
+ * And the slots. Solid calls a slot with a scope with a live scope: what the
+ * slot's markup read follows the choice in place, and the slot's nodes survive
+ * it. The consumer's layout of the `default` slot is resolved in the lift layer
+ * of the set (`ResolvedSlot` with a scope), and the tags in it enter its
+ * collection. An empty relay of the set the tag sees and draws its own — the
+ * cross icon, — as in Vue.
  */
 
 import { describe, it, expect, expectTypeOf, vi, afterEach } from 'vitest'

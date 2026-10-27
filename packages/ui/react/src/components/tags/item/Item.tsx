@@ -6,6 +6,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { ItemRow } from '../../item-row'
@@ -22,6 +23,12 @@ const CloseIcon = roleIcon('close')
  */
 export function TagsItem(props: TagsItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupTagsItem(props)
+	const close = useClickAction((event) => {
+		// Stopped at the cross: the roots of the tag and the set and the Select field would
+		// take the click as theirs
+		event.stopPropagation()
+		context?.adapters.tags.close()
+	})
 
 	const {
 		rendered,
@@ -70,13 +77,7 @@ export function TagsItem(props: TagsItemProps): ReactElement | null {
 					disabled={disabled}
 					size={size}
 					{...toAriaProps(closeAria)}
-					// Stops the native event: the synthetic one would already have passed the
-					// tag and set `TActionPlugin`, and the Select field would open its panel
-					// on a click on the cross
-					onActionClick={(event) => {
-						event.stopPropagation()
-						context?.adapters.tags.close()
-					}}
+					ref={close}
 				>
 					{renderSlot(props['close-icon']) ?? (
 						<Icon embedded="tags.close-icon" tag={CloseIcon} size={size} />

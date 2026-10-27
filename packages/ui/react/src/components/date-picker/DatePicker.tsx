@@ -1,5 +1,12 @@
 import type { ReactElement, ReactNode } from 'react'
-import { Elevate, renderSlot, roleIcon, toAriaProps, toRootProps } from '../../adapter'
+import {
+	Elevate,
+	renderSlot,
+	roleIcon,
+	toAriaProps,
+	toRootProps,
+	useClickAction,
+} from '../../adapter'
 import { Button } from '../button'
 import { Calendar } from '../calendar'
 import { DateInput } from '../date-input'
@@ -20,6 +27,15 @@ const CalendarMark = roleIcon('calendar')
 export function DatePicker(props: DatePickerProps): ReactElement | null {
 	const { ctrl, ref, forwardProps, state, layer, rootElement, calendar, engine } =
 		useSetupDatePicker(props)
+	const clearValue = useClickAction((event) => {
+		// Stopped at the button: the root of a select-only Select would open the panel
+		event.stopPropagation()
+		ctrl.clear()
+	})
+	const cancel = useClickAction(() => {
+		ctrl.open = false
+	})
+	const confirm = useClickAction(() => ctrl.confirm())
 
 	const {
 		rendered,
@@ -63,11 +79,7 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 				size={size}
 				disabled={disabled}
 				{...toAriaProps(clearAria)}
-				onActionClick={(event) => {
-					// Нативное событие: синтетический `stopPropagation` опоздал бы
-					event.stopPropagation()
-					ctrl.clear()
-				}}
+				ref={clearValue}
 			>
 				<Icon embedded="date-picker.clear-icon" tag={CloseMark} size={size} />
 			</Button>
@@ -98,9 +110,7 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 					className="so-date-picker__cancel"
 					size={size}
 					text={names_cancel}
-					onClick={() => {
-						ctrl.open = false
-					}}
+					ref={cancel}
 				/>
 				<Button
 					embedded="date-picker.confirm"
@@ -109,7 +119,7 @@ export function DatePicker(props: DatePickerProps): ReactElement | null {
 					size={size}
 					disabled={confirmDisabled}
 					text={names_confirm}
-					onClick={() => ctrl.confirm()}
+					ref={confirm}
 				/>
 			</>
 		) : undefined

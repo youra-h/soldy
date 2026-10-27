@@ -1,6 +1,7 @@
 import type { JSX } from 'solid-js'
 import {
 	Root,
+	clickAction,
 	createRootProps,
 	renderSlot,
 	resolveSlot,
@@ -48,11 +49,11 @@ export function TagsItem(props: TagsItemProps): JSX.Element {
 		context?.adapters.selection.toggle()
 	}
 
-	/** Всплытие гасится здесь: `onClick` Solid делегирует документу, там гасить поздно. */
-	function close(event: MouseEvent): void {
+	/** Stopped at the cross: the roots of the tag and the set and the Select field would take the click. */
+	const close = clickAction((event) => {
 		event.stopPropagation()
 		context?.adapters.tags.close()
-	}
+	})
 
 	return (
 		<Show when={state.rendered}>
@@ -80,7 +81,7 @@ export function TagsItem(props: TagsItemProps): JSX.Element {
 						disabled={state.disabled}
 						size={state.size}
 						{...state.closeAria}
-						onActionClick={close}
+						ref={close}
 					>
 						{closeIcon() ?? (
 							<Icon embedded="tags.close-icon" tag={CLOSE} size={state.size} />

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Dynamic, roleIcon, toRootProps } from '../../adapter'
+	import { clickAction, Dynamic, roleIcon, toRootProps } from '../../adapter'
 	import { Button } from '../button'
 	import { Frame } from '../frame'
 	import { Icon } from '../icon'
@@ -15,9 +15,9 @@
 
 	const CLOSE = roleIcon('close')
 
-	function close(): void {
+	const close = clickAction(() => {
 		ctrl.open = false
-	}
+	})
 </script>
 
 <!--
@@ -58,7 +58,7 @@
 				embedded="popover.close"
 				type="button"
 				class="so-popover__close"
-				onclick={close}
+				{@attach close}
 				{...state.closeAria}
 			>
 				{#if props['close-icon']}

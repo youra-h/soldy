@@ -6,6 +6,7 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	useClickAction,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
@@ -21,6 +22,7 @@ const CheckIcon = roleIcon('check')
  */
 export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuCheckboxItem(props)
+	const toggle = useClickAction(() => context?.adapters.menu.toggle())
 
 	const { rendered, tag, text, size, disabled, selected, aria, dataset, attrs } = state
 
@@ -28,7 +30,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 
 	const Tag = tag as ElementType
 	const checked = selected ?? false
-	const { onClick, ...row } = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
+	const row = toControlAttrs<MenuCheckboxItemAttributes>(forwardProps)
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -39,10 +41,7 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 				disabled={disabled}
 				{...toAriaProps(aria)}
 				{...row}
-				onClick={(event) => {
-					context?.adapters.menu.toggle()
-					onClick?.(event)
-				}}
+				ref={toggle}
 				leading={
 					<>
 						<span className="so-menu-item__indicator" aria-hidden="true">

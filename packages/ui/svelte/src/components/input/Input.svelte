@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		clickAction,
 		Dynamic,
 		fieldText,
 		roleIcon,
@@ -24,11 +25,11 @@
 
 	const CLOSE = roleIcon('close')
 
-	/** Всплытие гасится: select-only Select открывает панель по клику поля. */
-	function clear(event: MouseEvent): void {
+	/** Stopped at the button: a select-only Select opens its panel on a click on the field. */
+	const clear = clickAction((event) => {
 		event.stopPropagation()
 		ctrl.clear()
-	}
+	})
 </script>
 
 <Dynamic
@@ -65,7 +66,7 @@
 					size={state.size}
 					disabled={state.disabled}
 					{...state.clearAria}
-					onActionClick={clear}
+					{@attach clear}
 				>
 					<Icon embedded="input.clear-icon" tag={CLOSE} size={state.size} />
 				</Button>

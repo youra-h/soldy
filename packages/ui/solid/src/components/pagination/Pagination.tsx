@@ -4,6 +4,7 @@ import {
 	Elevate,
 	KeyedFor,
 	Root,
+	clickAction,
 	createRootProps,
 	relaySlot,
 	resolveSlot,
@@ -29,6 +30,8 @@ export function Pagination(props: PaginationProps): JSX.Element {
 	const binding = setupPagination(props)
 	const state = binding.state
 	const ctrl = binding.ctrl
+	const prev = clickAction(() => ctrl.prev())
+	const next = clickAction(() => ctrl.next())
 	const root = createRootProps(() => ({
 		state,
 		sets: [state.attrs, state.aria, state.dataset],
@@ -69,7 +72,7 @@ export function Pagination(props: PaginationProps): JSX.Element {
 					variant={state.variant}
 					disabled={state.prevDisabled}
 					{...state.prevAria}
-					onClick={() => ctrl.prev()}
+					ref={prev}
 				>
 					{prevIcon() ?? (
 						<Icon embedded="pagination.prev-icon" tag={ARROW} size={state.size} />
@@ -88,7 +91,7 @@ export function Pagination(props: PaginationProps): JSX.Element {
 					variant={state.variant}
 					disabled={state.nextDisabled}
 					{...state.nextAria}
-					onClick={() => ctrl.next()}
+					ref={next}
 				>
 					{nextIcon() ?? (
 						<Icon embedded="pagination.next-icon" tag={ARROW} size={state.size} />
