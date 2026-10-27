@@ -20,20 +20,24 @@
 	пока нарисована, и окно `Virtual` держит их столько, сколько показывает.
 -->
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
-	>
-		{#if props.leading}{@render props.leading()}{/if}
-		<span class="so-button__text">
-			{#if props.children}{@render props.children({ text: state.text ?? '' })}{:else}{state.text}{/if}
-		</span>
-		{#if props.trailing}{@render props.trailing()}{/if}
-	</Dynamic>
-{/if}
+<!--
+	Slots render by a call, not by a block around: the owners (an option, a menu item) hand their
+	markup to all three slots of the row, and a set slot behind `{#if}` cost two blocks. The text
+	falls back to `state.text` in the block of the content. The parts are glued: Svelte would keep
+	a space between them as text.
+-->
+{#snippet plain()}{state.text}{/snippet}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	{@render props.leading?.()}<span class="so-button__text"
+		>{@render (props.children ?? plain)({ text: state.text ?? '' })}</span
+	>{@render props.trailing?.()}
+</Dynamic>

@@ -16,21 +16,20 @@
 	темы 2 кольцо касается краёв. `pathLength="1"`: доля из переменной корня ложится в штрих
 	как есть.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-			state.fractionStyle,
-		)}
-		attach={binding.attachElement}
-	>
-		<svg class="so-progress-spinner__ring" viewBox="0 0 16 16" aria-hidden="true">
-			<circle class="so-progress-spinner__track" cx="8" cy="8" r="7" />
-			<circle class="so-progress-spinner__range" cx="8" cy="8" r="7" pathLength="1" />
-			<circle class="so-progress-spinner__runner" cx="8" cy="8" r="7" pathLength="1" />
-		</svg>
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+		state.fractionStyle,
+	)}
+	attach={binding.attachElement}
+>
+	<svg class="so-progress-spinner__ring" viewBox="0 0 16 16" aria-hidden="true">
+		<circle class="so-progress-spinner__track" cx="8" cy="8" r="7" />
+		<circle class="so-progress-spinner__range" cx="8" cy="8" r="7" pathLength="1" />
+		<circle class="so-progress-spinner__runner" cx="8" cy="8" r="7" pathLength="1" />
+	</svg>
+</Dynamic>

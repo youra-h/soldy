@@ -16,34 +16,28 @@
 	только строчная разметка. `checked` Svelte пишет свойством, на сервере — атрибутом.
 	Дорожка под `aria-hidden`: содержимое слотов не идёт в имя от подписи.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.dataset],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
-	>
-		<input
-			type="checkbox"
-			id={state.id}
-			name={state.name}
-			disabled={state.disabled}
-			required={state.required}
-			{...state.aria}
-			{...toControlAttrs<SwitchAttributes>(binding.forwardProps)}
-			checked={state.value}
-		/>
-		<span class="so-switch__track" aria-hidden="true">
-			<span class="so-switch__track--thumb">
-				{#if state.value}
-					{@render props.on?.({ value: state.value, ctrl })}
-				{:else}
-					{@render props.off?.({ value: state.value, ctrl })}
-				{/if}
-			</span>
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.dataset],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<input
+		type="checkbox"
+		id={state.id}
+		name={state.name}
+		disabled={state.disabled}
+		required={state.required}
+		{...state.aria}
+		{...toControlAttrs<SwitchAttributes>(binding.forwardProps)}
+		checked={state.value}
+	/><span class="so-switch__track" aria-hidden="true">
+		<span class="so-switch__track--thumb">
+			{@render (state.value ? props.on : props.off)?.({ value: state.value, ctrl })}
 		</span>
-	</Dynamic>
-{/if}
+	</span>
+</Dynamic>

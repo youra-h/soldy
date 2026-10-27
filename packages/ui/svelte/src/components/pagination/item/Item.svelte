@@ -20,26 +20,25 @@
 	Внутренняя часть Pagination: ставит её только владелец, поэтому атрибуты снаружи — на корень.
 	Текущая — не выключенная кнопка: каждая страница — своя остановка Tab.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
+	attach={binding.attachElement}
+>
+	<Button
+		embedded="pagination.page"
+		type="button"
+		disabled={state.disabled}
+		size={state.size}
+		variant={state.variant}
+		onclick={activate}
+		{...state.aria}
 	>
-		<Button
-			embedded="pagination.page"
-			type="button"
-			disabled={state.disabled}
-			size={state.size}
-			variant={state.variant}
-			onclick={activate}
-			{...state.aria}
-		>
-			{#if props.children}
-				{@render props.children({ text: state.text ?? '' })}
-			{:else}
-				{state.text}
-			{/if}
-		</Button>
-	</Dynamic>
-{/if}
+		{#if props.children}
+			{@render props.children({ text: state.text ?? '' })}
+		{:else}
+			{state.text}
+		{/if}
+	</Button>
+</Dynamic>

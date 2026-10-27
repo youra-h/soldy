@@ -21,50 +21,47 @@
 	считает края. `tabindex` — набором и до `viewportAria`: значение потребителя сильнее, а роль из
 	набора компилятор Svelte не видит и счёл бы остановку на `div` ошибкой доступности.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	<Button
+		embedded="scroller.prev"
+		type="button"
+		class="so-scroller__prev"
+		size={state.size}
+		disabled={state.prevDisabled}
+		{...state.prevAria}
 	>
-		<Button
-			embedded="scroller.prev"
-			type="button"
-			class="so-scroller__prev"
-			size={state.size}
-			disabled={state.prevDisabled}
-			{...state.prevAria}
-		>
-			{#if props['prev-icon']}
-				{@render props['prev-icon']()}
-			{:else}
-				<Icon embedded="scroller.prev-icon" tag={ARROW} size={state.size} />
-			{/if}
-		</Button>
-		<div
-			class="so-scroller__viewport"
-			{...{ tabindex: state.viewportTabIndex }}
-			{...state.viewportAria}
-		>
-			{@render props.children?.()}
-		</div>
-		<Button
-			embedded="scroller.next"
-			type="button"
-			class="so-scroller__next"
-			size={state.size}
-			disabled={state.nextDisabled}
-			{...state.nextAria}
-		>
-			{#if props['next-icon']}
-				{@render props['next-icon']()}
-			{:else}
-				<Icon embedded="scroller.next-icon" tag={ARROW} size={state.size} />
-			{/if}
-		</Button>
-	</Dynamic>
-{/if}
+		{#if props['prev-icon']}
+			{@render props['prev-icon']()}
+		{:else}
+			<Icon embedded="scroller.prev-icon" tag={ARROW} size={state.size} />
+		{/if}
+	</Button><div
+		class="so-scroller__viewport"
+		{...{ tabindex: state.viewportTabIndex }}
+		{...state.viewportAria}
+	>
+		{@render props.children?.()}
+	</div><Button
+		embedded="scroller.next"
+		type="button"
+		class="so-scroller__next"
+		size={state.size}
+		disabled={state.nextDisabled}
+		{...state.nextAria}
+	>
+		{#if props['next-icon']}
+			{@render props['next-icon']()}
+		{:else}
+			<Icon embedded="scroller.next-icon" tag={ARROW} size={state.size} />
+		{/if}
+	</Button>
+</Dynamic>

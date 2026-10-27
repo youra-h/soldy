@@ -16,6 +16,7 @@
 	скрывать содержимое нельзя.
 -->
 <Dynamic
+	rendered
 	tag={state.tag}
 	attributes={toRootProps(
 		{ classes: state.classes, layout_styles: state.layout_styles },
@@ -24,8 +25,8 @@
 	)}
 	attach={binding.attachElement}
 >
-	{#if state.present}
-		<div class="so-skeleton__placeholder" aria-hidden="true"></div>
-	{/if}
-	{@render props.children?.()}
+	{#if state.present}<div
+			class="so-skeleton__placeholder"
+			aria-hidden="true"
+		></div>{/if}{@render props.children?.()}
 </Dynamic>

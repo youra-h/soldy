@@ -15,18 +15,17 @@
 	внутри развела бы ячейку и то, что фокусируют. Плитка дня — `div`, а не `span`:
 	в слот кладут и блочное содержимое.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
-	>
-		<div class="so-calendar-item__day">
-			{#if props.children}{@render props.children({ text: state.text ?? '' })}{:else}{state.text}{/if}
-		</div>
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	<div class="so-calendar-item__day">
+		{#if props.children}{@render props.children({ text: state.text ?? '' })}{:else}{state.text}{/if}
+	</div>
+</Dynamic>

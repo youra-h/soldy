@@ -22,60 +22,57 @@
 	Петля — по ключу места (`cell.key`): страница, оставшаяся при сдвиге окна, — тот же
 	экземпляр, и узел с фокусом на нём не пересобирается.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	<Button
+		embedded="pagination.prev"
+		type="button"
+		class="so-pagination__prev"
+		size={state.size}
+		variant={state.variant}
+		disabled={state.prevDisabled}
+		onclick={() => ctrl.prev()}
+		{...state.prevAria}
 	>
-		<Button
-			embedded="pagination.prev"
-			type="button"
-			class="so-pagination__prev"
-			size={state.size}
-			variant={state.variant}
-			disabled={state.prevDisabled}
-			onclick={() => ctrl.prev()}
-			{...state.prevAria}
-		>
-			{#if props['prev-icon']}
-				{@render props['prev-icon']()}
+		{#if props['prev-icon']}
+			{@render props['prev-icon']()}
+		{:else}
+			<Icon embedded="pagination.prev-icon" tag={ARROW} size={state.size} />
+		{/if}
+	</Button><ol class="so-pagination__list">
+		{#each state.cells ?? [] as cell (cell.key)}
+			{#if cell.kind === 'item'}
+				{@const page = cell.item}
+				{#snippet content(scope: { text: string })}
+					{@render props.item?.({ ...scope, item: page })}
+				{/snippet}
+				<PaginationItem ctrl={page} children={props.item ? content : undefined} />
 			{:else}
-				<Icon embedded="pagination.prev-icon" tag={ARROW} size={state.size} />
+				<li class="so-pagination__ellipsis">…</li>
 			{/if}
-		</Button>
-		<ol class="so-pagination__list">
-			{#each state.cells ?? [] as cell (cell.key)}
-				{#if cell.kind === 'item'}
-					{@const page = cell.item}
-					{#snippet content(scope: { text: string })}
-						{@render props.item?.({ ...scope, item: page })}
-					{/snippet}
-					<PaginationItem ctrl={page} children={props.item ? content : undefined} />
-				{:else}
-					<li class="so-pagination__ellipsis">…</li>
-				{/if}
-			{/each}
-		</ol>
-		<Button
-			embedded="pagination.next"
-			type="button"
-			class="so-pagination__next"
-			size={state.size}
-			variant={state.variant}
-			disabled={state.nextDisabled}
-			onclick={() => ctrl.next()}
-			{...state.nextAria}
-		>
-			{#if props['next-icon']}
-				{@render props['next-icon']()}
-			{:else}
-				<Icon embedded="pagination.next-icon" tag={ARROW} size={state.size} />
-			{/if}
-		</Button>
-	</Dynamic>
-{/if}
+		{/each}
+	</ol><Button
+		embedded="pagination.next"
+		type="button"
+		class="so-pagination__next"
+		size={state.size}
+		variant={state.variant}
+		disabled={state.nextDisabled}
+		onclick={() => ctrl.next()}
+		{...state.nextAria}
+	>
+		{#if props['next-icon']}
+			{@render props['next-icon']()}
+		{:else}
+			<Icon embedded="pagination.next-icon" tag={ARROW} size={state.size} />
+		{/if}
+	</Button>
+</Dynamic>

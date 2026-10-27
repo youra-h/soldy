@@ -11,25 +11,24 @@
 	const state = binding.state
 </script>
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
-	>
-		{#if props.children}
-			{@render props.children()}
-		{:else}
-			{#each state.shown ?? [] as radio (radio.uid)}
-				{#snippet label(scope: { active: boolean })}
-					{@render props.item?.({ ...scope, item: radio })}
-				{/snippet}
-				<RadioGroupItem ctrl={radio} children={props.item ? label : undefined} />
-			{/each}
-		{/if}
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	{#if props.children}
+		{@render props.children()}
+	{:else}
+		{#each state.shown ?? [] as radio (radio.uid)}
+			{#snippet label(scope: { active: boolean })}
+				{@render props.item?.({ ...scope, item: radio })}
+			{/snippet}
+			<RadioGroupItem ctrl={radio} children={props.item ? label : undefined} />
+		{/each}
+	{/if}
+</Dynamic>

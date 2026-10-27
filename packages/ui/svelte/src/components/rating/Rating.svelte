@@ -28,33 +28,30 @@
 	{/if}
 {/snippet}
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
-		attach={binding.attachElement}
-	>
-		<span class="so-rating__track">
-			{#each state.stars ?? [] as star (star.value)}
-				<span class="so-rating__star" style={toStyleText(star.style)} aria-hidden="true">
-					{@render glyph(star.value, false)}
-					<span class="so-rating__star-fill">{@render glyph(star.value, true)}</span>
-				</span>
-			{/each}
-			<span class="so-rating__thumb">
-				<input
-					class="so-rating__input"
-					type="range"
-					min="0"
-					max={state.max}
-					step={state.step}
-					value={state.value}
-					id={state.id}
-					name={state.name}
-					disabled={state.disabled}
-					{...state.aria}
-				/>
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
+	attach={binding.attachElement}
+>
+	<span class="so-rating__track">
+		{#each state.stars ?? [] as star (star.value)}
+			<span class="so-rating__star" style={toStyleText(star.style)} aria-hidden="true">
+				{@render glyph(star.value, false)}<span class="so-rating__star-fill">{@render glyph(star.value, true)}</span>
 			</span>
+		{/each}<span class="so-rating__thumb">
+			<input
+				class="so-rating__input"
+				type="range"
+				min="0"
+				max={state.max}
+				step={state.step}
+				value={state.value}
+				id={state.id}
+				name={state.name}
+				disabled={state.disabled}
+				{...state.aria}
+			/>
 		</span>
-	</Dynamic>
-{/if}
+	</span>
+</Dynamic>

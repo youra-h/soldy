@@ -13,6 +13,7 @@
 {#if state.rendered}
 	<Teleport to={state.target} disabled={state.contained}>
 		<Dynamic
+			rendered
 			tag={state.tag}
 			attributes={toRootProps(
 				state,

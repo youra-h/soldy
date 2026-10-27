@@ -13,32 +13,30 @@
 	const text = textareaText(() => state.value)
 </script>
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.dataset],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
-	>
-		<textarea
-			id={state.id}
-			name={state.name}
-			rows={state.rows}
-			maxlength={state.maxlength}
-			disabled={state.disabled}
-			readonly={state.readonly}
-			required={state.required}
-			placeholder={state.placeholder}
-			{...state.aria}
-			{...toControlAttrs<TextareaAttributes>(binding.forwardProps)}
-			{...text.attributes}
-			value={text.value}
-		></textarea>
-		{#if state.counter}
-			<div class="so-textarea__counter" {...state.counterAria}>{state.names_counter}</div>
-		{/if}
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.dataset],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<textarea
+		id={state.id}
+		name={state.name}
+		rows={state.rows}
+		maxlength={state.maxlength}
+		disabled={state.disabled}
+		readonly={state.readonly}
+		required={state.required}
+		placeholder={state.placeholder}
+		{...state.aria}
+		{...toControlAttrs<TextareaAttributes>(binding.forwardProps)}
+		{...text.attributes}
+		value={text.value}
+	></textarea>{#if state.counter}<div class="so-textarea__counter" {...state.counterAria}>
+			{state.names_counter}
+		</div>{/if}
+</Dynamic>

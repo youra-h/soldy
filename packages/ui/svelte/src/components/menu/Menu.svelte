@@ -18,38 +18,37 @@
 	Роль `menu` — у панели, а не у списка: узел с ролью и фокусом должен быть один.
 	Части вплотную: пробел между блоками Svelte оставил бы в корне и в списке текстом.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
+	attach={binding.attachElement}
+>
+	{@render props.trigger?.({
+		triggerAria: state.triggerAria ?? {},
+		triggerDataset: state.triggerDataset ?? {},
+	})}<Frame
+		embedded="menu.frame"
+		class={state.panelClasses}
+		tabindex={-1}
+		visible={state.open}
+		position="fixed"
+		anchor_anchor={binding.rootElement}
+		anchor_point={state.point}
+		anchor_placement={state.placement}
+		anchor_offset={4}
+		{...state.aria}
+		{...state.dismiss_ownerAttribute}
 	>
-		{@render props.trigger?.({
-			triggerAria: state.triggerAria ?? {},
-			triggerDataset: state.triggerDataset ?? {},
-		})}<Frame
-			embedded="menu.frame"
-			class={state.panelClasses}
-			tabindex={-1}
-			visible={state.open}
-			position="fixed"
-			anchor_anchor={binding.rootElement}
-			anchor_point={state.point}
-			anchor_placement={state.placement}
-			anchor_offset={4}
-			{...state.aria}
-			{...state.dismiss_ownerAttribute}
-		>
-			<!-- Items from the panel's first opening on (`contentRendered`) -->
-			<div class="so-menu__list">
-				{#if state.contentRendered}
-					{#if props.children}
-						{@render props.children()}
-					{:else}
-						{@render drawItems(state, props)}
-					{/if}
+		<!-- Items from the panel's first opening on (`contentRendered`) -->
+		<div class="so-menu__list">
+			{#if state.contentRendered}
+				{#if props.children}
+					{@render props.children()}
+				{:else}
+					{@render drawItems(state, props)}
 				{/if}
-			</div>
-		</Frame>
-	</Dynamic>
-{/if}
+			{/if}
+		</div>
+	</Frame>
+</Dynamic>

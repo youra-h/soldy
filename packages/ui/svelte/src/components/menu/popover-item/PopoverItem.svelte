@@ -30,50 +30,49 @@
 	{/if}
 {/snippet}
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.dataset, state.attrs],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.dataset, state.attrs],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<ItemRow
+		embedded="menu.row"
+		tag="div"
+		size={state.size}
+		disabled={state.disabled}
+		{...state.aria}
+		{...toControlAttrs<MenuPopoverItemAttributes>(binding.forwardProps)}
+		onclick={chainHandler(() => context?.adapters.menu.open(), binding.forwardProps.onclick)}
 	>
-		<ItemRow
-			embedded="menu.row"
-			tag="div"
-			size={state.size}
-			disabled={state.disabled}
-			{...state.aria}
-			{...toControlAttrs<MenuPopoverItemAttributes>(binding.forwardProps)}
-			onclick={chainHandler(() => context?.adapters.menu.open(), binding.forwardProps.onclick)}
-		>
-			{#snippet leading()}
-				<span class="so-menu-item__icon">{@render props.leading?.()}</span>
-			{/snippet}
-			{#if props.header}
-				{@render props.header({ text: state.text ?? '', open: state.open ?? false })}
-			{:else}
-				{state.text}
-			{/if}
-			{#snippet trailing()}
-				<span class="so-menu-item__arrow" aria-hidden="true">{@render arrowIcon()}</span>
-			{/snippet}
-		</ItemRow><Frame
-			embedded="menu.popover-item-frame"
-			class="so-menu-item__panel"
-			tabindex={-1}
-			visible={state.open}
-			position="fixed"
-			anchor_anchor={binding.rootElement}
-			anchor_placement="end-start"
-			{...state.panelAria}
-			{...state.dismiss_ownerAttribute}
-		>
-			<div class="so-menu-item__content">
-				{#if state.contentRendered}{@render props.children?.()}{/if}
-			</div>
-		</Frame>
-	</Dynamic>
-{/if}
+		{#snippet leading()}
+			<span class="so-menu-item__icon">{@render props.leading?.()}</span>
+		{/snippet}
+		{#if props.header}
+			{@render props.header({ text: state.text ?? '', open: state.open ?? false })}
+		{:else}
+			{state.text}
+		{/if}
+		{#snippet trailing()}
+			<span class="so-menu-item__arrow" aria-hidden="true">{@render arrowIcon()}</span>
+		{/snippet}
+	</ItemRow><Frame
+		embedded="menu.popover-item-frame"
+		class="so-menu-item__panel"
+		tabindex={-1}
+		visible={state.open}
+		position="fixed"
+		anchor_anchor={binding.rootElement}
+		anchor_placement="end-start"
+		{...state.panelAria}
+		{...state.dismiss_ownerAttribute}
+	>
+		<div class="so-menu-item__content">
+			{#if state.contentRendered}{@render props.children?.()}{/if}
+		</div>
+	</Frame>
+</Dynamic>
