@@ -144,19 +144,20 @@ export function angular({ tsconfig, include }: TAngularOptions): Plugin[] {
 	const compiler: Plugin = {
 		name: 'playground:angular',
 
-		config: (_config, { command }) => ({
+		config: (config, { command }) => ({
 			optimizeDeps: { rolldownOptions: { plugins: [linker] } },
-			// Сборка стенда — продуктовая, как у Vue и React: Angular в ней без
-			// проверок разработки и без путей JIT, как его собирает CLI. Dev-сервер
-			// и тесты остаются в режиме разработки — с его ошибками и
-			// предупреждениями
+			// A build is a production one, as Vue's and React's: Angular without
+			// development checks and JIT paths, as its CLI builds it. A server
+			// bundle (`tools/bench-ssr`) is built in server mode, as the CLI builds
+			// one. The dev server and the tests stay in development mode — with its
+			// errors and warnings
 			...(command === 'build'
 				? {
 						define: {
 							ngDevMode: 'false',
 							ngJitMode: 'false',
 							ngI18nClosureMode: 'false',
-							ngServerMode: 'false',
+							ngServerMode: String(Boolean(config.build?.ssr)),
 						},
 					}
 				: {}),

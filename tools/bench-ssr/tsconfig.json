@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true,
+    "paths": {
+      "@soldy-ui/theme-oren/setup": ["../../packages/themes/oren/setup/index.ts"],
+      "@soldy-ui/theme-base/setup": ["../../packages/themes/base/setup/index.ts"],
+      "@soldy-ui/core": ["../../packages/core/src"],
+      "@soldy-ui/icons-material": ["../../packages/icons/material/src"],
+      "@soldy-ui/plugins": ["../../packages/plugins/src"],
+      "@soldy-ui/setup": ["../../packages/setup/index.ts"],
+      "@soldy-ui/playground-shared": ["../../packages/playground/shared/src/index.ts"]
+    }
+  },
+  // The framework entries draw the hosts' previews, which are type programs of
+  // the developer stand (each with its own JSX and Angular options); the run's
+  // own code is the measurement and the page contract
+  "include": ["src/page.ts", "src/measure.ts"]
+}
