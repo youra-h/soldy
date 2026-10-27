@@ -18,7 +18,6 @@ export function setupPaginationItem(props: PaginationItemProps) {
 		ctrl: props.ctrl,
 		props,
 	})
-	const owner = useAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		PaginationCollectionItemDescriptor(),
@@ -26,7 +25,8 @@ export function setupPaginationItem(props: PaginationItemProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, itemBinding), context: item.instance.context }
 }

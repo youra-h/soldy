@@ -337,8 +337,6 @@ export default {
       props,
     })
 
-    const refs = useAdapter(adapter, props, emit)
-
     const collectionAdapter = createVueAdapterContext(
       TabsCollectionDescriptor(),
       { props, options: { owner: adapter.instance, engine: props.engine } },
@@ -348,6 +346,7 @@ export default {
       .use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
     const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
+    const refs = useAdapter(adapter, props, emit)
 
     return joinBindings(refs, refsCollection)
   },
@@ -370,10 +369,14 @@ which win over a state property of the same name. Never spread a binding: a spre
 state once, in `setup()`, and the markup stops following the core —
 `packages/ui/vue/__tests__/setup-spread.spec.ts` allows only `...useSplitAttrs()` in a setup.
 
-The item setup mirrors the two-context shape (`TabsItemDescriptor` +
-`TabsCollectionItemDescriptor`, shared bundle, `TCollectionItemExtension`): the facade through
-`useCollectionAdapter` first, then the component through `useAdapter` — `attach` and
-`onUnmounted` go by that order — and `joinBindings(ownerBinding, itemBinding)`.
+The facade is bound **before** the component, in every adapter: each context listens to its
+events after its own `attach`, and the facade, accepted, writes into the component (the months
+of Calendar's grids, Table's `dataset`) — bound first, that is the component's starting state,
+not an event, as in React and Angular. The item setup mirrors the two-context shape
+(`TabsItemDescriptor` + `TabsCollectionItemDescriptor`, shared bundle,
+`TCollectionItemExtension`): the facade through `useCollectionAdapter` first, then the component
+through `useAdapter` — `attach` and `onUnmounted` go by that order — and
+`joinBindings(ownerBinding, itemBinding)`.
 
 ## Key files
 

@@ -18,8 +18,6 @@ export function setupMenu(getProps: () => MenuProps, mountId: string, receive: T
 		mountId,
 	})
 
-	const owner = useAdapter(adapter, getProps, receive)
-
 	const collectionAdapter = createSvelteAdapterContext(
 		MenuCollectionDescriptor(),
 		{
@@ -30,11 +28,8 @@ export function setupMenu(getProps: () => MenuProps, mountId: string, receive: T
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, collectionBinding)
 }

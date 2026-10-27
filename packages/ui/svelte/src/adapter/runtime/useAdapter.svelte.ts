@@ -5,14 +5,14 @@
  * 1. Core → Svelte: a subscription to the binding state; a property read in a
  *    tracking context keeps its value in a raw rune
  * 2. Svelte → Core: input props in an effect
- * 3. Events — to the `onXxx` callback props
- * 4. The component is accepted — `adapter.attach()` at initialisation
+ * 3. The component is accepted — `adapter.attach()` at initialisation
+ * 4. Events — to the `onXxx` callback props, after the acceptance
  * 5. The root — by an attachment: to `TElementPlugin`, to the component's
  *    `ref` and to the `rootElement` rune
  * 6. Cleanup on destroy
  *
- * The collection facade is bound by `useCollectionAdapter`, and
- * `joinBindings` joins it with the component's binding.
+ * The collection facade is bound by `useCollectionAdapter` — before the
+ * component, — and `joinBindings` joins it with the component's binding.
  * AGENTS.md (Svelte), «Связка».
  */
 
@@ -53,8 +53,8 @@ export type TBinding<
 /** Связка фасада коллекции: своего `ctrl` и корня у него нет. */
 export type TCollectionBinding<TState extends object, TProps extends object = object> = {
 	readonly state: TState
-	/** Атрибуты, которые не съели ни компонент, ни фасад. */
-	readonly forwardProps: TForwardProps<TProps>
+	/** What the facade leaves of the given attributes: `joinBindings` hands it the component's rest. */
+	forward: (props: TForwardProps<TProps>) => TForwardProps<TProps>
 }
 
 /**
@@ -179,14 +179,21 @@ function useExchange(
 		exchange.inputs.full(getProps())
 	})
 
-	// 3. One subscription for the whole life, right away, as the state: in an
+	// 3. The component's initialisation — on the server too — is its mount: a
+	// collection item joins the collection by the server markup, in DOM order
+	adapter.attach()
+
+	// 4. Events — after the acceptance: what it writes is the starting state,
+	// as in the other adapters (benchmarks/parity/README.md). A component with
+	// collection facades binds them first: the facade, accepted, writes into
+	// the component — the months of Calendar's grids, Table's `dataset`. One
+	// subscription for the whole life, at initialisation, as the state: in an
 	// effect it began after the children, and the markup items that joined the
-	// collection while mounting never reached the consumer — the other adapters
-	// send them (benchmarks/parity/README.md). The callback is read lazily and
-	// called untracked: an event comes in the middle of rendering too — an item
-	// joins inside the owner's block, — and a consumer writing its state there
-	// would be an unsafe mutation for Svelte. `onDestroy` unsubscribes on the
-	// server, where effects do not run
+	// collection while mounting never reached the consumer. The callback is
+	// read lazily and called untracked: an event comes in the middle of
+	// rendering too — an item joins inside the owner's block, — and a consumer
+	// writing its state there would be an unsafe mutation for Svelte.
+	// `onDestroy` unsubscribes on the server, where effects do not run
 	const stop = exchange.events.listen((exportName, args) => {
 		untrack(() => {
 			const callback: unknown = Reflect.get(getProps(), exportName)
@@ -203,10 +210,6 @@ function useExchange(
 		stop()
 		adapter.destroy()
 	})
-
-	// 4. Инициализация компонента — и на сервере тоже — это его монтирование:
-	// элемент коллекции входит в неё к серверной разметке, в порядке DOM
-	adapter.attach()
 
 	return { exchange, state: new Proxy<TValues>(values, STATE) }
 }
@@ -282,31 +285,28 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 }
 
 /**
- * Адаптер фасада коллекции: его состояние и то, что из атрибутов `getForward`
- * он не съел. `ctrl` и корня нет: они компонента, со связкой которого фасад
- * сводит `joinBindings`.
+ * The adapter of a collection facade: its state and what it leaves of the
+ * attributes. No `ctrl` and no root: they are the component's, whose binding
+ * `joinBindings` joins the facade with. Bound before the component: the
+ * facade, accepted, writes into it, and that is its starting state.
  */
 export function useCollectionAdapter<F extends IComponentContract, TProps extends object>(
 	facade: IAdapterContext<F>,
 	getProps: () => TProps,
-	getForward: () => TForwardProps<TProps>,
 ): TCollectionBinding<TAdapterState<F>, TProps> {
 	const { exchange, state } = useExchange(facade, getProps)
-	const forwardProps = $derived(forwardOf(exchange, getForward()))
 
 	return {
 		state: toInstanceState<F>(state),
-
-		get forwardProps() {
-			return forwardProps
-		},
+		forward: (props) => forwardOf(exchange, props),
 	}
 }
 
 /**
- * Связка компонента с его фасадами — одна, для разметки: состояние всех одним
- * видом, атрибуты — последнего фасада (каждый отбирает свои из остатка
- * предыдущего), `ctrl` и корень — компонента.
+ * The binding of a component with its facades — one, for the markup: the
+ * state of all of them as one view, the attributes of the last facade (each
+ * takes its own from the rest of the previous one, the first — from the
+ * component's), `ctrl` and the root of the component.
  */
 export function joinBindings<
 	C extends IComponentContract,
@@ -332,7 +332,9 @@ export function joinBindings(
 	owner: TBinding<IComponentContract, object, object>,
 	...facades: TCollectionBinding<object, object>[]
 ): TBinding<IComponentContract, object, object> {
-	const last = facades[facades.length - 1] ?? owner
+	const forwardProps = $derived(
+		facades.reduce((rest, facade) => facade.forward(rest), owner.forwardProps),
+	)
 
 	return {
 		ctrl: owner.ctrl,
@@ -342,7 +344,7 @@ export function joinBindings(
 		consumerRef: owner.consumerRef,
 
 		get forwardProps() {
-			return last.forwardProps
+			return forwardProps
 		},
 
 		get rootElement() {

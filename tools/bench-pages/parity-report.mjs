@@ -34,7 +34,6 @@ const read = (fw) => JSON.parse(fs.readFileSync(path.join(results, `parity-${fw}
  * - `ids` — ids and list keys are compared by presence only, see `masked`.
  * - `single` — an output of Angular and a `CustomEvent` of Web Components
  *   carry one value, see `packed`.
- * - `assembly` — what the component's own assembly sends, see `assembled`.
  * - `delegated` — a framework handler runs at the root, see `delegated`.
  * - `teardown` — what a component sends while its framework takes it down
  *   is not compared: the unmount step's events are only counted, see
@@ -55,7 +54,6 @@ const RULES = {
 		'data-owner',
 		'key',
 	]),
-	assembly: new Set(['react', 'angular']),
 	delegated: new Set(['react', 'svelte', 'solid']),
 }
 
@@ -111,27 +109,6 @@ function packed(event, fw) {
 	const none = fw === 'webc' ? null : '<undefined>'
 
 	return { name: event.name, args: [args.length > 1 ? args : (args[0] ?? none)] }
-}
-
-/**
- * The mount step without the component's own assembly, for the frameworks
- * that listen after it. A collection component has two contexts — its own
- * and the collection facade's, — and the facade's assembly writes into the
- * owner: the months of Calendar's grids, Table's `dataset`. React builds both
- * in one factory of the render and listens at the commit, Angular — after
- * `ngOnInit` built both: that is the initial state there. Vue, Svelte, Solid
- * and Web Components listen to the owner before they build the facade, and
- * it comes as events. The assembly's events are those before anything else
- * happened: before the first item joined and before the plugins' bundle.
- */
-function assembled(events, fw, label) {
-	if (label !== 'mount' || !RULES.assembly.has(fw)) return events
-
-	const first = events.findIndex(
-		(event) => event.name === 'item:add:before' || event.name === 'bundle:create',
-	)
-
-	return first > 0 ? events.slice(first) : events
 }
 
 /** The owner's own reaction to a click, past the click's target. */
@@ -193,7 +170,7 @@ function diff(a, b) {
 /** Divergences of one step: events, tree, focus. */
 function compareStep(vue, other, fw) {
 	const found = []
-	const ours = assembled(vue.events.filter(RULES.vModel), fw, vue.label)
+	const ours = vue.events.filter(RULES.vModel)
 	const expected = ours.map((event) => text(packed(event, fw)))
 	const actual = other.events.map(text)
 

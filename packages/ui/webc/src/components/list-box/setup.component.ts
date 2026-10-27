@@ -22,7 +22,6 @@ export function setupListBox(
 	onUpdate: TUpdateListener,
 ): TBinding<IListBox, TListBoxCollectionFacade> {
 	const adapter = createWebcAdapterContext(host, ListBoxDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 	const elevator = createWebcElevator(host)
 
 	const collectionAdapter = createWebcAdapterContext(
@@ -36,5 +35,8 @@ export function setupListBox(
 		// Окно обёртки `Virtual`; спискам в слотах элементов окно не наследуется
 		.use(TVirtualCollectionExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

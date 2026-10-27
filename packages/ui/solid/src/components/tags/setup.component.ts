@@ -11,7 +11,6 @@ import type { TagsProps } from './base.component'
 export function setupTags(props: TagsProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(TagsDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		TagsCollectionDescriptor(),
@@ -22,7 +21,8 @@ export function setupTags(props: TagsProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, collectionBinding), layer }
 }

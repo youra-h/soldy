@@ -21,8 +21,6 @@ export function setupSelect(props: SelectProps) {
 		props,
 	}).use(TFieldControlExtension, { elevator })
 
-	const owner = useAdapter(adapter, props)
-
 	const collectionAdapter = createSolidAdapterContext(
 		SelectCollectionDescriptor(),
 		{
@@ -34,7 +32,8 @@ export function setupSelect(props: SelectProps) {
 		.use(TCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return {
 		...joinBindings(owner, collectionBinding),

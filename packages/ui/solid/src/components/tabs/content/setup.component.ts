@@ -19,7 +19,6 @@ export function setupTabsContent(props: TabsContentProps) {
 		ctrl: props.ctrl,
 		props,
 	})
-	const owner = useAdapter(adapter, props)
 
 	const content = createSolidAdapterContext(
 		TabsCollectionContentDescriptor(),
@@ -27,7 +26,8 @@ export function setupTabsContent(props: TabsContentProps) {
 		{ bundle: adapter.bundle },
 	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(content, props, owner.forwardProps)
+	const itemBinding = useCollectionAdapter(content, props)
+	const owner = useAdapter(adapter, props)
 
 	return joinBindings(owner, itemBinding)
 }

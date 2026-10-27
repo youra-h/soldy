@@ -15,7 +15,6 @@ import type { SelectItemProps } from './base.component'
 export function setupSelectItem(props: SelectItemProps) {
 	const { elevator } = useElevator()
 	const adapter = createSolidAdapterContext(SelectItemDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		SelectCollectionItemDescriptor(),
@@ -23,7 +22,8 @@ export function setupSelectItem(props: SelectItemProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, itemBinding), context: item.instance.context }
 }

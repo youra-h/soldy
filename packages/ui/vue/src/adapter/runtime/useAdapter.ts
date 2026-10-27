@@ -166,22 +166,26 @@ export function useAdapterParts(
 		link.inputs.full(props)
 	})
 
-	// 3. Events: the core's events and `update:<prop>` for `v-model` — the
-	// exchange sends it by the profile, right after the core event.
-	//
-	// The consumer hears nothing once the unmount began, as in the other
-	// adapters (benchmarks/parity/README.md): Vue unmounts the parent's hooks
-	// first and its children after, and the markup items leaving the collection
-	// sent `update:items` with an ever shorter list — `v-model:items` of a
-	// `v-if`-ed owner emptied the parent's list. The blur of the removed node
-	// went out the same way
-	if (emit) onBeforeUnmount(link.events.listen((name, args) => emit(name, ...args)))
-
-	// 4. The component is accepted: in Vue that is `setup()` itself, with no
+	// 3. The component is accepted: in Vue that is `setup()` itself, with no
 	// repeats and no discarded assemblies. Here, not in `onMounted`: `setup()`
 	// runs on the server too, and a collection item has to join the collection
 	// before the server markup
 	adapter.attach()
+
+	// 4. Events: the core's events and `update:<prop>` for `v-model` — the
+	// exchange sends it by the profile, right after the core event.
+	//
+	// After the acceptance: what it writes is the starting state, as in the
+	// other adapters (benchmarks/parity/README.md). A component with collection
+	// facades binds them first: the facade, accepted, writes into the
+	// component — the months of Calendar's grids, Table's `dataset`.
+	//
+	// The consumer hears nothing once the unmount began: Vue unmounts the
+	// parent's hooks first and its children after, and the markup items
+	// leaving the collection sent `update:items` with an ever shorter list —
+	// `v-model:items` of a `v-if`-ed owner emptied the parent's list. The blur
+	// of the removed node went out the same way
+	if (emit) onBeforeUnmount(link.events.listen((name, args) => emit(name, ...args)))
 
 	// 5. Cleanup. Unsubscribing is a must: with an external `ctrl` that
 	// outlives the component, `adapter.destroy()` leaves `instance.events`

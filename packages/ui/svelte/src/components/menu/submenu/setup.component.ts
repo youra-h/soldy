@@ -28,8 +28,6 @@ export function setupMenuSubmenu(
 		mountId,
 	})
 
-	const owner = useAdapter(adapter, getProps, receive)
-
 	// В меню над ним — пункт
 	const item = createSvelteAdapterContext(
 		MenuCollectionItemDescriptor(),
@@ -44,12 +42,9 @@ export function setupMenuSubmenu(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
-	const menuBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => itemBinding.forwardProps,
-	)
+	const itemBinding = useCollectionAdapter(item, getProps)
+	const menuBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return Object.assign(joinBindings(owner, itemBinding, menuBinding), {
 		context: item.instance.context,

@@ -11,7 +11,6 @@ import type { MenuProps } from './base.component'
 export function setupMenu(props: MenuProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(MenuDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		MenuCollectionDescriptor(),
@@ -22,7 +21,8 @@ export function setupMenu(props: MenuProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, collectionBinding), layer }
 }

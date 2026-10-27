@@ -111,12 +111,16 @@ function useExchange<C extends IComponentContract>(
 		onUpdate(name, value)
 	})
 
+	// Отброшенных сборок у Web Components нет: связку заводит подключение
+	adapter.attach()
+
+	// Events after the acceptance: what it writes is the starting state, as in
+	// the other adapters (benchmarks/parity/README.md). A component with
+	// collection facades binds them first: the facade, accepted, writes into
+	// the component — the months of Calendar's grids, Table's `dataset`
 	const unbindEvents = binding.events.listen((exportName, args) => {
 		dispatch(host, exportName, args, bubbles)
 	})
-
-	// Отброшенных сборок у Web Components нет: связку заводит подключение
-	adapter.attach()
 
 	return {
 		state: toInstanceState<C>(state),
