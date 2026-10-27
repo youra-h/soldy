@@ -18,7 +18,6 @@ export function setupRadioGroupItem(props: RadioGroupItemProps) {
 		ctrl: props.ctrl,
 		props,
 	})
-	const owner = useAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		RadioGroupCollectionItemDescriptor(),
@@ -26,7 +25,8 @@ export function setupRadioGroupItem(props: RadioGroupItemProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(item, props, owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, itemBinding), context: item.instance.context }
 }

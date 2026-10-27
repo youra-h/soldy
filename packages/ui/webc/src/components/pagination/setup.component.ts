@@ -20,7 +20,6 @@ export function setupPagination(
 	onUpdate: TUpdateListener,
 ): TBinding<IPagination, TPaginationCollectionFacade> {
 	const adapter = createWebcAdapterContext(host, PaginationDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(
 		host,
@@ -29,5 +28,8 @@ export function setupPagination(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator: createWebcElevator(host) })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

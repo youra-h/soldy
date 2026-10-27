@@ -22,7 +22,6 @@ export function setupTable(getProps: () => TableProps, mountId: string, receive:
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		TableCollectionDescriptor(),
@@ -36,11 +35,8 @@ export function setupTable(getProps: () => TableProps, mountId: string, receive:
 		.use(TCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return Object.assign(joinBindings(owner, collectionBinding), {
 		facade: collectionAdapter.instance,

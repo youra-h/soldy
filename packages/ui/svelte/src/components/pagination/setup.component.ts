@@ -25,7 +25,6 @@ export function setupPagination(
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		PaginationCollectionDescriptor(),
@@ -37,11 +36,8 @@ export function setupPagination(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, collectionBinding)
 }

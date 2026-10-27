@@ -24,8 +24,6 @@ export function setupSelect(getProps: () => SelectProps, mountId: string, receiv
 		mountId,
 	}).use(TFieldControlExtension, { elevator })
 
-	const owner = useAdapter(adapter, getProps, receive)
-
 	const collectionAdapter = createSvelteAdapterContext(
 		SelectCollectionDescriptor(),
 		{
@@ -38,11 +36,8 @@ export function setupSelect(getProps: () => SelectProps, mountId: string, receiv
 		.use(TCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, collectionBinding)
 }

@@ -1,17 +1,18 @@
 /**
- * useAdapter — связка adapter-context с Solid, аналог `useAdapter` у Vue.
+ * useAdapter — binds an adapter context to Solid, the counterpart of Vue's
+ * `useAdapter`.
  *
- * - состояние — неглубокое, сигнал на прочитанное свойство
- *   (`createShallowState`), его заполняет подписка на связку;
- * - входы — эффект над всеми пропсами, связка пишет сменившиеся;
- * - события — колбэк-пропсы `onXxx`;
- * - тело компонента выполняется один раз, на сервере тоже: это и есть приём
- *   (`attach()`), а очистка — `onCleanup`.
+ * - the state is shallow, a signal per property read
+ *   (`createShallowState`), filled by the subscription to the binding;
+ * - the inputs — an effect over all props, the binding writes the changed ones;
+ * - the component body runs once, on the server too: that is the acceptance
+ *   (`attach()`), and the cleanup is `onCleanup`;
+ * - the events — the `onXxx` callback props, after the acceptance.
  *
- * `ref` адаптера привязывает корень к `TElementPlugin` и отдаёт тот же узел
- * `ref` потребителя. У коллекции контекстов два: фасад связывает
- * `useCollectionAdapter`, со связкой компонента его сводит `joinBindings`.
- * AGENTS.md (Solid), «Связка».
+ * The adapter's `ref` binds the root to `TElementPlugin` and hands the same
+ * node to the consumer's `ref`. A collection has two contexts: the facade is
+ * bound by `useCollectionAdapter` — before the component, — and `joinBindings`
+ * joins it with the component's binding. AGENTS.md (Solid), «Связка».
  */
 
 import { createEffect, createMemo, createSignal, onCleanup, type Accessor } from 'solid-js'
@@ -47,13 +48,19 @@ export type TBinding<
 /** Связка фасада коллекции: своего `ctrl` и `ref` у него нет. */
 export type TCollectionBinding<TState extends object, TProps extends object = object> = {
 	readonly state: TState
-	/** Мемо: атрибуты, которые не съели ни компонент, ни фасад. */
+	/** What the facade leaves of the given attributes: `joinBindings` hands it the component's rest. */
+	forward: (props: Partial<TProps>) => Partial<TProps>
+}
+
+/** What `joinBindings` takes of a binding it joins the facades with. */
+type TJoinable<TProps extends object> = {
+	readonly state: object
 	forwardProps: () => Partial<TProps>
 }
 
 /** Связка компонента с фасадом: состояние одним видом, атрибуты — фасада. */
 export type TJoinedBinding<
-	TOwner extends TCollectionBinding<object, TProps>,
+	TOwner extends TJoinable<TProps>,
 	TFacadeState extends object,
 	TProps extends object,
 > = Omit<TOwner, 'state' | 'forwardProps'> & {
@@ -61,7 +68,7 @@ export type TJoinedBinding<
 	forwardProps: () => Partial<TProps>
 }
 
-/** Общее у компонента и фасада: обмен, состояние, входы, события, приём и очистка. */
+/** What the component and a facade share: the exchange, the state, the inputs, the acceptance, the events and the cleanup. */
 function useExchange(
 	adapter: IAdapterContext,
 	props: object,
@@ -73,6 +80,13 @@ function useExchange(
 
 	createEffect(() => binding.inputs.full(props))
 
+	// Дети выполняются в порядке документа — элементы входят в коллекцию по DOM
+	adapter.attach()
+
+	// Events after the acceptance: what it writes is the starting state, as in
+	// the other adapters (benchmarks/parity/README.md). A component with
+	// collection facades binds them first: the facade, accepted, writes into
+	// the component — the months of Calendar's grids, Table's `dataset`
 	onCleanup(
 		binding.events.listen((exportName, args) => {
 			const callback: unknown = Reflect.get(props, exportName)
@@ -80,9 +94,6 @@ function useExchange(
 			if (typeof callback === 'function') callback(...args)
 		}),
 	)
-
-	// Дети выполняются в порядке документа — элементы входят в коллекцию по DOM
-	adapter.attach()
 
 	// Очистки Solid зовёт в обратном порядке: фасад уходит раньше компонента
 	onCleanup(() => adapter.destroy())
@@ -131,31 +142,33 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 }
 
 /**
- * Адаптер фасада коллекции: свои входы и события фасад берёт из `props`,
- * атрибуты отбирает из `forward` — остатка компонента или предыдущего
- * фасада. `ctrl` и `ref` нет: со связкой компонента фасад сводит `joinBindings`.
+ * The adapter of a collection facade: the facade takes its inputs and events
+ * from `props` and leaves the attributes that are not its own (`forward`).
+ * No `ctrl` and no `ref`: `joinBindings` joins the facade with the
+ * component's binding. Bound before the component: the facade, accepted,
+ * writes into it, and that is its starting state.
  */
 export function useCollectionAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
-	forward: () => Partial<TProps>,
 ): TCollectionBinding<TAdapterState<C>, TProps> {
 	const { binding, state } = useExchange(adapter, props)
 
 	return {
 		state: toInstanceState<C>(state),
-		forwardProps: createMemo(() => binding.forward(forward())),
+		forward: (rest) => binding.forward(rest),
 	}
 }
 
 /**
- * Связка компонента с его фасадами — одна, для разметки: состояние всех одним
- * видом (`joinState`), атрибуты — последнего фасада (каждый отбирает свои из
- * остатка предыдущего), остальное — компонента.
+ * The binding of a component with its facades — one, for the markup: the
+ * state of all of them as one view (`joinState`), the attributes of the last
+ * facade (each takes its own from the rest of the previous one, the first —
+ * from the component's), the rest — the component's.
  */
 export function joinBindings<
 	TProps extends object,
-	TOwner extends TCollectionBinding<object, TProps>,
+	TOwner extends TJoinable<TProps>,
 	TFacade extends object,
 >(
 	owner: TOwner,
@@ -163,7 +176,7 @@ export function joinBindings<
 ): TJoinedBinding<TOwner, TFacade, TProps>
 export function joinBindings<
 	TProps extends object,
-	TOwner extends TCollectionBinding<object, TProps>,
+	TOwner extends TJoinable<TProps>,
 	TFacade extends object,
 	TOwnerFacade extends object,
 >(
@@ -172,14 +185,14 @@ export function joinBindings<
 	ownerFacade: TCollectionBinding<TOwnerFacade, TProps>,
 ): TJoinedBinding<TJoinedBinding<TOwner, TFacade, TProps>, TOwnerFacade, TProps>
 export function joinBindings(
-	owner: TCollectionBinding<object>,
+	owner: TJoinable<object>,
 	...facades: TCollectionBinding<object>[]
-): TCollectionBinding<object> {
-	const last = facades[facades.length - 1] ?? owner
-
+): TJoinable<object> {
 	return {
 		...owner,
 		state: facades.reduce((state, facade) => joinState(state, facade.state), owner.state),
-		forwardProps: last.forwardProps,
+		forwardProps: createMemo(() =>
+			facades.reduce((rest, facade) => facade.forward(rest), owner.forwardProps()),
+		),
 	}
 }

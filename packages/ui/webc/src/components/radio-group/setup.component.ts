@@ -25,7 +25,6 @@ export function setupRadioGroup(
 		ctrl,
 		props,
 	}).use(TFieldControlExtension, { elevator: createWebcElevator(host) })
-	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(
 		host,
@@ -34,5 +33,8 @@ export function setupRadioGroup(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator: createWebcElevator(host) })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

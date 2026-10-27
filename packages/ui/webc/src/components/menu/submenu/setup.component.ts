@@ -51,8 +51,8 @@ export function setupMenuSubmenu(
 	).use(TCollectionExtension, { elevator })
 
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
-	const owner = useAdapter(adapter, host, onUpdate)
 	const menu = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
 
 	return joinBindings(owner, item, menu)
 }

@@ -16,7 +16,6 @@ export function setupTags(
 	onUpdate: TUpdateListener,
 ): TBinding<ITags, TTagsCollectionFacade> {
 	const adapter = createWebcAdapterContext(host, TagsDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(
 		host,
@@ -25,5 +24,8 @@ export function setupTags(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator: createWebcElevator(host) })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

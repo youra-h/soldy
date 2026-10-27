@@ -21,7 +21,6 @@ export function setupTable(
 	onUpdate: TUpdateListener,
 ): TBinding<ITable, TTableCollectionFacade> {
 	const adapter = createWebcAdapterContext(host, TableDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 	const elevator = createWebcElevator(host)
 
 	const collectionAdapter = createWebcAdapterContext(
@@ -34,5 +33,8 @@ export function setupTable(
 		// Окно обёртки `Virtual` над таблицей
 		.use(TVirtualCollectionExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

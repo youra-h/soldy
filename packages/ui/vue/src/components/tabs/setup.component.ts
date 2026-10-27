@@ -28,8 +28,6 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter(adapter, props, emit)
-
 		const collectionAdapter = createVueAdapterContext(
 			TabsCollectionDescriptor(),
 			{
@@ -45,6 +43,7 @@ export default {
 			.use(TDragAndDropCollectionExtension, { elevator: VueElevatorFactory })
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		return extendBinding(joinBindings(refs, refsCollection), useSplitAttrs())
 	},

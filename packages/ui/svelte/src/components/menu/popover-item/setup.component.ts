@@ -26,15 +26,14 @@ export function setupMenuPopoverItem(
 		mountId,
 	})
 
-	const owner = useAdapter(adapter, getProps, receive)
-
 	const item = createSvelteAdapterContext(
 		MenuCollectionItemDescriptor(),
 		{ props, mountId },
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return Object.assign(joinBindings(owner, itemBinding), { context: item.instance.context })
 }

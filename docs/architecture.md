@@ -1550,7 +1550,7 @@ Both read the surface `TSurface.of(descriptor, VueProfile)` at module import (La
   - Returns `TBinding` — a view (`adapter/runtime/view.ts`): one `Proxy` per component with a module-wide handler that reads the fields `ctrl`, `plugins`, `rootElement` (only when the bundle has `TElementPlugin`) and then the state — props and plugin outputs — on every access. Not a spread: it would read the state once, in `setup()`
   - Core → Vue: one shallow reactive record (`shallowReactive`) per context. `state.subscribe` hands every property with triggers over through the same call a trigger uses — that is how the record gets all its keys before the first render; later it calls only on a change. A new key is defined on the plain record past the proxy (no reader yet, and a fast object rather than a dictionary), a change goes through the proxy and notifies the readers. Vue creates a `Dep` for a key only when the render reads it: a property the markup does not read costs a slot of the record, not a `RefImpl` and a `Dep` as a `shallowRef` per property did (benchmarks/pages/vue.md, 869fmjnaq). Presence and keys of the view come from the raw records, untracked: Vue resolves a template name with `hasOwn` once per instance, and a key valued `undefined` is present
   - Vue → core: `onBeforeUpdate` → `inputs.full(props)` when the parent handed the component a new vnode — a parent pass that changed the props; a render of the component's own state keeps the vnode and skips the inputs. Changes only: the starting values were applied by the assembly — AGENTS.md, «Две поверхности управления». No `watch` over the props: reading every input for tracking created a `Dep` and a `Link` per key and an effect on every component (benchmarks/pages/vue.md, 869fmhuag)
-  - Events: `events.listen` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event)
+  - Events: `events.listen` → `emit`, including `update:<prop>` for `v-model` (the binding emits it after the core event) — after `attach`: what the acceptance writes is the starting state. A collection binds its facades before the component, so what the facade writes into it (the months of Calendar's grids, Table's `dataset`) is not an event, as in React and Angular
   - `rootElement` watch → `adapter.bindElement`
   - На `onUnmounted`: снимает подписки связки, затем `adapter.destroy()`
 - `useCollectionAdapter()` - То же для контекста фасада коллекции — владельца и элемента: `ctrl` и `rootElement` не отдаёт — они принадлежат компоненту, — и корня с `watch` фасаду не заводит: набор у фасада общий с компонентом, своего узла нет (AGENTS.md, «Vue collection setup»)
@@ -2377,11 +2377,12 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   половины: `bindRef` — только привязка к `TElementPlugin`, `consumerRef` —
   только запись `ref`, для корня внутри обёртки; привязанный узел разметка
   получает руной `rootElement` — у Popover, Tooltip и Select это якорь панели
-  их Frame), `useCollectionAdapter` — связка фасада коллекции: те же
-  состояние, входы, события, приём и уничтожение, но без `ctrl` и привязки
-  узла, а атрибуты — из того, что не съел компонент, — и `joinBindings`,
-  который сводит связку компонента с его фасадами в одну: состояние одним
-  видом (`joinState`, прокси), атрибуты последнего фасада, `ctrl` и корень
+  их Frame), `useCollectionAdapter` — связка фасада коллекции, связывается
+  раньше компонента: те же состояние, входы, события, приём и уничтожение, но
+  без `ctrl` и привязки узла, и `forward` — что фасад оставляет из данных ему
+  атрибутов, — и `joinBindings`, который сводит связку компонента с его
+  фасадами в одну: состояние одним видом (`joinState`, прокси), атрибуты
+  последнего фасада (цепочкой от остатка компонента), `ctrl` и корень
   компонента. Расширение `.svelte.ts` обязательно там, где используются руны
   (`$state`, `$effect`, `$derived`). Там же
   `Dynamic` — корень по `tag` (строка, компонент Svelte, метка роли);
@@ -2592,11 +2593,13 @@ Svelte 5 на рунах. Структура зеркалит React, потом�
   потребителя, для корня внутри обёртки; аксессор привязанного корня
   `rootElement`, как `rootElement` у Vue, — якорь панели Popover, Tooltip,
   Menu и пунктов меню со своей панелью), `useCollectionAdapter` — связка
-  фасада коллекции: те же состояние, входы, события, приём и уничтожение, но
-  без `ctrl` и привязки узла, а атрибуты — из того, что не съел компонент, — и
-  `joinBindings`, который сводит связку компонента с его фасадами в одну:
-  состояние одним видом (`joinState`, прокси поверх обоих состояний), атрибуты
-  последнего фасада, `ctrl` и привязка узла — компонента; `KeyedFor` — петля
+  фасада коллекции, связывается раньше компонента: те же состояние, входы,
+  события, приём и уничтожение, но без `ctrl` и привязки узла, и `forward` —
+  что фасад оставляет из данных ему атрибутов, — и `joinBindings`, который
+  сводит связку компонента с его фасадами в одну: состояние одним видом
+  (`joinState`, прокси поверх обоих состояний), атрибуты последнего фасада
+  (одним мемо, цепочкой от остатка компонента), `ctrl` и привязка узла —
+  компонента; `KeyedFor` — петля
   по ключу записи;
   `flow.ts` (вне бочки: имена как у Solid) — `Show`, `For` и `Index`
   компонентов: вне окна гидратации это примитивы Solid, а сменившееся в окне
@@ -3941,7 +3944,7 @@ setup(props, { emit }) {
      - adapter.connect(VueProfile): the exchange (TExchange)
      - state.subscribe: every property, then each change → the shallowReactive record
      - onBeforeUpdate with a new vnode from the parent → inputs.full(props) (changes only)
-     - events.listen → emit, update:<prop> for v-model included
+     - adapter.attach(), then events.listen → emit, update:<prop> for v-model included
      - rootElement watch → adapter.bindElement → TElementPlugin
      - onUnmounted: unsubscribe, adapter.destroy()
      ↓

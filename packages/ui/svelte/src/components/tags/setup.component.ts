@@ -17,7 +17,6 @@ export function setupTags(getProps: () => TagsProps, mountId: string, receive: T
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		TagsCollectionDescriptor(),
@@ -29,11 +28,8 @@ export function setupTags(getProps: () => TagsProps, mountId: string, receive: T
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, collectionBinding)
 }

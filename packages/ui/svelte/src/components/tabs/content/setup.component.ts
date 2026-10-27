@@ -25,7 +25,6 @@ export function setupTabsContent(
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
 
 	const content = createSvelteAdapterContext(
 		TabsCollectionContentDescriptor(),
@@ -33,7 +32,8 @@ export function setupTabsContent(
 		{ bundle: adapter.bundle },
 	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(content, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(content, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, itemBinding)
 }

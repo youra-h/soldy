@@ -24,7 +24,6 @@ export function setupMenu(
 	onUpdate: TUpdateListener,
 ): TBinding<IMenu, TMenuCollectionFacade, TMenuOutputs> {
 	const adapter = createWebcAdapterContext(host, MenuDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(
 		host,
@@ -33,5 +32,8 @@ export function setupMenu(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator: createWebcElevator(host) })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

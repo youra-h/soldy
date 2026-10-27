@@ -36,7 +36,6 @@ export function setupSelect(
 		TFieldControlExtension,
 		{ elevator },
 	)
-	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(
 		host,
@@ -48,5 +47,8 @@ export function setupSelect(
 		// Окно обёртки `<so-virtual>` над Select
 		.use(TVirtualCollectionExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

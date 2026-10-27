@@ -27,7 +27,6 @@ export function setupListBox(
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		ListBoxCollectionDescriptor(),
@@ -42,11 +41,8 @@ export function setupListBox(
 		.use(TDragAndDropCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(
-		collectionAdapter,
-		getProps,
-		() => owner.forwardProps,
-	)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, collectionBinding)
 }

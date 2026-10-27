@@ -68,9 +68,9 @@ export default {
 		).use(TCollectionExtension, { elevator: VueElevatorFactory })
 
 		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
+		const collectionBinding = useCollectionAdapter(collectionAdapter, props, emit)
 		// Выход `dismiss_ownerAttribute` шаблон раскладывает на панель
 		const ownerBinding = useAdapter(adapter, props, emit)
-		const collectionBinding = useCollectionAdapter(collectionAdapter, props, emit)
 
 		return extendBinding(joinBindings(ownerBinding, itemBinding, collectionBinding), {
 			context: itemAdapter.instance.context,

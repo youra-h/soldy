@@ -25,7 +25,6 @@ export function setupToastsItem(
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
 
 	const item = createSvelteAdapterContext(
 		ToastsCollectionItemDescriptor(),
@@ -33,7 +32,8 @@ export function setupToastsItem(
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
 
-	const itemBinding = useCollectionAdapter(item, getProps, () => owner.forwardProps)
+	const itemBinding = useCollectionAdapter(item, getProps)
+	const owner = useAdapter(adapter, getProps, receive)
 
 	return joinBindings(owner, itemBinding)
 }

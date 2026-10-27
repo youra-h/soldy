@@ -20,7 +20,6 @@ export function setupCalendar(
 	onUpdate: TUpdateListener,
 ): TBinding<ICalendar, TCalendarCollectionFacade> {
 	const adapter = createWebcAdapterContext(host, CalendarDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 
 	const collectionAdapter = createWebcAdapterContext(
 		host,
@@ -29,5 +28,8 @@ export function setupCalendar(
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator: createWebcElevator(host) })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

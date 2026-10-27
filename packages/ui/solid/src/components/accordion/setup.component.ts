@@ -16,7 +16,6 @@ import type { AccordionProps } from './base.component'
 export function setupAccordion(props: AccordionProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(AccordionDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		AccordionCollectionDescriptor(),
@@ -29,7 +28,8 @@ export function setupAccordion(props: AccordionProps) {
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, collectionBinding), layer }
 }

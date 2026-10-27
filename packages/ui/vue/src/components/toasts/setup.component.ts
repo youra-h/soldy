@@ -34,8 +34,6 @@ export default {
 			props,
 		})
 
-		const refs = useAdapter(adapter, props, emit)
-
 		// API тостов — потомкам (`useToasts()`): лифт опускает очередь движка
 		const collectionAdapter = createVueAdapterContext(
 			ToastsCollectionDescriptor(),
@@ -52,6 +50,7 @@ export default {
 			.use(TToastsApiExtension, { elevator: VueElevatorFactory })
 
 		const refsCollection = useCollectionAdapter(collectionAdapter, props, emit)
+		const refs = useAdapter(adapter, props, emit)
 
 		// Первый узел шаблона — приложение в слоте, регион телепортирован:
 		// `$el` потребителю — регион, а не начало фрагмента

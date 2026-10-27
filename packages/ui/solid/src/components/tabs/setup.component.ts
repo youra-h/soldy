@@ -16,7 +16,6 @@ import type { TabsProps } from './base.component'
 export function setupTabs(props: TabsProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(TabsDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		TabsCollectionDescriptor(),
@@ -29,7 +28,8 @@ export function setupTabs(props: TabsProps) {
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, collectionBinding), layer }
 }

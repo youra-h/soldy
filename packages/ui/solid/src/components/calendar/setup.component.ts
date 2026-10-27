@@ -19,7 +19,6 @@ export function setupCalendar(props: CalendarProps) {
 		ctrl: props.ctrl,
 		props,
 	})
-	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		CalendarCollectionDescriptor(),
@@ -30,7 +29,8 @@ export function setupCalendar(props: CalendarProps) {
 		{ bundle: adapter.bundle },
 	).use(TCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, collectionBinding), layer }
 }

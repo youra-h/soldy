@@ -21,7 +21,6 @@ export function setupAccordion(
 	onUpdate: TUpdateListener,
 ): TBinding<IAccordion, TAccordionCollectionFacade> {
 	const adapter = createWebcAdapterContext(host, AccordionDescriptor(), { ctrl, props })
-	const owner = useAdapter(adapter, host, onUpdate)
 	const elevator = createWebcElevator(host)
 
 	const collectionAdapter = createWebcAdapterContext(
@@ -33,5 +32,8 @@ export function setupAccordion(
 		.use(TCollectionExtension, { elevator })
 		.use(TDragAndDropCollectionExtension, { elevator })
 
-	return joinBindings(owner, useCollectionAdapter(collectionAdapter, host, onUpdate))
+	const facade = useCollectionAdapter(collectionAdapter, host, onUpdate)
+	const owner = useAdapter(adapter, host, onUpdate)
+
+	return joinBindings(owner, facade)
 }

@@ -17,7 +17,6 @@ import type { ListBoxProps } from './base.component'
 export function setupListBox(props: ListBoxProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(ListBoxDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		ListBoxCollectionDescriptor(),
@@ -31,7 +30,8 @@ export function setupListBox(props: ListBoxProps) {
 		.use(TDragAndDropCollectionExtension, { elevator })
 		.use(TVirtualCollectionExtension, { elevator })
 
-	const collectionBinding = useCollectionAdapter(collectionAdapter, props, owner.forwardProps)
+	const collectionBinding = useCollectionAdapter(collectionAdapter, props)
+	const owner = useAdapter(adapter, props)
 
 	return { ...joinBindings(owner, collectionBinding), layer }
 }
