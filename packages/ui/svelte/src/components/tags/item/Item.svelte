@@ -33,51 +33,50 @@
 	Крестик — сосед строки: потомки опции для скринридера презентационны, и его подпись
 	приклеилась бы к названию тега. Строка и крестик вплотную: пробел Svelte оставил бы текстом.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.dataset, state.attrs],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.dataset, state.attrs],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<ItemRow
+		embedded="tags.row"
+		tag="div"
+		direction={state.direction}
+		disabled={state.disabled}
+		size={state.size}
+		variant={state.variant}
+		leading={props.leading}
+		trailing={props.trailing}
+		onActionPress={toggle}
+		{...state.aria}
+		{...toControlAttrs<TagsItemAttributes>(binding.forwardProps)}
 	>
-		<ItemRow
-			embedded="tags.row"
-			tag="div"
-			direction={state.direction}
-			disabled={state.disabled}
-			size={state.size}
-			variant={state.variant}
-			leading={props.leading}
-			trailing={props.trailing}
-			onActionPress={toggle}
-			{...state.aria}
-			{...toControlAttrs<TagsItemAttributes>(binding.forwardProps)}
-		>
-			{#if props.children}
-				{@render props.children({
-					text: state.text ?? '',
-					selected: state.selected ?? false,
-				})}
-			{:else}
-				{state.text}
-			{/if}
-		</ItemRow>{#if state.tag_closable === true}<Button
-			embedded="tags.close"
-			type="button"
-			class="so-tags-item__close"
-			disabled={state.disabled}
-			size={state.size}
-			{...state.closeAria}
-			onActionClick={close}
-		>
-			{#if props['close-icon']}
-				{@render props['close-icon']()}
-			{:else}
-				<Icon embedded="tags.close-icon" tag={CLOSE} size={state.size} />
-			{/if}
-		</Button>{/if}
-	</Dynamic>
-{/if}
+		{#if props.children}
+			{@render props.children({
+				text: state.text ?? '',
+				selected: state.selected ?? false,
+			})}
+		{:else}
+			{state.text}
+		{/if}
+	</ItemRow>{#if state.tag_closable === true}<Button
+		embedded="tags.close"
+		type="button"
+		class="so-tags-item__close"
+		disabled={state.disabled}
+		size={state.size}
+		{...state.closeAria}
+		onActionClick={close}
+	>
+		{#if props['close-icon']}
+			{@render props['close-icon']()}
+		{:else}
+			<Icon embedded="tags.close-icon" tag={CLOSE} size={state.size} />
+		{/if}
+	</Button>{/if}
+</Dynamic>

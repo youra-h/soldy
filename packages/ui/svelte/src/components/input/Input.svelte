@@ -31,52 +31,51 @@
 	}
 </script>
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.dataset],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
-	>
-		{#if props.leading}
-			<div class="so-input__leading">{@render props.leading({ ctrl })}</div>
-		{/if}
-		<input
-			type="text"
-			id={state.id}
-			name={state.name}
-			disabled={state.disabled}
-			readonly={state.readonly}
-			required={state.required}
-			placeholder={state.placeholder}
-			{...state.aria}
-			{...toControlAttrs<InputAttributes>(binding.forwardProps)}
-			{...text}
-		/>
-		{#if state.clearable || props.clear || props.trailing}
-			<!-- Кнопка очистки и `trailing` вплотную: пробел Svelte оставил бы текстом. -->
-			<div class="so-input__trailing">
-				{#if props.clear}
-					{@render props.clear({ clear: ctrl.clear })}
-				{:else if state.clearable}
-					<Button
-						embedded="input.clear"
-						type="button"
-						class="so-input__clear"
-						size={state.size}
-						disabled={state.disabled}
-						{...state.clearAria}
-						onActionClick={clear}
-					>
-						<Icon embedded="input.clear-icon" tag={CLOSE} size={state.size} />
-					</Button>
-				{/if}{#if props.trailing}
-					{@render props.trailing({ ctrl })}
-				{/if}
-			</div>
-		{/if}
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.dataset],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	{#if props.leading}
+		<div class="so-input__leading">{@render props.leading({ ctrl })}</div>
+	{/if}
+	<input
+		type="text"
+		id={state.id}
+		name={state.name}
+		disabled={state.disabled}
+		readonly={state.readonly}
+		required={state.required}
+		placeholder={state.placeholder}
+		{...state.aria}
+		{...toControlAttrs<InputAttributes>(binding.forwardProps)}
+		{...text}
+	/>
+	{#if state.clearable || props.clear || props.trailing}
+		<!-- Кнопка очистки и `trailing` вплотную: пробел Svelte оставил бы текстом. -->
+		<div class="so-input__trailing">
+			{#if props.clear}
+				{@render props.clear({ clear: ctrl.clear })}
+			{:else if state.clearable}
+				<Button
+					embedded="input.clear"
+					type="button"
+					class="so-input__clear"
+					size={state.size}
+					disabled={state.disabled}
+					{...state.clearAria}
+					onActionClick={clear}
+				>
+					<Icon embedded="input.clear-icon" tag={CLOSE} size={state.size} />
+				</Button>
+			{/if}{#if props.trailing}
+				{@render props.trailing({ ctrl })}
+			{/if}
+		</div>
+	{/if}
+</Dynamic>

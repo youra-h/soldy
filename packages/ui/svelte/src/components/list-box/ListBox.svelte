@@ -53,36 +53,35 @@
 		{/if}
 	{/each}
 {/snippet}
-{#if state.rendered}
-	<Dynamic
-		tag="div"
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.dataset],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag="div"
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.dataset],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	{@render props.header?.()}<div
+		class="so-list-box__list"
+		{...FOCUSABLE}
+		{...state.aria}
+		{...toControlAttrs<ListBoxAttributes>(binding.forwardProps)}
 	>
-		{@render props.header?.()}<div
-			class="so-list-box__list"
-			{...FOCUSABLE}
-			{...state.aria}
-			{...toControlAttrs<ListBoxAttributes>(binding.forwardProps)}
-		>
-			{#if props.children}
-				{@render props.children()}
-			{:else}
-				{#each state.drawnSections ?? [] as section, index (section.key)}
-					{#if state.groupSeparators && index > 0}<div
-							class="so-list-box__separator"
-							aria-hidden="true"
-						></div>{/if}{#if section.group}<ListBoxGroup label={section.group.label}
-							>{@render entries(section.entries)}</ListBoxGroup
-						>{:else}{@render entries(section.entries)}{/if}
-				{/each}
-			{/if}{#if state.shown?.length === 0}
-				{@render props.empty?.()}
-			{/if}
-		</div>{@render props.footer?.()}
-	</Dynamic>
-{/if}
+		{#if props.children}
+			{@render props.children()}
+		{:else}
+			{#each state.drawnSections ?? [] as section, index (section.key)}
+				{#if state.groupSeparators && index > 0}<div
+						class="so-list-box__separator"
+						aria-hidden="true"
+					></div>{/if}{#if section.group}<ListBoxGroup label={section.group.label}
+						>{@render entries(section.entries)}</ListBoxGroup
+					>{:else}{@render entries(section.entries)}{/if}
+			{/each}
+		{/if}{#if state.shown?.length === 0}
+			{@render props.empty?.()}
+		{/if}
+	</div>{@render props.footer?.()}
+</Dynamic>

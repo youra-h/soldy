@@ -15,24 +15,23 @@
 	В корне только триггер: курсор на триггере — курсор на корне, цели наведения. Триггер и панель
 	стоят вплотную: пробел Svelte оставил бы в корне текстом.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
+	attach={binding.attachElement}
+>
+	{@render props.trigger?.({ triggerAria: state.triggerAria ?? {} })}<Frame
+		embedded="tooltip.frame"
+		class="so-tooltip__panel"
+		visible={state.open}
+		position="fixed"
+		anchor_anchor={binding.rootElement}
+		anchor_placement={state.placement}
+		anchor_offset={6}
+		{...state.aria}
+		{...state.dismiss_ownerAttribute}
 	>
-		{@render props.trigger?.({ triggerAria: state.triggerAria ?? {} })}<Frame
-			embedded="tooltip.frame"
-			class="so-tooltip__panel"
-			visible={state.open}
-			position="fixed"
-			anchor_anchor={binding.rootElement}
-			anchor_placement={state.placement}
-			anchor_offset={6}
-			{...state.aria}
-			{...state.dismiss_ownerAttribute}
-		>
-			<div class="so-tooltip__content">{@render props.children?.()}</div>
-		</Frame>
-	</Dynamic>
-{/if}
+		<div class="so-tooltip__content">{@render props.children?.()}</div>
+	</Frame>
+</Dynamic>

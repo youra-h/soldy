@@ -18,48 +18,47 @@
 	Панели (слот `content`) — вне ряда, иначе оказались бы внутри `[role=tablist]`.
 	Части стоят вплотную: пробел между блоками Svelte оставил бы в ряду и корне текстом.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag="div"
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.dataset],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
-	>
-		<div class="so-tabs__bar">
-			{#if props.leading}
-				<div class="so-tabs__leading">{@render props.leading()}</div>
-			{/if}<div
-				class="so-tabs__list"
-				{...state.aria}
-				{...toControlAttrs<TabsAttributes>(binding.forwardProps)}
-			>
-				{#if props.children}
-					{@render props.children()}
-				{:else}
-					{#each state.shown ?? [] as tab (tab.uid)}
-						{#snippet leading()}{@render props['item-leading']?.({ item: tab })}{/snippet}
-						{#snippet content(scope: { text: string; active: boolean })}
-							{@render props.item?.({ ...scope, item: tab })}
-						{/snippet}
-						{#snippet trailing()}{@render props['item-trailing']?.({ item: tab })}{/snippet}
-						{#snippet closeIcon()}
-							{@render props['item-close-icon']?.({ item: tab })}
-						{/snippet}
-						<TabsItem
-							ctrl={tab}
-							leading={props['item-leading'] ? leading : undefined}
-							trailing={props['item-trailing'] ? trailing : undefined}
-							close-icon={props['item-close-icon'] ? closeIcon : undefined}
-							children={props.item ? content : undefined}
-						/>
-					{/each}
-				{/if}
-			</div>{#if props.trailing}
-				<div class="so-tabs__trailing">{@render props.trailing()}</div>
+<Dynamic
+	rendered={state.rendered}
+	tag="div"
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.dataset],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<div class="so-tabs__bar">
+		{#if props.leading}
+			<div class="so-tabs__leading">{@render props.leading()}</div>
+		{/if}<div
+			class="so-tabs__list"
+			{...state.aria}
+			{...toControlAttrs<TabsAttributes>(binding.forwardProps)}
+		>
+			{#if props.children}
+				{@render props.children()}
+			{:else}
+				{#each state.shown ?? [] as tab (tab.uid)}
+					{#snippet leading()}{@render props['item-leading']?.({ item: tab })}{/snippet}
+					{#snippet content(scope: { text: string; active: boolean })}
+						{@render props.item?.({ ...scope, item: tab })}
+					{/snippet}
+					{#snippet trailing()}{@render props['item-trailing']?.({ item: tab })}{/snippet}
+					{#snippet closeIcon()}
+						{@render props['item-close-icon']?.({ item: tab })}
+					{/snippet}
+					<TabsItem
+						ctrl={tab}
+						leading={props['item-leading'] ? leading : undefined}
+						trailing={props['item-trailing'] ? trailing : undefined}
+						close-icon={props['item-close-icon'] ? closeIcon : undefined}
+						children={props.item ? content : undefined}
+					/>
+				{/each}
 			{/if}
-		</div>{@render props.content?.()}
-	</Dynamic>
-{/if}
+		</div>{#if props.trailing}
+			<div class="so-tabs__trailing">{@render props.trailing()}</div>
+		{/if}
+	</div>{@render props.content?.()}
+</Dynamic>

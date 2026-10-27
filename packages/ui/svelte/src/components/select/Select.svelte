@@ -83,62 +83,61 @@
 		{/if}</span
 	>{@render props.trailing?.()}
 {/snippet}
-{#if state.rendered}
-	<Dynamic
-		tag="div"
-		attributes={toRootProps(
-			state,
-			[state.dataset, state.attrs],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag="div"
+	attributes={toRootProps(
+		state,
+		[state.dataset, state.attrs],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	{#if props.field}
+		{@render props.field({ field })}
+	{:else}
+		<Input
+			embedded="select.field"
+			class="so-select__field"
+			ctrl={field}
+			id={state.id}
+			leading={fieldLeading}
+			trailing={fieldTrailing}
+			clear={props.clear}
+			{...state.aria}
+			{...toControlAttrs<SelectAttributes>(binding.forwardProps)}
+		/>
+	{/if}<Frame
+		embedded="select.frame"
+		class="so-select__panel"
+		visible={state.open}
+		position="fixed"
+		anchor_anchor={binding.rootElement}
+		anchor_placement={state.panelPlacement}
+		anchor_flip={state.panelFlip}
+		anchor_matchWidth={state.autoFitWidth}
+		anchor_offset={4}
+		{...state.panelDataset}
+		{...state.dismiss_ownerAttribute}
 	>
-		{#if props.field}
-			{@render props.field({ field })}
-		{:else}
-			<Input
-				embedded="select.field"
-				class="so-select__field"
-				ctrl={field}
-				id={state.id}
-				leading={fieldLeading}
-				trailing={fieldTrailing}
-				clear={props.clear}
-				{...state.aria}
-				{...toControlAttrs<SelectAttributes>(binding.forwardProps)}
-			/>
-		{/if}<Frame
-			embedded="select.frame"
-			class="so-select__panel"
-			visible={state.open}
-			position="fixed"
-			anchor_anchor={binding.rootElement}
-			anchor_placement={state.panelPlacement}
-			anchor_flip={state.panelFlip}
-			anchor_matchWidth={state.autoFitWidth}
-			anchor_offset={4}
-			{...state.panelDataset}
-			{...state.dismiss_ownerAttribute}
-		>
-			{#if state.handleRendered}
-				<div class="so-select__handle" aria-hidden="true"></div>
-			{/if}<div class="so-select__list" {...state.listAria}>
-				<!-- Options from data from the panel's first opening on (`contentRendered`) -->
-				{#if props.children}
-					{@render props.children()}
-				{:else if state.contentRendered}
-					{#each state.drawnSections ?? [] as section, index (section.key)}
-						{#if state.groupSeparators && index > 0}<div
-								class="so-select__separator"
-								aria-hidden="true"
-							></div>{/if}{#if section.group}<SelectGroup label={section.group.label}
-								>{@render entries(section.entries)}</SelectGroup
-							>{:else}{@render entries(section.entries)}{/if}
-					{/each}
-				{/if}{#if state.shown?.length === 0}
-					{@render props.empty?.()}
-				{/if}
-			</div>
-		</Frame>
-	</Dynamic>
-{/if}
+		{#if state.handleRendered}
+			<div class="so-select__handle" aria-hidden="true"></div>
+		{/if}<div class="so-select__list" {...state.listAria}>
+			<!-- Options from data from the panel's first opening on (`contentRendered`) -->
+			{#if props.children}
+				{@render props.children()}
+			{:else if state.contentRendered}
+				{#each state.drawnSections ?? [] as section, index (section.key)}
+					{#if state.groupSeparators && index > 0}<div
+							class="so-select__separator"
+							aria-hidden="true"
+						></div>{/if}{#if section.group}<SelectGroup label={section.group.label}
+							>{@render entries(section.entries)}</SelectGroup
+						>{:else}{@render entries(section.entries)}{/if}
+				{/each}
+			{/if}{#if state.shown?.length === 0}
+				{@render props.empty?.()}
+			{/if}
+		</div>
+	</Frame>
+</Dynamic>

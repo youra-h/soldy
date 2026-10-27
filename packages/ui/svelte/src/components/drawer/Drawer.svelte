@@ -34,6 +34,7 @@
 			style={toShownStyleText(state.layout_backdropStyles, state.visible === true)}
 			{...state.backdropDataset}
 		></div><Dynamic
+			rendered
 			tag={state.tag}
 			attributes={toRootProps(
 				state,

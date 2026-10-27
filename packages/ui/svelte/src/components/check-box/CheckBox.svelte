@@ -28,41 +28,40 @@
 	атрибутами, но HTML знает только `checked`, и «выбрано частично» поле покажет после
 	гидратации. Коробка под `aria-hidden`: иконки слотов не идут в имя от подписи.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.dataset],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
-	>
-		<input
-			type="checkbox"
-			id={state.id}
-			name={state.name}
-			disabled={state.disabled}
-			required={state.required}
-			{...state.aria}
-			{...toControlAttrs<CheckBoxAttributes>(binding.forwardProps)}
-			checked={state.value}
-			indeterminate={state.indeterminate}
-		/>
-		<span class="so-check-box__container" aria-hidden="true">
-			{#if state.indeterminate}
-				{#if props['indeterminate-icon']}
-					{@render props['indeterminate-icon']({ value: state.value, indeterminate: true })}
-				{:else}
-					<RoleIcon icon={INDETERMINATE} attributes={MARK} />
-				{/if}
-			{:else if state.value}
-				{#if props.icon}
-					{@render props.icon({ value: state.value, indeterminate: false })}
-				{:else}
-					<RoleIcon icon={CHECK} attributes={MARK} />
-				{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.dataset],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<input
+		type="checkbox"
+		id={state.id}
+		name={state.name}
+		disabled={state.disabled}
+		required={state.required}
+		{...state.aria}
+		{...toControlAttrs<CheckBoxAttributes>(binding.forwardProps)}
+		checked={state.value}
+		indeterminate={state.indeterminate}
+	/>
+	<span class="so-check-box__container" aria-hidden="true">
+		{#if state.indeterminate}
+			{#if props['indeterminate-icon']}
+				{@render props['indeterminate-icon']({ value: state.value, indeterminate: true })}
+			{:else}
+				<RoleIcon icon={INDETERMINATE} attributes={MARK} />
 			{/if}
-		</span>
-	</Dynamic>
-{/if}
+		{:else if state.value}
+			{#if props.icon}
+				{@render props.icon({ value: state.value, indeterminate: false })}
+			{:else}
+				<RoleIcon icon={CHECK} attributes={MARK} />
+			{/if}
+		{/if}
+	</span>
+</Dynamic>

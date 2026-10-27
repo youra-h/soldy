@@ -16,6 +16,7 @@
 	скрывать содержимое нельзя.
 -->
 <Dynamic
+	rendered
 	tag={state.tag}
 	attributes={toRootProps(
 		{ classes: state.classes, layout_styles: state.layout_styles },

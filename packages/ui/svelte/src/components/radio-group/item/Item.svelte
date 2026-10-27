@@ -17,36 +17,35 @@
 	`change` Svelte делегирует корню приложения: плагин группы слышит его раньше модели и
 	возвращает поля к прежнему выбору, а сменившуюся в модели отметку Svelte пишет следом.
 -->
-{#if state.rendered}
-	<!--
-		Место в коллекции (`order`) корню не отдаётся — группа радио не раскладывает, номер увёл бы
-		радио по чужому флекс-ряду.
-	-->
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			{ classes: state.classes, visible: state.visible },
-			[state.dataset, state.attrs],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<!--
+	Место в коллекции (`order`) корню не отдаётся — группа радио не раскладывает, номер увёл бы
+	радио по чужому флекс-ряду.
+-->
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		{ classes: state.classes, visible: state.visible },
+		[state.dataset, state.attrs],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<input
+		class="so-radio-group-item__input"
+		type="radio"
+		name={state.name}
+		value={state.value}
+		disabled={state.disabled}
+		{...state.aria}
+		{...toControlAttrs<RadioGroupItemAttributes>(binding.forwardProps)}
+		onchange={chainHandler(() => {
+			if (context) context.adapters.activation.active = true
+		}, binding.forwardProps.onchange)}
+		checked={state.active}
+	/><span class="so-radio-group-item__control"
+		><span class="so-radio-group-item__indicator"></span></span
+	><span class="so-radio-group-item__text"
+		>{@render props.children?.({ active: state.active ?? false })}</span
 	>
-		<input
-			class="so-radio-group-item__input"
-			type="radio"
-			name={state.name}
-			value={state.value}
-			disabled={state.disabled}
-			{...state.aria}
-			{...toControlAttrs<RadioGroupItemAttributes>(binding.forwardProps)}
-			onchange={chainHandler(() => {
-				if (context) context.adapters.activation.active = true
-			}, binding.forwardProps.onchange)}
-			checked={state.active}
-		/><span class="so-radio-group-item__control"
-			><span class="so-radio-group-item__indicator"></span></span
-		><span class="so-radio-group-item__text"
-			>{@render props.children?.({ active: state.active ?? false })}</span
-		>
-	</Dynamic>
-{/if}
+</Dynamic>

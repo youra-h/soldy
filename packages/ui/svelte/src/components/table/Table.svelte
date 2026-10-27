@@ -27,8 +27,8 @@
 		binding.forwardProps,
 		VIEWPORT,
 	)}
-	<Dynamic tag="div" attributes={layout.wrapper} attach={binding.consumerRef}>
-		<Dynamic tag={state.tag} attributes={layout.root} attach={binding.bindRef}>
+	<Dynamic rendered tag="div" attributes={layout.wrapper} attach={binding.consumerRef}>
+		<Dynamic rendered tag={state.tag} attributes={layout.root} attach={binding.bindRef}>
 			<thead class="so-table__head">
 				<tr class="so-table__head-row" {...state.headRowAria}>
 					{#if state.mode === 'multiple'}

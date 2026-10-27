@@ -16,24 +16,23 @@
 	блока Svelte — комментарий — `:empty` темы не видит. Части вплотную: пробел между
 	соседями Svelte оставил бы.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	<span class="so-label__control">{@render props.children?.()}</span><span
+		class="so-label__text"
 	>
-		<span class="so-label__control">{@render props.children?.()}</span><span
-			class="so-label__text"
-		>
-			{#if props.content}
-				{@render props.content()}
-			{:else if state.text}
-				{state.text}
-			{/if}
-		</span>
-	</Dynamic>
-{/if}
+		{#if props.content}
+			{@render props.content()}
+		{:else if state.text}
+			{state.text}
+		{/if}
+	</span>
+</Dynamic>

@@ -95,68 +95,67 @@
 		onclick={confirm}
 	/>
 {/snippet}
-{#if state.rendered}
-	<Dynamic
-		tag="div"
-		attributes={{
-			id: state.id,
-			...toRootProps(
-				state,
-				[state.attrs, state.rootAria, state.dataset],
-				binding.forwardProps,
-			),
-		}}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag="div"
+	attributes={{
+		id: state.id,
+		...toRootProps(
+			state,
+			[state.attrs, state.rootAria, state.dataset],
+			binding.forwardProps,
+		),
+	}}
+	attach={binding.attachElement}
+>
+	<!-- Имя — полю: оно и есть группа частей, так имя дойдёт и до частей. -->
+	{#if state.mode === 'single'}<DateInput
+			embedded="date-picker.field"
+			class="so-date-picker__field"
+			ctrl={ctrl.field}
+			aria_label={props.aria_label}
+			aria_labelledBy={props.aria_labelledBy}
+			aria_describedBy={props.aria_describedBy}
+			{...state.aria}
+			clear={props.clear || state.clearable ? clearButton : undefined}
+			trailing={trigger}
+		/>{:else}<DateInput
+			embedded="date-picker.start"
+			class="so-date-picker__start"
+			ctrl={ctrl.start}
+			aria_label={state.names_start}
+		/><span class="so-date-picker__dash" aria-hidden="true">–</span><DateInput
+			embedded="date-picker.end"
+			class="so-date-picker__end"
+			ctrl={ctrl.end}
+			aria_label={state.names_end}
+		/>{@render clearButton()}{@render trigger()}{/if}<Frame
+		embedded="date-picker.frame"
+		class="so-date-picker__panel"
+		tabindex={-1}
+		visible={state.open}
+		position="fixed"
+		anchor_anchor={binding.rootElement}
+		anchor_offset={4}
+		{...state.panelAria}
+		{...state.panelDataset}
+		{...state.dismiss_ownerAttribute}
 	>
-		<!-- Имя — полю: оно и есть группа частей, так имя дойдёт и до частей. -->
-		{#if state.mode === 'single'}<DateInput
-				embedded="date-picker.field"
-				class="so-date-picker__field"
-				ctrl={ctrl.field}
-				aria_label={props.aria_label}
-				aria_labelledBy={props.aria_labelledBy}
-				aria_describedBy={props.aria_describedBy}
-				{...state.aria}
-				clear={props.clear || state.clearable ? clearButton : undefined}
-				trailing={trigger}
-			/>{:else}<DateInput
-				embedded="date-picker.start"
-				class="so-date-picker__start"
-				ctrl={ctrl.start}
-				aria_label={state.names_start}
-			/><span class="so-date-picker__dash" aria-hidden="true">–</span><DateInput
-				embedded="date-picker.end"
-				class="so-date-picker__end"
-				ctrl={ctrl.end}
-				aria_label={state.names_end}
-			/>{@render clearButton()}{@render trigger()}{/if}<Frame
-			embedded="date-picker.frame"
-			class="so-date-picker__panel"
-			tabindex={-1}
-			visible={state.open}
-			position="fixed"
-			anchor_anchor={binding.rootElement}
-			anchor_offset={4}
-			{...state.panelAria}
-			{...state.panelDataset}
-			{...state.dismiss_ownerAttribute}
-		>
-			{#if state.handleRendered}<div
-					class="so-date-picker__handle"
-					aria-hidden="true"
-				></div>{/if}<div class="so-date-picker__content">
-				<!-- The calendar from the panel's first opening on (`contentRendered`) -->
-				{#if state.contentRendered}
-					<Calendar
-						embedded="date-picker.calendar"
-						class="so-date-picker__calendar"
-						ctrl={ctrl.calendar}
-						engine={ctrl.engine}
-						item={props.item}
-						footer={state.confirmable ? footer : undefined}
-					/>
-				{/if}
-			</div>
-		</Frame>
-	</Dynamic>
-{/if}
+		{#if state.handleRendered}<div
+				class="so-date-picker__handle"
+				aria-hidden="true"
+			></div>{/if}<div class="so-date-picker__content">
+			<!-- The calendar from the panel's first opening on (`contentRendered`) -->
+			{#if state.contentRendered}
+				<Calendar
+					embedded="date-picker.calendar"
+					class="so-date-picker__calendar"
+					ctrl={ctrl.calendar}
+					engine={ctrl.engine}
+					item={props.item}
+					footer={state.confirmable ? footer : undefined}
+				/>
+			{/if}
+		</div>
+	</Frame>
+</Dynamic>
