@@ -961,3 +961,37 @@ describe('события монтирования', () => {
 		expect(added).toEqual(['a', 'b'])
 	})
 })
+
+/**
+ * The consumer hears nothing once the teardown began, as in the other
+ * adapters: the subscription ended in an effect made after the template's
+ * blocks, and the markup items leaving the collection sent `onChangeItems`
+ * with an ever shorter list — a consumer keeping it in its state lost the list
+ * with the owner (benchmarks/parity/README.md).
+ */
+describe('события снятия', () => {
+	it('уходящие элементы разметки и отвязка корня до потребителя не доходят', async () => {
+		const heard: string[] = []
+
+		const { destroy } = mount(Harness, {
+			list: {
+				onChangeItems: (items) => heard.push(`items ${items.length}`),
+				onItemRemoved: () => heard.push('item:removed'),
+				onElementRemoved: () => heard.push('element:removed'),
+			},
+			items: [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B' },
+			],
+		})
+		await nextFrame()
+
+		expect(heard.at(-1)).toBe('items 2')
+
+		const mounted = heard.length
+
+		destroy()
+
+		expect(heard.slice(mounted)).toEqual([])
+	})
+})

@@ -15,7 +15,17 @@
  * joins it with the component's binding. AGENTS.md (Solid), «Связка».
  */
 
-import { createEffect, createMemo, createSignal, onCleanup, type Accessor } from 'solid-js'
+import {
+	createComputed,
+	createEffect,
+	createMemo,
+	createSignal,
+	getOwner,
+	onCleanup,
+	onMount,
+	runWithOwner,
+	type Accessor,
+} from 'solid-js'
 import { toInstanceState } from '@soldy-ui/setup'
 import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } from '@soldy-ui/setup'
 import { SolidProfile } from '../common'
@@ -88,18 +98,36 @@ function useExchange(
 	// the other adapters (benchmarks/parity/README.md). A component with
 	// collection facades binds them first: the facade, accepted, writes into
 	// the component — the months of Calendar's grids, Table's `dataset`
-	onCleanup(
-		binding.events.listen((exportName, args) => {
-			const callback: unknown = Reflect.get(props, exportName)
+	const stop = binding.events.listen((exportName, args) => {
+		const callback: unknown = Reflect.get(props, exportName)
 
-			if (typeof callback === 'function') callback(...args)
-		}),
-	)
+		if (typeof callback === 'function') callback(...args)
+	})
+
+	onCleanup(stop)
+	stopFirst(stop)
 
 	// Очистки Solid зовёт в обратном порядке: фасад уходит раньше компонента
 	onCleanup(() => adapter.destroy())
 
 	return { binding, state }
+}
+
+/**
+ * The consumer hears nothing once the teardown began, as in the other
+ * adapters (benchmarks/parity/README.md). Solid cleans an owner's
+ * computations first, the last made first, and its cleanups after them: the
+ * children — the markup items leaving the collection with an ever shorter
+ * list, the root's unbinding — went before `onCleanup` of the component's
+ * body. Once mounted, when the children are made, a computation made under
+ * the same owner is its last one, and its cleanup is the first of the
+ * teardown. Before the mount, and on the server, where effects do not run,
+ * `onCleanup` unsubscribes.
+ */
+function stopFirst(stop: () => void): void {
+	const owner = getOwner()
+
+	onMount(() => runWithOwner(owner, () => createComputed(() => onCleanup(stop))))
 }
 
 export function useAdapter<C extends IComponentContract, TProps extends object>(

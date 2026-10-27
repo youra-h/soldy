@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
-import { createSignal, For, type JSX } from 'solid-js'
+import { createSignal, For, Show, type JSX } from 'solid-js'
 import {
 	createEngine,
 	createEngineListBox,
@@ -1119,5 +1119,57 @@ describe('типы', () => {
 		expectTypeOf<NonNullable<ListBoxProps['value']>>().toEqualTypeOf<
 			NonNullable<TListBoxValue>
 		>()
+	})
+})
+
+/**
+ * The consumer hears nothing once the teardown began, as in the other
+ * adapters: Solid cleans the children before the cleanups of the owner's
+ * body, and the markup items leaving the collection sent `onChangeItems` with
+ * an ever shorter list — a consumer keeping it in its state lost the list
+ * with the owner (benchmarks/parity/README.md).
+ */
+describe('события снятия', () => {
+	it('владелец под Show уходит молча: длина списка у потребителя прежняя', () => {
+		const [shown, setShown] = createSignal(true)
+		const [count, setCount] = createSignal(0)
+		const heard: string[] = []
+
+		mount(() => (
+			<Show when={shown()}>
+				<ListBox
+					onChangeItems={(items) => setCount(items.length)}
+					onItemRemoved={() => heard.push('item:removed')}
+					onElementRemoved={() => heard.push('element:removed')}
+				>
+					<ListBoxItem value="a" text="A" />
+					<ListBoxItem value="b" text="B" />
+				</ListBox>
+			</Show>
+		))
+
+		expect(count()).toBe(2)
+
+		setShown(false)
+
+		expect(count()).toBe(2)
+		expect(heard).toEqual([])
+	})
+
+	it('снятие корня — без событий', () => {
+		const heard: string[] = []
+		const { destroy } = mount(() => (
+			<ListBox
+				onChangeItems={(items) => heard.push(`items ${items.length}`)}
+				onElementRemoved={() => heard.push('element:removed')}
+			>
+				<ListBoxItem value="a" text="A" />
+			</ListBox>
+		))
+		const mounted = heard.length
+
+		destroy()
+
+		expect(heard.slice(mounted)).toEqual([])
 	})
 })

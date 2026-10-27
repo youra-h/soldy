@@ -34,13 +34,13 @@ const read = (fw) => JSON.parse(fs.readFileSync(path.join(results, `parity-${fw}
  * - `ids` — ids and list keys are compared by presence only, see `masked`.
  * - `single` — an output of Angular and a `CustomEvent` of Web Components
  *   carry one value, see `packed`.
- * - `teardown` — what a component sends while its framework takes it down
- *   is not compared: the unmount step's events are only counted, see
- *   `TEARDOWN`.
+ * - `removedBlur` — the blur of the removed node in the unmount step of
+ *   Svelte and Web Components, see `TEARDOWN`.
  */
 const RULES = {
 	vModel: (event) => !event.name.startsWith('update:'),
 	single: new Set(['webc', 'angular']),
+	removedBlur: new Set(['svelte', 'webc']),
 	ids: new Set([
 		'id',
 		'for',
@@ -56,14 +56,14 @@ const RULES = {
 }
 
 /**
- * The teardown: Vue (`onBeforeUnmount`), React and Angular unsubscribe the
- * consumer before the children and the nodes go, and a removed custom element
- * sends nothing. Svelte removes the nodes first and destroys the children
- * before the parent, and Solid cleans the children before the parent: the
- * blur of the removed node, the root's unbinding, the markup items leaving
- * the collection reach the consumer there, and neither framework has a hook
- * that comes earlier. Chrome blurs a removed node before it is detached, so a
- * custom element hears its own blur too.
+ * The unmount step, compared by its events: the consumer hears nothing once
+ * the teardown began. Vue (`onBeforeUnmount`), React, Angular and Solid
+ * unsubscribe it before the children and the nodes go, Svelte — in a
+ * pre-effect, made before the template's blocks, and a removed custom element
+ * sends nothing. Svelte and Web Components remove the nodes before any hook of
+ * the component, though, and Chrome blurs a removed focused node before it is
+ * detached: the focused component's `action:blur` and `change:focused`
+ * reach the consumer there (`removedBlur`).
  */
 const TEARDOWN = 'unmount'
 
@@ -109,6 +109,15 @@ function packed(event, fw) {
 	return { name: event.name, args: [args.length > 1 ? args : (args[0] ?? none)] }
 }
 
+const BLUR = new Set(['action:blur', 'change:focused'])
+
+/** Events of their step, without the blur of the removed node (`removedBlur`). */
+function eventsOf(step, fw) {
+	if (step.label !== TEARDOWN || !RULES.removedBlur.has(fw)) return step.events
+
+	return step.events.filter((event) => !BLUR.has(event.name))
+}
+
 const text = (event) => `${event.name} ${JSON.stringify(masked(event.args))}`
 
 /** Longest common subsequence of two line lists — the diff of two snapshots. */
@@ -147,7 +156,7 @@ function compareStep(vue, other, fw) {
 	const found = []
 	const ours = vue.events.filter(RULES.vModel)
 	const expected = ours.map((event) => text(packed(event, fw)))
-	const actual = other.events.map(text)
+	const actual = eventsOf(other, fw).map(text)
 
 	if (expected.join('\n') !== actual.join('\n')) {
 		const same = [...expected].sort().join('\n') === [...actual].sort().join('\n')
@@ -199,16 +208,16 @@ function selfCheck() {
 
 selfCheck()
 const report = [`# Parity — ${new Date().toISOString().slice(0, 10)}`, '']
-const compared = (step) => step.label !== TEARDOWN
 const totals = { pages: 0, steps: 0, events: 0 }
 const summary = []
 
 for (const page of Object.values(vue.pages)) {
-	const steps = page.steps.filter(compared)
-
 	totals.pages++
-	totals.steps += steps.length
-	totals.events += steps.reduce((sum, step) => sum + step.events.filter(RULES.vModel).length, 0)
+	totals.steps += page.steps.length
+	totals.events += page.steps.reduce(
+		(sum, step) => sum + step.events.filter(RULES.vModel).length,
+		0,
+	)
 }
 
 // The reference itself must run clean: an error on a Vue page is a finding too
@@ -219,16 +228,6 @@ if (own.length) {
 
 	for (const [id, page] of own) report.push(`### ${id}`, '', '```', ...page.errors, '```', '')
 }
-
-/** Events of the unmount steps — counted, not compared (`TEARDOWN`). */
-const teardownOf = (journal) =>
-	Object.values(journal.pages).reduce(
-		(sum, page) =>
-			sum +
-			(page.steps.find((step) => step.label === TEARDOWN)?.events.filter(RULES.vModel)
-				.length ?? 0),
-		0,
-	)
 
 for (const fw of frameworks) {
 	const other = read(fw)
@@ -260,7 +259,7 @@ for (const fw of frameworks) {
 		page.steps.slice(0, theirs.steps.length).forEach((step, index) => {
 			const theirStep = theirs.steps[index]
 
-			if (!compared(step) || step.label !== theirStep.label) return
+			if (step.label !== theirStep.label) return
 
 			const found = compareStep(step, theirStep, fw)
 
@@ -274,7 +273,6 @@ for (const fw of frameworks) {
 		fw,
 		divergences: divergences.length,
 		pages: pages.size,
-		teardown: teardownOf(other),
 	})
 	report.push(`## ${fw}: ${divergences.length} steps differ on ${pages.size} pages`, '')
 
@@ -297,18 +295,14 @@ report.splice(
 	0,
 	`Compared with Vue: ${totals.pages} pages, ${totals.steps} steps, ${totals.events} events.`,
 	'',
-	'| Framework | Steps differ | Pages | Teardown events (not compared) |',
-	'| --- | --- | --- | --- |',
-	`| vue | — | — | ${teardownOf(vue)} |`,
-	...summary.map(
-		({ fw, divergences, pages, teardown }) =>
-			`| ${fw} | ${divergences} | ${pages} | ${teardown} |`,
-	),
+	'| Framework | Steps differ | Pages |',
+	'| --- | --- | --- |',
+	...summary.map(({ fw, divergences, pages }) => `| ${fw} | ${divergences} | ${pages} |`),
 	'',
 )
 
 const out = values.out ?? path.join(results, 'parity-report.md')
 
 fs.writeFileSync(out, report.join('\n'))
-console.log(report.slice(0, 9 + summary.length).join('\n'))
+console.log(report.slice(0, 8 + summary.length).join('\n'))
 process.exitCode = summary.filter((row) => row.divergences).length + (own.length ? 1 : 0)
