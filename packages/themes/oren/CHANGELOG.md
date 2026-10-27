@@ -1,5 +1,31 @@
 # @soldy-ui/theme-oren
 
+## 0.3.0-alpha.6
+
+### Patch Changes
+
+- d20904b: Every size of the font scales now steps from the font of the place, which `normal` takes as is, instead of numbers fitted to a 16px page. Button, Pagination, fields and captions: `sm` is 2px smaller, `lg`, `xl` and `2xl` 2px, 4px and 8px larger (`calc(1em - 0.125rem)` … `calc(1em + 0.5rem)`). Table cells and header labels, Calendar day numbers and picker tiles, control notes (Field helper and error, Textarea counter, Slider mark labels) and tags are the same ladder a step down: 4px and 2px smaller at `sm` and `normal`, the font of the place at `lg`, 2px and 4px larger at `xl` and `2xl`; the group labels of `sm` rows are 6px smaller. At a 16px place nothing changes; at 14px a `sm` Button is now 12px instead of 14px (as large as `normal`), a `lg` one 16px instead of 18px, and a `normal` table 12px. The gap cell of Pagination takes the font of its size on its own node rather than inheriting it from the root.
+- 69f263b: The group labels of ListBox, Select and Menu now take the note of the size of their rows (Field helper), a step smaller than the rows, instead of the note one size below: 14px at a 16px place for `normal` rows, 12px at 14px. The variables `--so-group-label-font-size-sm` and `--so-group-label-line-height-sm` are gone: `sm` rows read the `sm` note.
+- a6a77f8: Every package declares `sideEffects`, so the application's bundler drops the modules a page does not use: a page with one button no longer pulls every component of the core, every plugin and every component of the adapter (React: 184 → 82 KB gzip of JS). The core, plugins, icons and adapters are `false`, the themes keep their stylesheets (`["*.css"]`), and `@soldy-ui/webc` is `true`: importing it defines every element, as before.
+- 2dec183: The repository moved to github.com/youra-h/soldy-ui: package repository, homepage and issue links point there
+- Updated dependencies [101269c]
+- Updated dependencies [d20904b]
+- Updated dependencies [a73c5bf]
+- Updated dependencies [69f263b]
+- Updated dependencies [7ac5495]
+- Updated dependencies [e9aaab9]
+- Updated dependencies [a6a77f8]
+- Updated dependencies [765030a]
+- Updated dependencies [2e2ff15]
+- Updated dependencies [2dec183]
+- Updated dependencies [54f5b1d]
+- Updated dependencies [5429a39]
+- Updated dependencies [3b50b69]
+- Updated dependencies [604ae77]
+  - @soldy-ui/core@0.3.0-alpha.6
+  - @soldy-ui/setup@0.3.0-alpha.6
+  - @soldy-ui/theme-base@0.3.0-alpha.6
+
 ## 0.3.0-alpha.5
 
 ### Patch Changes

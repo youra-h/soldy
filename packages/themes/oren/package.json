@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/theme-oren",
-  "version": "0.3.0-alpha.5",
+  "version": "0.3.0-alpha.6",
   "description": "Тема oren: CSS под BEM-классы и data-* компонентов Soldy UI, светлая и тёмная схемы",
   "keywords": [
     "soldy",
@@ -50,11 +50,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@soldy-ui/theme-base": "0.3.0-alpha.5"
+    "@soldy-ui/theme-base": "0.3.0-alpha.6"
   },
   "peerDependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.5",
-    "@soldy-ui/setup": "0.3.0-alpha.5"
+    "@soldy-ui/core": "0.3.0-alpha.6",
+    "@soldy-ui/setup": "0.3.0-alpha.6"
   },
   "devDependencies": {
     "@tailwindcss/node": "^4.2.2",

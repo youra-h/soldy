@@ -11,7 +11,7 @@ render it in Vue, React, Angular, Svelte, Solid and Web Components.**
 [![npm](https://img.shields.io/npm/v/@soldy-ui/core?label=npm)](https://www.npmjs.com/org/soldy-ui)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Status:** version `0.3.0-alpha.5`, a pre-release on npm. From this version on, every released
+> **Status:** version `0.3.0-alpha.6`, a pre-release on npm. From this version on, every released
 > component in [the component table](#components) is available in all six adapters: Vue, React,
 > Angular, Svelte, Solid and Web Components. Early development: until `1.0`, any release may change
 > the API.
