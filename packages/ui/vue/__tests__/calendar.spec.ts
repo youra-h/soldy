@@ -288,6 +288,24 @@ describe('кнопки листания', () => {
 		expect(prev().hasAttribute('disabled')).toBe(true)
 	})
 
+	it('месяцы, показанные при монтировании, — начальное состояние, а не событие', async () => {
+		const onChangeMonths = vi.fn()
+		const onUpdateMonths = vi.fn()
+
+		await render(() =>
+			h(Calendar, { 'onChange:months': onChangeMonths, 'onUpdate:months': onUpdateMonths }),
+		)
+
+		expect(onChangeMonths).not.toHaveBeenCalled()
+		expect(onUpdateMonths).not.toHaveBeenCalled()
+
+		next().click()
+		await settle()
+
+		expect(onChangeMonths).toHaveBeenCalledExactlyOnceWith(['2026-10-01'])
+		expect(onUpdateMonths).toHaveBeenCalledExactlyOnceWith(['2026-10-01'])
+	})
+
 	it('листание пишет months — v-model:months', async () => {
 		const months = ref<string[] | undefined>(undefined)
 

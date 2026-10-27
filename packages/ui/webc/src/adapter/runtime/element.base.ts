@@ -434,6 +434,10 @@ export function ElementBase<
 			const props = this._props.open(this._root.localName)
 			const binding = spec.setup(this, this._ctrl, props, this._onUpdate)
 
+			// The consumer hears the element from its full assembly: every context
+			// accepted, the markup items not joined yet
+			binding.listen()
+
 			this._binding = binding
 			this._ctrl = binding.ctrl
 			this._props.close(binding)

@@ -77,9 +77,9 @@ export class TPropStore {
 	}
 
 	/**
-	 * Сборка кончилась: снятое до неё, следом записанное во время неё — слушатель
-	 * события самой сборки (месяцы календаря). Место ему — эта связка, а не
-	 * следующая: иначе следующая сборка откатила бы компонент к нему.
+	 * The assembly is over: what was unset before it, then what was written
+	 * during it. Its place is this binding, not the next one: otherwise the next
+	 * assembly would roll the component back to it.
 	 */
 	close(binding: TPropTarget): void {
 		const late = this._unset

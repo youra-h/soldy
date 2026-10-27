@@ -1,7 +1,7 @@
 import { TCollectionExtension, TagsCollectionDescriptor, TagsDescriptor } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -11,7 +11,7 @@ import type { TagsProps } from './base.component'
 export function setupTags(props: TagsProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(TagsDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		TagsCollectionDescriptor(),

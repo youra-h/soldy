@@ -164,9 +164,8 @@ async function controlled(html = '<div is="so-calendar"></div>'): Promise<TCalen
 }
 
 /**
- * Месяцы сеток, которые потребитель возвращает свойством, — как
- * `v-model:months` у Vue: на каждую смену он пишет их обратно в элемент. Первую
- * смену — месяцы, показанные при сборке, — слушатель слышит внутри вставки.
+ * The grid months the consumer returns as a property — like Vue's
+ * `v-model:months`: it writes them back into the element on every change.
  */
 function returnMonths(el: TCalendarElementProps): void {
 	el.addEventListener('so:change:months', (event) => {
@@ -1021,25 +1020,30 @@ describe('Calendar · движок снаружи', () => {
 })
 
 /**
- * Месяцы, показанные при сборке, календарь сообщает внутри вставки: вид пишет
- * их владельцу при приёме фасада, и связки у элемента ещё нет. Записанное
- * слушателем в этот момент — смена от потребителя, и место ей в связке этой
- * сборки: она доходит до ядра сразу после сборки, до конца вставки, а не ждёт
- * следующей.
+ * The months shown at assembly are the starting state: the view writes them
+ * into the owner when the facade is accepted, and the consumer hears the
+ * element from its full assembly — as in React and Angular
+ * (benchmarks/parity/README.md).
  */
-describe('Calendar · запись на событии сборки', () => {
-	/**
-	 * Без предусловия сценарий выродился бы молча: событие, пришедшее после
-	 * вставки, пишет уже в живую связку.
-	 */
-	it('возвращённые месяцы не затеняют ядро — ни после листания, ни после перестановки', async () => {
+describe('Calendar · сборка — начальное состояние', () => {
+	it('месяцы, показанные при сборке, событием не приходят', async () => {
 		const heard = vi.fn()
-		const el = insert(undefined, (node) => {
-			node.addEventListener('so:change:months', heard)
-			returnMonths(node)
-		})
+		const el = insert(undefined, (node) => node.addEventListener('so:change:months', heard))
+
+		expect(el.ctrl?.months).toEqual(['2026-09-01'])
+
+		await settle()
+
+		expect(heard).not.toHaveBeenCalled()
+
+		next().click()
+		await settle()
 
 		expect(heard).toHaveBeenCalledOnce()
+	})
+
+	it('возвращённые месяцы не затеняют ядро — ни после листания, ни после перестановки', async () => {
+		const el = insert(undefined, returnMonths)
 
 		await settle()
 		next().click()
@@ -1054,26 +1058,5 @@ describe('Calendar · запись на событии сборки', () => {
 		expect(el.months).toEqual(['2026-10-01'])
 		expect(el.ctrl?.months).toEqual(['2026-10-01'])
 		expect(titles()).toEqual(['October 2026'])
-	})
-
-	it('другие месяцы, записанные на событии сборки, ядро принимает в этой же сборке', async () => {
-		const el = insert(undefined, (node) => {
-			node.addEventListener(
-				'so:change:months',
-				() => {
-					node.months = ['2026-12-01']
-				},
-				{ once: true },
-			)
-		})
-
-		expect(el.ctrl?.months).toEqual(['2026-12-01'])
-		expect(el.months).toEqual(['2026-12-01'])
-
-		await settle()
-
-		expect(el.months).toEqual(['2026-12-01'])
-		expect(titles()).toEqual(['December 2026'])
-		expect(dayCell('2026-12-10').textContent?.trim()).toBe('10')
 	})
 })

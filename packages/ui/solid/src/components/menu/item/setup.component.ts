@@ -5,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -15,7 +15,7 @@ import type { MenuItemProps } from './base.component'
 export function setupMenuItem(props: MenuItemProps) {
 	const { elevator } = useElevator()
 	const adapter = createSolidAdapterContext(MenuItemDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		MenuCollectionItemDescriptor(),

@@ -7,7 +7,7 @@ import {
 import {
 	createSvelteAdapterContext,
 	joinBindings,
-	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	useElevator,
 	type TRootReceiver,
@@ -26,7 +26,7 @@ export function setupRadioGroup(
 		props,
 		mountId,
 	}).use(TFieldControlExtension, { elevator })
-	const owner = useAdapter(adapter, getProps, receive)
+	const owner = useOwnerAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		RadioGroupCollectionDescriptor(),

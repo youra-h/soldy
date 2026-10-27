@@ -40,6 +40,8 @@ export type TBinding<
 	readonly ctrl: TInstance
 	readonly facade: TFacade
 	syncProps(props: object): void
+	/** Core events from here on: the base calls it once the assembly is done. */
+	listen(): void
 	bindElement(el: Element | null): void
 	destroy(): void
 }
@@ -49,6 +51,7 @@ export type TCollectionBinding<TFacade = object> = {
 	readonly state: TInstanceState<TFacade>
 	readonly facade: TFacade
 	syncProps(props: object): void
+	listen(): void
 	destroy(): void
 }
 
@@ -57,12 +60,14 @@ export type TUpdateListener = (name: string, value: unknown) => void
 type TExchange<C extends IComponentContract> = {
 	readonly state: TAdapterState<C>
 	syncProps(props: object): void
+	listen(): void
 	destroy(): void
 }
 
 type TJoined = {
 	readonly state: Readonly<Record<string, unknown>>
 	syncProps(props: object): void
+	listen(): void
 	destroy(): void
 }
 
@@ -111,9 +116,12 @@ function useExchange<C extends IComponentContract>(
 		onUpdate(name, value)
 	})
 
-	const unbindEvents = binding.events.listen((exportName, args) => {
-		dispatch(host, exportName, args, bubbles)
-	})
+	// Core events start with `listen()`, from the base once the whole assembly
+	// is done: what the assembly writes — the collection facade, accepted after
+	// the component, writes into it the months of Calendar's grids and Table's
+	// `dataset`, — is the starting state, as in React and Angular
+	// (benchmarks/parity/README.md)
+	let unbindEvents: (() => void) | undefined
 
 	// Отброшенных сборок у Web Components нет: связку заводит подключение
 	adapter.attach()
@@ -126,9 +134,15 @@ function useExchange<C extends IComponentContract>(
 			binding.inputs.delta(props)
 		},
 
+		listen(): void {
+			unbindEvents = binding.events.listen((exportName, args) => {
+				dispatch(host, exportName, args, bubbles)
+			})
+		},
+
 		destroy(): void {
 			unsubscribe()
-			unbindEvents()
+			unbindEvents?.()
 			adapter.destroy()
 		},
 	}
@@ -215,9 +229,10 @@ function toBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>(
 }
 
 /**
- * Одна связка из двух или трёх контекстов: свой, фасад элемента и, у пункта с
- * подменю, фасад своей коллекции. Узел — только свой; фасады уничтожаются
- * раньше компонента, пока его набор плагинов цел.
+ * One binding of two or three contexts: its own, the item facade and, for an
+ * item with a submenu, the facade of its own collection. The node is only its
+ * own; the events are everyone's, from the end of the assembly; the facades
+ * are destroyed before the component, while its plugin bundle is intact.
  */
 export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknown>(
 	owner: TBinding<TInstance, unknown, TOutputs>,
@@ -238,6 +253,12 @@ export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknow
 			owner.syncProps(props)
 
 			for (const each of facades) each.syncProps(props)
+		},
+
+		listen(): void {
+			owner.listen()
+
+			for (const each of facades) each.listen()
 		},
 
 		bindElement(el: Element | null): void {

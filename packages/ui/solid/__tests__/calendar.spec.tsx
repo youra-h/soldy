@@ -316,6 +316,19 @@ describe('Calendar · кнопки листания', () => {
 		expect(prev().hasAttribute('disabled')).toBe(true)
 	})
 
+	it('месяцы, показанные при монтировании, — начальное состояние, а не onChangeMonths', async () => {
+		const onChangeMonths = vi.fn()
+
+		await render({ onChangeMonths })
+
+		expect(onChangeMonths).not.toHaveBeenCalled()
+
+		next().click()
+		await nextFrame()
+
+		expect(onChangeMonths).toHaveBeenCalledExactlyOnceWith(['2026-10-01'])
+	})
+
 	it('листание пишет months — onChangeMonths', async () => {
 		const months = await withMonths()
 

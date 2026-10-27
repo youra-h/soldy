@@ -7,7 +7,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -21,7 +21,7 @@ export function setupSelect(props: SelectProps) {
 		props,
 	}).use(TFieldControlExtension, { elevator })
 
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		SelectCollectionDescriptor(),

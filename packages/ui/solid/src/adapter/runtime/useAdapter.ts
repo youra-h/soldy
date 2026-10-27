@@ -1,17 +1,19 @@
 /**
- * useAdapter — связка adapter-context с Solid, аналог `useAdapter` у Vue.
+ * useAdapter — binds an adapter context to Solid, the counterpart of Vue's
+ * `useAdapter`.
  *
- * - состояние — неглубокое, сигнал на прочитанное свойство
- *   (`createShallowState`), его заполняет подписка на связку;
- * - входы — эффект над всеми пропсами, связка пишет сменившиеся;
- * - события — колбэк-пропсы `onXxx`;
- * - тело компонента выполняется один раз, на сервере тоже: это и есть приём
- *   (`attach()`), а очистка — `onCleanup`.
+ * - the state is shallow, a signal per property read
+ *   (`createShallowState`), filled by the subscription to the binding;
+ * - the inputs — an effect over all props, the binding writes the changed ones;
+ * - the events — the `onXxx` callback props, from the full assembly;
+ * - the component body runs once, on the server too: that is the acceptance
+ *   (`attach()`), and the cleanup is `onCleanup`.
  *
- * `ref` адаптера привязывает корень к `TElementPlugin` и отдаёт тот же узел
- * `ref` потребителя. У коллекции контекстов два: фасад связывает
- * `useCollectionAdapter`, со связкой компонента его сводит `joinBindings`.
- * AGENTS.md (Solid), «Связка».
+ * The adapter's `ref` binds the root to `TElementPlugin` and hands the same
+ * node to the consumer's `ref`. A component with collection facades binds its
+ * own context with `useOwnerAdapter` and each facade with
+ * `useCollectionAdapter`; `joinBindings` joins them and starts the events of
+ * all of them, once every context is accepted. AGENTS.md (Solid), «Связка».
  */
 
 import { createEffect, createMemo, createSignal, onCleanup, type Accessor } from 'solid-js'
@@ -44,28 +46,42 @@ export type TBinding<
 	consumerRef: (el: Element) => void
 }
 
+/** Core events from here on: `joinBindings` calls it once every context is accepted. */
+type TListen = {
+	listen: () => void
+}
+
+/** The component's own binding before `joinBindings`: its events have not started yet. */
+export type TOwnerBinding<
+	C extends IComponentContract = IComponentContract,
+	TProps extends object = object,
+> = TBinding<C, TProps> & TListen
+
 /** Связка фасада коллекции: своего `ctrl` и `ref` у него нет. */
-export type TCollectionBinding<TState extends object, TProps extends object = object> = {
+export type TCollectionBinding<TState extends object, TProps extends object = object> = TListen & {
 	readonly state: TState
 	/** Мемо: атрибуты, которые не съели ни компонент, ни фасад. */
 	forwardProps: () => Partial<TProps>
 }
 
-/** Связка компонента с фасадом: состояние одним видом, атрибуты — фасада. */
+/** The binding of a component with a facade: the state as one view, the attributes — the facade's. */
 export type TJoinedBinding<
-	TOwner extends TCollectionBinding<object, TProps>,
+	TOwner extends { readonly state: object },
 	TFacadeState extends object,
 	TProps extends object,
-> = Omit<TOwner, 'state' | 'forwardProps'> & {
+> = Omit<TOwner, 'state' | 'forwardProps' | 'listen'> & {
 	readonly state: TJoinedState<TOwner['state'], TFacadeState>
 	forwardProps: () => Partial<TProps>
 }
 
-/** Общее у компонента и фасада: обмен, состояние, входы, события, приём и очистка. */
+/**
+ * What the component and a facade share: the exchange, the state, the inputs,
+ * the acceptance and the cleanup — and the events, by `listen`.
+ */
 function useExchange(
 	adapter: IAdapterContext,
 	props: object,
-): { binding: TExchange; state: Readonly<Record<string, unknown>> } {
+): { binding: TExchange; state: Readonly<Record<string, unknown>>; listen: () => void } {
 	const binding = adapter.connect(SolidProfile)
 	const [state, write] = createShallowState()
 
@@ -73,28 +89,57 @@ function useExchange(
 
 	createEffect(() => binding.inputs.full(props))
 
-	onCleanup(
-		binding.events.listen((exportName, args) => {
-			const callback: unknown = Reflect.get(props, exportName)
-
-			if (typeof callback === 'function') callback(...args)
-		}),
-	)
-
 	// Дети выполняются в порядке документа — элементы входят в коллекцию по DOM
 	adapter.attach()
 
 	// Очистки Solid зовёт в обратном порядке: фасад уходит раньше компонента
 	onCleanup(() => adapter.destroy())
 
-	return { binding, state }
+	return {
+		binding,
+		state,
+
+		// Called once the whole assembly is done: by `useAdapter` right away, by
+		// `joinBindings` after every context of the component. What the assembly
+		// writes is the starting state, as in the other adapters
+		// (benchmarks/parity/README.md): the collection facade, accepted after
+		// the component, writes into it the months of Calendar's grids and
+		// Table's `dataset`. Still before the children: the markup items joining
+		// the collection reach the consumer
+		listen() {
+			onCleanup(
+				binding.events.listen((exportName, args) => {
+					const callback: unknown = Reflect.get(props, exportName)
+
+					if (typeof callback === 'function') callback(...args)
+				}),
+			)
+		},
+	}
 }
 
+/** The binding of a component with one context, heard right away. */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	props: TProps,
 ): TBinding<C, TProps> {
-	const { binding, state } = useExchange(adapter, props)
+	const binding = useOwnerAdapter(adapter, props)
+
+	binding.listen()
+
+	return binding
+}
+
+/**
+ * The own context of a component with collection facades: everything
+ * `useAdapter` does but the events — `joinBindings` starts them once the
+ * facades are accepted too.
+ */
+export function useOwnerAdapter<C extends IComponentContract, TProps extends object>(
+	adapter: IAdapterContext<C>,
+	props: TProps,
+): TOwnerBinding<C, TProps> {
+	const { binding, state, listen } = useExchange(adapter, props)
 	const forwardProps = createMemo(() => binding.forward(props))
 	const [rootElement, setRootElement] = createSignal<Element | null>(null)
 
@@ -122,6 +167,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		rootElement,
 		bindRef,
 		consumerRef,
+		listen,
 
 		ref(el: Element) {
 			bindRef(el)
@@ -140,18 +186,21 @@ export function useCollectionAdapter<C extends IComponentContract, TProps extend
 	props: TProps,
 	forward: () => Partial<TProps>,
 ): TCollectionBinding<TAdapterState<C>, TProps> {
-	const { binding, state } = useExchange(adapter, props)
+	const { binding, state, listen } = useExchange(adapter, props)
 
 	return {
 		state: toInstanceState<C>(state),
 		forwardProps: createMemo(() => binding.forward(forward())),
+		listen,
 	}
 }
 
 /**
- * Связка компонента с его фасадами — одна, для разметки: состояние всех одним
- * видом (`joinState`), атрибуты — последнего фасада (каждый отбирает свои из
- * остатка предыдущего), остальное — компонента.
+ * The binding of a component with its facades — one, for the markup: the
+ * state of all of them as one view (`joinState`), the attributes of the last
+ * facade (each takes its own from the rest of the previous one), the rest —
+ * the component's. Every context is accepted by now, so the events of all of
+ * them start here: the consumer hears the component from its full assembly.
  */
 export function joinBindings<
 	TProps extends object,
@@ -174,11 +223,16 @@ export function joinBindings<
 export function joinBindings(
 	owner: TCollectionBinding<object>,
 	...facades: TCollectionBinding<object>[]
-): TCollectionBinding<object> {
+): Omit<TCollectionBinding<object>, 'listen'> {
+	const { listen, ...rest } = owner
 	const last = facades[facades.length - 1] ?? owner
 
+	listen()
+
+	for (const facade of facades) facade.listen()
+
 	return {
-		...owner,
+		...rest,
 		state: facades.reduce((state, facade) => joinState(state, facade.state), owner.state),
 		forwardProps: last.forwardProps,
 	}

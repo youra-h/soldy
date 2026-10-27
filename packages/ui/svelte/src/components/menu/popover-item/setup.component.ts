@@ -6,7 +6,7 @@ import {
 import {
 	createSvelteAdapterContext,
 	joinBindings,
-	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	useElevator,
 	type TRootReceiver,
@@ -26,7 +26,7 @@ export function setupMenuPopoverItem(
 		mountId,
 	})
 
-	const owner = useAdapter(adapter, getProps, receive)
+	const owner = useOwnerAdapter(adapter, getProps, receive)
 
 	const item = createSvelteAdapterContext(
 		MenuCollectionItemDescriptor(),

@@ -5,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -18,7 +18,7 @@ export function setupCalendarItem(props: CalendarItemProps) {
 		ctrl: props.ctrl,
 		props,
 	})
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		CalendarCollectionItemDescriptor(),

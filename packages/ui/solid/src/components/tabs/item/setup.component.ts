@@ -5,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -15,7 +15,7 @@ import type { TabsItemProps } from './base.component'
 export function setupTabsItem(props: TabsItemProps) {
 	const { elevator } = useElevator()
 	const adapter = createSolidAdapterContext(TabsItemDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		TabsCollectionItemDescriptor(),

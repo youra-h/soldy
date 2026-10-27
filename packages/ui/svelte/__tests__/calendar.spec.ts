@@ -132,8 +132,8 @@ async function controlled(
 
 /** Месяцы сеток, возвращённые пропом, — как `v-model:months` у Vue. */
 async function withMonths(): Promise<() => TCalendarDate[] | undefined> {
-	// The handler is called while mounting too, with the grid's first months —
-	// the props are in place before the mount
+	// The months shown at mount are the starting state: the handler hears the
+	// changes after it
 	const props = reactiveProps<CalendarProps>({})
 
 	props.onChangeMonths = (months) => {
@@ -355,6 +355,19 @@ describe('Calendar · кнопки листания', () => {
 		flushSync()
 
 		expect(prev().hasAttribute('disabled')).toBe(true)
+	})
+
+	it('месяцы, показанные при монтировании, — начальное состояние, а не onChangeMonths', async () => {
+		const onChangeMonths = vi.fn()
+
+		await render({ onChangeMonths })
+
+		expect(onChangeMonths).not.toHaveBeenCalled()
+
+		next().click()
+		await nextFrame()
+
+		expect(onChangeMonths).toHaveBeenCalledExactlyOnceWith(['2026-10-01'])
 	})
 
 	it('листание пишет months — onChangeMonths', async () => {

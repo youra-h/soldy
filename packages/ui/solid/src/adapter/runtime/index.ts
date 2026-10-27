@@ -1,8 +1,10 @@
 export {
 	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	joinBindings,
 	type TBinding,
+	type TOwnerBinding,
 	type TCollectionBinding,
 	type TConsumerRef,
 	type TJoinedBinding,

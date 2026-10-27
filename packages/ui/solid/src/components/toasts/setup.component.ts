@@ -6,7 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -16,7 +16,7 @@ import type { ToastsProps } from './base.component'
 export function setupToasts(props: ToastsProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(ToastsDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		ToastsCollectionDescriptor(),

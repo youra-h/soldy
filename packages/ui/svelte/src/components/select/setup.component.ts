@@ -8,7 +8,7 @@ import {
 import {
 	createSvelteAdapterContext,
 	joinBindings,
-	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	useElevator,
 	type TRootReceiver,
@@ -24,7 +24,7 @@ export function setupSelect(getProps: () => SelectProps, mountId: string, receiv
 		mountId,
 	}).use(TFieldControlExtension, { elevator })
 
-	const owner = useAdapter(adapter, getProps, receive)
+	const owner = useOwnerAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		SelectCollectionDescriptor(),

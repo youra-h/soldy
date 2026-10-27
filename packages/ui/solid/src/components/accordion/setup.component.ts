@@ -6,7 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -16,7 +16,7 @@ import type { AccordionProps } from './base.component'
 export function setupAccordion(props: AccordionProps) {
 	const { elevator, layer } = useElevator()
 	const adapter = createSolidAdapterContext(AccordionDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		AccordionCollectionDescriptor(),

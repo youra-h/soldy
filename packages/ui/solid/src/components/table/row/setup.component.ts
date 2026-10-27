@@ -5,7 +5,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -16,7 +16,7 @@ import type { TableRowProps } from './base.component'
 export function setupTableRow(props: TableRowProps) {
 	const { elevator } = useElevator()
 	const adapter = createSolidAdapterContext(TableRowDescriptor(), { ctrl: props.ctrl, props })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const item = createSolidAdapterContext(
 		TableCollectionRowDescriptor(),

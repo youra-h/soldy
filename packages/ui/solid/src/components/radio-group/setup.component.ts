@@ -6,7 +6,7 @@ import {
 } from '@soldy-ui/setup'
 import {
 	createSolidAdapterContext,
-	useAdapter,
+	useOwnerAdapter,
 	joinBindings,
 	useCollectionAdapter,
 	useElevator,
@@ -19,7 +19,7 @@ export function setupRadioGroup(props: RadioGroupProps) {
 		ctrl: props.ctrl,
 		props,
 	}).use(TFieldControlExtension, { elevator })
-	const owner = useAdapter(adapter, props)
+	const owner = useOwnerAdapter(adapter, props)
 
 	const collectionAdapter = createSolidAdapterContext(
 		RadioGroupCollectionDescriptor(),

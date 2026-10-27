@@ -8,7 +8,7 @@ import {
 import {
 	createSvelteAdapterContext,
 	joinBindings,
-	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	useElevator,
 	type TRootReceiver,
@@ -27,7 +27,7 @@ export function setupListBox(
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
+	const owner = useOwnerAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		ListBoxCollectionDescriptor(),

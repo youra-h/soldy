@@ -2,8 +2,9 @@
  * useAdapter — the one Vue hook of the project.
  *
  * 1. Binds the component to Vue through the exchange `adapter.connect()` in
- *    `setup()`: the state record, the inputs, the events and `update:<prop>`
- *    for `v-model`
+ *    `setup()`: the state record and the inputs; the events and
+ *    `update:<prop>` for `v-model` — from `onBeforeMount`, once the whole
+ *    assembly is done
  * 2. Accepts the component — `adapter.attach()` in `setup()`
  * 3. Binds the root DOM element to `TElementPlugin` through the context
  * 4. Calls `adapter.destroy()` when the component unmounts
@@ -17,6 +18,7 @@ import {
 	ref,
 	shallowReactive,
 	watch,
+	onBeforeMount,
 	onBeforeUnmount,
 	onUnmounted,
 	onBeforeUpdate,
@@ -169,13 +171,29 @@ export function useAdapterParts(
 	// 3. Events: the core's events and `update:<prop>` for `v-model` — the
 	// exchange sends it by the profile, right after the core event.
 	//
-	// The consumer hears nothing once the unmount began, as in the other
-	// adapters (benchmarks/parity/README.md): Vue unmounts the parent's hooks
-	// first and its children after, and the markup items leaving the collection
-	// sent `update:items` with an ever shorter list — `v-model:items` of a
-	// `v-if`-ed owner emptied the parent's list. The blur of the removed node
-	// went out the same way
-	if (emit) onBeforeUnmount(link.events.listen((name, args) => emit(name, ...args)))
+	// The consumer hears the component from its full assembly, as in the other
+	// adapters (benchmarks/parity/README.md): `onBeforeMount` comes after the
+	// whole `setup()` — every context of the component accepted — and before
+	// the render that creates the children. What the assembly writes is the
+	// starting state: the collection facade, accepted after the component,
+	// writes into it — the months of Calendar's grids, Table's `dataset`, —
+	// and a subscription from `setup()` sent that as events. The markup items
+	// join the collection on the render, after the hook, and are heard. There
+	// is no mount on the server, so no events there either, as in React.
+	//
+	// The consumer hears nothing once the unmount began: Vue unmounts the
+	// parent's hooks first and its children after, and the markup items
+	// leaving the collection sent `update:items` with an ever shorter list —
+	// `v-model:items` of a `v-if`-ed owner emptied the parent's list. The blur
+	// of the removed node went out the same way
+	if (emit) {
+		let stop: (() => void) | undefined
+
+		onBeforeMount(() => {
+			stop = link.events.listen((name, args) => emit(name, ...args))
+		})
+		onBeforeUnmount(() => stop?.())
+	}
 
 	// 4. The component is accepted: in Vue that is `setup()` itself, with no
 	// repeats and no discarded assemblies. Here, not in `onMounted`: `setup()`

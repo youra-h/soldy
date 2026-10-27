@@ -2,7 +2,7 @@ import { MenuCollectionDescriptor, MenuDescriptor, TCollectionExtension } from '
 import {
 	createSvelteAdapterContext,
 	joinBindings,
-	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	useElevator,
 	type TRootReceiver,
@@ -18,7 +18,7 @@ export function setupMenu(getProps: () => MenuProps, mountId: string, receive: T
 		mountId,
 	})
 
-	const owner = useAdapter(adapter, getProps, receive)
+	const owner = useOwnerAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		MenuCollectionDescriptor(),

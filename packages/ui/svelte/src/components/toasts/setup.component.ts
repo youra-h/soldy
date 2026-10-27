@@ -7,7 +7,7 @@ import {
 import {
 	createSvelteAdapterContext,
 	joinBindings,
-	useAdapter,
+	useOwnerAdapter,
 	useCollectionAdapter,
 	useElevator,
 	type TRootReceiver,
@@ -22,7 +22,7 @@ export function setupToasts(getProps: () => ToastsProps, mountId: string, receiv
 		props,
 		mountId,
 	})
-	const owner = useAdapter(adapter, getProps, receive)
+	const owner = useOwnerAdapter(adapter, getProps, receive)
 
 	const collectionAdapter = createSvelteAdapterContext(
 		ToastsCollectionDescriptor(),
