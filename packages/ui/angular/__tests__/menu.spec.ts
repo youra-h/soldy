@@ -39,6 +39,7 @@ import { Component, signal, type Type } from '@angular/core'
 import { TestBed, type ComponentFixture } from '@angular/core/testing'
 import {
 	TCheckBox,
+	TMenuCheckboxItem,
 	createEngineMenu,
 	type IMenuItem,
 	type IMenuItemSource,
@@ -1223,6 +1224,194 @@ describe('группы разметки', () => {
 		check()
 
 		expect(brief(page.engine)[1]).toEqual(['Изменение', ['cut', 'copy']])
+	})
+})
+
+/**
+ * Items as the `default` template of the menu and of a submenu — the lazy form
+ * of markup items. A projection Angular creates with the menu, and
+ * `contentRendered` only keeps it out of the document; the template the menu
+ * and the submenu create themselves, with the first opening of their panel,
+ * as the default slot of the other adapters. DI of the template is the place
+ * it is written, as with a projection: its items enter the collection of the
+ * menu or submenu it is written in.
+ */
+describe('шаблон default', () => {
+	/**
+	 * An action, a checkbox, a submenu (an action and a checkbox), a radio
+	 * group and another action, each level as a template. One checkbox per
+	 * level: the probe counts the assemblies of its class.
+	 */
+	@Component({
+		selector: 'probe-menu-template',
+		standalone: true,
+		imports: [
+			...BASE,
+			...RADIO,
+			TMenuItemComponent,
+			TMenuCheckboxItemComponent,
+			TMenuSubmenuComponent,
+		],
+		template: `<span so-menu (soChoose)="root.push($event.value)">
+			${TRIGGER}
+			<ng-template slot="default">
+				<div so-menu-item value="edit" text="Изменить"></div>
+				<div so-menu-checkbox-item value="grid" text="Сетка"></div>
+				<div
+					so-menu-submenu
+					value="share"
+					text="Поделиться"
+					(soChoose)="nested.push($event.value)"
+				>
+					<ng-template slot="default">
+						<div so-menu-item value="link" text="Ссылка"></div>
+						<div so-menu-checkbox-item value="ruler" text="Линейка"></div>
+					</ng-template>
+				</div>
+				<div
+					so-menu-radio-group
+					label="Сортировка"
+					[value]="sort()"
+					(soChangeValue)="sort.set($event.newValue)"
+				>
+					<div so-menu-radio-item value="name" text="По имени"></div>
+					<div so-menu-radio-item value="date" text="По дате"></div>
+				</div>
+				<div so-menu-item value="remove" text="Удалить"></div>
+			</ng-template>
+		</span>`,
+	})
+	class TemplatePage {
+		readonly sort = signal<TMenuRadioGroupValue>(null)
+		readonly root: unknown[] = []
+		readonly nested: unknown[] = []
+	}
+
+	/** The template next to a projection: the template replaces it. */
+	@Component({
+		selector: 'probe-menu-template-projection',
+		standalone: true,
+		imports: [...BASE, TMenuItemComponent],
+		template: `<span so-menu>
+			${TRIGGER}
+			<ng-template slot="default"
+				><div so-menu-item value="edit" text="Шаблон"></div
+			></ng-template>
+			<div so-menu-item value="remove" text="Проекция"></div>
+		</span>`,
+	})
+	class TemplateProjectionPage {}
+
+	const rootPanel = () => panelOf(triggerNode())
+	const shareRow = () => rowOf('Поделиться')
+	const subPanel = () => panelOf(shareRow())
+
+	let probe: TAssemblyProbe
+
+	beforeEach(() => {
+		probe = countAssemblies(TMenuCheckboxItem)
+	})
+
+	afterEach(() => probe.dispose())
+
+	it('пункты — с первого открытия своей панели, закрытие их не снимает', async () => {
+		await render(TemplatePage)
+
+		expect(probe.counts).toEqual({ install: 0, destroy: 0 })
+		expect(document.querySelectorAll('.so-menu-item')).toHaveLength(0)
+
+		await open()
+
+		const first = rows()
+
+		expect(texts(rootPanel())).toEqual(['Изменить', 'Поделиться', 'Удалить'])
+		// The submenu's template waits for its own opening
+		expect(probe.counts).toEqual({ install: 1, destroy: 0 })
+		expect(texts(subPanel())).toEqual([])
+
+		click(shareRow())
+		await nextFrame()
+		check()
+
+		expect(texts(subPanel())).toEqual(['Ссылка'])
+		expect(probe.counts).toEqual({ install: 2, destroy: 0 })
+
+		const links = [...subPanel().querySelectorAll('[role^="menuitem"]')]
+
+		click(triggerNode())
+		await nextFrame()
+		check()
+
+		// Closing only hides the panels: the same rows, assembled once
+		expect(isOpen()).toBe(false)
+		expect(rows()).toEqual(first)
+		expect([...subPanel().querySelectorAll('[role^="menuitem"]')]).toEqual(links)
+		expect(probe.counts).toEqual({ install: 2, destroy: 0 })
+	})
+
+	it('стрелки ходят по пунктам шаблона, → открывает подменю на первом его пункте', async () => {
+		await render(TemplatePage)
+
+		triggerNode().focus()
+		await press(triggerNode(), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowIn(rootPanel(), 'Изменить'))
+
+		await press(rowIn(rootPanel(), 'Изменить'), 'ArrowDown')
+		await press(rowIn(rootPanel(), 'Сетка'), 'ArrowDown')
+
+		expect(document.activeElement).toBe(shareRow())
+
+		await press(shareRow(), 'ArrowRight')
+
+		expect(shown(subPanel())).toBe(true)
+		expect(document.activeElement).toBe(rowIn(subPanel(), 'Ссылка'))
+
+		// The submenu's items are its own collection: down from the last one wraps to the first
+		await press(rowIn(subPanel(), 'Ссылка'), 'ArrowDown')
+		await press(rowIn(subPanel(), 'Линейка'), 'ArrowDown')
+
+		expect(document.activeElement).toBe(rowIn(subPanel(), 'Ссылка'))
+	})
+
+	it('выбор в подменю шаблона сообщает choose меню и подменю и закрывает меню', async () => {
+		const fixture = await render(TemplatePage)
+		const page = fixture.componentInstance
+
+		await open()
+		click(shareRow())
+		await nextFrame()
+		check()
+		click(rowIn(subPanel(), 'Ссылка'))
+		await nextFrame()
+
+		expect(page.root).toEqual(['link'])
+		expect(page.nested).toEqual(['link'])
+		expect(shown(rootPanel())).toBe(false)
+		expect(document.activeElement).toBe(triggerNode())
+	})
+
+	it('группа переключателей в шаблоне: клик отмечает один, значение — выходом', async () => {
+		const fixture = await render(TemplatePage)
+		const page = fixture.componentInstance
+
+		await open()
+		click(rowOf('По имени'))
+		click(rowOf('По дате'))
+
+		expect(page.sort()).toBe('date')
+		expect(rowOf('По имени').getAttribute('aria-checked')).toBe('false')
+		expect(rowOf('По дате').getAttribute('aria-checked')).toBe('true')
+		expect(page.root).toEqual([])
+	})
+
+	it('рядом с проекцией — рисуется шаблон', async () => {
+		await render(TemplateProjectionPage)
+
+		await open()
+
+		expect(texts(rootPanel())).toEqual(['Шаблон'])
+		expect(document.body.textContent).not.toContain('Проекция')
 	})
 })
 

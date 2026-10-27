@@ -175,28 +175,41 @@
 		Без пунктов разметки — пункты из данных по секциям (`sections`), порядком показанного.
 	-->
 	<div class="so-menu__list">
-		<!-- Items from the panel's first opening on (`contentRendered`). Markup items are a projection: Angular creates them with the menu and only inserts them then -->
+		<!--
+			Items from the panel's first opening on (`contentRendered`). Markup items written as
+			a projection Angular creates with the menu and only inserts then; the `default`
+			template the menu creates itself, here, so its items come with the first opening.
+			Given, it is drawn instead of the projection.
+		-->
 		@if (state()['contentRendered']) {
-			<ng-content>
-				@for (section of state()['sections'] ?? []; track section.key; let first = $first) {
-					@if (state()['groupSeparators'] && !first) {
-						<div so-menu-separator></div>
-					}
-					@if (section.group; as group) {
-						<div so-menu-group [label]="group.label">
+			@if (slot('default'); as content) {
+				<ng-container [ngTemplateOutlet]="content" />
+			} @else {
+				<ng-content>
+					@for (
+						section of state()['sections'] ?? [];
+						track section.key;
+						let first = $first
+					) {
+						@if (state()['groupSeparators'] && !first) {
+							<div so-menu-separator></div>
+						}
+						@if (section.group; as group) {
+							<div so-menu-group [label]="group.label">
+								<ng-container
+									[ngTemplateOutlet]="entries"
+									[ngTemplateOutletContext]="{ $implicit: section.items }"
+								/>
+							</div>
+						} @else {
 							<ng-container
 								[ngTemplateOutlet]="entries"
 								[ngTemplateOutletContext]="{ $implicit: section.items }"
 							/>
-						</div>
-					} @else {
-						<ng-container
-							[ngTemplateOutlet]="entries"
-							[ngTemplateOutletContext]="{ $implicit: section.items }"
-						/>
+						}
 					}
-				}
-			</ng-content>
+				</ng-content>
+			}
 		}
 	</div>
 </div>
