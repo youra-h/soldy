@@ -1,5 +1,31 @@
 # @soldy-ui/plugins
 
+## 0.3.0-alpha.6
+
+### Minor Changes
+
+- 101269c: Menu, its submenus and DatePicker build their panel content on the first opening (`contentRendered`): a menu nobody opened is its trigger and an empty panel, a date picker nobody opened is a field with a button. Closing still only hides the panel and keeps the content. In Angular, menu items written in markup are a projection — Angular creates them with the menu and only inserts them on the first opening; items from `items` and the calendar are created then.
+  
+  What broke and how to update: before the first opening, menu items and the DatePicker calendar are neither in the document nor in the menu's collection. Code that reads them earlier should open the panel first (`open`). Opening the menu by a key still highlights the edge item — a frame later, once the items are drawn.
+- 54f5b1d: Select builds options from `items` on the first opening of its panel (`contentRendered`), as Menu and DatePicker do; closing only hides them, and options written in markup are mounted as before. `Virtual` measures its window once the first drawn item enters the document.
+  
+  What broke and how to update: before the first opening, options from `items` are not in the document and have no `id` — open the panel (`open`) before reading them.
+
+### Patch Changes
+
+- a6a77f8: Every package declares `sideEffects`, so the application's bundler drops the modules a page does not use: a page with one button no longer pulls every component of the core, every plugin and every component of the adapter (React: 184 → 82 KB gzip of JS). The core, plugins, icons and adapters are `false`, the themes keep their stylesheets (`["*.css"]`), and `@soldy-ui/webc` is `true`: importing it defines every element, as before.
+- 2dec183: The repository moved to github.com/youra-h/soldy-ui: package repository, homepage and issue links point there
+- Updated dependencies [101269c]
+- Updated dependencies [7ac5495]
+- Updated dependencies [a6a77f8]
+- Updated dependencies [765030a]
+- Updated dependencies [2e2ff15]
+- Updated dependencies [2dec183]
+- Updated dependencies [54f5b1d]
+- Updated dependencies [5429a39]
+- Updated dependencies [604ae77]
+  - @soldy-ui/core@0.3.0-alpha.6
+
 ## 0.3.0-alpha.5
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @soldy-ui/icons-material
 
+## 0.3.0-alpha.6
+
+### Patch Changes
+
+- a6a77f8: Every package declares `sideEffects`, so the application's bundler drops the modules a page does not use: a page with one button no longer pulls every component of the core, every plugin and every component of the adapter (React: 184 → 82 KB gzip of JS). The core, plugins, icons and adapters are `false`, the themes keep their stylesheets (`["*.css"]`), and `@soldy-ui/webc` is `true`: importing it defines every element, as before.
+- 2dec183: The repository moved to github.com/youra-h/soldy-ui: package repository, homepage and issue links point there
+- Updated dependencies [101269c]
+- Updated dependencies [a73c5bf]
+- Updated dependencies [2dec183]
+- Updated dependencies [54f5b1d]
+  - @soldy-ui/setup@0.3.0-alpha.6
+
 ## 0.3.0-alpha.5
 
 ### Patch Changes

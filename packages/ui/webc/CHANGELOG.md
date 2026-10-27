@@ -1,5 +1,38 @@
 # @soldy-ui/webc
 
+## 0.3.0-alpha.6
+
+### Minor Changes
+
+- 101269c: Menu, its submenus and DatePicker build their panel content on the first opening (`contentRendered`): a menu nobody opened is its trigger and an empty panel, a date picker nobody opened is a field with a button. Closing still only hides the panel and keeps the content. In Angular, menu items written in markup are a projection — Angular creates them with the menu and only inserts them on the first opening; items from `items` and the calendar are created then.
+  
+  What broke and how to update: before the first opening, menu items and the DatePicker calendar are neither in the document nor in the menu's collection. Code that reads them earlier should open the panel first (`open`). Opening the menu by a key still highlights the edge item — a frame later, once the items are drawn.
+- 7ac5495: DatePicker no longer builds its calendar up front: days and month pickers appear on the first opening, and date fields are created for the mode that needs them, so a closed picker holds just its field. Until the first opening or a mode change `ctrl.engine` has no calendar (`engine.options.get('owner')` is `undefined`) and commands such as `selection.chooseDate()` do nothing — open the picker (`ctrl.open = true`) before driving its calendar from code.
+- 2e2ff15: Calendar month picker places create their list on the first opening of their popover: `pickers[i].list` is now `{ ctrl, engine }`, `undefined` until then, and `pickers[i].engine` is gone — read `pickers[i].list?.ctrl` and `pickers[i].list?.engine`.
+- 54f5b1d: Select builds options from `items` on the first opening of its panel (`contentRendered`), as Menu and DatePicker do; closing only hides them, and options written in markup are mounted as before. `Virtual` measures its window once the first drawn item enters the document.
+  
+  What broke and how to update: before the first opening, options from `items` are not in the document and have no `id` — open the panel (`open`) before reading them.
+
+### Patch Changes
+
+- 23f8f70: Web Components: the polyfill of customized built-ins (Safari) runs before the first element is defined, from the package root and from every entry — in 0.3.0-alpha.5 the built package ran it after every registration.
+- 23f8f70: Web Components: an entry point per component — `import '@soldy-ui/webc/button'` defines just the button (with the locale provider and the elements its markup draws), so a page ships only what it uses; `import '@soldy-ui/webc'` still defines every element.
+- a6a77f8: Every package declares `sideEffects`, so the application's bundler drops the modules a page does not use: a page with one button no longer pulls every component of the core, every plugin and every component of the adapter (React: 184 → 82 KB gzip of JS). The core, plugins, icons and adapters are `false`, the themes keep their stylesheets (`["*.css"]`), and `@soldy-ui/webc` is `true`: importing it defines every element, as before.
+- 2dec183: The repository moved to github.com/youra-h/soldy-ui: package repository, homepage and issue links point there
+- Updated dependencies [101269c]
+- Updated dependencies [a73c5bf]
+- Updated dependencies [7ac5495]
+- Updated dependencies [a6a77f8]
+- Updated dependencies [765030a]
+- Updated dependencies [2e2ff15]
+- Updated dependencies [2dec183]
+- Updated dependencies [54f5b1d]
+- Updated dependencies [5429a39]
+- Updated dependencies [604ae77]
+  - @soldy-ui/core@0.3.0-alpha.6
+  - @soldy-ui/setup@0.3.0-alpha.6
+  - @soldy-ui/plugins@0.3.0-alpha.6
+
 ## 0.3.0-alpha.5
 
 ### Patch Changes

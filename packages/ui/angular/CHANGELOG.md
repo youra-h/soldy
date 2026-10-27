@@ -1,5 +1,39 @@
 # @soldy-ui/angular
 
+## 0.3.0-alpha.6
+
+### Minor Changes
+
+- 101269c: Menu, its submenus and DatePicker build their panel content on the first opening (`contentRendered`): a menu nobody opened is its trigger and an empty panel, a date picker nobody opened is a field with a button. Closing still only hides the panel and keeps the content. In Angular, menu items written in markup are a projection — Angular creates them with the menu and only inserts them on the first opening; items from `items` and the calendar are created then.
+  
+  What broke and how to update: before the first opening, menu items and the DatePicker calendar are neither in the document nor in the menu's collection. Code that reads them earlier should open the panel first (`open`). Opening the menu by a key still highlights the edge item — a frame later, once the items are drawn.
+- 2e2ff15: Calendar month picker places create their list on the first opening of their popover: `pickers[i].list` is now `{ ctrl, engine }`, `undefined` until then, and `pickers[i].engine` is gone — read `pickers[i].list?.ctrl` and `pickers[i].list?.engine`.
+- 54f5b1d: Select builds options from `items` on the first opening of its panel (`contentRendered`), as Menu and DatePicker do; closing only hides them, and options written in markup are mounted as before. `Virtual` measures its window once the first drawn item enters the document.
+  
+  What broke and how to update: before the first opening, options from `items` are not in the document and have no `id` — open the panel (`open`) before reading them.
+
+### Patch Changes
+
+- e7df36a: Tabs.Content accepts its content as `<ng-template slot="default">`: an inactive panel then creates nothing, and leaving the tab removes it.
+- a6a77f8: Every package declares `sideEffects`, so the application's bundler drops the modules a page does not use: a page with one button no longer pulls every component of the core, every plugin and every component of the adapter (React: 184 → 82 KB gzip of JS). The core, plugins, icons and adapters are `false`, the themes keep their stylesheets (`["*.css"]`), and `@soldy-ui/webc` is `true`: importing it defines every element, as before.
+- 0576069: Angular and Svelte adapters keep less memory per mounted component: fewer signals, computeds and effects in the adapter wiring. In Angular, `state()`, `instance()`, `facade()` and `rootElement()` of the component base are methods now, called the same way, and only components that read slots query slot templates.
+- 2dec183: The repository moved to github.com/youra-h/soldy-ui: package repository, homepage and issue links point there
+- c0260ec: Menu and Menu.Submenu accept their items as `<ng-template slot="default">`: the menu creates the template with the first opening of its panel, while items written as a projection Angular creates together with the menu.
+- 1829a75: Popover and Menu.PopoverItem accept panel content as `<ng-template slot="default">`: with `lazyMount`, its components are created on first open instead of right away. Calendar creates its month and year picker on first open.
+- Updated dependencies [101269c]
+- Updated dependencies [a73c5bf]
+- Updated dependencies [7ac5495]
+- Updated dependencies [a6a77f8]
+- Updated dependencies [765030a]
+- Updated dependencies [2e2ff15]
+- Updated dependencies [2dec183]
+- Updated dependencies [54f5b1d]
+- Updated dependencies [5429a39]
+- Updated dependencies [604ae77]
+  - @soldy-ui/core@0.3.0-alpha.6
+  - @soldy-ui/setup@0.3.0-alpha.6
+  - @soldy-ui/plugins@0.3.0-alpha.6
+
 ## 0.3.0-alpha.5
 
 ### Patch Changes
