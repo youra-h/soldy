@@ -3,6 +3,7 @@ import {
 	Component,
 	input,
 	viewChild,
+	viewChildren,
 	type Signal,
 	type Type,
 } from '@angular/core'
@@ -18,128 +19,148 @@ import {
 	TRadioGroupItemComponent,
 	TSwitchComponent,
 } from '@soldy-ui/angular'
+import { CopyDirective } from './copy.directive'
 
 /**
- * Разметка сценариев, которой нет у превью: содержимое слотов под проверку —
- * в Angular.
+ * Scenario markup that the previews do not have — slot content to check — in
+ * Angular.
  *
- * Ключи и разметка — те же, что у хостов Vue и React: сценарии в общем пакете
- * ищут в сцене одно и то же, на каком бы фреймворке её ни нарисовали. Слоты
- * Button в Angular — элементы с атрибутом `slot`, а слот со scope —
- * `<ng-template slot="default" let-text>`.
+ * The keys and the markup are those of the Vue and React hosts: the scenarios
+ * of the shared package look for the same things in the scene, whatever
+ * framework drew it. Button slots in Angular are elements with a `slot`
+ * attribute, and a slot with a scope is `<ng-template slot="default" let-text>`.
  *
- * Фикстура — компонент со своим шаблоном: содержимое слотов разметкой
- * разложить по имени нельзя, и scope слоту отдаёт только шаблон. Поэтому
- * пропсы сценария фикстура принимает своими входами — теми, что пишут её
- * сценарии (`text` и `ctrl`), — и передаёт компоненту сценария привязками.
- * Проп, которого у фикстуры нет, хост назовёт ошибкой, как и у превью.
- * Компонент сценария фикстура отдаёт хосту (`subject`): его выходы хост
- * слушает, как у превью. Имя поля — не имя пропа: входы у фикстуры и превью
- * своим шаблоном названы по пропам страницы, а `target` — проп слоя (окно,
- * выезжающая панель).
+ * A fixture is a component with its own template: slot content cannot be laid
+ * out by name in markup, and only a template gives a slot its scope. So the
+ * fixture takes the scenario's props as its inputs — those its scenarios write
+ * (`text` and `ctrl`) — and passes them to the scenario's component with
+ * bindings. A prop the fixture has no input for the host calls an error, as for
+ * a preview. The field names are not prop names: the inputs of fixtures and
+ * previews are named after the page's props, and `target` is a prop of the
+ * layers (dialog, drawer).
+ *
+ * The same shape serves the previews (`TPreview`): a component of the host
+ * whose markup is one copy.
  */
 export type TFixture = {
-	/** Компонент сценария в разметке фикстуры. */
-	readonly subject: Signal<object>
+	/** The markup of one copy: the host stamps the copies from it. */
+	readonly copy: Signal<CopyDirective>
+	/** The scenario's component in each copy: the host listens to its outputs. */
+	readonly subjects: Signal<readonly object[]>
 }
 
 @Component({
 	selector: 'pg-button-slot-labels',
-	imports: [TButtonComponent, SlotDirective],
+	imports: [TButtonComponent, SlotDirective, CopyDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	// Метки во всех трёх слотах: сценарий ищет их по `data-probe` и сверяет
 	// порядок, а в `default` печатает то, что пришло в scope
 	template: `
-		<button so-button [ctrl]="ctrl()" [text]="text()">
-			<span slot="leading" data-probe="leading">L</span>
-			<ng-template slot="default" let-text>
-				<span data-probe="default">{{ text }}</span>
-			</ng-template>
-			<span slot="trailing" data-probe="trailing">T</span>
-		</button>
+		<ng-template pg-copy>
+			<button so-button [ctrl]="ctrl()" [text]="text()">
+				<span slot="leading" data-probe="leading">L</span>
+				<ng-template slot="default" let-text>
+					<span data-probe="default">{{ text }}</span>
+				</ng-template>
+				<span slot="trailing" data-probe="trailing">T</span>
+			</button>
+		</ng-template>
 	`,
 })
 class ButtonSlotLabels implements TFixture {
 	readonly ctrl = input<IButton>()
 	readonly text = input<string>()
-	readonly subject = viewChild.required(TButtonComponent)
+	readonly copy = viewChild.required(CopyDirective)
+	readonly subjects = viewChildren(TButtonComponent)
 }
 
 @Component({
 	selector: 'pg-button-slot-icons',
-	imports: [TButtonComponent, TIconComponent, RoleIconDirective],
+	imports: [TButtonComponent, TIconComponent, RoleIconDirective, CopyDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	// Иконки по краям — подпись длинная, из пропа `text` сценария
 	template: `
-		<button so-button [ctrl]="ctrl()" [text]="text()">
-			<svg slot="leading" so-icon so-role-icon="check"></svg>
-			<svg slot="trailing" so-icon so-role-icon="arrowRight"></svg>
-		</button>
+		<ng-template pg-copy>
+			<button so-button [ctrl]="ctrl()" [text]="text()">
+				<svg slot="leading" so-icon so-role-icon="check"></svg>
+				<svg slot="trailing" so-icon so-role-icon="arrowRight"></svg>
+			</button>
+		</ng-template>
 	`,
 })
 class ButtonSlotIcons implements TFixture {
 	readonly ctrl = input<IButton>()
 	readonly text = input<string>()
-	readonly subject = viewChild.required(TButtonComponent)
+	readonly copy = viewChild.required(CopyDirective)
+	readonly subjects = viewChildren(TButtonComponent)
 }
 
 @Component({
 	selector: 'pg-label-check-box',
-	imports: [TLabelComponent, TCheckBoxComponent],
+	imports: [TLabelComponent, TCheckBoxComponent, CopyDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	// Подпись вокруг контрола: текст — из пропа `text` сценария, контрол — в
 	// основной проекции
 	template: `
-		<label so-label [ctrl]="ctrl()" [text]="text()">
-			<span so-check-box></span>
-		</label>
+		<ng-template pg-copy>
+			<label so-label [ctrl]="ctrl()" [text]="text()">
+				<span so-check-box></span>
+			</label>
+		</ng-template>
 	`,
 })
 class LabelCheckBox implements TFixture {
 	readonly ctrl = input<ILabel>()
 	readonly text = input<string>()
-	readonly subject = viewChild.required(TLabelComponent)
+	readonly copy = viewChild.required(CopyDirective)
+	readonly subjects = viewChildren(TLabelComponent)
 }
 
 @Component({
 	selector: 'pg-label-switch',
-	imports: [TLabelComponent, TSwitchComponent],
+	imports: [TLabelComponent, TSwitchComponent, CopyDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
-		<label so-label [ctrl]="ctrl()" [text]="text()">
-			<span so-switch></span>
-		</label>
+		<ng-template pg-copy>
+			<label so-label [ctrl]="ctrl()" [text]="text()">
+				<span so-switch></span>
+			</label>
+		</ng-template>
 	`,
 })
 class LabelSwitch implements TFixture {
 	readonly ctrl = input<ILabel>()
 	readonly text = input<string>()
-	readonly subject = viewChild.required(TLabelComponent)
+	readonly copy = viewChild.required(CopyDirective)
+	readonly subjects = viewChildren(TLabelComponent)
 }
 
 @Component({
 	selector: 'pg-label-radio',
-	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent],
+	imports: [TLabelComponent, TRadioGroupComponent, TRadioGroupItemComponent, CopyDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	// Корень радио — `label`, а `label` в `label` HTML запрещает: внутри
 	// подписи радио пишут на строчном теге. Группа вокруг — ради общего `name`
 	template: `
-		<div so-radio-group>
-			<label so-label [ctrl]="ctrl()" [text]="text()">
-				<span so-radio-group-item value="a"></span>
-			</label>
-		</div>
+		<ng-template pg-copy>
+			<div so-radio-group>
+				<label so-label [ctrl]="ctrl()" [text]="text()">
+					<span so-radio-group-item value="a"></span>
+				</label>
+			</div>
+		</ng-template>
 	`,
 })
 class LabelRadio implements TFixture {
 	readonly ctrl = input<ILabel>()
 	readonly text = input<string>()
-	readonly subject = viewChild.required(TLabelComponent)
+	readonly copy = viewChild.required(CopyDirective)
+	readonly subjects = viewChildren(TLabelComponent)
 }
 
 export const FIXTURES: Record<string, Type<TFixture>> = {

@@ -1,19 +1,20 @@
 /**
- * Хост Angular — то, что у него своё.
+ * The Angular host — what is its own.
  *
- * Общее со всеми хостами — витрину, страницы, сценарии, язык — проверяют
- * дымовые тесты по списку фреймворков. Здесь — решения самого хоста Angular:
- * компоненты стенд собирает компилятором Angular, а пакеты Angular — линкером,
- * и компилятора Angular в рантайме нет; пропсы уходят входам по имени, и
- * пропа без входа хост не глушит; экземпляр ядра адаптер берёт при сборке, и
- * смена `ctrl` ставит компонент заново; обёртку и содержимое превью хост
- * собирает сам — части на своих элементах в проекциях, после владельца и с
- * его инжектором; рамка вокруг компонента идёт за пропсами оболочки, а данные
- * превью ложатся под них; превью, которому нужны шаблоны слотов (Popover,
- * Tooltip) или своё состояние (открытость Dialog и Drawer), и компонент без
- * корня — директива на `<ng-container>` (Virtual, DragAndDrop) — свой
- * шаблон, как у фикстуры: пропсы — входам его компонента, выходы — у
- * компонента в его разметке.
+ * What it shares with every host — the showcase, the pages, the scenarios, the
+ * language — the smoke tests check by the list of frameworks. Here are the
+ * decisions of the Angular host itself: the stand builds components with the
+ * Angular compiler and the Angular packages with the linker, and there is no
+ * Angular compiler at runtime; props go to inputs by name, and the host does
+ * not mute a prop without an input; the adapter takes the core instance at
+ * assembly, and a change of `ctrl` places the component anew. A preview is a
+ * component of the host with its markup, as a fixture: the wrapper, the parts
+ * in projections and the frame are markup, the parts enter the collection in
+ * markup order, the frame follows the shell's props, and the preview's data
+ * lies under them; the props go to the inputs of the preview, the outputs are
+ * those of the component in its markup. The copies (`count`) are views of one
+ * template: the host listens to the component of each, and each has its own
+ * state.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -161,12 +162,13 @@ const textsOf = (node: ParentNode, selector: string): string[] =>
 
 describe('хост Angular · обёртка и содержимое', () => {
 	/**
-	 * Элементы списка — свои компоненты на своих элементах в основной проекции
-	 * владельца. Элемент читает лифт владельца при своей сборке, поэтому хост
-	 * собирает его после владельца и с его инжектором: вошёл в коллекцию —
-	 * встал на своё место в ней (`order`) и выбирается кликом. Проекция — в узле
-	 * списка внутри корня: рядом с ним в корне стоят шапка и подвал. Снятое
-	 * превью уносит и части.
+	 * The list's items are components of their own on their own elements in the
+	 * owner's main projection. An item reads the owner's lift layer at its
+	 * assembly, by the injector of the template: once it entered the collection,
+	 * it stands in its place there (`order`) and is selected by a click. The
+	 * projection is in the list's node inside the root: the header and the
+	 * footer stand next to it in the root. A removed preview takes the parts
+	 * away too.
 	 */
 	it('элементы списка входят в коллекцию владельца в порядке разметки', async () => {
 		const node = stage()
@@ -280,11 +282,11 @@ describe('хост Angular · обёртка и содержимое', () => {
 	})
 
 	/**
-	 * Опции Select — свои компоненты на своих элементах в его основной проекции,
-	 * в списке панели, увезённой в `body`. Слой лифта Select опция читает по
-	 * инжектору владельца, поэтому хост собирает её после Select: вошла в
-	 * коллекцию — встала на своё место в ней (`order`), а выбор пишет текст
-	 * опции в поле.
+	 * Select's options are components of their own on their own elements in its
+	 * main projection, in the list of the panel carried away to `body`. An
+	 * option reads the lift layer of the Select by the injector of the template:
+	 * once it entered the collection, it stands in its place there (`order`), and
+	 * selecting it writes the option's text into the field.
 	 */
 	it('опции Select входят в коллекцию владельца в порядке разметки — в панели в body', async () => {
 		const node = stage()
@@ -833,17 +835,17 @@ describe('хост Angular · содержимое панели с lazyMount', (
 
 describe('хост Angular · рамка', () => {
 	/**
-	 * Таблица — в рамке: разметке без компонента со стилем от пропсов
-	 * оболочки, как `div` вокруг Table у Vue и React. Строки и колонки —
-	 * данные превью, а пропсы строки ложатся поверх: с закреплённой шапкой у
-	 * таблицы сорок своих строк, а рамка — окно прокрутки. Смена пропа меняет
-	 * то и другое на той же таблице.
+	 * The table is in a frame: markup without a component, with a style from the
+	 * shell's props, as the `div` around Table in Vue and React. The rows and
+	 * columns are the preview's data, and the row's props go over them: with a
+	 * sticky head the table has forty rows of its own, and the frame is a scroll
+	 * window. A change of the prop changes both on the same table.
 	 */
 	it('таблица — в рамке: данные превью под пропсами строки, рамка идёт за пропсом', () => {
 		const node = stage()
 		const handle = host.mount(node, { component: 'table', props: {} })
-		const frame = node.querySelector('[pg-angular-frame]')
-		const viewport = frame?.querySelector(':scope > .so-table__viewport')
+		const viewport = node.querySelector('.so-table__viewport')
+		const frame = viewport?.parentElement
 
 		if (!(frame instanceof HTMLElement)) throw new Error('рамки нет')
 
@@ -857,7 +859,7 @@ describe('хост Angular · рамка', () => {
 
 		handle.update({ stickyHead: true })
 
-		expect(node.querySelector('[pg-angular-frame]')).toBe(frame)
+		expect(node.querySelector('.so-table__viewport')?.parentElement).toBe(frame)
 		expect(frame.style.height).toBe('320px')
 		expect(frame.style.overflow).toBe('auto')
 		expect(all(node, '.so-table-row')).toHaveLength(TABLE_SCROLL_ROWS.length)
@@ -866,5 +868,60 @@ describe('хост Angular · рамка', () => {
 		handle.unmount()
 
 		expect(node.childNodes).toHaveLength(0)
+	})
+})
+
+describe('хост Angular · копии', () => {
+	/**
+	 * The copies are views of one template of the preview, stamped by the host
+	 * before their assembly: the host listens to the component of each copy, and
+	 * the props of the shell reach them all.
+	 */
+	it('выходы — у компонента каждой копии, пропсы — всем', () => {
+		const node = stage()
+		const events: string[] = []
+		const handle = host.mount(node, {
+			component: 'check-box',
+			props: {},
+			onEvent: (name) => events.push(name),
+			count: 3,
+		})
+		const inputs = all(node, '.so-check-box > input')
+
+		expect(textsOf(node, '.so-label__text')).toEqual(['Согласен', 'Согласен', 'Согласен'])
+
+		handle.update({ value: true })
+
+		expect(inputs.map((input) => input instanceof HTMLInputElement && input.checked)).toEqual([
+			true,
+			true,
+			true,
+		])
+		expect(events.filter((name) => name === 'change:value')).toHaveLength(3)
+
+		handle.unmount()
+
+		expect(node.childNodes).toHaveLength(0)
+	})
+
+	/**
+	 * The open state of a dialog is the copy's own (`pg-copy-state`): the button
+	 * of one copy opens its own dialog, not all of them.
+	 */
+	it('окно у каждой копии своё', async () => {
+		const node = stage()
+		const handle = host.mount(node, { component: 'dialog', props: {}, count: 2 })
+		const dialogs = all(document.body, '.so-dialog')
+
+		expect(dialogs).toHaveLength(2)
+
+		all(node, '.so-button')[1]?.click()
+		await nextFrame()
+
+		expect(dialogs.map((dialog) => dialog.style.display)).toEqual(['none', ''])
+
+		handle.unmount()
+
+		expect(document.querySelector('.so-dialog')).toBe(null)
 	})
 })
