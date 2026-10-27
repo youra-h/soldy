@@ -1,0 +1,6 @@
+{
+  // The Angular program of the run: its page root beside the stand's Angular
+  // host, whose previews it places, with the host's options and paths
+  "extends": "../../../../packages/playground/vue/src/hosts/angular/tsconfig.json",
+  "include": ["./**/*", "../../../../packages/playground/vue/src/hosts/angular/**/*"]
+}

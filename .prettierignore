@@ -17,7 +17,9 @@ package-lock.json
 # CHANGELOG.md пакетов пишет changesets при выпуске (npm run changeset:version).
 CHANGELOG.md
 
-# Benchmark results are written by the runners (tools/bench-pages, tools/bench-compare).
+# Benchmark results are written by the runners (tools/bench-pages, tools/bench-compare,
+# tools/bench-ssr).
 # Their nested .gitignore hides them from git, but Prettier reads only the root ignore files.
 tools/bench-pages/results
 tools/bench-compare/results
+tools/bench-ssr/results
