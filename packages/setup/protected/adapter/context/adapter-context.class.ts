@@ -92,8 +92,11 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 	connect(profile: IAdapterProfile): TExchange {
 		const surface = TSurface.of(this.descriptor, profile)
 		const link = this._link
+		// The profile's `batch`: how the framework applies one update's writes
 		const exchange =
-			link instanceof TExchange ? link : new TExchange(link.members, surface, link.props)
+			link instanceof TExchange
+				? link
+				: new TExchange(link.members, surface, link.props, profile.batch)
 
 		if (exchange.surface !== surface) {
 			throw new Error(

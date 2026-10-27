@@ -28,7 +28,7 @@ import {
 	TSurface,
 } from '@soldy-ui/setup'
 import type { IAdapterProfile, TEventSink, TStateListener } from '@soldy-ui/setup'
-import { CallbackProfile, installResizeObserverStub, required } from './helpers'
+import { CallbackProfile, groupingFramework, installResizeObserverStub, required } from './helpers'
 
 /** Дескриптор с одним пропом — чтобы проверить конфиг статического слоя. */
 const single = (prop: Record<string, unknown>) =>
@@ -488,6 +488,153 @@ describe('связка · порядок', () => {
 		binding.state.subscribe(() => {})
 
 		expect(binding.state.getSnapshot().text).toBe('b')
+	})
+})
+
+/**
+ * An update of the exchange — one event of a participant: the state reread,
+ * the event, its models — runs inside the profile's `batch`, when the profile
+ * has one: the framework applies the update's writes as one group. A
+ * framework that renders on a state write renders after the event then, as
+ * one that renders later. When the update comes and in what order its steps
+ * go stays the exchange's; the profile says only how the framework applies a
+ * group of writes. The framework here applies a group at its end and drops it
+ * when the group throws.
+ */
+describe('связка · такт', () => {
+	/** A button over an outer instance; the framework listens to its state and events. */
+	function bindOver(framework: ReturnType<typeof groupingFramework>) {
+		const ctrl = new TButton()
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(
+			framework.profile,
+		)
+
+		binding.state.subscribe(framework.write)
+		binding.events.listen(framework.sink)
+		// The subscription hands the state over at once, outside any update
+		framework.trace.length = 0
+
+		return { ctrl, binding }
+	}
+
+	it('одно событие — один такт: состояние, событие и модель внутри', () => {
+		const framework = groupingFramework({
+			...CallbackProfile,
+			model: (name) => `update:${name}`,
+		})
+		const { ctrl, binding } = bindOver(framework)
+		const seen: unknown[] = []
+
+		binding.events.listen((name) => {
+			if (name === 'onChangeText') {
+				seen.push(binding.state.getSnapshot().text, framework.applied.get('text'))
+			}
+		})
+
+		ctrl.text = 'b'
+
+		expect([...framework.trace]).toEqual([
+			'batch:start',
+			'state:text',
+			'event:onChangeText',
+			'event:update:text',
+			'batch:end',
+		])
+		// The sink sees the exchange's new state; the framework shows it after the update
+		expect(seen).toEqual(['b', ''])
+		expect(framework.applied.get('text')).toBe('b')
+	})
+
+	it('триггер без события поверхности — тоже такт', () => {
+		type TGoEvents = TPluginEvents & { go: () => void }
+
+		class TGoPlugin extends TBasePlugin<object, TGoEvents> {}
+
+		class TLevelPlugin extends TBasePlugin<object, TGoEvents> {
+			level = 0
+		}
+
+		// One namespace: the first plugin publishes `probe:go`, and the second
+		// one's `go` only rereads its property
+		const descriptor = defineComponent({
+			ctor: class {},
+			plugins: [
+				definePlugin({
+					ctor: TGoPlugin,
+					namespace: 'probe',
+					contribution: { events: ['go'] },
+				}),
+				definePlugin({
+					ctor: TLevelPlugin,
+					namespace: 'probe',
+					contribution: { props: { level: { type: Number, triggers: ['go'] } } },
+				}),
+			],
+		})
+		const context = createAdapterContext(descriptor, {})
+		const level = required(context.bundle?.get(TLevelPlugin), 'плагин уровня')
+		const framework = groupingFramework()
+		const binding = context.connect(framework.profile)
+
+		binding.state.subscribe(framework.write)
+		binding.events.listen(framework.sink)
+		framework.trace.length = 0
+
+		level.level = 5
+		level.events.emit('go')
+
+		expect([...framework.trace]).toEqual(['batch:start', 'state:probe_level', 'batch:end'])
+		expect(framework.applied.get('probe_level')).toBe(5)
+	})
+
+	it('приёмник меняет инстанс — вложенный такт: его записи ждут конца внешнего', () => {
+		const framework = groupingFramework()
+		const { ctrl, binding } = bindOver(framework)
+		const seen: unknown[] = []
+
+		binding.events.listen((name) => {
+			if (name !== 'onChangeText') return
+
+			seen.push(framework.applied.get('text'))
+
+			if (ctrl.text === 'b') ctrl.text = 'c'
+		})
+
+		ctrl.text = 'b'
+
+		expect([...framework.trace]).toEqual([
+			'batch:start',
+			'state:text',
+			'event:onChangeText',
+			'batch:nested',
+			'state:text',
+			'event:onChangeText',
+			'batch:end',
+		])
+		expect(seen).toEqual(['', ''])
+		expect(framework.applied.get('text')).toBe('c')
+	})
+
+	it('приёмник бросает — такт завершён, ошибка дошла до источника записи', () => {
+		const framework = groupingFramework()
+		const { ctrl, binding } = bindOver(framework)
+		const failure = new Error('приёмник')
+
+		binding.events.listen((name) => {
+			if (name === 'onChangeText') throw failure
+		})
+
+		expect(() => {
+			ctrl.text = 'b'
+		}).toThrow(failure)
+		expect([...framework.trace]).toEqual([
+			'batch:start',
+			'state:text',
+			'event:onChangeText',
+			'batch:end',
+		])
+		// The group was not broken off: the framework shows the update's write
+		expect(framework.applied.get('text')).toBe('b')
 	})
 })
 

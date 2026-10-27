@@ -28,6 +28,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { For, createSignal, type JSX } from 'solid-js'
 import {
+	TMenu,
 	createEngineMenu,
 	type IMenuItem,
 	type IMenuItemSource,
@@ -386,6 +387,74 @@ describe('открытие', () => {
 		click(triggerNode())
 
 		expect(opened()).toBe(false)
+	})
+})
+
+/**
+ * The consumer hears the opening before the panel's items join, as on the
+ * other platforms: the exchange runs an update — the state reread, the
+ * event — as one group of Solid's writes (`batch` of the profile), and Solid
+ * renders after the event, still before the write returns. Rendering inside
+ * the reread mounted the items before `change:open` reached the consumer
+ * (benchmarks/parity/README.md).
+ */
+describe('событие открытия — раньше отрисовки', () => {
+	it('при первом открытии onChangeOpen приходит раньше входа пунктов', async () => {
+		const heard: string[] = []
+
+		await render(() => (
+			<Menu
+				trigger={trigger}
+				onChangeOpen={(value) => heard.push(`open:${String(value)}`)}
+				onItemAdded={(event) => heard.push(`added:${String(event.item.value)}`)}
+			>
+				<Menu.Item value="edit" text="Изменить" />
+				<Menu.Item value="remove" text="Удалить" />
+			</Menu>
+		))
+
+		await open()
+
+		expect(heard).toEqual(['open:true', 'added:edit', 'added:remove'])
+	})
+
+	it('сразу после ctrl.open = true, без ожидания, пункты в DOM', async () => {
+		const menu = new TMenu()
+
+		await render(() => (
+			<Menu ctrl={menu} trigger={trigger}>
+				<Menu.Item value="edit" text="Изменить" />
+			</Menu>
+		))
+
+		menu.open = true
+
+		expect(isOpen()).toBe(true)
+		expect(texts(panel())).toEqual(['Изменить'])
+	})
+
+	it('onChangeOpen бросает — ошибка у ctrl.open = true, панель отрисована', async () => {
+		const menu = new TMenu()
+		const failure = new Error('потребитель')
+
+		await render(() => (
+			<Menu
+				ctrl={menu}
+				trigger={trigger}
+				onChangeOpen={() => {
+					throw failure
+				}}
+			>
+				<Menu.Item value="edit" text="Изменить" />
+			</Menu>
+		))
+
+		expect(() => {
+			menu.open = true
+		}).toThrow(failure)
+		// The group of writes completed: rendering did not freeze on the exception
+		expect(isOpen()).toBe(true)
+		expect(texts(panel())).toEqual(['Изменить'])
 	})
 })
 

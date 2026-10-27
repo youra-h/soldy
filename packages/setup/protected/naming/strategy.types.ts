@@ -1,10 +1,11 @@
 /**
- * Профиль фреймворка: стратегия имён, которую даёт адаптер, а применяет общий слой.
+ * Framework profile: what the adapter tells the shared layer about its framework — the names and how it applies writes.
  *
- * Ядро и дескриптор говорят на одном языке (`text`, `aria:label`,
- * `change:text`), каждый фреймворк — на своём. Всё, чем фреймворки различаются
- * в именах, собрано в одной константе адаптера (`VueProfile`, `ReactProfile`,
- * …); её идентичность — ключ кэша поверхности.
+ * The core and the descriptor speak one language (`text`, `aria:label`,
+ * `change:text`), every framework speaks its own. Everything the frameworks
+ * differ in for the shared layer — the names, the default slot, the binding
+ * event, how a group of writes is applied — is one constant of the adapter;
+ * its identity is the surface's cache key.
  */
 
 import type { TName } from '../define/name.class'
@@ -27,4 +28,16 @@ export interface IAdapterProfile {
 	 * привязки у них не существует.
 	 */
 	readonly model?: (exportName: string) => string
+	/**
+	 * Runs one update of the exchange synchronously, as one group of the
+	 * framework's writes. An update is one event of a participant — the state
+	 * rereads its properties, then the event and its models go out — or the
+	 * release of what piled up during another mount's assembly (`TExchange`).
+	 * A framework that renders on a state write renders after the event then,
+	 * and before the update returns. When an update comes and in what order
+	 * its steps go is the shared layer's; the profile only says how the
+	 * framework applies a group of writes. Not set — every write applies on
+	 * its own.
+	 */
+	readonly batch?: (update: () => void) => void
 }

@@ -316,3 +316,62 @@ export const CallbackProfile: IAdapterProfile = {
 	naming: { prop: underscorePropNaming, event: callbackEventNaming },
 	defaultSlot: 'children',
 }
+
+/**
+ * A framework that applies a group of writes (`batch` of its profile) only
+ * at the group's end and drops the group's writes when it throws. `trace` is
+ * what the exchange did: `state:<name>` — a write to the framework's state,
+ * `event:<name>` — the sink, `batch:start`, `batch:end` and `batch:nested` —
+ * the groups. `applied` is what the framework shows: the values applied so
+ * far. A nested group is a part of the outer one, and its writes wait for
+ * the outer group's end.
+ */
+export function groupingFramework(base: IAdapterProfile = CallbackProfile) {
+	const trace: string[] = []
+	const applied = new Map<string, unknown>()
+	let pending: Array<readonly [string, unknown]> | undefined
+
+	const profile: IAdapterProfile = {
+		...base,
+		batch: (update) => {
+			if (pending) {
+				trace.push('batch:nested')
+				update()
+
+				return
+			}
+
+			const writes: Array<readonly [string, unknown]> = []
+
+			pending = writes
+			trace.push('batch:start')
+
+			try {
+				update()
+			} finally {
+				pending = undefined
+			}
+
+			for (const [name, value] of writes) applied.set(name, value)
+
+			trace.push('batch:end')
+		},
+	}
+
+	return {
+		profile,
+		trace,
+		applied,
+		/** The framework's state listener: inside a group the write waits for the group's end. */
+		write: (name: string, value: unknown): void => {
+			trace.push(`state:${name}`)
+
+			if (pending) pending.push([name, value])
+			else applied.set(name, value)
+		},
+		/** The framework's sink of events. */
+		sink: (name: string): void => {
+			trace.push(`event:${name}`)
+		},
+	}
+}

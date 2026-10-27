@@ -17,6 +17,7 @@ import { TActionEvent, TPopover } from '@soldy-ui/core'
 import { PopoverDescriptor } from '../content/descriptors'
 import { createAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'
+import { groupingFramework } from './helpers'
 
 /** Смонтировать над `ctrl`: что и в каком порядке слышат состояние и события обмена. */
 function mountOver(ctrl: TPopover, mountId: string, onEvent?: (args: readonly unknown[]) => void) {
@@ -148,4 +149,71 @@ describe('TAssembling: сборка над инстансом атомарна �
 		)
 		first.off()
 	})
+
+	/**
+	 * The release is one update of the exchange: with the profile's `batch`,
+	 * the whole state and the notifications go inside one group of the
+	 * framework's writes (binding.spec.ts, «связка · такт»).
+	 */
+	it('выпуск после сборки — один такт: всё состояние и уведомления внутри', async () => {
+		const framework = groupingFramework(CommonProfile)
+		const ctrl = new TPopover()
+		const exchange = createAdapterContext(PopoverDescriptor(), { ctrl, mountId: 'a' }).connect(
+			framework.profile,
+		)
+
+		exchange.state.subscribe(framework.write)
+		exchange.events.listen(framework.sink)
+		framework.trace.length = 0
+
+		createAdapterContext(PopoverDescriptor(), { ctrl, mountId: 'b' })
+
+		// The assembly's events only piled up: their updates wrote nothing
+		expect(framework.trace.every((entry) => entry.startsWith('batch:'))).toBe(true)
+
+		framework.trace.length = 0
+
+		// The announcements of both bundles come in the same microtasks: they are
+		// updates of their own, and the release is the group that rereads the state
+		await Promise.resolve()
+
+		const { groups, outside } = groupsOf(framework.trace)
+		const releases = groups.filter((group) => group.some((entry) => entry.startsWith('state:')))
+
+		expect(outside).toEqual([])
+		expect(releases).toHaveLength(1)
+
+		const [release] = releases
+		const lastState = release.reduce(
+			(last, entry, index) => (entry.startsWith('state:') ? index : last),
+			-1,
+		)
+
+		expect(release).toContain('event:change:aria')
+		expect(lastState).toBeLessThan(release.findIndex((entry) => entry.startsWith('event:')))
+		// The group applied the release: the framework shows the new mount's ids
+		expect(JSON.stringify([...framework.applied.values()])).toContain('b')
+	})
 })
+
+/** What every group of the framework's writes held, and what came outside the groups, by the trace of `groupingFramework`. */
+function groupsOf(trace: readonly string[]): { groups: string[][]; outside: string[] } {
+	const groups: string[][] = []
+	const outside: string[] = []
+	let group: string[] | undefined
+
+	for (const entry of trace) {
+		if (entry === 'batch:start') {
+			group = []
+			groups.push(group)
+		} else if (entry === 'batch:end') {
+			group = undefined
+		} else if (group) {
+			group.push(entry)
+		} else {
+			outside.push(entry)
+		}
+	}
+
+	return { groups, outside }
+}
