@@ -401,7 +401,12 @@ elements: `<div so-menu-item>` (an action — `(soChoose)` on the menu tells whi
 `<div so-menu-popover-item>` with any content in its own side panel — as in a popover, a
 `<ng-template slot="default">` with `lazyMount` is created with the first open of the panel, and
 the row text is the `header` template. A checkbox or a radio item is
-checked with `[selected]` and `(soChangeSelected)`. Without items in the markup, the menu draws them
+checked with `[selected]` and `(soChangeSelected)`. The items of a menu and of a submenu are written
+as is or as a template, `<ng-template slot="default">`, and a given template is drawn instead.
+Write them as a template when they should not be created right away — say, a menu in every row of a
+table: the menu creates the template itself, with the first open of its panel, and the items stay
+until the menu is removed. Items written as is Angular creates with the menu, and the menu only
+keeps them out of the document until the first open. Without items in the markup, the menu draws them
 from `[items]`: an item with nested `items` is a submenu, groups come from `_.group` or `groupBy`,
 and the item slots are templates — `item`, `item-leading`, `item-trailing`, `item-header` and
 `item-arrow-icon`, with the item in the context; a submenu from data gets them under the same names.
@@ -417,8 +422,10 @@ template: `<span so-menu (soChoose)="run($event.value)">
   </ng-template>
   <div so-menu-item value="edit" text="Edit"><span slot="trailing">Ctrl+E</span></div>
   <div so-menu-submenu value="share" text="Share">
-    <div so-menu-item value="link" text="Link"></div>
-    <div so-menu-item value="mail" text="Mail"></div>
+    <ng-template slot="default">
+      <div so-menu-item value="link" text="Link"></div>
+      <div so-menu-item value="mail" text="Mail"></div>
+    </ng-template>
   </div>
   <div so-menu-popover-item value="due" text="Due date" lazyMount>
     <ng-template slot="default"><div so-calendar></div></ng-template>

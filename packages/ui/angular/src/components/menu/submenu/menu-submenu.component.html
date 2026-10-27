@@ -192,9 +192,11 @@
 	[so-attributes]="{ ...state()['panelAria'], ...state()['dismiss_ownerAttribute'] }"
 >
 	<!--
-		`item-content` меню над ним приходит шаблоном `default`, а не проекцией: запасное
-		содержимое `<ng-content>` Angular выбирает один раз, и ветка `@if`, спроецированная
-		сюда, сняла бы пункты из данных и с ложным условием.
+		The `default` template is the lazy form of the items, as the menu's: the submenu creates
+		it with the first opening of its panel, while a projection Angular creates with the
+		submenu. `item-content` of the menu above comes as this template too, not as a
+		projection: Angular picks the fallback content of `<ng-content>` once, and an `@if`
+		branch projected here would drop the items from data even with a false condition.
 	-->
 	<div class="so-menu__list">
 		<!-- Items from the panel's first opening on (`contentRendered`), as the menu's -->
