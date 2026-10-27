@@ -180,12 +180,19 @@ export function useAdapterParts(
 	// facades binds them first: the facade, accepted, writes into the
 	// component — the months of Calendar's grids, Table's `dataset`.
 	//
-	// The consumer hears nothing once the unmount began: Vue unmounts the
+	// The consumer hears nothing once the unmount began: it stops on `detach`,
+	// the teardown's first moment (`onBeforeUnmount`). Vue unmounts the
 	// parent's hooks first and its children after, and the markup items
 	// leaving the collection sent `update:items` with an ever shorter list —
 	// `v-model:items` of a `v-if`-ed owner emptied the parent's list. The blur
 	// of the removed node went out the same way
-	if (emit) onBeforeUnmount(link.events.listen((name, args) => emit(name, ...args)))
+	if (emit)
+		adapter.events.on(
+			'detach',
+			link.events.listen((name, args) => emit(name, ...args)),
+		)
+
+	onBeforeUnmount(() => adapter.detach())
 
 	// 5. Cleanup. Unsubscribing is a must: with an external `ctrl` that
 	// outlives the component, `adapter.destroy()` leaves `instance.events`

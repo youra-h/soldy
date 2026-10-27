@@ -27,7 +27,7 @@ export function setupToastsItem(
 		{ props },
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, {
-		item: adapter.instance,
+		item: adapter,
 		elevator: createWebcElevator(host),
 	})
 

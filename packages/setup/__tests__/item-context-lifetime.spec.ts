@@ -221,7 +221,7 @@ function mountItem<TFacade extends TCollectionItemFacade, TPlugins extends IPlug
 		collectionItemDescriptor,
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+	).use(TCollectionItemExtension, { item: adapter, elevator })
 
 	return { instance: adapter.instance, facade, unmount: accept([facade, adapter]) }
 }
@@ -418,7 +418,7 @@ function mountPanel(elevator: TElevatorFactory, value: string) {
 		TabsCollectionContentDescriptor(),
 		{ props: { value } },
 		{ bundle: adapter.bundle },
-	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
+	).use(TTabsContentBindingExtension, { content: adapter, elevator })
 
 	return { content: adapter.instance, facade, unmount: accept([facade, adapter]) }
 }

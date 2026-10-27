@@ -944,3 +944,31 @@ describe('типы', () => {
 		>()
 	})
 })
+
+/**
+ * What an item's acceptance writes is its starting state, as in the other
+ * adapters, where the consumer listens after the acceptance: React accepts in
+ * a passive effect, after the consumer listens, and the item heard itself
+ * enter — its `aria`, `dataset` and the `selected` of its markup
+ * (`TBuilt.accept`).
+ */
+describe('события приёма', () => {
+	it('элемент не слышит своего входа в коллекцию', () => {
+		const heard: string[] = []
+
+		mount(
+			<ListBox>
+				<ListBoxItem
+					value="a"
+					text="A"
+					selected
+					onChangeSelected={() => heard.push('selected')}
+					onChangeAria={() => heard.push('aria')}
+					onChangeDataset={() => heard.push('dataset')}
+				/>
+			</ListBox>,
+		)
+
+		expect(heard).toEqual([])
+	})
+})

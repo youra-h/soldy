@@ -41,6 +41,8 @@ export type TBinding<
 	readonly facade: TFacade
 	syncProps(props: object): void
 	bindElement(el: Element | null): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
@@ -49,6 +51,8 @@ export type TCollectionBinding<TFacade = object> = {
 	readonly state: TInstanceState<TFacade>
 	readonly facade: TFacade
 	syncProps(props: object): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
@@ -57,12 +61,16 @@ export type TUpdateListener = (name: string, value: unknown) => void
 type TExchange<C extends IComponentContract> = {
 	readonly state: TAdapterState<C>
 	syncProps(props: object): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
 type TJoined = {
 	readonly state: Readonly<Record<string, unknown>>
 	syncProps(props: object): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
@@ -122,12 +130,21 @@ function useExchange<C extends IComponentContract>(
 		dispatch(host, exportName, args, bubbles)
 	})
 
+	// The consumer stops on `detach`: from the teardown's first moment
+	// (`disconnectedCallback`) or from the collection the element is an item
+	// of, before its siblings go one by one (`TCollectionMembers`)
+	adapter.events.on('detach', unbindEvents)
+
 	return {
 		state: toInstanceState<C>(state),
 
 		// Дельта, а не `full`: элемент отдаёт по одному атрибуту или свойству
 		syncProps(props: object): void {
 			binding.inputs.delta(props)
+		},
+
+		detach(): void {
+			adapter.detach()
 		},
 
 		destroy(): void {
@@ -246,6 +263,12 @@ export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknow
 
 		bindElement(el: Element | null): void {
 			owner.bindElement(el)
+		},
+
+		detach(): void {
+			owner.detach()
+
+			for (const each of facades) each.detach()
 		},
 
 		destroy(): void {

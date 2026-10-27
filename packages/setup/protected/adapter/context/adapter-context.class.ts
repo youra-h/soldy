@@ -8,10 +8,14 @@
  * `TElementPlugin` зовут все шесть адаптеров, а расширение каждый из них был бы
  * обязан помнить и подключать.
  *
- * Жизнь контекста — три фазы: собран, принят фреймворком (`attach`), уничтожен.
- * Когда наступает вторая, знает только рантайм адаптера: у Vue, Solid, Svelte,
- * Angular и Web Components это сама сборка, у React — коммит. Поэтому фаза —
- * метод контекста, как `bindElement`, а не шаг, который помнит каждый компонент.
+ * The context's life is four phases: assembled, accepted by the framework
+ * (`attach`), being removed (`detach`), destroyed. When the second and the
+ * third come only the adapter's runtime knows: acceptance is the assembly
+ * itself for Vue, Solid, Svelte, Angular and Web Components and the commit for
+ * React; removal begins before the children go. So a phase is a method of the
+ * context, as `bindElement`, not a step every component remembers. The
+ * context reports a phase and does nothing on it: what follows is up to those
+ * who listen.
  *
  * Участников обмена и пропсы сборки контекст держит до первого `connect()`.
  * Пропсы нужны двоим: расширениям, которые читают их в конструкторе (`meta`
@@ -65,6 +69,8 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 	private _extensions?: unknown[]
 	/** До первого `connect()` — участники и пропсы сборки, после — обмен монтирования. */
 	private _link: IAssembly | TExchange
+	/** `detach` came: it comes once, from the runtime or from the collection. */
+	private _detached = false
 
 	constructor(
 		readonly descriptor: IComponentDescriptor,
@@ -134,7 +140,15 @@ export class TAdapterContext<C extends IComponentContract> implements IAdapterCo
 		this._events?.emit('attach')
 	}
 
+	detach(): void {
+		if (this._detached) return
+
+		this._detached = true
+		this._events?.emit('detach')
+	}
+
 	destroy(): void {
+		this.detach()
 		this._events?.emit('destroy')
 		this._extensions = undefined
 		this._tenancy.destroy()

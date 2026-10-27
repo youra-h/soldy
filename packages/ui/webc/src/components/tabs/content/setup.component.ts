@@ -27,7 +27,7 @@ export function setupTabsContent(
 		{ props },
 		{ bundle: adapter.bundle },
 	).use(TTabsContentBindingExtension, {
-		content: adapter.instance,
+		content: adapter,
 		elevator: createWebcElevator(host),
 	})
 

@@ -74,7 +74,7 @@ function mountAction(elevator: TElevatorFactory, props: object) {
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator })
+	).use(TCollectionItemExtension, { item: own, elevator })
 
 	accept([item, own])
 
@@ -88,7 +88,7 @@ function mountPopoverItem(elevator: TElevatorFactory, props: object) {
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator })
+	).use(TCollectionItemExtension, { item: own, elevator })
 
 	return { instance: own.instance, bundle: own.bundle, unmount: accept([item, own]) }
 }
@@ -105,7 +105,7 @@ function mountSubmenu(elevator: TElevatorFactory): TMenuSubmenu {
 		MenuCollectionItemDescriptor(),
 		{},
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator })
+	).use(TCollectionItemExtension, { item: own, elevator })
 	const facade = createAdapterContext(
 		MenuSubmenuCollectionDescriptor(),
 		{ options: { owner: own.instance } },

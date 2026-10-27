@@ -16,7 +16,7 @@ export function useSetupTabsItem(props: TabsItemProps) {
 			TabsCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+		).use(TCollectionItemExtension, { item: adapter, elevator })
 
 		return [adapter, item] as const
 	})

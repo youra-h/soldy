@@ -995,3 +995,31 @@ describe('события снятия', () => {
 		expect(heard.slice(mounted)).toEqual([])
 	})
 })
+
+/**
+ * The items of markup hear nothing of their siblings going with the owner:
+ * Svelte destroys them one by one, and an item still heard heard its order
+ * change as the earlier ones left. The owner's `detach` detaches its
+ * collection's members before any goes (`TCollectionMembers`).
+ */
+describe('события снятия элементов', () => {
+	it('элементы разметки не слышат, как уходят соседи', async () => {
+		const heard: string[] = []
+		const item = (value: string): ListBoxItemProps => ({
+			value,
+			text: value,
+			onChangeOrder: () => heard.push(`${value} order`),
+			onChangeSelected: () => heard.push(`${value} selected`),
+			onChangeAria: () => heard.push(`${value} aria`),
+		})
+
+		const { destroy } = mount(Harness, { items: [item('a'), item('b'), item('c')] })
+		await nextFrame()
+
+		const mounted = heard.length
+
+		destroy()
+
+		expect(heard.slice(mounted)).toEqual([])
+	})
+})

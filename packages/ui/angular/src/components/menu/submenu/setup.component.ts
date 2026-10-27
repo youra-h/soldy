@@ -39,7 +39,7 @@ export function setupMenuSubmenu(
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator: AngularElevatorFactory })
+	).use(TCollectionItemExtension, { item: adapter, elevator: AngularElevatorFactory })
 
 	// Для своих пунктов — меню
 	const menu = createAngularAdapterContext(

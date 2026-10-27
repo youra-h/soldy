@@ -91,7 +91,7 @@ function mountSubmenu(
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator })
+	).use(TCollectionItemExtension, { item: own, elevator })
 	const facade = createAdapterContext(
 		MenuSubmenuCollectionDescriptor(),
 		{ options: { owner: own.instance, engine: entry?.engine } },
@@ -110,7 +110,7 @@ function mountItem(layer: TElevatorLayer, props: object): { item: TMenuItem; unm
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator: elevatorOf(layer) })
+	).use(TCollectionItemExtension, { item: own, elevator: elevatorOf(layer) })
 
 	return { item: own.instance, unmount: accept([item, own]) }
 }

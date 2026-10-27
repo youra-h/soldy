@@ -84,6 +84,8 @@ type TExchange<TState> = {
 	syncInputs(inputs: object): void
 	/** Возвращает отписку. */
 	syncEvents(outputOf: TOutputOf): () => void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
@@ -130,11 +132,22 @@ function useExchange<C extends IComponentContract>(
 			binding.inputs.delta(inputs)
 		},
 
-		// Эмиттер ищется на каждое событие: его заводит первое чтение выхода
+		// The emitter is looked up on every event: the output's first read
+		// creates it. The consumer stops on `detach`: from the teardown's first
+		// moment (`ngOnDestroy`) or from the collection the component is an item
+		// of, before its siblings go one by one (`TCollectionMembers`)
 		syncEvents(outputOf: TOutputOf): () => void {
-			return binding.events.listen((exportName, args) =>
+			const stop = binding.events.listen((exportName, args) =>
 				outputOf(exportName)?.emit(payloadOf(args)),
 			)
+
+			adapter.events.on('detach', stop)
+
+			return stop
+		},
+
+		detach(): void {
+			adapter.detach()
 		},
 
 		destroy(): void {
@@ -194,6 +207,10 @@ export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknow
 		},
 
 		bindElement: (el) => owner.bindElement(el),
+
+		detach(): void {
+			for (const each of [owner, ...facades]) each.detach()
+		},
 
 		destroy(): void {
 			for (const each of facades) each.destroy()

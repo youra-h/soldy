@@ -11,6 +11,9 @@
  * Реестр — детям, которые в коллекцию не входят, а с её элементами связаны:
  * панель `Tabs.Content` отдаёт свой `id` плагину связок своего таба, а набор
  * таба — нынешнего его монтирования — находит в реестре.
+ *
+ * The members (`COLLECTION_MEMBERS_ELEVATOR`) go down beside them: the
+ * owner's `detach` detaches them (`TCollectionMembers`).
  */
 
 import { batchOf, plainOf } from '@soldy-ui/core'
@@ -23,7 +26,8 @@ import {
 	COLLECTION_ENGINE_ELEVATOR,
 	ITEM_CONTEXT_ELEVATOR,
 } from '../../../protected/adapter/elevator/keys'
-import { COLLECTION_BUNDLES_ELEVATOR } from './keys'
+import { COLLECTION_BUNDLES_ELEVATOR, COLLECTION_MEMBERS_ELEVATOR } from './keys'
+import { TCollectionMembers } from './members.class'
 import type { ICollectionExtensionOptions, TCollectionOwner } from './types'
 
 export class TCollectionExtension {
@@ -40,6 +44,12 @@ export class TCollectionExtension {
 		elevator(ITEM_CONTEXT_ELEVATOR).down(engine)
 
 		this._wire(context, elevator, engine)
+
+		// The collection comes down with its owner, and its members with it
+		const members = new TCollectionMembers()
+
+		elevator(COLLECTION_MEMBERS_ELEVATOR).down(members)
+		context.events.on('detach', () => members.detach())
 
 		// Владельца в опции движка пишет сам фасад: что в них лежит, знает он.
 		// Здесь — только момент: принят компонент — привязать, уничтожен — снять

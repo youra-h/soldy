@@ -10,11 +10,16 @@ import type { TExchange } from '../exchange/exchange.class'
 import type { TMember } from '../exchange/member.class'
 
 /**
- * Жизненный цикл контекста: `attach` — фреймворк принял собранный компонент,
- * `destroy` — отпустил. Оба шлёт рантайм адаптера, по разу и в этом порядке.
+ * The context's life: `attach` — the framework accepted the assembled
+ * component, `detach` — it began removing it, `destroy` — it let it go. Each
+ * comes once and in this order; the adapter's runtime sends `attach` and
+ * `destroy`, `detach` comes from the runtime too or from the collection the
+ * component is an item of (`TCollectionItemExtension`). What to do on
+ * `detach` is the adapter's call: the consumer hears nothing from then on.
  */
 export type TAdapterEvents = {
 	attach: () => void
+	detach: () => void
 	destroy: () => void
 }
 
@@ -171,7 +176,17 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 	 */
 	attach(): void
 
-	/** Запустить уничтожение контекста */
+	/**
+	 * The framework began removing the component: the first moment of its
+	 * teardown, before its children go. The context reports it (`detach`
+	 * event) and nothing else — the adapter stops the consumer on it. A
+	 * collection reports it to its items as well
+	 * (`TCollectionItemExtension`): siblings leave one by one, and an item still
+	 * heard would hear them go. Once: a repeat does nothing.
+	 */
+	detach(): void
+
+	/** Destroy the context; detached first, if it was not. */
 	destroy(): void
 }
 

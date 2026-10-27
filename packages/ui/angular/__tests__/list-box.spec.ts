@@ -1145,3 +1145,57 @@ describe('типы', () => {
 		expectTypeOf<IListBoxItem>().toHaveProperty('text')
 	})
 })
+
+/**
+ * A removed list goes silently, its items too: Angular destroys a removed
+ * subtree children first, and the owner heard its items leave one by one, an
+ * item — its siblings. Angular takes the subtree out of the document first,
+ * and a placed component out of the document sends nothing
+ * (`TComponentBase`), as an element of Web Components.
+ */
+describe('события снятия', () => {
+	it('список и его элементы под @if уходят молча', async () => {
+		@Component({
+			imports: [TListBoxComponent, TListBoxItemComponent],
+			template: `
+				@if (shown()) {
+					<div
+						so-list-box
+						(soChangeItems)="heard.push('items')"
+						(soItemRemoved)="heard.push('item:removed')"
+					>
+						@for (item of items; track item.value) {
+							<div
+								so-list-box-item
+								[value]="item.value"
+								[text]="item.text"
+								(soChangeOrder)="heard.push(item.value + ' order')"
+								(soChangeAria)="heard.push(item.value + ' aria')"
+							></div>
+						}
+					</div>
+				}
+			`,
+		})
+		class Host {
+			readonly shown = signal(true)
+			readonly items = ITEMS
+			readonly heard: string[] = []
+		}
+
+		const fixture = mountHost(Host)
+
+		await nextFrame()
+		fixture.detectChanges()
+
+		const { heard } = fixture.componentInstance
+		const mounted = heard.length
+
+		expect(mounted).toBeGreaterThan(0)
+
+		fixture.componentInstance.shown.set(false)
+		fixture.detectChanges()
+
+		expect(heard.slice(mounted)).toEqual([])
+	})
+})

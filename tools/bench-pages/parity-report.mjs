@@ -43,12 +43,18 @@ const coreName = (event) => event.name.slice(event.name.indexOf('>') + 1)
  * - `single` — an output of Angular and a `CustomEvent` of Web Components
  *   carry one value, see `packed`.
  * - `removedBlur` — the blur of the removed node in the unmount step of
- *   Svelte and Web Components, see `TEARDOWN`.
+ *   Svelte, Web Components and Angular, see `TEARDOWN`.
+ * - `nodeOrder` — the events of a node (`ready`, `element:ready`,
+ *   `element:removed`) are compared by content, not by place, see `NODE`.
+ * - `enteredBefore` — the `change:order` of a part in React's mount step, see
+ *   `ENTERED`.
  */
 const RULES = {
 	vModel: (event) => !coreName(event).startsWith('update:'),
 	single: new Set(['webc', 'angular']),
-	removedBlur: new Set(['svelte', 'webc']),
+	removedBlur: new Set(['svelte', 'webc', 'angular']),
+	nodeOrder: new Set(['react', 'svelte', 'solid', 'webc']),
+	enteredBefore: new Set(['react']),
 	ids: new Set([
 		'id',
 		'for',
@@ -68,7 +74,9 @@ const RULES = {
  * the teardown began. Vue (`onBeforeUnmount`), React, Angular and Solid
  * unsubscribe it before the children and the nodes go, Svelte — in a
  * pre-effect, made before the template's blocks, and a removed custom element
- * sends nothing. Svelte and Web Components remove the nodes before any hook of
+ * or Angular component sends nothing. A collection's items stop with it
+ * (`detach` of the adapter context): the siblings leaving one by one are not
+ * heard. Svelte, Web Components and Angular remove the nodes before any hook of
  * the component, though, and Chrome blurs a removed focused node before it is
  * detached: the focused component's `action:blur` and `change:focused`
  * reach the consumer there (`removedBlur`).
@@ -119,11 +127,51 @@ function packed(event, fw) {
 
 const BLUR = new Set(['action:blur', 'change:focused'])
 
-/** Events of their step, without the blur of the removed node (`removedBlur`). */
-function eventsOf(step, fw) {
-	if (step.label !== TEARDOWN || !RULES.removedBlur.has(fw)) return step.events
+/**
+ * Events of a node — of the component's and of its parts': the frame of
+ * `TElementPlugin` after binding, and the unbinding. They come in the order
+ * the framework binds and unbinds nodes, not in the order of the core's
+ * events: Vue, React and Angular bind the children first, Svelte, Solid and
+ * Web Components the parent first, and Solid takes a node out on the write
+ * that hides it, while Vue does it on its render after the click. Such a
+ * framework's node events are compared as a set (`nodeOrder`), and the
+ * rest of the step in order.
+ */
+const NODE = new Set(['ready', 'element:ready', 'element:removed'])
 
-	return step.events.filter((event) => !BLUR.has(coreName(event)))
+/**
+ * React renders all the items of a list before it commits any, and an item's
+ * facade follows its collection from its render: an item that has not entered
+ * yet hears `change:order` as its earlier siblings enter. Vue makes and
+ * accepts the items one by one, and an item hears only the later ones. A
+ * part's `change:order` in the mount step is not compared for React
+ * (`enteredBefore`).
+ */
+const ENTERED = 'mount'
+
+/** Events of their step under the rules of the framework, in the order they are compared. */
+function eventsOf(step, fw) {
+	const { label } = step
+	let events = step.events
+
+	if (label === TEARDOWN && RULES.removedBlur.has(fw)) {
+		events = events.filter((event) => !BLUR.has(coreName(event)))
+	}
+
+	if (label === ENTERED && RULES.enteredBefore.has(fw)) {
+		events = events.filter((event) => !event.name.includes('>change:order'))
+	}
+
+	if (RULES.nodeOrder.has(fw)) {
+		const node = events.filter((event) => NODE.has(coreName(event)))
+
+		events = [
+			...events.filter((event) => !NODE.has(coreName(event))),
+			...node.sort((a, b) => (text(a) < text(b) ? -1 : text(a) > text(b) ? 1 : 0)),
+		]
+	}
+
+	return events
 }
 
 const text = (event) => `${event.name} ${JSON.stringify(masked(event.args))}`
@@ -162,8 +210,14 @@ function diff(a, b) {
 /** Divergences of one step: events, tree, focus. */
 function compareStep(vue, other, fw) {
 	const found = []
-	const ours = vue.events.filter(RULES.vModel)
-	const expected = ours.map((event) => text(packed(event, fw)))
+	const ours = eventsOf(
+		{
+			label: vue.label,
+			events: vue.events.filter(RULES.vModel).map((event) => packed(event, fw)),
+		},
+		fw,
+	)
+	const expected = ours.map(text)
 	const actual = eventsOf(other, fw).map(text)
 
 	if (expected.join('\n') !== actual.join('\n')) {

@@ -82,7 +82,7 @@ function mountRadio(layer: TElevatorLayer, props: object, ctrl?: TMenuRadioItem)
 		MenuCollectionRadioItemDescriptor(),
 		{ props },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator })
+	).use(TCollectionItemExtension, { item: own, elevator })
 
 	accept([item, own])
 

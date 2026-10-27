@@ -8,7 +8,8 @@
  * - `ngOnInit`: сборка setup-функцией компонента в контексте его инъекции и
  *   приёмник событий ядра;
  * - `ngOnChanges`: изменённые входы — в ядро;
- * - `ngOnDestroy`: отписка и `destroy()`.
+ * - `ngOnDestroy`: `detach()` — the consumer hears nothing from then on, — the
+ *   unsubscription and `destroy()`.
  *
  * Компонент наследует не базу, а сгенерированную `T<Имя>Surface`: она
  * объявляет входы и выходы с их типами для строгого шаблона.
@@ -16,6 +17,7 @@
 
 import {
 	Directive,
+	ElementRef,
 	EventEmitter,
 	Injector,
 	Input,
@@ -77,6 +79,10 @@ export abstract class TComponentBase<
 	private readonly _inputNames: readonly string[]
 	private readonly _setup: TSetup<TInstance, TFacade, TOutputs, TOwnerFacade>
 	private readonly _root: TRoot
+	/** The host node: removed from the document, the component sends nothing (`_removed`). */
+	private readonly _host: unknown = inject(ElementRef).nativeElement
+	/** The host was in the document: the first render placed it. */
+	private _placed = false
 
 	/** Поддерево предка есть — им прячется только слой, увезённый из поддерева. */
 	private readonly _above: Signal<boolean>
@@ -197,6 +203,8 @@ export abstract class TComponentBase<
 
 			if (!binding) return
 
+			this._placed = true
+
 			const element = this._present() ? node : null
 
 			binding.bindElement(element)
@@ -219,7 +227,9 @@ export abstract class TComponentBase<
 
 		const binding = runInInjectionContext(this._injector, () => this._setup(this.ctrl, inputs))
 
-		this._eventsCleanup = binding.syncEvents((name) => this._createdOutput(name))
+		this._eventsCleanup = binding.syncEvents((name) =>
+			this._removed() ? undefined : this._createdOutput(name),
+		)
 
 		this._binding.set(binding)
 	}
@@ -239,6 +249,7 @@ export abstract class TComponentBase<
 	}
 
 	ngOnDestroy(): void {
+		this._binding()?.detach()
 		this._eventsCleanup?.()
 		this._binding()?.destroy()
 	}
@@ -287,6 +298,27 @@ export abstract class TComponentBase<
 		const { shownBy } = this._root
 
 		return shownBy !== undefined && state[shownBy] !== true
+	}
+
+	/**
+	 * Removed from the document: the consumer took the component down, and
+	 * what its teardown stirs is news to no one — the blur of the removed node,
+	 * the siblings leaving the collection one by one. Angular destroys a removed
+	 * subtree children first, with no moment before them (`detach` comes from
+	 * `ngOnDestroy`, after the children), but it takes the subtree out of the
+	 * document first. So a component that was placed and is out of the document
+	 * sends nothing, as an element of Web Components. On the server the first
+	 * render does not run, and nothing is muted.
+	 */
+	private _removed(): boolean {
+		const host = this._host
+
+		return (
+			this._placed &&
+			typeof host === 'object' &&
+			host !== null &&
+			Reflect.get(host, 'isConnected') === false
+		)
 	}
 
 	/** Уже заведённый эмиттер; поиск его не заводит. */

@@ -33,7 +33,7 @@ export function setupMenuSubmenu(
 		MenuCollectionItemDescriptor(),
 		{ props, mountId },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+	).use(TCollectionItemExtension, { item: adapter, elevator })
 
 	// Для своих пунктов — меню
 	const collectionAdapter = createSvelteAdapterContext(

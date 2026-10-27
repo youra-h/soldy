@@ -107,7 +107,9 @@ function insert<T extends object>(
  * created right away (`CopyDirective.stamp`), and the listeners stand before
  * their assembly, which comes with the next check, as the output bindings of a
  * template: the events of the parts entering a collection already have
- * someone to receive them.
+ * someone to receive them. They go after the destruction, as the output
+ * bindings of a template, which Angular removes after the hooks of its view:
+ * what a teardown sends reaches them, and the parity run hears it.
  */
 function drawTemplate(
 	outlet: ViewContainerRef,
@@ -132,9 +134,9 @@ function drawTemplate(
 	return {
 		write,
 		destroy() {
-			for (const stop of unlisten) stop()
-
 			ref.destroy()
+
+			for (const stop of unlisten) stop()
 		},
 	}
 }

@@ -1,17 +1,28 @@
 /**
- * useAdapterContext — держит контексты компонента между рендерами и отвечает
- * за весь срок их жизни: сборка на первом рендере, приём при коммите,
- * пересборка при повторной установке эффекта, уничтожение очисткой.
+ * useAdapterContext — keeps the component's contexts between renders and
+ * answers for their whole life: the assembly on the first render, the
+ * acceptance at the commit, the reassembly when the effect is set again, the
+ * detach and the destruction by the cleanups.
  * AGENTS.md (React), «Срок жизни контекста».
  */
 
-import { useContext, useEffect, useEffectEvent, useId, useMemo, useReducer, useRef } from 'react'
+import {
+	useContext,
+	useEffect,
+	useEffectEvent,
+	useId,
+	useLayoutEffect,
+	useMemo,
+	useReducer,
+	useRef,
+} from 'react'
 import { createAdapterContext } from '@soldy-ui/setup'
 import type { IAdapterContext, TElevatorFactory } from '@soldy-ui/setup'
 import { ElevatorContext, type TElevatorLayer } from '../elevator/layer'
 import { LocaleContext } from '../locale/context'
 import { TReactElevatorScope } from '../elevator/scope.class'
 import { TDrafts } from './drafts.class'
+import { accepting } from './accepting'
 
 /** Сборка контекста, которую хук отдаёт фабрике: сигнатура — `createAdapterContext`. */
 export type TCreateAdapterContext = typeof createAdapterContext
@@ -44,8 +55,15 @@ function attachAll(contexts: TAdapterContexts): void {
 	for (const context of listOf(contexts)) context.attach()
 }
 
-/** В обратном порядке: фасад уходит раньше владельца. */
+/** All of them before any goes: the component's consumer hears nothing of its facade leaving. */
+function detachAll(contexts: TAdapterContexts): void {
+	for (const context of listOf(contexts)) context.detach()
+}
+
+/** Detached, then in reverse order: the facade goes before the owner. */
 function destroyAll(contexts: TAdapterContexts): void {
+	detachAll(contexts)
+
 	for (const context of [...listOf(contexts)].reverse()) context.destroy()
 }
 
@@ -72,9 +90,22 @@ class TBuilt<T extends TAdapterContexts> {
 		return this._destroyed
 	}
 
+	/**
+	 * The consumers of the contexts being accepted hear nothing of what the
+	 * acceptance writes — an item entering its collection: that is the starting
+	 * state, as in the other adapters, where the consumer listens after the
+	 * acceptance. React accepts in a passive effect, after the consumer
+	 * listens (a layout effect, so as not to miss `ready` of a frame before
+	 * it), and the children before the owner, who has to hear them enter.
+	 */
 	accept(): void {
 		drafts.accept(this.held)
-		attachAll(this.contexts)
+		accepting(this.contexts, () => attachAll(this.contexts))
+	}
+
+	/** The cleanup of a layout effect: the teardown's first moment, before any destruction. */
+	readonly detach = (): void => {
+		detachAll(this.contexts)
 	}
 
 	readonly destroy = (): void => {
@@ -142,6 +173,12 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 		return current.destroy
 	}, [source])
+
+	// Detached by a layout cleanup: every layout cleanup of a removed subtree
+	// comes before any passive one, so the consumers hear nothing once the
+	// teardown began, and the destruction — the passive cleanup above — comes
+	// after all of them
+	useLayoutEffect(() => built.detach, [built])
 
 	const layer = useMemo(() => built.scope.layerOver(parent), [built, parent])
 

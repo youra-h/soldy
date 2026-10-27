@@ -1140,9 +1140,9 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
 
 Движок, расширения и плагины одинаковы во всех адаптерах, а момент, когда
 фреймворк принимает собранный компонент, у каждого свой. Поэтому у контекста
-три фазы — собран, принят (`attach()`), уничтожен (`destroy()`), — а
-`TCollectionItemExtension` (`setup/content/extensions/collection/`) делит
-работу по ним:
+четыре фазы — собран, принят (`attach()`), снимается (`detach()`),
+уничтожен (`destroy()`), — а `TCollectionItemExtension`
+(`setup/content/extensions/collection/`) делит работу по ним:
 
 - **сборка** (`use(TCollectionItemExtension, …)`) — движок своей коллекции и
   её регистратор через лифт, контекст элемента в фасад (`setContext`), `meta`
@@ -1151,6 +1151,20 @@ get closable() { return !this._item.disabled && (this._item.closable ?? this._pa
   владельца и `meta.apply`;
 - **снятие** — на `destroy`: выход из коллекции и освобождение контекста
   элемента.
+
+**Коллекция снимается вместе с участниками.** Между входом и снятием элемент —
+участник коллекции (`TCollectionMembers`): его свой контекст и контекст
+фасада (поэтому расширению отдают свой контекст — `{ item: adapter }`, а не
+инстанс). `detach` владельца — первый миг его снятия, раньше детей, —
+отсоединяет всех участников: Svelte, Solid и Angular снимают поддерево за один
+проход, элементы уходят по одному, и элемент, которого ещё слышат, слышал бы,
+как уходят соседи (`change:order`, переезд активности). Что делать на
+`detach`, решает адаптер: потребитель больше ничего не слышит. Контекст
+только сообщает фазу — один раз, раньше `destroy`, а `destroy` без неё
+отсоединяет сам. Элемент, снятый один, отсоединяет только себя. Панель
+`Tabs.Content` — тоже участник. Сторожат `setup/__tests__/detach.spec.ts` и
+«события снятия элементов» в `ui/svelte/__tests__/list-box.spec.ts` и
+`ui/solid/__tests__/list-box.spec.tsx`.
 
 Панель `Tabs.Content` в коллекцию не входит, но фазы у неё те же
 (`TTabsContentBindingExtension`, `setup/content/extensions/tabs/`): сборка

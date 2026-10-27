@@ -33,7 +33,7 @@ export function setupMenuRadioItem(
 		MenuCollectionRadioItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+	).use(TCollectionItemExtension, { item: adapter, elevator })
 
 	// Фасад первым, как у пункта
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

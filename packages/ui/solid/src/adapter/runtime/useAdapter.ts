@@ -104,8 +104,12 @@ function useExchange(
 		if (typeof callback === 'function') callback(...args)
 	})
 
+	// The consumer stops on `detach`: from the teardown's first moment
+	// (`detachFirst`) or from the collection the component is an item of,
+	// before its siblings go one by one (`TCollectionMembers`)
+	adapter.events.on('detach', stop)
 	onCleanup(stop)
-	stopFirst(stop)
+	detachFirst(adapter)
 
 	// Очистки Solid зовёт в обратном порядке: фасад уходит раньше компонента
 	onCleanup(() => adapter.destroy())
@@ -114,20 +118,22 @@ function useExchange(
 }
 
 /**
- * The consumer hears nothing once the teardown began, as in the other
- * adapters (benchmarks/parity/README.md). Solid cleans an owner's
- * computations first, the last made first, and its cleanups after them: the
- * children — the markup items leaving the collection with an ever shorter
- * list, the root's unbinding — went before `onCleanup` of the component's
- * body. Once mounted, when the children are made, a computation made under
- * the same owner is its last one, and its cleanup is the first of the
- * teardown. Before the mount, and on the server, where effects do not run,
- * `onCleanup` unsubscribes.
+ * The teardown's first moment is `detach`: the consumer hears nothing from
+ * then on, as in the other adapters (benchmarks/parity/README.md). Solid
+ * cleans an owner's computations first, the last made first, and its cleanups
+ * after them: the children — the markup items leaving the collection with an
+ * ever shorter list, the root's unbinding — went before `onCleanup` of the
+ * component's body. Once mounted, when the children are made, a computation
+ * made under the same owner is its last one, and its cleanup is the first of
+ * the teardown. Before the mount, and on the server, where effects do not
+ * run, `onCleanup` unsubscribes.
  */
-function stopFirst(stop: () => void): void {
+function detachFirst(adapter: IAdapterContext): void {
 	const owner = getOwner()
 
-	onMount(() => runWithOwner(owner, () => createComputed(() => onCleanup(stop))))
+	onMount(() =>
+		runWithOwner(owner, () => createComputed(() => onCleanup(() => adapter.detach()))),
+	)
 }
 
 export function useAdapter<C extends IComponentContract, TProps extends object>(

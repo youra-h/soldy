@@ -9,6 +9,7 @@
 
 import type { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import type { IElevatorKey } from '../../../protected/adapter/elevator'
+import type { TCollectionMembers } from './members.class'
 
 /**
  * Реестр наборов элементов ближайшей коллекции — того же владельца, что
@@ -18,4 +19,13 @@ import type { IElevatorKey } from '../../../protected/adapter/elevator'
  */
 export const COLLECTION_BUNDLES_ELEVATOR: IElevatorKey<TCollectionBundlesPlugin | null> = {
 	name: 'soldy:collection-bundles',
+}
+
+/**
+ * The members of the nearest collection — of the same owner as the engine
+ * under `ITEM_CONTEXT_ELEVATOR`: an item and a part bound to an item join it
+ * on entering and leave it when their mount ends.
+ */
+export const COLLECTION_MEMBERS_ELEVATOR: IElevatorKey<TCollectionMembers> = {
+	name: 'soldy:collection-members',
 }

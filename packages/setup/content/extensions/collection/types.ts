@@ -28,8 +28,23 @@ export type TCollectionItemFacade = {
 	clearContext(): void
 }
 
+/** What the collection detaches with itself: a context of a member (`TCollectionMembers`). */
+export interface IDetachable {
+	detach(): void
+}
+
+/**
+ * The own context of a component in a collection — of its own descriptor,
+ * not of the facade: its instance is the collection's element, and the
+ * collection detaches it with itself (`TCollectionMembers`).
+ */
+export type TCollectionMember<TInstance extends object = object> = {
+	readonly instance: TInstance
+	detach(): void
+}
+
 export interface ICollectionItemExtensionOptions {
-	/** Реальный элемент коллекции (инстанс из owner-дескриптора). */
-	item: object
+	/** The item's own context: its instance is the collection's element. */
+	item: TCollectionMember
 	elevator: TElevatorFactory
 }

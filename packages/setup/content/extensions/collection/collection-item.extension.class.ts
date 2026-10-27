@@ -18,6 +18,11 @@
  * - **снятие** (`destroy` контекста) — выход из коллекции и освобождение
  *   контекста элемента.
  *
+ * Between entering and leaving the item is a member of the collection
+ * (`TCollectionMembers`): its own context and the facade's. The owner's
+ * `detach` detaches them: the framework is removing the whole collection, and
+ * an item still heard would hear its siblings go.
+ *
  * Когда наступает `attach`, решает рантайм адаптера.
  *
  * Своя коллекция — ближайшая выше по дереву, если элемент её. Лифт отдаёт
@@ -72,6 +77,7 @@ import {
 	ITEM_CONTEXT_ELEVATOR,
 } from '../../../protected/adapter/elevator/keys'
 import { ITEM_GROUP_ELEVATOR } from '../item-group/keys'
+import { COLLECTION_MEMBERS_ELEVATOR } from './keys'
 import { collectItemProps } from './item-props'
 import type { ICollectionItemExtensionOptions, TCollectionItemFacade } from './types'
 
@@ -92,7 +98,8 @@ export class TCollectionItemExtension {
 		context: TInstanceContext<TCollectionItemFacade>,
 		options: ICollectionItemExtensionOptions,
 	) {
-		const { item, elevator } = options
+		const { elevator } = options
+		const item = options.item.instance
 		const { props } = context
 
 		// Пропсы сборки контекст отпускает на `connect()`. Пустой `meta` вместо
@@ -108,6 +115,8 @@ export class TCollectionItemExtension {
 		// Регистратор кладёт тот же владелец, что и движок: у чужой коллекции
 		// и он чужой
 		const register = engine ? elevator(COLLECTION_ENGINE_ELEVATOR).up() : undefined
+		// Members — of the same owner
+		const members = engine ? elevator(COLLECTION_MEMBERS_ELEVATOR).up() : undefined
 		// Группа разметки над элементом — если она группа его коллекции
 		const link = engine ? elevator(ITEM_GROUP_ELEVATOR).up() : undefined
 		const groupKey = link && link.engine === engine ? link.key : undefined
@@ -138,6 +147,8 @@ export class TCollectionItemExtension {
 
 			if (register) this._leave = register(item, context.bundle)
 
+			members?.add(options.item, context)
+
 			// `meta` — после регистрации: движок применяет его к элементу, который уже в нём
 			metaOf<object>(engine)?.apply(item, grouped ? { ...meta, group: groupKey } : meta)
 		})
@@ -145,6 +156,7 @@ export class TCollectionItemExtension {
 		context.events.on('destroy', () => {
 			// Подписка снимается до выхода: свой выход — не удаление из коллекции
 			plain?.events.off('item:removed', removed)
+			members?.delete(options.item, context)
 
 			this._leave?.()
 			this._leave = undefined

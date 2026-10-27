@@ -64,6 +64,10 @@
  *   таба и контекст таба. Контекст, собранный, но так и не принятый,
  *   уничтожается тоже: подписок входа у него нет, а атрибуты и контекст таба,
  *   взятые сборкой, уходят.
+ *
+ * An accepted panel is a member of the collection (`TCollectionMembers`), as
+ * an item is: the owner's `detach` detaches its own context and the facade's,
+ * and the panel does not hear the tabs go.
  */
 
 import { TItemContext, TTabsExtension } from '@soldy-ui/core'
@@ -78,7 +82,7 @@ import type { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { ITEM_CONTEXT_ELEVATOR } from '../../../protected/adapter/elevator/keys'
 import type { TCollectionItemFacade } from '../collection'
-import { COLLECTION_BUNDLES_ELEVATOR } from '../collection/keys'
+import { COLLECTION_BUNDLES_ELEVATOR, COLLECTION_MEMBERS_ELEVATOR } from '../collection/keys'
 import type { ITabsContentBindingOptions } from './types'
 
 /** Движок Tabs: в нём стоит расширение табов. Движок другой коллекции панели чужой. */
@@ -108,7 +112,8 @@ export class TTabsContentBindingExtension {
 		context: TInstanceContext<TCollectionItemFacade>,
 		options: ITabsContentBindingOptions,
 	) {
-		const { content, elevator } = options
+		const { elevator } = options
+		const content = options.content.instance
 
 		// Лифт отдаёт движок ближайшей коллекции, и она бывает не Tabs. Чужая —
 		// как будто её нет: панель — ни с каким табом, и работы у связки нет
@@ -119,6 +124,8 @@ export class TTabsContentBindingExtension {
 		const extensions: TTabsCollectionExtensions = engine.extensions
 		/** Наборы табов: в нём панель находит плагин связок своего таба. */
 		const bundles = registryOf(elevator(COLLECTION_BUNDLES_ELEVATOR).up(), engine)
+		/** Members of the same collection: lifted beside the engine, as the registry. */
+		const members = elevator(COLLECTION_MEMBERS_ELEVATOR).up()
 		/** `id`, который панели задало приложение. */
 		const idPlugin = context.bundle?.get(TIdPlugin)
 
@@ -218,6 +225,7 @@ export class TTabsContentBindingExtension {
 
 		context.events.on('attach', () => {
 			attached = true
+			members?.add(options.content, context)
 			// Таб, найденный сборкой: подписка на него ждала входа, а записанное
 			// им с тех пор панель берёт сейчас — после подписки, как связка
 			boundItem?.events.on('change:aria', linkPanel)
@@ -240,6 +248,7 @@ export class TTabsContentBindingExtension {
 			content.events.off('change:value', resolve)
 			idPlugin?.events.off('change:id', linkPanel)
 
+			members?.delete(options.content, context)
 			unbind()
 			attached = false
 

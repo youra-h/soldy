@@ -20,7 +20,7 @@ export function setupTagsItem(props: TagsItemProps) {
 		TagsCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+	).use(TCollectionItemExtension, { item: adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(item, props)
 	const owner = useAdapter(adapter, props)

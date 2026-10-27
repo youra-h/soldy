@@ -29,7 +29,7 @@ export function setupMenuRadioItem(
 		MenuCollectionRadioItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator: AngularElevatorFactory })
+	).use(TCollectionItemExtension, { item: adapter, elevator: AngularElevatorFactory })
 
 	return joinBindings(owner, useCollectionAdapter(item))
 }

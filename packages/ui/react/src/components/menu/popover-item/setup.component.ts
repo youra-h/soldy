@@ -21,7 +21,7 @@ export function useSetupMenuPopoverItem(props: MenuPopoverItemProps) {
 			MenuCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+		).use(TCollectionItemExtension, { item: adapter, elevator })
 
 		return [adapter, item] as const
 	})

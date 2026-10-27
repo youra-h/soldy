@@ -1173,3 +1173,40 @@ describe('события снятия', () => {
 		expect(heard.slice(mounted)).toEqual([])
 	})
 })
+
+/**
+ * The items of markup hear nothing of their siblings going with the owner:
+ * Solid cleans them one by one, and an item still heard heard its order
+ * change as the others left. The owner's `detach` detaches its collection's
+ * members before any goes (`TCollectionMembers`).
+ */
+describe('события снятия элементов', () => {
+	it('элементы разметки не слышат, как уходят соседи', () => {
+		const [shown, setShown] = createSignal(true)
+		const heard: string[] = []
+		const item = (value: string) => (
+			<ListBoxItem
+				value={value}
+				text={value}
+				onChangeOrder={() => heard.push(`${value} order`)}
+				onChangeAria={() => heard.push(`${value} aria`)}
+			/>
+		)
+
+		mount(() => (
+			<Show when={shown()}>
+				<ListBox>
+					{item('a')}
+					{item('b')}
+					{item('c')}
+				</ListBox>
+			</Show>
+		))
+
+		const mounted = heard.length
+
+		setShown(false)
+
+		expect(heard.slice(mounted)).toEqual([])
+	})
+})

@@ -147,7 +147,7 @@ function assembleListBox(props: object, markup: readonly object[] = []) {
 					ListBoxCollectionItemDescriptor(),
 					{ props: itemProps },
 					{ bundle: item.bundle },
-				).use(TCollectionItemExtension, { item: item.instance, elevator }),
+				).use(TCollectionItemExtension, { item: item, elevator }),
 			),
 		)
 	}
@@ -207,7 +207,7 @@ function assembleMenu(markup: readonly object[]) {
 					MenuCollectionCheckboxItemDescriptor(),
 					{ props: itemProps },
 					{ bundle: item.bundle },
-				).use(TCollectionItemExtension, { item: item.instance, elevator }),
+				).use(TCollectionItemExtension, { item: item, elevator }),
 			),
 		)
 	}
@@ -242,7 +242,7 @@ function assembleTabs(props: object, markup: readonly object[] = []) {
 					TabsCollectionItemDescriptor(),
 					{ props: itemProps },
 					{ bundle: item.bundle },
-				).use(TCollectionItemExtension, { item: item.instance, elevator }),
+				).use(TCollectionItemExtension, { item: item, elevator }),
 			),
 		)
 	}
