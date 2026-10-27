@@ -81,7 +81,7 @@ function useExchange(
 
 	createEffect(() => binding.inputs.full(props))
 
-	// Дети выполняются в порядке документа — элементы входят в коллекцию по DOM
+	// Children run in document order, so items join the collection in DOM order
 	adapter.attach()
 
 	// Events after the acceptance: what it writes is the starting state, as in
