@@ -1,4 +1,12 @@
-import { defineComponent, h, mergeProps, ref, watch, type Component } from 'vue'
+import {
+	defineComponent,
+	h,
+	mergeProps,
+	ref,
+	watch,
+	type Component,
+	type FunctionalComponent,
+} from 'vue'
 import type { TToastsItemType } from '@soldy-ui/core'
 import type {
 	DescriptorSlots,
@@ -668,13 +676,21 @@ export const PREVIEWS: Record<string, TPreview> = {
  *
  * Пропы не объявлены намеренно: всё, что передали, попадает в `attrs`, и превью
  * получает набор целиком — от `size` до `ctrl`.
+ *
+ * Without `inheritAttrs: false` Vue also hands a functional component's
+ * listeners and class to its root: the wrapper (`Label` around CheckBox) got
+ * the component's listeners, and the page journal showed the wrapper's events
+ * and the native `input` bubbling to it as the component's.
  */
 export function toComponents(previews: Record<string, TPreview>): Record<string, Component> {
 	return Object.fromEntries(
-		Object.entries(previews).map(([id, render]) => [
-			id,
-			(_props: unknown, { attrs }: { attrs: Record<string, unknown> }) => render(attrs),
-		]),
+		Object.entries(previews).map(([id, render]) => {
+			const component: FunctionalComponent = (_props, { attrs }) => render(attrs)
+
+			component.inheritAttrs = false
+
+			return [id, component]
+		}),
 	)
 }
 

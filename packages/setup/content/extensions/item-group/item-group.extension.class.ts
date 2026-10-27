@@ -1,37 +1,45 @@
 /**
- * TItemGroupExtension — часть группы входит в группировку коллекции: ключ — элементам внутри, подпись — группировке.
+ * TItemGroupExtension — a group part enters the collection's grouping: the key to the items inside, the label to the grouping.
  *
- * Группа разметки (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`,
- * `Select.Group`) идёт тем же каналом, что метка `_.group` в данных: она
- * опускает по лифту (`ITEM_GROUP_ELEVATOR`) свой ключ вместе с движком своей
- * коллекции, а элемент внутри кладёт ключ себе в отметки, когда входит в
- * коллекцию (`TCollectionItemExtension`). Второго хранилища членства нет —
- * ключ помнит `meta`, как метку из данных.
+ * A markup group (`Menu.Group`, `Menu.RadioGroup`, `ListBox.Group`,
+ * `Select.Group`) goes the same channel as the `_.group` mark in data: it
+ * lowers its key along with its collection's engine down the elevator
+ * (`ITEM_GROUP_ELEVATOR`), and an item inside puts the key into its marks
+ * when it joins the collection (`TCollectionItemExtension`). There is no
+ * second membership storage — `meta` remembers the key, as the mark from
+ * data.
  *
- * Ключ — от экземпляра группы (`uid`): обращаться к группе разметки по ключу
- * потребителю незачем, и отдельного пропа под него нет. В документ ключ не
- * уходит, поэтому сервер и браузер его не сверяют.
+ * The key comes from the group's instance (`uid`): the consumer has no reason
+ * to address a markup group by key, and there is no prop for it. The key does
+ * not go into the document, so the server and the browser do not compare it.
  *
- * Подпись группа регистрирует в группировке (`register`): секции получают её,
- * когда в `groups` подписи нет. Регистрация отдельна от `groups` — сброс
- * пропа группы разметки не стирает — и порядка не задаёт. Сменилась подпись —
- * группа регистрирует новую поверх прежней.
+ * The group registers its label in the grouping (`register`): the sections
+ * get it when `groups` has no label. The registration is separate from
+ * `groups` — resetting the prop does not erase the markup group's — and sets
+ * no order. The label changed — the group registers the new one over the old.
  *
- * Фазы — как у связки поля (`TFieldControlExtension`):
+ * Phases — as the field link's (`TFieldControlExtension`):
  *
- * - **сборка** — связка элементам: они читают её при своей сборке;
- * - **вход** (`attach` контекста) — регистрация подписи и подписка на её
- *   смену. Группировка — чужое хранилище, а собранную группу фреймворк вправе
- *   выбросить, так и не приняв;
- * - **снятие** (`destroy` контекста) — отписка и снятие регистрации.
+ * - **assembly** — the link for the items: they read it at their assembly;
+ * - **entry** — the label's registration and the subscription to its change.
+ *   The grouping is someone else's storage, and the framework may throw an
+ *   assembled group away without accepting it. The entry is the context's
+ *   `attach` or the entry of the group's first item (`enter` of the link),
+ *   whichever comes first: React accepts the children before their parent,
+ *   and the items joined a group without its label — the sections came
+ *   unlabelled first (benchmarks/parity/README.md). An accepted item has an
+ *   accepted group above it, so the early entry registers no thrown-away
+ *   group;
+ * - **removal** (the context's `destroy`) — the unsubscription and the
+ *   registration removed.
  *
- * Коллекции выше нет или группировки у неё нет — группа опускает пустую
- * связку: элементам ключ не нужен, а связка группы выше до них не доходит.
- * Группа, которую владелец рисует по секции из данных, — та же часть: её
- * ключа нет ни у одного элемента — элемент из данных ключ группы не берёт, —
- * и регистрация секций не меняет.
+ * No collection above or it has no grouping — the group lowers an empty
+ * link: the items need no key, and a group link from above does not reach
+ * them. A group the owner draws for a section from data is the same part: no
+ * item has its key — an item from data takes no group key — and the
+ * registration does not change the sections.
  *
- * Использование:
+ * Usage:
  *   adapter.use(TItemGroupExtension, { elevator: VueElevatorFactory })
  */
 
@@ -58,18 +66,27 @@ export class TItemGroupExtension {
 		/** Снятие последней регистрации: новая подпись регистрируется поверх прежней. */
 		let release: (() => void) | undefined
 
+		/** Whether the group has entered the grouping — see «entry» above. */
+		let entered = false
+
 		const register = (): void => {
 			release = grouping.register({ key, label: group.label })
 		}
 
-		link.down({ key, engine })
+		const enter = (): void => {
+			if (entered) return
 
-		context.events.on('attach', () => {
+			entered = true
 			register()
 			group.events.on('change:label', register)
-		})
+		}
+
+		link.down({ key, engine, enter })
+
+		context.events.on('attach', enter)
 
 		context.events.on('destroy', () => {
+			entered = false
 			group.events.off('change:label', register)
 			release?.()
 			release = undefined

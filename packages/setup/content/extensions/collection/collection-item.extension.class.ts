@@ -132,6 +132,10 @@ export class TCollectionItemExtension {
 			// состав: у элемента из данных метка группы — из данных
 			const grouped = groupKey !== undefined && !batchOf<object>(engine)?.items.includes(item)
 
+			// The group enters the grouping before its first item: React accepts the
+			// item before its group, and the section came without the group's label
+			if (grouped) link?.enter()
+
 			if (register) this._leave = register(item, context.bundle)
 
 			// `meta` — после регистрации: движок применяет его к элементу, который уже в нём

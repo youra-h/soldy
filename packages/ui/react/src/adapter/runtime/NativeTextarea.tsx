@@ -17,6 +17,10 @@ export type TNativeTextareaProps = Omit<
 export function NativeTextarea({ text, ...attributes }: TNativeTextareaProps): ReactElement {
 	const node = useRef<HTMLTextAreaElement>(null)
 	const value = text ?? ''
+	// The markup gets the first text only, as `NativeInput`: a later
+	// `defaultValue` changes the shown text past the property, and the caret
+	// stays at the start
+	const initial = useRef(value)
 
 	useLayoutEffect(() => {
 		const textarea = node.current
@@ -24,5 +28,5 @@ export function NativeTextarea({ text, ...attributes }: TNativeTextareaProps): R
 		if (textarea && textarea.value !== value) textarea.value = value
 	}, [value])
 
-	return <textarea {...attributes} ref={node} defaultValue={value} />
+	return <textarea {...attributes} ref={node} defaultValue={initial.current} />
 }

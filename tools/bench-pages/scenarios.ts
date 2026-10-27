@@ -10,6 +10,39 @@
  */
 export type TScenario = (scope: HTMLElement, act: number) => Promise<number>
 
+/**
+ * Observer of the scenario's steps: called after every user action with its
+ * label (`press so-select__arrow`), and the scenario waits for it. The parity
+ * run (`parity.mjs`) records the component's events and the accessibility tree
+ * there; the page run has no observer.
+ */
+export type TStepObserver = (label: string) => Promise<void>
+
+let observer: TStepObserver | undefined
+
+/** Set or clear the step observer. */
+export function observeSteps(next: TStepObserver | undefined): void {
+	observer = next
+}
+
+/** End of a user action: the observer gets its label. */
+export async function step(label: string): Promise<void> {
+	await observer?.(label)
+}
+
+/**
+ * A node in a step label: its part class (`so-select__arrow`), otherwise its
+ * block class, otherwise its tag. Not the first class: their order on a node
+ * is the adapter's, not a contract.
+ */
+export function describe(element: Element): string {
+	const classes = [...element.classList]
+		.filter((name) => name.startsWith('so-') && !name.includes('--'))
+		.sort()
+
+	return classes.find((name) => name.includes('__')) ?? classes[0] ?? element.localName
+}
+
 export function frame(): Promise<void> {
 	return new Promise((resolve) => requestAnimationFrame(() => resolve()))
 }
@@ -54,6 +87,7 @@ export async function press(element: Element | null | undefined, at = 0.5): Prom
 	pointer(element, 'mouseup', at)
 	element.click()
 	await frames()
+	await step(`press ${describe(element)}`)
 
 	return 1
 }
@@ -67,6 +101,7 @@ export async function key(element: Element | null | undefined, name: string): Pr
 	element.dispatchEvent(new KeyboardEvent('keydown', init))
 	element.dispatchEvent(new KeyboardEvent('keyup', init))
 	await frames()
+	await step(`key ${name} ${describe(element)}`)
 
 	return 1
 }
@@ -89,6 +124,7 @@ export async function type(element: Element | null | undefined, text: string): P
 	document.execCommand('insertText', false, text)
 	await frames()
 	element.blur()
+	await step(`type "${text}" ${describe(element)}`)
 
 	return 1
 }
@@ -244,14 +280,18 @@ export const SCENARIOS: Record<string, TScenario> = {
 			pointer(hovered, 'pointerenter')
 			await wait(450)
 			await frames()
+			await step(`hover ${describe(hovered)}`)
 			pointer(hovered, 'pointerleave')
+			await step(`leave ${describe(hovered)}`)
 			done += 1
 		}
 
 		for (const trigger of triggers) {
 			trigger.focus({ preventScroll: true })
 			await frames(3)
+			await step(`focus ${describe(trigger)}`)
 			trigger.blur()
+			await step(`blur ${describe(trigger)}`)
 			done += 1
 		}
 
@@ -299,6 +339,7 @@ export const SCENARIOS: Record<string, TScenario> = {
 
 		viewport?.scrollBy({ left: 200 })
 		await frames()
+		await step('scroll so-scroller__viewport')
 
 		return (await press(copy.querySelector('.so-scroller__prev'))) + 1
 	}),
@@ -353,8 +394,10 @@ export const SCENARIOS: Record<string, TScenario> = {
 
 			scroller.scrollTop = scroller.scrollHeight
 			await frames(3)
+			await step(`scroll end ${describe(scroller)}`)
 			scroller.scrollTop = 0
 			await frames(3)
+			await step(`scroll start ${describe(scroller)}`)
 			done += 1
 		}
 

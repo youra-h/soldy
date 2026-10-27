@@ -1,6 +1,6 @@
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
-import { TButton, TComponent, TEventEmitter } from '@soldy-ui/core'
+import { TActionEvent, TButton, TComponent, TEventEmitter } from '@soldy-ui/core'
 import { enUS, ruRU } from '@soldy-ui/plugins'
 import {
 	COLLECTION_ITEMS,
@@ -13,7 +13,14 @@ import {
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
 import '../../packages/playground/vue/browser/page.css'
-import { SCENARIOS } from './scenarios'
+import { observeSteps, SCENARIOS } from './scenarios'
+
+declare global {
+	interface Window {
+		/** Step of the parity run: exposed by `parity.mjs`, it records the tree in Node. */
+		parityStep?: (label: string) => Promise<void>
+	}
+}
 
 /**
  * Страница замера (`window.bench`): хост превью фреймворка из `?fw=` ставит
@@ -184,6 +191,149 @@ async function locale(): Promise<void> {
 /** Сколько живых объектов класса — для `Runtime.queryObjects` прогонщика. */
 const prototypes = { component: TComponent.prototype, emitter: TEventEmitter.prototype }
 
-const bench = { framework, pages, mount, unmount, scenario, locale, frames, prototypes }
+/** An event of the parity journal: the full core name and comparable arguments. */
+type TJournalEntry = { name: string; args: unknown[] }
+
+/** The component's events since the last `take`. */
+let journal: TJournalEntry[] = []
+
+/**
+ * An event argument in a form the six frameworks can be compared by, taken at
+ * the moment of the event: a core instance — its class and `value` (the
+ * instance itself lives on and changes), an action event — its class, fields
+ * and `defaultPrevented`, a DOM event or node — its type. Ids differ between
+ * mounts and are not compared: the accessibility tree has none.
+ */
+function comparable(value: unknown, depth = 0): unknown {
+	if (value === undefined) return '<undefined>'
+	if (value === null || typeof value !== 'object') {
+		return typeof value === 'function' ? '<function>' : value
+	}
+	if (value instanceof Date) return `Date(${value.toISOString()})`
+	if (value instanceof Event) return { dom: value.type }
+	if (value instanceof Node) return { node: value.nodeName.toLowerCase() }
+	if (Array.isArray(value)) return value.map((item) => comparable(item, depth + 1))
+	if (value instanceof TComponent) {
+		const own = Reflect.get(value, 'value')
+
+		return {
+			instance: value.constructor?.name ?? 'Object',
+			...(own === undefined ? {} : { value: comparable(own, depth + 1) }),
+		}
+	}
+	if (value instanceof Set) return { set: [...value].map((item) => comparable(item, depth + 1)) }
+	if (value instanceof Map) {
+		return { map: [...value].map((entry) => comparable(entry, depth + 1)) }
+	}
+	if (depth > 3) return '<deep>'
+
+	const fields = () =>
+		Object.fromEntries(
+			Object.entries(value).map(([key, field]) => [key, comparable(field, depth + 1)]),
+		)
+	const prototype = Object.getPrototypeOf(value)
+
+	if (prototype === Object.prototype || prototype === null) return fields()
+
+	// Any other object — a plugin, an engine — by its class: its fields are
+	// its internals, not the event's data
+	if (!(value instanceof TActionEvent)) return { object: value.constructor?.name ?? 'Object' }
+
+	return {
+		object: value.constructor?.name ?? 'Object',
+		...fields(),
+		defaultPrevented: value.defaultPrevented,
+	}
+}
+
+/**
+ * Mount the page for the parity run: one copy, whose events go to the
+ * journal.
+ */
+async function record(page: string): Promise<void> {
+	if (mounted.length) throw new Error('[bench-pages] страница уже стоит')
+
+	mounted = [
+		host.mount(place(), {
+			component: page,
+			props: propsOf(page),
+			count: 1,
+			onEvent: (name, args) =>
+				journal.push({ name, args: args.map((arg) => comparable(arg)) }),
+		}),
+	]
+
+	await frames()
+}
+
+/** The journal since the last call. */
+function take(): TJournalEntry[] {
+	const taken = journal
+
+	journal = []
+
+	return taken
+}
+
+/**
+ * Wait until the page is still: no running finite animation or transition
+ * (a spinner turns forever) and no DOM change for three frames, at most 3 s.
+ * A layer closes with a transition, and what it sends at its end belongs to
+ * the step that closed it.
+ */
+async function settle(): Promise<void> {
+	const end = performance.now() + 3000
+	let changed = true
+	const watcher = new MutationObserver(() => (changed = true))
+
+	watcher.observe(document.body, {
+		subtree: true,
+		childList: true,
+		attributes: true,
+		characterData: true,
+	})
+
+	try {
+		for (let still = 0; still < 3 && performance.now() < end;) {
+			changed = false
+			await frame()
+
+			const moving = document
+				.getAnimations()
+				.some(
+					(animation) =>
+						animation.playState === 'running' &&
+						animation.effect?.getComputedTiming().endTime !== Infinity,
+				)
+
+			still = changed || moving ? 0 : still + 1
+		}
+	} finally {
+		watcher.disconnect()
+	}
+}
+
+/** Report every scenario step to the runner once the page is still. */
+function observe(): void {
+	observeSteps(async (label) => {
+		await settle()
+		await window.parityStep?.(label)
+	})
+}
+
+const bench = {
+	framework,
+	pages,
+	mount,
+	unmount,
+	scenario,
+	locale,
+	frames,
+	prototypes,
+	record,
+	take,
+	settle,
+	observe,
+}
 
 Object.assign(window, { bench })

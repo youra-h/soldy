@@ -135,6 +135,12 @@ jobs:
           ) > "$RUNNER_TEMP/memory.log" 2>&1 &
           npm run test:layout
 
+      # The same user scenario on all six platforms: the component's events and
+      # the accessibility tree after every step, compared with Vue
+      # (benchmarks/parity/README.md). The report goes to the log.
+      - name: Сверка платформ
+        run: npm run test:parity
+
       - name: Память и журнал ядра при падении
         if: failure()
         run: |

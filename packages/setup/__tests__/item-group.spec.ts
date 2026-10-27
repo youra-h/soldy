@@ -203,25 +203,32 @@ describe('группа разметки — в группировке колле
 	})
 
 	/**
-	 * Порядок React: эффекты детей идут раньше родителя, и элементы входят в
-	 * коллекцию раньше, чем принята их группа. Ключ они берут при сборке, а
-	 * подпись приходит с приёмом группы.
+	 * React's order: the children's effects run before the parent's, and the
+	 * items join the collection before their group is accepted. The group
+	 * enters the grouping with its first item, so the section has its label
+	 * from the start, and the group's own acceptance changes nothing
+	 * (benchmarks/parity/README.md).
 	 */
-	it('подпись — с приёмом группы: элементы, вошедшие раньше, уже в её секции', () => {
+	it('подпись — с первым элементом: группа входит раньше своего приёма', () => {
 		const listLayer = childOf()
 		const list = mountList(listLayer)
 		const groupLayer = childOf(listLayer)
 		const group = assembleGroup(groupLayer, { label: 'Фрукты' })
+		const sections = vi.fn()
 
+		list.extensions.group.events.on('change:sections', sections)
 		mountItem(childOf(groupLayer), { value: 'apple' })
 
 		expect(brief(list.extensions.group.sections)).toEqual([
-			[expect.stringMatching(/^group:/), '', ['apple']],
+			[expect.stringMatching(/^group:/), 'Фрукты', ['apple']],
 		])
+
+		const before = sections.mock.calls.length
 
 		accept([group])
 
 		expect(list.extensions.group.sections[0].group?.label).toBe('Фрукты')
+		expect(sections).toHaveBeenCalledTimes(before)
 	})
 })
 

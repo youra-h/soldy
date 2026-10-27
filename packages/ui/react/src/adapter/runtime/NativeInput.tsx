@@ -47,6 +47,13 @@ function toProperties(live: TNativeInputLive): TProperties {
 export function NativeInput({ live, ...attributes }: TNativeInputProps): ReactElement {
 	const node = useRef<HTMLInputElement>(null)
 	const { value, checked, indeterminate } = toProperties(live)
+	// The markup gets the first text only. A later `defaultValue` React writes
+	// into the `value` attribute, and an input the user has not edited shows it
+	// with the caret at the start: the property found the text already there
+	// and was not written, and typing after a choice in Select went before the
+	// chosen text. Vue writes the property, and the caret goes to the end, as
+	// after any write of a script (benchmarks/parity/README.md)
+	const initial = useRef(value)
 
 	useLayoutEffect(() => {
 		const input = node.current
@@ -61,5 +68,7 @@ export function NativeInput({ live, ...attributes }: TNativeInputProps): ReactEl
 		}
 	}, [value, checked, indeterminate])
 
-	return <input {...attributes} ref={node} defaultValue={value} defaultChecked={checked} />
+	return (
+		<input {...attributes} ref={node} defaultValue={initial.current} defaultChecked={checked} />
+	)
 }

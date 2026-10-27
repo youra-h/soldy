@@ -179,20 +179,29 @@ function useExchange(
 		exchange.inputs.full(getProps())
 	})
 
-	// 3. and 6. One subscription for the whole life, the callback is read
-	// lazily; one effect that tracks nothing: its teardown unsubscribes, then
-	// destroys the adapter — the order two effects had, at the cost of one
-	$effect(() => {
-		const stop = exchange.events.listen((exportName, args) => {
+	// 3. One subscription for the whole life, right away, as the state: in an
+	// effect it began after the children, and the markup items that joined the
+	// collection while mounting never reached the consumer — the other adapters
+	// send them (benchmarks/parity/README.md). The callback is read lazily and
+	// called untracked: an event comes in the middle of rendering too — an item
+	// joins inside the owner's block, — and a consumer writing its state there
+	// would be an unsafe mutation for Svelte. `onDestroy` unsubscribes on the
+	// server, where effects do not run
+	const stop = exchange.events.listen((exportName, args) => {
+		untrack(() => {
 			const callback: unknown = Reflect.get(getProps(), exportName)
 
 			if (typeof callback === 'function') callback(...args)
 		})
+	})
 
-		return () => {
-			stop()
-			adapter.destroy()
-		}
+	onDestroy(stop)
+
+	// 6. One effect that tracks nothing: its teardown unsubscribes, then
+	// destroys the adapter
+	$effect(() => () => {
+		stop()
+		adapter.destroy()
 	})
 
 	// 4. Инициализация компонента — и на сервере тоже — это его монтирование:

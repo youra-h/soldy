@@ -66,13 +66,24 @@ type TJoined = {
 	destroy(): void
 }
 
-/** Событие «до» (аргумент `TActionEvent`) отменяемо: отменённое отменяет событие ядра. */
+/**
+ * An event "before" (a `TActionEvent` argument) is cancelable: cancelling it
+ * cancels the core event.
+ *
+ * A removed element sends nothing: the consumer took it down, and what its
+ * teardown stirs — the blur of the removed node, the markup items leaving the
+ * collection — is not news to anyone, as in the other adapters
+ * (benchmarks/parity/README.md). An element moved elsewhere is assembled anew
+ * on connecting (`ElementBase`), so its state starts over there too.
+ */
 function dispatch(
 	host: HTMLElement,
 	name: string,
 	args: readonly unknown[],
 	bubbles: boolean,
 ): void {
+	if (!host.isConnected) return
+
 	const detail = args.length > 1 ? args : args[0]
 	const action = detail instanceof TActionEvent ? detail : undefined
 	const event = new CustomEvent(name, {
