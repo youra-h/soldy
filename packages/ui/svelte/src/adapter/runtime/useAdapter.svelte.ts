@@ -204,12 +204,18 @@ function useExchange(
 
 	onDestroy(stop)
 
-	// 6. One effect that tracks nothing: its teardown unsubscribes, then
-	// destroys the adapter
-	$effect(() => () => {
-		stop()
-		adapter.destroy()
-	})
+	// The consumer hears nothing once the teardown began, as in the other
+	// adapters (benchmarks/parity/README.md). Svelte destroys a block's effects
+	// in the order they were made: a pre-effect is made at once, before the
+	// template's blocks, while `$effect` and `onDestroy` wait for the mount and
+	// come after them. Unsubscribed there, the consumer heard the children go —
+	// the markup items leaving the collection with an ever shorter list, the
+	// root's unbinding. The nodes are removed before any effect: the blur of a
+	// removed node still reaches the consumer
+	$effect.pre(() => stop)
+
+	// 6. One effect that tracks nothing: its teardown destroys the adapter
+	$effect(() => () => adapter.destroy())
 
 	return { exchange, state: new Proxy<TValues>(values, STATE) }
 }
