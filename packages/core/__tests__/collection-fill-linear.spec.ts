@@ -226,15 +226,31 @@ describe.each(cases)('$name · снимки состава при наполне
 	})
 })
 
+/** How many composition snapshots (`driver.valueOf()`) were taken during `fill`. */
+function snapshotsOf(fill: () => void): number {
+	const valueOf = vi.spyOn(TCollectionStorageDriver.prototype, 'valueOf')
+
+	try {
+		fill()
+
+		return valueOf.mock.calls.length
+	} finally {
+		valueOf.mockRestore()
+	}
+}
+
+// One snapshot per composition change — the list `change:items` carries —
+// and none per inserted item: the position "at the end" is the insert
+// command's, read from the storage length
 describe('движок без компонента · снимки состава', () => {
-	it('batch.set и push по одному копий состава не снимают', () => {
-		expect(copiesOf(() => createEngine({ items: sources(COUNT) }))).toBe(0)
+	it('снимок — один на смену состава: пачка — один, push по одному — по одному на элемент', () => {
+		expect(snapshotsOf(() => createEngine({ items: sources(COUNT) }))).toBe(1)
 
 		const engine = createEngine<TSource>()
 
 		expect(
-			copiesOf(() => sources(COUNT).forEach((item) => engine.extensions.plain.push(item))),
-		).toBe(0)
+			snapshotsOf(() => sources(COUNT).forEach((item) => engine.extensions.plain.push(item))),
+		).toBe(COUNT)
 		expect(engine.extensions.batch.items.map((item) => item.value)).toEqual(
 			sources(COUNT).map((item) => item.value),
 		)

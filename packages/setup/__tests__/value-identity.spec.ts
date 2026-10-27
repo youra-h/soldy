@@ -7,8 +7,16 @@ import {
 	TCollectionEngine,
 	TBatchExtension,
 	TMenu,
+	TListBox,
 } from '@soldy-ui/core'
-import { IconDescriptor, ButtonDescriptor, MenuDescriptor } from '../content/descriptors'
+import type { IListBoxItem } from '@soldy-ui/core'
+import {
+	IconDescriptor,
+	ButtonDescriptor,
+	MenuDescriptor,
+	ListBoxDescriptor,
+	ListBoxCollectionDescriptor,
+} from '../content/descriptors'
 import { createAdapterContext, type IAdapterContext } from '../protected/adapter'
 import { CommonProfile } from '../protected/naming'
 
@@ -89,6 +97,38 @@ describe('Составные props меняют идентичность при 
 		expect(after).not.toBe(before)
 		// снимок отделён от самого драйвера
 		expect(driver.valueOf()).not.toBe(driver)
+	})
+
+	/**
+	 * The consumer hears `change:items` with the list as its argument and may
+	 * keep it — in a Solid signal, say. A live reference to the storage would
+	 * change under it with no event, and the framework would not see it.
+	 */
+	it('items: change:items отдаёт потребителю снимок состава', () => {
+		const owner = createAdapterContext(ListBoxDescriptor(), { ctrl: new TListBox() })
+		const facade = createAdapterContext(
+			ListBoxCollectionDescriptor(),
+			{ options: { owner: owner.instance } },
+			{ bundle: owner.bundle },
+		)
+		const heard: unknown[] = []
+
+		facade.connect(CommonProfile).events.listen((name, args) => {
+			if (name === 'change:items') heard.push(args[0])
+		})
+
+		const { plain } = facade.instance.extensions
+		const first = plain.push({ value: 'a' })
+
+		plain.push({ value: 'b' })
+		plain.remove(first)
+
+		// The lists are read only now, after every change: each must still be
+		// what it was when heard
+		const values = (items: unknown): unknown =>
+			Array.isArray(items) ? items.map((item: IListBoxItem) => item.value) : items
+
+		expect(heard.map(values)).toEqual([['a'], ['a', 'b'], ['b']])
 	})
 
 	/**

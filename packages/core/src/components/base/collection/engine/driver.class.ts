@@ -56,7 +56,7 @@ export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> 
 			command.emitEvents(ctx)
 
 			if (command.changed) {
-				this.events.emit('change:items', this._storage.items)
+				this.events.emit('change:items', this.valueOf())
 			}
 		} else {
 			this._pendingCommands.push(command)
@@ -132,7 +132,7 @@ export class TCollectionStorageDriver<T> implements ICollectionStorageDriver<T> 
 				)
 
 				if (commandsToEmit.some((cmd) => cmd.changed)) {
-					this.events.emit('change:items', this._storage.items)
+					this.events.emit('change:items', this.valueOf())
 				}
 			}
 		}
