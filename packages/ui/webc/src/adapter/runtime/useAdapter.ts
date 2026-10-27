@@ -111,7 +111,7 @@ function useExchange<C extends IComponentContract>(
 		onUpdate(name, value)
 	})
 
-	// Отброшенных сборок у Web Components нет: связку заводит подключение
+	// Web Components have no discarded assemblies: the binding is made on connect
 	adapter.attach()
 
 	// Events after the acceptance: what it writes is the starting state, as in
