@@ -26,50 +26,47 @@
 	крестика: фокус при открытии встаёт на первый контрол, крестик — последняя остановка Tab.
 	Триггер и панель стоят вплотную: пробел Svelte оставил бы в корне текстом.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(state, [state.attrs, state.dataset], binding.forwardProps)}
+	attach={binding.attachElement}
+>
+	{@render props.trigger?.({
+		triggerAria: state.triggerAria ?? {},
+		triggerDataset: state.triggerDataset ?? {},
+	})}<Frame
+		embedded="popover.frame"
+		class="so-popover__panel"
+		tabindex={-1}
+		visible={state.open}
+		contained={state.contained}
+		position="fixed"
+		anchor_anchor={binding.rootElement}
+		anchor_placement={state.placement}
+		anchor_offset={8}
+		{...state.aria}
+		{...state.panelDataset}
+		{...state.dismiss_ownerAttribute}
 	>
-		{@render props.trigger?.({
-			triggerAria: state.triggerAria ?? {},
-			triggerDataset: state.triggerDataset ?? {},
-		})}<Frame
-			embedded="popover.frame"
-			class="so-popover__panel"
-			tabindex={-1}
-			visible={state.open}
-			contained={state.contained}
-			position="fixed"
-			anchor_anchor={binding.rootElement}
-			anchor_placement={state.placement}
-			anchor_offset={8}
-			{...state.aria}
-			{...state.panelDataset}
-			{...state.dismiss_ownerAttribute}
+		{#if state.handleRendered}<div class="so-popover__handle" aria-hidden="true"></div>{/if}<div
+			class="so-popover__content"
 		>
-			{#if state.handleRendered}
-				<div class="so-popover__handle" aria-hidden="true"></div>
-			{/if}
-			<div class="so-popover__content">
-				{#if state.contentRendered}{@render props.children?.()}{/if}
-			</div>
-			{#if state.closable}
-				<Button
-					embedded="popover.close"
-					type="button"
-					class="so-popover__close"
-					onclick={close}
-					{...state.closeAria}
-				>
-					{#if props['close-icon']}
-						{@render props['close-icon']()}
-					{:else}
-						<Icon embedded="popover.close-icon" tag={CLOSE} />
-					{/if}
-				</Button>
-			{/if}
-		</Frame>
-	</Dynamic>
-{/if}
+			{#if state.contentRendered}{@render props.children?.()}{/if}
+		</div>{#if state.closable}
+			<Button
+				embedded="popover.close"
+				type="button"
+				class="so-popover__close"
+				onclick={close}
+				{...state.closeAria}
+			>
+				{#if props['close-icon']}
+					{@render props['close-icon']()}
+				{:else}
+					<Icon embedded="popover.close-icon" tag={CLOSE} />
+				{/if}
+			</Button>
+		{/if}
+	</Frame>
+</Dynamic>

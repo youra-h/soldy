@@ -21,6 +21,7 @@
 {@render props.children?.()}{#if state.rendered}
 	<Teleport to={state.target}>
 		<Dynamic
+			rendered
 			tag={state.tag}
 			attributes={toRootProps(
 				state,

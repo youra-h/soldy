@@ -13,36 +13,35 @@
 </script>
 
 <!-- Обёртки значка и сочетания — у каждого пункта, без пробелов: пустую тема прячет по `:empty`. -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.dataset, state.attrs],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.dataset, state.attrs],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<ItemRow
+		embedded="menu.row"
+		tag="div"
+		size={state.size}
+		disabled={state.disabled}
+		{...state.aria}
+		{...toControlAttrs<MenuItemAttributes>(binding.forwardProps)}
+		onclick={chainHandler(() => context?.adapters.menu.choose(), binding.forwardProps.onclick)}
 	>
-		<ItemRow
-			embedded="menu.row"
-			tag="div"
-			size={state.size}
-			disabled={state.disabled}
-			{...state.aria}
-			{...toControlAttrs<MenuItemAttributes>(binding.forwardProps)}
-			onclick={chainHandler(() => context?.adapters.menu.choose(), binding.forwardProps.onclick)}
-		>
-			{#snippet leading()}
-				<span class="so-menu-item__icon">{@render props.leading?.()}</span>
-			{/snippet}
-			{#if props.children}
-				{@render props.children({ text: state.text ?? '' })}
-			{:else}
-				{state.text}
-			{/if}
-			{#snippet trailing()}
-				<span class="so-menu-item__shortcut">{@render props.trailing?.()}</span>
-			{/snippet}
-		</ItemRow>
-	</Dynamic>
-{/if}
+		{#snippet leading()}
+			<span class="so-menu-item__icon">{@render props.leading?.()}</span>
+		{/snippet}
+		{#if props.children}
+			{@render props.children({ text: state.text ?? '' })}
+		{:else}
+			{state.text}
+		{/if}
+		{#snippet trailing()}
+			<span class="so-menu-item__shortcut">{@render props.trailing?.()}</span>
+		{/snippet}
+	</ItemRow>
+</Dynamic>

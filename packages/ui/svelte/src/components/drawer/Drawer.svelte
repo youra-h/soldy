@@ -34,6 +34,7 @@
 			style={toShownStyleText(state.layout_backdropStyles, state.visible === true)}
 			{...state.backdropDataset}
 		></div><Dynamic
+			rendered
 			tag={state.tag}
 			attributes={toRootProps(
 				state,
@@ -44,11 +45,11 @@
 		>
 			{#if state.handleRendered}
 				<div class="so-drawer__handle" aria-hidden="true"></div>
-			{/if}
-			<h2 class="so-drawer__title" {...state.titleAria}>{@render props.title?.()}</h2>
-			<div class="so-drawer__body">{@render props.children?.()}</div>
-			<div class="so-drawer__footer">{@render props.footer?.()}</div>
-			{#if state.closable}
+			{/if}<h2 class="so-drawer__title" {...state.titleAria}>{@render props.title?.()}</h2><div
+				class="so-drawer__body"
+			>
+				{@render props.children?.()}
+			</div><div class="so-drawer__footer">{@render props.footer?.()}</div>{#if state.closable}
 				<Button
 					embedded="drawer.close"
 					type="button"
@@ -61,8 +62,7 @@
 					{:else}
 						<Icon embedded="drawer.close-icon" tag={CLOSE} />
 					{/if}
-				</Button>
-			{/if}
+				</Button>{/if}
 		</Dynamic>
 	</Teleport>
 {/if}

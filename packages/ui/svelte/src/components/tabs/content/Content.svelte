@@ -11,12 +11,11 @@
 </script>
 
 <!-- Рисуется, пока активен таб того же `value`; панель без такого таба пуста. -->
-{#if state.rendered && state.active}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(state, [state.attrs, state.aria], binding.forwardProps)}
-		attach={binding.attachElement}
-	>
-		{@render props.children?.()}
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered && state.active}
+	tag={state.tag}
+	attributes={toRootProps(state, [state.attrs, state.aria], binding.forwardProps)}
+	attach={binding.attachElement}
+>
+	{@render props.children?.()}
+</Dynamic>

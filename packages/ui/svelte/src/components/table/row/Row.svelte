@@ -24,52 +24,51 @@
 	(`runsOf`).
 	Ячейки стоят вплотную: пробел между ними Svelte оставил бы в строке текстом.
 -->
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.attrs, state.aria, state.dataset],
-			binding.forwardProps,
-		)}
-		attach={binding.attachElement}
-	>
-		{#if state.selecting}<td class="so-table-row__select" {...state.cellAria}>
-				<CheckBox
-					embedded="table.select"
-					ctrl={context?.adapters.table.checkBox}
-					aria_labelledBy={state.rowHeaderId}
-				/>
-			</td>{/if}{#if props.cell}{#each runsOf(state.cells ?? [], 'rowHeader') as run}{#if run.value}{#each run.items as cell (cell.column.uid)}<th
-							class="so-table-row__cell"
-							scope="row"
-							{...cell.dataset}
-							{...state.cellAria}
-							{...cell.aria}
-						>
-							{@render props.cell({ row, column: cell.column, value: cell.value })}
-						</th>{/each}{:else}{#each run.items as cell (cell.column.uid)}<td
-							class="so-table-row__cell"
-							{...cell.dataset}
-							{...state.cellAria}
-							{...cell.aria}
-						>
-							{@render props.cell({ row, column: cell.column, value: cell.value })}
-						</td>{/each}{/if}{/each}{:else}{#each runsOf(state.cells ?? [], 'rowHeader') as run}{#if run.value}{#each run.items as cell (cell.column.uid)}<th
-							class="so-table-row__cell"
-							scope="row"
-							{...cell.dataset}
-							{...state.cellAria}
-							{...cell.aria}
-						>
-							{cell.text}
-						</th>{/each}{:else}{#each run.items as cell (cell.column.uid)}<td
-							class="so-table-row__cell"
-							{...cell.dataset}
-							{...state.cellAria}
-							{...cell.aria}
-						>
-							{cell.text}
-						</td>{/each}{/if}{/each}{/if}
-	</Dynamic>
-{/if}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.attrs, state.aria, state.dataset],
+		binding.forwardProps,
+	)}
+	attach={binding.attachElement}
+>
+	{#if state.selecting}<td class="so-table-row__select" {...state.cellAria}>
+			<CheckBox
+				embedded="table.select"
+				ctrl={context?.adapters.table.checkBox}
+				aria_labelledBy={state.rowHeaderId}
+			/>
+		</td>{/if}{#if props.cell}{#each runsOf(state.cells ?? [], 'rowHeader') as run}{#if run.value}{#each run.items as cell (cell.column.uid)}<th
+						class="so-table-row__cell"
+						scope="row"
+						{...cell.dataset}
+						{...state.cellAria}
+						{...cell.aria}
+					>
+						{@render props.cell({ row, column: cell.column, value: cell.value })}
+					</th>{/each}{:else}{#each run.items as cell (cell.column.uid)}<td
+						class="so-table-row__cell"
+						{...cell.dataset}
+						{...state.cellAria}
+						{...cell.aria}
+					>
+						{@render props.cell({ row, column: cell.column, value: cell.value })}
+					</td>{/each}{/if}{/each}{:else}{#each runsOf(state.cells ?? [], 'rowHeader') as run}{#if run.value}{#each run.items as cell (cell.column.uid)}<th
+						class="so-table-row__cell"
+						scope="row"
+						{...cell.dataset}
+						{...state.cellAria}
+						{...cell.aria}
+					>
+						{cell.text}
+					</th>{/each}{:else}{#each run.items as cell (cell.column.uid)}<td
+						class="so-table-row__cell"
+						{...cell.dataset}
+						{...state.cellAria}
+						{...cell.aria}
+					>
+						{cell.text}
+					</td>{/each}{/if}{/each}{/if}
+</Dynamic>

@@ -31,42 +31,41 @@
 	</span>
 {/snippet}
 
-{#if state.rendered}
-	<Dynamic
-		tag={state.tag}
-		attributes={toRootProps(
-			state,
-			[state.dataset, state.attrs],
-			toRootForward(binding.forwardProps),
-		)}
-		attach={binding.attachElement}
+<Dynamic
+	rendered={state.rendered}
+	tag={state.tag}
+	attributes={toRootProps(
+		state,
+		[state.dataset, state.attrs],
+		toRootForward(binding.forwardProps),
+	)}
+	attach={binding.attachElement}
+>
+	<ItemRow
+		embedded="list-box.row"
+		tag="div"
+		view={state.view}
+		disabled={state.disabled}
+		size={state.size}
+		variant={state.variant}
+		{...state.aria}
+		{...state.dataset}
+		{...toControlAttrs<ListBoxItemAttributes>(binding.forwardProps)}
+		onclick={chainHandler(() => context?.adapters.list.choose(), binding.forwardProps.onclick)}
 	>
-		<ItemRow
-			embedded="list-box.row"
-			tag="div"
-			view={state.view}
-			disabled={state.disabled}
-			size={state.size}
-			variant={state.variant}
-			{...state.aria}
-			{...state.dataset}
-			{...toControlAttrs<ListBoxItemAttributes>(binding.forwardProps)}
-			onclick={chainHandler(() => context?.adapters.list.choose(), binding.forwardProps.onclick)}
-		>
-			{#snippet leading()}
-				{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}
-			{/snippet}
-			{#if props.children}
-				{@render props.children({
-					text: state.text ?? '',
-					selected: state.selected ?? false,
-				})}
-			{:else}
-				{state.text}
-			{/if}
-			{#snippet trailing()}
-				{@render props.trailing?.()}{#if state.indicator === 'end'}{@render mark()}{/if}
-			{/snippet}
-		</ItemRow>
-	</Dynamic>
-{/if}
+		{#snippet leading()}
+			{#if state.indicator === 'start'}{@render mark()}{/if}{@render props.leading?.()}
+		{/snippet}
+		{#if props.children}
+			{@render props.children({
+				text: state.text ?? '',
+				selected: state.selected ?? false,
+			})}
+		{:else}
+			{state.text}
+		{/if}
+		{#snippet trailing()}
+			{@render props.trailing?.()}{#if state.indicator === 'end'}{@render mark()}{/if}
+		{/snippet}
+	</ItemRow>
+</Dynamic>
