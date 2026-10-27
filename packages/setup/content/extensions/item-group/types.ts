@@ -7,13 +7,18 @@ import type { IListenable } from '@soldy-ui/plugins'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
 /**
- * Связка группы с элементами внутри: ключ группы в группировке коллекции и
- * движок этой коллекции. Элемент берёт ключ, только если он элемент того же
- * движка: пункты подменю в группе меню — элементы своей коллекции.
+ * The link of a group with the items inside: the group's key in the
+ * collection's grouping and the engine of that collection. An item takes the
+ * key only if it is an item of the same engine: the items of a submenu in a
+ * menu group are items of their own collection.
+ *
+ * `enter` — the group enters the grouping, at the latest before its first
+ * item does (see `TItemGroupExtension`); a repeat does nothing.
  */
 export interface IItemGroupLink {
 	readonly key: string
 	readonly engine: TCollectionEngine<any, any>
+	enter(): void
 }
 
 /**

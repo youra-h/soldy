@@ -938,3 +938,26 @@ describe('типы', () => {
 		>()
 	})
 })
+
+/**
+ * The consumer hears the markup items join the collection while mounting, as
+ * in the other adapters: the subscription began in an effect, after the
+ * children, and `onItemAdded` stayed silent for them
+ * (benchmarks/parity/README.md).
+ */
+describe('события монтирования', () => {
+	it('onItemAdded — каждый элемент разметки, в порядке DOM', async () => {
+		const added: unknown[] = []
+
+		mount(Harness, {
+			list: { onItemAdded: (event) => added.push(Reflect.get(Object(event.item), 'value')) },
+			items: [
+				{ value: 'a', text: 'A' },
+				{ value: 'b', text: 'B' },
+			],
+		})
+		await flush()
+
+		expect(added).toEqual(['a', 'b'])
+	})
+})

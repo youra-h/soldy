@@ -34,12 +34,24 @@ export type TInputValue<
 	TInput extends keyof DescriptorComponentProps<TDescriptorFn>,
 > = DescriptorComponentProps<TDescriptorFn>[TInput]
 
-/** Первый аргумент события ядра — его шлёт `syncEvents`. */
+/**
+ * The value of an output — what `syncEvents` emits: the core event's only
+ * argument, the tuple of its arguments when there are several (the new and
+ * the previous item of `change:activation`), `undefined` when there are none.
+ * The same payload as `detail` of an event of Web Components.
+ */
 type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
 	? TArgs extends readonly []
 		? undefined
-		: TArgs[0]
+		: TArgs extends readonly [unknown]
+			? TArgs[0]
+			: TArgs
 	: undefined
+
+/** One value of the core event's arguments — see `TOutputValue`. */
+function payloadOf(args: readonly unknown[]): unknown {
+	return args.length > 1 ? args : args[0]
+}
 
 /** Тип выхода по событию дескриптора — геттер в сгенерированной `T<Имя>Surface`. */
 export type TOutputEmitter<
@@ -120,7 +132,9 @@ function useExchange<C extends IComponentContract>(
 
 		// Эмиттер ищется на каждое событие: его заводит первое чтение выхода
 		syncEvents(outputOf: TOutputOf): () => void {
-			return binding.events.listen((exportName, args) => outputOf(exportName)?.emit(args[0]))
+			return binding.events.listen((exportName, args) =>
+				outputOf(exportName)?.emit(payloadOf(args)),
+			)
 		},
 
 		destroy(): void {

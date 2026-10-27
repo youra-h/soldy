@@ -132,11 +132,16 @@ async function controlled(
 
 /** Месяцы сеток, возвращённые пропом, — как `v-model:months` у Vue. */
 async function withMonths(): Promise<() => TCalendarDate[] | undefined> {
-	const props = await render({
-		onChangeMonths: (months) => {
-			props.months = months
-		},
-	})
+	// The handler is called while mounting too, with the grid's first months —
+	// the props are in place before the mount
+	const props = reactiveProps<CalendarProps>({})
+
+	props.onChangeMonths = (months) => {
+		props.months = months
+	}
+
+	mount(Calendar, props)
+	await nextFrame()
 
 	return () => props.months
 }

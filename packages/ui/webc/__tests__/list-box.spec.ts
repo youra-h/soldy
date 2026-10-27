@@ -1435,3 +1435,25 @@ describe('типы', () => {
 		expectTypeOf<TButtonElementProps['disabled']>().toEqualTypeOf<boolean>()
 	})
 })
+
+/**
+ * A removed element sends nothing: what its teardown stirs — the markup items
+ * leaving the collection — is not news to the consumer, as in Vue, React and
+ * Angular (benchmarks/parity/README.md).
+ */
+describe('снятие', () => {
+	it('снятый список не шлёт событий выхода своих элементов', async () => {
+		const host = await mount(HARNESS)
+		const list = listIn(host)
+		const heard: string[] = []
+
+		for (const name of ['so:item:removed', 'so:change:items', 'so:change:count']) {
+			list.addEventListener(name, () => heard.push(name))
+		}
+
+		host.remove()
+		await flush()
+
+		expect(heard).toEqual([])
+	})
+})

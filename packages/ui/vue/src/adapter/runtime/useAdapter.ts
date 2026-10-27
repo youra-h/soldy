@@ -17,6 +17,7 @@ import {
 	ref,
 	shallowReactive,
 	watch,
+	onBeforeUnmount,
 	onUnmounted,
 	onBeforeUpdate,
 	getCurrentInstance,
@@ -166,10 +167,15 @@ export function useAdapterParts(
 	})
 
 	// 3. Events: the core's events and `update:<prop>` for `v-model` — the
-	// exchange sends it by the profile, right after the core event
-	if (emit) {
-		offs.push(link.events.listen((name, args) => emit(name, ...args)))
-	}
+	// exchange sends it by the profile, right after the core event.
+	//
+	// The consumer hears nothing once the unmount began, as in the other
+	// adapters (benchmarks/parity/README.md): Vue unmounts the parent's hooks
+	// first and its children after, and the markup items leaving the collection
+	// sent `update:items` with an ever shorter list — `v-model:items` of a
+	// `v-if`-ed owner emptied the parent's list. The blur of the removed node
+	// went out the same way
+	if (emit) onBeforeUnmount(link.events.listen((name, args) => emit(name, ...args)))
 
 	// 4. The component is accepted: in Vue that is `setup()` itself, with no
 	// repeats and no discarded assemblies. Here, not in `onMounted`: `setup()`
@@ -189,16 +195,33 @@ export function useAdapterParts(
 }
 
 /**
+ * The node behind a template ref: Vue puts a component's instance there when
+ * the root is drawn by a component — Icon's `tag` is its glyph — and the node
+ * is that instance's `$el`.
+ */
+function elementOf(root: unknown): Element | null {
+	if (root instanceof Element) return root
+
+	const el: unknown = typeof root === 'object' && root !== null ? Reflect.get(root, '$el') : null
+
+	return el instanceof Element ? el : null
+}
+
+/**
  * The ref of the root bound to `TElementPlugin` — only where the bundle has
  * the plugin: headless layers do not. A facade shares the component's bundle
  * and has no node of its own, so `useCollectionAdapter` does not call this.
+ *
+ * The plugin gets the node, whatever the template wrote into the ref
+ * (`elementOf`): a component's instance in `TElementPlugin` gave no
+ * `element:ready`, and the plugins of Icon with a glyph never got a node.
  */
 function useRootElement(adapter: IAdapterContext): Ref<Element | null> | undefined {
 	if (!adapter.bundle?.get(TElementPlugin)) return undefined
 
 	const rootElement = ref<Element | null>(null)
 
-	watch(rootElement, (el) => adapter.bindElement(el ?? null), { flush: 'post' })
+	watch(rootElement, (root) => adapter.bindElement(elementOf(root)), { flush: 'post' })
 
 	return rootElement
 }

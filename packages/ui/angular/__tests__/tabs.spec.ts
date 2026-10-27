@@ -24,7 +24,7 @@
 import { describe, it, expect, expectTypeOf, vi, afterEach, beforeEach } from 'vitest'
 import { Component, signal, type EventEmitter } from '@angular/core'
 import type { ComponentFixture } from '@angular/core/testing'
-import { TCheckBox, type TTabsOrientation } from '@soldy-ui/core'
+import { TCheckBox, type ITabsItem, type TTabsOrientation } from '@soldy-ui/core'
 import { TElementPlugin } from '@soldy-ui/plugins'
 import {
 	SlotDirective,
@@ -169,6 +169,45 @@ const ITEMS = [
 	{ value: 'b', text: 'B' },
 	{ value: 'c', text: 'C' },
 ]
+
+/** The same tabs; the host keeps what `(soChangeActivation)` brought. */
+@Component({
+	standalone: true,
+	imports: [TTabsComponent, TTabsItemComponent],
+	template: `<div so-tabs (soChangeActivation)="changes.push($event)">
+		<div so-tabs-item value="a" text="First" active></div>
+		<div so-tabs-item value="b" text="Second"></div>
+	</div>`,
+})
+class ActivationHost {
+	readonly changes: unknown[] = []
+}
+
+/**
+ * An output carries one value: an event of several arguments brings their
+ * tuple, as `detail` of Web Components — the first argument alone lost the
+ * previous tab (benchmarks/parity/README.md).
+ */
+describe('выход события с несколькими аргументами', () => {
+	it('(soChangeActivation) — новый и прежний таб', () => {
+		const fixture = mountHost(ActivationHost)
+		const { changes } = fixture.componentInstance
+
+		changes.length = 0
+		click(fixture, tab('Second'))
+
+		const values = (entry: unknown) =>
+			Array.isArray(entry) ? entry.map((tab) => Reflect.get(Object(tab), 'value')) : entry
+
+		expect(changes.map(values)).toEqual([['b', 'a']])
+	})
+
+	it('тип выхода — кортеж аргументов события', () => {
+		expectTypeOf<TTabsComponent['soChangeActivation']>().toEqualTypeOf<
+			EventEmitter<[ITabsItem | undefined, ITabsItem | undefined]>
+		>()
+	})
+})
 
 describe('показ панели по активному табу', () => {
 	it('видна только панель активного таба', () => {

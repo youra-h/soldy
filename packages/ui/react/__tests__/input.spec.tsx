@@ -507,3 +507,24 @@ describe('Input · типы', () => {
 		>()
 	})
 })
+
+/**
+ * A text written by the core lands as a script's write does: the caret goes to
+ * the end. A later `defaultValue` React writes into the `value` attribute, and
+ * an input the user has not edited showed it with the caret at the start —
+ * typing after a choice in Select went before the chosen text
+ * (benchmarks/parity/README.md).
+ */
+describe('Input · текст от ядра', () => {
+	it('атрибут value — первый текст, новый текст — свойством, каретка в конце', () => {
+		const mounted = mount(<Input value="" />)
+
+		mounted.render(<Input value="Первый" />)
+
+		const input = field(mounted.root())
+
+		expect(input.getAttribute('value')).toBe('')
+		expect(input.value).toBe('Первый')
+		expect(input.selectionStart).toBe('Первый'.length)
+	})
+})
