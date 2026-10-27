@@ -14,10 +14,11 @@ import { serve } from './serve.mjs'
  *
  * soldy is the page of `tools/bench-pages` (the developer stand's hosts), the
  * neighbors are the pages of this stand; one runner measures both the same
- * way. Every participant gets its own browser. First the warm-up — every page
- * of the participant once, without measuring — then the pages one by one,
- * `warm + cycles` cycles each: mount N copies, measure; the scenario on the
- * first `act` copies; unmount, measure. There is no locale step — the
+ * way. Every participant gets its own browser. First the warm-up — every
+ * component page the participant compares once, then the other pages of its
+ * plan, without measuring, whatever `--pages` lists — then the pages one by
+ * one, `warm + cycles` cycles each: mount N copies, measure; the scenario on
+ * the first `act` copies; unmount, measure. There is no locale step — the
  * neighbors have no shared locale source to switch.
  *
  * `all` is per pair: every component both soldy and the neighbor have, once,
@@ -103,10 +104,11 @@ function slope(points) {
 }
 
 /**
- * One participant: its own browser and page. `plan` — the pages to measure:
- * `{ key, page, only }`, where `only` narrows `all` to the components of a pair.
+ * One participant: its own browser and page. `components` — the component
+ * pages it compares, `plan` — the pages to measure: `{ key, page, only }`,
+ * where `only` narrows `all` to the components of a pair.
  */
-async function measureParticipant(url, plan) {
+async function measureParticipant(url, components, plan) {
 	const browser = await chromium.launch()
 	const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
 	const errors = []
@@ -176,7 +178,18 @@ async function measureParticipant(url, plan) {
 	const unmount = () => page.evaluate(() => bench.unmount())
 	const result = { url, browser: browser.version(), pages: {}, errors }
 
-	for (const step of plan) {
+	// Warm-up, as in `tools/bench-pages/run.mjs`: every component page, then the
+	// plan's other pages, whatever `--pages` lists. Warming only the plan is not
+	// enough: `all` holds a single copy of each component per cycle, and the
+	// first `all` of the plan kept warming up through its own measured cycles
+	// (soldy on Svelte, `all:bits`: 24.7 KB/cycle with every counter in place;
+	// the next `all` of the same run was clean)
+	const warmup = [
+		...components.map((id) => ({ key: id, page: id })),
+		...plan.filter((step) => !components.includes(step.key)),
+	]
+
+	for (const step of warmup) {
 		await mount(step)
 		await act(step)
 		await unmount()
@@ -287,7 +300,7 @@ for (const fw of FRAMEWORKS) {
 			...(wanted('empty') ? [{ key: 'empty', page: 'empty' }] : []),
 		]
 
-		result.participants.soldy = await measureParticipant(soldyUrl, soldyPlan)
+		result.participants.soldy = await measureParticipant(soldyUrl, compared, soldyPlan)
 
 		for (const lib of libs) {
 			const own = libPages[lib].filter((id) => soldyPages.includes(id))
@@ -299,6 +312,7 @@ for (const fw of FRAMEWORKS) {
 
 			result.participants[lib] = await measureParticipant(
 				`${neighbors.base}${fw}.html?lib=${lib}`,
+				own,
 				plan,
 			)
 		}
