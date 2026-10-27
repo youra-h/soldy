@@ -1,16 +1,18 @@
 /**
- * useAdapter — связка adapter-context со Svelte, аналог `useAdapter` у Vue.
+ * useAdapter — binds an adapter context to Svelte, the counterpart of Vue's
+ * `useAdapter`.
  *
- * 1. Core → Svelte: подписка на состояние связки, значения — в сырые руны
- * 2. Svelte → Core: входные пропсы в эффекте
- * 3. События — в колбэк-пропы `onXxx`
- * 4. Компонент принят — `adapter.attach()` при инициализации
- * 5. Корень — attachment-ом: к `TElementPlugin`, в `ref` компонента и в руну
- *    `rootElement`
- * 6. Очистка при уничтожении
+ * 1. Core → Svelte: a subscription to the binding state; a property read in a
+ *    tracking context keeps its value in a raw rune
+ * 2. Svelte → Core: input props in an effect
+ * 3. Events — to the `onXxx` callback props
+ * 4. The component is accepted — `adapter.attach()` at initialisation
+ * 5. The root — by an attachment: to `TElementPlugin`, to the component's
+ *    `ref` and to the `rootElement` rune
+ * 6. Cleanup on destroy
  *
- * Фасад коллекции связывает `useCollectionAdapter`, со связкой компонента его
- * сводит `joinBindings`.
+ * The collection facade is bound by `useCollectionAdapter`, and
+ * `joinBindings` joins it with the component's binding.
  * AGENTS.md (Svelte), «Связка».
  */
 
@@ -56,50 +58,103 @@ export type TCollectionBinding<TState extends object, TProps extends object = ob
 }
 
 /**
- * Значение свойства связки — сырая руна (`$state.raw`). Ядро отдаёт значения, а
- * не ручки на живое состояние, и о смене сообщает новым значением (AGENTS.md,
- * «Контракт границы core → ui»). Глубокая руна `$state` оборачивала в прокси
- * всё составное — массив ячеек строки таблицы, каждую ячейку, её `aria` и
- * `dataset`, — с источником на каждый прочитанный ключ, и следить за ними
- * незачем: на месте их никто не меняет. В таблице это была треть памяти строки
- * (benchmarks/table/svelte.md, 869fmcau7)
+ * Own rune of a binding property that a tracking context has read — a raw
+ * rune (`$state.raw`). The core hands out values, not handles on live state,
+ * and reports a change with a new value (AGENTS.md, «Контракт границы core →
+ * ui»). The deep `$state` rune wrapped everything composite in a proxy — the
+ * array of a table row's cells, each cell, its `aria` and `dataset` — with a
+ * source per key read, and there is no point in watching them: nobody changes
+ * them in place. In the table that was a third of a row's memory
+ * (benchmarks/table/svelte.md, 869fmcau7).
+ *
+ * `born` — the binding's version when the rune was made (see `TValues`).
  */
 class TRawValue {
 	value = $state.raw<unknown>()
 
-	constructor(value: unknown) {
+	constructor(
+		value: unknown,
+		readonly born: number,
+	) {
 		this.value = value
 	}
 }
 
-/** Руны свойств связки по именам — за прокси её состояния. */
-type TRawValues = {
-	readonly values: Map<string, TRawValue>
+/**
+ * Binding properties by name, behind the proxy of its state. A property no
+ * tracking context has read holds its bare value: a rune per property cost the
+ * button 18 runes, and its markup reads about 10 of them (benchmarks/pages/
+ * svelte.md, 869fmjpgj). The first tracked read gives the property its rune.
+ *
+ * A running reaction does not track a rune it made itself in the same run, so
+ * that read also reads `version`, made with the binding. The first change of a
+ * rune made since the last bump bumps the version: the reactions that made
+ * runes since then run again and from then on track the runes themselves. A
+ * change of a property nobody has read wakes nobody.
+ *
+ * A type, not the class: the proxy over it is the state record, and a class
+ * type has no index signature.
+ */
+type TValues = {
+	readonly values: Map<string, unknown>
+	version: number
 }
 
-/** Руна свойства — как свойство объекта: у символа и незаведённого имени её нет. */
-function valueOf({ values }: TRawValues, name: string | symbol): TRawValue | undefined {
-	return typeof name === 'string' ? values.get(name) : undefined
+/** `TValues` with the version in a raw rune. */
+class TValueStore implements TValues {
+	readonly values = new Map<string, unknown>()
+	version = $state.raw(0)
+}
+
+/** Whether the property has arrived — as an object property, a symbol never has. */
+function has({ values }: TValues, name: string | symbol): name is string {
+	return typeof name === 'string' && values.has(name)
+}
+
+/** Value of the property; read in a tracking context, a property without a rune gets one. */
+function valueOf(target: TValues, name: string | symbol): unknown {
+	if (!has(target, name)) return undefined
+
+	const entry = target.values.get(name)
+
+	if (entry instanceof TRawValue) return entry.value
+
+	if ($effect.tracking()) target.values.set(name, new TRawValue(entry, target.version))
+
+	return entry
+}
+
+/** New value from the subscription; the caller writes it untracked (see `useExchange`). */
+function write(target: TValues, name: string, value: unknown): void {
+	const entry = target.values.get(name)
+
+	if (!(entry instanceof TRawValue)) {
+		target.values.set(name, value)
+	} else if (entry.value !== value) {
+		if (entry.born === target.version) target.version++
+
+		entry.value = value
+	}
 }
 
 /**
- * Состояние связки — прокси над рунами её свойств, обработчик один на все
- * связки. Геттер на каждое свойство — замыкание, его области и пара
- * аксессоров — у строки таблицы стоил килобайты (benchmarks/table/svelte.md).
- * Руна заводится подпиской, а не первым чтением: руна, заведённая в
- * исполняемом эффекте, в нём же не отслеживается.
+ * Binding state — a proxy over its properties, one handler for all bindings.
+ * A getter per property — a closure, its scopes and a pair of accessors — cost
+ * a table row kilobytes (benchmarks/table/svelte.md).
  */
-const STATE: ProxyHandler<TRawValues> = {
-	get: (target, name) => valueOf(target, name)?.value,
-	has: (target, name) => valueOf(target, name) !== undefined,
+const STATE: ProxyHandler<TValues> = {
+	get: valueOf,
+	has,
 	ownKeys: ({ values }) => [...values.keys()],
-	getOwnPropertyDescriptor(target, name) {
-		const known = valueOf(target, name)
-
-		return (
-			known && { value: known.value, enumerable: true, configurable: true, writable: false }
-		)
-	},
+	getOwnPropertyDescriptor: (target, name) =>
+		has(target, name)
+			? {
+					value: valueOf(target, name),
+					enumerable: true,
+					configurable: true,
+					writable: false,
+				}
+			: undefined,
 }
 
 /** Общая часть `useAdapter` и `useCollectionAdapter`. */
@@ -108,19 +163,14 @@ function useExchange(
 	getProps: () => object,
 ): { exchange: TExchange; state: Readonly<Record<string, unknown>> } {
 	const exchange = adapter.connect(SvelteProfile)
-	const values = new Map<string, TRawValue>()
+	const values = new TValueStore()
 
-	// 1. Подписка — сразу, а не в эффекте: эффекта нет на сервере. Первое
-	// значение свойства заводит его руну. Запись — мимо слежения: ядро
-	// меняется и посреди отрисовки
+	// 1. Subscribe right away, not in an effect: there are no effects on the
+	// server. The write is untracked: the core changes in the middle of
+	// rendering too
 	onDestroy(
 		exchange.state.subscribe((name, value) => {
-			untrack(() => {
-				const known = values.get(name)
-
-				if (known) known.value = value
-				else values.set(name, new TRawValue(value))
-			})
+			untrack(() => write(values, name, value))
 		}),
 	)
 
@@ -149,7 +199,7 @@ function useExchange(
 	// элемент коллекции входит в неё к серверной разметке, в порядке DOM
 	adapter.attach()
 
-	return { exchange, state: new Proxy<TRawValues>({ values }, STATE) }
+	return { exchange, state: new Proxy<TValues>(values, STATE) }
 }
 
 /**
