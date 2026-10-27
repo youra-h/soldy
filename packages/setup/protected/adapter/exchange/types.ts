@@ -18,6 +18,12 @@ export type TStateSnapshot = Readonly<Record<string, unknown>>
 /** Приёмник событий: имя во фреймворке и аргументы события ядра. */
 export type TEventSink = (name: string, args: readonly unknown[]) => void
 
+/** Listener of the exchange's updates: where an update begins and where it ends (`TUpdatePort`). */
+export interface IUpdateListener {
+	begin(): void
+	end(): void
+}
+
 /**
  * Описание участника: что владелец объявляет наружу. Свойство типа, а не
  * монтирования — одно на дескриптор, определение плагина или контракт, и по

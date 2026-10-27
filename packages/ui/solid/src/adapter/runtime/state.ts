@@ -1,45 +1,84 @@
 /**
- * Состояние связки и вид двух состояний. AGENTS.md (Solid), «Связка».
+ * The binding's state and the view of two states. AGENTS.md (Solid), «Связка».
  *
- * - Состояние — сигнал на свойство, значение отдаётся как есть: ядро отдаёт
- *   значения, и сменившееся приходит новым объектом (AGENTS.md, «Контракт
- *   границы core → ui»). Стор Solid оборачивал каждый вложенный объект —
- *   ячейки строки, их `aria` и `dataset` — в прокси с сигналом на прочитанное
- *   свойство, которое никогда не сменится. Как `shallowRef` у Vue.
- * - Сигнал заводит первое чтение свойства: разметка читает меньше половины
- *   свойств связки, а подписка отдаёт значение каждого.
- * - Вид двух контекстов — прокси, которое читает свойство у состояния на
- *   каждое чтение: спред прочёл бы его один раз, в теле компонента, а геттеры
- *   по ключам потеряли бы свойства, незаданные к сборке. Одноимённых у
- *   компонента и фасада нет — имена фасада префиксуются.
+ * - The state is a signal per property, and a value is handed over as it is:
+ *   the core hands out values, and a changed one comes as a new object
+ *   (AGENTS.md, «Контракт границы core → ui»). Solid's store wrapped every
+ *   nested object — a row's cells, their `aria` and `dataset` — in a proxy
+ *   with a signal per read property that never changes. Like `shallowRef` in
+ *   Vue.
+ * - A signal is made by the first read of a property: the markup reads less
+ *   than half of the binding's properties, and the subscription hands over the
+ *   value of each.
+ * - Writes of an update of the exchange are applied at its end, in one
+ *   `batch` (`IUpdateListener`): Solid renders on a signal write, and a write
+ *   applied in the middle of the update rendered before the update's event
+ *   reached the consumer — the panel opened by `change:open` mounted, and its
+ *   items joined the menu first. A read in the middle of the update sees the
+ *   written value already: only the signal's notification waits.
+ * - The view of two contexts is a proxy that reads a property from the state
+ *   on every read: a spread would read it once, in the component's body, and
+ *   getters by keys would lose the properties not set by the assembly. The
+ *   component and the facade have no properties of the same name — the
+ *   facade's names are prefixed.
  */
 
-import { createSignal, type Accessor, type Setter } from 'solid-js'
+import { batch, createSignal, type Accessor, type Setter } from 'solid-js'
+import type { IUpdateListener } from '@soldy-ui/setup'
 
 type TSignal = [Accessor<unknown>, Setter<unknown>]
 
 /** Значения и сигналы свойств — за прокси состояния. */
-class TShallowState {
+class TShallowState implements IUpdateListener {
 	/** Записанные, но ещё не прочитанные — без сигнала. */
 	private readonly _values = new Map<PropertyKey, unknown>()
 	/** Прочитанные записанные. */
 	private readonly _signals = new Map<PropertyKey, TSignal>()
 	/** Прочитанные до записи: подписка связки отдаёт каждое свойство сразу, и здесь — чужие. */
 	private readonly _unwritten = new Map<PropertyKey, TSignal>()
+	/** Writes of the update in progress — applied at its end. */
+	private _pending?: Map<PropertyKey, unknown>
+	/** Updates of the exchange in progress: a sink's write to a participant nests one. */
+	private _depth = 0
 
-	/** Свойство записывали: у связки — одно из её свойств, с подписки. */
+	/** The property was written: for the binding, one of its properties, from the subscription. */
 	written(key: PropertyKey): boolean {
-		return this._values.has(key) || this._signals.has(key)
+		return this._values.has(key) || this._signals.has(key) || this._pending?.has(key) === true
 	}
 
 	read(key: PropertyKey): unknown {
-		return this._signalOf(key)[0]()
+		const value = this._signalOf(key)[0]()
+		const pending = this._pending
+
+		return pending?.has(key) ? pending.get(key) : value
 	}
 
 	write(name: PropertyKey, value: unknown): void {
+		if (this._depth > 0) (this._pending ??= new Map()).set(name, value)
+		else this._apply(name, value)
+	}
+
+	begin(): void {
+		this._depth++
+	}
+
+	/** The outermost update ended: its writes go to the signals, and Solid renders once. */
+	end(): void {
+		// The listener may have come in the middle of an update and missed its beginning
+		if (this._depth === 0 || --this._depth > 0) return
+
+		const pending = this._pending
+
+		if (pending === undefined) return
+
+		this._pending = undefined
+		batch(() => pending.forEach((value, name) => this._apply(name, value)))
+	}
+
+	private _apply(name: PropertyKey, value: unknown): void {
 		const signal = this._signals.get(name) ?? this._adopt(name)
 
-		// Значение-функцию сеттер сигнала счёл бы updater'ом
+		// A setter of a signal would take a function value for an updater
 		if (signal) signal[1](() => value)
 		else this._values.set(name, value)
 	}
@@ -74,10 +113,15 @@ class TShallowState {
 /** Состояния связок по их прокси — виду двух состояний. */
 const shallowStates = new WeakMap<object, TShallowState>()
 
-/** Свойство со значением `undefined` — незаданное: `in` его не видит. */
+/**
+ * A property with the value `undefined` is unset: `in` does not see it. The
+ * listener of the exchange's updates holds the writes of an update back to
+ * its end.
+ */
 export function createShallowState(): [
 	state: Readonly<Record<string, unknown>>,
 	write: (name: string, value: unknown) => void,
+	updates: IUpdateListener,
 ] {
 	const values = new TShallowState()
 	const state = new Proxy<Record<string, unknown>>(
@@ -90,7 +134,7 @@ export function createShallowState(): [
 
 	shallowStates.set(state, values)
 
-	return [state, (name, value) => values.write(name, value)]
+	return [state, (name, value) => values.write(name, value), values]
 }
 
 /** Одноимённое свойство берётся из верхнего состояния. */

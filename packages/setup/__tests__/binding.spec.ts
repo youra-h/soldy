@@ -491,6 +491,83 @@ describe('связка · порядок', () => {
 	})
 })
 
+/**
+ * The exchange reports where an update begins and ends (`updates`): an update
+ * is one event of a participant — the state reread, then the event and its
+ * models. What to do at the bounds is the adapter's call; the exchange only
+ * tells.
+ */
+describe('связка · такт', () => {
+	/** A binding over an outside button that writes everything it hears into `trace`. */
+	function traced() {
+		const trace: string[] = []
+		const ctrl = new TButton()
+		const binding = createAdapterContext(ButtonDescriptor(), { ctrl }).connect(CallbackProfile)
+
+		binding.state.subscribe((name) => trace.push(`state:${name}`))
+		binding.events.listen((name) => trace.push(`event:${name}`))
+		trace.length = 0
+
+		const off = binding.updates.listen({
+			begin: () => trace.push('begin'),
+			end: () => trace.push('end'),
+		})
+
+		return { ctrl, binding, trace, off }
+	}
+
+	it('такт обнимает перечитывание состояния и событие', () => {
+		const { ctrl, trace } = traced()
+
+		ctrl.text = 'b'
+
+		expect(trace).toEqual(['begin', 'state:text', 'event:onChangeText', 'end'])
+	})
+
+	it('запись приёмника в участника — такт внутри такта', () => {
+		const { ctrl, binding, trace } = traced()
+
+		binding.events.listen((name) => {
+			if (name === 'onChangeText' && ctrl.text === 'b') ctrl.text = 'c'
+		})
+		ctrl.text = 'b'
+
+		expect(trace).toEqual([
+			'begin',
+			'state:text',
+			'event:onChangeText',
+			'begin',
+			'state:text',
+			'event:onChangeText',
+			'end',
+			'end',
+		])
+	})
+
+	it('приёмник бросает — конец такта всё равно приходит, ошибка — у записи', () => {
+		const { ctrl, binding, trace } = traced()
+		const failure = new Error('sink')
+
+		binding.events.listen((name) => {
+			if (name === 'onChangeText') throw failure
+		})
+
+		expect(() => {
+			ctrl.text = 'b'
+		}).toThrow(failure)
+		expect(trace.at(-1)).toBe('end')
+	})
+
+	it('снятый слушатель границ такта не слышит', () => {
+		const { ctrl, trace, off } = traced()
+
+		off()
+		ctrl.text = 'b'
+
+		expect(trace).toEqual(['state:text', 'event:onChangeText'])
+	})
+})
+
 /** Связка над внешним инстансом: снаружи видно, что она в него пишет. */
 function bindButton(ctrl = new TButton()) {
 	const context = createAdapterContext(ButtonDescriptor(), { ctrl })

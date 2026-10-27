@@ -35,7 +35,6 @@ const read = (fw) => JSON.parse(fs.readFileSync(path.join(results, `parity-${fw}
  * - `single` — an output of Angular and a `CustomEvent` of Web Components
  *   carry one value, see `packed`.
  * - `assembly` — what the component's own assembly sends, see `assembled`.
- * - `syncRender` — Solid renders on a state write, see `rendered`.
  * - `delegated` — a framework handler runs at the root, see `delegated`.
  * - `teardown` — what a component sends while its framework takes it down
  *   is not compared: the unmount step's events are only counted, see
@@ -57,7 +56,6 @@ const RULES = {
 		'key',
 	]),
 	assembly: new Set(['react', 'angular']),
-	syncRender: new Set(['solid']),
 	delegated: new Set(['react', 'svelte', 'solid']),
 }
 
@@ -136,28 +134,6 @@ function assembled(events, fw, label) {
 	return first > 0 ? events.slice(first) : events
 }
 
-/**
- * Solid applies a state write at once, rendering included: the panel that
- * `change:open` opens mounts and its items join the collection before the
- * event reaches the consumer (the exchange rereads the state first and sends
- * the event after). The other frameworks render later. Accepted: the same
- * events where exactly one of Vue's comes later in Solid's journal.
- */
-function rendered(expected, actual, fw) {
-	if (!RULES.syncRender.has(fw) || expected.length !== actual.length) return false
-
-	return expected.some((line, index) => {
-		const rest = expected.filter((_, other) => other !== index)
-
-		return actual.some(
-			(their, at) =>
-				at > index &&
-				their === line &&
-				actual.filter((_, other) => other !== at).join('\n') === rest.join('\n'),
-		)
-	})
-}
-
 /** The owner's own reaction to a click, past the click's target. */
 const PRESS = /^action:(click|press) /
 
@@ -221,11 +197,7 @@ function compareStep(vue, other, fw) {
 	const expected = ours.map((event) => text(packed(event, fw)))
 	const actual = other.events.map(text)
 
-	if (
-		expected.join('\n') !== actual.join('\n') &&
-		!rendered(expected, actual, fw) &&
-		!delegated(expected, actual, fw)
-	) {
+	if (expected.join('\n') !== actual.join('\n') && !delegated(expected, actual, fw)) {
 		const same = [...expected].sort().join('\n') === [...actual].sort().join('\n')
 
 		found.push({ kind: same ? 'order' : 'events', lines: diff(expected, actual) })
