@@ -414,10 +414,15 @@ describe('типы', () => {
 		expectTypeOf<(scope: { item: IAccordionItem }) => ReactNode>().toExtend<
 			NonNullable<AccordionProps['item-trailing-icon']>
 		>()
+		// AccordionItem's own slots carry `item` too — the section already knows
+		// itself (`ctrl`) and hands it to the slot itself, the way a table row's
+		// `cell` slot carries its own row: see `item.descriptor.ts`, AGENTS.md (React), «Слоты».
 		expectTypeOf<
-			(scope: { text: string; selected: boolean }) => ReactNode
+			(scope: { item: IAccordionItem; text: string; selected: boolean }) => ReactNode
 		>().toExtend<THeader>()
-		expectTypeOf<AccordionItemProps['children']>().toEqualTypeOf<ReactNode>()
+		expectTypeOf<(scope: { item: IAccordionItem }) => ReactNode>().toExtend<
+			NonNullable<AccordionItemProps['children']>
+		>()
 	})
 
 	it('колбэки фасадов — пропсы компонентов', () => {

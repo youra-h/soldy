@@ -22,11 +22,11 @@
 	`.so-accordion-item__arrow`, и подменённая слотом иконка поворачивается так же. Обёртка
 	стоит, пока на её стороне стрелка по умолчанию или задан слот.
 -->
-{#snippet arrow(side: 'start' | 'end', slot: Snippet | undefined)}
+{#snippet arrow(side: 'start' | 'end', slot: Snippet<[{ item: typeof binding.ctrl }]> | undefined)}
 	{#if slot || state.arrowPlacement === side}
 		<span class="so-accordion-item__arrow">
 			{#if slot}
-				{@render slot()}
+				{@render slot({ item: binding.ctrl })}
 			{:else}
 				<Icon embedded="accordion.arrow" tag={ARROW} size={state.size} />
 			{/if}
@@ -57,10 +57,13 @@
 		{@attach toggle}
 	>
 		{#snippet leading()}
-			{@render arrow('start', props['leading-icon'])}{@render props.leading?.()}
+			{@render arrow('start', props['leading-icon'])}{@render props.leading?.({
+				item: binding.ctrl,
+			})}
 		{/snippet}
 		{#if props.header}
 			{@render props.header({
+				item: binding.ctrl,
 				text: state.text ?? '',
 				selected: state.selected ?? false,
 			})}
@@ -68,11 +71,14 @@
 			{state.text}
 		{/if}
 		{#snippet trailing()}
-			{@render props.trailing?.()}{@render arrow('end', props['trailing-icon'])}
+			{@render props.trailing?.({ item: binding.ctrl })}{@render arrow(
+				'end',
+				props['trailing-icon'],
+			)}
 		{/snippet}
 	</Button><div class="so-accordion-item__body">
 		<div class="so-accordion-item__content" {...state.contentAria}>
-			{@render props.children?.()}
+			{@render props.children?.({ item: binding.ctrl })}
 		</div>
 	</div>
 </Dynamic>

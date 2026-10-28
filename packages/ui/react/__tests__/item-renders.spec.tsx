@@ -18,14 +18,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
-import { Calendar, Select } from '@soldy-ui/react'
+import { Accordion, Calendar, Select } from '@soldy-ui/react'
+import { useSetupAccordionItem } from '../src/components/accordion/item/setup.component'
 import { useSetupCalendarItem } from '../src/components/calendar/item/setup.component'
 import { useSetupSelectItem } from '../src/components/select/item/setup.component'
 import { find, mount, nextFrame } from './mount'
 
+vi.mock('../src/components/accordion/item/setup.component', { spy: true })
 vi.mock('../src/components/calendar/item/setup.component', { spy: true })
 vi.mock('../src/components/select/item/setup.component', { spy: true })
 
+const sectionRenders = vi.mocked(useSetupAccordionItem)
 const dayRenders = vi.mocked(useSetupCalendarItem)
 const optionRenders = vi.mocked(useSetupSelectItem)
 
@@ -81,6 +84,39 @@ describe('перерисовка дней Calendar', () => {
 
 		expect(day.dataset.selected).toBe('true')
 		expect([...new Set(renderedDays())]).toEqual(['2026-09-10', '2026-09-15'])
+	})
+})
+
+describe('перерисовка секций Accordion', () => {
+	const ITEMS = [
+		{ value: 'a', text: 'Первый' },
+		{ value: 'b', text: 'Второй' },
+		{ value: 'c', text: 'Третий' },
+	]
+
+	it('аккордеон со слотом item-content перерисован своим пропом — секции нет', async () => {
+		// Stable reference, outside `view`: a new function on every test render
+		// is as unstable as an uncompiled Vue slot, and sections would redraw
+		// on a change of this prop, not of the owner.
+		const itemContent = ({ item }: { item: { text: string } }) => item.text
+		// `data-test-label` isn't an Accordion prop: it falls into the DOM
+		// attribute and redraws the owner only, not its sections.
+		const view = (label: string) => (
+			<Accordion items={ITEMS} data-test-label={label} item-content={itemContent} />
+		)
+		const { render: rerender } = mount(view('Первое имя'))
+
+		await nextFrame()
+
+		expect(sectionRenders).toHaveBeenCalled()
+		sectionRenders.mockClear()
+
+		rerender(view('Второе имя'))
+
+		expect(find(document, '.so-accordion', HTMLElement).getAttribute('data-test-label')).toBe(
+			'Второе имя',
+		)
+		expect(sectionRenders).not.toHaveBeenCalled()
 	})
 })
 

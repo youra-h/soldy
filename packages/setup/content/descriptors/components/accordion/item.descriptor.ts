@@ -8,6 +8,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TAccordionItem } from '@soldy-ui/core'
+import type { IAccordionItem } from '@soldy-ui/core'
 import { headerIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
@@ -36,23 +37,41 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 			 * `leading-icon` и `trailing-icon` подменяют её в одном месте, по
 			 * умолчанию она берётся из пакета иконок по роли `arrowRight`
 			 * (см. `ICON_ROLES`).
+			 *
+			 * Each slot carries its own section (`item`) in scope — the section
+			 * hands itself to the slot, like a table row's `row`
+			 * (`table/row/Cells.vue`). So the owner relays slots as given, no
+			 * key of its own (`RELAYS` in `item-slots.spec.ts`, `key: null`),
+			 * and never touches its loop variable (AGENTS.md, Pitfalls).
 			 */
 			slots: {
-				default: { description: 'Содержимое раскрывающейся панели' },
+				default: {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description: 'Содержимое раскрывающейся панели',
+				},
 				'leading-icon': {
+					scope: { item: defineType<IAccordionItem>(Object) },
 					description:
 						'Стрелка перед заголовком. По умолчанию — при arrowPlacement="start"',
 				},
-				leading: { description: 'Перед текстом заголовка' },
+				leading: {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description: 'Перед текстом заголовка',
+				},
 				header: {
 					scope: {
+						item: defineType<IAccordionItem>(Object),
 						text: defineType<string>(String),
 						selected: defineType<boolean>(Boolean),
 					},
 					description: 'Текст заголовка. Задано — переопределяет проп text',
 				},
-				trailing: { description: 'После текста заголовка' },
+				trailing: {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description: 'После текста заголовка',
+				},
 				'trailing-icon': {
+					scope: { item: defineType<IAccordionItem>(Object) },
 					description: 'Стрелка после заголовка. По умолчанию — при arrowPlacement="end"',
 				},
 			},

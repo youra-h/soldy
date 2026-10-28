@@ -159,12 +159,15 @@ const RELAYS: readonly TRelay[] = [
 
 	['Pagination', 'item', 'Pagination.Item', 'default', 'item'],
 
-	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', 'item'],
-	['Accordion', 'item-leading', 'Accordion.Item', 'leading', 'item'],
-	['Accordion', 'item', 'Accordion.Item', 'header', 'item'],
-	['Accordion', 'item-trailing', 'Accordion.Item', 'trailing', 'item'],
-	['Accordion', 'item-trailing-icon', 'Accordion.Item', 'trailing-icon', 'item'],
-	['Accordion', 'item-content', 'Accordion.Item', 'default', 'item'],
+	// A section hands itself to its own slot (no key), like a table row's
+	// own `row` — else the relay would carry it from the owner's loop
+	// variable, and redraw with every redraw of the owner (Pitfalls)
+	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', null],
+	['Accordion', 'item-leading', 'Accordion.Item', 'leading', null],
+	['Accordion', 'item', 'Accordion.Item', 'header', null],
+	['Accordion', 'item-trailing', 'Accordion.Item', 'trailing', null],
+	['Accordion', 'item-trailing-icon', 'Accordion.Item', 'trailing-icon', null],
+	['Accordion', 'item-content', 'Accordion.Item', 'default', null],
 
 	['RadioGroup', 'item', 'RadioGroup.Item', 'default', 'item'],
 

@@ -55,7 +55,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 					v-if="arrowPlacement === 'start' || $slots['leading-icon']"
 					class="so-accordion-item__arrow"
 				>
-					<slot name="leading-icon">
+					<slot name="leading-icon" :item="ctrl">
 						<Icon
 							embedded="accordion.arrow"
 							v-if="arrowPlacement === 'start'"
@@ -64,20 +64,20 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 						/>
 					</slot>
 				</span>
-				<slot name="leading" />
+				<slot name="leading" :item="ctrl" />
 			</template>
 
-			<slot name="header" :text="text" :selected="selected">
+			<slot name="header" :item="ctrl" :text="text" :selected="selected">
 				{{ text }}
 			</slot>
 
 			<template #trailing>
-				<slot name="trailing" />
+				<slot name="trailing" :item="ctrl" />
 				<span
 					v-if="arrowPlacement === 'end' || $slots['trailing-icon']"
 					class="so-accordion-item__arrow"
 				>
-					<slot name="trailing-icon">
+					<slot name="trailing-icon" :item="ctrl">
 						<Icon
 							embedded="accordion.arrow"
 							v-if="arrowPlacement === 'end'"
@@ -91,7 +91,7 @@ export default { ...SetupAccordionItem, components: { Icon, Button } }
 
 		<div class="so-accordion-item__body">
 			<div class="so-accordion-item__content" v-bind="contentAria">
-				<slot />
+				<slot :item="ctrl" />
 			</div>
 		</div>
 	</component>
