@@ -24,21 +24,18 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 				whether the arrow's wrapper stands on that side — so their slots go to
 				it only when the accordion has them.
 
-				The slots are relayed only when the accordion has any of them: the
-				relay refers to the loop variable, and Vue redraws a section with such
-				slots on every redraw of its owner (AGENTS.md, Pitfalls). The relay
-				forwards the section's own scope as given and never touches the
-				owner's loop variable: the compiler compares names, not scopes, and
-				finds a bound identifier wherever it occurs in the forwarded content,
-				member access on it included. `item-content` alone is the slot almost
-				every consumer gives, so this is what keeps it from redrawing every
-				section on every redraw of the owner.
+				A relay that touches a `v-for`'s loop variable, or has a `v-if` on one
+				of its forwarded `<template #slot>`, makes Vue redraw the whole section
+				with every redraw of the owner (AGENTS.md, Pitfalls) — so the common
+				slots (`item`, `item-leading`, `item-trailing`, `item-content`) relay
+				through the section's own scope, as a single static set, unconditionally.
 
-				A `v-if` on a forwarded `<template #slot>` makes the whole slot set
-				dynamic too, whatever it forwards: so which icon slots are given is
-				decided once, above the loop — each combination forwards its own
-				static slot set, the icon slots among them unconditional within it,
-				never a `v-if` on the forwarding `<template>` itself.
+				The icon slots are rarer and still cost a redraw when given: a `v-if`
+				picks their default-arrow fallback, which only the section itself can
+				decide, and only by the slot's presence — so when either is given, this
+				falls back to the plain, pre-optimization relay below. Consumers that
+				override an arrow and also need many sections should use `items` with
+				the `item-leading`/`item-trailing` wrappers instead.
 			-->
 			<template v-if="!($slots['item-leading-icon'] || $slots['item-trailing-icon'])">
 				<template v-for="entry in shown" :key="entry.uid">
@@ -69,52 +66,10 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 					</AccordionItem>
 				</template>
 			</template>
-			<template v-else-if="$slots['item-leading-icon'] && !$slots['item-trailing-icon']">
-				<template v-for="entry in shown" :key="entry.uid">
-					<AccordionItem :ctrl="entry">
-						<template #leading-icon="{ item }">
-							<slot name="item-leading-icon" :item="item" />
-						</template>
-						<template #leading="{ item }">
-							<slot name="item-leading" :item="item" />
-						</template>
-						<template #header="{ item, text, selected }">
-							<slot name="item" :item="item" :text="text" :selected="selected" />
-						</template>
-						<template #trailing="{ item }">
-							<slot name="item-trailing" :item="item" />
-						</template>
-						<template #default="{ item }">
-							<slot name="item-content" :item="item" />
-						</template>
-					</AccordionItem>
-				</template>
-			</template>
-			<template v-else-if="!$slots['item-leading-icon'] && $slots['item-trailing-icon']">
-				<template v-for="entry in shown" :key="entry.uid">
-					<AccordionItem :ctrl="entry">
-						<template #leading="{ item }">
-							<slot name="item-leading" :item="item" />
-						</template>
-						<template #header="{ item, text, selected }">
-							<slot name="item" :item="item" :text="text" :selected="selected" />
-						</template>
-						<template #trailing="{ item }">
-							<slot name="item-trailing" :item="item" />
-						</template>
-						<template #trailing-icon="{ item }">
-							<slot name="item-trailing-icon" :item="item" />
-						</template>
-						<template #default="{ item }">
-							<slot name="item-content" :item="item" />
-						</template>
-					</AccordionItem>
-				</template>
-			</template>
 			<template v-else>
 				<template v-for="entry in shown" :key="entry.uid">
 					<AccordionItem :ctrl="entry">
-						<template #leading-icon="{ item }">
+						<template v-if="$slots['item-leading-icon']" #leading-icon="{ item }">
 							<slot name="item-leading-icon" :item="item" />
 						</template>
 						<template #leading="{ item }">
@@ -126,7 +81,7 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 						<template #trailing="{ item }">
 							<slot name="item-trailing" :item="item" />
 						</template>
-						<template #trailing-icon="{ item }">
+						<template v-if="$slots['item-trailing-icon']" #trailing-icon="{ item }">
 							<slot name="item-trailing-icon" :item="item" />
 						</template>
 						<template #default="{ item }">
