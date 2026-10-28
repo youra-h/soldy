@@ -1,7 +1,7 @@
 /**
- * Шаблон Calendar: месяцы в ряд петлёй по месту сетки, одна пара кнопок листания
- * у первого месяца, подвал — своей строкой. Обработчиков нет: нажатия и клавиши
- * ловят плагины на корне. docs/architecture.md, Layer 8d, «Даты».
+ * Calendar template: months in a row by a loop over grid places, one pair of paging buttons
+ * at the first month, the footer in a row of its own. No handlers: clicks and keys are
+ * caught by plugins on the root. docs/architecture.md, Layer 8d, «Даты».
  */
 
 import type {
@@ -40,17 +40,17 @@ import { TListBoxElement, type TListBoxElementProps } from '../list-box'
 import { registerPopoverTag, type TPopoverElementProps } from '../popover'
 import { TCalendarItemElement } from './item'
 
-/** Образец календаря → слот дня (`setup/__tests__/item-slots.spec.ts`). */
+/** Calendar sample → day slot (`setup/__tests__/item-slots.spec.ts`). */
 export const CALENDAR_ITEM_SLOTS: TItemSlots = {
 	item: 'default',
 }
 
-/** Заголовок месяца — Popover на `div`: панель лежит в корне, а в `span` блоку не место. */
+/** Month heading — Popover on a `div`: the panel lies in the root, and a block has no place in a `span`. */
 const TPopoverDivElement = registerPopoverTag('div')
 
 type TCalendarContext = ITemplateContext<ICalendar, TCalendarCollectionFacade>
 
-/** `arrowRight` у обеих стрелок: «назад» зеркалит тема. */
+/** `arrowRight` for both arrows: the theme mirrors «back». */
 const PREV: TIconButtonSpec = {
 	embedded: 'calendar.prev',
 	iconEmbedded: 'calendar.prev-icon',
@@ -93,18 +93,21 @@ type THeading = {
 	readonly next: TIconButton
 }
 
+/** A week is keyed by its place: a new first day of the week keeps six days of seven in their row. */
+type TWeek = { readonly cells: TCalendarCell[]; readonly place: number }
+
 type TMonth = {
 	readonly node: HTMLElement
-	/** Заголовок — пока у места есть панель выбора. */
+	/** The heading — while the place has a picker panel. */
 	heading: THeading | null
 	readonly table: HTMLTableElement
 	readonly weekdays: HTMLTableRowElement
-	readonly weeks: TKeyedLoop<TCalendarCell[], string, HTMLTableRowElement>
+	readonly weeks: TKeyedLoop<TWeek, number, HTMLTableRowElement>
 }
 
 /**
- * Ключ месяца — место, а не месяц: при листании кнопка заголовка, её поповер и
- * живая область остаются теми же узлами — фокус из панели не падает, смена объявляется.
+ * A month is keyed by place, not by month: when paging, the heading button, its popover and
+ * the live region stay the same nodes — focus does not drop from the panel, the change is announced.
  */
 type TPlace = {
 	readonly index: number
@@ -210,7 +213,7 @@ function syncHeading(
 
 	patch(title, { size, disabled })
 
-	// Живая область — текст, а не контрол
+	// The live region is text, not a control
 	ownerAttributes(titleText, grid.titleAria)
 
 	patch(titleText, { textContent: grid.title })
@@ -269,7 +272,7 @@ function cellOf(ctx: TCalendarContext, cell: TCalendarCell): HTMLElement {
 	return day
 }
 
-/** День всё берёт у своего инстанса. */
+/** A day takes everything from its instance. */
 function updateCell(node: HTMLElement, cell: TCalendarCell): void {
 	if (!cell.item) ownerAttributes(node, cell.aria)
 }
@@ -294,7 +297,7 @@ function weekOf(ctx: TCalendarContext, week: TCalendarCell[]): HTMLTableRowEleme
 	return row
 }
 
-/** Сменился экземпляр поповера места (новая связка без движка снаружи) — заголовок новый. */
+/** The place's popover instance changed (a new binding without an outside engine) — a new heading. */
 function drawMonth(ctx: TCalendarContext, month: TMonth, { index, grid }: TPlace): void {
 	const picker = ctx.state.pickers?.[index]
 
@@ -313,9 +316,9 @@ function drawMonth(ctx: TCalendarContext, month: TMonth, { index, grid }: TPlace
 	ownerAttributes(month.table, grid.gridAria)
 	drawWeekdays(month.weekdays, ctx.state.weekdays ?? [])
 	month.weeks.draw(
-		grid.weeks,
-		(week) => weekOf(ctx, week),
-		(row, week) => drawWeek(ctx, row, week),
+		grid.weeks.map((cells, place) => ({ cells, place })),
+		({ cells }) => weekOf(ctx, cells),
+		(row, { cells }) => drawWeek(ctx, row, cells),
 	)
 }
 
@@ -329,7 +332,7 @@ function monthOf(ctx: TCalendarContext, place: TPlace): HTMLElement {
 
 	node.className = 'so-calendar__month'
 	table.className = 'so-calendar__grid'
-	// Имя дня — полная дата: шапка скринридеру не нужна
+	// A day's name is the full date: screen readers do not need the header
 	thead.setAttribute('aria-hidden', 'true')
 	weekdays.className = 'so-calendar__weekdays'
 	thead.appendChild(weekdays)
@@ -341,7 +344,7 @@ function monthOf(ctx: TCalendarContext, place: TPlace): HTMLElement {
 		heading: null,
 		table,
 		weekdays,
-		weeks: new TKeyedLoop(tbody, null, (week: TCalendarCell[]) => week[0]?.date ?? ''),
+		weeks: new TKeyedLoop(tbody, null, (week: TWeek) => week.place),
 	}
 
 	monthsByNode.set(node, month)
@@ -350,7 +353,7 @@ function monthOf(ctx: TCalendarContext, place: TPlace): HTMLElement {
 	return node
 }
 
-/** За заголовком первого месяца — Tab идёт за глазом. Не двигаются: перенос пересобрал бы их. */
+/** After the first month's heading — Tab follows the eye. They do not move: relocation would rebuild them. */
 function placePaging(month: TMonth, prev: HTMLElement, next: HTMLElement): void {
 	if (next.nextSibling === month.table && prev.nextSibling === next) return
 
@@ -370,7 +373,7 @@ export const calendarTemplate: ITemplate<ICalendar, TCalendarCollectionFacade> =
 		footer.className = 'so-calendar__footer'
 		root.appendChild(months)
 
-		// Подвал — своей строкой: в ряду месяцев расширил бы его; пустой держал бы место
+		// The footer in a row of its own: in the months' row it would widen it; empty, it would hold space
 		if (hasSlot('footer')) root.appendChild(footer)
 
 		parts.set(root, {

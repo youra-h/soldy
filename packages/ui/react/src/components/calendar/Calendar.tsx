@@ -18,15 +18,15 @@ import { CalendarItem } from './item'
 import { useSetupCalendar } from './setup.component'
 import type { CalendarProps } from './base.component'
 
-/** Одна иконка на все стрелки: роли «влево» нет, стрелку к началу строки зеркалит тема. */
+/** One icon for all arrows: there is no «left» role, the theme mirrors the arrow to the line start. */
 const ARROW = roleIcon('arrowRight')
 
-/** Scope слота триггера Popover — связка с панелью и вид «нажат». */
+/** Scope of the Popover trigger slot — the link to the panel and the pressed look. */
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 type TSize = ButtonProps['size']
 
-/** Ячейка недели: день — элемент коллекции, заполнитель — пустая ячейка. */
+/** A week cell: a day is a collection item, a placeholder is an empty cell. */
 function drawCell(props: CalendarProps, cell: TCalendarCell): ReactElement {
 	const { item } = cell
 
@@ -98,8 +98,8 @@ function drawCard(picker: TCalendarPicker, size: TSize): ReactNode {
 }
 
 /**
- * Calendar — сетки показанных месяцев, листание и подвал: docs/agents/dates.md, «Даты».
- * Ключ поповера — его экземпляр: AGENTS.md (React), «Пересобранный инстанс и `key`».
+ * Calendar — grids of the shown months, paging and the footer: docs/agents/dates.md, «Даты».
+ * The popover is keyed by its instance: AGENTS.md (React), «Пересобранный инстанс и `key`».
  */
 export function Calendar(props: CalendarProps): ReactElement | null {
 	const { ref, forwardProps, state, layer } = useSetupCalendar(props)
@@ -204,8 +204,9 @@ export function Calendar(props: CalendarProps): ReactElement | null {
 						</tr>
 					</thead>
 					<tbody>
-						{grid.weeks.map((week) => (
-							<tr key={week[0]?.date} className="so-calendar__week">
+						{/* A week is keyed by its place: a new first day of the week keeps six days of seven in their row */}
+						{grid.weeks.map((week, place) => (
+							<tr key={place} className="so-calendar__week">
 								{week.map((cell) => drawCell(props, cell))}
 							</tr>
 						))}

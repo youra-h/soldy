@@ -1,10 +1,10 @@
 <!--
-	Основной проекции нет: дни кладёт в коллекцию вид по месяцам сеток. Подвал — своей
-	строкой: в ряду с месяцами он расширил бы его. Текст узлов — `[textContent]`, а не
-	интерполяцией: от отступа Prettier Angular оставил бы пробелы.
+	There is no main projection: the view puts the days into the collection by grid months. The
+	footer is a row of its own: next to the months it would widen their row. Node text is
+	`[textContent]`, not interpolation: Angular would keep the spaces of Prettier indentation.
 -->
 <div class="so-calendar__months">
-	<!-- Ключ — место сетки: при листании заголовок, его поповер и живая область — те же узлы. -->
+	<!-- Keyed by grid place: when paging, the heading, its popover and the live region stay the same nodes. -->
 	@for (grid of state()['grids'] ?? []; track $index; let index = $index) {
 		<div class="so-calendar__month">
 			<!--
@@ -115,8 +115,8 @@
 				</div>
 			}
 			<!--
-				Кнопки листания — одна пара, у первого месяца: Tab идёт за глазом. Значок обеих —
-				`arrowRight`, «назад» зеркалит тема.
+				Paging buttons — one pair, at the first month: Tab follows the eye. Both use the
+				`arrowRight` icon, the theme mirrors «back».
 			-->
 			@if (index === 0) {
 				<button
@@ -161,8 +161,11 @@
 				</button>
 			}
 			<!--
-				Ячейка — по своему дню, заполнитель — по дате: день берёт `ctrl` при сборке,
-				и другой элемент на той же дате меняет ключ. Шаблон `item` — дню, только заданный.
+				A week is keyed by its place in the grid: when the first day of the week changes
+				with the language, six days of seven stay in their row and are not rebuilt.
+				A cell is keyed by its day, a placeholder by the date: the day takes `ctrl` at
+				assembly, and another item on the same date changes the key. The `item`
+				template goes to the day only when set.
 			-->
 			<table class="so-calendar__grid" [so-attributes]="grid.gridAria">
 				<thead aria-hidden="true">
@@ -173,7 +176,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					@for (week of grid.weeks; track week[0].date) {
+					@for (week of grid.weeks; track $index) {
 						<tr class="so-calendar__week">
 							@for (cell of week; track cell.item ?? cell.date) {
 								@if (cell.item; as item) {
@@ -201,7 +204,7 @@
 		</div>
 	}
 </div>
-<!-- Подвал — только при шаблоне `footer`: пустая строка держала бы место под сетками. -->
+<!-- The footer only with a `footer` template: an empty row would hold space under the grids. -->
 @if (slot('footer'); as footer) {
 	<div class="so-calendar__footer">
 		<ng-container [ngTemplateOutlet]="footer" />

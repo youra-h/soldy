@@ -277,11 +277,12 @@ export default { ...SetupCalendar, components: { Button, Icon, ListBox, Popover,
 					<tbody>
 						<!--
 							A week — seven cells from the first day of the week, keyed by its
-							first date.
+							place in the grid: a new first day of the week keeps six days of
+							seven in their row.
 						-->
 						<tr
-							v-for="week in grid.weeks"
-							:key="week[0].date"
+							v-for="(week, place) in grid.weeks"
+							:key="place"
 							class="so-calendar__week"
 						>
 							<!--
