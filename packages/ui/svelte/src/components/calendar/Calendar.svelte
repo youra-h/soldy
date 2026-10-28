@@ -17,14 +17,14 @@
 	const binding = setupCalendar(() => props, mountId, (node) => (ref = node))
 	const state = binding.state
 
-	// Одна иконка на все стрелки: роли «влево» нет, стрелку в начало строки зеркалит тема
+	// One icon for all arrows: there is no «left» role, the theme mirrors the arrow to the line start
 	const ARROW = roleIcon('arrowRight')
 </script>
 
 <!--
-	Calendar — месяцы своей строкой, подвал — отдельной: в одном ряду с месяцами он
-	расширил бы ряд своей шириной. Узлы стоят вплотную: пробел между блоками Svelte
-	оставил бы текстом.
+	Calendar — months in a row of their own, the footer in another: next to the months it
+	would widen the row by its width. Nodes stand tight: Svelte would keep a space between
+	blocks as text.
 -->
 <Dynamic
 	rendered={state.rendered}
@@ -159,12 +159,13 @@
 					</thead>
 					<tbody>
 						<!--
-							Weeks are keyed by their first date, cells by the date: a day that stays
-							when paging is the same node, with focus. The day takes `ctrl` at
+							Weeks are keyed by their place, cells by the date: a new first day of the
+							week keeps six days of seven in their row, and a day stays the same node,
+							with focus. The day takes `ctrl` at
 							assembly — hence `{#key}`. `item` is relayed only when the slot is set:
 							an empty snippet would not give way to the number.
 						-->
-						{#each grid.weeks as week (week[0]?.date)}
+						{#each grid.weeks as week, place (place)}
 							<tr class="so-calendar__week">
 								{#each week as cell (cell.date)}
 									{#if cell.item}

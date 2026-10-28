@@ -20,16 +20,16 @@ import { CalendarItem } from './item'
 import { setupCalendar } from './setup.component'
 import type { CalendarProps } from './base.component'
 
-/** Одна иконка на все стрелки: роли «влево» нет, стрелку к началу строки зеркалит тема. */
+/** One icon for all arrows: there is no «left» role, the theme mirrors the arrow to the line start. */
 const ARROW = roleIcon('arrowRight')
 
-/** Scope слота триггера Popover — связка с панелью и вид «нажат». */
+/** Scope of the Popover trigger slot — the link to the panel and the pressed look. */
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
 /**
- * Календарь: сетки показанных месяцев, одна пара кнопок листания у первого месяца и подвал.
- * Месяц — по месту (`Index`): кнопка заголовка, её поповер и живая область переживают
- * листание тем же узлом. Панель выбора — Popover места, `contained` на `div`.
+ * Calendar: grids of the shown months, one pair of paging buttons at the first month, and the footer.
+ * A month goes by place (`Index`): the heading button, its popover and the live region survive
+ * paging as the same node. The picker panel is the place's Popover, `contained` on a `div`.
  */
 export function Calendar(props: CalendarProps): JSX.Element {
 	const binding = setupCalendar(props)
@@ -40,7 +40,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 		forward: binding.forwardProps(),
 	}))
 
-	/** Ячейка недели: день — элемент коллекции, заполнитель — пустая ячейка. */
+	/** A week cell: a day is a collection item, a placeholder is an empty cell. */
 	const cell = (entry: Accessor<TCalendarCell>) => {
 		const aria = createPartProps(() => entry().aria)
 
@@ -57,7 +57,10 @@ export function Calendar(props: CalendarProps): JSX.Element {
 		)
 	}
 
-	/** Неделя — семь ячеек, от первого дня недели. */
+	/**
+	 * A week — seven cells from the first day of the week, by its place (`Index`): a new
+	 * first day of the week keeps six days of seven in their row.
+	 */
 	const week = (entry: Accessor<TCalendarCell[]>) => (
 		<tr class="so-calendar__week">
 			<KeyedFor each={entry()} by={(day) => day.date}>
@@ -66,7 +69,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 		</tr>
 	)
 
-	/** Заголовок месяца — кнопка-триггер панели выбора; текст и живая область внутри. */
+	/** Month heading — the trigger button of the picker panel; text and live region inside. */
 	const title = (grid: Accessor<TCalendarGrid>) => (scope: TTriggerScope) => {
 		const titleAria = createPartProps(() => grid().titleAria)
 
@@ -141,7 +144,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 		</div>
 	)
 
-	/** Пара кнопок листания — одна на весь календарь, у первого месяца. */
+	/** The pair of paging buttons — one per calendar, at the first month. */
 	const paging = () => (
 		<>
 			<Button
@@ -173,7 +176,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 		</>
 	)
 
-	/** Месяц места `index`: заголовок с панелью выбора, листание у первого, сетка. */
+	/** The month at place `index`: heading with the picker panel, paging at the first, the grid. */
 	const month = (grid: Accessor<TCalendarGrid>, index: number) => {
 		const gridAria = createPartProps(() => grid().gridAria)
 
@@ -207,9 +210,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
 						</tr>
 					</thead>
 					<tbody>
-						<KeyedFor each={grid().weeks} by={(days) => days[0]?.date}>
-							{week}
-						</KeyedFor>
+						<Index each={grid().weeks}>{week}</Index>
 					</tbody>
 				</table>
 			</div>
