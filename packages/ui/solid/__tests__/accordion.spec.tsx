@@ -407,10 +407,13 @@ describe('типы', () => {
 		expectTypeOf<(scope: { item: IAccordionItem }) => JSX.Element>().toExtend<
 			NonNullable<AccordionProps['item-trailing-icon']>
 		>()
+		// The section carries itself (`ctrl`) into its own slots' scope
 		expectTypeOf<
-			(scope: { text: string; selected: boolean }) => JSX.Element
+			(scope: { item: IAccordionItem; text: string; selected: boolean }) => JSX.Element
 		>().toExtend<THeader>()
-		expectTypeOf<AccordionItemProps['children']>().toEqualTypeOf<JSX.Element | undefined>()
+		expectTypeOf<(scope: { item: IAccordionItem }) => JSX.Element>().toExtend<
+			NonNullable<AccordionItemProps['children']>
+		>()
 	})
 
 	it('колбэки фасадов — пропсы компонентов', () => {
