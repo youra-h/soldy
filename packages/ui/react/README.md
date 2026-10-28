@@ -53,7 +53,7 @@ arrive as callback props (`element:ready` → `onElementReady`), and the default
 npm install @soldy-ui/react @soldy-ui/theme-oren @soldy-ui/icons-material
 ```
 
-React and React DOM `^19.2` are peer dependencies. A theme and an icon pack are separate packages —
+React and React DOM `^19.3` are peer dependencies. A theme and an icon pack are separate packages —
 pick the ones you want.
 
 ## Usage

@@ -63,7 +63,7 @@ Install the adapter for your framework, a theme and an icon pack. The adapter br
 | Framework      | Install                         | Requires        |
 | -------------- | ------------------------------- | --------------- |
 | Vue            | `npm install @soldy-ui/vue`     | Vue 3.5.21+     |
-| React          | `npm install @soldy-ui/react`   | React 19.2+     |
+| React          | `npm install @soldy-ui/react`   | React 19.3+     |
 | Angular        | `npm install @soldy-ui/angular` | Angular 22.2+   |
 | Svelte         | `npm install @soldy-ui/svelte`  | Svelte 5.55.10+ |
 | Solid          | `npm install @soldy-ui/solid`   | Solid 1.9.13+   |
