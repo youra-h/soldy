@@ -7,6 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
@@ -17,7 +18,9 @@ import type { TabsItemAttributes, TabsItemProps } from './base.component'
  * TabsItem — таб: строка `Button` с `role="tab"` и кнопка закрытия рядом с
  * ней. Атрибуты потребителя — строке: AGENTS.md (React), «Корень и `ref` потребителя».
  */
-export function TabsItem(props: TabsItemProps): ReactElement | null {
+export const TabsItem = withRenderBoundary(function TabsItem(
+	props: TabsItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupTabsItem(props)
 	const activate = useClickAction(() => {
 		if (context) context.adapters.activation.active = true
@@ -81,4 +84,4 @@ export function TabsItem(props: TabsItemProps): ReactElement | null {
 			) : null}
 		</Tag>
 	)
-}
+})

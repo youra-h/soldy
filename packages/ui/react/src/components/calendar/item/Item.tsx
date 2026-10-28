@@ -1,10 +1,12 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toRootProps } from '../../../adapter'
+import { renderSlot, toRootProps, withRenderBoundary } from '../../../adapter'
 import { useSetupCalendarItem } from './setup.component'
 import type { CalendarItemProps } from './base.component'
 
 /** CalendarItem — день календаря, корень — ячейка сетки: docs/agents/dates.md, «Даты». */
-export function CalendarItem(props: CalendarItemProps): ReactElement | null {
+export const CalendarItem = withRenderBoundary(function CalendarItem(
+	props: CalendarItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state } = useSetupCalendarItem(props)
 
 	const { rendered, tag, text, attrs, aria, dataset } = state
@@ -20,4 +22,4 @@ export function CalendarItem(props: CalendarItemProps): ReactElement | null {
 			</div>
 		</Tag>
 	)
-}
+})

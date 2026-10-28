@@ -8,6 +8,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
@@ -18,7 +19,9 @@ import type { AccordionItemAttributes, AccordionItemProps } from './base.compone
  * AccordionItem — секция: заголовок `Button` и панель с набором `contentAria`.
  * Атрибуты потребителя — заголовку: AGENTS.md (React), «Корень и `ref` потребителя».
  */
-export function AccordionItem(props: AccordionItemProps): ReactElement | null {
+export const AccordionItem = withRenderBoundary(function AccordionItem(
+	props: AccordionItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupAccordionItem(props)
 	const toggle = useClickAction(() => context?.adapters.selection.toggle())
 
@@ -91,4 +94,4 @@ export function AccordionItem(props: AccordionItemProps): ReactElement | null {
 			</div>
 		</Tag>
 	)
-}
+})

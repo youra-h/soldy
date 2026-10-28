@@ -6,13 +6,16 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { useSetupMenuRadioItem } from './setup.component'
 import type { MenuRadioItemAttributes, MenuRadioItemProps } from './base.component'
 
 /** MenuRadioItem — переключатель меню: строка пункта с точкой-отметкой в начале, как у флажка. */
-export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
+export const MenuRadioItem = withRenderBoundary(function MenuRadioItem(
+	props: MenuRadioItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuRadioItem(props)
 	const check = useClickAction(() => context?.adapters.menu.check())
 
@@ -51,4 +54,4 @@ export function MenuRadioItem(props: MenuRadioItemProps): ReactElement | null {
 			</ItemRow>
 		</Tag>
 	)
-}
+})

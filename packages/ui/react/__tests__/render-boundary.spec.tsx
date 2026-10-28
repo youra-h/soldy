@@ -1,13 +1,15 @@
 /**
- * Граница перерисовки (`withRenderBoundary`) — механика адаптерного слоя React.
+ * The render boundary (`withRenderBoundary`) — a mechanism of React's adapter
+ * layer.
  *
- * Компонент под границей родитель перерисовывает, только когда сменился проп
- * по идентичности, а своё состояние — связка компонента — перерисовывает его
- * как обычно. Под границей — настоящий Button: его рендер считает слот
- * `children` под шпионом, Button зовёт его ровно раз за рендер.
+ * The parent redraws a component under the boundary only when a prop changed
+ * by identity, and its own state — the component's binding — redraws it as
+ * usual. Under the boundary is a real Button: its render is counted by the
+ * `children` slot under a spy, which Button calls exactly once per render.
  *
- * Где граница стоит и что она экономит — строки и ячейки Table
- * (`table-row-renders.spec.tsx`, «перерисовка ячеек» в `table.spec.tsx`).
+ * Where the boundary stands and what it saves — Table's rows and cells
+ * (`table-row-renders.spec.tsx`, «перерисовка ячеек» in `table.spec.tsx`)
+ * and the collections' items (`item-renders.spec.tsx`).
  */
 
 import { describe, it, expect, expectTypeOf, vi } from 'vitest'
@@ -16,13 +18,13 @@ import { TButton } from '@soldy-ui/core'
 import { Button, withRenderBoundary, type ButtonProps } from '@soldy-ui/react'
 import { mount, nextFrame } from './mount'
 
-/** Button под границей. */
+/** Button under the boundary. */
 const BoundedButton = withRenderBoundary(Button)
 
 /**
- * Кнопка над `ctrl` под границей; слот — шпион, сброшенный после монтирования.
- * `rerender` — следующий рендер родителя: `ctrl` и слот те же, а стиль, если
- * задан, — новый объект с тем же содержимым.
+ * A button over `ctrl` under the boundary; the slot is a spy, cleared after
+ * mounting. `rerender` is the parent's next render: the same `ctrl` and slot,
+ * and the style, if given, a new object with the same content.
  */
 async function renderCounted(ctrl: TButton, style?: CSSProperties) {
 	const slot = vi.fn(({ text }: { text: string }) => text)
@@ -35,7 +37,7 @@ async function renderCounted(ctrl: TButton, style?: CSSProperties) {
 
 	await nextFrame()
 
-	// Кнопка нарисована слотом: иначе счётчик ниже ничего бы не стерёг
+	// The button is drawn by the slot: otherwise the counter below would guard nothing
 	expect(slot).toHaveBeenCalled()
 	slot.mockClear()
 

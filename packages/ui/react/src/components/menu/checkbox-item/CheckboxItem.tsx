@@ -7,6 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
@@ -20,7 +21,9 @@ const CheckIcon = roleIcon('check')
  * MenuCheckboxItem — флажок меню: строка пункта с отметкой в начале. Обёртка отметки — прямой
  * ребёнок строки и у неотмеченного: по ней тема узнаёт колонку отметок.
  */
-export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | null {
+export const MenuCheckboxItem = withRenderBoundary(function MenuCheckboxItem(
+	props: MenuCheckboxItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuCheckboxItem(props)
 	const toggle = useClickAction(() => context?.adapters.menu.toggle())
 
@@ -61,4 +64,4 @@ export function MenuCheckboxItem(props: MenuCheckboxItemProps): ReactElement | n
 			</ItemRow>
 		</Tag>
 	)
-}
+})
