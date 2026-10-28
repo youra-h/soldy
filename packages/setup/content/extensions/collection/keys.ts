@@ -1,21 +1,30 @@
 /**
- * Ключ лифта реестра наборов коллекции: владелец опускает по нему детям
- * реестр наборов своих элементов (`TCollectionBundlesPlugin`), рядом с
- * движком.
- *
- * Лежит отдельно от проводки, как ключ группы (`ITEM_GROUP_ELEVATOR`): лифт
- * берёт любой ключ, поэтому ключ — в наполнении, а не в механике лифта.
+ * Lift keys of the collection, lowered by its owner beside the engine. They
+ * live apart from the wiring, as the group key (`ITEM_GROUP_ELEVATOR`) does:
+ * the lift takes any key, so keys belong to the content, not to the lift's
+ * mechanics.
  */
 
 import type { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import type { IElevatorKey } from '../../../protected/adapter/elevator'
+import type { TCollectionMembers } from './members.class'
 
 /**
- * Реестр наборов элементов ближайшей коллекции — того же владельца, что
- * движок под `ITEM_CONTEXT_ELEVATOR`. Набор элемента в нём — нынешнего
- * монтирования. Пустое значение опускает владелец без реестра: реестр
- * коллекции выше до его поддерева не доходит.
+ * The registry of the nearest collection's item bundles
+ * (`TCollectionBundlesPlugin`), of the same owner as the engine under
+ * `ITEM_CONTEXT_ELEVATOR`; an item's bundle in it is of its current mount. An
+ * owner without a registry lowers `null`, so that a collection's registry
+ * above does not reach its subtree.
  */
 export const COLLECTION_BUNDLES_ELEVATOR: IElevatorKey<TCollectionBundlesPlugin | null> = {
 	name: 'soldy:collection-bundles',
+}
+
+/**
+ * The members of the nearest collection, of the same owner as the engine: an
+ * item and a part bound to an item join on entry and leave when their mount
+ * ends.
+ */
+export const COLLECTION_MEMBERS_ELEVATOR: IElevatorKey<TCollectionMembers> = {
+	name: 'soldy:collection-members',
 }

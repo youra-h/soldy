@@ -30,7 +30,7 @@ export function setupMenuPopoverItem(
 		MenuCollectionItemDescriptor(),
 		{ props, mountId },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+	).use(TCollectionItemExtension, { adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(item, getProps)
 	const owner = useAdapter(adapter, getProps, receive)

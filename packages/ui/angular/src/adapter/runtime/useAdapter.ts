@@ -1,14 +1,16 @@
 /**
- * useAdapter — связка adapter-context с Angular, аналог `useAdapter` у Vue.
+ * useAdapter — binds an adapter context to Angular, the counterpart of Vue's
+ * `useAdapter`.
  *
- * - состояние — сигнал: он уведомляет шаблон сам, с Zone.js и без;
- * - компонент принят (`attach()`) сразу при создании связки;
- * - `syncInputs` — дельта `ngOnChanges`, `syncEvents` — события ядра в
- *   эмиттеры выходов, `destroy` — очистка.
+ * - state is a signal: it notifies the template itself, with Zone.js or
+ *   without;
+ * - the component is accepted (`attach()`) as soon as the binding is created;
+ * - `syncInputs` is the `ngOnChanges` delta, `syncEvents` routes core events
+ *   to the output emitters, `detach` stops the consumer, `destroy` cleans up.
  *
- * У коллекционного компонента контекстов два — свой и фасада (у пункта с
- * подменю три), а базе нужна одна связка: их сводит `joinBindings`. AGENTS.md
- * (Angular), «Коллекция: два контекста — одна связка».
+ * A collection component has two contexts, its own and the facade's (three
+ * for an item with a submenu), and the base needs one binding: `joinBindings`
+ * joins them. AGENTS.md (Angular), «Коллекция: два контекста — одна связка».
  */
 
 import { computed, signal, type EventEmitter, type Signal } from '@angular/core'
@@ -26,8 +28,8 @@ import type {
 import { AngularProfile } from '../common/profile'
 
 /**
- * Тип входа по пропу дескриптора — поле входа в сгенерированной
- * `T<Имя>Surface`: строгий шаблон сверяет привязку с ним.
+ * The input type of a descriptor prop: the input field of the generated
+ * `T<Name>Surface`, which strict templates check the binding against.
  */
 export type TInputValue<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -35,10 +37,10 @@ export type TInputValue<
 > = DescriptorComponentProps<TDescriptorFn>[TInput]
 
 /**
- * The value of an output — what `syncEvents` emits: the core event's only
+ * The value of an output, what `syncEvents` emits: the core event's only
  * argument, the tuple of its arguments when there are several (the new and
  * the previous item of `change:activation`), `undefined` when there are none.
- * The same payload as `detail` of an event of Web Components.
+ * The same payload as `detail` of a Web Components event.
  */
 type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
 	? TArgs extends readonly []
@@ -48,22 +50,23 @@ type TOutputValue<THandler> = THandler extends (...args: infer TArgs) => unknown
 			: TArgs
 	: undefined
 
-/** One value of the core event's arguments — see `TOutputValue`. */
+/** One value from the core event's arguments, see `TOutputValue`. */
 function payloadOf(args: readonly unknown[]): unknown {
 	return args.length > 1 ? args : args[0]
 }
 
-/** Тип выхода по событию дескриптора — геттер в сгенерированной `T<Имя>Surface`. */
+/** The output type of a descriptor event: the getter of the generated `T<Name>Surface`. */
 export type TOutputEmitter<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TEvent extends keyof DescriptorAllEvents<TDescriptorFn>,
 > = EventEmitter<TOutputValue<DescriptorAllEvents<TDescriptorFn>[TEvent]>>
 
 /**
- * Состояние, как его читает шаблон: свойства инстанса, входы и выходы плагинов
- * (`TOutputs`, как `TAdapterState` setup) и свойства фасадов. Одноимённых у них
- * нет — имена фасадов и плагинов префиксуются, а проп плагина без namespace
- * (`id` у `TIdPlugin`) с инстансом не совпадает по построению.
+ * State as the template reads it: instance properties, plugin inputs and
+ * outputs (`TOutputs`, as in setup's `TAdapterState`) and facade properties.
+ * Their names never clash: facade and plugin names are prefixed, and a plugin
+ * prop without a namespace (`id` of `TIdPlugin`) differs from the instance's
+ * by construction.
  */
 export type TBindingState<
 	TInstance,
@@ -75,19 +78,21 @@ export type TBindingState<
 	TInstanceState<TOutputs> &
 	TInstanceState<TOwnerFacade>
 
-/** Заведённый эмиттер выхода по имени, иначе `undefined`. */
+/** The created emitter of an output by name, otherwise `undefined`. */
 export type TOutputOf = (name: string) => EventEmitter<unknown> | undefined
 
-/** Связка одного контекста. */
+/** The binding of one context. */
 type TExchange<TState> = {
 	readonly state: Signal<TState>
 	syncInputs(inputs: object): void
-	/** Возвращает отписку. */
+	/** Returns the unsubscription. */
 	syncEvents(outputOf: TOutputOf): () => void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
-/** Связка компонента для базы; у компонента с фасадом её собирает `joinBindings`. */
+/** The component's binding for the base; for a component with a facade `joinBindings` builds it. */
 export type TBinding<
 	TInstance = any,
 	TFacade = unknown,
@@ -95,12 +100,12 @@ export type TBinding<
 	TOwnerFacade = unknown,
 > = TExchange<TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>> & {
 	readonly ctrl: TInstance
-	/** Фасад коллекции; у пункта с подменю — фасад элемента в коллекции над ним. */
+	/** The collection facade; for an item with a submenu, its facade in the collection above. */
 	readonly facade: TFacade
 	bindElement(el: Element | null): void
 }
 
-/** Связка фасада: без `ctrl` и узла — они у компонента. */
+/** A facade's binding: no `ctrl` and no node, the component has them. */
 export type TCollectionBinding<TFacade = any> = TExchange<TInstanceState<TFacade>> & {
 	readonly facade: TFacade
 }
@@ -118,23 +123,34 @@ function useExchange<C extends IComponentContract>(
 		state.set(toInstanceState<C>(binding.state.getSnapshot())),
 	)
 
-	// Связку заводит `ngOnInit`, и на сервере тоже: хуки идут в порядке
-	// шаблона, и элементы разметки входят в коллекцию в порядке DOM
+	// `ngOnInit` creates the binding, on the server too: the hooks run in
+	// template order, and markup items enter the collection in DOM order
 	adapter.attach()
 
 	return {
 		state,
 
-		// Дельта, а не `full`: тот сбросил бы к умолчанию остальные входы
+		// A delta, not `full`: that would reset the other inputs to their defaults
 		syncInputs(inputs: object): void {
 			binding.inputs.delta(inputs)
 		},
 
-		// Эмиттер ищется на каждое событие: его заводит первое чтение выхода
+		// The emitter is looked up on every event: the output's first read
+		// creates it. The consumer stops on `detach`, which comes from
+		// `ngOnDestroy` or, for a collection item, from its collection before
+		// the siblings go one by one (`TCollectionMembers`)
 		syncEvents(outputOf: TOutputOf): () => void {
-			return binding.events.listen((exportName, args) =>
+			const stop = binding.events.listen((exportName, args) =>
 				outputOf(exportName)?.emit(payloadOf(args)),
 			)
+
+			adapter.events.on('detach', stop)
+
+			return stop
+		},
+
+		detach(): void {
+			adapter.detach()
 		},
 
 		destroy(): void {
@@ -162,16 +178,17 @@ export function useCollectionAdapter<C extends IComponentContract>(
 }
 
 /**
- * Одна связка из своей и фасадов: состояние — одним видом, входы и события —
- * всем, узел — только свой, уничтожение — фасады раньше компонента: элемент
- * выходит из коллекции, пока его набор плагинов цел.
+ * One binding from the own and the facades': state as one view, inputs,
+ * events and `detach` to all, the node to the own only. Destruction goes
+ * facades first: the item leaves the collection while its plugin bundle is
+ * intact.
  */
 export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknown>(
 	owner: TBinding<TInstance, unknown, TOutputs>,
 	facade: TCollectionBinding<TFacade>,
 	ownerFacade?: TCollectionBinding<TOwnerFacade>,
 ): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade> {
-	// По порядку уничтожения: элемент выходит из коллекции над ним раньше своей
+	// In destruction order: the item leaves the collection above it before its own
 	const facades: readonly TExchange<unknown>[] = ownerFacade ? [facade, ownerFacade] : [facade]
 
 	return {
@@ -194,6 +211,10 @@ export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknow
 		},
 
 		bindElement: (el) => owner.bindElement(el),
+
+		detach(): void {
+			for (const each of [owner, ...facades]) each.detach()
+		},
 
 		destroy(): void {
 			for (const each of facades) each.destroy()

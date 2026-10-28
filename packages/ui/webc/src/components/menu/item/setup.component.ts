@@ -26,10 +26,7 @@ export function setupMenuItem(
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым, как у Vue: в коллекцию пункт входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

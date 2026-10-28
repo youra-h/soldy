@@ -29,29 +29,31 @@ import {
 	TABLE_SCROLL_ROWS,
 } from '@soldy-ui/playground-shared'
 import { CopyDirective } from './copy.directive'
+import { PartDirective } from './part.directive'
 import type { TFixture } from './fixtures'
 
 /**
- * Previews of collections — in Angular.
+ * Previews of collections, in Angular.
  *
- * The same previews as in Vue (`hosts/vue/previews.ts`): the items and panels
- * as parts in markup, data where the neighbors give data (the rows and columns
- * of the table, tags). The content is the shared manifest’s
+ * The same previews as in Vue (`hosts/vue/previews.ts`): items and panels as
+ * parts in markup, data where the other hosts use data (the table's rows and
+ * columns, tags). The content comes from the shared manifest
  * (`COLLECTION_ITEMS`), as in Vue and React. Like every preview of the host
  * (`previews.ts`), it takes the shell's props as its inputs and binds them to
- * the collection in its markup; the parts' props are the preview's. The parts
- * enter the collection in markup order, and they see the lift layer of their
- * owner by the injector of the template, as in an application.
+ * the collection in its markup; the parts' props are set by the preview. The
+ * parts enter the collection in markup order and see their owner's lift layer
+ * through the template's injector, as in an application. A part in markup is
+ * marked `pg-part`, so the host listens to it (`PartDirective`).
  */
 
 /**
- * RadioGroup: the label of a radio is content — a radio has no text, it is a
- * bare control, as a CheckBox. The root of a radio is the label,
+ * RadioGroup: a radio's label is content, since a radio has no text and is a
+ * bare control like CheckBox. The radio's root is the label,
  * `<label so-radio-group-item>`.
  */
 @Component({
 	selector: 'pg-radio-group-preview',
-	imports: [TRadioGroupComponent, TRadioGroupItemComponent, CopyDirective],
+	imports: [TRadioGroupComponent, TRadioGroupItemComponent, CopyDirective, PartDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
@@ -76,7 +78,7 @@ import type { TFixture } from './fixtures'
 				[items]="items()"
 			>
 				@for (item of entries; track item.value) {
-					<label so-radio-group-item [value]="item.value">{{ item.text }}</label>
+					<label so-radio-group-item pg-part [value]="item.value">{{ item.text }}</label>
 				}
 			</div>
 		</ng-template>
@@ -101,13 +103,13 @@ export class RadioGroupPreview implements TFixture {
 	readonly items = input<TRadioGroupComponent['items']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TRadioGroupComponent)
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }
 
 /**
- * The inputs of a ListBox preview — one for every prop the page writes, and
- * `ctrl` — and the list in each copy: shared by the list with items in markup
+ * The inputs of a ListBox preview (one for every prop the page writes, and
+ * `ctrl`) and the list in each copy, shared by the list with items in markup
  * and the list from data (`ListBoxPreview`, `ListBoxItemsPreview`).
  */
 @Directive()
@@ -168,33 +170,34 @@ const LIST_BOX_BINDINGS = `
 `
 
 /**
- * ListBox: items in markup. When they came as data (`items` of the page's
+ * ListBox: items in markup. When they came as data (`items` from the page's
  * groups block) the preview is `ListBoxItemsPreview`: markup would replace the
  * data, and the list draws groups from data. The host picks it when it places
- * the preview (`templateFor`), for the reason given at `MenuPreview`.
+ * the preview (`templateFor`), for the reason given at `MenuPreview`
+ * (`templates.ts`).
  */
 @Component({
 	selector: 'pg-list-box-preview',
-	imports: [TListBoxComponent, TListBoxItemComponent, CopyDirective],
+	imports: [TListBoxComponent, TListBoxItemComponent, CopyDirective, PartDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
 		<ng-template pg-copy>
 			<div so-list-box ${LIST_BOX_BINDINGS}>
 				@for (item of entries; track item.value) {
-					<div so-list-box-item [value]="item.value" [text]="item.text"></div>
+					<div so-list-box-item pg-part [value]="item.value" [text]="item.text"></div>
 				}
 			</div>
 		</ng-template>
 	`,
 })
 export class ListBoxPreview extends TListBoxPreviewInputs {
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }
 
 /**
- * ListBox from data: the content is `items` of the page's groups block, and
+ * ListBox from data: the content is `items` from the page's groups block, and
  * there are no items in markup.
  */
 @Component({
@@ -211,8 +214,8 @@ export class ListBoxPreview extends TListBoxPreviewInputs {
 export class ListBoxItemsPreview extends TListBoxPreviewInputs {}
 
 /**
- * The inputs of a Select preview — one for every prop the page writes, and
- * `ctrl` — and the select in each copy: shared by the select with options in
+ * The inputs of a Select preview (one for every prop the page writes, and
+ * `ctrl`) and the select in each copy, shared by the select with options in
  * markup and the select from data (`SelectPreview`, `SelectItemsPreview`).
  */
 @Directive()
@@ -299,9 +302,9 @@ const SELECT_BINDINGS = `
 `
 
 /**
- * Select: options in markup, as `ListBoxPreview`. The options stand in the
- * list of its panel, carried away to `body`, and see the lift layer of the
- * Select by the injector of the template, as in an application.
+ * Select: options in markup, like `ListBoxPreview`. The options sit in the
+ * list of its panel, moved to `body`, and see Select's lift layer through the
+ * template's injector, as in an application.
  */
 @Component({
 	selector: 'pg-select-preview',
@@ -319,12 +322,12 @@ const SELECT_BINDINGS = `
 	`,
 })
 export class SelectPreview extends TSelectPreviewInputs {
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }
 
 /**
- * Select from data: the options are `items` of the page's groups block, and
+ * Select from data: the options are `items` from the page's groups block, and
  * there are none in markup.
  */
 @Component({
@@ -341,9 +344,9 @@ export class SelectPreview extends TSelectPreviewInputs {
 export class SelectItemsPreview extends TSelectPreviewInputs {}
 
 /**
- * Tags: as data, as in Vue — the row spans the width of the cell, otherwise
- * overflow has nothing to compare with: in the flex of the scene the row would
- * keep the width of its tags. The page's `items` go over the preview's.
+ * Tags: as data, as in Vue. The row spans the cell's width, otherwise overflow
+ * has nothing to compare with: in the flexbox cell stage the row would keep
+ * the width of its tags. The page's `items` override the preview's.
  */
 @Component({
 	selector: 'pg-tags-preview',
@@ -401,16 +404,16 @@ export class TagsPreview implements TFixture {
 	readonly mode = input<TTagsComponent['mode']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TTagsComponent)
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }
 
 /**
- * Table: rows and columns as data, as in Vue and React — the table has no
+ * Table: rows and columns as data, as in Vue and React: the table has no
  * parts in markup. The frame bounds the width, and with a sticky head it is
- * also a scroll window 320 px high over forty rows. The page's `items` and
- * `columns` go over the preview's. The window of the table is on the
- * Virtual page.
+ * also a 320 px scroll window over forty rows. The page's `items` and
+ * `columns` override the preview's. The table's window is on the Virtual
+ * page.
  */
 @Component({
 	selector: 'pg-table-preview',
@@ -484,7 +487,7 @@ export class TablePreview implements TFixture {
 	readonly grid = input<TTableComponent['grid']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TTableComponent)
-	/** The rows and columns of the preview — as `items` and `columns` of the Vue and React previews. */
+	/** The preview's rows and columns, like `items` and `columns` of the Vue and React previews. */
 	protected readonly data = {
 		rows: TABLE_ROWS,
 		scrollRows: TABLE_SCROLL_ROWS,
@@ -493,13 +496,19 @@ export class TablePreview implements TFixture {
 }
 
 /**
- * Tabs: the tabs and their panels as parts. The first tab is active right
- * away — otherwise no panel would mount. The panels go to the `content` slot,
- * outside the list of tabs.
+ * Tabs: the tabs and their panels as parts. The first tab is active at once,
+ * otherwise no panel would mount. The panels go to the `content` slot,
+ * outside the tab list.
  */
 @Component({
 	selector: 'pg-tabs-preview',
-	imports: [TTabsComponent, TTabsItemComponent, TTabsContentComponent, CopyDirective],
+	imports: [
+		TTabsComponent,
+		TTabsItemComponent,
+		TTabsContentComponent,
+		CopyDirective,
+		PartDirective,
+	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
@@ -528,13 +537,14 @@ export class TablePreview implements TFixture {
 				@for (item of entries; track item.value; let first = $first) {
 					<div
 						so-tabs-item
+						pg-part
 						[active]="first"
 						[value]="item.value"
 						[text]="item.text"
 					></div>
 				}
 				@for (item of entries; track item.value) {
-					<div so-tabs-content slot="content" [value]="item.value">
+					<div so-tabs-content pg-part slot="content" [value]="item.value">
 						<div style="padding: 12px">Панель «{{ item.text }}»</div>
 					</div>
 				}
@@ -563,7 +573,7 @@ export class TabsPreview implements TFixture {
 	readonly items = input<TTabsComponent['items']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TTabsComponent)
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }
 
@@ -572,7 +582,7 @@ export class TabsPreview implements TFixture {
  */
 @Component({
 	selector: 'pg-accordion-preview',
-	imports: [TAccordionComponent, TAccordionItemComponent, CopyDirective],
+	imports: [TAccordionComponent, TAccordionItemComponent, CopyDirective, PartDirective],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { style: 'display: contents' },
 	template: `
@@ -596,7 +606,7 @@ export class TabsPreview implements TFixture {
 				[mode]="mode()"
 			>
 				@for (item of entries; track item.value) {
-					<div so-accordion-item [value]="item.value" [text]="item.text">
+					<div so-accordion-item pg-part [value]="item.value" [text]="item.text">
 						<div style="padding: 4px 0">Содержимое «{{ item.text }}»</div>
 					</div>
 				}
@@ -622,14 +632,14 @@ export class AccordionPreview implements TFixture {
 	readonly mode = input<TAccordionComponent['mode']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TAccordionComponent)
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }
 
 /**
- * Scroller: the strip spans the width of the cell — at the width of its
- * content it would overflow the whole column, and there would be nothing to
- * scroll. The content is lines without wrapping, in markup, as in Vue.
+ * Scroller: the strip spans the cell's width; as wide as its content it would
+ * overflow the whole column, leaving nothing to scroll. The content is
+ * unwrapped lines in markup, as in Vue.
  */
 @Component({
 	selector: 'pg-scroller-preview',
@@ -679,6 +689,6 @@ export class ScrollerPreview implements TFixture {
 	readonly aria_describedBy = input<TScrollerComponent['aria_describedBy']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TScrollerComponent)
-	/** The collection's content — from the shared manifest, as in Vue and React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly entries = COLLECTION_ITEMS
 }

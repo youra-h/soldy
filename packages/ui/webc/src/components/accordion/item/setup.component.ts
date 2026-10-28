@@ -26,10 +26,7 @@ export function setupAccordionItem(
 		AccordionCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым: в коллекцию секция входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

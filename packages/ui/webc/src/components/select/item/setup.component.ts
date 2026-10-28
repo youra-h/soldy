@@ -26,10 +26,7 @@ export function setupSelectItem(
 		SelectCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым: в коллекцию опция входит, когда её контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

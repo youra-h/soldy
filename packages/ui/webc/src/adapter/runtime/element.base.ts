@@ -324,6 +324,7 @@ export function ElementBase<
 			this._connected = false
 			this._above?.stop()
 			this._above = undefined
+			this._binding?.detach()
 			this._binding?.destroy()
 			this._binding = undefined
 			this._teleport?.release()

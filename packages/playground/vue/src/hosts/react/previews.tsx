@@ -56,110 +56,122 @@ import {
 	useToasts,
 	type TToastRender,
 } from '@soldy-ui/react'
+import type { TParts } from './events'
 
 /**
- * Как рисовать компонент на стенде — в React.
+ * How to draw a component on the stand — in React.
  *
- * Та же карта, что у хоста Vue (`hosts/vue/previews.ts`), и с теми же ключами
- * — идентификаторами реестра: содержимое не свойство, из метаданных его не
- * достать, а разметка у каждого фреймворка своя. Превью то же самое, что у
- * Vue, чтобы колонки двух фреймворков можно было сравнивать глазами.
+ * The same map as the Vue host's (`hosts/vue/previews.ts`), keyed by registry
+ * id: content is not a prop, the metadata cannot give it, and markup is each
+ * framework's own. The previews match Vue's, so the columns compare by eye.
  *
- * Функция получает готовые пропсы (`bind`) и рисует ими компонент: в первой
- * колонке там пропы, во второй — `ctrl` с экземпляром ядра, у обеих —
- * колбэки событий, которые кладёт хост. Значения пропов самого компонента —
- * подпись кнопки, плейсхолдер поля — данные, одни на все хосты
- * (`PREVIEW_PROPS` в общем пакете), и в `bind` их кладёт оболочка. Здесь —
- * обёртка и содержимое.
+ * `bind` holds ready props: the row's props in the first column, `ctrl` with a
+ * core instance in the second, and the host's event callbacks in both. The
+ * component's own prop values (a button's label, a field's placeholder) are
+ * data shared by all hosts (`PREVIEW_PROPS`), which the shell puts in `bind`;
+ * the preview adds only the wrapper and the content.
  *
- * Слоёв и `frame` здесь нет: во Vue это ComponentView с чужими пропами, а в
- * React чужой проп ушёл бы атрибутом в корень, и React предупредил бы о нём.
+ * `parts` holds the listeners of the parts the preview places in markup, by
+ * part (`TComponentEntry.parts`); the preview spreads them on those parts.
+ * Empty when the host listens to nothing.
+ *
+ * The layers and `frame` have no previews: in Vue they are ComponentView with
+ * props it does not own, which React would put on the root as attributes, with
+ * a warning.
  */
-export type TPreview = (bind: Readonly<Record<string, unknown>>) => ReactNode
+export type TPreview = (bind: Readonly<Record<string, unknown>>, parts: TParts) => ReactNode
 
-/** Содержимое коллекций — из общего манифеста, как у Vue. */
+/** Collection content — from the shared manifest, as in Vue. */
 const ITEMS = COLLECTION_ITEMS
 
-/** Глиф превью Icon — компонент на роль: `tag` у Icon — корень, а не роль. */
+/** The Icon preview's glyph is a role's component: Icon's `tag` is its root, not a role. */
 const ARROW_DOWN = roleIcon('arrowDown')
 
 /**
- * Табы разметкой — у превью Tabs и DragAndDrop, как `tabsSlots` у Vue. Первый
- * таб активен сразу — иначе ни одна панель не смонтируется.
+ * Tabs in markup — for the Tabs and DragAndDrop previews, like `tabsSlots` in
+ * Vue. The first tab is active at once, otherwise no panel would mount.
  */
-const tabsItems = () =>
-	ITEMS.map((item, index) => <Tabs.Item key={item.value} active={index === 0} {...item} />)
+const tabsItems = (parts: TParts = {}) =>
+	ITEMS.map((item, index) => (
+		<Tabs.Item key={item.value} active={index === 0} {...item} {...parts.Item} />
+	))
 
-/** Панели табов — слотом `content`, вне списка табов; у превью Tabs и DragAndDrop. */
-const tabsPanels = () =>
+/** Tab panels — in the `content` slot, outside the tab list; for Tabs and DragAndDrop. */
+const tabsPanels = (parts: TParts = {}) =>
 	ITEMS.map((item) => (
-		<Tabs.Content key={`c-${item.value}`} value={item.value}>
+		<Tabs.Content key={`c-${item.value}`} value={item.value} {...parts.Content}>
 			<div style={{ padding: 12 }}>Панель «{item.text}»</div>
 		</Tabs.Content>
 	))
 
-/** Секции разметкой, с содержимым, — у превью Accordion и DragAndDrop. */
-const accordionItems = () =>
+/** Sections in markup, with content — for the Accordion and DragAndDrop previews. */
+const accordionItems = (parts: TParts = {}) =>
 	ITEMS.map((item) => (
-		<Accordion.Item key={item.value} {...item}>
+		<Accordion.Item key={item.value} {...item} {...parts.Item}>
 			<div style={{ padding: '4px 0' }}>Содержимое «{item.text}»</div>
 		</Accordion.Item>
 	))
 
-/** Scope слота `trigger` у Popover — из объявления слота в дескрипторе. */
+/** Scope of Popover's `trigger` slot — from the slot's declaration in the descriptor. */
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
-/** Scope слота `trigger` у Tooltip — ссылка триггера на панель. */
+/** Scope of Tooltip's `trigger` slot — the trigger's link to the panel. */
 type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
-/** Scope слота `trigger` у Menu — связка кнопки с меню и вид «нажата». */
+/** Scope of Menu's `trigger` slot — the button's binding to the menu and its pressed look. */
 type TMenuTriggerScope = DescriptorSlots<typeof MenuDescriptor>['trigger']
 
 /**
- * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
- * переключателей — отмечен один, — действия с подсказками сочетаний, подменю
- * с подменю внутри, пункт с панелью — календарём, который монтируется с первым
- * открытием, — выключенное действие и «опасный» пункт своего варианта.
+ * Menu items in markup, as in Vue: a labelled checkbox group, a radio group
+ * with one item checked, actions with shortcut hints, a submenu with a submenu
+ * inside, an item with a panel — a calendar mounted on the first open — a
+ * disabled action and a "dangerous" item of its own variant.
  */
-const menuItems = () => (
+const menuItems = (parts: TParts) => (
 	<>
 		<Menu.Group label="Вид">
-			<Menu.CheckboxItem value="grid" text="Сетка" selected />
-			<Menu.CheckboxItem value="ruler" text="Линейка" />
+			<Menu.CheckboxItem value="grid" text="Сетка" selected {...parts.CheckboxItem} />
+			<Menu.CheckboxItem value="ruler" text="Линейка" {...parts.CheckboxItem} />
 		</Menu.Group>
 		<Menu.Separator />
 		<Menu.RadioGroup label="Сортировка" value="name">
-			<Menu.RadioItem value="name" text="По имени" />
-			<Menu.RadioItem value="date" text="По дате" />
+			<Menu.RadioItem value="name" text="По имени" {...parts.RadioItem} />
+			<Menu.RadioItem value="date" text="По дате" {...parts.RadioItem} />
 		</Menu.RadioGroup>
 		<Menu.Separator />
-		<Menu.Item value="edit" text="Изменить" trailing="Ctrl+E" />
-		<Menu.Item value="copy" text="Дублировать" trailing="Ctrl+D" />
-		<Menu.Submenu value="share" text="Поделиться">
-			<Menu.Item value="link" text="Ссылка" />
-			<Menu.Item value="mail" text="Почта" />
-			<Menu.Submenu value="messengers" text="Мессенджеры">
-				<Menu.Item value="telegram" text="Telegram" />
-				<Menu.Item value="whatsapp" text="WhatsApp" />
+		<Menu.Item value="edit" text="Изменить" trailing="Ctrl+E" {...parts.Item} />
+		<Menu.Item value="copy" text="Дублировать" trailing="Ctrl+D" {...parts.Item} />
+		<Menu.Submenu value="share" text="Поделиться" {...parts.Submenu}>
+			<Menu.Item value="link" text="Ссылка" {...parts.Item} />
+			<Menu.Item value="mail" text="Почта" {...parts.Item} />
+			<Menu.Submenu value="messengers" text="Мессенджеры" {...parts.Submenu}>
+				<Menu.Item value="telegram" text="Telegram" {...parts.Item} />
+				<Menu.Item value="whatsapp" text="WhatsApp" {...parts.Item} />
 			</Menu.Submenu>
 		</Menu.Submenu>
-		<Menu.PopoverItem value="due" text="Срок" lazyMount>
+		<Menu.PopoverItem value="due" text="Срок" lazyMount {...parts.PopoverItem}>
 			<Calendar />
 		</Menu.PopoverItem>
-		<Menu.Item value="archive" text="В архив" disabled />
+		<Menu.Item value="archive" text="В архив" disabled {...parts.Item} />
 		<Menu.Separator />
-		<Menu.Item value="remove" text="Удалить" variant="negative" trailing="Del" />
+		<Menu.Item
+			value="remove"
+			text="Удалить"
+			variant="negative"
+			trailing="Del"
+			{...parts.Item}
+		/>
 	</>
 )
 
 /**
- * Открытость окна и выезжающей панели на стенде — своё состояние превью, как
- * `v-model:visible` у Vue (`DialogPreview` в `hosts/vue/previews.ts`): кнопка
- * открывает, крестик, Escape и подложка закрывают через `onChangeVisible`, а
- * строка `visible` задаёт её снаружи — сменилась строка, открытость за ней. С
- * экземпляром ядра (вторая колонка) путь тот же: запись в `visible` инстанса
- * доходит сюда `onChangeVisible`. Колбэк журнала страницы (`onChangeVisible`
- * из пропсов) зовётся вместе со своим, а не затирается им.
+ * The open state of the dialog and the drawer — the preview's own, like
+ * `v-model:visible` in Vue (`DialogPreview` in `hosts/vue/previews.ts`). The
+ * button opens; the close button, Escape and the backdrop close through
+ * `onChangeVisible`, which also carries a write to the instance's `visible` in
+ * the second column. The `visible` row sets the state from outside whenever the
+ * row changes. The page journal's `onChangeVisible` from the props is called
+ * too, not replaced.
  */
 function useShown(bind: Readonly<Record<string, unknown>>) {
 	const visible = bind.visible === true
@@ -185,9 +197,9 @@ function useShown(bind: Readonly<Record<string, unknown>>) {
 }
 
 /**
- * Окно на стенде открывает кнопка: закрытое оно спрятано, а открытое
- * накрывает страницу подложкой, и показывать его сразу было бы нечестно по
- * отношению к остальной странице.
+ * The dialog on the stand is opened by a button: closed, it is hidden, and
+ * open, it covers the page with a backdrop, so showing it at once would block
+ * the rest of the page.
  */
 function DialogPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
 	const { shown, setShown, onChangeVisible } = useShown(bind)
@@ -215,13 +227,13 @@ function DialogPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
 }
 
 /**
- * Выезжающую панель на стенде тоже открывает кнопка — по той же причине, что
- * окно, и на том же своём состоянии (`useShown`).
+ * The drawer is opened by a button too — for the same reason as the dialog,
+ * and on the same own state (`useShown`).
  *
- * Кнопка и панель лежат в своей коробке с `position: relative`: с
- * `contained` панель не телепортируется, а встаёт в ближайшем
- * позиционированном предке, и строка `contained` показывает её в коробке
- * превью, а не у края всей страницы.
+ * The button and the drawer sit in a box with `position: relative`: with
+ * `contained` the drawer is not teleported but placed in the nearest
+ * positioned ancestor, so the `contained` row shows it in the preview's box,
+ * not at the edge of the whole page.
  */
 function DrawerPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
 	const { shown, setShown, onChangeVisible } = useShown(bind)
@@ -248,24 +260,23 @@ function DrawerPreview(bind: Readonly<Record<string, unknown>>): ReactNode {
 	)
 }
 
-/** Своё содержимое тоста — кнопка «Отменить»: тост приходит ей пропом и закрывается ею. */
+/** The toast's own content — an undo button: it gets the toast as a prop and closes it. */
 const ToastUndo: TToastRender = ({ toast }) => (
 	<Button text="Отменить" onClick={() => toast.close()} />
 )
 
 /**
- * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
- * (`useToasts()`) и показывают тост. Что сообщает тост, — образцы стенда, одни
- * на все хосты (`toastSample`), своё содержимое к ним — кнопка «Отменить»
- * этого хоста. Текст начинается с номера: в стопке видно, какой тост где.
- * Номер — своё состояние превью (`useRef`): это код стенда, а не компонент
- * библиотеки, и перерисовки он не требует.
+ * Toasts come from code, not markup: buttons inside the manager show them
+ * through `useToasts()`. The messages are the stand's samples shared by all
+ * hosts (`toastSample`), with this host's undo button as their own content.
+ * Each text starts with a number, so the stack shows which toast is which; the
+ * counter is a `useRef` — stand code, not a library component, and it needs no
+ * re-render.
  *
- * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
- * показывает значок своего вида. Последняя — ожидание: «Сохраняем…» с кольцом
- * на месте значка сам не закрывается, а через пару секунд тот же тост сообщает
- * успех. Ряд кнопок — с переносом: в ячейку витрины шесть кнопок одной
- * строкой не встают.
+ * One button for a plain message and one per type (`TOASTS_ITEM_TYPES`), each
+ * toast with its type's icon. The last is a pending toast: "Saving…" with a
+ * spinner stays open and a couple of seconds later turns into a success. The
+ * row wraps: six buttons do not fit one line of a showcase cell.
  */
 function ToastsTrigger(): ReactNode {
 	const { show } = useToasts()
@@ -278,7 +289,7 @@ function ToastsTrigger(): ReactNode {
 		show({ ...sample, text: `${count.current}. ${sample.text}`, type })
 	}
 
-	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	// While the work runs the toast waits; when it ends the same toast reports the result
 	const save = () => {
 		count.current += 1
 
@@ -306,8 +317,8 @@ function ToastsTrigger(): ReactNode {
 }
 
 export const PREVIEWS: Record<string, TPreview> = {
-	// Подпись — проп `text` из пропсов превью, а не слот: заданный слот
-	// перекрывает проп, и строка `text` не меняла бы ничего видимого
+	// The label is the `text` prop from the preview props, not a slot: a given
+	// slot overrides the prop, and the `text` row would change nothing visible
 	button: (bind) => <Button {...bind} />,
 
 	input: (bind) => <Input {...bind} />,
@@ -315,8 +326,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	textarea: (bind) => <Textarea {...bind} />,
 
-	// Текста у чекбокса и переключателя нет, оба — голый контрол: подпись даёт
-	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
+	// A checkbox and a switch have no text, both are bare controls: the label
+	// comes from the Label wrapper. The preview sets its props, the page rows
+	// edit the control
 	'check-box': (bind) => (
 		<Label text="Согласен">
 			<CheckBox {...bind} />
@@ -329,86 +341,93 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</Label>
 	),
 
-	// Подпись — проп `text` из пропсов превью, контрол — слотом. Строки
-	// страницы правят саму подпись: сторону, размер текста, вариант
+	// The label is the `text` prop from the preview props, the control is the
+	// slot. The page rows edit the label itself: its side, text size, variant
 	label: (bind) => (
 		<Label {...bind}>
 			<CheckBox />
 		</Label>
 	),
 
-	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
-	// содержимым. Строки страницы правят само поле: сторону подписи, тексты,
-	// ошибку
+	// A form field around Input: the parts' texts are preview props, the
+	// control is the content. The page rows edit the field itself: the label's
+	// side, the texts, the error
 	field: (bind) => (
 		<Field {...bind}>
 			<Input placeholder="name@example.com" />
 		</Field>
 	),
 
-	// Имени у ползунка нет, как у чекбокса: видимое даёт подпись Label, над
-	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей высоты
+	// A slider has no name, like a checkbox: the visible one is a Label above
+	// it. A horizontal slider stretches to the label's width, a vertical one
+	// keeps its own height
 	slider: (bind) => (
 		<Label text="Громкость" position="top">
 			<Slider {...bind} />
 		</Label>
 	),
 
-	// Имени у оценки нет, как у ползунка: видимое даёт подпись Label над звёздами
+	// A rating has no name, like a slider: the visible one is a Label above the stars
 	rating: (bind) => (
 		<Label text="Оценка" position="top">
 			<Rating {...bind} />
 		</Label>
 	),
 
-	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox
-	'radio-group': (bind) => (
+	// The label is the content: a radio has no text, it is a bare control, like CheckBox
+	'radio-group': (bind, parts) => (
 		<RadioGroup {...bind}>
 			{ITEMS.map((item) => (
-				<RadioGroup.Item key={item.value} value={item.value}>
+				<RadioGroup.Item key={item.value} value={item.value} {...parts.Item}>
 					{item.text}
 				</RadioGroup.Item>
 			))}
 		</RadioGroup>
 	),
 
-	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам
-	// сеток. Языка у превью нет: это локаль провайдера вокруг корня хоста —
-	// выбор языка в шапке (`setLocale` хоста)
+	// A calendar has no content: its month-grid view puts the days into the
+	// collection. The preview sets no language: it is the locale of the
+	// provider around the host's root — the header's language picker (the
+	// host's `setLocale`)
 	calendar: (bind) => <Calendar {...bind} />,
 
-	// Язык — из шапки стенда, как у календаря
+	// The language comes from the stand's header, as for the calendar
 	'date-input': (bind) => <DateInput {...bind} />,
 
-	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
-	// из шапки стенда, как у поля и календаря
+	// The field and the calendar are DatePicker's own instances, it has no
+	// content. The language comes from the header, as for the field and the
+	// calendar
 	'date-picker': (bind) => <DatePicker {...bind} />,
 
-	// Элементы — разметкой, а пришли данными (`items` блока групп страницы) —
-	// из них: разметка заменила бы данные, а группы список рисует из данных
-	'list-box': (bind) => (
+	// Items in markup, unless they come as data (`items` from the page's groups
+	// block): markup would replace the data, and the list draws groups from data
+	'list-box': (bind, parts) => (
 		<ListBox {...bind}>
-			{bind.items ? null : ITEMS.map((item) => <ListBox.Item key={item.value} {...item} />)}
+			{bind.items
+				? null
+				: ITEMS.map((item) => <ListBox.Item key={item.value} {...item} {...parts.Item} />)}
 		</ListBox>
 	),
 
-	// Опции — разметкой, а пришли данными (`items` блока групп страницы) — из
-	// них, как у Vue: разметка заменила бы данные, а группы Select рисует из данных
+	// Options in markup, unless they come as data (`items` from the page's groups
+	// block), as in Vue: markup would replace the data, and Select draws groups
+	// from data
 	select: (bind) => (
 		<Select {...bind}>
 			{bind.items ? null : ITEMS.map((item) => <Select.Item key={item.value} {...item} />)}
 		</Select>
 	),
 
-	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама.
-	// Язык номеров и имён стрелок — из шапки стенда
+	// Pagination has no content: it puts the window's pages into its collection
+	// itself. The language of the numbers and the arrows' names comes from the
+	// header
 	pagination: (bind) => <Pagination {...bind} />,
 
-	// Содержимое ленты — просто разметка: коллекции у неё нет. Каждый элемент —
-	// прямой ребёнок вьюпорта: по ним тема ставит точки снапа, а плагин считает
-	// края. Обёртка — граница ширины, как у Vue: сцена ячейки — флексбокс, и
-	// лента по ширине содержимого вылезла бы за колонку — листать стало бы
-	// нечего
+	// The scroller's content is plain markup: it has no collection. Each item is
+	// a direct child of the viewport: the theme puts snap points on them, and
+	// the plugin measures the edges. The wrapper bounds the width, as in Vue:
+	// the cell's stage is a flexbox, and a scroller as wide as its content would
+	// overflow the column, with nothing left to scroll
 	scroller: (bind) => (
 		<div style={{ width: '100%' }}>
 			<Scroller {...bind}>
@@ -421,8 +440,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</div>
 	),
 
-	// Триггер — Button, связку с панелью и вид «нажат» он берёт из scope
-	// слота. В содержимом есть кнопка: на неё при открытии уходит фокус
+	// The trigger is a Button: it takes the binding to the panel and the pressed
+	// look from the slot scope. The content has a button, which takes the focus
+	// on open
 	popover: (bind) => (
 		<Popover
 			{...bind}
@@ -435,17 +455,16 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</Popover>
 	),
 
-	// Триггер — Button, связку с меню и вид «нажата» он берёт из scope слота,
-	// как у Popover. У контекстного меню (`openOn: 'contextmenu'`) в слоте
-	// область, как «файл» у потребителя: меню вызывают над ней правой кнопкой,
-	// долгим касанием и Shift+F10, и панель встаёт у точки вызова. Область —
-	// нативная кнопка, как у Vue: под фокусом для Shift+F10, со своими ролью и
-	// именем и без связки с меню. Режим область берёт из пропсов колонки, как у
-	// Vue: у колонки экземпляра его нет, и там меню вызывают над кнопкой.
-	// Пункты — разметкой, а пришли данными (`items` блока групп страницы) — из
-	// них, как у списка: разметка заменила бы данные, а группы меню рисует из
-	// данных
-	menu: (bind) => (
+	// The trigger is a Button that takes the menu binding and the pressed look
+	// from the slot scope, as for Popover. With `openOn: 'contextmenu'` the slot
+	// holds an area instead, like a "file" in an app: right click, long press or
+	// Shift+F10 over it opens the menu at that point. The area is a native
+	// button, as in Vue: focusable for Shift+F10, with its own role and name,
+	// unbound from the menu. The mode comes from the column's props: the
+	// instance column has none and opens the menu over the button. Items in
+	// markup, unless they come as data (`items` from the groups block), as for
+	// the list
+	menu: (bind, parts) => (
 		<Menu
 			{...bind}
 			trigger={({ triggerAria, triggerDataset }: TMenuTriggerScope) =>
@@ -461,12 +480,13 @@ export const PREVIEWS: Record<string, TPreview> = {
 				)
 			}
 		>
-			{bind.items ? null : menuItems()}
+			{bind.items ? null : menuItems(parts)}
 		</Menu>
 	),
 
-	// Триггер — Button, ссылку на панель (`aria-describedby`) он берёт из
-	// scope слота. Текст подсказки — содержимым: пропа текста у неё нет
+	// The trigger is a Button: it takes the link to the panel
+	// (`aria-describedby`) from the slot scope. The tooltip's text is the
+	// content: it has no text prop
 	tooltip: (bind) => (
 		<Tooltip
 			{...bind}
@@ -478,24 +498,24 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</Tooltip>
 	),
 
-	// Кнопка открывает окно, окно — на своём состоянии (см. `DialogPreview`)
+	// A button opens the dialog, which runs on its own state (see `DialogPreview`)
 	dialog: (bind) => <DialogPreview {...bind} />,
 
-	// Кнопка открывает панель, панель — на своём состоянии (см. `DrawerPreview`)
+	// A button opens the drawer, which runs on its own state (see `DrawerPreview`)
 	drawer: (bind) => <DrawerPreview {...bind} />,
 
-	// Менеджер оборачивает кнопки, которые показывают тосты (см.
-	// `ToastsTrigger`). Регион с тостами — телепортом у края окна, вне ячейки
-	// превью
+	// The manager wraps the buttons that show toasts (see `ToastsTrigger`). The
+	// toast region is teleported to the window's edge, outside the preview cell
 	toasts: (bind) => (
 		<Toasts {...bind}>
 			<ToastsTrigger />
 		</Toasts>
 	),
 
-	// Строки и колонки — данными, как у Vue: частей разметкой у таблицы нет.
-	// Обёртка — граница ширины, а с закреплённой шапкой — ещё и окно прокрутки
-	// высотой 320 px на сорок строк. Окно таблицы — на странице Virtual
+	// Rows and columns are data, as in Vue: a table has no parts in markup. The
+	// wrapper bounds the width, and with a sticky head it is also a 320 px high
+	// scroll box over forty rows. The table's virtual window is on the Virtual
+	// page
 	table: (bind) => (
 		<div
 			style={
@@ -512,46 +532,48 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</div>
 	),
 
-	tabs: (bind) => (
-		<Tabs {...bind} content={tabsPanels()}>
-			{tabsItems()}
+	tabs: (bind, parts) => (
+		<Tabs {...bind} content={tabsPanels(parts)}>
+			{tabsItems(parts)}
 		</Tabs>
 	),
 
-	// Обёртка — граница ширины, как у Vue: сцена ячейки — флексбокс, и ряд по
-	// ширине своих тегов уходил бы за край колонки, а `overflow` не срабатывал
-	// бы вовсе — прокручивать было бы нечего
+	// The wrapper bounds the width, as in Vue: the cell's stage is a flexbox, and
+	// a row as wide as its tags would run past the column's edge, so `overflow`
+	// would never apply — there would be nothing to scroll
 	tags: (bind) => (
 		<div style={{ width: '100%' }}>
 			<Tags items={ITEMS} {...bind} />
 		</div>
 	),
 
-	accordion: (bind) => <Accordion {...bind}>{accordionItems()}</Accordion>,
+	accordion: (bind, parts) => <Accordion {...bind}>{accordionItems(parts)}</Accordion>,
 
 	icon: (bind) => <Icon tag={ARROW_DOWN} {...bind} />,
 
-	// Длину горизонтальной полосе даёт контейнер, своей у неё нет. Обёртка —
-	// граница ширины, как у Vue: сцена ячейки — флексбокс, и полоса держала бы
-	// там только свой минимум. По умолчанию полоса пуста: доля — ноль, а бег —
-	// флаг `indeterminate`
+	// A horizontal bar gets its length from the container, it has none of its
+	// own. The wrapper bounds the width, as in Vue: the cell's stage is a
+	// flexbox, where the bar would keep only its minimum. By default the bar is
+	// empty: the fraction is zero, and the running look is the `indeterminate`
+	// flag
 	'progress-linear': (bind) => (
 		<div style={{ width: '100%' }}>
 			<ProgressLinear {...bind} />
 		</div>
 	),
 
-	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
-	// бег — флаг `indeterminate`
+	// The ring is inline and of its own size. By default it is empty: the
+	// fraction is zero, and the running look is the `indeterminate` flag
 	'progress-spinner': (bind) => <ProgressSpinner {...bind} />,
 
 	skeleton: (bind) => <Skeleton {...bind} />,
 
-	// Перестановка у трёх коллекций сразу, на одном составе: Tabs и Accordion —
-	// той же разметкой, что на их страницах, ListBox — данными, как у Vue.
-	// Элемент переставляется в своей коллекции: между коллекциями обёртка не
-	// переносит. Ряд — граница ширины, как у окна: табы — во всю ширину ряда,
-	// список и секции — под ними, рядом
+	// Reordering in three collections at once, on one set of items: Tabs and
+	// Accordion in the same markup as on their pages, ListBox as data, as in
+	// Vue. An item moves within its own collection: the wrapper does not move
+	// items between collections. The row bounds the width, as on the Virtual
+	// page: the tabs take the full row, the list and the sections sit below,
+	// side by side
 	'drag-and-drop': (bind) => (
 		<DragAndDrop {...bind}>
 			<div
@@ -574,14 +596,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 		</DragAndDrop>
 	),
 
-	// Окно на трёх списках по тысяче элементов: на пяти его не видно. ListBox с
-	// пределом строк прокручивается сам, у Select прокручивается список его
-	// панели, таблица — в обёртке высотой 320 px; строка `enabled` включает и
-	// выключает окно у всех разом. Элементы — данными (`items`): элементы
-	// разметкой окно не прячет. Ряд — граница ширины, как у Vue, а Select — в
-	// колонке своей ширины: поле во всю ширину места, и в ряду оно забрало бы
-	// место таблицы. Переставленную колонку таблица ведёт целиком, с ячейками
-	// строк (`reorderPreview: 'column'`): в окне это сотни ячеек, а не тысячи
+	// The window over three lists of a thousand items (five would not show it):
+	// ListBox with a row limit scrolls itself, Select scrolls its panel's list,
+	// the table scrolls in a 320 px wrapper; the `enabled` row toggles the window
+	// for all. Items are data (`items`): the window does not hide items in
+	// markup. The row bounds the width, as in Vue; Select gets a fixed-width
+	// column, or its full-width field would take the table's place. A moved
+	// column is dragged whole, with its cells (`reorderPreview: 'column'`): in
+	// the window that is hundreds of cells, not thousands
 	virtual: (bind) => (
 		<Virtual {...bind}>
 			<div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', width: '100%' }}>

@@ -23,7 +23,7 @@ export function setupToastsItem(props: ToastsItemProps) {
 		ToastsCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+	).use(TCollectionItemExtension, { adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(item, props)
 	const owner = useAdapter(adapter, props)

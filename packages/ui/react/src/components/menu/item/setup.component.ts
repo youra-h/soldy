@@ -16,7 +16,7 @@ export function useSetupMenuItem(props: MenuItemProps) {
 			MenuCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+		).use(TCollectionItemExtension, { adapter, elevator })
 
 		return [adapter, item] as const
 	})

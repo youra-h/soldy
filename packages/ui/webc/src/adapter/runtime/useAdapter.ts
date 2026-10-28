@@ -1,8 +1,8 @@
 /**
- * Связка Web Components над готовым adapter-context. Реактивности у платформы
- * нет: состояние — обычный объект, об изменении сообщает `onUpdate`, а
- * перерисовку планирует база элемента. События ядра — `CustomEvent` на
- * элементе; у разметки владельца они не всплывают. AGENTS.md (Web
+ * The Web Components binding over an assembled adapter context. The platform
+ * has no reactivity: state is a plain object, `onUpdate` reports a change,
+ * and the element base schedules the render. Core events are `CustomEvent`s
+ * on the element; from the owner's markup they do not bubble. AGENTS.md (Web
  * Components), «Связка».
  */
 
@@ -18,9 +18,10 @@ import { WebcProfile } from '../common'
 import { isOwnerMarkup } from './marks'
 
 /**
- * Свойства инстанса с выходами плагинов и свойства фасадов. Выходы — одним
- * видом с инстансом, фасад владельца — с фасадом: из пересечения трёх видов
- * TypeScript не выводит инстанс по ожидаемому типу контекста шаблона.
+ * Instance properties with plugin outputs, and facade properties. Outputs go
+ * in one view with the instance, the owner's facade with the facade: from an
+ * intersection of three views TypeScript does not infer the instance from the
+ * expected type of the template context.
  */
 export type TBindingState<
 	TInstance,
@@ -29,7 +30,7 @@ export type TBindingState<
 	TOwnerFacade = unknown,
 > = TInstanceState<TInstance & TOutputs> & TInstanceState<TFacade & TOwnerFacade>
 
-/** `TFacade` — фасад коллекции, через его контекст шаблон зовёт команды коллекции. */
+/** `TFacade` is the collection facade; the template calls collection commands via its context. */
 export type TBinding<
 	TInstance = object,
 	TFacade = unknown,
@@ -41,14 +42,18 @@ export type TBinding<
 	readonly facade: TFacade
 	syncProps(props: object): void
 	bindElement(el: Element | null): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
-/** Связка фасада: `ctrl` и узел принадлежат компоненту, а не фасаду. */
+/** A facade's binding: `ctrl` and the node belong to the component, not the facade. */
 export type TCollectionBinding<TFacade = object> = {
 	readonly state: TInstanceState<TFacade>
 	readonly facade: TFacade
 	syncProps(props: object): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
@@ -57,12 +62,16 @@ export type TUpdateListener = (name: string, value: unknown) => void
 type TExchange<C extends IComponentContract> = {
 	readonly state: TAdapterState<C>
 	syncProps(props: object): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
 type TJoined = {
 	readonly state: Readonly<Record<string, unknown>>
 	syncProps(props: object): void
+	/** The teardown began: the consumer hears nothing from then on. */
+	detach(): void
 	destroy(): void
 }
 
@@ -71,8 +80,8 @@ type TJoined = {
  * cancels the core event.
  *
  * A removed element sends nothing: the consumer took it down, and what its
- * teardown stirs — the blur of the removed node, the markup items leaving the
- * collection — is not news to anyone, as in the other adapters
+ * teardown stirs (the blur of the removed node, the markup items leaving the
+ * collection) is news to no one, as in the other adapters
  * (benchmarks/parity/README.md). An element moved elsewhere is assembled anew
  * on connecting (`ElementBase`), so its state starts over there too.
  */
@@ -105,7 +114,7 @@ function useExchange<C extends IComponentContract>(
 	const bubbles = !isOwnerMarkup(host)
 	const state: Record<string, unknown> = {}
 
-	// Подписка сразу отдаёт значение каждого свойства — так состояние и заполняется
+	// The subscription hands over every property's value at once: that fills the state
 	const unsubscribe = binding.state.subscribe((name, value) => {
 		state[name] = value
 		onUpdate(name, value)
@@ -117,17 +126,26 @@ function useExchange<C extends IComponentContract>(
 	// Events after the acceptance: what it writes is the starting state, as in
 	// the other adapters (benchmarks/parity/README.md). A component with
 	// collection facades binds them first: the facade, accepted, writes into
-	// the component — the months of Calendar's grids, Table's `dataset`
+	// the component (the months of Calendar's grids, Table's `dataset`)
 	const unbindEvents = binding.events.listen((exportName, args) => {
 		dispatch(host, exportName, args, bubbles)
 	})
 
+	// The consumer stops on `detach`, which comes from `disconnectedCallback`
+	// or, for a collection item, from its collection before the siblings go
+	// one by one (`TCollectionMembers`)
+	adapter.events.on('detach', unbindEvents)
+
 	return {
 		state: toInstanceState<C>(state),
 
-		// Дельта, а не `full`: элемент отдаёт по одному атрибуту или свойству
+		// A delta, not `full`: the element passes one attribute or property at a time
 		syncProps(props: object): void {
 			binding.inputs.delta(props)
+		},
+
+		detach(): void {
+			adapter.detach()
 		},
 
 		destroy(): void {
@@ -169,7 +187,7 @@ type TJoinedStates = {
 	readonly states: readonly Readonly<Record<string, unknown>>[]
 }
 
-/** Состояние, где имя есть, — первое по порядку. */
+/** The first state in order that has the name. */
 function stateOf(
 	{ states }: TJoinedStates,
 	name: string | symbol,
@@ -178,8 +196,8 @@ function stateOf(
 }
 
 /**
- * Обработчик один на все виды: геттер на каждое имя каждого вида — замыкание,
- * его область и пара аксессоров, — у строки таблицы стоил килобайты.
+ * One handler for all views: a getter per name of every view (a closure, its
+ * scope and a pair of accessors) cost a table row kilobytes.
  */
 const JOINED: ProxyHandler<TJoinedStates> = {
 	get(target, name) {
@@ -201,9 +219,9 @@ const JOINED: ProxyHandler<TJoinedStates> = {
 }
 
 /**
- * Живой вид нескольких состояний: свойство — из первого, где оно есть. Ключи
- * заполнила подписка при сборке, новых не появляется, значения читаются в
- * момент обращения.
+ * A live view of several states: a property comes from the first that has it.
+ * The subscription filled the keys at assembly and no new ones appear; values
+ * are read at access time.
  */
 function joinStates(
 	states: readonly Readonly<Record<string, unknown>>[],
@@ -211,7 +229,7 @@ function joinStates(
 	return new Proxy<TJoinedStates>({ states }, JOINED)
 }
 
-/** Граница рантайма и типа, как `toInstanceState`: связь имён держат дескрипторы. */
+/** The runtime/type boundary, as `toInstanceState`: the descriptors hold the name link. */
 function toBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>(
 	view: Readonly<Record<string, unknown>>,
 ): TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade> {
@@ -219,9 +237,10 @@ function toBindingState<TInstance, TFacade, TOutputs, TOwnerFacade>(
 }
 
 /**
- * Одна связка из двух или трёх контекстов: свой, фасад элемента и, у пункта с
- * подменю, фасад своей коллекции. Узел — только свой; фасады уничтожаются
- * раньше компонента, пока его набор плагинов цел.
+ * One binding from two or three contexts: the own, the item's facade and, for
+ * an item with a submenu, the facade of its own collection. The node is the
+ * own only; `detach` goes to all; facades are destroyed before the component,
+ * while its plugin bundle is intact.
  */
 export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknown>(
 	owner: TBinding<TInstance, unknown, TOutputs>,
@@ -246,6 +265,12 @@ export function joinBindings<TInstance, TFacade, TOutputs, TOwnerFacade = unknow
 
 		bindElement(el: Element | null): void {
 			owner.bindElement(el)
+		},
+
+		detach(): void {
+			owner.detach()
+
+			for (const each of facades) each.detach()
 		},
 
 		destroy(): void {

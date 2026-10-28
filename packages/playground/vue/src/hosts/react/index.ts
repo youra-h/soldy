@@ -3,22 +3,27 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import { enUS, type TLocale } from '@soldy-ui/plugins'
 import { LocaleProvider } from '@soldy-ui/react'
-import { findComponent, type IPreviewHost } from '@soldy-ui/playground-shared'
+import {
+	componentDescriptors,
+	findComponent,
+	partsOf,
+	type IPreviewHost,
+} from '@soldy-ui/playground-shared'
 import { PREVIEWS, type TPreview } from './previews'
 import { FIXTURES } from './fixtures'
 import { listenersOf } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
 
-/** Язык шапки — один на все корни хоста. */
+/** The header's language — one for all the host's roots. */
 let locale: TLocale = enUS
 
-/** Отрисовки живых корней: смена языка перерисовывает каждый. */
+/** Draws of the live roots: a language change redraws each of them. */
 const roots = new Set<() => void>()
 
-/** Сколько корней превью смонтировано — номер в префиксе id следующего (см. `mount`). */
+/** Preview roots mounted so far — the number in the next root's id prefix (see `mount`). */
 let mounted = 0
 
-/** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
+/** What to draw: the fixture by its key, without a key — the component's preview. */
 function drawing(component: string, fixture: string | undefined): TPreview {
 	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
 
@@ -30,27 +35,27 @@ function drawing(component: string, fixture: string | undefined): TPreview {
 }
 
 /**
- * Хост React.
+ * The React host.
  *
- * Превью — свой корень React (`createRoot`) на узле оболочки, корень дерева —
- * `LocaleProvider`: контекст оболочки в чужой корень не проходит, и язык шапки
- * корню даёт хост. Смена языка перерисовывает корни с новой локалью
- * провайдера, а провайдер пишет её в свой источник — компоненты не
- * перемонтируются.
+ * A preview is its own React root (`createRoot`) on the shell's node, with
+ * `LocaleProvider` on top: the shell's context does not reach another root, so
+ * the host gives the root the header's language. A language change redraws the
+ * roots with the provider's new locale, and the provider writes it to its
+ * source — the components are not remounted.
  *
- * Всё — через `flushSync`: контракт обещает компонент в DOM к возврату из
- * `mount`, а пропсы и язык оболочка меняет из своих наблюдателей, вне
- * отрисовки React, и синхронный сброс там законен. Отрисовка тем же корнем —
- * обновление, а не новое монтирование: React сверяет дерево с прежним.
+ * Every draw goes through `flushSync`: the contract promises the component in
+ * the DOM when `mount` returns, and the shell changes props and language from
+ * its own watchers, outside React's rendering, where a synchronous flush is
+ * allowed. A draw on the same root is an update, not a new mount: React
+ * reconciles the tree with the previous one.
  *
- * Префикс id у каждого корня свой (`identifierPrefix`), как `idPrefix` у
- * приложений хоста Vue. `useId` React выводит id из места в дереве корня, и у
- * двух одинаковых превью — их по два на строку страницы — совпали бы id
- * монтирования, а с ними `id` частей и пометки панелей владельцами
- * (`data-owner`). Плагины слоя находят панель по пометке первой в документе, и
- * жест, фокус и немой фон уходили бы на чужую скрытую панель. Несколько корней
- * на странице React и просит различать префиксом. Сторожит «пометки панелей
- * владельцами не повторяются» в `__tests__/smoke/suite.ts`.
+ * Each root has its own id prefix (`identifierPrefix`), like `idPrefix` of the
+ * Vue host's apps. `useId` derives ids from the place in the root's tree, so
+ * the two identical previews of a page row would share mount ids, the parts'
+ * `id`s and the panels' owner marks (`data-owner`). The layer plugins find a
+ * panel by the first mark in the document, and the gesture, the focus and the
+ * inert background would go to the other preview's hidden panel. Guarded by
+ * «пометки панелей владельцами не повторяются» in `__tests__/smoke/suite.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
@@ -59,7 +64,10 @@ const host: IPreviewHost = {
 	mount(node, { component, fixture, props, onEvent, count = 1 }) {
 		const preview = drawing(component, fixture)
 		const entry = findComponent(component)
-		const listeners = entry && onEvent ? listenersOf(entry, onEvent) : {}
+		const listeners = entry && onEvent ? listenersOf(componentDescriptors(entry), onEvent) : {}
+		// A fixture's markup is its own: its parts are not listened to
+		const parts =
+			entry && onEvent && fixture === undefined ? partsOf(entry, onEvent, listenersOf) : {}
 		const root = createRoot(node, { identifierPrefix: `preview${++mounted}-` })
 		let bind = props
 
@@ -70,7 +78,11 @@ const host: IPreviewHost = {
 						LocaleProvider,
 						{ locale },
 						Array.from({ length: count }, (_, key) =>
-							createElement(Fragment, { key }, preview({ ...bind, ...listeners })),
+							createElement(
+								Fragment,
+								{ key },
+								preview({ ...bind, ...listeners }, parts),
+							),
 						),
 					),
 				),

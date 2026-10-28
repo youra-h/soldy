@@ -1,8 +1,10 @@
 /**
- * useAdapterContext — держит контексты компонента между рендерами и отвечает
- * за весь срок их жизни: сборка на первом рендере, приём при коммите,
- * пересборка при повторной установке эффекта, уничтожение очисткой.
- * AGENTS.md (React), «Срок жизни контекста».
+ * useAdapterContext — keeps the component's contexts between renders and owns
+ * their whole life: assembly on the first render, acceptance at the commit,
+ * reassembly when the effect is set up again, destruction in its cleanup. The
+ * first moment of the teardown, `detach`, is the layout cleanup of the
+ * consumer's subscription (`TEventCallbacks.release`). AGENTS.md (React),
+ * «Срок жизни контекста».
  */
 
 import { useContext, useEffect, useEffectEvent, useId, useMemo, useReducer, useRef } from 'react'
@@ -12,23 +14,24 @@ import { ElevatorContext, type TElevatorLayer } from '../elevator/layer'
 import { LocaleContext } from '../locale/context'
 import { TReactElevatorScope } from '../elevator/scope.class'
 import { TDrafts } from './drafts.class'
+import { accepting } from './accepting'
 
-/** Сборка контекста, которую хук отдаёт фабрике: сигнатура — `createAdapterContext`. */
+/** The context assembly the hook gives the factory: the signature of `createAdapterContext`. */
 export type TCreateAdapterContext = typeof createAdapterContext
 
-/** Что собирает фабрика: контекст компонента или несколько — свой и фасада коллекции. */
+/** What the factory assembles: the component's context, or several (its own and the facade's). */
 export type TAdapterContexts = IAdapterContext | readonly IAdapterContext[]
 
 export type TAssembly<T extends TAdapterContexts> = {
-	/** Ровно то, что вернула фабрика. */
+	/** Exactly what the factory returned. */
 	readonly contexts: T
-	/** Слой компонента: родительский и то, что сборка опустила. Детям — через `Elevate`. */
+	/** The layer: the parent's plus what the assembly put down. Children get it via `Elevate`. */
 	readonly layer: TElevatorLayer
 }
 
 const nextVersion = (version: number) => version + 1
 
-/** Сборки, которые React ещё не принял, — общие для всех компонентов. */
+/** Assemblies React has not accepted yet, shared by all components. */
 const drafts = new TDrafts()
 
 function isList(contexts: TAdapterContexts): contexts is readonly IAdapterContext[] {
@@ -39,28 +42,35 @@ function listOf(contexts: TAdapterContexts): readonly IAdapterContext[] {
 	return isList(contexts) ? contexts : [contexts]
 }
 
-/** В порядке сборки: фасад собран на наборе владельца и принимается после него. */
+/** In assembly order: the facade is assembled on the owner's bundle and accepted after it. */
 function attachAll(contexts: TAdapterContexts): void {
 	for (const context of listOf(contexts)) context.attach()
 }
 
-/** В обратном порядке: фасад уходит раньше владельца. */
+/** All before any is destroyed: the component's consumer hears nothing of its facade leaving. */
+function detachAll(contexts: TAdapterContexts): void {
+	for (const context of listOf(contexts)) context.detach()
+}
+
+/** Detached, then in reverse order: the facade goes before the owner. */
 function destroyAll(contexts: TAdapterContexts): void {
+	detachAll(contexts)
+
 	for (const context of [...listOf(contexts)].reverse()) context.destroy()
 }
 
 /**
- * Сборка на руках у хука: контексты, лифт и то, что они взяли снаружи.
- * Очистка эффекта — стрелка `destroy`: AGENTS.md (React), «Функции дольше
- * рендера — в классах».
+ * The assembly the hook holds: the contexts, the elevator and what they took
+ * from outside. The effect's cleanup is the `destroy` arrow: AGENTS.md
+ * (React), «Функции дольше рендера — в классах».
  */
 class TBuilt<T extends TAdapterContexts> {
 	private _destroyed = false
 
 	/**
-	 * @param contexts ровно то, что вернула фабрика
-	 * @param scope лифт, на котором собраны контексты
-	 * @param held `ctrl` и движок коллекции, пришедшие снаружи
+	 * @param contexts exactly what the factory returned
+	 * @param scope the elevator the contexts are assembled on
+	 * @param held `ctrl` and the collection engine that came from outside
 	 */
 	constructor(
 		readonly contexts: T,
@@ -72,9 +82,18 @@ class TBuilt<T extends TAdapterContexts> {
 		return this._destroyed
 	}
 
+	/**
+	 * The consumers of the contexts being accepted hear nothing of what the
+	 * acceptance writes (an item entering its collection): that is the
+	 * starting state, as in the other adapters, where the consumer starts
+	 * listening after the acceptance. React accepts in a passive effect, after
+	 * the consumer started listening in a layout effect (before the first
+	 * paint, so `ready` of `TElementPlugin` is not lost), and accepts the
+	 * children before the owner, whose consumer has to hear them enter.
+	 */
 	accept(): void {
 		drafts.accept(this.held)
-		attachAll(this.contexts)
+		accepting(this.contexts, () => attachAll(this.contexts))
 	}
 
 	readonly destroy = (): void => {
@@ -90,16 +109,16 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	const locale = useContext(LocaleContext)
 	const parent = useContext(ElevatorContext)
 	const ref = useRef<TBuilt<T> | null>(null)
-	// С чем прошла последняя установка эффекта
+	// The layer the last effect setup ran with
 	const settled = useRef<TElevatorLayer | null>(null)
 	const [, rerender] = useReducer(nextVersion, 0)
 	const assemble = (layer: TElevatorLayer): TBuilt<T> => {
 		const scope = new TReactElevatorScope(layer)
 		const held: object[] = []
-		// Повтор выброшенного рендера над тем же `ctrl` — с id выброшенного
+		// A retry of a discarded render over the same `ctrl` keeps the discarded one's id
 		let id = mountId
-		// Id монтирования и локаль, заданные опцией явно, остаются за тем, кто
-		// их задал
+		// A mount id and a locale given explicitly as options stay with whoever
+		// gave them
 		const create: TCreateAdapterContext = (descriptor, options, config) => {
 			const taken = drafts.take(options)
 
@@ -114,7 +133,7 @@ export function useAdapterContext<T extends TAdapterContexts>(
 
 		return built
 	}
-	// Фабрика последнего рендера, а не той, что застал эффект
+	// The factory of the last render, not of the one the effect saw
 	const rebuild = useEffectEvent(() => assemble(parent))
 
 	if (!ref.current) {
@@ -122,13 +141,13 @@ export function useAdapterContext<T extends TAdapterContexts>(
 	}
 
 	const built = ref.current
-	// Устаревшее прочитанное переустанавливает эффект с новым слоем
+	// A stale read layer sets the effect up again with the new one
 	const source = built.scope.isStale(parent) ? parent : settled.current
 
 	useEffect(() => {
 		settled.current = source
 
-		// Повторная установка: компонент жив, а его контексты уничтожены
+		// A repeated setup: the component is alive, but its contexts are destroyed
 		if (ref.current?.destroyed) {
 			ref.current = rebuild()
 			rerender()

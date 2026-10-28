@@ -26,10 +26,7 @@ export function setupMenuCheckboxItem(
 		MenuCollectionCheckboxItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым, как у пункта
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

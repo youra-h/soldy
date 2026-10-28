@@ -26,10 +26,7 @@ export function setupRadioGroupItem(
 		RadioGroupCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым: запись группы при входе радио своя связка прочтёт сразу
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

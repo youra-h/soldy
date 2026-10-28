@@ -16,7 +16,7 @@ export function useSetupCalendarItem(props: CalendarItemProps) {
 			CalendarCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+		).use(TCollectionItemExtension, { adapter, elevator })
 
 		return [adapter, item] as const
 	})

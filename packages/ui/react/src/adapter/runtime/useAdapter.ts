@@ -72,7 +72,7 @@ function bind(adapter: IAdapterContext): TStore {
 		adapter,
 		binding,
 		snapshot: new TStableSnapshot(binding.state),
-		callbacks: new TEventCallbacks(),
+		callbacks: new TEventCallbacks(adapter),
 	}
 }
 
@@ -107,7 +107,7 @@ function useExchange(
 	// Подписка до первой отрисовки: `ready` из TElementPlugin не потеряется
 	callbacks.update(props)
 
-	useLayoutEffect(() => binding.events.listen(callbacks.sink), [binding, callbacks])
+	useLayoutEffect(() => callbacks.listen(binding), [binding, callbacks])
 
 	return { binding, state }
 }

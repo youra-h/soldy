@@ -25,7 +25,7 @@ export function setupSelectItem(
 		SelectCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, elevator: AngularElevatorFactory })
+	).use(TCollectionItemExtension, { adapter, elevator: AngularElevatorFactory })
 
 	return joinBindings(owner, useCollectionAdapter(item))
 }

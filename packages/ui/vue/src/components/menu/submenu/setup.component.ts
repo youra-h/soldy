@@ -51,10 +51,7 @@ export default {
 			MenuCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, {
-			item: adapter.instance,
-			elevator: VueElevatorFactory,
-		})
+		).use(TCollectionItemExtension, { adapter, elevator: VueElevatorFactory })
 
 		// Для своих пунктов — меню. Готовая коллекция снаружи — как у меню:
 		// дали — фасад работает на ней, не дали — соберёт свою

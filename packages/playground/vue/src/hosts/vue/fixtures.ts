@@ -1,27 +1,29 @@
 import { h, type Component } from 'vue'
 import { Button, CheckBox, Icon, Label, RadioGroup, Switch, roleIcon } from '@soldy-ui/vue'
-import { toComponents, type TPreview } from './previews'
+import type { TPreview } from './previews'
 
-/**
- * Разметка сценариев, которой нет у превью: содержимое слотов под проверку.
- *
- * Сценарий ссылается на фикстуру ключом (`fixture`), а без ключа рисуется
- * превью своего компонента — тем же набором атрибутов: стартовые пропы
- * сценария, `ctrl` с экземпляром и слушатели журнала. Слоты — не свойство,
- * из метаданных их не достать, и разметка у каждого фреймворка своя: поэтому
- * фикстуры живут в хосте фреймворка, а сценарии, которые на них смотрят, — в
- * общем пакете. Ключи — те же у всех хостов.
- *
- * Фикстура без сценария и сценарий без фикстуры — ошибка: первую никто не
- * рисует, второй молча пропадает из меню (см. `__tests__/scenarios.spec.ts`).
- */
-/** Глифы — компонентами `roleIcon`, один раз: `tag` у Icon — корень, а не роль. */
+/** Glyphs as `roleIcon` components, made once: Icon's `tag` is the root, not a role. */
 const CHECK = roleIcon('check')
 const ARROW_RIGHT = roleIcon('arrowRight')
 
+/**
+ * Scenario markup the previews lack: slot content to check.
+ *
+ * A scenario refers to a fixture by key (`fixture`); without a key it draws
+ * its component's preview, with the same attribute set: the scenario's
+ * starting props, `ctrl` with the instance and the journal's listeners. Slots
+ * are not properties, metadata cannot give them, and each framework has its
+ * own markup: so fixtures live in the framework's host, and the scenarios
+ * that look at them in the shared package. The keys are the same for every
+ * host.
+ *
+ * A fixture without a scenario, or a scenario without a fixture, is an error:
+ * nobody draws the first, the second silently drops out of the menu (see
+ * `__tests__/scenarios.spec.ts`).
+ */
 export const FIXTURES: Record<string, TPreview> = {
-	// Метки во всех трёх слотах: сценарий ищет их по `data-probe` и сверяет
-	// порядок, а в `default` печатает то, что пришло в scope
+	// Probes in all three slots: the scenario finds them by `data-probe` and
+	// checks their order; `default` prints what came in the scope
 	'button-slot-labels': (bind) =>
 		h(Button, bind, {
 			leading: () => h('span', { 'data-probe': 'leading' }, 'L'),
@@ -29,26 +31,24 @@ export const FIXTURES: Record<string, TPreview> = {
 			trailing: () => h('span', { 'data-probe': 'trailing' }, 'T'),
 		}),
 
-	// Иконки по краям — подпись длинная, из пропа `text` сценария
+	// Icons at the edges; the long label comes from the scenario's `text` prop
 	'button-slot-icons': (bind) =>
 		h(Button, bind, {
 			leading: () => h(Icon, { tag: CHECK }),
 			trailing: () => h(Icon, { tag: ARROW_RIGHT }),
 		}),
 
-	// Подпись вокруг контрола: текст — из пропа `text` сценария, контрол — в
-	// слоте `default`
+	// A label around a control: the text from the scenario's `text` prop, the
+	// control in the `default` slot
 	'label-check-box': (bind) => h(Label, bind, () => h(CheckBox)),
 
 	'label-switch': (bind) => h(Label, bind, () => h(Switch)),
 
-	// Корень радио — `label`, а `label` в `label` HTML запрещает: внутри
-	// подписи радио рисуется с `tag="span"`. Группа вокруг — ради общего `name`
+	// The radio's root is a `label`, and HTML forbids a `label` inside a `label`:
+	// inside the label the radio is drawn with `tag="span"`. The group around it
+	// gives the shared `name`
 	'label-radio': (bind) =>
 		h(RadioGroup as Component, null, () =>
 			h(Label, bind, () => h(RadioGroup.Item, { value: 'a', tag: 'span' })),
 		),
 }
-
-/** Фикстуры как компоненты — как и превью (см. `toComponents`). */
-export const FIXTURE_COMPONENTS: Record<string, Component> = toComponents(FIXTURES)

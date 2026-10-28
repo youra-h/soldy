@@ -30,7 +30,7 @@ export function setupTabsContent(
 		TabsCollectionContentDescriptor(),
 		{ props, mountId },
 		{ bundle: adapter.bundle },
-	).use(TTabsContentBindingExtension, { content: adapter.instance, elevator })
+	).use(TTabsContentBindingExtension, { adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(content, getProps)
 	const owner = useAdapter(adapter, getProps, receive)

@@ -13,108 +13,121 @@ import {
 import { toastsOf, type TToastRender } from '@soldy-ui/webc'
 
 /**
- * Как рисовать компонент на стенде — в Web Components.
+ * How to draw a component on the playground, in Web Components.
  *
- * Та же карта, что у хоста Vue (`hosts/vue/previews.ts`), и с теми же ключами
- * — идентификаторами реестра. Разметки у платформы нет: элемент строит код
- * хоста (`document.createElement(tag, { is })`), поэтому превью — не функция
- * с разметкой, а описание элемента: нативный тег, имя элемента soldy, свои
- * атрибуты элемента, дети по слотам и обёртка. Превью то же самое, что у Vue и
- * React, чтобы колонки фреймворков можно было сравнивать глазами.
+ * The same map as the Vue host's (`hosts/vue/previews.ts`), with the same
+ * keys, the registry ids. The platform has no markup: the host's code builds
+ * the element (`document.createElement(tag, { is })`), so a preview is not a
+ * function with markup but a description of the element: the native tag, the
+ * soldy element name, the element's own attributes, children by slot and a
+ * wrapper. The previews are the same as in Vue and React, so the framework
+ * columns can be compared by eye.
  *
- * Значений пропов компонента превью в описании нет: подпись кнопки,
- * плейсхолдер поля — данные, одни на все хосты (`PREVIEW_PROPS` в общем
- * пакете), и компоненту их отдаёт оболочка вместе с пропсами строки. Свои
- * пропсы описания — у обёртки и детей, а у компонента — только то, что рисует
- * само превью, как у соседних хостов: строки и колонки таблицы.
+ * The description holds no prop values of the preview's component: a
+ * button's label or a field's placeholder are data, the same for every host
+ * (`PREVIEW_PROPS` in the shared package), and the shell gives them to the
+ * component together with the row's props. The wrapper and the children have
+ * description props of their own; the component only what the preview itself
+ * draws, as in the other hosts: the table's rows and columns.
  *
- * Чего у адаптера нет, того нет и в карте: компоненты переносятся своими
- * задачами.
+ * A component missing from the map is not shown by this host.
  */
 export type TPreview = {
-	/** Нативный тег элемента: элемент soldy — встроенный элемент своего тега. */
+	/** The element's native tag: a soldy element is a customized built-in of its tag. */
 	readonly tag: string
 	/**
-	 * Имя элемента soldy — значение `is`. Нет — элемент автономный, и имя —
-	 * сам тег (`<so-virtual>`, `<so-drag-and-drop>`), или это вовсе не элемент
-	 * soldy: обёртка-граница таблицы, ряд превью DragAndDrop и его ячейки.
+	 * The soldy element name: the `is` value. Missing: either the element is
+	 * autonomous and its name is the tag itself (`<so-virtual>`,
+	 * `<so-drag-and-drop>`), or it is not a soldy element at all: the table's
+	 * width wrapper, the DragAndDrop preview row and its cells.
 	 */
 	readonly is?: string
 	/**
-	 * Пропсы описания — у обёртки и детей; у компонента превью — только данные,
-	 * которые рисует само превью (строки и колонки таблицы): значения его пропов
-	 * отдаёт оболочка (`PREVIEW_PROPS`). Функция — пропсы от пропсов строки
-	 * компонента: таблице с закреплённой шапкой — длинный список строк.
+	 * Description props, of the wrapper and children; for the preview's component
+	 * only the data the preview itself draws (the table's rows and columns): the
+	 * shell gives its prop values (`PREVIEW_PROPS`). A function derives props from
+	 * the component's row props: a table with a sticky head gets a long row list.
 	 */
 	readonly props?: TPreviewProps | ((bind: TPreviewProps) => TPreviewProps)
 	/**
-	 * Стиль элемента без компонента. У обёртки — от пропсов строки компонента:
-	 * граница ширины таблицы, а с закреплённой шапкой — ещё и окно прокрутки, и
-	 * смена пропсов строки пишет его заново. У ребёнка в слоте — ряд превью
-	 * DragAndDrop и его ячейки: пропсов строки ребёнок не получает, и стиль
-	 * пишется один раз, при постройке.
+	 * Style of an element without a component. For a wrapper it follows the
+	 * component's row props (the table's width bound, with a sticky head also a
+	 * scroll window), and a row props change rewrites it. For a child in a slot
+	 * (the DragAndDrop preview row and its cells) there are no row props, and the
+	 * style is written once, when built.
 	 */
 	readonly style?: (bind: TPreviewProps) => string
 	/**
-	 * Свои атрибуты элемента — не пропы ядра, а то, что элемент читает сам: роль
-	 * иконки (`icon`). Имя — как у свойства элемента, атрибут — то же имя через
-	 * дефис, как у пропов. Это часть того, что элемент рисует: код колонок пишет
-	 * их всегда, без роли иконка пуста.
+	 * The element's own attributes: not core props but what the element reads
+	 * itself, such as the icon role (`icon`). Named like the element property;
+	 * the attribute is the same name hyphenated, as for props. They are part of
+	 * what the element draws: the column code always writes them, and without a
+	 * role the icon is empty.
 	 */
 	readonly attributes?: Readonly<Record<string, string>>
 	/**
-	 * Дети по слотам — свет элемента: имя слота → элементы soldy и разметка без
-	 * компонента. Код хоста ставит их в элемент до вставки, элементы — с
-	 * атрибутом `slot`, кроме слота по умолчанию. Функция — дети от пропсов
-	 * строки компонента: список, состав которого пришёл данными (`items` блока
-	 * групп страницы), рисуется без элементов разметки — они заменили бы данные.
-	 * Дети ставятся до вставки, и смена пропсов их не перестраивает.
+	 * Children by slot, the element's light DOM: slot name → soldy elements and
+	 * markup without a component. The host's code puts them into the element
+	 * before insertion, elements with a `slot` attribute except for the default
+	 * slot. A function derives children from the component's row props: a list
+	 * whose items came as data (`items` from the page's groups block) is drawn
+	 * without markup items, which would replace the data. Children are placed
+	 * before insertion, and a props change does not rebuild them.
 	 */
 	readonly slots?:
 		| Readonly<Record<string, readonly TContent[]>>
 		| ((bind: TPreviewProps) => Readonly<Record<string, readonly TContent[]>>)
 	/**
-	 * Пропсы строки, от которых зависят дети (`slots` функцией), — их смена
-	 * строит элемент заново, как смена `ctrl`: дети ставятся до вставки, а
-	 * свет собранного элемента база уже разложила. Так у Menu режим
-	 * контекстного меню (`openOn`) меняет триггер на область, как разметка Vue.
+	 * Row props the children depend on (`slots` as a function): changing them
+	 * rebuilds the element, like a `ctrl` change, since children are placed
+	 * before insertion and the base has already distributed the assembled
+	 * element's light DOM. This is how Menu's context mode (`openOn`) swaps the
+	 * trigger for an area, as the Vue markup does.
 	 */
 	readonly rebuild?: readonly string[]
 	/**
-	 * Обёртка — элемент вокруг компонента, как у Vue и React: подпись Label у
-	 * CheckBox, Switch, Slider и Rating — элемент soldy со своими пропсами, в
-	 * слоте по умолчанию которого лежит компонент, — а у таблицы, полосы
-	 * ProgressLinear и ленты Scroller граница ширины, `div` со стилем (у
-	 * таблицы — от пропсов строки), у выезжающей панели — её контейнер. Пропсы
-	 * строки, `ctrl` и слушатели — у компонента, обёртке пропсы задаёт
-	 * описание. Код колонок обёртку не показывает: он про компонент.
+	 * An element around the component, as in Vue and React: for CheckBox,
+	 * Switch, Slider and Rating a Label, a soldy element with its own props and
+	 * the component in its default slot; for Table, Tags, ProgressLinear and
+	 * Scroller a width bound, a styled `div` (the table's follows the row props);
+	 * for Drawer its container box, for Dialog a box-less `div`. The row props,
+	 * `ctrl` and the listeners go to the component; the wrapper's props come from
+	 * the description. The column code does not show the wrapper: it is about the
+	 * component.
 	 */
 	readonly wrapper?: TPreview
 	/**
-	 * Кнопка, которая открывает компонент, — её подпись: окно и выезжающую
-	 * панель на стенде открывает кнопка, как у Vue, — закрытые они спрятаны, а
-	 * открытые накрывают страницу подложкой. Button встаёт в обёртку перед
-	 * компонентом, и нажатие пишет компоненту `visible = true`, как кнопка
-	 * превью Vue — своё состояние `v-model:visible`. Без обёртки кнопке негде
-	 * стоять: корень превью — один узел.
+	 * Label of the button that opens the component: on the playground a button
+	 * opens Dialog and Drawer, as in Vue, since closed they are hidden and open
+	 * they cover the page with a backdrop. The Button goes into the wrapper before
+	 * the component, and a press writes `visible = true` to the component, as the
+	 * Vue preview's button writes its `v-model:visible` state. Without a wrapper
+	 * the button has no place: the preview root is a single node.
 	 */
 	readonly opener?: string
+	/**
+	 * The part this element is in the component's markup, by its name in the
+	 * registry (`TComponentEntry.parts`): `Item` for `<div is="so-tabs-item">`.
+	 * The host puts the part's listeners on it before insertion, as the
+	 * component's own on the component (`partsOf`).
+	 */
+	readonly part?: string
 }
 
-/** Пропсы элемента — свойствами, по имени. */
+/** The element's props, set as properties by name. */
 export type TPreviewProps = Readonly<Record<string, unknown>>
 
 /**
- * Ребёнок в слоте: элемент soldy со своим описанием — часть коллекции, контрол
- * подписи — или разметка без компонента — текст, блок с отступом. Разметку
- * строит функция: у каждой отрисовки свои узлы.
+ * A child in a slot: a soldy element with its own description (a collection
+ * part, a label's control) or markup without a component (text, a padded
+ * block). Markup is built by a function, so each render has its own nodes.
  */
 export type TContent = TPreview | (() => Node)
 
-/** Текст в слоте — подпись радио. */
+/** Text in a slot: a radio's label. */
 const text = (value: string) => (): Node => document.createTextNode(value)
 
-/** Блок содержимого с отступом — панель таба, содержимое секции, как у соседей. */
+/** A padded content block: a tab panel or a section's content, as in the other hosts. */
 const block = (padding: string, value: string) => (): Node => {
 	const node = document.createElement('div')
 
@@ -125,9 +138,9 @@ const block = (padding: string, value: string) => (): Node => {
 }
 
 /**
- * Элемент ленты — как у Vue: строчный блок с отступом, без переноса текста.
- * Каждый — прямой ребёнок вьюпорта: по ним тема ставит точки снапа, а плагин
- * считает края.
+ * A scroller element, as in Vue: a padded inline block without text wrapping.
+ * Each is a direct child of the viewport: the theme puts snap points on them,
+ * and the plugin measures the edges.
  */
 const strip = (value: string) => (): Node => {
 	const node = document.createElement('span')
@@ -138,7 +151,7 @@ const strip = (value: string) => (): Node => {
 	return node
 }
 
-/** Абзац содержимого панели поповера — как у Vue: с отступом до кнопки под ним. */
+/** A paragraph of panel content, as in Vue: with a gap to the button below it. */
 const paragraph = (value: string) => (): Node => {
 	const node = document.createElement('p')
 
@@ -148,12 +161,13 @@ const paragraph = (value: string) => (): Node => {
 	return node
 }
 
-/** Кнопка с подписью — в слоте: триггер поповера и подсказки, кнопка в панели. */
+/** A labelled button in a slot: the popover and tooltip trigger, a button in a panel. */
 const button = (text: string): TPreview => ({ tag: 'button', is: 'so-button', props: { text } })
 
 /**
- * Строчная подпись — в именованном слоте: заголовок окна и выезжающей панели.
- * Текст без элемента атрибута `slot` не несёт и ушёл бы в слот по умолчанию.
+ * An inline caption in a named slot: the title of Dialog and Drawer, or a
+ * menu item's shortcut. Bare text carries no `slot` attribute and would land
+ * in the default slot.
  */
 const caption = (value: string) => (): Node => {
 	const node = document.createElement('span')
@@ -163,7 +177,7 @@ const caption = (value: string) => (): Node => {
 	return node
 }
 
-/** Поле с подсказкой — в теле окна и выезжающей панели, как у Vue. */
+/** A field with a placeholder, in the body of Dialog and Drawer, as in Vue. */
 const field = (placeholder: string): TPreview => ({
 	tag: 'div',
 	is: 'so-input',
@@ -171,10 +185,10 @@ const field = (placeholder: string): TPreview => ({
 })
 
 /**
- * Кнопка подвала окна и выезжающей панели — как у Vue: нажатие закрывает их
- * записью открытости (`visible = false`). Свою панель кнопка находит по месту
- * — ближайший предок с классом панели: окно, увезённое в цель, держит её в
- * себе.
+ * A footer button of Dialog and Drawer, as in Vue: a press closes them by
+ * writing `visible = false`. The button finds its panel by position, the
+ * nearest ancestor with the panel's class: a dialog moved into its target
+ * still holds the button inside.
  */
 const closing = (text: string) => (): Node => {
 	const node = soldy('button', 'so-button', { text })
@@ -188,7 +202,7 @@ const closing = (text: string) => (): Node => {
 	return node
 }
 
-/** Своё содержимое тоста — кнопка «Отменить»: тост приходит ей параметром и закрывается ею. */
+/** Custom toast content, an Undo button: it gets the toast as a parameter and closes it. */
 const undo: TToastRender = (toast) => {
 	const node = soldy('button', 'so-button', { text: 'Отменить' })
 
@@ -198,18 +212,19 @@ const undo: TToastRender = (toast) => {
 }
 
 /**
- * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
- * у своего места (`toastsOf`) и показывают тост, как кнопки превью Vue —
- * `useToasts()`. Менеджер оборачивает их, как приложение, а регион с тостами
- * уехал к краю окна, мимо ячейки превью.
+ * Toasts come from code, not markup: buttons inside the manager take the API
+ * from their place (`toastsOf`) and show a toast, as the Vue preview's buttons
+ * use `useToasts()`. The manager wraps them as it wraps an app, and the toast
+ * region moves to the window edge, outside the preview cell.
  *
- * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`). Что
- * сообщает тост, — образцы стенда, одни на все хосты (`toastSample`), своё
- * содержимое к ним — кнопка «Отменить» этого хоста. Текст начинается с номера:
- * в стопке видно, какой тост где. Последняя кнопка — ожидание: «Сохраняем…» с
- * кольцом на месте значка сам не закрывается, а через пару секунд тот же тост
- * сообщает успех. Ряд кнопок — с переносом, как у Vue. Номера — свои у каждой
- * отрисовки ряда.
+ * One button per plain message and per type (`TOASTS_ITEM_TYPES`). What a
+ * toast says comes from the playground samples, the same for every host
+ * (`toastSample`); this host's custom content for them is the Undo button.
+ * The text starts with a number, so the stack shows which toast is where. The
+ * last button is a pending one: "Saving…" with a ring in place of the icon
+ * does not close by itself, and a couple of seconds later the same toast
+ * reports success. The row wraps, as in Vue. Each render of the row numbers
+ * from its own counter.
  */
 const toastsTrigger = (): Node => {
 	const row = document.createElement('div')
@@ -224,7 +239,7 @@ const toastsTrigger = (): Node => {
 		toastsOf(node).show({ ...sample, text: `${count}. ${sample.text}`, type })
 	}
 
-	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	// While the work runs the toast waits; when it ends the same toast reports the result
 	const save = (node: Element) => {
 		count += 1
 
@@ -258,20 +273,20 @@ const toastsTrigger = (): Node => {
 }
 
 /**
- * Граница ширины — как у Vue: сцена ячейки — флексбокс, и полоса или лента
- * держала бы там только свой минимум, а лента с шириной по содержимому
- * вылезла бы за колонку целиком — листать стало бы нечего.
+ * A width bound, as in Vue: the cell stage is a flexbox, where a bar or a
+ * scroller would keep only its minimum, and a scroller as wide as its content
+ * would overflow the column whole, leaving nothing to scroll.
  */
 const FULL_WIDTH: TPreview = { tag: 'div', style: () => 'width:100%' }
 
-/** Содержимое коллекций — из общего манифеста, как у Vue и React. */
+/** Collection content from the shared manifest, as in Vue and React. */
 const ITEMS = COLLECTION_ITEMS
 
 /**
- * Область контекстного меню — как «файл» у потребителя, как у Vue: меню
- * вызывают над ней правой кнопкой, долгим касанием и Shift+F10, и панель
- * встаёт у точки вызова. Область — нативная кнопка, как у Vue: под фокусом для
- * Shift+F10, со своими ролью и именем и без связки с меню.
+ * The context menu area, like a consumer's "file", as in Vue: the menu opens
+ * over it by right click, long press and Shift+F10, and the panel sits at the
+ * point of the call. The area is a native button, as in Vue: focusable for
+ * Shift+F10, with its own role and name, and no link to the menu.
  */
 const contextArea = (): Node => {
 	const node = document.createElement('button')
@@ -283,19 +298,30 @@ const contextArea = (): Node => {
 	return node
 }
 
-/** Пункт меню разметкой: элемент части со своими пропсами и детьми по слотам. */
+/**
+ * The menu's parts by element name, mapped to their registry names; groups
+ * and separators are not listened to.
+ */
+const MENU_PARTS: Readonly<Record<string, string>> = {
+	'so-menu-item': 'Item',
+	'so-menu-checkbox-item': 'CheckboxItem',
+	'so-menu-radio-item': 'RadioItem',
+	'so-menu-submenu': 'Submenu',
+	'so-menu-popover-item': 'PopoverItem',
+}
+
+/** A menu item in markup: the part's element with its props and children by slot. */
 const menuPart = (
 	is: string,
 	props: TPreviewProps = {},
 	slots: Readonly<Record<string, readonly TContent[]>> = {},
-): TPreview => ({ tag: 'div', is, props, slots })
+): TPreview => ({ tag: 'div', is, props, slots, part: MENU_PARTS[is] })
 
 /**
- * Пункты меню разметкой, как у Vue: группа флажков с подписью, группа
- * переключателей — отмечен один, — действия с подсказками сочетаний в слоте
- * `trailing`, подменю с подменю внутри, пункт с панелью — календарём, который
- * монтируется с первым открытием, — выключенное действие и «опасный» пункт
- * своего варианта.
+ * Menu items in markup, as in Vue: a labelled group of checkboxes, a group of
+ * radios with one checked, actions with shortcut hints in the `trailing` slot,
+ * a submenu with a submenu inside, an item with a panel (a calendar mounted on
+ * first open), a disabled action and a "dangerous" item with its own variant.
  */
 const MENU_ITEMS: readonly TContent[] = [
 	menuPart(
@@ -367,8 +393,8 @@ const MENU_ITEMS: readonly TContent[] = [
 ]
 
 /**
- * Элемент soldy в разметке без компонента — кодом, как его строит
- * потребитель: пропсы свойствами до вставки.
+ * A soldy element inside markup without a component, built in code as a
+ * consumer builds it: props as properties before insertion.
  */
 function soldy(tag: string, is: string, props: TPreviewProps): HTMLElement {
 	const element = document.createElement(tag, { is })
@@ -379,14 +405,15 @@ function soldy(tag: string, is: string, props: TPreviewProps): HTMLElement {
 }
 
 /**
- * Содержимое окна — как у Vue и React: список с пределом строк, который
- * прокручивается сам, Select — у него прокручивается список панели — и
- * таблица в обёртке высотой 320 px, по тысяче элементов — на пяти окна не
- * видно. Элементы — данными: элементы разметкой окно не прячет. Ряд — граница
- * ширины, Select — в колонке своей ширины: поле во всю ширину места, и в ряду
- * оно забрало бы место таблицы. Переставленную колонку таблица ведёт целиком,
- * с ячейками строк (`reorderPreview: 'column'`): в окне это сотни ячеек, а не
- * тысячи.
+ * The Virtual window's content, as in Vue and React: a list with a row limit
+ * that scrolls itself, a Select whose panel list scrolls, and a table in a
+ * 320 px wrapper, a thousand items each, since with five the window is not
+ * visible. Items are data: the window does not hide items placed in markup.
+ * The row bounds the width; Select sits in a column of its own width, since
+ * its field takes the full width and would take the table's room in the row.
+ * The table drags a moved column whole, with the rows' cells
+ * (`reorderPreview: 'column'`): inside the window that is hundreds of cells,
+ * not thousands.
  */
 const windowed = (): Node => {
 	const row = document.createElement('div')
@@ -423,9 +450,9 @@ const windowed = (): Node => {
 }
 
 /**
- * Табы и их панели — описанием, у превью Tabs и DragAndDrop. Первый таб
- * активен сразу — иначе ни одна панель не покажется. Панели — слотом
- * `content`, вне списка табов.
+ * Tabs and their panels as a description, for the Tabs and DragAndDrop
+ * previews. The first tab is active at once, otherwise no panel shows. The
+ * panels go to the `content` slot, outside the tab list.
  */
 const TABS: TPreview = {
 	tag: 'div',
@@ -435,17 +462,19 @@ const TABS: TPreview = {
 			tag: 'div',
 			is: 'so-tabs-item',
 			props: { active: index === 0, ...item },
+			part: 'Item',
 		})),
 		content: ITEMS.map((item) => ({
 			tag: 'div',
 			is: 'so-tabs-content',
 			props: { value: item.value },
+			part: 'Content',
 			slots: { default: [block('12px', `Панель «${item.text}»`)] },
 		})),
 	},
 }
 
-/** Секции с содержимым — описанием, у превью Accordion и DragAndDrop. */
+/** Sections with content as a description, for the Accordion and DragAndDrop previews. */
 const ACCORDION: TPreview = {
 	tag: 'div',
 	is: 'so-accordion',
@@ -454,16 +483,18 @@ const ACCORDION: TPreview = {
 			tag: 'div',
 			is: 'so-accordion-item',
 			props: { ...item },
+			part: 'Item',
 			slots: { default: [block('4px 0', `Содержимое «${item.text}»`)] },
 		})),
 	},
 }
 
 /**
- * Ряд превью DragAndDrop — как у Vue и React: Tabs и Accordion — теми же
- * описаниями, что на их страницах, ListBox — данными. Ряд и ячейки — разметка
- * без компонента со своим стилем: ряд — граница ширины, как у окна, табы — во
- * всю ширину ряда, список и секции — под ними, рядом.
+ * The DragAndDrop preview row, as in Vue and React: Tabs and Accordion with
+ * the same descriptions as on their pages, ListBox by data. The row and its
+ * cells are styled markup without a component: the row bounds the width, as
+ * for Virtual; the tabs take the row's full width, the list and the sections
+ * sit below, side by side.
  */
 const REORDERABLE: TPreview = {
 	tag: 'div',
@@ -478,8 +509,8 @@ const REORDERABLE: TPreview = {
 }
 
 export const PREVIEWS: Record<string, TPreview> = {
-	// Подпись — проп `text` из пропсов превью, а не содержимое: заданный слот
-	// перекрывает проп, и строка `text` не меняла бы ничего видимого
+	// The label is the `text` prop from the preview props, not content: a given
+	// slot overrides the prop, and the `text` row would change nothing visible
 	button: { tag: 'button', is: 'so-button' },
 
 	input: { tag: 'div', is: 'so-input' },
@@ -487,8 +518,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	textarea: { tag: 'div', is: 'so-textarea' },
 
-	// Текста у флажка и переключателя нет, оба — голый контрол: подпись даёт
-	// обёртка Label. Её пропы задаёт превью, строки страницы правят контрол
+	// A checkbox and a switch have no text, both are bare controls: the Label
+	// wrapper gives the label. The preview sets its props; the page rows edit the
+	// control
 	'check-box': {
 		tag: 'span',
 		is: 'so-check-box',
@@ -501,32 +533,32 @@ export const PREVIEWS: Record<string, TPreview> = {
 		wrapper: { tag: 'label', is: 'so-label', props: { text: 'Включено' } },
 	},
 
-	// Имени у ползунка нет, как у флажка: видимое даёт подпись Label над
-	// ползунком. Горизонтальный тянется на её ширину, вертикальный — своей
-	// высоты
+	// A slider has no name, like a checkbox: the visible one comes from a Label
+	// above it. A horizontal slider stretches to the label's width, a vertical one
+	// keeps its own height
 	slider: {
 		tag: 'span',
 		is: 'so-slider',
 		wrapper: { tag: 'label', is: 'so-label', props: { text: 'Громкость', position: 'top' } },
 	},
 
-	// Имени у оценки нет, как у ползунка: видимое даёт подпись Label над звёздами
+	// A rating has no name, like a slider: the visible one comes from a Label above the stars
 	rating: {
 		tag: 'span',
 		is: 'so-rating',
 		wrapper: { tag: 'label', is: 'so-label', props: { text: 'Оценка', position: 'top' } },
 	},
 
-	// Подпись — проп `text` из пропсов превью, контрол — слотом. Строки
-	// страницы правят саму подпись: сторону, размер текста, вариант
+	// The text is the `text` prop from the preview props, the control a slot. The
+	// page rows edit the label itself: side, text size, variant
 	label: {
 		tag: 'label',
 		is: 'so-label',
 		slots: { default: [{ tag: 'span', is: 'so-check-box' }] },
 	},
 
-	// Поле формы вокруг Input: тексты частей — пропсы превью, контрол —
-	// слотом. Строки страницы правят само поле: сторону подписи, тексты, ошибку
+	// A form field around Input: the parts' texts are preview props, the control
+	// a slot. The page rows edit the field itself: label side, texts, error
 	field: {
 		tag: 'div',
 		is: 'so-field',
@@ -535,8 +567,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
-	// Подпись — содержимым: текста у радио нет, оно голый контрол, как CheckBox.
-	// Корень радио — подпись, `<label is="so-radio-group-item">`
+	// The label is content: a radio has no text, it is a bare control like
+	// CheckBox. The radio's root is a label, `<label is="so-radio-group-item">`
 	'radio-group': {
 		tag: 'div',
 		is: 'so-radio-group',
@@ -545,6 +577,7 @@ export const PREVIEWS: Record<string, TPreview> = {
 				tag: 'label',
 				is: 'so-radio-group-item',
 				props: { value: item.value },
+				part: 'Item',
 				slots: { default: [text(item.text)] },
 			})),
 		},
@@ -554,8 +587,8 @@ export const PREVIEWS: Record<string, TPreview> = {
 
 	accordion: ACCORDION,
 
-	// Содержимое ленты — просто разметка, по элементу на пункт: коллекции у неё
-	// нет. Лента — в границе ширины, как у Vue
+	// The scroller's content is plain markup, one element per item: it has no
+	// collection. The scroller sits in a width bound, as in Vue
 	scroller: {
 		tag: 'div',
 		is: 'so-scroller',
@@ -563,13 +596,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 		wrapper: FULL_WIDTH,
 	},
 
-	// Содержимого у пагинации нет: страницы окна кладёт в коллекцию она сама,
-	// а рисует её шаблон. Язык номеров и имён стрелок — из шапки стенда
+	// Pagination has no content: it puts the window's pages into the collection
+	// itself, and its template draws them. The language of numbers and arrow
+	// names comes from the header
 	pagination: { tag: 'nav', is: 'so-pagination' },
 
-	// Триггер — Button в слоте `trigger`: связку с панелью и вид «нажат» он
-	// получает сам, scope у слотов нет. В содержимом есть кнопка: на неё при
-	// открытии уходит фокус
+	// The trigger is a Button in the `trigger` slot: it gets the link to the panel
+	// and the pressed look by itself, as slots have no scope. The content has a
+	// button for focus to move to on open
 	popover: {
 		tag: 'span',
 		is: 'so-popover',
@@ -582,14 +616,14 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
-	// Триггер — Button в слоте `trigger`: связку с меню и вид «нажата» он
-	// получает сам, scope у слотов нет. У контекстного меню (`openOn:
-	// 'contextmenu'`) в слоте область, как у Vue. Режим область берёт из пропсов
-	// колонки: у колонки экземпляра его нет, и там меню вызывают над кнопкой.
-	// Дети ставятся до вставки, поэтому смена режима строит элемент заново
-	// (`rebuild`). Пункты — разметкой, как у Vue; пришли данными (`items` блока
-	// групп страницы) — из них: разметка заменила бы данные, а группы меню
-	// рисует из данных
+	// The trigger is a Button in the `trigger` slot: it gets the link to the menu
+	// and the pressed look by itself, as slots have no scope. A context menu
+	// (`openOn: 'contextmenu'`) gets an area in the slot, as in Vue. The area
+	// reads the mode from the column's props: the instance column has none, and
+	// there the menu opens over the button. Children are placed before
+	// insertion, so a mode change rebuilds the element (`rebuild`). Items are
+	// markup, as in Vue, unless they came as data (`items` from the page's groups
+	// block): markup would replace the data, and the menu draws groups from data
 	menu: {
 		tag: 'span',
 		is: 'so-menu',
@@ -600,9 +634,9 @@ export const PREVIEWS: Record<string, TPreview> = {
 		}),
 	},
 
-	// Триггер — Button в слоте `trigger`: ссылку на панель (`aria-describedby`)
-	// он получает сам. Текст подсказки — слотом по умолчанию: пропа текста у неё
-	// нет
+	// The trigger is a Button in the `trigger` slot: it gets the panel reference
+	// (`aria-describedby`) by itself. The tooltip text goes to the default slot:
+	// there is no text prop
 	tooltip: {
 		tag: 'span',
 		is: 'so-tooltip',
@@ -612,10 +646,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
-	// Окно открывает кнопка, как у Vue: закрытое оно спрятано, а открытое
-	// накрывает страницу подложкой. Кнопка и окно — прямо в ячейке: обёртка без
-	// коробки. Окно уезжает в `body`, в ячейке — его якорь; кнопки подвала его
-	// закрывают
+	// A button opens the dialog, as in Vue: closed it is hidden, open it covers
+	// the page with a backdrop. The button and the dialog sit right in the cell:
+	// the wrapper has no box. The dialog moves to `body`, leaving its anchor in
+	// the cell; the footer buttons close it
 	dialog: {
 		tag: 'div',
 		is: 'so-dialog',
@@ -628,9 +662,10 @@ export const PREVIEWS: Record<string, TPreview> = {
 		wrapper: { tag: 'div', style: () => 'display:contents' },
 	},
 
-	// Выезжающую панель тоже открывает кнопка. Кнопка и панель — в своей коробке
-	// с `position: relative`, как у Vue: с `contained` панель не уезжает, а
-	// встаёт в ней, и строка `contained` показывает её в коробке превью
+	// A button opens the drawer too. The button and the drawer sit in their own
+	// box with `position: relative`, as in Vue: with `contained` the drawer does
+	// not move out but sits in it, so the `contained` row shows it in the preview
+	// box
 	drawer: {
 		tag: 'div',
 		is: 'so-drawer',
@@ -646,14 +681,15 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
-	// Менеджер — автономный элемент без коробки, своим тегом, вокруг ряда
-	// кнопок, которые показывают тосты из кода. Регион с тостами — у края окна
+	// The manager is an autonomous box-less element with its own tag, around the
+	// row of buttons that show toasts from code. The toast region sits at the
+	// window edge
 	toasts: { tag: 'so-toasts', slots: { default: [toastsTrigger] } },
 
-	// Элементы — разметкой, как у Vue и React. Строка элемента — кнопка на `div`
-	// (`<div is="so-item-row-div">`): её строит шаблон элемента. Пришли данными
-	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
-	// группы список рисует из данных
+	// Items in markup, as in Vue and React. An item's row is a button on a `div`
+	// (`<div is="so-item-row-div">`), built by the item's template. Unless they
+	// came as data (`items` from the page's groups block): markup would replace
+	// the data, and the list draws groups from data
 	'list-box': {
 		tag: 'div',
 		is: 'so-list-box',
@@ -664,20 +700,21 @@ export const PREVIEWS: Record<string, TPreview> = {
 						tag: 'div',
 						is: 'so-list-box-item',
 						props: { ...item },
+						part: 'Item',
 					})),
 		}),
 	},
 
-	// Теги — данными, как у Vue: `items` из общего манифеста — то, что рисует
-	// само превью. Обёртка — граница ширины: ряд обязан быть ровно по ячейке,
-	// иначе `overflow` не срабатывает вовсе, — сцена ячейки флексбокс, и ряд
-	// держал бы там ширину своего содержимого
+	// Tags are data, as in Vue: `items` from the shared manifest is what the
+	// preview itself draws. The wrapper bounds the width: the row must match the
+	// cell exactly or `overflow` does not apply at all, and in the flexbox cell
+	// stage the row would keep its content's width
 	tags: { tag: 'div', is: 'so-tags', props: { items: ITEMS }, wrapper: FULL_WIDTH },
 
-	// Опции — разметкой, как у Vue. Строка опции — кнопка на `span`
-	// (`<span is="so-item-row-span">`): её строит шаблон опции. Пришли данными
-	// (`items` блока групп страницы) — из них: разметка заменила бы данные, а
-	// группы Select рисует из данных
+	// Options in markup, as in Vue. An option's row is a button on a `span`
+	// (`<span is="so-item-row-span">`), built by the option's template. Unless
+	// they came as data (`items` from the page's groups block): markup would
+	// replace the data, and Select draws groups from data
 	select: {
 		tag: 'div',
 		is: 'so-select',
@@ -692,22 +729,24 @@ export const PREVIEWS: Record<string, TPreview> = {
 		}),
 	},
 
-	// Содержимого у календаря нет: дни кладёт в коллекцию вид по месяцам сеток,
-	// а рисует их шаблон. Языка у превью нет: это локаль провайдера вокруг
-	// корня хоста — выбор языка в шапке (`setLocale` хоста)
+	// A calendar has no content: its month grid view puts the days into the
+	// collection, and its template draws them. The preview has no language of its
+	// own: it is the locale of the provider around the host root, picked in the
+	// header (the host's `setLocale`)
 	calendar: { tag: 'div', is: 'so-calendar' },
 
-	// Язык — из шапки стенда, как у календаря
+	// The language comes from the playground header, as for the calendar
 	'date-input': { tag: 'div', is: 'so-date-input' },
 
-	// Поле и календарь — экземпляры DatePicker, содержимого у него нет. Язык —
-	// из шапки стенда, как у поля и календаря
+	// The field and the calendar are DatePicker's own instances; it has no
+	// content. The language comes from the header, as for the field and calendar
 	'date-picker': { tag: 'div', is: 'so-date-picker' },
 
-	// Строки и колонки — данными, как у Vue и React: частей разметкой у таблицы
-	// нет. Элемент — окно таблицы, а обёртка вокруг — граница ширины, с
-	// закреплённой шапкой — ещё и окно прокрутки высотой 320 px на сорок строк.
-	// Окно `Virtual` — на своей странице
+	// Rows and columns are data, as in Vue and React: the table has no parts in
+	// markup. The element is the table's outer node around its `table` root, and
+	// the wrapper around it bounds the width; with a sticky head it is also a
+	// 320 px scroll window over forty rows. The `Virtual` window is on its own
+	// page
 	table: {
 		tag: 'div',
 		is: 'so-table',
@@ -722,26 +761,29 @@ export const PREVIEWS: Record<string, TPreview> = {
 		},
 	},
 
-	// Глиф — роль, свой атрибут элемента: `<svg>` рисунка строит шаблон Icon
+	// The glyph is a role, the element's own attribute: Icon's template builds the `<svg>`
 	icon: { tag: 'span', is: 'so-icon', attributes: { icon: 'arrowDown' } },
 
-	// Длину горизонтальной полосе даёт контейнер, своей у неё нет: обёртка —
-	// граница ширины, как у Vue. Вертикальная — строчный блок своей высоты, и
-	// обёртка ей не мешает. По умолчанию полоса пуста — доля ноль, а бег —
-	// флаг `indeterminate`
+	// A horizontal bar gets its length from the container, having none of its
+	// own: the wrapper bounds the width, as in Vue. A vertical bar is an inline
+	// block of its own height, and the wrapper does not get in its way. By
+	// default the bar is empty: the fraction is zero, and running is the
+	// `indeterminate` flag
 	'progress-linear': { tag: 'span', is: 'so-progress-linear', wrapper: FULL_WIDTH },
 
-	// Кольцо строчное и своего размера. По умолчанию оно пусто — доля ноль, а
-	// бег — флаг `indeterminate`
+	// The ring is inline and of its own size. By default it is empty: the
+	// fraction is zero, and running is the `indeterminate` flag
 	'progress-spinner': { tag: 'span', is: 'so-progress-spinner' },
 
 	skeleton: { tag: 'div', is: 'so-skeleton' },
 
-	// Перестановка — автономный элемент без коробки, своим тегом, как окно: у
-	// Vue и React узла у обёртки нет. Коллекции — в его свете, в ряду
+	// DragAndDrop is an autonomous box-less element with its own tag, like
+	// Virtual: in Vue and React the wrapper has no node. The collections sit in
+	// its light DOM, in a row
 	'drag-and-drop': { tag: 'so-drag-and-drop', slots: { default: [REORDERABLE] } },
 
-	// Окно — автономный элемент без коробки, своим тегом: у Vue и React узла у
-	// обёртки нет. Строка `enabled` включает и выключает окно у обоих
+	// Virtual is an autonomous box-less element with its own tag: in Vue and
+	// React the wrapper has no node. The `enabled` row turns the window on and
+	// off for all three lists
 	virtual: { tag: 'so-virtual', slots: { default: [windowed] } },
 }

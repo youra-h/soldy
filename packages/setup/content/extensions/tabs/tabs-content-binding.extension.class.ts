@@ -1,69 +1,65 @@
 /**
- * TTabsContentBindingExtension — связывает панель с её табом.
+ * TTabsContentBindingExtension — binds a panel to its tab.
  *
- * Панель не регистрируется в коллекции: её нет в `items`. Она находит уже
- * существующий таб по совпадению `value` и берёт контекст этого таба
- * (`TItemContext`) — свой, на время монтирования: адаптеры те же, что у
- * `TTabsItemCollectionFacade`, но отпускает их панель сама — при перепривязке
- * к другому табу или ни к какому и при снятии. Общий с табом контекст,
- * отпущенный одним из них, сломал бы другого. У панели без таба контекста нет
- * вовсе: иначе её `active` отвечал бы за прежний таб. Что активность панели
- * сменилась вместе с контекстом, сообщает фасад — связка его только меняет.
+ * The panel does not register in the collection: it is not in `items`. It
+ * finds the existing tab with the same `value` and takes that tab's item
+ * context (`TItemContext`) of its own, for the mount: the same adapters as
+ * `TTabsItemCollectionFacade` has, but the panel releases them itself — on
+ * rebinding and on teardown. A context shared with the tab and released by
+ * one of them would break the other. A panel without a tab has no context at
+ * all, or its `active` would answer for the previous tab. The facade reports
+ * the change of activity that comes with the context; the binding only swaps
+ * it.
  *
- * Здесь же проставляется сторона панели в связке с табом — `id` и
- * `aria-labelledby` — прямо в `aria` панели. Это единственное место, где
- * известно, что панель нашла свой таб. Своей формулы `id` у панели нет: таб
- * (`TTabsItemIdsPlugin`) записал `id` панели в свой `aria-controls` и свой
- * `id`, и панель берёт ровно их. Формула одна, у таба, и половинки не
- * разойдутся. Таб смонтировали заново или сменили его `id` в `TIdPlugin` — у
- * него новые `id` (`change:aria`), и панель идёт за ним.
+ * The panel's side of the tab link — `id` and `aria-labelledby` — is written
+ * here into the panel's `aria`: this is the only place that knows the panel
+ * found its tab. The panel has no `id` formula of its own: the tab
+ * (`TTabsItemIdsPlugin`) wrote the panel's `id` into its `aria-controls`, and
+ * the panel takes exactly that, so the two halves cannot diverge. When the tab
+ * remounts or its `TIdPlugin` changes, its ids change (`change:aria`) and the
+ * panel follows.
  *
- * `id`, который панели задало приложение (`TIdPlugin` панели), главнее
- * формулы: он встаёт на панель — с первой отрисовки и без таба тоже, узел
- * его, — и на него ведёт `aria-controls` таба. Пишет `aria-controls` только
- * плагин таба, поэтому принятая панель отдаёт ему свой `TIdPlugin`
- * (`bindPanel`), а при отвязке и снятии забирает (`unbindPanel`) — ссылка
- * снова на формулу. Плагин таба — нынешнего его монтирования — панель берёт
- * из реестра наборов коллекции (`TCollectionBundlesPlugin`), который владелец
- * опускает рядом с движком (`COLLECTION_BUNDLES_ELEVATOR`). Набор таба входит
- * в реестр на входе таба — бывает, позже панели, и заново, когда таб
- * смонтировали снова, — поэтому панель отдаёт свой `id` и на каждую
- * регистрацию (`bundle:registered`).
+ * An `id` the application gave the panel (its `TIdPlugin`) wins over the
+ * formula: it goes on the panel from the first render, tab or no tab, and the
+ * tab's `aria-controls` points to it. Only the tab's plugin writes
+ * `aria-controls`, so an accepted panel hands it its `TIdPlugin`
+ * (`bindPanel`) and takes it back on unbinding and teardown (`unbindPanel`).
+ * The plugin of the tab's current mount is found in the collection's bundle
+ * registry (`COLLECTION_BUNDLES_ELEVATOR`). A tab's bundle enters the registry
+ * on the tab's entry — sometimes after the panel, and again on a remount — so
+ * the panel hands its `id` over on every registration (`bundle:registered`)
+ * too.
  *
- * Перерешение нужно в двух случаях: панель смонтировалась раньше своего таба
- * (тогда ждём `item:added`) и у панели сменилось `value`.
+ * The tab is looked up only in a Tabs engine (one with `TTabsExtension`). The
+ * lift gives the nearest collection's engine, and it may be foreign: a panel
+ * outside its tabs under an app-wide `<Toasts>`. A foreign collection is
+ * treated as absent, as for `TCollectionItemExtension`: otherwise the panel
+ * would bind to a foreign item with a matching `value` — silently under
+ * RadioGroup, with a failing assembly where there is no activation.
  *
- * Таб ищется только в движке Tabs — в том, где стоит расширение табов
- * (`TTabsExtension`). Лифт отдаёт движок ближайшей коллекции, и она бывает
- * чужой: панель вне своих табов под `<Toasts>`, который оборачивает
- * приложение. Чужая коллекция — как будто её нет, как у элемента коллекции
- * (`TCollectionItemExtension`): иначе панель связалась бы с чужим элементом,
- * чьё `value` совпало, — молча под RadioGroup и с падением сборки там, где
- * активации нет.
+ * The work follows the context's phases, as in `TCollectionItemExtension`:
  *
- * Работа разделена по фазам контекста, как у `TCollectionItemExtension`:
- *
- * - **сборка** — первое связывание. Оно пишет только своё — фасад панели и её
- *   `aria`. Таб из данных (`items`) в коллекции уже есть, а список табов
- *   рисуется раньше панелей, поэтому панель под него попадает в первую же
- *   отрисовку, в том числе серверную. `aria-controls` таба в ней — на формулу:
- *   таб нарисован раньше, чем собралась панель;
- * - **вход** (`attach` контекста) — связывание ещё раз, сторона таба и
- *   подписки на `item:added` движка, `bundle:registered` реестра,
- *   `change:value` панели, `change:id` её `TIdPlugin` и `change:aria`
- *   связанного таба. Табы разметки входят в коллекцию на своём `attach`, и
- *   панель, что стоит в документе после них, находит их вторым поиском.
- *   Подписки и запись табу ждут входа, потому что шины и таб не свои: движок и
- *   реестр — владельца, таб — коллекции, панель могла прийти снаружи (`ctrl`),
- *   а у React сборка идёт на рендере, и отброшенный рендер оставил бы на них
- *   лишнего подписчика, а у таба — `id` панели, которой нет. Поэтому таб,
- *   найденный сборкой, вход перечитывает после подписки: то, что он записал о
- *   связке между сборкой и входом (у React — `id` таба в его `TIdPlugin`
- *   эффектом), иначе до панели не дошло бы;
- * - **снятие** (`destroy` контекста) — отписка, атрибуты панели, её `id` у
- *   таба и контекст таба. Контекст, собранный, но так и не принятый,
- *   уничтожается тоже: подписок входа у него нет, а атрибуты и контекст таба,
- *   взятые сборкой, уходят.
+ * - **assembly** — the first binding, writing only the panel's own: its
+ *   facade and its `aria`. A data tab is already in the collection and the tab
+ *   list renders before the panels, so the panel is bound from the first
+ *   render, the server's included;
+ * - **entry** (`attach`) — binding again, the tab's side, and the
+ *   subscriptions: the engine's `item:added`, the registry's
+ *   `bundle:registered`, the panel's `change:value`, its `TIdPlugin`'s
+ *   `change:id` and the bound tab's `change:aria`. Markup tabs enter on their
+ *   own `attach`, and a panel after them finds them on this second lookup.
+ *   Subscriptions and the write to the tab wait for entry because those buses
+ *   and the tab are not the panel's: React assembles on render, and a
+ *   discarded render would leave an extra subscriber on them and the `id` of
+ *   a panel that does not exist on the tab. A tab found on assembly is reread
+ *   after subscribing, so what it wrote in between (React: the tab's `id` set
+ *   by an effect) reaches the panel. From entry to teardown the panel is a
+ *   member of the collection (`TCollectionMembers`), as an item is: the
+ *   owner's `detach` detaches its own context and the facade's, and the panel
+ *   does not hear the tabs go;
+ * - **teardown** (`destroy`) — unsubscribing, the panel's attributes, its `id`
+ *   at the tab and the tab's context. A context assembled but never accepted
+ *   is torn down too: it has no subscriptions, but what assembly took goes.
  */
 
 import { TItemContext, TTabsExtension } from '@soldy-ui/core'
@@ -78,15 +74,15 @@ import type { TCollectionBundlesPlugin } from '@soldy-ui/plugins'
 import type { TInstanceContext } from '../../../protected/adapter/context'
 import { ITEM_CONTEXT_ELEVATOR } from '../../../protected/adapter/elevator/keys'
 import type { TCollectionItemFacade } from '../collection'
-import { COLLECTION_BUNDLES_ELEVATOR } from '../collection/keys'
+import { COLLECTION_BUNDLES_ELEVATOR, COLLECTION_MEMBERS_ELEVATOR } from '../collection/keys'
 import type { ITabsContentBindingOptions } from './types'
 
-/** Движок Tabs: в нём стоит расширение табов. Движок другой коллекции панели чужой. */
+/** A Tabs engine: the tabs extension is in it. Any other collection's engine is foreign to a panel. */
 function isTabsEngine(engine: TCollectionEngine<any, any> | undefined): engine is TTabsCollection {
 	return engine?.extensions.tabs instanceof TTabsExtension
 }
 
-/** Реестр наборов той коллекции, чей движок у панели: реестр другой ей чужой. */
+/** The bundle registry of the panel's collection: another's is foreign. */
 function registryOf(
 	bundles: TCollectionBundlesPlugin | null | undefined,
 	engine: TTabsCollection,
@@ -94,7 +90,7 @@ function registryOf(
 	return bundles?.engine === engine ? bundles : undefined
 }
 
-/** Таб, чьё значение совпало со значением панели. */
+/** The tab whose value matches the panel's. */
 function findByValue(engine: TTabsCollection, value: unknown): ITabsItem | undefined {
 	for (const item of engine.extensions.batch.items) {
 		if (item.value === value) return item
@@ -108,42 +104,41 @@ export class TTabsContentBindingExtension {
 		context: TInstanceContext<TCollectionItemFacade>,
 		options: ITabsContentBindingOptions,
 	) {
-		const { content, elevator } = options
+		const { adapter, elevator } = options
+		const content = adapter.instance
 
-		// Лифт отдаёт движок ближайшей коллекции, и она бывает не Tabs. Чужая —
-		// как будто её нет: панель — ни с каким табом, и работы у связки нет
+		// A foreign collection is treated as absent: no tab, nothing to bind
 		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up()
 
 		if (!isTabsEngine(engine)) return
 
 		const extensions: TTabsCollectionExtensions = engine.extensions
-		/** Наборы табов: в нём панель находит плагин связок своего таба. */
+		/** The tabs' bundles: there the panel finds its tab's link plugin. */
 		const bundles = registryOf(elevator(COLLECTION_BUNDLES_ELEVATOR).up(), engine)
-		/** `id`, который панели задало приложение. */
+		/** The collection's members, lowered beside the engine as the registry is. */
+		const members = elevator(COLLECTION_MEMBERS_ELEVATOR).up()
+		/** The `id` the application gave the panel. */
 		const idPlugin = context.bundle?.get(TIdPlugin)
 
-		/** Таб, с которым связаны сейчас. */
+		/** The tab bound now. */
 		let boundItem: ITabsItem | undefined
-		/**
-		 * Контекст таба у фасада панели. Отпускает его отвязка: перед новой
-		 * привязкой и при снятии.
-		 */
+		/** The tab's context at the panel's facade; unbinding releases it. */
 		let boundContext: TItemContext<ITabsItem, TTabsCollectionExtensions> | undefined
-		/** Плагин связок таба, которому панель отдала свой `TIdPlugin`. */
+		/** The tab's link plugin the panel handed its `TIdPlugin` to. */
 		let boundIds: TTabsItemIdsPlugin | undefined
-		/** Контекст принят: на чужие шины уже можно подписываться. */
+		/** The context is accepted: subscribing to foreign buses is allowed. */
 		let attached = false
 
 		/**
-		 * Сторона панели: свой `id` приложения, иначе тот, что записал таб, и
-		 * ссылка на таб. Без таба остаётся только свой `id`.
+		 * The panel's side: the application's `id`, else the one the tab wrote,
+		 * and the link to the tab. Without a tab only the own `id` stays.
 		 */
 		const linkPanel = (): void => {
 			content.aria.add('id', idPlugin?.id ?? boundItem?.aria.get('aria-controls'))
 			content.aria.add('aria-labelledby', boundItem?.aria.get('id'))
 		}
 
-		/** Таб больше не ведёт `aria-controls` по этой панели — снова на формулу. */
+		/** The tab's `aria-controls` no longer follows this panel: back to the formula. */
 		const unlinkTab = (): void => {
 			if (idPlugin) boundIds?.unbindPanel(idPlugin)
 
@@ -151,9 +146,9 @@ export class TTabsContentBindingExtension {
 		}
 
 		/**
-		 * Сторона таба: его плагин связок ведёт `aria-controls` на `id` панели.
-		 * Только у принятой панели — таб ей чужой, — и плагин нынешнего
-		 * монтирования таба: у таба, смонтированного заново, он новый.
+		 * The tab's side: its link plugin points `aria-controls` to the panel's
+		 * `id`. Only for an accepted panel, and only the plugin of the tab's
+		 * current mount: a remounted tab has a new one.
 		 */
 		const linkTab = (): void => {
 			const ids =
@@ -172,11 +167,9 @@ export class TTabsContentBindingExtension {
 		}
 
 		/**
-		 * Панель — ни с каким табом: ссылки на таб нет, `aria-controls` таба на
-		 * неё не ведёт, и контекста у фасада тоже нет, иначе его `active`
-		 * отвечал бы за прежний таб. Фасад отвязывается раньше, чем контекст
-		 * отпускают: фасад читают и после снятия, и чтение отпущенного контекста
-		 * создало бы адаптеры заново.
+		 * The panel is bound to no tab. The facade is cleared before the context
+		 * is released: the facade is read after teardown too, and reading a
+		 * released context would recreate the adapters.
 		 */
 		const unbind = (): void => {
 			if (attached) boundItem?.events.off('change:aria', linkPanel)
@@ -190,7 +183,7 @@ export class TTabsContentBindingExtension {
 			boundItem = undefined
 		}
 
-		/** Связаться с табом или ни с каким: сторону панели пишет и то и другое. */
+		/** Bind to a tab or to none: both write the panel's side. */
 		const bind = (item: ITabsItem | undefined): void => {
 			unbind()
 
@@ -204,7 +197,7 @@ export class TTabsContentBindingExtension {
 			linkPanel()
 			linkTab()
 
-			// Последним: о смене активности фасад сообщает, когда связка уже на месте
+			// Last: the facade reports the activity change once the binding is in place
 			if (boundContext) context.instance.setContext(boundContext)
 		}
 
@@ -218,8 +211,9 @@ export class TTabsContentBindingExtension {
 
 		context.events.on('attach', () => {
 			attached = true
-			// Таб, найденный сборкой: подписка на него ждала входа, а записанное
-			// им с тех пор панель берёт сейчас — после подписки, как связка
+			members?.add(adapter, context)
+			// The tab found on assembly: subscribed now, and what it wrote since
+			// is read after subscribing
 			boundItem?.events.on('change:aria', linkPanel)
 			idPlugin?.events.on('change:id', linkPanel)
 			linkPanel()
@@ -227,8 +221,8 @@ export class TTabsContentBindingExtension {
 
 			resolve()
 
-			// Панель могла смонтироваться раньше своего таба, а набор таба —
-			// войти в реестр позже панели или заново
+			// The panel may mount before its tab, and the tab's bundle may enter
+			// the registry after the panel or again
 			engine.extensions.plain.events.on('item:added', resolve)
 			bundles?.events.on('bundle:registered', linkTab)
 			content.events.on('change:value', resolve)
@@ -240,6 +234,7 @@ export class TTabsContentBindingExtension {
 			content.events.off('change:value', resolve)
 			idPlugin?.events.off('change:id', linkPanel)
 
+			members?.delete(adapter, context)
 			unbind()
 			attached = false
 

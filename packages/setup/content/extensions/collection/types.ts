@@ -1,13 +1,15 @@
 /**
- * Контракты расширений коллекции: инстанс, к которому они подключаются, и их опции.
+ * Contracts of the collection extensions: the instance each is installed on, and its options.
  */
 
 import type { TCollectionEngine, TItemContext } from '@soldy-ui/core'
+import type { TInstanceContext } from '../../../protected/adapter/context'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
 /**
- * Инстанс, к которому подключается расширение: фасад, владеющий коллекцией.
- * Принятие компонента привязывает владельца к движку, уничтожение — снимает.
+ * The instance `TCollectionExtension` is installed on: the facade that owns
+ * the collection. Acceptance binds the owner to the engine, destruction
+ * releases it.
  */
 export type TCollectionOwner = {
 	readonly engine: TCollectionEngine<any, any>
@@ -20,16 +22,30 @@ export interface ICollectionExtensionOptions {
 }
 
 /**
- * Инстанс, к которому подключается расширение: item-фасад, принимающий контекст
- * элемента на монтирование и отпускающий его в конце.
+ * The instance `TCollectionItemExtension` is installed on: the item facade,
+ * which takes the item context for the mount and lets it go at the end.
  */
 export type TCollectionItemFacade = {
 	setContext(context: TItemContext<any, any>): void
 	clearContext(): void
 }
 
+/** A context the collection detaches with itself (`TCollectionMembers`). */
+export interface IDetachable {
+	detach(): void
+}
+
+/**
+ * The own adapter context of a collection member, of its own descriptor, not
+ * of the facade: its instance is the collection's item, and the collection
+ * detaches it with itself.
+ */
+export type TMemberAdapter<TInstance extends object = object> = Pick<
+	TInstanceContext<TInstance>,
+	'instance' | 'detach'
+>
+
 export interface ICollectionItemExtensionOptions {
-	/** Реальный элемент коллекции (инстанс из owner-дескриптора). */
-	item: object
+	adapter: TMemberAdapter
 	elevator: TElevatorFactory
 }

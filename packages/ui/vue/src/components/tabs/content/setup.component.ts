@@ -33,10 +33,7 @@ export default {
 			TabsCollectionContentDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TTabsContentBindingExtension, {
-			content: adapter.instance,
-			elevator: VueElevatorFactory,
-		})
+		).use(TTabsContentBindingExtension, { adapter, elevator: VueElevatorFactory })
 
 		const collectionBinding = useCollectionAdapter(contentAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)

@@ -20,7 +20,7 @@ export function useSetupMenuRadioItem(props: MenuRadioItemProps) {
 			MenuCollectionRadioItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, { item: adapter.instance, elevator })
+		).use(TCollectionItemExtension, { adapter, elevator })
 
 		return [adapter, item] as const
 	})

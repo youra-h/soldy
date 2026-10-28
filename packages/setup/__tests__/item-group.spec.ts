@@ -96,7 +96,7 @@ function mountItem(layer: TElevatorLayer, props: object, ctrl?: IListBoxItem) {
 		ListBoxCollectionItemDescriptor(),
 		{ props },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own.instance, elevator: elevatorOf(layer) })
+	).use(TCollectionItemExtension, { adapter: own, elevator: elevatorOf(layer) })
 
 	accept([item, own])
 
@@ -278,7 +278,7 @@ describe('ключ — только из своей коллекции', () => {
 			MenuCollectionItemDescriptor(),
 			{ props },
 			{ bundle: own.bundle },
-		).use(TCollectionItemExtension, { item: own.instance, elevator })
+		).use(TCollectionItemExtension, { adapter: own, elevator })
 		const facade = createAdapterContext(
 			MenuSubmenuCollectionDescriptor(),
 			{ options: { owner: own.instance } },
@@ -297,7 +297,7 @@ describe('ключ — только из своей коллекции', () => {
 			MenuCollectionItemDescriptor(),
 			{ props },
 			{ bundle: own.bundle },
-		).use(TCollectionItemExtension, { item: own.instance, elevator: elevatorOf(layer) })
+		).use(TCollectionItemExtension, { adapter: own, elevator: elevatorOf(layer) })
 
 		accept([item, own])
 	}

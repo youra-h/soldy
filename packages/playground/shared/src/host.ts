@@ -1,118 +1,155 @@
 import type { TLocale } from '@soldy-ui/plugins'
+import type { IComponentDescriptor } from '@soldy-ui/setup'
 import type { TComponentEntry, TPropControl } from './types'
 import { isSnippetExtension, type TSnippetExtension } from './snippet-file'
 
 /**
- * Хост превью — фреймворковая половина стенда.
+ * Preview host: the framework half of the playground.
  *
- * Оболочка стенда одна, на Vue: шапку, меню и редакторы пропов она рисует
- * компонентами soldy. Компонент на странице рисует хост фреймворка,
- * выбранного в шапке, — в свой корень, на узле, который дала оболочка. Об
- * оболочке хост не знает, оболочка о хосте — только этот контракт: что он умеет
- * нарисовать, как смонтировать и на каком языке.
+ * The shell is one, on Vue: it draws the header, the menu and the prop editors
+ * with soldy components. The component on the page is drawn by the host of the
+ * framework picked in the header, in its own root, on a node the shell gives.
+ * The host knows nothing of the shell; the shell knows only this contract of
+ * the host: what it can draw, how to mount it and in which language.
  *
- * Состояние страницы держит оболочка: значение строки, экземпляр ядра и движок
- * уходят хосту пропсами. Поэтому смена фреймворка перемонтирует только сцену, а
- * выставленное на странице переживает её.
+ * The shell holds the page state: a row's value, the core instance and the
+ * engine reach the host as props. So switching the framework remounts only the
+ * scene, and what was set on the page survives it.
  */
 
-/** Куда хост отдаёт событие компонента: полное имя ядра и аргументы. */
+/** Where the host sends a component event: the full core name and the arguments. */
 export type TPreviewEventSink = (name: string, args: readonly unknown[]) => void
 
-/** Что смонтировать. */
+/** What to mount. */
 export type TPreviewMount = {
-	/** Компонент — идентификатор реестра (`button`), он же ключ карты превью. */
+	/** Component: the registry id (`button`), also the key of the preview map. */
 	component: string
-	/** Ключ фикстуры — разметки со слотами. Без него рисуется превью компонента. */
+	/** Fixture key: markup with slots. Without it the component's preview is drawn. */
 	fixture?: string
 	/**
-	 * Пропсы — именами, как их пишут в разметке: `aria_label`, `ctrl`,
-	 * `engine`. Слушателей среди них нет: события хост отдаёт в `onEvent`.
+	 * Props, named as markup writes them: `aria_label`, `ctrl`, `engine`. No
+	 * listeners among them: the host sends events to `onEvent`.
 	 */
 	props: Readonly<Record<string, unknown>>
 	/**
-	 * Все события, которые компонент объявил (свои и фасада коллекции), —
-	 * под полными именами ядра: `change:text`, `action:press`. Имена
-	 * фреймворка (`onChangeText`) к ним приводит хост. Нет приёмника — хост не
-	 * слушает ничего.
+	 * Every event the component declares (its own and its collection
+	 * facade's), under the full core name: `change:text`, `action:press`. The
+	 * host maps framework names (`onChangeText`) to them. No sink: the host
+	 * listens to nothing.
+	 *
+	 * Events of the parts the preview places in markup (`TComponentEntry.parts`)
+	 * come here too, under the part's name: `Tabs.Item>action:press`
+	 * (`partsOf`). A fixture's markup is its own, and its parts are not
+	 * listened to.
 	 */
 	onEvent?: TPreviewEventSink
 	/**
-	 * Сколько копий превью в корне — одним деревом фреймворка, рядом, как
-	 * десятки одинаковых компонентов на странице приложения. Пропсы и
-	 * слушатели у копий общие. Так монтирует стенд замера страниц
-	 * (`tools/bench-pages`). Не задан — одна.
+	 * How many copies of the preview the root holds: one framework tree, side
+	 * by side, like dozens of identical components on an app page. The copies
+	 * share props and listeners. The page benchmark mounts this way
+	 * (`tools/bench-pages`). Unset: one.
 	 */
 	count?: number
 }
 
-/** Смонтированное превью. */
+/** A mounted preview. */
 export interface IPreviewHandle {
-	/** Новые пропсы — целиком, а не разница: отрисует их фреймворк в своём такте. */
+	/** New props, whole rather than a diff: the framework draws them on its own tick. */
 	update(props: Readonly<Record<string, unknown>>): void
-	/** Снять компонент: узел монтирования остаётся пустым. */
+	/** Unmount the component: the mount node is left empty. */
 	unmount(): void
 }
 
-/** Код колонок страницы свойств — в синтаксисе фреймворка хоста. */
+/** Code of the props page columns, in the host framework's syntax. */
 export interface IPreviewSnippets {
-	/** Расширение файла примера: в нём «Открыть в VS Code» пишет код колонок. */
+	/** Extension of the example file that "Open in VS Code" writes the column code to. */
 	readonly extension: TSnippetExtension
-	/** Колонка «Component»: значение приходит пропом. */
+	/** The "Component" column: the value comes as a prop. */
 	propSnippet(
 		entry: TComponentEntry,
 		prop: string,
 		value: unknown,
 		preset?: Record<string, unknown>,
 	): string
-	/** Колонка «Component Instance»: значение пишется в экземпляр ядра. */
+	/** The "Component Instance" column: the value is written to the core instance. */
 	instanceSnippet(entry: TComponentEntry, control: TPropControl, value: unknown): string
 }
 
 export interface IPreviewHost {
 	/**
-	 * Компоненты, которые хост умеет нарисовать, — ключи его карты превью.
-	 * Меню и витрина оболочки — пересечение реестра с ними.
+	 * Components the host can draw: the keys of its preview map. The shell's
+	 * menu and showcase are the registry intersected with them.
 	 */
 	readonly previews: readonly string[]
 	/**
-	 * Фикстуры сценариев — ключи. Сценарий виден, если у хоста есть и
-	 * компонент, и его фикстура.
+	 * Scenario fixture keys. A scenario is shown when the host has both the
+	 * component and its fixture.
 	 */
 	readonly fixtures: readonly string[]
 	/**
-	 * Отдают ли слоты содержимому данные компонента — scope. `false` — нет: у
-	 * Web Components содержимое слота — свет элемента, и данных ему не передать.
-	 * Сценарии, которые проверяют scope (`TScenario.slotScope`), такой хост не
-	 * показывает. Не задан — scope у слотов есть.
+	 * Whether slots pass the component's data (scope) to their content. `false`
+	 * for Web Components: slot content is the element's light DOM, and no data
+	 * can be handed to it. Such a host hides scenarios that check the scope
+	 * (`TScenario.slotScope`). Unset: slots have a scope.
 	 */
 	readonly slotScope?: boolean
 	/**
-	 * Задаётся ли тег корня компонента пропом `tag`. `false` — нет: у Web
-	 * Components тег — сам элемент, его задаёт регистрация (`<label
-	 * is="so-radio-group-item">`). Сценарии, фикстуры которых задают тег
-	 * пропом (`TScenario.tagProp`), такой хост не показывает. Не задан — проп
-	 * `tag` есть.
+	 * Whether the `tag` prop sets the component's root tag. `false` for Web
+	 * Components: the tag is the element itself, set by its registration
+	 * (`<label is="so-radio-group-item">`). Such a host hides scenarios whose
+	 * fixtures set the tag by prop (`TScenario.tagProp`). Unset: the `tag` prop
+	 * exists.
 	 */
 	readonly tagProp?: boolean
 	/**
-	 * Смонтировать компонент в узел — в свой корень фреймворка.
+	 * Mount the component into the node, in a root of the host's framework.
 	 *
-	 * Синхронно: к возврату компонент в DOM. Кадр, к которому `TElementPlugin`
-	 * отдаёт узел плагинам, ждёт вызывающий.
+	 * Synchronous: the component is in the DOM on return. The caller waits for
+	 * the frame on which `TElementPlugin` hands the node to plugins.
 	 */
 	mount(node: HTMLElement, mount: TPreviewMount): IPreviewHandle
 	/**
-	 * Язык шапки — всем корням хоста, без перемонтирования. Контекст
-	 * провайдера оболочки в чужой корень не проходит, поэтому у каждого корня
-	 * свой `LocaleProvider`, и локаль ему даёт хост.
+	 * The header's language, for every root of the host, without a remount.
+	 * The shell provider's context does not cross into a foreign root, so each
+	 * root has its own `LocaleProvider`, and the host gives it the locale.
 	 */
 	setLocale(locale: TLocale): void
-	/** Код колонок. Нет его — у колонок нет блоков кода. */
+	/** Column code. Without it the columns have no code blocks. */
 	readonly snippets?: IPreviewSnippets
 }
 
-/** Модуль хоста: хост — его экспорт по умолчанию. */
+/**
+ * Descriptors whose events the component sends: its own and, for a
+ * collection, its facade's, as its adapter declares them.
+ */
+export function componentDescriptors(entry: TComponentEntry): readonly IComponentDescriptor[] {
+	return [
+		entry.descriptor(),
+		...(entry.collectionDescriptor ? [entry.collectionDescriptor()] : []),
+	]
+}
+
+/**
+ * Listeners of the parts the preview places in markup (`TComponentEntry.parts`),
+ * by part, in the host's form (`listen`, the same as for the component). The
+ * sink gets an event under the part's name, `Tabs.Item>action:press`: the
+ * owner's export name and the part's, as the consumer writes `<Tabs.Item>`.
+ * One format for every host: the parity run compares the journals.
+ */
+export function partsOf<TListeners>(
+	entry: TComponentEntry,
+	sink: TPreviewEventSink,
+	listen: (descriptors: readonly IComponentDescriptor[], sink: TPreviewEventSink) => TListeners,
+): Readonly<Record<string, TListeners>> {
+	return Object.fromEntries(
+		Object.entries(entry.parts ?? {}).map(([part, descriptors]) => [
+			part,
+			listen(descriptors(), (name, args) => sink(`${entry.label}.${part}>${name}`, args)),
+		]),
+	)
+}
+
+/** Host module: the host is its default export. */
 export type TPreviewHostModule = { default: IPreviewHost }
 
 function isObject(value: unknown): value is Record<PropertyKey, unknown> {
@@ -132,7 +169,7 @@ function isSnippets(value: unknown): value is IPreviewSnippets {
 	)
 }
 
-/** Хост ли это — по форме, которую обещает контракт. */
+/** Whether this is a host, by the shape the contract promises. */
 export function isPreviewHost(value: unknown): value is IPreviewHost {
 	return (
 		isObject(value) &&
@@ -147,11 +184,11 @@ export function isPreviewHost(value: unknown): value is IPreviewHost {
 }
 
 /**
- * Модуль ли это хоста — то, что отдал загрузчик оболочки.
+ * Whether what the shell loader returned is a host module.
  *
- * Загрузчик получает модуль ленивым `import()`, и тип у него `unknown`:
- * приведение к хосту спрятало бы модуль, который экспортирует не то. Сторож
- * проверяет форму и отказывает громко.
+ * The loader gets the module by a lazy `import()`, typed `unknown`: a cast to
+ * the host would hide a module that exports the wrong thing. The guard checks
+ * the shape and fails loudly.
  */
 export function isPreviewHostModule(value: unknown): value is TPreviewHostModule {
 	return isObject(value) && isPreviewHost(value.default)
