@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/plugins",
-  "version": "0.3.0-alpha.6",
+  "version": "0.3.0-alpha.7",
   "description": "Плагины поведения в рантайме, ставятся в TPluginBundle: DOM, фокус, клавиатура, оверлей",
   "keywords": [
     "soldy",
@@ -36,7 +36,7 @@
     "dist"
   ],
   "dependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.6"
+    "@soldy-ui/core": "0.3.0-alpha.7"
   },
   "scripts": {
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",

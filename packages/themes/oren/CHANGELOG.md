@@ -1,5 +1,18 @@
 # @soldy-ui/theme-oren
 
+## 0.3.0-alpha.7
+
+### Patch Changes
+
+- Updated dependencies [26cc7e3]
+- Updated dependencies [5d8b7ca]
+- Updated dependencies [d278f0f]
+- Updated dependencies [1a322fe]
+- Updated dependencies [843f9ef]
+  - @soldy-ui/setup@0.3.0-alpha.7
+  - @soldy-ui/core@0.3.0-alpha.7
+  - @soldy-ui/theme-base@0.3.0-alpha.7
+
 ## 0.3.0-alpha.6
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@soldy-ui/icons-lucide",
-  "version": "0.3.0-alpha.6",
+  "version": "0.3.0-alpha.7",
   "description": "Иконки Lucide: реализация контракта ролей ICON_ROLES",
   "keywords": [
     "soldy",
@@ -41,6 +41,6 @@
     "generate": "node scripts/generate.mjs"
   },
   "dependencies": {
-    "@soldy-ui/setup": "0.3.0-alpha.6"
+    "@soldy-ui/setup": "0.3.0-alpha.7"
   }
 }

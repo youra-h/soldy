@@ -1,5 +1,15 @@
 # @soldy-ui/icons-lucide
 
+## 0.3.0-alpha.7
+
+### Patch Changes
+
+- Updated dependencies [26cc7e3]
+- Updated dependencies [5d8b7ca]
+- Updated dependencies [d278f0f]
+- Updated dependencies [1a322fe]
+  - @soldy-ui/setup@0.3.0-alpha.7
+
 ## 0.3.0-alpha.6
 
 ### Patch Changes
