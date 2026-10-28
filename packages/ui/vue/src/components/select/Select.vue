@@ -22,48 +22,46 @@ export default {
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<!--
-			Поле — готовый `Input`, а не свой `<input>`: у него уже есть слоты
-			`leading`/`trailing` под иконки и стили. Весь набор ARIA комбобокса
-			(`role="combobox"`, `aria-expanded`, `aria-controls`,
-			`aria-activedescendant`, `aria-autocomplete`) живёт в `field.aria`
-			(см. `TSelect`, `TSelectExtension`, `TSelectKeyboardPlugin`) и
-			выводится самим `Input.vue` на его внутренний `<input>` — здесь его
-			пробрасывать не нужно.
+				The field is a ready `Input`, not an `<input>` of its own: it has the
+				`leading`/`trailing` slots for icons, and the styles. The whole ARIA
+				set of the combobox (`role="combobox"`, `aria-expanded`,
+				`aria-controls`, `aria-activedescendant`, `aria-autocomplete`) lives
+				in `field.aria` (`TSelect`, `TSelectExtension`,
+				`TSelectKeyboardPlugin`), and `Input.vue` puts it on its inner
+				`<input>` itself.
 
-			`:ctrl="field"`, а не набор пропов: текст, плейсхолдер и ARIA
-			комбобокса, которые видит пользователь, принадлежат отдельному
-			экземпляру `TInput` (`field`), которым владеет Select (см.
-			`TSelect.field`, `TSelectExtension`). Рядом `:value`/`:placeholder`
-			не ставить ни в каком виде — тогда снова завелись бы вторые копии.
-			`disabled`, `size`, `variant`, `readonly`, `required`, `name`,
-			`clearable` и ошибку (`invalid`) тоже несёт инстанс: Select
-			синхронизирует их с ним сам. Имя кнопки очистки поле получает от
-			своего плагина имён. `id` — не свойство ядра, а проп `TIdPlugin`:
-			свой `id` Select (заданный приложением или полем формы `Field`)
-			отдаёт полю пропом `:id`, и `Input` кладёт его на свой `<input>`.
+				`:ctrl="field"`, not a set of props: the text, the placeholder and the
+				combobox ARIA belong to the separate `TInput` instance (`field`) that
+				Select owns (`TSelect.field`, `TSelectExtension`). No `:value` or
+				`:placeholder` next to it — they would be second copies. `disabled`,
+				`size`, `variant`, `readonly`, `required`, `name`, `clearable` and
+				the error (`invalid`) are carried by the instance too: Select keeps them
+				in sync itself. The clear button gets its name from the field's names
+				plugin. `id` is a prop of `TIdPlugin`, not of the core: Select hands
+				its own `id` (the app's or the form field's) to the field, and `Input`
+				puts it on its `<input>`.
 
-			Свой набор `aria` Select — имя (`aria_label`, `aria_labelledBy`),
-			описание, `aria-invalid` — ложится атрибутами на `Input`, а `Input`
-			отдаёт их своему `<input>`, поверх набора комбобокса: имя и описание
-			— у элемента, на котором стоит фокус. Атрибуты потребителя — поверх
-			обоих.
+				Select's own `aria` set — the name (`aria_label`, `aria_labelledBy`),
+				the description, `aria-invalid` — goes as attributes to `Input`, which
+				hands them to its `<input>` over the combobox set: the name and the
+				description belong to the focused element. The consumer's attributes go
+				over both.
 
-			Кнопку очистки рисует поле — первой в своём слоте у конца, перед
-			стрелкой. Очищает поле его команда `clear`, а выбор снимает
-			`TSelectExtension` по её событию: здесь кнопки нет.
+				The field draws the clear button — first in its end slot, before the
+				arrow. Its `clear` command clears the field, and `TSelectExtension`
+				drops the choice by its event: there is no button here.
 
-			`readonly` вложенного `Input` — обычный `readonly` Select, которым
-			управляет `editable`. В select-only (`editable: false`, по
-			умолчанию) поле остаётся readonly; `editable: true` снимает его и
-			позволяет вводить текст. Что делает ввод, решает `editableMode`, и
-			решает целиком в `TEditablePlugin`: разметка про подсветку и отбор
-			не знает ничего, поэтому во всех адаптерах они одинаковы.
+				The nested `Input`'s `readonly` is Select's, driven by `editable`.
+				Select-only (`editable: false`, the default) keeps the field readonly;
+				`editable: true` lifts it and lets the user type. What typing does is
+				`editableMode`'s, decided whole in `TEditablePlugin`: the markup knows
+				nothing of highlighting and filtering, so all adapters behave the same.
 
-			`readonly` гасит нативный `required` у вложенного `<input>` (браузер
-			не валидирует readonly-поле), поэтому `aria-required` в `field.aria`
-			`TInput` ставит явно — без него состояние осталось бы немым для
-			скринридера (см. `TInput._syncInputAccessibility()`).
-		-->
+				`readonly` turns off the native `required` of the nested `<input>`
+				(the browser does not validate a readonly field), so `TInput` sets
+				`aria-required` in `field.aria` explicitly — otherwise the screen
+				reader would not hear the state (`TInput._syncInputAccessibility()`).
+			-->
 		<slot name="field" :field="field">
 			<Input
 				embedded="select.field"
@@ -72,16 +70,17 @@ export default {
 				:id="id"
 				v-bind="{ ...aria, ...controlAttrs }"
 			>
-				<!-- Слоты Input пробрасываются наружу как есть -->
+				<!-- Input's slots are relayed outward as they are -->
 				<template #leading>
 					<!--
-						Теги — второй компонент со своей коллекцией, не разметка: связка
-						«опция ⇄ тег» целиком в `TSelectTagsExtension`. Есть только в
-						`multiple` — в `single` `tags` пуст, и слот получает то же поле.
+						The tags are a second component with its own collection, not
+						markup: "option ⇄ tag" lives whole in `TSelectTagsExtension`. Only
+						in `multiple` — in `single` `tags` is empty, and the slot gets the
+						same field.
 
-						Слот `tags` отдаёт инстанс тегов и его коллекцию — то, что
-						встроенный `Tags` берёт `:ctrl` и `:engine`: свой ряд получает
-						связку готовой и раскладывает теги, как ему нужно.
+						The `tags` slot hands over the tags instance and its collection —
+						what the built-in `Tags` takes as `:ctrl` and `:engine`: a row of
+						one's own gets the link ready and lays out the tags as it needs.
 					-->
 					<slot v-if="tags" name="tags" :tags="tags" :engine="tags_engine">
 						<Tags
@@ -95,10 +94,10 @@ export default {
 				</template>
 
 				<!--
-					Своя кнопка очистки — проброс слота `clear` поля со scope поля:
-					команда `clear` очищает поле, а выбор снимается по её событию.
-					Слот отдаётся полю, только когда задан Select'у: иначе поле
-					рисует свою кнопку по `clearable`.
+					A clear button of one's own — the field's `clear` slot relayed with
+					the field's scope: the `clear` command clears the field, and the
+					choice drops by its event. The slot goes to the field only when Select
+					has it: otherwise the field draws its own button by `clearable`.
 				-->
 				<template v-if="$slots.clear" #clear="{ clear }">
 					<slot name="clear" :clear="clear" />
@@ -106,14 +105,12 @@ export default {
 
 				<template #trailing>
 					<!--
-						Стрелка декоративна: состояние панели уже сказано через
-						`aria-expanded` на поле, второй раз объявлять его не надо.
-						Icon скрыт от скринридера по умолчанию.
+						The arrow is decorative: `aria-expanded` on the field already says
+						the panel's state. Icon is hidden from the screen reader by default.
 
-						Класс на обёртке, а не на иконке: тема разворачивает
-						стрелку селектором `.so-select[data-open] .so-select__arrow`.
-						Поставь его на `Icon` — и подменённая через слот иконка
-						перестала бы поворачиваться, причём молча.
+						The class is on the wrapper, not on the icon: the theme turns the
+						arrow by `.so-select[data-open] .so-select__arrow`. On `Icon` an
+						icon replaced through the slot would silently stop turning.
 					-->
 					<span class="so-select__arrow">
 						<slot name="arrow-icon">
@@ -127,28 +124,27 @@ export default {
 		</slot>
 
 		<!--
-			Панель телепортируется, поэтому лежит вне поддерева поля. Из этого
-			два следствия: якорем ей служит корень Select, а
-			`dismiss_ownerAttribute` помечает её владельцем — иначе нажатие
-			внутрь панели считалось бы нажатием мимо и закрывало её.
+			The panel is teleported, so it lies outside the field's subtree. Two
+			consequences: its anchor is Select's root, and `dismiss_ownerAttribute`
+			marks Select as its owner — otherwise a press inside the panel would count
+			as a press outside and close it.
 
-			Открытость — это `visible` (v-show), а не `rendered` (v-if), и это
-			важно: опции регистрируются в коллекции при монтировании и выбывают
-			при размонтировании. Спрячь панель через `v-if` — и закрытие
-			вычистило бы коллекцию, а вместе с ней и выбор, то есть значение
-			поля. `v-show` ставит `display: none`, чего достаточно и чтобы
-			убрать панель из дерева доступности.
+			Openness is `visible` (v-show), not `rendered` (v-if), and it matters:
+			the options join the collection on mounting and leave it on unmounting.
+			Hidden by `v-if`, the panel would empty the collection on closing, and
+			the choice with it — the field's value. `v-show` sets `display: none`,
+			which also takes the panel out of the accessibility tree.
 
-			Сторону панели шаблон не вычисляет: `placement` Select ядро переводит
-			в `panelPlacement` и `panelFlip`, а у края окна сторону выбирает
-			`TAnchorPlugin`, если `placement` не запретил ему flip.
+			The template does not compute the panel's side: the core turns Select's
+			`placement` into `panelPlacement` and `panelFlip`, and at the window's
+			edge `TAnchorPlugin` picks the side, unless `placement` forbade the flip.
 
-			`panelDataset` — `data-*` панели от Select: признак «тянут»
-			(`data-swiping`), по которому тема снимает переход, пока панель идёт
-			за пальцем. Открытость (`data-open`) Frame пишет сам — это видимость
-			его слоя, — а сторону после flip (`data-placement`) пишет плагин
-			якоря. Сдвиг во время жеста (`--so-swipe-offset`) плагин жеста пишет
-			в панель сам.
+			`panelDataset` — the panel's `data-*` from Select: "being pulled"
+			(`data-swiping`), by which the theme drops the transition while the panel
+			follows the finger. Openness (`data-open`) Frame writes itself — it is
+			its layer's visibility — and the side after a flip (`data-placement`) the
+			anchor plugin. The gesture plugin writes the offset during the gesture
+			(`--so-swipe-offset`) into the panel itself.
 		-->
 		<Frame
 			embedded="select.frame"
@@ -163,50 +159,56 @@ export default {
 			v-bind="{ ...panelDataset, ...dismiss_ownerAttribute }"
 		>
 			<!--
-				Полоса, за которую панель тянут, — пока жест включён. Она говорит,
-				что панель можно смахнуть, и сама ничего не делает: потребитель её
-				не адресует, скринридеру она не нужна (`aria-hidden`). Стоит она у
-				края со стороны поля (`data-placement`), ставит её тема. Прямой
-				потомок панели и вне списка: в `[role=listbox]` скринридер счёл бы
-				её опцией, а плагин жеста узнаёт полосу только у самой панели.
-				Закрыть без перетаскивания — Escape и нажатие мимо.
+				The bar the panel is pulled by — while the gesture is on. It says the
+				panel can be swiped and does nothing itself: the consumer does not
+				address it, and the screen reader does not need it (`aria-hidden`). It
+				stands at the edge on the field's side (`data-placement`), placed by the
+				theme. A direct child of the panel and outside the list: in
+				`[role=listbox]` the screen reader would take it for an option, and the
+				gesture plugin knows the bar only at the panel itself. Closing without
+				dragging is Escape and a press outside.
 			-->
 			<div v-if="handleRendered" class="so-select__handle" aria-hidden="true" />
 
 			<div class="so-select__list" v-bind="listAria">
 				<slot>
 					<!--
-						Слоты опций статические и получают элемент через scope —
-						динамические имена резолвит только Vue (см. Tabs.vue). Проброс
-						целиком: у каждого слота опции есть `item-<слот>`, и его scope —
-						scope слота опции плюс сама опция. Отметку опция рисует сама,
-						пока слот не задан, — поэтому слот отметки отдаётся ей, только
-						когда задан Select'у.
+						The options' slots are static and get the item through the scope —
+						dynamic names resolve only in Vue (see Tabs.vue). The relay is whole:
+						each option slot has its `item-<slot>`, whose scope is the option
+						slot's scope plus the option. The option draws its mark itself while
+						its slot is not given — so the mark's slot goes to it only when Select
+						has it.
 
-						Опции — то, что рисует коллекция, по секциям группировки
-						(`drawnSections`), как у ListBox: группа с подписью — в
-						`SelectGroup`, опции без группы — прямо в списке, между соседними
-						секциями, пока его просит Select (`groupSeparators`), — немой
-						разделитель (`aria-hidden`, не `separator`: в `listbox` ARIA
-						пускает только опции и группы). Секции идут
-						порядком показанного — стрелки подсвечивают опции так, как они
-						стоят на экране. Без групп секция одна — ни обёртки, ни
-						разделителя. Отбор, убравший все опции группы, убирает и её
-						секцию — вместе с подписью.
+						The options are what the collection draws, by the grouping's sections
+						(`drawnSections`), as in ListBox: a group with a label — in
+						`SelectGroup`, options without a group — right in the list, and
+						between neighboring sections, while Select asks for it
+						(`groupSeparators`), a mute separator (`aria-hidden`, not
+						`separator`: ARIA lets only options and groups into a `listbox`). The
+						sections follow the shown order — the arrows highlight the options as
+						they stand on screen. Without groups there is one section — no wrapper,
+						no separator. A filter that removed all options of a group removes its
+						section with the label.
 
-						В секции — её записи по порядку, ключ — ключ записи. Без окна это
-						все показанные опции секции, то есть то, что осталось после
-						отбора. Скрытая опция размонтируется, но из коллекции не исчезает
-						— составом владеют данные, а не разметка (см. `owned` в
-						`TCollectionExtension`). Снятие фильтра возвращает её на место
-						вместе с выбором.
+						A section has its entries in order, keyed by the entry's key. Without
+						a window these are all its shown options — what the filter left. A
+						hidden option unmounts but stays in the collection — the data own the
+						composition, not the markup (`owned` in `TCollectionExtension`).
+						Dropping the filter brings it back with its choice.
 
-						В окне обёртки `Virtual` (у списка без групп) — видимые опции и
-						распорки на месте пропущенных: `div` под `aria-hidden`, высоту
-						которого тема берёт из его стиля. Одна петля на опции и распорки,
-						как у ListBox: петли по блокам перемонтировали бы опцию, когда она
-						переходит из блока в блок. Проброс слотов записан у опций группы
-						и у опций без неё: обёртка у них разная.
+						In the window of the `Virtual` wrapper (a list without groups) — the
+						visible options and fillers in place of the skipped ones: a `div`
+						under `aria-hidden` whose height the theme takes from its style. One
+						loop for options and fillers, as in ListBox: loops by blocks would
+						remount an option moving from block to block. The relay is written
+						for the options of a group and for those without one: their wrappers
+						differ.
+
+						The slots are relayed only when Select has any of them: the relay
+						refers to the loop's `entry`, and Vue redraws an item with such
+						slots on every redraw of its owner (AGENTS.md, Pitfalls) — every
+						option on every opening of the panel.
 					-->
 					<!--
 						Options from data are mounted from the panel's first opening on
@@ -231,6 +233,17 @@ export default {
 										aria-hidden="true"
 										:style="entry.style"
 									></div>
+									<SelectItem
+										v-else-if="
+											!(
+												$slots.item ||
+												$slots['item-leading'] ||
+												$slots['item-trailing'] ||
+												$slots['item-indicator-icon']
+											)
+										"
+										:ctrl="entry.item"
+									/>
 									<SelectItem v-else :ctrl="entry.item">
 										<template #leading>
 											<slot name="item-leading" :item="entry.item" />
@@ -267,6 +280,17 @@ export default {
 										aria-hidden="true"
 										:style="entry.style"
 									></div>
+									<SelectItem
+										v-else-if="
+											!(
+												$slots.item ||
+												$slots['item-leading'] ||
+												$slots['item-trailing'] ||
+												$slots['item-indicator-icon']
+											)
+										"
+										:ctrl="entry.item"
+									/>
 									<SelectItem v-else :ctrl="entry.item">
 										<template #leading>
 											<slot name="item-leading" :item="entry.item" />

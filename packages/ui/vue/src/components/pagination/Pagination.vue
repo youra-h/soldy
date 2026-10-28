@@ -17,26 +17,27 @@ export default { ...SetupPagination, components: { Button, Icon, PaginationItem 
 		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
 		<!--
-			Pagination — ряд в одну строку: стрелка «назад», список страниц,
-			стрелка «вперёд». Корень рисуется по `tag` (по умолчанию `nav`):
-			ориентир для скринридера. Имя ему даёт приложение — `aria_label` или
-			`aria_labelledBy`, они в наборе `aria`: что листают, знает только оно.
-			На корне — модификаторы `--size-*` и `--variant-*` и `data-disabled`.
+			Pagination — a single row: the "back" arrow, the list of pages, the
+			"forward" arrow. The root is drawn by `tag` (`nav` by default): a
+			landmark for the screen reader. The app names it — `aria_label` or
+			`aria_labelledBy`, in the `aria` set: only it knows what is paged. The
+			root has the `--size-*` and `--variant-*` modifiers and `data-disabled`.
 
-			Стрелки стоят вне списка: в списке только страницы и пропуски.
-			Отдельных кнопок «в начало» и «в конец» нет — их роль играют первая
-			и последняя страницы, они видны всегда.
+			The arrows stand outside the list: the list holds only pages and gaps.
+			There are no "first" and "last" buttons — the first and the last pages
+			play that part, they are always shown.
 		-->
 
 		<!--
-			Стрелка «назад» — на предыдущую страницу (`ctrl.prev()`). `size` и
-			`variant` — пагинации: цвет тема берёт с модификатора кнопки.
-			Выключенность считает пагинация (`prevDisabled`: первая страница,
-			текущей нет или выключен компонент), имя из локали — в наборе
-			`prevAria`. Вида нет: `plain` и квадрат даёт тема по контексту. Иконка
-			— роль `arrowRight`, у обеих стрелок: «назад» тема зеркалит по
-			направлению строки. Слот `prev-icon` — своя иконка; в слот кладут
-			стрелку, которая смотрит в конец строки, — тема зеркалит и её.
+			The "back" arrow — to the previous page (`ctrl.prev()`). `size` and
+			`variant` are the pagination's: the theme takes the color from the
+			button's modifier. The pagination computes the disabled state
+			(`prevDisabled`: the first page, no current page or the component is
+			disabled), the name from the locale is in the `prevAria` set. No view:
+			the theme gives `plain` and the square by context. The icon is the
+			`arrowRight` role on both arrows: the theme mirrors "back" by the line's
+			direction. The `prev-icon` slot is an icon of one's own; it takes an arrow
+			that points to the line's end — the theme mirrors it too.
 		-->
 		<Button
 			embedded="pagination.prev"
@@ -55,40 +56,43 @@ export default { ...SetupPagination, components: { Button, Icon, PaginationItem 
 
 		<ol class="so-pagination__list">
 			<!--
-				Страницы и пропуски — по порядку окна (`cells`): первая страница,
-				пропуск, N страниц вокруг текущей, пропуск, последняя
-				(`1 … 4 5 6 … 10`). Страница — элемент коллекции; в коллекции
-				только страницы окна. Пропуск — разметка владельца там, где между
-				соседними страницами окна пропущены две и больше: одну
-				пропущенную окно показывает страницей (`1 2 3 4 5 … 10`).
+				Pages and gaps in the window's order (`cells`): the first page, a gap,
+				N pages around the current one, a gap, the last (`1 … 4 5 6 … 10`). A
+				page is a collection item; the collection holds only the window's pages.
+				A gap is the owner's markup where two or more pages are skipped between
+				neighboring window pages: the window shows a single skipped page as a
+				page (`1 2 3 4 5 … 10`).
 
-				Ключ места — `cell.key`: у страницы её `uid`. Страница, оставшаяся
-				на экране при сдвиге окна, — тот же экземпляр, и узел с фокусом на
-				нём не пересобирается.
+				The place's key is `cell.key`: a page's `uid`. A page that stays on
+				screen as the window moves is the same instance, and the focused node on
+				it is not rebuilt.
 
-				Слот страницы пробрасывается целиком: `item`, scope — scope слота
-				страницы (`text`) плюс сама страница.
+				The page's slot is relayed whole: `item`, the scope — the page slot's
+				scope (`text`) plus the page. It is relayed only when the pagination has
+				it: the relay refers to the loop's `cell`, and Vue redraws an item with
+				such slots on every redraw of its owner (AGENTS.md, Pitfalls).
 			-->
 			<template v-for="cell in cells" :key="cell.key">
-				<PaginationItem v-if="cell.kind === 'item'" :ctrl="cell.item">
+				<PaginationItem v-if="cell.kind === 'item' && $slots.item" :ctrl="cell.item">
 					<template #default="{ text }">
 						<slot name="item" :item="cell.item" :text="text" />
 					</template>
 				</PaginationItem>
+				<PaginationItem v-else-if="cell.kind === 'item'" :ctrl="cell.item" />
 
 				<!--
-					Пропуск — не кнопка и не иконка: на нём ничего не нажимают, и
-					фокуса у него нет. Многоточие — текстом. Клетку той же ширины,
-					что узкая страница, даёт тема.
+					A gap is neither a button nor an icon: nothing is pressed on it, and
+					it has no focus. The ellipsis is text. The theme gives the cell the
+					width of a narrow page.
 				-->
 				<li v-else class="so-pagination__ellipsis">…</li>
 			</template>
 		</ol>
 
 		<!--
-			Стрелка «вперёд» — на следующую страницу (`ctrl.next()`);
-			выключена на последней (`nextDisabled`). Остальное — как у «назад»,
-			имя из локали — в наборе `nextAria`, слот — `next-icon`.
+			The "forward" arrow — to the next page (`ctrl.next()`); disabled on the
+			last one (`nextDisabled`). The rest is as at "back": the name from the
+			locale is in the `nextAria` set, the slot is `next-icon`.
 		-->
 		<Button
 			embedded="pagination.next"
