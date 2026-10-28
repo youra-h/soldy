@@ -144,3 +144,15 @@
 | calendar: locale en     | 1201                 | 25                  | 1550 / 31            | 980                         | 0 / 0                            | Button 300, Icon 200, Icon_arrowRight 200, Calendar$1 100 |
 | number-input: locale ru | 801                  | 17                  | 0 / 0                | 784                         | 0 / 0                            | Button 200, Icon 200, NumberInput 100, NativeInput 100    |
 | number-input: locale en | 801                  | 17                  | 0 / 0                | 784                         | 0 / 0                            | Button 200, Icon 200, NumberInput 100, NativeInput 100    |
+
+## 2026-10-28 — React, неделя Calendar по месту в сетке
+
+Ключ строки недели — её место в сетке, а не первая дата (задача 869fmu6nz). Смена языка с другим
+первым днём недели (`ruRU` ⇄ `enUS`) оставляет в строке шесть дней из семи, и сетка месяца не
+пересобирается целиком. Время до кадра на странице `calendar` из 50, мс; «до» — прошлый замер
+журнала, «после» — `npm run interaction -- --pages calendar --rates 1,6` (×4 — тем же прогоном):
+
+| Действие            | ×1      | ×4        | ×6        |
+| ------------------- | ------- | --------- | --------- |
+| calendar: locale ru | 92 → 50 | 524 → 311 | 856 → 522 |
+| calendar: locale en | 88 → 49 | 529 → 297 | 841 → 518 |

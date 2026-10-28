@@ -148,3 +148,15 @@ Tags, Accordion, RadioGroup, Pagination, Toasts), отдаёт элементу 
 | calendar: locale en     | 302                  | 8                   | 1550 / 31            | 1029                        | 0 / 0                            | Button 150, Calendar 50, Popover 50, Frame 50     |
 | number-input: locale ru | 152                  | 5                   | 0 / 0                | 294                         | 0 / 0                            | Button 100, NumberInput 50, ? 1, LocaleProvider 1 |
 | number-input: locale en | 152                  | 5                   | 0 / 0                | 294                         | 0 / 0                            | Button 100, NumberInput 50, ? 1, LocaleProvider 1 |
+
+## 2026-10-28 — Vue, неделя Calendar по месту в сетке
+
+Ключ строки недели — её место в сетке, а не первая дата (задача 869fmu6nz). Смена языка с другим
+первым днём недели (`ruRU` ⇄ `enUS`) оставляет в строке шесть дней из семи, и сетка месяца не
+пересобирается целиком. Время до кадра на странице `calendar` из 50, мс; «до» — прошлый замер
+журнала, «после» — `npm run interaction -- --pages calendar --rates 1,6` (×4 — тем же прогоном):
+
+| Действие            | ×1       | ×4        | ×6         |
+| ------------------- | -------- | --------- | ---------- |
+| calendar: locale ru | 120 → 76 | 716 → 392 | 1150 → 560 |
+| calendar: locale en | 141 → 78 | 788 → 351 | 1239 → 554 |
