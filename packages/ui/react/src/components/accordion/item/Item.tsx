@@ -1,4 +1,4 @@
-import type { ElementType, ReactElement, ReactNode } from 'react'
+import type { ElementType, ReactElement } from 'react'
 import {
 	hasSlot,
 	renderSlot,
@@ -10,6 +10,7 @@ import {
 	useClickAction,
 	withRenderBoundary,
 } from '../../../adapter'
+import type { TSlotContent } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
 import { useSetupAccordionItem } from './setup.component'
@@ -22,7 +23,7 @@ import type { AccordionItemAttributes, AccordionItemProps } from './base.compone
 export const AccordionItem = withRenderBoundary(function AccordionItem(
 	props: AccordionItemProps,
 ): ReactElement | null {
-	const { ref, forwardProps, state, context } = useSetupAccordionItem(props)
+	const { ref, forwardProps, state, context, ctrl } = useSetupAccordionItem(props)
 	const toggle = useClickAction(() => context?.adapters.selection.toggle())
 
 	const {
@@ -45,18 +46,25 @@ export const AccordionItem = withRenderBoundary(function AccordionItem(
 
 	const Tag = tag as ElementType
 	const header = toControlAttrs<AccordionItemAttributes>(forwardProps)
+	const item = ctrl
 
 	// Класс стрелки — на обёртке: тема поворачивает по нему и подменённую слотом иконку
-	const arrowAt = (side: 'start' | 'end', slot: ReactNode) =>
-		hasSlot(slot) || arrowPlacement === side ? (
+	const arrowAt = (
+		side: 'start' | 'end',
+		slot: TSlotContent<{ item: typeof item }> | undefined,
+	) => {
+		const rendered = renderSlot(slot, { item })
+
+		return hasSlot(rendered) || arrowPlacement === side ? (
 			<span className="so-accordion-item__arrow">
-				{hasSlot(slot) ? (
-					renderSlot(slot)
+				{hasSlot(rendered) ? (
+					rendered
 				) : (
 					<Icon embedded="accordion.arrow" tag={roleIcon('arrowRight')} size={size} />
 				)}
 			</span>
 		) : null
+	}
 
 	return (
 		<Tag {...toRootProps(ref, state, [dataset, attrs], toRootForward(forwardProps))}>
@@ -74,22 +82,25 @@ export const AccordionItem = withRenderBoundary(function AccordionItem(
 				leading={
 					<>
 						{arrowAt('start', props['leading-icon'])}
-						{renderSlot(props.leading)}
+						{renderSlot(props.leading, { item })}
 					</>
 				}
 				trailing={
 					<>
-						{renderSlot(props.trailing)}
+						{renderSlot(props.trailing, { item })}
 						{arrowAt('end', props['trailing-icon'])}
 					</>
 				}
 			>
-				{renderSlot(props.header, { text: text ?? '', selected: selected ?? false }) ??
-					text}
+				{renderSlot(props.header, {
+					item,
+					text: text ?? '',
+					selected: selected ?? false,
+				}) ?? text}
 			</Button>
 			<div className="so-accordion-item__body">
 				<div className="so-accordion-item__content" {...toAriaProps(contentAria)}>
-					{renderSlot(props.children)}
+					{renderSlot(props.children, { item })}
 				</div>
 			</div>
 		</Tag>

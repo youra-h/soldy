@@ -38,15 +38,11 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 			 * умолчанию она берётся из пакета иконок по роли `arrowRight`
 			 * (см. `ICON_ROLES`).
 			 *
-			 * Каждый слот несёт в scope и саму секцию (`item`): секция уже знает
-			 * себя (проп `ctrl`) и отдаёт её слоту сама, как ячейка таблицы
-			 * отдаёт слоту свою строку (`row`, `table/row/Cells.vue`). Поэтому
-			 * владелец, рисующий секции из `items`, пробрасывает слоты как есть,
-			 * без собственного ключа (сравни `RELAYS` в
-			 * `setup/__tests__/item-slots.spec.ts`, запись с `key: null`) — и не
-			 * обращается при этом к переменной своего цикла, иначе Vue
-			 * перерисовывал бы все секции с каждой перерисовкой владельца
-			 * (AGENTS.md, Pitfalls).
+			 * Each slot carries its own section (`item`) in scope — the section
+			 * hands itself to the slot, like a table row's `row`
+			 * (`table/row/Cells.vue`). So the owner relays slots as given, no
+			 * key of its own (`RELAYS` in `item-slots.spec.ts`, `key: null`),
+			 * and never touches its loop variable (AGENTS.md, Pitfalls).
 			 */
 			slots: {
 				default: {

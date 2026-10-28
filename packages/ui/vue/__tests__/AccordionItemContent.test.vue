@@ -1,23 +1,16 @@
 <script setup lang="ts">
 /**
- * Тестовая обёртка: слот `item-content` Accordion — из скомпилированного
- * шаблона.
- *
- * Перерисовку секций со слотом проверяют только так: слоты из `mount(…, {
- * slots })` и из `h()` метки стабильности не несут, и Vue считает их
- * динамическими — секции с ними перерисовывались бы с каждой перерисовкой
- * владельца (AGENTS.md, Pitfalls).
+ * Test harness: Accordion's `item-content` slot from a compiled template —
+ * an `h()`/`mount(…, { slots })` slot carries no stability mark and is
+ * always dynamic (AGENTS.md, Pitfalls), so this is the only way to test it.
  */
 import { Accordion } from '@soldy-ui/vue'
 
 defineProps<{
 	items: ReadonlyArray<{ value: string; text: string }>
-	/**
-	 * Метка — проп, которого у Accordion нет: он выпадает в `$attrs` и
-	 * перерисовывает сам Accordion, не затрагивая секции
-	 */
+	/** Not an Accordion prop: falls into `$attrs`, redraws Accordion only */
 	label?: string
-	/** Слот зовёт его на каждую нарисованную секцию: так тест считает их рендеры */
+	/** Called on each drawn section, so the test counts their renders */
 	count?: (value: string) => void
 }>()
 </script>

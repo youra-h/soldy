@@ -159,10 +159,9 @@ const RELAYS: readonly TRelay[] = [
 
 	['Pagination', 'item', 'Pagination.Item', 'default', 'item'],
 
-	// Секция уже знает себя и отдаёт её слоту сама (ключа нет), как ячейка
-	// Table отдаёт свою строку: иначе владельцу пришлось бы класть секцию в
-	// scope проброса из переменной своего цикла, и Vue перерисовывал бы все
-	// секции с каждой перерисовкой владельца (AGENTS.md, Pitfalls)
+	// A section hands itself to its own slot (no key), like a table row's
+	// own `row` — else the relay would carry it from the owner's loop
+	// variable, and redraw with every redraw of the owner (Pitfalls)
 	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', null],
 	['Accordion', 'item-leading', 'Accordion.Item', 'leading', null],
 	['Accordion', 'item', 'Accordion.Item', 'header', null],

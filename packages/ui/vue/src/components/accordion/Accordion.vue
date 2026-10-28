@@ -44,7 +44,12 @@ export default { ...SetupAccordion, components: { AccordionItem } }
 				<template v-for="entry in shown" :key="entry.uid">
 					<AccordionItem
 						v-if="
-							!($slots.item || $slots['item-leading'] || $slots['item-trailing'] || $slots['item-content'])
+							!(
+								$slots.item ||
+								$slots['item-leading'] ||
+								$slots['item-trailing'] ||
+								$slots['item-content']
+							)
 						"
 						:ctrl="entry"
 					/>
