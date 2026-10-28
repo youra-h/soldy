@@ -8,6 +8,7 @@
 
 import { defineComponent, defineDescriptor, defineType } from '../../../../protected/define'
 import { TAccordionItem } from '@soldy-ui/core'
+import type { IAccordionItem } from '@soldy-ui/core'
 import { headerIn } from '@soldy-ui/plugins'
 import { ValueControlDescriptor } from '../value-control.descriptor'
 import { OWNER_STYLE_PROPS } from '../stylable.descriptor'
@@ -36,23 +37,45 @@ export const AccordionItemDescriptor = defineDescriptor(() =>
 			 * `leading-icon` и `trailing-icon` подменяют её в одном месте, по
 			 * умолчанию она берётся из пакета иконок по роли `arrowRight`
 			 * (см. `ICON_ROLES`).
+			 *
+			 * Каждый слот несёт в scope и саму секцию (`item`): секция уже знает
+			 * себя (проп `ctrl`) и отдаёт её слоту сама, как ячейка таблицы
+			 * отдаёт слоту свою строку (`row`, `table/row/Cells.vue`). Поэтому
+			 * владелец, рисующий секции из `items`, пробрасывает слоты как есть,
+			 * без собственного ключа (сравни `RELAYS` в
+			 * `setup/__tests__/item-slots.spec.ts`, запись с `key: null`) — и не
+			 * обращается при этом к переменной своего цикла, иначе Vue
+			 * перерисовывал бы все секции с каждой перерисовкой владельца
+			 * (AGENTS.md, Pitfalls).
 			 */
 			slots: {
-				default: { description: 'Содержимое раскрывающейся панели' },
+				default: {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description: 'Содержимое раскрывающейся панели',
+				},
 				'leading-icon': {
+					scope: { item: defineType<IAccordionItem>(Object) },
 					description:
 						'Стрелка перед заголовком. По умолчанию — при arrowPlacement="start"',
 				},
-				leading: { description: 'Перед текстом заголовка' },
+				leading: {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description: 'Перед текстом заголовка',
+				},
 				header: {
 					scope: {
+						item: defineType<IAccordionItem>(Object),
 						text: defineType<string>(String),
 						selected: defineType<boolean>(Boolean),
 					},
 					description: 'Текст заголовка. Задано — переопределяет проп text',
 				},
-				trailing: { description: 'После текста заголовка' },
+				trailing: {
+					scope: { item: defineType<IAccordionItem>(Object) },
+					description: 'После текста заголовка',
+				},
 				'trailing-icon': {
+					scope: { item: defineType<IAccordionItem>(Object) },
 					description: 'Стрелка после заголовка. По умолчанию — при arrowPlacement="end"',
 				},
 			},

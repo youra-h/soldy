@@ -159,12 +159,16 @@ const RELAYS: readonly TRelay[] = [
 
 	['Pagination', 'item', 'Pagination.Item', 'default', 'item'],
 
-	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', 'item'],
-	['Accordion', 'item-leading', 'Accordion.Item', 'leading', 'item'],
-	['Accordion', 'item', 'Accordion.Item', 'header', 'item'],
-	['Accordion', 'item-trailing', 'Accordion.Item', 'trailing', 'item'],
-	['Accordion', 'item-trailing-icon', 'Accordion.Item', 'trailing-icon', 'item'],
-	['Accordion', 'item-content', 'Accordion.Item', 'default', 'item'],
+	// Секция уже знает себя и отдаёт её слоту сама (ключа нет), как ячейка
+	// Table отдаёт свою строку: иначе владельцу пришлось бы класть секцию в
+	// scope проброса из переменной своего цикла, и Vue перерисовывал бы все
+	// секции с каждой перерисовкой владельца (AGENTS.md, Pitfalls)
+	['Accordion', 'item-leading-icon', 'Accordion.Item', 'leading-icon', null],
+	['Accordion', 'item-leading', 'Accordion.Item', 'leading', null],
+	['Accordion', 'item', 'Accordion.Item', 'header', null],
+	['Accordion', 'item-trailing', 'Accordion.Item', 'trailing', null],
+	['Accordion', 'item-trailing-icon', 'Accordion.Item', 'trailing-icon', null],
+	['Accordion', 'item-content', 'Accordion.Item', 'default', null],
 
 	['RadioGroup', 'item', 'RadioGroup.Item', 'default', 'item'],
 
