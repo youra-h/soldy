@@ -35,15 +35,15 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 	const contentAria = createPartProps(() => state.contentAria)
 	const title = resolveSlot(
 		() => props.header,
-		() => ({ text: state.text ?? '', selected: state.selected ?? false }),
+		() => ({ item: binding.ctrl, text: state.text ?? '', selected: state.selected ?? false }),
 	)
 	const leadingIcon = resolveSlot(
 		() => props['leading-icon'],
-		() => ({}),
+		() => ({ item: binding.ctrl }),
 	)
 	const trailingIcon = resolveSlot(
 		() => props['trailing-icon'],
-		() => ({}),
+		() => ({ item: binding.ctrl }),
 	)
 
 	/** The header's attributes: all of the consumer's but the class and the style. */
@@ -76,12 +76,12 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 					leading={
 						<>
 							{arrow('start', leadingIcon)}
-							{renderSlot(props.leading)}
+							{renderSlot(props.leading, { item: binding.ctrl })}
 						</>
 					}
 					trailing={
 						<>
-							{renderSlot(props.trailing)}
+							{renderSlot(props.trailing, { item: binding.ctrl })}
 							{arrow('end', trailingIcon)}
 						</>
 					}
@@ -90,7 +90,7 @@ export function AccordionItem(props: AccordionItemProps): JSX.Element {
 				</Button>
 				<div class="so-accordion-item__body">
 					<div class="so-accordion-item__content" {...contentAria()}>
-						{renderSlot(props.children)}
+						{renderSlot(props.children, { item: binding.ctrl })}
 					</div>
 				</div>
 			</Root>

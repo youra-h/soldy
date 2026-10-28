@@ -405,10 +405,13 @@ describe('типы', () => {
 		expectTypeOf<Snippet<[TItemScope]>>().toExtend<
 			NonNullable<AccordionProps['item-trailing-icon']>
 		>()
-		expectTypeOf<Snippet<[THeaderScope]>>().toExtend<
+		// The section carries itself (`ctrl`) into its own slots' scope
+		expectTypeOf<Snippet<[TItemHeaderScope]>>().toExtend<
 			NonNullable<AccordionItemProps['header']>
 		>()
-		expectTypeOf<AccordionItemProps['children']>().toEqualTypeOf<Snippet | undefined>()
+		expectTypeOf<Snippet<[TItemScope]>>().toExtend<
+			NonNullable<AccordionItemProps['children']>
+		>()
 	})
 
 	it('колбэки фасадов — пропсы компонентов', () => {
