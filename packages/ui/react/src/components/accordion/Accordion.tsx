@@ -5,8 +5,8 @@ import { useSetupAccordion } from './setup.component'
 import type { AccordionProps } from './base.component'
 
 /**
- * Accordion — набор раскрывающихся секций; слоты секций — AGENTS.md (React),
- * «Слоты».
+ * Accordion — the set of expanding sections; section slots — AGENTS.md
+ * (React), «Слоты».
  *
  * The item slots go to each section as the owner's own props, not already
  * called: calling one here would build a new React element on every redraw
