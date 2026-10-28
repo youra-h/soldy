@@ -1,5 +1,28 @@
 # @soldy-ui/solid
 
+## 0.3.0-alpha.7
+
+### Minor Changes
+
+- 5d8b7ca: Event callbacks run before Solid renders the new state, as on the other platforms: Menu's `onChangeOpen` now comes before its panel's items join. Read the rendered DOM after the callback (an effect or `queueMicrotask`), not inside it
+- a20cdd5: A component's own assembly no longer sends events: on Vue, Svelte, Solid and Web Components a context listens to its events after it is accepted, and a collection binds its facades before the component, as React and Angular do. What the facade writes into the component while mounting is the starting state: Calendar no longer sends `change:months` (and Vue `update:months`) with the months it shows on mount, Table no longer sends `change:dataset`; read the starting value from the instance (`ctrl.months`) instead of waiting for the first event. Svelte and Solid adapter API: `useCollectionAdapter` no longer takes the rest of the attributes — `joinBindings` chains them from the component's rest.
+- 515db01: React, Solid and Svelte: a part's click action (activate a tab, choose an option, toggle a section, press a menu item, turn a page, close a panel or a tag, clear a field, the DatePicker's Cancel and Done) is a native listener on the part's node, set as soon as the node exists, as in Vue, Web Components and Angular. The owner's `onActionClick` and `onActionPress` now come after the action: a handler that read the state before the click (the previous tab, the previous choice) reads the new one — take the previous value from the change event (`onChangeActivation`, `onChangeSelection`) instead. A click right after the mount, before the first frame, is no longer lost on the tabs' and tags' crosses and the fields' clear buttons. The consumer's `onClick` on a part still runs after the action.
+- d278f0f: The adapter context has a fourth phase, detach: the first moment of the teardown, before the children go. The context only reports it; every adapter stops the consumer on it, and a collection reports it to its items and Tabs panels, so in Svelte, Solid and Angular an item no longer hears its siblings leave when the whole collection goes. An Angular component taken out of the document sends nothing (its owner heard its items leave one by one), and a React item no longer hears its own entry into the collection: what the acceptance writes is the starting state, as in the other adapters. Breaking: TCollectionItemExtension and TTabsContentBindingExtension take the own context of the item or the panel instead of its instance, and take the instance from it: { adapter, elevator } instead of { item: adapter.instance, elevator } and { content: adapter.instance, elevator }. IAdapterContext has detach() and the detach event.
+
+### Patch Changes
+
+- 88e4f4f: Calendar: weeks are keyed by their place in the grid, so switching to a language with another first day of the week keeps six days of seven in their row instead of rebuilding the month.
+- 1a322fe: `AccordionItem` slots now carry their own section (`item`) in scope in every adapter, the way a table row's `cell` slot carries its own row; Accordion relays its `item-*` slots from that scope instead of its loop variable. React: Accordion no longer redraws every section with the owner when the consumer gives `item-content`.
+- ea743a8: Svelte and Solid: the consumer no longer hears a component's teardown. The markup items leaving the collection no longer send `onChangeItems` with an ever shorter list (a consumer keeping it in its state lost the list with a hidden owner), nor the unbinding of its root (`onElementRemoved`). On Svelte the blur of a removed focused node still comes, as on Web Components: the framework removes the nodes before any hook.
+- Updated dependencies [26cc7e3]
+- Updated dependencies [5d8b7ca]
+- Updated dependencies [d278f0f]
+- Updated dependencies [1a322fe]
+- Updated dependencies [843f9ef]
+  - @soldy-ui/setup@0.3.0-alpha.7
+  - @soldy-ui/core@0.3.0-alpha.7
+  - @soldy-ui/plugins@0.3.0-alpha.7
+
 ## 0.3.0-alpha.6
 
 ### Minor Changes

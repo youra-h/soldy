@@ -1,5 +1,11 @@
 # @soldy-ui/core
 
+## 0.3.0-alpha.7
+
+### Patch Changes
+
+- 843f9ef: The `change:items` event of a collection now carries a snapshot of the list instead of the live storage array: a consumer that keeps the list (in a Solid signal, say) no longer sees it change without an event.
+
 ## 0.3.0-alpha.6
 
 ### Minor Changes

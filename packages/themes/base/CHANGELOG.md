@@ -1,5 +1,13 @@
 # @soldy-ui/theme-base
 
+## 0.3.0-alpha.7
+
+### Patch Changes
+
+- Updated dependencies [843f9ef]
+  - @soldy-ui/core@0.3.0-alpha.7
+  - @soldy-ui/plugins@0.3.0-alpha.7
+
 ## 0.3.0-alpha.6
 
 ### Patch Changes
