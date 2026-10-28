@@ -7,6 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
@@ -17,7 +18,9 @@ import type { ListBoxItemAttributes, ListBoxItemProps } from './base.component'
  * ListBoxItem — элемент списка: корень по `tag` и строка-опция — `ItemRow` на `div`
  * (под этот тег написан `TListBoxItem._ariaTag`).
  */
-export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
+export const ListBoxItem = withRenderBoundary(function ListBoxItem(
+	props: ListBoxItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupListBoxItem(props)
 	const choose = useClickAction(() => context?.adapters.list.choose())
 
@@ -81,4 +84,4 @@ export function ListBoxItem(props: ListBoxItemProps): ReactElement | null {
 			</ItemRow>
 		</Tag>
 	)
-}
+})

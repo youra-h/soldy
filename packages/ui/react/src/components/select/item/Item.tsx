@@ -7,6 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Icon } from '../../icon'
@@ -20,7 +21,9 @@ const CheckIcon = roleIcon('check')
  * SelectItem — опция списка панели: корень по `tag` и строка-опция — `ItemRow` на `span`
  * (под этот тег написан `TSelectItem._ariaTag`).
  */
-export function SelectItem(props: SelectItemProps): ReactElement | null {
+export const SelectItem = withRenderBoundary(function SelectItem(
+	props: SelectItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupSelectItem(props)
 	const choose = useClickAction(() => context?.adapters.select.choose())
 
@@ -80,4 +83,4 @@ export function SelectItem(props: SelectItemProps): ReactElement | null {
 			</ItemRow>
 		</Tag>
 	)
-}
+})

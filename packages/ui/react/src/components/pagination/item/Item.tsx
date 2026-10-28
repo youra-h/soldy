@@ -1,11 +1,19 @@
 import type { ElementType, ReactElement } from 'react'
-import { renderSlot, toAriaProps, toRootProps, useClickAction } from '../../../adapter'
+import {
+	renderSlot,
+	toAriaProps,
+	toRootProps,
+	useClickAction,
+	withRenderBoundary,
+} from '../../../adapter'
 import { Button } from '../../button'
 import { useSetupPaginationItem } from './setup.component'
 import type { PaginationItemProps } from './base.component'
 
 /** PaginationItem — страница пагинации, внутренняя часть: её рисует только `Pagination`. */
-export function PaginationItem(props: PaginationItemProps): ReactElement | null {
+export const PaginationItem = withRenderBoundary(function PaginationItem(
+	props: PaginationItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupPaginationItem(props)
 	const activate = useClickAction(() => {
 		if (context) context.adapters.activation.active = true
@@ -32,4 +40,4 @@ export function PaginationItem(props: PaginationItemProps): ReactElement | null 
 			</Button>
 		</Tag>
 	)
-}
+})

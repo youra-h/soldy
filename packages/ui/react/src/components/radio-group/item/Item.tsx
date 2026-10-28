@@ -6,12 +6,15 @@ import {
 	toControlAttrs,
 	toRootForward,
 	toRootProps,
+	withRenderBoundary,
 } from '../../../adapter'
 import { useSetupRadioGroupItem } from './setup.component'
 import type { RadioGroupItemAttributes, RadioGroupItemProps } from './base.component'
 
 /** RadioGroupItem — радио на нативном `<input type="radio">`: AGENTS.md (React), «Поля ввода». */
-export function RadioGroupItem(props: RadioGroupItemProps): ReactElement | null {
+export const RadioGroupItem = withRenderBoundary(function RadioGroupItem(
+	props: RadioGroupItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupRadioGroupItem(props)
 
 	const { rendered, tag, name, value, disabled, active, aria, dataset, attrs } = state
@@ -46,4 +49,4 @@ export function RadioGroupItem(props: RadioGroupItemProps): ReactElement | null 
 			</span>
 		</Tag>
 	)
-}
+})

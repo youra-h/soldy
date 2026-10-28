@@ -7,6 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { ItemRow } from '../../item-row'
@@ -21,7 +22,9 @@ const CloseIcon = roleIcon('close')
  * TagsItem — тег: корень-пилюля по `tag`, в нём строка — `ItemRow` на `div` — и крестик рядом
  * со строкой, а не в ней: потомки опции для скринридера презентационны.
  */
-export function TagsItem(props: TagsItemProps): ReactElement | null {
+export const TagsItem = withRenderBoundary(function TagsItem(
+	props: TagsItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupTagsItem(props)
 	const close = useClickAction((event) => {
 		// Stopped at the cross: the roots of the tag and the set and the Select field would
@@ -86,4 +89,4 @@ export function TagsItem(props: TagsItemProps): ReactElement | null {
 			) : null}
 		</Tag>
 	)
-}
+})

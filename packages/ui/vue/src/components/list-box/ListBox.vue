@@ -15,50 +15,56 @@ export default { ...SetupListBox, components: { ListBoxItem, ListBoxGroup } }
 		v-bind="{ ...attrs, ...dataset, ...containerAttrs }"
 	>
 		<!--
-			Корень — рамка: шапка, список и подвал. Набор `aria` — это сам список
-			(`role="listbox"`, `aria-multiselectable`, имя от `aria_label`), и
-			лежит он на узле списка, а не на корне: в `listbox` ARIA пускает только
-			опции и группы, а шапка и подвал — место полей и кнопок. На узле списка
-			и остановка Tab: по элементам ходят стрелки его клавиатуры
-			(`TListKeyboardPlugin`). На корне — `attrs` и `dataset`: тема красит
-			рамку по корню.
+			The root is a frame: the header, the list and the footer. The `aria` set
+			is the list itself (`role="listbox"`, `aria-multiselectable`, the name
+			from `aria_label`), and it lies on the list's node, not on the root: ARIA
+			lets only options and groups into a `listbox`, and the header and the
+			footer are a place for fields and buttons. The Tab stop is on the list's
+			node too: its keyboard's arrows move between the items
+			(`TListKeyboardPlugin`). The root has `attrs` and `dataset`: the theme
+			paints the frame by the root.
 
-			Атрибуты потребителя делятся, как у поля: класс и стиль — корню
-			(`containerAttrs`), остальное — узлу списка (`controlAttrs`), поверх его
-			`aria` и остановки Tab. `aria-label` и `id` потребителя называют список,
-			а не рамку без роли, а `tabindex="-1"` снимает список с остановок Tab.
+			The consumer's attributes split as a field's: class and style — to the
+			root (`containerAttrs`), the rest — to the list's node (`controlAttrs`),
+			over its `aria` and Tab stop. The consumer's `aria-label` and `id` name
+			the list, not the frame without a role, and `tabindex="-1"` takes the
+			list off the Tab stops.
 
-			Предел строк (`maxRows`) плагин высоты ставит узлу списка: он и
-			прокручивается, а шапка и подвал стоят на месте.
+			The height plugin sets the rows limit (`maxRows`) on the list's node: it
+			is what scrolls, while the header and the footer stay in place.
 		-->
 		<slot name="header" />
 		<div class="so-list-box__list" tabindex="0" v-bind="{ ...aria, ...controlAttrs }">
 			<slot>
 				<!--
-					Элементы — то, что рисует коллекция, по секциям группировки
-					(`drawnSections`), ключ секции — её ключ. Группа с подписью — в
-					`ListBoxGroup`, элементы без группы — прямо в списке, между
-					соседними секциями, пока его просит список (`groupSeparators`), —
-					разделитель: немой `div` (`aria-hidden`), а не `separator` — в
-					`listbox` ARIA пускает только опции и группы. Секции идут порядком
-					показанного, поэтому стрелки ходят так же, как элементы стоят на
-					экране. Без групп секция одна — ни обёртки, ни разделителя.
+					The items are what the collection draws, by the grouping's sections
+					(`drawnSections`), keyed by the section's key. A group with a label —
+					in `ListBoxGroup`, items without a group — right in the list, and
+					between neighboring sections, while the list asks for it
+					(`groupSeparators`), a separator: a mute `div` (`aria-hidden`), not
+					`separator` — ARIA lets only options and groups into a `listbox`. The
+					sections follow the shown order, so the arrows move as the items stand
+					on screen. Without groups there is one section — no wrapper, no
+					separator.
 
-					В секции — её записи по порядку, ключ — ключ записи. Без окна это
-					все показанные элементы секции. В окне обёртки `Virtual` (у списка
-					без групп) — видимые и распорки на месте пропущенных: `div` под
-					`aria-hidden`, высоту которого тема берёт из его стиля. Одна петля на
-					элементы и распорки: петли по блокам перемонтировали бы элемент,
-					когда он переходит из блока в блок.
+					A section has its entries in order, keyed by the entry's key. Without a
+					window these are all its shown items. In the window of the `Virtual`
+					wrapper (a list without groups) — the visible ones and fillers in place
+					of the skipped: a `div` under `aria-hidden` whose height the theme
+					takes from its style. One loop for items and fillers: loops by blocks
+					would remount an item moving from block to block.
 
-					Слоты элементов статические и получают элемент через scope —
-					динамические имена резолвит только Vue (см. Tabs.vue). Проброс
-					целиком: у каждого слота элемента есть `item-<слот>`, и его scope —
-					scope слота элемента плюс сам элемент. Записан он у элементов группы
-					и у элементов без неё: обёртка у них разная.
+					The items' slots are static and get the item through the scope —
+					dynamic names resolve only in Vue (see Tabs.vue). The relay is whole:
+					each item slot has its `item-<slot>`, whose scope is the item slot's
+					scope plus the item. It is written for the items of a group and for
+					those without one: their wrappers differ. The item draws its mark
+					itself while its slot is not given — so the mark's slot goes to it only
+					when the list has it.
 
-					Отметку элемент рисует сам, пока слот не задан, — поэтому слот
-					отметки отдаётся ему, только когда задан списку.
+					The slots are relayed only when the list has any of them: the relay
+					refers to the loop's `entry`, and Vue redraws an item with such slots
+					on every redraw of its owner (AGENTS.md, Pitfalls).
 				-->
 				<template v-for="(section, index) in drawnSections" :key="section.key">
 					<div
@@ -74,6 +80,17 @@ export default { ...SetupListBox, components: { ListBoxItem, ListBoxGroup } }
 								aria-hidden="true"
 								:style="entry.style"
 							></div>
+							<ListBoxItem
+								v-else-if="
+									!(
+										$slots.item ||
+										$slots['item-leading'] ||
+										$slots['item-trailing'] ||
+										$slots['item-indicator-icon']
+									)
+								"
+								:ctrl="entry.item"
+							/>
 							<ListBoxItem v-else :ctrl="entry.item">
 								<template #leading>
 									<slot name="item-leading" :item="entry.item" />
@@ -110,6 +127,17 @@ export default { ...SetupListBox, components: { ListBoxItem, ListBoxGroup } }
 								aria-hidden="true"
 								:style="entry.style"
 							></div>
+							<ListBoxItem
+								v-else-if="
+									!(
+										$slots.item ||
+										$slots['item-leading'] ||
+										$slots['item-trailing'] ||
+										$slots['item-indicator-icon']
+									)
+								"
+								:ctrl="entry.item"
+							/>
 							<ListBoxItem v-else :ctrl="entry.item">
 								<template #leading>
 									<slot name="item-leading" :item="entry.item" />
@@ -141,9 +169,9 @@ export default { ...SetupListBox, components: { ListBoxItem, ListBoxGroup } }
 				</template>
 			</slot>
 			<!--
-				Пустой список — как у Select: пока показанных элементов нет, на их
-				месте слот `empty`, внутри списка. Пустой `listbox` для скринридера —
-				тупик, а сообщение объясняет, что происходит.
+				An empty list — as in Select: while no item is shown, the `empty` slot
+				stands in their place, inside the list. An empty `listbox` is a dead end
+				for the screen reader, and the message explains what is going on.
 			-->
 			<slot v-if="shown.length === 0" name="empty" />
 		</div>

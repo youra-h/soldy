@@ -236,7 +236,7 @@ export default { ...SetupDatePicker, components: { Button, Calendar, DateInput, 
 					:ctrl="calendar"
 					:engine="engine"
 				>
-					<template #item="{ item, text }">
+					<template v-if="$slots.item" #item="{ item, text }">
 						<slot name="item" :item="item" :text="text" />
 					</template>
 

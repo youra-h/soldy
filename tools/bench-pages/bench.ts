@@ -1,3 +1,5 @@
+// First: the counting build's render hooks stand before any framework loads
+import { counts, detail } from './count/probes'
 import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import { TActionEvent, TButton, TComponent, TEventEmitter } from '@soldy-ui/core'
@@ -81,6 +83,9 @@ function propsOf(id: string): Readonly<Record<string, unknown>> {
 /** What is mounted now: the page's roots. */
 let mounted: IPreviewHandle[] = []
 
+/** Copies on the mounted component page: the interaction run tells them apart by it. */
+let copies = 0
+
 /**
  * A planted leak — a check of the measurement itself: after mounting, the
  * page holds the buttons' nodes, a `document` listener for each and a core
@@ -128,8 +133,8 @@ async function mount(page: string, count: number, only?: string[]): Promise<numb
 		)
 	} else {
 		const component = page === 'leak' || page === 'empty' ? 'button' : page
-		const copies = page === 'empty' ? 0 : count
 
+		copies = page === 'empty' ? 0 : count
 		mounted = [host.mount(place(), { component, props: propsOf(component), count: copies })]
 	}
 
@@ -154,6 +159,7 @@ async function unmount(): Promise<void> {
 	for (const handle of mounted) handle.unmount()
 
 	mounted = []
+	copies = 0
 
 	for (const node of stage?.querySelectorAll('.bench-page') ?? []) node.remove()
 
@@ -332,8 +338,247 @@ function observe(): void {
 	})
 }
 
+/**
+ * The input events of a user action (interaction run, `interaction.mjs`): the
+ * first of them starts the action's time, its last one (`final` of `arm`)
+ * waits for the frame.
+ */
+const INPUT_EVENTS = [
+	'pointerdown',
+	'mousedown',
+	'pointerup',
+	'mouseup',
+	'click',
+	'keydown',
+	'beforeinput',
+	'input',
+	'keyup',
+]
+
+/**
+ * Render work of an action: the counters of the counting build
+ * (`count/counter.ts`) and the updates by component name, most first.
+ */
+type TRenders = { mount: number; update: number; tick: number; names: Record<string, number> }
+
+/**
+ * DOM writes of an action (mutation records) by where they landed: in the
+ * first copy, which the action is on, in the other copies, outside the page
+ * (a layer at the end of `body`).
+ */
+type TWrites = { acted: number; others: number; outside: number }
+
+/**
+ * An action's result, in ms from its first input event: `paint` — to the end
+ * of the frame after its last event, `settled` — to the calm (three frames in
+ * a row less than 50 ms apart, as the table stand's), `inp` — the browser's own
+ * input-to-paint of the action's events (Event Timing, the longest; `null` —
+ * under 16 ms, which it does not report). The counting build adds the render
+ * work and the DOM writes.
+ */
+type TInteraction = {
+	paint: number
+	settled: number
+	inp: number | null
+	renders: TRenders | null
+	writes: TWrites | null
+}
+
+/** Event Timing entries since the last action. */
+let timings: PerformanceEntry[] = []
+
+const timingObserver = new PerformanceObserver((list) => timings.push(...list.getEntries()))
+
+// The shortest duration Event Timing reports; TypeScript's DOM types do not know the field yet
+const timingOptions: PerformanceObserverInit & { durationThreshold: number } = {
+	type: 'event',
+	durationThreshold: 16,
+}
+
+timingObserver.observe(timingOptions)
+
+/** The action being measured: its result once it has settled. */
+let pending: Promise<TInteraction> | null = null
+
+/** The end of the next frame: `requestAnimationFrame` and the task after it. */
+function frameEnd(): Promise<number> {
+	return new Promise((resolve) =>
+		requestAnimationFrame(() => setTimeout(() => resolve(performance.now()), 0)),
+	)
+}
+
+/**
+ * Where the page's copies stand: the first node down from the page's root
+ * with more than one child, and how many children a copy has. `null` — a
+ * page of one copy, or one whose children do not split into its copies.
+ */
+function copyLayout(): { parent: Element; size: number } | null {
+	let parent = stage?.querySelector('.bench-page') ?? null
+
+	while (parent && parent.children.length === 1) parent = parent.children[0] ?? null
+
+	if (!parent || copies < 2 || parent.children.length % copies) return null
+
+	return { parent, size: parent.children.length / copies }
+}
+
+/** Count the DOM writes from now until `stop`, by copy (counting build only). */
+function watchWrites(): (() => TWrites) | null {
+	if (import.meta.env.MODE !== 'count') return null
+
+	const layout = copyLayout()
+	const writes: TWrites = { acted: 0, others: 0, outside: 0 }
+	const page = stage?.querySelector('.bench-page')
+	const watcher = new MutationObserver((records) => {
+		for (const record of records) {
+			let node: Node | null = record.target
+
+			if (!page?.contains(node)) {
+				writes.outside += 1
+				continue
+			}
+
+			while (layout && node && node.parentNode !== layout.parent) node = node.parentNode
+
+			const index =
+				layout && node instanceof Element ? [...layout.parent.children].indexOf(node) : 0
+
+			if (index >= 0 && index < (layout?.size ?? Infinity)) writes.acted += 1
+			else writes.others += 1
+		}
+	})
+
+	watcher.observe(document.body, {
+		subtree: true,
+		childList: true,
+		attributes: true,
+		characterData: true,
+	})
+
+	return () => {
+		watcher.disconnect()
+
+		return writes
+	}
+}
+
+/** Measure an action that began at `t0` once it has settled. */
+async function finish(
+	t0: number,
+	start: typeof counts,
+	writes: (() => TWrites) | null,
+): Promise<TInteraction> {
+	const paint = (await frameEnd()) - t0
+	let previous = performance.now()
+
+	for (let calm = 0; calm < 3;) {
+		const time = await frameEnd()
+
+		calm = time - previous < 50 ? calm + 1 : 0
+		previous = time
+	}
+
+	timings.push(...timingObserver.takeRecords())
+
+	const durations = timings
+		.filter((entry) => entry.startTime >= t0 - 1)
+		.map((entry) => entry.duration)
+
+	timings = []
+
+	return {
+		paint: Math.round(paint),
+		settled: Math.round(previous - t0),
+		inp: durations.length ? Math.max(...durations) : null,
+		renders:
+			import.meta.env.MODE === 'count'
+				? {
+						mount: counts.mount - start.mount,
+						update: counts.update - start.update,
+						tick: counts.tick - start.tick,
+						names: Object.fromEntries(
+							[...(detail.names ?? [])].sort((a, b) => b[1] - a[1]),
+						),
+					}
+				: null,
+		writes: writes?.() ?? null,
+	}
+}
+
+/**
+ * Get ready for a user action the runner sends with real input (Playwright):
+ * its time starts at the first input event and waits for the frame after the
+ * `final` one — `click` for a press, `keydown` for a key, `input` for typing.
+ */
+function arm(final: string): void {
+	if (pending) throw new Error('[bench-pages] действие уже ждёт')
+
+	const start = { ...counts }
+	const writes = watchWrites()
+
+	if (import.meta.env.MODE === 'count') detail.names = new Map()
+
+	timings = []
+	pending = new Promise((resolve) => {
+		let t0: number | null = null
+		const listener = (event: Event) => {
+			t0 ??= event.timeStamp
+
+			if (event.type !== final) return
+
+			for (const type of INPUT_EVENTS) window.removeEventListener(type, listener, true)
+
+			void finish(t0, start, writes).then(resolve)
+		}
+
+		for (const type of INPUT_EVENTS) window.addEventListener(type, listener, true)
+	})
+}
+
+/** The page's language switch as an action: from the call to its frame. */
+function switchLocale(language: 'ru' | 'en'): void {
+	if (pending) throw new Error('[bench-pages] действие уже ждёт')
+
+	const start = { ...counts }
+	const writes = watchWrites()
+
+	if (import.meta.env.MODE === 'count') detail.names = new Map()
+	const t0 = performance.now()
+
+	timings = []
+	host.setLocale(language === 'ru' ? ruRU : enUS)
+	pending = finish(t0, start, writes)
+}
+
+/** The armed action's result; it fails if the action has not come within 10 s. */
+async function measured(): Promise<TInteraction> {
+	const action = pending
+
+	if (!action) throw new Error('[bench-pages] действие не ждёт')
+
+	let timer = 0
+
+	try {
+		return await Promise.race([
+			action,
+			new Promise<never>((_, reject) => {
+				timer = window.setTimeout(
+					() => reject(new Error('[bench-pages] действие не пришло за 10 с')),
+					10_000,
+				)
+			}),
+		])
+	} finally {
+		clearTimeout(timer)
+		pending = null
+	}
+}
+
 const bench = {
 	framework,
+	arm,
+	switchLocale,
+	measured,
 	pages,
 	mount,
 	unmount,

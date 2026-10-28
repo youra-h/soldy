@@ -15,26 +15,34 @@ export default { ...SetupRadioGroup, components: { RadioGroupItem } }
 		v-bind="{ ...attrs, ...aria, ...dataset }"
 	>
 		<!--
-			Контейнер группы. Набор `aria` владельца — здесь: `role="radiogroup"`
-			пишет ядро, имя из `aria_label` / `aria_labelledBy` — TAriaPlugin.
+			The group's container. The owner's `aria` set is here: the core writes
+			`role="radiogroup"`, TAriaPlugin the name from `aria_label` /
+			`aria_labelledBy`.
 
-			В теме oren стилей у `.so-radio-group` нет (решение владельца): радио
-			одной группы стоят где угодно внутри контейнера — в строках списка, в
-			ячейках таблицы, — и раскладку задаёт потребитель.
+			The oren theme has no styles for `.so-radio-group` (the owner's
+			decision): the radios of one group stand anywhere inside the container —
+			in a list's rows, in a table's cells — and the consumer sets the layout.
 		-->
 		<slot>
 			<!--
-				Запасное содержимое — радио из пропа `items`, по одному на
-				элемент (перебор `shown`, как в ListBox.vue). Слот подписи
-				статический и получает радио через scope (`item`), как у
-				остальных коллекций: динамические имена резолвит только Vue. Рядом
-				с радио — scope подписи самого радио (`active`).
+				The fallback content — radios from the `items` prop, one per item (over
+				`shown`, as in ListBox.vue). The label slot is static and gets the radio
+				through the scope (`item`), as in the other collections: dynamic names
+				resolve only in Vue. Next to the radio — the scope of the radio's own
+				label (`active`).
+
+				The slot is relayed only when the group has it: the relay refers to the
+				loop's `item`, and Vue redraws an item with such slots on every redraw
+				of its owner (AGENTS.md, Pitfalls).
 			-->
-			<RadioGroupItem v-for="item in shown" :key="item.uid" :ctrl="item">
-				<template #default="{ active }">
-					<slot name="item" :item="item" :active="active" />
-				</template>
-			</RadioGroupItem>
+			<template v-for="item in shown" :key="item.uid">
+				<RadioGroupItem v-if="!$slots.item" :ctrl="item" />
+				<RadioGroupItem v-else :ctrl="item">
+					<template #default="{ active }">
+						<slot name="item" :item="item" :active="active" />
+					</template>
+				</RadioGroupItem>
+			</template>
 		</slot>
 	</component>
 </template>

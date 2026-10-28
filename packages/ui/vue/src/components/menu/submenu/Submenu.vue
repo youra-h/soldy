@@ -33,10 +33,11 @@ const components = Object.defineProperty(
 )
 
 /**
- * Пункт с подменю: строка пункта в меню над ним и своя панель с пунктами.
+ * An item with a submenu: the item's row in the menu above and a panel of its
+ * own with the items.
  *
- * Вокруг слота значка нет пробелов: пустую обёртку тема прячет по `:empty`,
- * и пробельный текст сделал бы её непустой.
+ * No whitespace around the icon's slot: the theme hides an empty wrapper by
+ * `:empty`, and whitespace text would make it non-empty.
  */
 export default { ...SetupMenuSubmenu, components }
 </script>
@@ -51,23 +52,24 @@ export default { ...SetupMenuSubmenu, components }
 		v-bind="{ ...dataset, ...containerAttrs, ...attrs }"
 	>
 		<!--
-			Корень несёт состояние для темы (`data-highlighted`, `data-disabled`,
-			`data-open`) и модификаторы размера меню и своего варианта, а строка
-			красится от него, как у пункта: открытый пункт горит, пока открыта
-			его панель. Корень — якорь панели: его прямоугольник — строка.
+			The root carries the state for the theme (`data-highlighted`,
+			`data-disabled`, `data-open`) and the modifiers of the menu's size and of
+			its own variant, and the row is painted from it, as an item's: an open
+			item glows while its panel is open. The root is the panel's anchor: its
+			box is the row.
 		-->
 
 		<!--
-			Строка — `ItemRow` на `div`, как у пункта: на ней ARIA пункта (роль
-			`menuitem`, `aria-haspopup="menu"`, `aria-expanded`, `id` и
-			`aria-controls` на панель, `tabindex="-1"` от меню) и DOM-фокус,
-			когда пункт подсвечен.
+			The row is an `ItemRow` on a `div`, as an item's: it has the item's ARIA
+			(the `menuitem` role, `aria-haspopup="menu"`, `aria-expanded`, the `id`
+			and `aria-controls` to the panel, `tabindex="-1"` from the menu) and the
+			DOM focus while the item is highlighted.
 
-			Нажатие строки открывает подменю, а не переключает: открытое
-			наведением клик не закроет. Решает меню
-			(`adapters.menu.open()`): выключенному отказывает. Стрелку к концу
-			строки, Enter и пробел клавиатура пункта гасит сама и открывает
-			подменю на первом пункте — клика из них нет.
+			A press on the row opens the submenu, it does not toggle: a click does
+			not close one opened by hovering. The menu decides
+			(`adapters.menu.open()`) and refuses a disabled one. The item's keyboard
+			handles the arrow to the line's end, Enter and Space itself and opens
+			the submenu on its first item — they make no click.
 		-->
 		<ItemRow
 			embedded="menu.row"
@@ -84,9 +86,9 @@ export default { ...SetupMenuSubmenu, components }
 			<slot name="header" :text="text" :open="open">{{ text }}</slot>
 
 			<!--
-				Стрелка — у конца строки, в обёртке, которая держит её место и
-				зеркалит её в RTL. Обёртка скрыта от скринридера: подменю
-				объявляет `aria-haspopup`.
+				The arrow is at the line's end, in a wrapper that holds its place and
+				mirrors it in RTL. The wrapper is hidden from the screen reader: the
+				submenu announces `aria-haspopup`.
 			-->
 			<template #trailing>
 				<span class="so-menu-item__arrow" aria-hidden="true">
@@ -98,20 +100,21 @@ export default { ...SetupMenuSubmenu, components }
 		</ItemRow>
 
 		<!--
-			Панель — Frame, как у меню: телепорт, слой выше панели меню над ним
-			(нажатие в ней меню мимо не считает), привязка к корню пункта и
-			пометка владельцем. Встаёт у конца строки, верхом вровень с ней, без
-			зазора; у края окна привязка переводит её к началу строки, в RTL —
-			наоборот. На неё ложится набор панели (`panelAria`): `role="menu"`,
-			`id`, на который ссылается `aria-controls` строки, и
-			`aria-labelledby` на строку — имя подменю. `tabindex="-1"` — фокус
-			встаёт на саму панель, пока ни один пункт не подсвечен.
+			The panel is a Frame, as the menu's: the teleport, a layer above the
+			menu's panel above it (the menu does not count a press in it as
+			outside), the anchoring to the item's root and the owner mark. It stands
+			at the row's end, its top level with the row, without a gap; at the
+			window's edge the anchoring moves it to the row's start, in RTL the other
+			way. The panel's set goes on it (`panelAria`): `role="menu"`, the `id`
+			the row's `aria-controls` refers to, and `aria-labelledby` to the row —
+			the submenu's name. `tabindex="-1"` — the focus stands on the panel
+			itself while no item is highlighted.
 
-			Открытость — `visible` панели, а не `rendered`: пункты входят в
-			коллекцию подменю при монтировании, и закрытие не должно её
-			вычищать. Классы — свой набор (`panelClasses`): блок панели меню с
-			размером подменю и вариантом его панели — своим вариантом подменю,
-			а без него вариантом меню над ним.
+			Openness is the panel's `visible`, not `rendered`: the items join the
+			submenu's collection on mounting, and closing must not empty it. The
+			classes are its own set (`panelClasses`): the menu panel's block with the
+			submenu's size and its panel's variant — the submenu's own, and without
+			it the variant of the menu above.
 		-->
 		<Frame
 			embedded="menu.submenu-frame"
@@ -124,16 +127,20 @@ export default { ...SetupMenuSubmenu, components }
 			v-bind="{ ...panelAria, ...dismiss_ownerAttribute }"
 		>
 			<!--
-				Список — то, что прокручивается, как у меню. Пункты из `items` —
-				действия и подменю, по секциям показанного: группа с подписью — в
-				`MenuGroup`, пункты без группы — прямо в списке, между соседними
-				секциями, пока его просит подменю (`groupSeparators`), —
-				разделитель. Пункт с вложенным `items` — подменю следующего
-				уровня, как у меню: его запись (`submenus`) ложится в пропсы
-				`Submenu` — этого же компонента. Слоты пункта пробрасываются
-				целиком: `item-<слот>`, scope — scope слота строки плюс сам
-				пункт; `default` подменю — `item-content`, а свои `item` и
-				`item-*` подменю отдаёт следующему уровню под теми же именами.
+				The list is what scrolls, as the menu's. Items from `items` — actions
+				and submenus, by the sections of the shown ones: a group with a label —
+				in `MenuGroup`, items without a group — right in the list, and between
+				neighboring sections, while the submenu asks for it
+				(`groupSeparators`), a separator. An item with nested `items` is a
+				submenu of the next level, as in the menu: its record (`submenus`) goes
+				into the props of `Submenu` — this very component. The item's slots are
+				relayed whole: `item-<slot>`, the scope — the row slot's scope plus the
+				item; the submenu's `default` is `item-content`, and the submenu hands
+				its `item` and `item-*` to the next level under the same names.
+
+				The slots are relayed only when the submenu has any of them: the relay
+				refers to the loop's `item`, and Vue redraws an item with such slots on
+				every redraw of its owner (AGENTS.md, Pitfalls).
 			-->
 			<!--
 				Items are mounted from the panel's first opening on
@@ -145,7 +152,25 @@ export default { ...SetupMenuSubmenu, components }
 						<MenuSeparator v-if="groupSeparators && index > 0" />
 						<MenuGroup v-if="section.group" :label="section.group.label">
 							<template v-for="item in section.items" :key="item.uid">
-								<Submenu v-if="submenus.has(item)" v-bind="submenus.get(item)">
+								<template
+									v-if="
+										!(
+											$slots.item ||
+											$slots['item-leading'] ||
+											$slots['item-trailing'] ||
+											$slots['item-header'] ||
+											$slots['item-arrow-icon'] ||
+											$slots['item-content']
+										)
+									"
+								>
+									<Submenu
+										v-if="submenus.has(item)"
+										v-bind="submenus.get(item)"
+									/>
+									<MenuItem v-else :ctrl="item" />
+								</template>
+								<Submenu v-else-if="submenus.has(item)" v-bind="submenus.get(item)">
 									<template #leading>
 										<slot name="item-leading" :item="item" />
 									</template>
@@ -202,7 +227,25 @@ export default { ...SetupMenuSubmenu, components }
 						</MenuGroup>
 						<template v-else>
 							<template v-for="item in section.items" :key="item.uid">
-								<Submenu v-if="submenus.has(item)" v-bind="submenus.get(item)">
+								<template
+									v-if="
+										!(
+											$slots.item ||
+											$slots['item-leading'] ||
+											$slots['item-trailing'] ||
+											$slots['item-header'] ||
+											$slots['item-arrow-icon'] ||
+											$slots['item-content']
+										)
+									"
+								>
+									<Submenu
+										v-if="submenus.has(item)"
+										v-bind="submenus.get(item)"
+									/>
+									<MenuItem v-else :ctrl="item" />
+								</template>
+								<Submenu v-else-if="submenus.has(item)" v-bind="submenus.get(item)">
 									<template #leading>
 										<slot name="item-leading" :item="item" />
 									</template>

@@ -7,6 +7,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
@@ -21,7 +22,9 @@ const ArrowIcon = roleIcon('arrowRight')
  * MenuPopoverItem — пункт со своей панелью сбоку с любым содержимым. Текст строки — слот
  * `header`: `default` — содержимое панели, как у `Accordion.Item` и `Popover`.
  */
-export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | null {
+export const MenuPopoverItem = withRenderBoundary(function MenuPopoverItem(
+	props: MenuPopoverItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context, rootElement } = useSetupMenuPopoverItem(props)
 	const expand = useClickAction(() => context?.adapters.menu.open())
 
@@ -83,4 +86,4 @@ export function MenuPopoverItem(props: MenuPopoverItemProps): ReactElement | nul
 			</Frame>
 		</Tag>
 	)
-}
+})

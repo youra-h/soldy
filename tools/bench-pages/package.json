@@ -2,10 +2,11 @@
   "name": "bench-pages",
   "private": true,
   "type": "module",
-  "description": "Замер страниц компонентов soldy: вес страницы и утечки памяти по циклам, см. benchmarks/pages/README.md в корне; сверка платформ — benchmarks/parity/README.md",
+  "description": "Замер страниц компонентов soldy: вес страницы и утечки памяти по циклам, см. benchmarks/pages/README.md в корне; сверка платформ — benchmarks/parity/README.md; отклик на действие — benchmarks/interaction/README.md",
   "scripts": {
     "bench": "node run.mjs",
     "parity": "node parity.mjs && node parity-report.mjs",
-    "heap": "node --max-old-space-size=8192 heap.mjs"
+    "heap": "node --max-old-space-size=8192 heap.mjs",
+    "interaction": "node interaction.mjs && node interaction-report.mjs"
   }
 }

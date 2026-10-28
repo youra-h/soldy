@@ -8,6 +8,7 @@ import {
 	toRootProps,
 	type TRoleIconProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { Button } from '../../button'
 import { Icon } from '../../icon'
@@ -28,7 +29,9 @@ const NOTIFICATION = roleIcon('notification')
 const CLOSE = roleIcon('close')
 
 /** ToastsItem — тост, внутренняя часть менеджера: рисует только регион `Toasts`. */
-export function ToastsItem(props: ToastsItemProps): ReactElement | null {
+export const ToastsItem = withRenderBoundary(function ToastsItem(
+	props: ToastsItemProps,
+): ReactElement | null {
 	const { ctrl, ref, forwardProps, state } = useSetupToastsItem(props)
 	const close = useClickAction(() => ctrl.close())
 
@@ -104,4 +107,4 @@ export function ToastsItem(props: ToastsItemProps): ReactElement | null {
 			</div>
 		</Tag>
 	)
-}
+})

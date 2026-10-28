@@ -6,13 +6,16 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { useSetupMenuItem } from './setup.component'
 import type { MenuItemAttributes, MenuItemProps } from './base.component'
 
 /** MenuItem — пункт-действие: корень по `tag` и строка — `ItemRow` на `div` с ARIA пункта. */
-export function MenuItem(props: MenuItemProps): ReactElement | null {
+export const MenuItem = withRenderBoundary(function MenuItem(
+	props: MenuItemProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context } = useSetupMenuItem(props)
 	const choose = useClickAction(() => context?.adapters.menu.choose())
 
@@ -42,4 +45,4 @@ export function MenuItem(props: MenuItemProps): ReactElement | null {
 			</ItemRow>
 		</Tag>
 	)
-}
+})

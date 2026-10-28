@@ -12,6 +12,7 @@ import {
 	toRootForward,
 	toRootProps,
 	useClickAction,
+	withRenderBoundary,
 } from '../../../adapter'
 import { ItemRow } from '../../item-row'
 import { Frame } from '../../frame'
@@ -109,7 +110,9 @@ export function drawItems(state: TItemsState, slots: TItemSlots): ReactElement[]
  * MenuSubmenu — пункт с подменю: строка в меню над ним и своя панель с пунктами; панель —
  * в слое лифта подменю, и её пункты входят в его коллекцию, а не в коллекцию меню.
  */
-export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
+export const MenuSubmenu = withRenderBoundary(function MenuSubmenu(
+	props: MenuSubmenuProps,
+): ReactElement | null {
 	const { ref, forwardProps, state, context, rootElement, layer } = useSetupMenuSubmenu(props)
 	const expand = useClickAction(() => context?.adapters.menu.open())
 
@@ -179,4 +182,4 @@ export function MenuSubmenu(props: MenuSubmenuProps): ReactElement | null {
 			</Elevate>
 		</Tag>
 	)
-}
+})
