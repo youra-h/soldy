@@ -440,7 +440,7 @@ describe('TCollectionItemExtension: сборка и вход', () => {
 		const item = new TListBoxItem({ value: 'a', text: 'a' })
 		const context = createAdapterContext(ListBoxCollectionItemDescriptor(), { props }).use(
 			TCollectionItemExtension,
-			{ item, member: { detach: () => {} }, elevator: factory },
+			{ adapter: { instance: item, detach: () => {} }, elevator: factory },
 		)
 
 		return { engine, item, context }
@@ -484,8 +484,10 @@ describe('TCollectionItemExtension: сборка и вход', () => {
 
 		expect(() =>
 			context.use(TCollectionItemExtension, {
-				item: new TListBoxItem({ value: 'a', text: 'a' }),
-				member: { detach: () => {} },
+				adapter: {
+					instance: new TListBoxItem({ value: 'a', text: 'a' }),
+					detach: () => {},
+				},
 				elevator: factory,
 			}),
 		).toThrow('TCollectionItemExtension ставится до connect()')
@@ -562,7 +564,7 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 
 		const context = createAdapterContext(TabsCollectionContentDescriptor(), {}, { bundle }).use(
 			TTabsContentBindingExtension,
-			{ content, member: { detach: () => {} }, elevator: factory },
+			{ adapter: { instance: content, detach: () => {} }, elevator: factory },
 		)
 
 		/** Таб разметки входит в коллекцию на своём входе, а его набор в реестр — следом. */
@@ -870,8 +872,7 @@ describe('TTabsContentBindingExtension: сборка и вход', () => {
 
 		createAdapterContext(TabsCollectionContentDescriptor(), {}, { bundle })
 			.use(TTabsContentBindingExtension, {
-				content,
-				member: { detach: () => {} },
+				adapter: { instance: content, detach: () => {} },
 				elevator: factory,
 			})
 			.attach()

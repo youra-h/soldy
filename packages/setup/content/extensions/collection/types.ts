@@ -3,6 +3,7 @@
  */
 
 import type { TCollectionEngine, TItemContext } from '@soldy-ui/core'
+import type { TInstanceContext } from '../../../protected/adapter/context'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
 /**
@@ -34,10 +35,17 @@ export interface IDetachable {
 	detach(): void
 }
 
+/**
+ * The own adapter context of a collection member, of its own descriptor, not
+ * of the facade: its instance is the collection's item, and the collection
+ * detaches it with itself.
+ */
+export type TMemberAdapter<TInstance extends object = object> = Pick<
+	TInstanceContext<TInstance>,
+	'instance' | 'detach'
+>
+
 export interface ICollectionItemExtensionOptions {
-	/** The collection's item: the instance of the item's own descriptor. */
-	item: object
-	/** The item's own context: the collection detaches it with itself. */
-	member: IDetachable
+	adapter: TMemberAdapter
 	elevator: TElevatorFactory
 }

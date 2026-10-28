@@ -26,11 +26,7 @@ export function setupTabsContent(
 		TabsCollectionContentDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TTabsContentBindingExtension, {
-		content: adapter.instance,
-		member: adapter,
-		elevator: createWebcElevator(host),
-	})
+	).use(TTabsContentBindingExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым, как у Vue: с принятым контекстом панель слышит `item:added` поздних табов
 	const content = useCollectionAdapter(contentAdapter, host, onUpdate)

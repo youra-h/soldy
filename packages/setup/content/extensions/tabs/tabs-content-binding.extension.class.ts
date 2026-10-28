@@ -104,7 +104,8 @@ export class TTabsContentBindingExtension {
 		context: TInstanceContext<TCollectionItemFacade>,
 		options: ITabsContentBindingOptions,
 	) {
-		const { content, member, elevator } = options
+		const { adapter, elevator } = options
+		const content = adapter.instance
 
 		// A foreign collection is treated as absent: no tab, nothing to bind
 		const engine = elevator(ITEM_CONTEXT_ELEVATOR).up()
@@ -210,7 +211,7 @@ export class TTabsContentBindingExtension {
 
 		context.events.on('attach', () => {
 			attached = true
-			members?.add(member, context)
+			members?.add(adapter, context)
 			// The tab found on assembly: subscribed now, and what it wrote since
 			// is read after subscribing
 			boundItem?.events.on('change:aria', linkPanel)
@@ -233,7 +234,7 @@ export class TTabsContentBindingExtension {
 			content.events.off('change:value', resolve)
 			idPlugin?.events.off('change:id', linkPanel)
 
-			members?.delete(member, context)
+			members?.delete(adapter, context)
 			unbind()
 			attached = false
 

@@ -26,7 +26,7 @@ export function setupMenuSubmenu(props: MenuSubmenuProps) {
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, member: adapter, elevator })
+	).use(TCollectionItemExtension, { adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(item, props)
 

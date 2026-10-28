@@ -35,11 +35,7 @@ export default {
 			RadioGroupCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, {
-			item: adapter.instance,
-			member: adapter,
-			elevator: VueElevatorFactory,
-		})
+		).use(TCollectionItemExtension, { adapter, elevator: VueElevatorFactory })
 
 		const itemBinding = useCollectionAdapter(itemAdapter, props, emit)
 		const ownerBinding = useAdapter(adapter, props, emit)

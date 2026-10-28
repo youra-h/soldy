@@ -26,11 +26,7 @@ export function setupTabsItem(
 		TabsCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		member: adapter,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым, как у Vue: в коллекцию таб входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

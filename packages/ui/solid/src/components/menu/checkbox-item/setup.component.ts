@@ -23,7 +23,7 @@ export function setupMenuCheckboxItem(props: MenuCheckboxItemProps) {
 		MenuCollectionCheckboxItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter.instance, member: adapter, elevator })
+	).use(TCollectionItemExtension, { adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(item, props)
 	const owner = useAdapter(adapter, props)

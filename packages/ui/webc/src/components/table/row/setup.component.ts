@@ -26,11 +26,7 @@ export function setupTableRow(
 		TableCollectionRowDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		member: adapter,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым: в коллекцию строка входит, когда её контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

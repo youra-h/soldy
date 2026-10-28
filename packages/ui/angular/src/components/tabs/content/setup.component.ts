@@ -25,11 +25,7 @@ export function setupTabsContent(
 		TabsCollectionContentDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TTabsContentBindingExtension, {
-		content: adapter.instance,
-		member: adapter,
-		elevator: AngularElevatorFactory,
-	})
+	).use(TTabsContentBindingExtension, { adapter, elevator: AngularElevatorFactory })
 
 	return joinBindings(owner, useCollectionAdapter(content))
 }

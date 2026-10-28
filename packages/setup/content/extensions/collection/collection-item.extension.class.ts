@@ -16,8 +16,9 @@
  *   the framework accepts the component: React assembles on render, and a
  *   discarded render would leave a phantom in the engine, while an item added
  *   after the mount would update its owner in the middle of a child's render.
- *   From entry to teardown the item's own context and the facade's are
- *   members of the collection (`TCollectionMembers`): when the whole
+ *   From entry to teardown the item's own context (`adapter`, its instance is
+ *   the item) and the facade's are members of the collection
+ *   (`TCollectionMembers`): when the whole
  *   collection comes down, the owner's `detach` detaches them, and an item
  *   does not hear its siblings leave;
  * - **teardown** (`destroy`) — leaving the collection and releasing the item
@@ -85,7 +86,8 @@ export class TCollectionItemExtension {
 		context: TInstanceContext<TCollectionItemFacade>,
 		options: ICollectionItemExtensionOptions,
 	) {
-		const { item, member, elevator } = options
+		const { adapter, elevator } = options
+		const item = adapter.instance
 		const { props } = context
 
 		// The context releases the assembly props on `connect()`. An empty
@@ -132,7 +134,7 @@ export class TCollectionItemExtension {
 
 			if (register) this._leave = register(item, context.bundle)
 
-			members?.add(member, context)
+			members?.add(adapter, context)
 
 			// `meta` after the registration: the engine applies it to an item already in it
 			metaOf<object>(engine)?.apply(item, grouped ? { ...meta, group: groupKey } : meta)
@@ -141,7 +143,7 @@ export class TCollectionItemExtension {
 		context.events.on('destroy', () => {
 			// Unsubscribed before leaving: its own leaving is not a removal
 			plain?.events.off('item:removed', removed)
-			members?.delete(member, context)
+			members?.delete(adapter, context)
 
 			this._leave?.()
 			this._leave = undefined

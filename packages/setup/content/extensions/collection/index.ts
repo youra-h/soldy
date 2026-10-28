@@ -5,4 +5,5 @@ export type {
 	ICollectionItemExtensionOptions,
 	TCollectionItemFacade,
 	TCollectionOwner,
+	TMemberAdapter,
 } from './types'

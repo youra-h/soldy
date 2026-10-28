@@ -26,11 +26,7 @@ export function setupCalendarItem(
 		CalendarCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		member: adapter,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	// Фасад первым, как у Vue: в коллекцию день входит, когда его контекст принят
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)

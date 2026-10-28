@@ -25,11 +25,7 @@ export function setupMenuCheckboxItem(
 		MenuCollectionCheckboxItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		member: adapter,
-		elevator: AngularElevatorFactory,
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: AngularElevatorFactory })
 
 	return joinBindings(owner, useCollectionAdapter(item))
 }

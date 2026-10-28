@@ -24,7 +24,7 @@ export function setupTabsContent(props: TabsContentProps) {
 		TabsCollectionContentDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TTabsContentBindingExtension, { content: adapter.instance, member: adapter, elevator })
+	).use(TTabsContentBindingExtension, { adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(content, props)
 	const owner = useAdapter(adapter, props)

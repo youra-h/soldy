@@ -16,7 +16,7 @@ export function useSetupAccordionItem(props: AccordionItemProps) {
 			AccordionCollectionItemDescriptor(),
 			{ props },
 			{ bundle: adapter.bundle },
-		).use(TCollectionItemExtension, { item: adapter.instance, member: adapter, elevator })
+		).use(TCollectionItemExtension, { adapter, elevator })
 
 		return [adapter, item] as const
 	})

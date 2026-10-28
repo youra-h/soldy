@@ -26,11 +26,7 @@ export function setupToastsItem(
 		ToastsCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, {
-		item: adapter.instance,
-		member: adapter,
-		elevator: createWebcElevator(host),
-	})
+	).use(TCollectionItemExtension, { adapter, elevator: createWebcElevator(host) })
 
 	const item = useCollectionAdapter(itemAdapter, host, onUpdate)
 	const owner = useAdapter(adapter, host, onUpdate)
