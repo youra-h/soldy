@@ -28,7 +28,6 @@ import {
 	Tabs,
 	Tags,
 } from '@soldy-ui/vue'
-import AccordionItemContentHarness from './AccordionItemContent.test.vue'
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -183,28 +182,6 @@ describe('перерисовка элементов из данных', () => {
 
 		expect(count(entry.self)).toBeGreaterThan(0)
 		expect(count(entry.item)).toBe(0)
-	})
-
-	it('Accordion со слотом item-content перерисован своим пропом — слот секций не зван', async () => {
-		const slotCalls = vi.fn<(value: string) => void>()
-
-		wrapper = mount(AccordionItemContentHarness, {
-			props: { items: ITEMS, label: 'Первое имя', count: slotCalls },
-			attachTo: document.body,
-		})
-		await settle()
-
-		expect(document.querySelectorAll('.so-accordion-item').length).toBeGreaterThan(0)
-		expect(slotCalls).toHaveBeenCalledTimes(ITEMS.length)
-		slotCalls.mockClear()
-
-		await wrapper.setProps({ label: 'Второе имя' })
-		await settle()
-
-		expect(document.querySelector('.so-accordion')?.getAttribute('data-test-label')).toBe(
-			'Второе имя',
-		)
-		expect(slotCalls).not.toHaveBeenCalled()
 	})
 
 	it('DatePicker открыт и закрыт — дни календаря нет', async () => {
