@@ -23,24 +23,25 @@ declare global {
 }
 
 /**
- * Страница замера (`window.bench`): хост превью фреймворка из `?fw=` ставит
- * страницу компонента — N его копий одним корнем (`TPreviewMount.count`), —
- * сценарий действует на неё, и страница снимается. Меряет прогонщик
- * (`run.mjs`) протоколом DevTools; здесь — только то, что делает приложение.
+ * The measurement page (`window.bench`): the preview host of the framework
+ * from `?fw=` mounts a component's page — N copies in one root
+ * (`TPreviewMount.count`) — a scenario acts on it, and the page is taken down.
+ * The runner (`run.mjs`) measures over the DevTools protocol; here is only
+ * what the app does.
  *
- * Хосты — стенда разработчика (`packages/playground/vue/src/hosts/`): у всех
- * шести фреймворков одни превью с одними данными, и страницы разных
- * фреймворков сравнимы.
+ * The hosts are the developer stand's (`packages/playground/vue/src/hosts/`):
+ * all six frameworks have the same previews with the same data, so the pages
+ * of different frameworks are comparable.
  */
 
 useIcons(material)
 useTheme(oren)
 
 /**
- * Модули хостов — лениво, по папкам, как у оболочки стенда
- * (`packages/playground/vue/src/hosts/index.ts`): грузится только хост
- * фреймворка страницы, а у хостов свои программы типов, и glob не втягивает
- * их в программу стенда.
+ * Host modules — lazily, by folder, as in the stand's shell
+ * (`packages/playground/vue/src/hosts/index.ts`): only the page framework's
+ * host is loaded, and the hosts have their own type programs, which the glob
+ * does not pull into the stand's program.
  */
 const HOSTS = import.meta.glob('../../packages/playground/vue/src/hosts/*/index.ts')
 
@@ -59,9 +60,9 @@ const stage = document.querySelector<HTMLElement>('#app')
 if (!stage) throw new Error('[bench-pages] нет #app')
 
 /**
- * Страницы — готовые компоненты, которые хост умеет нарисовать, в порядке
- * реестра. Слои наследования (группа `layers`) — не компоненты страницы, как
- * и на витрине стенда.
+ * The pages are the finished components the host can draw, in registry order.
+ * The inheritance layers (the `layers` group) are not page components, as on
+ * the stand's showcase.
  */
 const pages = COMPONENTS.filter(
 	(entry) => entry.group !== 'layers' && host.previews.includes(entry.id),
@@ -77,14 +78,14 @@ function propsOf(id: string): Readonly<Record<string, unknown>> {
 	return id === 'select' ? { ...previewProps(id), items: COLLECTION_ITEMS } : previewProps(id)
 }
 
-/** Смонтированное сейчас: корни страницы. */
+/** What is mounted now: the page's roots. */
 let mounted: IPreviewHandle[] = []
 
 /**
- * Подставная утечка — проверка самого замера: после монтирования страница
- * держит узлы кнопок, слушатель `document` на каждую и экземпляр ядра, как
- * компонент, который забыл отписаться. Замер, который её не увидел, — не
- * замер.
+ * A planted leak — a check of the measurement itself: after mounting, the
+ * page holds the buttons' nodes, a `document` listener for each and a core
+ * instance, like a component that forgot to unsubscribe. A measurement that
+ * does not see it is not a measurement.
  */
 const leaked: unknown[] = []
 
@@ -96,7 +97,7 @@ async function frames(count = 2): Promise<void> {
 	for (let index = 0; index < count; index++) await frame()
 }
 
-/** Узел под корень: у каждой страницы — свой, снимается вместе с ней. */
+/** A node for a root: each page has its own, removed together with it. */
 function place(): HTMLElement {
 	const node = document.createElement('div')
 
@@ -107,14 +108,14 @@ function place(): HTMLElement {
 }
 
 /**
- * Страница компонента: N копий одним корнем. Служебные страницы: `all` —
- * каждый компонент по разу, своим корнем; `empty` — корень без компонентов,
- * шум самого замера; `leak` — кнопки с подставной утечкой. Отдаёт время
- * монтирования, мс: от вызова хоста до второго кадра, к которому плагины
- * получили узлы.
- *
+ * A component's page: N copies in one root. Service pages: `all` — each
+ * component once, in its own root; `empty` — a root without components, the
+ * noise of the measurement itself; `leak` — buttons with the planted leak.
  * `only` narrows `all` to the listed components — the ones a neighbor library
  * has too (`tools/bench-compare`).
+ *
+ * Returns the mount time in ms: from the host call to the second frame, by
+ * which the plugins have got their nodes.
  */
 async function mount(page: string, count: number, only?: string[]): Promise<number> {
 	if (mounted.length) throw new Error('[bench-pages] страница уже стоит')
@@ -148,7 +149,7 @@ async function mount(page: string, count: number, only?: string[]): Promise<numb
 	return time
 }
 
-/** Снять страницу: корни и их узлы; ждать кадры, за которые уходят слои. */
+/** Take the page down — the roots and their nodes — and wait the frames the layers leave in. */
 async function unmount(): Promise<void> {
 	for (const handle of mounted) handle.unmount()
 
@@ -159,7 +160,7 @@ async function unmount(): Promise<void> {
 	await frames()
 }
 
-/** Сценарий страницы: действия на её копиях. `all` — сценарии всех компонентов по очереди. */
+/** The page's scenario: actions on its copies. `all` runs every component's scenario in turn. */
 async function scenario(page: string, act: number, only?: string[]): Promise<number> {
 	const ids = page === 'all' ? (only ?? pages) : [page === 'leak' ? 'button' : page]
 
@@ -180,7 +181,7 @@ async function scenario(page: string, act: number, only?: string[]): Promise<num
 	return done
 }
 
-/** Язык страницы: туда и обратно, как переключатель языка приложения. */
+/** The page's language: there and back, like an app's language switch. */
 async function locale(): Promise<void> {
 	host.setLocale(ruRU)
 	await frames(1)
@@ -188,7 +189,7 @@ async function locale(): Promise<void> {
 	await frames(1)
 }
 
-/** Сколько живых объектов класса — для `Runtime.queryObjects` прогонщика. */
+/** Prototypes whose live objects the runner counts with `Runtime.queryObjects`. */
 const prototypes = { component: TComponent.prototype, emitter: TEventEmitter.prototype }
 
 /** An event of the parity journal: the full core name and comparable arguments. */

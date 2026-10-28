@@ -31,36 +31,35 @@ type TDrawn = {
 }
 
 /**
- * Props that a component of Angular has no input for: the root's tag is the
+ * Props an Angular component has no input for: the root's tag is the
  * element's own (`<a so-button>`), and the adapter declares no `tag` input.
- * The host does not write it, as the Web Components host does not.
+ * The host does not write it, like the Web Components host.
  */
 const ELEMENT_PROPS: ReadonlySet<string> = new Set(['tag'])
 
 /**
- * The host's application — one for all roots, without Zone.js: the adapter is
- * built for zoneless, the components' state is signals. One rather than one
- * per root: a mount id is the number of an assembly in the application
+ * The host's application, one for all roots, without Zone.js: the adapter is
+ * built for zoneless, and the components' state is signals. One rather than
+ * one per root: a mount id is the number of an assembly in the application
  * (`ng-1`, `ng-2`), and two applications on one page would give parts equal
- * ids. The adapter's renderer (`provideAttrs()`) is provided, as in an
- * application's `appConfig`: without it fields and collections do not
- * assemble.
+ * ids. The adapter's renderer (`provideAttrs()`) is provided as in an app's
+ * `appConfig`: without it fields and collections do not assemble.
  */
 const app = await createApplication({ providers: [provideAttrs()] })
 
 /**
- * A component of the host — a preview or a fixture — into the root's place,
+ * Places a host component (a preview or a fixture) into the root's outlet,
  * with input bindings, as a template places it.
  *
- * A binding (`inputBinding`) stands on every input of the component and reads
- * the props from a signal: a change of the props is a new value of the signal,
- * and a removed prop comes to the input as `undefined`, so the core assembly
- * returns the property to the declaration's default. The DI of the place goes
- * through the root's locale provider, and the assembly sees its locale. A prop
- * without an input is a mismatch of the adapter with the descriptor, and the
- * host does not mute it. The listeners of the preview's parts go to the
- * component's injector (`PART_LISTENERS`): the parts its markup marks
- * `pg-part` take them there.
+ * Every input of the component gets a binding (`inputBinding`) that reads the
+ * props from a signal: new props are a new signal value, and a removed prop
+ * reaches the input as `undefined`, so the core assembly returns the property
+ * to the declared default. The place's DI goes through the root's locale
+ * provider, so the assembly sees its locale. A prop without an input is a
+ * mismatch between the adapter and the descriptor, and the host throws rather
+ * than hiding it. The listeners of the preview's parts go to the component's
+ * injector (`PART_LISTENERS`), where the parts its markup marks `pg-part`
+ * take them.
  */
 function insert<T extends object>(
 	outlet: ViewContainerRef,
@@ -98,18 +97,18 @@ function insert<T extends object>(
 }
 
 /**
- * A component of the host with `count` copies of its markup: the shell's props
- * go to its inputs, and the host listens to the outputs of the component in
- * every copy (`subjects`).
+ * A host component with `count` copies of its markup: the shell's props go to
+ * its inputs, and the host listens to the outputs of the component in every
+ * copy (`subjects`).
  *
- * The component is checked before the copies are stamped: its inputs reach
- * its markup, the state of a copy among them (`pg-copy-state`). The copies are
- * created right away (`CopyDirective.stamp`), and the listeners stand before
- * their assembly, which comes with the next check, as the output bindings of a
- * template: the events of the parts entering a collection already have
- * someone to receive them. They go after the destruction, as the output
- * bindings of a template, which Angular removes after the hooks of its view:
- * what a teardown sends reaches them, and the parity run hears it.
+ * The component is checked before the copies are stamped, so its inputs,
+ * including a copy's state (`pg-copy-state`), reach its markup. The copies are
+ * created at once (`CopyDirective.stamp`), and the listeners are attached
+ * before the copies assemble on the next check, like a template's output
+ * bindings: the events of parts entering a collection already have a
+ * receiver. They are removed after the destruction, again like a template's
+ * output bindings, which Angular removes after its view's hooks: what a
+ * teardown sends still reaches them, and the parity run hears it.
  */
 function drawTemplate(
 	outlet: ViewContainerRef,
@@ -163,30 +162,29 @@ function fixtureOf(fixture: string): Type<TFixture> {
  * The Angular host.
  *
  * A preview is a root of its own (`PreviewRootComponent`) on the shell's node,
- * with `so-locale-provider` in it: the shell's context does not pass into
- * another root, and the host gives the root the header's language. The host
- * puts the preview into the root too (`insert`): the props come by their
- * markup names, and Angular lists the bindings of a template by name.
+ * with `so-locale-provider` in it: the shell's context does not cross into
+ * another root, so the host gives the root the header's language. The host
+ * also puts the preview into the root (`insert`): the props come by their
+ * markup names, and Angular binds a template's inputs by name.
  *
  * The application checks the components' state itself, on its own tick. But
  * `mount`, `update` and `setLocale` end with a check in the same call
- * (`app.tick()`), as `flushSync` in React: the contract promises the component
- * in the DOM on return, and the shell changes props and language from its own
- * watchers, outside Angular's tick.
+ * (`app.tick()`), like `flushSync` in React: the contract promises the
+ * component in the DOM on return, and the shell changes props and language
+ * from its own watchers, outside Angular's tick.
  *
- * The root is checked before the component assembles in it: the provider
- * already holds the header's language, and the assembly sees it rather than
- * the English the locale source was created with — as in a template, where
- * Angular writes the provider's input before the hooks of its children. Its
- * view is checked (`detectChanges`), not the application: the application
- * ticks once per `mount`. A manual tick of Angular switches the scheduler to
- * microtasks until the end of the browser task, and in development mode the
- * first notification after each tick counts towards an infinite loop (NG0103
- * after a hundred in a row). The shell's page mounts all previews in one task —
- * Select has about seventy of them, — and two ticks per preview brought it
- * down.
+ * The root is checked before the component assembles in it, so the provider
+ * already holds the header's language and the assembly sees it rather than
+ * the English the locale source was created with, as in a template, where
+ * Angular writes the provider's input before its children's hooks. The root's
+ * view is checked (`detectChanges`), not the application, which ticks once
+ * per `mount`. A manual Angular tick switches the scheduler to microtasks
+ * until the end of the browser task, and in development mode the first
+ * notification after each tick counts towards an infinite loop (NG0103 after
+ * a hundred in a row). The shell's page mounts all previews in one task
+ * (Select has about seventy), and two ticks per preview brought it down.
  *
- * A change of `ctrl` places the preview anew, with its parts: the adapter takes
+ * A `ctrl` change places the preview anew, with its parts: the adapter takes
  * the core instance at assembly, not on the fly.
  */
 const host: IPreviewHost = {
@@ -216,14 +214,14 @@ const host: IPreviewHost = {
 		let bind = props
 		let drawn: TDrawn
 
-		// The root is checked before the component assembles: the provider already
-		// holds the header's language. By its view, not by a tick of the
-		// application — `mount` ticks once (see the header)
+		// The root is checked before the component assembles, so the provider
+		// already holds the header's language. Its view is checked, not the
+		// application: `mount` ticks once (see the host's comment)
 		app.attachView(root.hostView)
 		root.changeDetectorRef.detectChanges()
 
-		// The root goes into the document when it has something to draw: no
-		// preview or a prop without an input — the shell's node stays empty
+		// The root goes into the document only once it has something to draw: with
+		// no preview, or a prop without an input, the shell's node stays empty
 		try {
 			drawn = draw(bind)
 		} catch (error) {

@@ -29,10 +29,9 @@ export class TEventCallbacks {
 	}
 
 	/**
-	 * Listen to the binding until the context's `detach` — from the teardown's
-	 * first moment or from the collection the component is an item of: the
-	 * consumer hears nothing from then on. Returns the cleanup of the layout
-	 * effect (`release`).
+	 * Listen to the binding until the context's `detach`, which comes from the
+	 * teardown's first moment or, for a collection item, from its collection.
+	 * Returns the layout effect's cleanup (`release`).
 	 */
 	listen(binding: TExchange): () => void {
 		const stop = binding.events.listen(this.sink)
@@ -44,10 +43,10 @@ export class TEventCallbacks {
 	}
 
 	/**
-	 * The cleanup of the layout effect: the teardown's first moment — every
-	 * layout cleanup of a removed subtree comes before any passive one, and the
-	 * destruction is a passive cleanup (`useAdapterContext`). So it detaches
-	 * the context, and the subscription goes with it.
+	 * The layout effect's cleanup is the teardown's first moment: React runs
+	 * every layout cleanup of a removed subtree before any passive one, and the
+	 * destruction is a passive cleanup (`useAdapterContext`). So it ends the
+	 * subscription and detaches the context.
 	 */
 	readonly release = (): void => {
 		this._stop?.()

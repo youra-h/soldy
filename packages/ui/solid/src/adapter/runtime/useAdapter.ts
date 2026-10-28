@@ -2,16 +2,17 @@
  * useAdapter — binds an adapter context to Solid, the counterpart of Vue's
  * `useAdapter`.
  *
- * - the state is shallow, a signal per property read
- *   (`createShallowState`), filled by the subscription to the binding;
- * - the inputs — an effect over all props, the binding writes the changed ones;
+ * - state is shallow, a signal per property read (`createShallowState`),
+ *   filled by the subscription to the binding;
+ * - inputs: an effect over all props, the binding writes the changed ones;
  * - the component body runs once, on the server too: that is the acceptance
  *   (`attach()`), and the cleanup is `onCleanup`;
- * - the events — the `onXxx` callback props, after the acceptance.
+ * - events go to the `onXxx` callback props, after the acceptance, until
+ *   `detach`.
  *
  * The adapter's `ref` binds the root to `TElementPlugin` and hands the same
  * node to the consumer's `ref`. A collection has two contexts: the facade is
- * bound by `useCollectionAdapter` — before the component, — and `joinBindings`
+ * bound by `useCollectionAdapter`, before the component, and `joinBindings`
  * joins it with the component's binding. AGENTS.md (Solid), «Связка».
  */
 
@@ -32,8 +33,9 @@ import { SolidProfile } from '../common'
 import { createShallowState, joinState, type TJoinedState } from './state'
 
 /**
- * `ref` потребителя — корень компонента: функция или переменная, которую
- * компилятор Solid превращает в функцию. Узел — `Element`: корнем бывает `<svg>`.
+ * The consumer's `ref` gets the component's root: a function, or a variable
+ * the Solid compiler turns into one. The node is an `Element`: the root can be
+ * an `<svg>`.
  */
 export type TConsumerRef = Element | ((element: Element) => void)
 
@@ -43,22 +45,22 @@ export type TBinding<
 > = {
 	readonly ctrl: C['instance']
 	readonly state: TAdapterState<C>
-	/** Мемо: атрибуты, не съеденные связкой. */
+	/** A memo: the attributes the binding did not take. */
 	forwardProps: () => Partial<TProps>
-	/** Привязанный корень; не отрисован или снят — `null`. Якорь панели (`anchor_anchor`). */
+	/** The bound root; `null` unrendered or removed. The panel's anchor (`anchor_anchor`). */
 	rootElement: Accessor<Element | null>
-	/** callback-ref корня: привязка к `TElementPlugin`, затем `ref` потребителя. */
+	/** The root's callback ref: binds to `TElementPlugin`, then calls the consumer's `ref`. */
 	ref: (el: Element) => void
-	/** Только привязка — корню внутри обёртки (окно таблицы). */
+	/** Only the binding: for a root inside a wrapper (the table's window). */
 	bindRef: (el: Element) => void
-	/** Только `ref` потребителя — обёртке корня. */
+	/** Only the consumer's `ref`: for the root's wrapper. */
 	consumerRef: (el: Element) => void
 }
 
-/** Связка фасада коллекции: своего `ctrl` и `ref` у него нет. */
+/** The binding of a collection facade: it has no `ctrl` and no `ref` of its own. */
 export type TCollectionBinding<TState extends object, TProps extends object = object> = {
 	readonly state: TState
-	/** What the facade leaves of the given attributes: `joinBindings` hands it the component's rest. */
+	/** The attributes the facade leaves; `joinBindings` passes it the component's rest. */
 	forward: (props: Partial<TProps>) => Partial<TProps>
 }
 
@@ -68,7 +70,7 @@ type TJoinable<TProps extends object> = {
 	forwardProps: () => Partial<TProps>
 }
 
-/** Связка компонента с фасадом: состояние одним видом, атрибуты — фасада. */
+/** A component's binding joined with a facade: state as one view, attributes from the facade. */
 export type TJoinedBinding<
 	TOwner extends TJoinable<TProps>,
 	TFacadeState extends object,
@@ -78,7 +80,7 @@ export type TJoinedBinding<
 	forwardProps: () => Partial<TProps>
 }
 
-/** What the component and a facade share: the exchange, the state, the inputs, the acceptance, the events and the cleanup. */
+/** What the component and a facade share: exchange, state, inputs, acceptance, events, cleanup. */
 function useExchange(
 	adapter: IAdapterContext,
 	props: object,
@@ -97,36 +99,36 @@ function useExchange(
 	// Events after the acceptance: what it writes is the starting state, as in
 	// the other adapters (benchmarks/parity/README.md). A component with
 	// collection facades binds them first: the facade, accepted, writes into
-	// the component — the months of Calendar's grids, Table's `dataset`
+	// the component (the months of Calendar's grids, Table's `dataset`)
 	const stop = binding.events.listen((exportName, args) => {
 		const callback: unknown = Reflect.get(props, exportName)
 
 		if (typeof callback === 'function') callback(...args)
 	})
 
-	// The consumer stops on `detach`: from the teardown's first moment
-	// (`detachFirst`) or from the collection the component is an item of,
-	// before its siblings go one by one (`TCollectionMembers`)
+	// The consumer stops on `detach`, which comes from the teardown's first
+	// moment (`detachFirst`) or, for a collection item, from its collection
+	// before the siblings go one by one (`TCollectionMembers`)
 	adapter.events.on('detach', stop)
 	onCleanup(stop)
 	detachFirst(adapter)
 
-	// Очистки Solid зовёт в обратном порядке: фасад уходит раньше компонента
+	// Solid runs cleanups in reverse order of registration
 	onCleanup(() => adapter.destroy())
 
 	return { binding, state }
 }
 
 /**
- * The teardown's first moment is `detach`: the consumer hears nothing from
- * then on, as in the other adapters (benchmarks/parity/README.md). Solid
+ * Sends `detach` at the teardown's first moment: the consumer hears nothing
+ * from then on, as in the other adapters (benchmarks/parity/README.md). Solid
  * cleans an owner's computations first, the last made first, and its cleanups
- * after them: the children — the markup items leaving the collection with an
- * ever shorter list, the root's unbinding — went before `onCleanup` of the
- * component's body. Once mounted, when the children are made, a computation
- * made under the same owner is its last one, and its cleanup is the first of
- * the teardown. Before the mount, and on the server, where effects do not
- * run, `onCleanup` unsubscribes.
+ * after them, so the children (markup items leaving the collection with an
+ * ever shorter list, the root's unbinding) went before `onCleanup` of the
+ * component's body. A computation made on mount, when the children already
+ * exist, is the owner's last one, and its cleanup is the first of the
+ * teardown. Before the mount, and on the server, where effects do not run,
+ * `onCleanup(stop)` unsubscribes and `destroy` detaches.
  */
 function detachFirst(adapter: IAdapterContext): void {
 	const owner = getOwner()
@@ -144,7 +146,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 	const forwardProps = createMemo(() => binding.forward(props))
 	const [rootElement, setRootElement] = createSignal<Element | null>(null)
 
-	// Отвязка — очисткой владельца узла: смена тега (`Root`) отвязывает прежний
+	// Unbinding is a cleanup of the node's owner: a tag change (`Root`) unbinds the previous node
 	const bindRef = (el: Element): void => {
 		adapter.bindElement(el)
 		setRootElement(el)

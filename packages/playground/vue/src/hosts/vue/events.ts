@@ -9,13 +9,13 @@ export type TListeners = Record<string, (...args: unknown[]) => void>
 export type TParts = Readonly<Record<string, TListeners>>
 
 /**
- * Listeners of all the events of a component or a part — in Vue.
+ * Listeners of all the events of a component or a part, in Vue.
  *
  * The list is exactly what the component declares to Vue in `emits`:
- * `useEmits` of its descriptors (`componentDescriptors`, a part's —
- * `TComponentEntry.parts`), as `base.component.ts` of the collection
+ * `useEmits` of its descriptors (`componentDescriptors`, or a part's from
+ * `TComponentEntry.parts`), joined as `base.component.ts` of the collection
  * components joins them. It holds the explicit events, the props' triggers and
- * `update:<prop>` of v-model. An event added appears on the stand by itself.
+ * v-model's `update:<prop>`. A new event shows up on the playground by itself.
  *
  * An event's name in Vue is the full core name (`change:visible`), and the
  * sink gets it as is. `update:<prop>` is Vue's v-model: it goes to the sink

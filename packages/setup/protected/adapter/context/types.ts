@@ -1,5 +1,5 @@
 /**
- * Контракт контекста адаптера, его опций и конструкторов расширений.
+ * Contracts of the adapter context, its options and extension constructors.
  */
 
 import type { TEvented } from '@soldy-ui/core'
@@ -12,10 +12,9 @@ import type { TMember } from '../exchange/member.class'
 /**
  * The context's life: `attach` — the framework accepted the assembled
  * component, `detach` — it began removing it, `destroy` — it let it go. Each
- * comes once and in this order; the adapter's runtime sends `attach` and
- * `destroy`, `detach` comes from the runtime too or from the collection the
- * component is an item of (`TCollectionItemExtension`). What to do on
- * `detach` is the adapter's call: the consumer hears nothing from then on.
+ * comes once and in this order. The adapter's runtime sends all three;
+ * `detach` may also come earlier from the collection the component is a
+ * member of (`TCollectionMembers`).
  */
 export type TAdapterEvents = {
 	attach: () => void
@@ -24,9 +23,9 @@ export type TAdapterEvents = {
 }
 
 /**
- * Контракт контекста: инстанс и плагины названы, остальное — как у любого
- * компонента. По нему `createAdapterContext` сводит инстанс из двух
- * источников — `ctor` дескриптора и переданного `ctrl`.
+ * A context contract with the instance and the plugins named, the rest as for
+ * any component. By it `createAdapterContext` resolves the instance from two
+ * sources: the descriptor's `ctor` and the given `ctrl`.
  */
 export type TContextContract<
 	TInstance extends object,
@@ -34,21 +33,20 @@ export type TContextContract<
 > = IComponentContract & { instance: TInstance; plugins: TPlugins }
 
 /**
- * Контекст компонента, про который известен только инстанс. Так расширение
- * объявляет, с чем оно работает: `TInstanceContext<TCollectionOwner>` — с
- * любым компонентом, у инстанса которого есть `engine`.
+ * A context of which only the instance is known. This is how an extension
+ * declares what it works with: `TInstanceContext<TCollectionOwner>` — any
+ * component whose instance has an `engine`.
  */
 export type TInstanceContext<TInstance extends object> = IAdapterContext<
 	TContextContract<TInstance>
 >
 
 /**
- * Конструктор расширения с опциями.
- *
- * `TInstance` — какой инстанс нужен расширению (`TCollectionExtension` —
- * фасад с `engine`). `IAdapterContext.use()` сверяет его с инстансом контекста
- * при компиляции: расширение не подключить к компоненту, у которого нет того,
- * с чем оно работает.
+ * An extension constructor with options. `TInstance` is the instance the
+ * extension needs (`TCollectionExtension` — a facade with `engine`);
+ * `IAdapterContext.use()` checks it against the context's instance at compile
+ * time, so an extension cannot go on a component that lacks what it works
+ * with.
  */
 export interface IAdapterExtensionCtor<
 	T = unknown,
@@ -58,131 +56,134 @@ export interface IAdapterExtensionCtor<
 	new (context: TInstanceContext<TInstance>, options: TOpts): T
 }
 
-/** Конструктор расширения без опций. */
+/** An extension constructor without options. */
 export interface IAdapterExtensionCtorNoOpts<T = unknown, TInstance extends object = object> {
 	new (context: TInstanceContext<TInstance>): T
 }
 
-/** Любой конструктор расширения — ключ реестра и элемент стартового набора. */
+/** Any extension constructor: a registry key and an item of the starting set. */
 export type TAnyExtensionCtor = new (...args: any[]) => unknown
 
-/** Опции создания адаптер-контекста: готовый инстанс (ctrl) или props/options конструктора. */
+/** Options of creating an adapter context: a ready instance (`ctrl`) or the constructor's props and options. */
 export interface IAdapterContextOptions<TInstance extends object = object> {
 	ctrl?: TInstance
 	/**
-	 * Пропсы фреймворка. `object`, а не `Record<string, unknown>`: адаптеры
-	 * объявляют пропсы интерфейсами, у которых нет индексной сигнатуры. Читаются
-	 * по имени из дескриптора — через `Reflect.get`.
+	 * The framework's props. `object`, not `Record<string, unknown>`: adapters
+	 * declare props as interfaces without an index signature. They are read by
+	 * the descriptor's names through `Reflect.get`.
 	 */
 	props?: object
 	options?: object
 	/**
-	 * Имя места, если компонент — деталь разметки другого компонента (строка и
-	 * крестик тега). Уходит в состав монтирования (`resolveComposition`): плагины
-	 * реестра со `scope: 'own'` вложенному компоненту не ставятся.
+	 * The place's name if the component is a detail of another component's
+	 * markup (a tag's row and close button). It goes into the mount's
+	 * composition (`resolveComposition`): registry plugins with `scope: 'own'`
+	 * are not installed on an embedded component.
 	 */
 	embedded?: string
 	/**
-	 * Id монтирования — от `useId` фреймворка, один на сервере и в браузере.
-	 * Уходит своему набору плагинов: от него плагины строят `id` частей
-	 * (`IPluginBundle.createId`). Инстанс его не получает — `id` нужны документу,
-	 * а не ядру. Набор не свой (`config.bundle`) — id монтирования у того, кто
-	 * его собрал.
+	 * The mount id — from the framework's `useId`, the same on the server and
+	 * in the browser. It goes to the own plugin bundle, from which plugins build
+	 * the parts' `id`s (`IPluginBundle.createId`); the instance does not get it —
+	 * ids are the document's business, not the core's. With a bundle not its
+	 * own (`config.bundle`) the mount id is of whoever assembled the bundle.
 	 */
 	mountId?: string
 	/**
-	 * Локаль поддерева — от провайдера локали фреймворка, ближайшего выше по
-	 * дереву: тег для Intl и строки библиотеки, с событием смены. Уходит своему
-	 * набору плагинов, как id монтирования (`IPluginBundle.locale`): по ней
-	 * плагины языка и имён пишут компоненту тег и имена кнопок — при сборке и
-	 * на каждую смену. Инстанс её не получает: язык знает место компонента в
-	 * дереве, а не экземпляр. Не задана — у набора своя английская. Набор не
-	 * свой (`config.bundle`) — локаль у того, кто его собрал.
+	 * The subtree's locale — from the framework's nearest locale provider above:
+	 * the Intl tag and the library's strings, with a change event. It goes to
+	 * the own plugin bundle, as the mount id does (`IPluginBundle.locale`), and
+	 * the language and names plugins write the tag and the button names from it,
+	 * on assembly and on every change. The instance does not get it: the
+	 * language is known by the component's place in the tree, not by the
+	 * instance. Not given — the bundle has its own English one. With a bundle
+	 * not its own (`config.bundle`) the locale is of whoever assembled it.
 	 */
 	locale?: ILocaleSource
 }
 
-/** Что свой набор берёт от монтирования: id монтирования и локаль поддерева. */
+/** What the own bundle takes from the mount: the mount id and the subtree's locale. */
 export type TBundleMount = Pick<IAdapterContextOptions, 'mountId' | 'locale'>
 
 export interface IAdapterContextConfig {
 	/**
-	 * Готовый набор плагинов: его передаёт тот, кто его собрал (адаптер
-	 * коллекции делит набор компонента с фасадом). Без него набор собирается по
-	 * составу — плагины дескриптора плюс регистрации приложения.
+	 * A ready plugin bundle, passed by whoever assembled it (a collection
+	 * adapter shares the component's bundle with the facade). Without it the
+	 * bundle is assembled by the composition: the descriptor's plugins plus the
+	 * application's registrations.
 	 */
 	bundle?: IPluginBundle | null
 }
 
 /**
- * Контекст адаптера: собранный компонент и его расширения.
+ * The adapter context: the assembled component and its extensions.
  *
- * Параметр — контракт дескриптора, по которому контекст собран
- * (`IComponentContract`). Его выводит `createAdapterContext`, а `useAdapter`
- * адаптеров берёт из него тип инстанса и выходы плагинов для типа состояния
- * (`TAdapterState`) — дженерики в компоненте не пишут.
+ * The parameter is the descriptor contract the context was assembled by
+ * (`IComponentContract`). `createAdapterContext` infers it, and the adapters'
+ * `useAdapter` takes from it the instance type and the plugins' outputs for
+ * the state type (`TAdapterState`), so components write no generics.
  */
 export interface IAdapterContext<C extends IComponentContract = IComponentContract> {
-	/** Фантомное поле: в рантайме его нет, оно только несёт контракт в типе. */
+	/** A phantom field: absent at runtime, it only carries the contract in the type. */
 	readonly __contract?: C
 	readonly instance: C['instance']
 	readonly bundle: IPluginBundle | null
 	readonly descriptor: IComponentDescriptor
 	/**
-	 * Пропсы сборки — до первого `connect()`: их читают расширения в
-	 * конструкторе, а обмен заводит из них память входов. После `connect()` —
-	 * `undefined`: память входов живёт своими ячейками, и контекст пропсы
-	 * отпускает.
+	 * The assembly props, until the first `connect()`: extensions read them in
+	 * their constructors and the exchange starts its input memory from them.
+	 * After `connect()` — `undefined`: the input memory lives in its own cells
+	 * and the context lets the props go.
 	 */
 	readonly props: object | undefined
-	/** Имя места, если компонент — деталь чужой разметки (`IAdapterContextOptions.embedded`). */
+	/** The place's name if the component is a detail of another's markup (`IAdapterContextOptions.embedded`). */
 	readonly embedded: string | undefined
 	readonly events: TEvented<TAdapterEvents>
 
-	/** Подключить расширение БЕЗ опций */
+	/** Install an extension WITHOUT options. */
 	use<T>(ExtensionCtor: IAdapterExtensionCtorNoOpts<T, C['instance']>): this
-	/** Подключить расширение С обязательными опциями */
+	/** Install an extension WITH required options. */
 	use<T, TOpts>(
 		ExtensionCtor: IAdapterExtensionCtor<T, TOpts, C['instance']>,
 		options: TOpts,
 	): this
 
-	/** Получить зарегистрированное расширение по его классу */
+	/** The installed extension of the given class. */
 	get<T>(ctor: new (...args: any[]) => T): T | undefined
 
 	/**
-	 * Связать корневой узел разметки с `TElementPlugin` набора; `null` —
-	 * отвязать. У компонента без этого плагина вызов ничего не делает.
+	 * Bind the markup's root node to the bundle's `TElementPlugin`; `null`
+	 * unbinds. Without that plugin the call does nothing.
 	 */
 	bindElement(element: Element | null): void
 
 	/**
-	 * Обмен значениями с фреймворком в именах его профиля: состояние, входы,
-	 * события. Память входов начинается с пропсов сборки; начальные значения уже
-	 * применила сборка.
+	 * The value exchange with the framework, in its profile's names: state,
+	 * inputs, events. The input memory starts from the assembly props; the
+	 * assembly has already applied the initial values.
 	 *
-	 * Обмен один на монтирование: первый вызов его заводит и отпускает пропсы
-	 * сборки, повторный с тем же профилем отдаёт его же, с другим — ошибка.
+	 * One exchange per mount: the first call creates it and releases the
+	 * assembly props, a repeat with the same profile returns it, another
+	 * profile is an error.
 	 */
 	connect(profile: IAdapterProfile): TExchange
 
 	/**
-	 * Фреймворк принял собранный компонент: с этого момента он часть живого
-	 * дерева, а не черновик сборки. Пара к `destroy()`: обе зовёт рантайм
-	 * адаптера в свой момент цикла, а не компонент. Сборка чужого не трогает —
-	 * то, что пишет в чужое хранилище (вход элемента в коллекцию владельца),
-	 * подписывается на `attach`. Зовётся один раз, между сборкой и
-	 * `destroy()`: порядок держит рантайм адаптера, как и у `destroy()`.
+	 * The framework accepted the assembled component: from now on it is part of
+	 * the live tree, not an assembly draft. Whatever writes into someone else's
+	 * storage (an item entering its owner's collection) waits for `attach`.
+	 * Called once, between assembly and `destroy()`, by the adapter's runtime,
+	 * not by the component.
 	 */
 	attach(): void
 
 	/**
 	 * The framework began removing the component: the first moment of its
-	 * teardown, before its children go. The context reports it (`detach`
-	 * event) and nothing else — the adapter stops the consumer on it. A
-	 * collection reports it to its items as well
-	 * (`TCollectionItemExtension`): siblings leave one by one, and an item still
-	 * heard would hear them go. Once: a repeat does nothing.
+	 * teardown, before its children go. The context only reports it (the
+	 * `detach` event); the adapter stops the consumer on it. A collection
+	 * detaches its members too (`TCollectionMembers`): siblings leave one by
+	 * one, and a member still heard would hear them go. Once: a repeat does
+	 * nothing.
 	 */
 	detach(): void
 
@@ -191,22 +192,21 @@ export interface IAdapterContext<C extends IComponentContract = IComponentContra
 }
 
 /**
- * Владение набором плагинов: свой (`TOwnBundle`) или не свой (`TSharedBundle`).
- *
- * «Свой набор или чужой» — не флаг, который проверяет каждый, кто с набором
- * работает: всё, что от этого зависит, делает один из двух объектов.
+ * Ownership of the plugin bundle: own (`TOwnBundle`) or shared
+ * (`TSharedBundle`). Not a flag every user of the bundle checks: everything
+ * that depends on it is done by one of the two objects.
  */
 export interface IBundleTenancy {
 	readonly bundle: IPluginBundle | null
 	/**
-	 * Участники обмена от набора: плагины дескриптора, а у своего набора — ещё и
-	 * связка. Строятся на вызов: нужны они сборке и обмену, а не набору, и набор
-	 * их не держит.
+	 * The exchange members from the bundle: the descriptor's plugins and, for
+	 * an own bundle, the binding too. Built per call: the assembly and the
+	 * exchange need them, the bundle does not keep them.
 	 */
 	members(): readonly TMember[]
-	/** Кому из участников набора (`members()`) эта сборка пишет начальные значения. */
+	/** Which of the bundle's members (`members()`) this assembly writes initial values to. */
 	seeded(members: readonly TMember[]): readonly TMember[]
-	/** Завершить сборку после начальных значений: плагины реестра и объявление набора наружу. */
+	/** Finish the assembly after the initial values: registry plugins and announcing the bundle. */
 	complete(): void
 	destroy(): void
 }

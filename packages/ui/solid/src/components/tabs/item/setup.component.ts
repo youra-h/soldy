@@ -20,7 +20,7 @@ export function setupTabsItem(props: TabsItemProps) {
 		TabsCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter, elevator })
+	).use(TCollectionItemExtension, { item: adapter.instance, member: adapter, elevator })
 
 	const itemBinding = useCollectionAdapter(item, props)
 	const owner = useAdapter(adapter, props)

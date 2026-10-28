@@ -52,7 +52,8 @@ export default {
 			{ props },
 			{ bundle: adapter.bundle },
 		).use(TCollectionItemExtension, {
-			item: adapter,
+			item: adapter.instance,
+			member: adapter,
 			elevator: VueElevatorFactory,
 		})
 

@@ -30,7 +30,11 @@ export function setupMenuPopoverItem(
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter, elevator: AngularElevatorFactory })
+	).use(TCollectionItemExtension, {
+		item: adapter.instance,
+		member: adapter,
+		elevator: AngularElevatorFactory,
+	})
 
 	return joinBindings(owner, useCollectionAdapter(item))
 }

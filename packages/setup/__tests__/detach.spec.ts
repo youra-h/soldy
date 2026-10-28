@@ -65,7 +65,7 @@ function mountTab(elevator: TElevatorFactory, value: string): IAdapterContext[] 
 		TabsCollectionItemDescriptor(),
 		{ props: { value } },
 		{ bundle: own.bundle },
-	).use(TCollectionItemExtension, { item: own, elevator })
+	).use(TCollectionItemExtension, { item: own.instance, member: own, elevator })
 
 	own.attach()
 	facade.attach()
@@ -80,7 +80,7 @@ function mountPanel(elevator: TElevatorFactory, value: string): IAdapterContext[
 		TabsCollectionContentDescriptor(),
 		{ props: { value } },
 		{ bundle: own.bundle },
-	).use(TTabsContentBindingExtension, { content: own, elevator })
+	).use(TTabsContentBindingExtension, { content: own.instance, member: own, elevator })
 
 	own.attach()
 	facade.attach()

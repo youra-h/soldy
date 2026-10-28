@@ -4,13 +4,12 @@
 
 import type { ITabsContent } from '@soldy-ui/core'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
-import type { TCollectionMember } from '../collection'
+import type { IDetachable } from '../collection/types'
 
 export interface ITabsContentBindingOptions {
-	/**
-	 * The panel's own context: its instance (TTabsContent) is the source of
-	 * `value`, and the collection detaches it with itself.
-	 */
-	content: TCollectionMember<ITabsContent>
+	/** The panel instance (TTabsContent): the source of `value`. */
+	content: ITabsContent
+	/** The panel's own context: the collection detaches it with itself. */
+	member: IDetachable
 	elevator: TElevatorFactory
 }

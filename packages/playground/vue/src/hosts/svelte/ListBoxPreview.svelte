@@ -9,8 +9,8 @@
 </script>
 
 <!--
-	Элементы — разметкой, а пришли данными (`items` блока групп страницы) — из
-	них: разметка заменила бы данные, а группы список рисует из данных.
+	Items in markup, unless they come as data (`items` from the page's groups
+	block): markup would replace the data, and the list draws groups from data.
 -->
 {#if bind.items}
 	<ListBox {...bind} />

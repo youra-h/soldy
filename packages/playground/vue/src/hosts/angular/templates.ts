@@ -56,32 +56,32 @@ import type { TFixture } from './fixtures'
 
 /**
  * Previews whose markup needs slot templates, state of their own or a
- * directive — in Angular.
+ * directive, in Angular.
  *
- * The trigger of a popover and a tooltip is a slot template with a scope
- * (`<ng-template slot="trigger">`). A dialog and a drawer need a button that
- * opens them, an open state of their own and parts by slots, as the Vue
- * preview has. A component without a root — the virtual window and the
- * reordering — is a directive on `<ng-container>`. The trigger and the content
- * are those of the Vue preview (`hosts/vue/previews.ts`).
+ * The trigger of Popover and Tooltip is a slot template with a scope
+ * (`<ng-template slot="trigger">`). Dialog and Drawer need a button that opens
+ * them, an open state of their own and parts by slots, as in the Vue preview.
+ * A component without a root (Virtual, DragAndDrop) is a directive on
+ * `<ng-container>`. The trigger and the content match the Vue preview
+ * (`hosts/vue/previews.ts`).
  *
  * Like every preview of the host (`previews.ts`), the preview takes the shell's
- * props as its inputs and passes them to the component in its markup with
- * bindings — an input for every prop the page writes, and `ctrl`. The input's
- * type is the type of the adapter component's field, and a removed prop comes
- * to the input as `undefined`, so the property returns to its default. The
- * host does not mute a prop without an input: a prop that appeared in the
- * descriptor and did not get here is an error on its page. The markup is one
- * copy (`<ng-template pg-copy>`), and the component in it goes to the host
- * (`subjects`): the host listens to its outputs.
+ * props as its inputs and binds them to the component in its markup: an input
+ * for every prop the page writes, and `ctrl`. An input is typed as the adapter
+ * component's field, and a removed prop reaches it as `undefined`, so the
+ * property returns to its default. The host does not hide a prop without an
+ * input: a prop added to the descriptor but missing here is an error on its
+ * page. The markup is one copy (`<ng-template pg-copy>`), and the component in
+ * it goes to the host (`subjects`), which listens to its outputs.
  */
 
 /**
  * Popover: the trigger is a Button that puts the link to the panel and the
- * pressed look on itself with the set directive. The content has a button:
- * focus goes to it on open. The content is the `default` template, as the
- * slot of the Vue preview: a projection would be created right away, and the
- * `lazyMount` row would only keep it out of the document.
+ * pressed look on itself with the attribute set directive (`so-attributes`).
+ * The content has a button for focus to move to on open. The content is the
+ * `default` template, like the Vue preview's slot: a projection would be
+ * created at once, and the `lazyMount` row would only keep it out of the
+ * document.
  */
 @Component({
 	selector: 'pg-popover-preview',
@@ -154,9 +154,9 @@ export class PopoverPreview implements TFixture {
 }
 
 /**
- * Tooltip: триггер — Button, ссылку на панель (`aria-describedby`) он кладёт
- * на себя директивой набора. Текст подсказки — содержимым: пропа текста у неё
- * нет.
+ * Tooltip: the trigger is a Button that puts the panel reference
+ * (`aria-describedby`) on itself with the attribute set directive. The
+ * tooltip text is content: there is no text prop.
  */
 @Component({
 	selector: 'pg-tooltip-preview',
@@ -208,8 +208,8 @@ export class TooltipPreview implements TFixture {
 }
 
 /**
- * The inputs of a menu preview — one for every prop the page writes, and
- * `ctrl` — and the menu in each copy (`subjects`): shared by the menu with
+ * The inputs of a menu preview (one for every prop the page writes, and
+ * `ctrl`) and the menu in each copy (`subjects`), shared by the menu with
  * items in markup and the menu from data (`MenuPreview`, `MenuItemsPreview`).
  */
 @Directive()
@@ -234,9 +234,9 @@ abstract class TMenuPreviewInputs implements TFixture {
 }
 
 /**
- * Привязки меню превью ко входам превью, кроме состава — одни у обоих меню.
- * Состав (`items`) отдаёт только меню из данных: у меню разметкой его заменяет
- * разметка.
+ * Bindings of the preview's menu to the preview's inputs, except the content;
+ * the same for both menus. Only the menu from data passes `items`: in the
+ * markup menu the markup takes its place.
  */
 const MENU_BINDINGS = `
 	[ctrl]="ctrl()"
@@ -256,13 +256,14 @@ const MENU_BINDINGS = `
 `
 
 /**
- * Триггер меню — Button, связку с меню и вид «нажата» он кладёт на себя
- * директивой набора. У контекстного меню (`openOn: 'contextmenu'`) в слоте
- * область, как «файл» у потребителя: меню вызывают над ней правой кнопкой,
- * долгим касанием и Shift+F10, и панель встаёт у точки вызова. Область —
- * нативная кнопка, как у Vue: под фокусом для Shift+F10, со своими ролью и
- * именем и без связки с меню. Режим область берёт из пропсов колонки: у
- * колонки экземпляра его нет, и там меню вызывают над кнопкой.
+ * The menu trigger: a Button that puts the link to the menu and the pressed
+ * look on itself with the attribute set directive. A context menu (`openOn:
+ * 'contextmenu'`) gets an area in the slot, like a consumer's "file": the
+ * menu opens over it by right click, long press and Shift+F10, and the panel
+ * sits at the point of the call. The area is a native button, as in Vue:
+ * focusable for Shift+F10, with its own role and name, and no link to the
+ * menu. The area reads the mode from the column's props: the instance column
+ * has none, and there the menu opens over the button.
  */
 const MENU_TRIGGER = `
 	<ng-template slot="trigger" let-triggerAria="triggerAria" let-triggerDataset="triggerDataset">
@@ -281,23 +282,25 @@ const MENU_TRIGGER = `
 `
 
 /**
- * Menu: items in markup, as in Vue — a group of checkboxes with a label, a
- * group of radios with one checked, actions with shortcut hints, a submenu
- * with a submenu inside, an item with a panel — a calendar mounted with the
- * first opening, — a disabled action and a "dangerous" item of its own variant.
- * The items of the menu and of each submenu are their `default` template, as a
- * consumer who wants them lazy writes them: the menu creates it with the first
- * opening of its panel, while a projection Angular would create with the menu.
+ * Menu: items in markup, as in Vue: a labelled group of checkboxes, a group
+ * of radios with one checked, actions with shortcut hints, a submenu with a
+ * submenu inside, an item with a panel (a calendar mounted on first open), a
+ * disabled action and a "dangerous" item with its own variant. The items of
+ * the menu and of each submenu are their `default` template, as a consumer
+ * who wants them lazy writes them: the menu creates it on the first opening
+ * of its panel, while Angular would create a projection together with the
+ * menu.
  *
- * When the items came as data (`items` of the page's groups block and of the
- * `groupSeparators` row preset), the preview is another one, `MenuItemsPreview`:
- * markup would replace the data, and the menu draws groups from data. Not
- * `@if` around the items: Angular picks the fallback content of `<ng-content>`
- * once, and an `@if` in the content takes the projection even with a false
- * condition. Nor a second menu in an `@else` branch: the host listens to the
- * outputs of the menu in each copy (`subjects`) as soon as the copies are
- * created, before the first check, and a menu in a branch would appear only in
- * that check. So the host picks the preview when it places it (`templateFor`).
+ * When the items came as data (`items` from the page's groups block or the
+ * `groupSeparators` row preset), the preview is a different one,
+ * `MenuItemsPreview`: markup would replace the data, and the menu draws groups
+ * from data. Not an `@if` around the items: Angular picks the fallback content
+ * of `<ng-content>` once, and an `@if` in the content takes the projection
+ * even with a false condition. Nor a second menu in an `@else` branch: the
+ * host listens to the menu's outputs in each copy (`subjects`) as soon as the
+ * copies are created, before the first check, and a menu in a branch would
+ * appear only during that check. So the host picks the preview when it places
+ * it (`templateFor`).
  */
 @Component({
 	selector: 'pg-menu-preview',
@@ -379,9 +382,9 @@ const MENU_TRIGGER = `
 export class MenuPreview extends TMenuPreviewInputs {}
 
 /**
- * Menu из данных: состав — `items` блока групп страницы или пресета строки
- * `groupSeparators`, — и пунктов разметкой нет: меню рисует свои по секциям
- * групп. Триггер — тот же, что у `MenuPreview`.
+ * Menu from data: the content is `items` from the page's groups block or the
+ * `groupSeparators` row preset, with no items in markup: the menu draws its
+ * own by group sections. The trigger is the same as in `MenuPreview`.
  */
 @Component({
 	selector: 'pg-menu-items-preview',
@@ -397,18 +400,18 @@ export class MenuPreview extends TMenuPreviewInputs {}
 export class MenuItemsPreview extends TMenuPreviewInputs {}
 
 /**
- * Dialog: on the stand a button opens the dialog, as in Vue: a closed dialog is
- * hidden, and an open one covers the page with a backdrop, so showing it right
- * away would be unfair to the rest of the page.
+ * Dialog: on the playground a button opens the dialog, as in Vue: closed it
+ * is hidden, and open it covers the page with a backdrop, so showing it at
+ * once would block the rest of the page.
  *
- * Whether it is open is the own state of a copy (`state`, the context of
- * its view): a signal the `visible` input overwrites (`linkedSignal`), as
- * `v-model:visible` on its own state in Vue. The cross, Escape and the
- * backdrop close the dialog through `(soChangeVisible)`, the footer buttons by
- * writing the signal, and the `visible` row sets it from outside. With a core
- * instance (the second column) the path is the same: writing `visible` of the
- * instance opens the dialog, and the output reaches here. Every copy opens its
- * own dialog.
+ * Openness is a copy's own state (`state`, the context of its view): a
+ * signal the `visible` input overwrites (`linkedSignal`), like
+ * `v-model:visible` on local state in Vue. The close button, Escape and the
+ * backdrop close the dialog through `(soChangeVisible)`, the footer buttons
+ * by writing the signal, and the `visible` row sets it from outside. With a
+ * core instance (the second column) the path is the same: writing the
+ * instance's `visible` opens the dialog, and the output comes back here. Each
+ * copy opens its own dialog.
  */
 @Component({
 	selector: 'pg-dialog-preview',
@@ -472,7 +475,7 @@ export class DialogPreview implements TFixture {
 	readonly hideOutside_enabled = input<TDialogComponent['hideOutside_enabled']>()
 	readonly scrollLock_enabled = input<TDialogComponent['scrollLock_enabled']>()
 	/**
-	 * The own state of a copy: whether its dialog is open; the `visible` input
+	 * A copy's own state: whether its dialog is open; the `visible` input
 	 * overwrites it.
 	 */
 	readonly state = () => ({ shown: linkedSignal(() => this.visible() ?? false) })
@@ -481,13 +484,13 @@ export class DialogPreview implements TFixture {
 }
 
 /**
- * Drawer: a button opens the drawer too — for the same reason as the dialog,
- * and on the same own state of a copy (see `DialogPreview`).
+ * Drawer: a button opens the drawer too, for the same reason as the dialog
+ * and on the same per-copy state (see `DialogPreview`).
  *
- * The button and the drawer lie in a box of their own with
- * `position: relative`, as in Vue: with `contained` the drawer does not leave
- * but stands in the nearest positioned ancestor, and the `contained` row shows
- * it in the preview's box rather than at the edge of the whole page.
+ * The button and the drawer sit in their own box with `position: relative`,
+ * as in Vue: with `contained` the drawer is not moved out but placed in the
+ * nearest positioned ancestor, so the `contained` row shows it in the
+ * preview's box rather than at the edge of the whole page.
  */
 @Component({
 	selector: 'pg-drawer-preview',
@@ -554,7 +557,7 @@ export class DrawerPreview implements TFixture {
 	readonly hideOutside_enabled = input<TDrawerComponent['hideOutside_enabled']>()
 	readonly scrollLock_enabled = input<TDrawerComponent['scrollLock_enabled']>()
 	/**
-	 * The own state of a copy: whether its drawer is open; the `visible` input
+	 * A copy's own state: whether its drawer is open; the `visible` input
 	 * overwrites it.
 	 */
 	readonly state = () => ({ shown: linkedSignal(() => this.visible() ?? false) })
@@ -563,9 +566,10 @@ export class DrawerPreview implements TFixture {
 }
 
 /**
- * Своё содержимое тоста — кнопка «Отменить»: тост приходит ей входом `toast`
- * и закрывается ею. Коробки у компонента нет: кнопка встаёт в ряд своего
- * содержимого тоста, как кнопка, которую рисует компонент Vue.
+ * Custom toast content, an Undo button: the toast comes to it as the `toast`
+ * input and is closed by it. The component has no box: the button sits in
+ * the row of the toast's custom content, like the button the Vue component
+ * draws.
  */
 @Component({
 	selector: 'pg-toast-undo',
@@ -578,20 +582,20 @@ class ToastUndo {
 	readonly toast = input.required<IToastsItem>()
 }
 
-/** Своё содержимое образцов тостов этого хоста. */
+/** This host's custom content for the toast samples. */
 const undo: TToastRender = ToastUndo
 
 /**
- * Тосты приходят из кода, а не из разметки: кнопки внутри менеджера берут API
- * (`useToasts()` полем) и показывают тост. Что сообщает тост, — образцы
- * стенда, одни на все хосты (`toastSample`), своё содержимое к ним — кнопка
- * «Отменить» этого хоста. Текст начинается с номера: в стопке видно, какой
- * тост где.
+ * Toasts come from code, not markup: buttons inside the manager take the API
+ * (`useToasts()` in a field) and show a toast. What a toast says comes from
+ * the playground samples, the same for every host (`toastSample`); this
+ * host's custom content for them is the Undo button. The text starts with a
+ * number, so the stack shows which toast is where.
  *
- * Кнопка — на обычное сообщение и на каждый вид (`TOASTS_ITEM_TYPES`): тост
- * показывает значок своего вида. Последняя — ожидание: «Сохраняем…» с кольцом
- * на месте значка сам не закрывается, а через пару секунд тот же тост
- * сообщает успех. Ряд кнопок — с переносом, как у Vue.
+ * One button per plain message and per type (`TOASTS_ITEM_TYPES`): a toast
+ * shows its type's icon. The last one is pending: "Saving…" with a ring in
+ * place of the icon does not close by itself, and a couple of seconds later
+ * the same toast reports success. The row wraps, as in Vue.
  */
 @Component({
 	selector: 'pg-toasts-trigger',
@@ -620,7 +624,7 @@ class ToastsTrigger {
 		this._toasts.show({ ...sample, text: `${this._count}. ${sample.text}`, type })
 	}
 
-	// Работа идёт — тост ждёт; кончилась — тот же тост сообщает итог
+	// While the work runs the toast waits; when it ends the same toast reports the result
 	protected save(): void {
 		this._count += 1
 
@@ -638,10 +642,11 @@ class ToastsTrigger {
 }
 
 /**
- * Toasts: менеджер вокруг ряда кнопок, которые показывают тосты, как у Vue, —
- * `<div so-toasts>` без своей коробки, а регион с тостами уехал к краю окна,
- * мимо ячейки превью. Кнопкам нужен API менеджера над ними (`useToasts()`), а
- * шаблон его отдаёт только разметке, поэтому превью — своим шаблоном.
+ * Toasts: the manager around a row of buttons that show toasts, as in Vue: a
+ * box-less `<div so-toasts>`, with the toast region moved to the window edge,
+ * outside the preview cell. The buttons need the manager above them
+ * (`useToasts()`), which a template gives only to its markup, so the preview
+ * is a template of its own.
  */
 @Component({
 	selector: 'pg-toasts-preview',
@@ -682,13 +687,14 @@ export class ToastsPreview implements TFixture {
 }
 
 /**
- * DragAndDrop: перестановка у трёх коллекций сразу, на одном составе, как у
- * Vue и React, — `<ng-container so-drag-and-drop>` вокруг ряда. Tabs и
- * Accordion — частями разметки, ListBox — данными. Элемент переставляется в
- * своей коллекции: между коллекциями обёртка не переносит. Ряд — граница
- * ширины: табы — во всю ширину ряда, список и секции — под ними, рядом.
- * Первый таб активен сразу — иначе ни одна панель не смонтируется, — а
- * панели — слотом `content`, вне списка табов.
+ * DragAndDrop: reordering in three collections at once, over the same items,
+ * as in Vue and React: `<ng-container so-drag-and-drop>` around a row. Tabs
+ * and Accordion as parts in markup, ListBox by data. An item moves within its
+ * own collection: the wrapper does not move items between collections. The
+ * row bounds the width: the tabs take its full width, the list and the
+ * sections sit below, side by side. The first tab is active at once,
+ * otherwise no panel mounts, and the panels go to the `content` slot, outside
+ * the tab list.
  */
 @Component({
 	selector: 'pg-drag-and-drop-preview',
@@ -747,20 +753,21 @@ export class DragAndDropPreview implements TFixture {
 	readonly ctrl = input<TDragAndDropComponent['ctrl']>()
 	readonly copy = viewChild.required(CopyDirective)
 	readonly subjects = viewChildren(TDragAndDropComponent)
-	/** Состав коллекций — из общего манифеста, как у Vue и React. */
+	/** Collection content from the shared manifest, as in Vue and React. */
 	protected readonly items = COLLECTION_ITEMS
 }
 
 /**
- * Virtual: окно на трёх списках по тысяче элементов — на пяти его не видно, —
- * `<ng-container so-virtual>` вокруг ряда. ListBox с пределом строк
- * прокручивается сам, у Select прокручивается список его панели, таблица — в
- * окне прокрутки высотой 320 px; строка `enabled` включает и выключает окно у
- * всех разом. Элементы — данными (`items`): элементы разметкой окно не прячет.
- * Ряд — граница ширины, как у Vue и React, а Select — в колонке своей ширины:
- * поле во всю ширину места, и в ряду оно забрало бы место таблицы.
- * Переставленную колонку таблица ведёт целиком, с ячейками строк
- * (`reorderPreview="column"`): в окне это сотни ячеек, а не тысячи.
+ * Virtual: the window over three lists of a thousand items each (with five it
+ * is not visible), `<ng-container so-virtual>` around a row. ListBox with a
+ * row limit scrolls itself, Select scrolls the list of its panel, the table
+ * sits in a 320 px scroll window; the `enabled` row turns the window on and
+ * off for all of them at once. Items are data (`items`): the window does not
+ * hide items placed in markup. The row bounds the width, as in Vue and React,
+ * and Select sits in a column of its own width: its field takes the full
+ * width and would take the table's room in the row. The table drags a moved
+ * column whole, with the rows' cells (`reorderPreview="column"`): inside the
+ * window that is hundreds of cells, not thousands.
  */
 @Component({
 	selector: 'pg-virtual-preview',

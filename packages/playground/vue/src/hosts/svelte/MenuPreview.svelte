@@ -11,20 +11,20 @@
 </script>
 
 <!--
-	Триггер — Button, связку с меню и вид «нажата» он берёт из scope сниппета
-	`trigger`. У контекстного меню (`openOn: 'contextmenu'`) в сниппете область,
-	как «файл» у потребителя: меню вызывают над ней правой кнопкой, долгим
-	касанием и Shift+F10, и панель встаёт у точки вызова. Область — нативная
-	кнопка, как у Vue: под фокусом для Shift+F10, со своими ролью и именем и без
-	связки с меню. Режим область берёт из пропсов колонки, как у Vue: у колонки
-	экземпляра его нет, и там меню вызывают над кнопкой.
+	The trigger is a Button that takes the menu binding and the pressed look from
+	the scope of the `trigger` snippet. With `openOn: 'contextmenu'` the snippet
+	holds an area instead, like a "file" in an app: right click, long press or
+	Shift+F10 over it opens the menu at that point. The area is a native button,
+	as in Vue: focusable for Shift+F10, with its own role and name, unbound from
+	the menu. The mode comes from the column's props: the instance column has
+	none and opens the menu over the button.
 
-	Пункты — разметкой, как у Vue: группа флажков с подписью, группа
-	переключателей — отмечен один, — действия с подсказками сочетаний, подменю
-	с подменю внутри, пункт с панелью — календарём, который монтируется с
-	первым открытием, — выключенное действие и «опасный» пункт своего варианта.
-	Пришли данными (`items` блока групп страницы) — из них: разметка заменила бы
-	данные, а группы меню рисует из данных.
+	Items in markup, as in Vue: a labelled checkbox group, a radio group with
+	one item checked, actions with shortcut hints, a submenu with a submenu
+	inside, an item with a panel — a calendar mounted on the first open — a
+	disabled action and a "dangerous" item of its own variant. Items that come
+	as data (`items` from the groups block) are used instead: markup would
+	replace the data, and the menu draws groups from data.
 -->
 {#snippet trigger({ triggerAria, triggerDataset }: TTriggerScope)}
 	{#if bind.openOn === 'contextmenu'}

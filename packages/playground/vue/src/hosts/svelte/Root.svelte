@@ -5,13 +5,13 @@
 	import { setParts, type TParts } from './events'
 
 	type TRootProps = {
-		/** Чем рисовать: превью компонента или фикстура сценария. */
+		/** What to draw: the component's preview or a scenario fixture. */
 		preview: TPreview
-		/** Пропсы превью с колбэками событий — их меняет `update` хоста. */
+		/** The preview props with the event callbacks — the host's `update` sets them. */
 		bind: TLive<TPreviewProps>
 		/** Listeners of the preview's parts: the previews take them from the context. */
 		parts: TParts
-		/** Сколько копий превью рядом (`TPreviewMount.count`). */
+		/** How many copies of the preview stand side by side (`TPreviewMount.count`). */
 		count: number
 	}
 
@@ -23,10 +23,11 @@
 </script>
 
 <!--
-	Корень хоста Svelte: свой `LocaleProvider` вокруг превью. Контекст
-	провайдера оболочки в чужой корень не проходит, и язык шапки корню даёт
-	хост — смена доходит до провайдера без перемонтирования. Копии превью —
-	рядом, число копий корень не меняет.
+	The Svelte host's root: its own `LocaleProvider` around the preview. The
+	shell's provider context does not reach another root, so the host gives the
+	root the header's language, and a change reaches the provider without a
+	remount. The copies of the preview stand side by side, and the root never
+	changes their number.
 -->
 <LocaleProvider locale={language.current}>
 	{#each { length: count }, index (index)}

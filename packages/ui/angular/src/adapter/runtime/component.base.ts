@@ -1,18 +1,18 @@
 /**
- * TComponentBase — база Angular-компонента soldy: жизненный цикл связки,
- * выходы, слоты и корень. AGENTS.md (Angular), «Корень-хост ведёт базовый
- * `TComponentBase`».
+ * TComponentBase — the base of a soldy Angular component: the binding's
+ * lifecycle, outputs, slots and the root. AGENTS.md (Angular), «Корень-хост
+ * ведёт базовый `TComponentBase`».
  *
- * - конструктор: корень по описанию (`TRootSpec`, стратегии в `root/`) и
- *   признак поддерева для потомков;
- * - `ngOnInit`: сборка setup-функцией компонента в контексте его инъекции и
- *   приёмник событий ядра;
- * - `ngOnChanges`: изменённые входы — в ядро;
- * - `ngOnDestroy`: `detach()` — the consumer hears nothing from then on, — the
+ * - constructor: the root by its spec (`TRootSpec`, strategies in `root/`)
+ *   and the subtree flag for descendants;
+ * - `ngOnInit`: assembly by the component's setup function in its injection
+ *   context, and the sink of core events;
+ * - `ngOnChanges`: changed inputs go to the core;
+ * - `ngOnDestroy`: `detach()` (the consumer hears nothing from then on),
  *   unsubscription and `destroy()`.
  *
- * Компонент наследует не базу, а сгенерированную `T<Имя>Surface`: она
- * объявляет входы и выходы с их типами для строгого шаблона.
+ * A component extends the generated `T<Name>Surface`, not the base: the
+ * surface declares inputs and outputs with their types for strict templates.
  */
 
 import {
@@ -41,13 +41,13 @@ import type { SlotDirective } from './slot.directive'
 import { SUBTREE_PRESENT, SubtreeDirective } from './subtree.directive'
 import type { TBinding, TBindingState } from './useAdapter'
 
-/** Setup-функция компонента: сборка его контекстов в одну связку. */
+/** The component's setup function: assembles its contexts into one binding. */
 export type TSetup<TInstance, TFacade = unknown, TOutputs = unknown, TOwnerFacade = unknown> = (
 	ctrl: TInstance | undefined,
 	inputs: object,
 ) => TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
 
-/** Ссылка шаблона на узел, который нужен базе: корень, поле, спутник слоя. */
+/** A template reference to a node the base needs: the root, the field, the layer's companion. */
 export type TTemplateRef = 'root' | 'control' | 'companion'
 
 const VIEW_ROOT: TRootSpec = { strategy: 'view' }
@@ -59,7 +59,7 @@ const NO_BINDING_STATE = Object.freeze({})
 const NO_SLOTS: readonly SlotDirective[] = Object.freeze([])
 
 @Directive({
-	// `hostDirectives` наследник получает, а `providers` — нет
+	// A subclass inherits `hostDirectives`, but not `providers`
 	hostDirectives: [SubtreeDirective],
 	host: {
 		'[style.display]': '_rootDisplay()',
@@ -73,24 +73,24 @@ export abstract class TComponentBase<
 >
 	implements OnInit, OnChanges, OnDestroy
 {
-	/** Готовый инстанс ядра; нет — сборка создаёт свой. */
+	/** A ready core instance; without it the assembly creates one. */
 	@Input() ctrl?: TInstance
 
 	private readonly _inputNames: readonly string[]
 	private readonly _setup: TSetup<TInstance, TFacade, TOutputs, TOwnerFacade>
 	private readonly _root: TRoot
-	/** The host node: removed from the document, the component sends nothing (`_removed`). */
+	/** The host node: once it is out of the document, the component sends nothing (`_removed`). */
 	private readonly _host: unknown = inject(ElementRef).nativeElement
-	/** The host was in the document: the first render placed it. */
+	/** The first render with a binding has run: the host was in the document. */
 	private _placed = false
 
-	/** Поддерево предка есть — им прячется только слой, увезённый из поддерева. */
+	/** The ancestor's subtree is present. It hides only a layer moved out of the subtree. */
 	private readonly _above: Signal<boolean>
 
-	/** Корень есть — там, где у Vue его не снял бы `v-if`. */
+	/** The root exists: where Vue's `v-if` would not remove it. */
 	private readonly _present: Signal<boolean>
 
-	/** Корень там, где ему место: у слоя — в цели или на месте, у остальных — всегда. */
+	/** The root is where it belongs: a layer in its target or in place, anything else always. */
 	protected readonly placed: Signal<boolean>
 
 	private readonly _binding = signal<
@@ -110,10 +110,10 @@ export abstract class TComponentBase<
 		return this._boundRoot()
 	}
 
-	/** В его контексте заводятся эмиттеры и идёт сборка. */
+	/** Emitters are created and the assembly runs in its context. */
 	private readonly _injector = inject(Injector)
 
-	/** State of the core with plugin outputs and facade properties — the signal of the binding. */
+	/** State of the core with plugin outputs and facade properties: the binding's signal. */
 	state(): TBindingState<TInstance, TFacade, TOutputs, TOwnerFacade> {
 		return this._binding()?.state() ?? NO_BINDING_STATE
 	}
@@ -128,7 +128,7 @@ export abstract class TComponentBase<
 		return this._binding()?.facade
 	}
 
-	/** Внешний узел скрыт. Инстанса база не знает и читает состояние по именам. */
+	/** The outer node is hidden. The base does not know the instance and reads state by name. */
 	private readonly _hidden = computed(() => {
 		const state: TStateSnapshot = this.state()
 		const hidden =
@@ -138,19 +138,19 @@ export abstract class TComponentBase<
 	})
 
 	/**
-	 * Скрытие хоста. Не скрыт — `undefined`, а не `null`: так Angular берёт
-	 * статику хоста, а `null` сняла бы её.
+	 * The host's display. Not hidden is `undefined`, not `null`: then Angular
+	 * keeps the host's static style, and `null` would remove it.
 	 */
 	protected readonly _rootDisplay = computed(() =>
 		!this._root.hidesRoot && this._hidden() ? 'none' : undefined,
 	)
 
 	/**
-	 * Узел шаблона по ссылке — `#root`, `#control`, `#companion`; ссылки нет —
-	 * `null`. Запросы объявляет сгенерированная поверхность, и только на
-	 * ссылки шаблона компонента: запрос Angular копирует себя в каждое
-	 * представление шаблона — блок `@if`, итерацию `@for`, — и у компонента
-	 * без ссылки это память на каждый блок.
+	 * The template node by its reference (`#root`, `#control`, `#companion`),
+	 * `null` without one. The generated surface declares the queries, and only
+	 * for references the component's template has: an Angular query copies
+	 * itself into every view of the template (an `@if` block, a `@for`
+	 * iteration), and without the reference that is memory on every block.
 	 */
 	protected templateNode(_ref: TTemplateRef): Element | null {
 		return null
@@ -192,11 +192,11 @@ export abstract class TComponentBase<
 		})
 
 		this.placed = this._root.placed
-		// Остальных прячет спрятанный предок, а узел у плагинов снимает `_present`
+		// Anything else is hidden by its hidden ancestor; `_present` takes the node from the plugins
 		this._above = this._root.layer ? above : SUBTREE_PRESENT
 		this._present = this._presence(above)
 
-		// Узел — плагинам и шаблону только в браузере, после отрисовки
+		// The node goes to the plugins and the template only in the browser, after the render
 		afterRenderEffect(() => {
 			const node = this._root.node()
 			const binding = this._binding()
@@ -211,16 +211,17 @@ export abstract class TComponentBase<
 			this._boundRoot.set(element)
 		})
 
-		// Признак своего поддерева — сразу: поддерево Angular создаёт позже.
-		// `rendered` менеджера тостов снимает регион, а не приложение в обёртке
+		// The own subtree flag is provided at once: Angular creates the subtree
+		// later. `rendered` of the toasts manager removes the region, not the
+		// app inside the wrapper
 		inject(SubtreeDirective, { self: true }).provide(
 			this._root.hidesRoot ? above : this._present,
 		)
 	}
 
 	ngOnInit(): void {
-		// Первый ngOnChanges пришёл раньше связки: входы при монтировании
-		// применяет сборка
+		// The first ngOnChanges came before the binding: the assembly applies the
+		// inputs at mount
 		const inputs = this.collectInputs()
 
 		if (this._root.tag !== undefined) inputs['tag'] = this._root.tag
@@ -266,10 +267,11 @@ export abstract class TComponentBase<
 	}
 
 	/**
-	 * Эмиттер выхода — зовёт геттер `T<Имя>Surface` при первом чтении. Эмиттер
-	 * становится собственным свойством и заслоняет геттер; повторный вызов —
-	 * ошибка, а не подмена. В контексте инжектора: `EventEmitter` берёт из него
-	 * `DestroyRef`, и `outputToObservable` завершается вместе с компонентом.
+	 * The output's emitter, called by the `T<Name>Surface` getter on the first
+	 * read. The emitter becomes an own property and shadows the getter; a second
+	 * call is an error, not a replacement. Created in the injector's context:
+	 * `EventEmitter` takes `DestroyRef` from it, and `outputToObservable`
+	 * completes with the component.
 	 */
 	protected createOutput<T>(name: string): EventEmitter<T> {
 		const emitter = runInInjectionContext(this._injector, () => new EventEmitter<T>())
@@ -279,7 +281,7 @@ export abstract class TComponentBase<
 		return emitter
 	}
 
-	/** Снимает корень то же, что у Vue `v-if`: `rendered=false` и `shownBy`. */
+	/** The root is removed by what removes it under Vue's `v-if`: `rendered=false` and `shownBy`. */
 	private _presence(above: Signal<boolean>): Signal<boolean> {
 		const { hides, shownBy } = this._root
 
@@ -301,14 +303,14 @@ export abstract class TComponentBase<
 	}
 
 	/**
-	 * Removed from the document: the consumer took the component down, and
-	 * what its teardown stirs is news to no one — the blur of the removed node,
-	 * the siblings leaving the collection one by one. Angular destroys a removed
-	 * subtree children first, with no moment before them (`detach` comes from
-	 * `ngOnDestroy`, after the children), but it takes the subtree out of the
-	 * document first. So a component that was placed and is out of the document
-	 * sends nothing, as an element of Web Components. On the server the first
-	 * render does not run, and nothing is muted.
+	 * Removed from the document: the consumer took the component down, and what
+	 * its teardown stirs (the blur of the removed node, the siblings leaving the
+	 * collection one by one) is news to no one. Angular destroys a removed
+	 * subtree children first, with no hook on the parent before them: `detach`
+	 * from `ngOnDestroy` comes after the children. But it takes the subtree out
+	 * of the document first, so a placed component that is out of the document
+	 * sends nothing, like a Web Components element. On the server the render
+	 * does not run, and nothing is muted.
 	 */
 	private _removed(): boolean {
 		const host = this._host
@@ -321,7 +323,7 @@ export abstract class TComponentBase<
 		)
 	}
 
-	/** Уже заведённый эмиттер; поиск его не заводит. */
+	/** An already created emitter; the lookup does not create one. */
 	private _createdOutput(name: string): EventEmitter<unknown> | undefined {
 		const output: unknown = Object.getOwnPropertyDescriptor(this, name)?.value
 

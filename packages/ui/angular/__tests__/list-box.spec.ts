@@ -1,22 +1,23 @@
 /**
- * ListBox под Angular — список с выбором на движке коллекций.
+ * ListBox under Angular: a list with selection on the collection engine.
  *
- * Сценарии — те же, что у React (`list-box.spec.tsx`) и Vue: выбор, состав,
- * отметка и слоты. Движок коллекций, его расширения и плагины перенесены без
- * правок.
+ * The scenarios are those of React (`list-box.spec.tsx`) and Vue: selection,
+ * composition, the indicator and slots. The collection engine, its extensions
+ * and plugins are shared unchanged.
  *
- * Своё у Angular — разметка. Корень — сам элемент компонента
- * (`<div so-list-box>`), элемент — `<div so-list-box-item>`: атрибуты потребителя у
- * списка делятся между корнем и узлом списка, у элемента — между корнем и
- * строкой. Входы фасада (`items`, `mode`,
- * `engine`, `selected` элемента) — входы того же элемента. Слоты со scope —
- * шаблоны (`<ng-template slot="item" let-item="item">`), и шаблон, заданный
- * списку, рисуется у каждого элемента вместо своего — как сниппет у Svelte:
- * пустоту его отрисовки элемент не видит.
+ * What is Angular's own is the markup. The root is the component's element
+ * itself (`<div so-list-box>`), an item is `<div so-list-box-item>`: the
+ * consumer's attributes are split between the root and the list node for the
+ * list, between the root and the row for an item. Facade inputs (`items`,
+ * `mode`, `engine`, an item's `selected`) are inputs of the same element.
+ * Scoped slots are templates (`<ng-template slot="item" let-item="item">`),
+ * and a template given to the list is drawn in every item instead of its own,
+ * like a Svelte snippet: the item cannot see that it rendered nothing.
  *
- * Элемент разметки входит в коллекцию в своём `ngOnInit`, после списка, —
- * Angular зовёт хуки в порядке шаблона, и элементы входят в порядке DOM. Лифт и
- * два списка рядом проверяет `collection-elevator.spec.ts`.
+ * A markup item joins the collection in its `ngOnInit`, after the list:
+ * Angular calls hooks in template order, so items join in DOM order. The
+ * elevator and two lists side by side are covered by
+ * `collection-elevator.spec.ts`.
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
@@ -48,10 +49,10 @@ const ITEMS: TItem[] = [
 	{ value: 'c', text: 'Третий' },
 ]
 
-/** Строки элементов — на них обработчик выбора, `aria-selected` и `tabindex`. */
+/** The item rows: they carry the selection handler, `aria-selected` and `tabindex`. */
 const rows = () => [...document.querySelectorAll('.so-list-box-item .so-button')]
 
-/** Строка элемента по тексту; нет её — тест падает здесь. */
+/** An item's row by its text; without one the test fails here. */
 function rowOf(text: string): HTMLElement {
 	const row = rows().find((candidate) => candidate.textContent?.trim() === text)
 
@@ -60,15 +61,15 @@ function rowOf(text: string): HTMLElement {
 	return row
 }
 
-/** `aria-selected` всех строк по порядку. */
+/** `aria-selected` of all rows in order. */
 const selection = () => rows().map((row) => row.getAttribute('aria-selected'))
 
 const listItems = () => [...document.querySelectorAll('.so-list-box-item')]
 
-/** Корень списка в разметке хоста. */
+/** The list's root in the host markup. */
 const rootOf = (fixture: ComponentFixture<unknown>) => findIn(fixture, '[so-list-box]', HTMLElement)
 
-/** Узел списка в корне: на нём набор `aria` списка и остановка Tab. */
+/** The list node inside the root: it carries the list's `aria` set and the Tab stop. */
 const listOf = (fixture: ComponentFixture<unknown>) =>
 	findIn(fixture, '[so-list-box] > .so-list-box__list', HTMLDivElement)
 
@@ -77,19 +78,19 @@ function click(fixture: ComponentFixture<unknown>, element: HTMLElement): void {
 	fixture.detectChanges()
 }
 
-/** Клавиша на узле — как её шлёт браузер: всплывает и отменяется. */
+/** A key on a node as the browser sends it: bubbling and cancelable. */
 function press(fixture: ComponentFixture<unknown>, target: Element, key: string): void {
 	target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
 	fixture.detectChanges()
 }
 
-/** Микрозадачи: `engine:create` движок объявляет на них. */
+/** Microtasks: the engine announces `engine:create` on them. */
 const flush = (): Promise<void> => Promise.resolve()
 
-/** Движок так, как его видит тест: состав элементов по значениям. */
+/** The engine as the test sees it: the item composition. */
 type TEngineView = { extensions: { batch: { items: readonly object[] } } }
 
-/** «B» выключается сигналом `itemOff`, весь список — `listOff`. */
+/** "B" is disabled by the `itemOff` signal, the whole list by `listOff`. */
 @Component({
 	standalone: true,
 	imports: [TListBoxComponent, TListBoxItemComponent],
@@ -148,9 +149,9 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Выключенный элемент кликом не выбирается — выключен ли он сам или весь
-	 * список. Включённый обратно — выбирается тем же кликом: так видно, что
-	 * обработчик на месте и отказ даёт именно выключенность.
+	 * A disabled item is not selected by a click, whether it or the whole list
+	 * is disabled. Enabled again, it is selected by the same click: so the
+	 * handler is in place and the refusal comes from being disabled.
 	 */
 	it.each([
 		['выключен сам', 'itemOff'],
@@ -175,11 +176,11 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Остановка Tab одна — узел списка (APG Listbox), а по элементам ходят
-	 * стрелки. `tabindex="-1"` элемента пишет ядро в его `aria`, и на
-	 * строке он перекрывает `tabindex="0"`, который кнопка на `div` ставит себе
-	 * сама: набор владельца главнее. Корень — рамка вокруг шапки, списка и
-	 * подвала, остановкой он не бывает.
+	 * There is one Tab stop, the list node (APG Listbox); arrows move between
+	 * items. The core writes an item's `tabindex="-1"` into its `aria`, and on
+	 * the row it overrides the `tabindex="0"` a button on a `div` sets itself:
+	 * the owner's set wins. The root is a frame around the header, the list
+	 * and the footer, and is never a stop.
 	 */
 	it('строки — не остановки Tab, узел списка — остановка, корень — нет', () => {
 		const fixture = mountHost(Harness)
@@ -191,11 +192,12 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Роли пишет ядро: узел списка — `listbox`, в `multiple` — с
-	 * `aria-multiselectable`, строка — `option`. Набор `aria` списка кладёт на
-	 * узел директива набора, а не база на корень. Набор элемента лежит верхним
-	 * слоем раскладчика строки, и `role="button"`, который кнопка на `div`
-	 * пишет себе сама, в разметку не попадает.
+	 * The core writes the roles: the list node is a `listbox`, with
+	 * `aria-multiselectable` in `multiple`, a row is an `option`. The list's
+	 * `aria` set goes on the node through the set directive, not on the root
+	 * through the base. The item's set is the top layer of the row's
+	 * attributes, so the `role="button"` a button on a `div` writes itself
+	 * does not reach the markup.
 	 */
 	it('узел списка — listbox с aria-multiselectable, строки — опции, а не кнопки', () => {
 		const fixture = mountHost(Harness)
@@ -212,7 +214,7 @@ describe('выбор', () => {
 		const fixture = mountHost(Harness)
 		const list = listOf(fixture)
 
-		// Клавиатура списка слушает корень с `element:ready` — через кадр
+		// The list's keyboard listens to the root from `element:ready`, a frame later
 		await nextFrame()
 
 		press(fixture, list, 'ArrowDown')
@@ -230,10 +232,11 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Фокус по строкам не ходит, и элемент под стрелками скринридеру называет
-	 * `aria-activedescendant` узла списка (APG Listbox): `id` строке пишет
-	 * плагин `id` элемента от монтирования, ссылку — клавиатура списка. До
-	 * клавиш подсветки на экране нет — и ссылки нет.
+	 * Focus does not move along the rows: the list node's
+	 * `aria-activedescendant` names the item under the arrows to a screen
+	 * reader (APG Listbox). The item's `id` plugin writes the row's `id` from
+	 * the mount, the list's keyboard writes the reference. Before any key there
+	 * is no highlight on screen, and no reference.
 	 */
 	it('элемент под стрелками — aria-activedescendant узла списка на id подсвеченной строки', async () => {
 		const fixture = mountHost(Harness)
@@ -261,11 +264,12 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * Свой `id` элемента — его вход: статический атрибут и привязка `[id]`
-	 * пишут вход, статику база снимает с корня, и на строку `id` встаёт из
-	 * набора элемента — ссылка ведёт на него, узел с ним один. Раньше `id`
-	 * потребителя ехал на строку статикой, и набор, который база считает своим,
-	 * его стирал. Сменили у подсвеченного — строка и ссылка идут за ним.
+	 * An item's own `id` is its input: the static attribute and the `[id]`
+	 * binding both write the input, the base takes the static one off the
+	 * root, and the row gets `id` from the item's set, so the reference points
+	 * at it and only one node has it. Before, the consumer's `id` went to the
+	 * row as a static attribute, and the set the base considers its own erased
+	 * it. Changed on the highlighted item, the row and the reference follow.
 	 */
 	it('свой id элемента — на строке, ссылка ведёт на него и идёт за его сменой', async () => {
 		@Component({
@@ -314,9 +318,9 @@ describe('выбор', () => {
 	})
 
 	/**
-	 * В `listbox` ARIA пускает только опции, поэтому шапка и подвал — дети
-	 * корня рядом с узлом списка. Их клавиши — не списка: поле печатает,
-	 * кнопка нажимается.
+	 * ARIA allows only options inside a `listbox`, so the header and the footer
+	 * are children of the root beside the list node. Their keys are not the
+	 * list's: a field types, a button is pressed.
 	 */
 	it('шапка и подвал — вне listbox; их клавиши подсветку не двигают', async () => {
 		@Component({
@@ -350,9 +354,9 @@ describe('выбор', () => {
 })
 
 /**
- * Атрибуты потребителя делятся, как у поля: класс и стиль — корню-рамке,
- * статические атрибуты разметки — узлу списка, где роль `listbox`. Имя и `id`
- * называют список, а не рамку без роли.
+ * The consumer's attributes are split as for a field: class and style go to
+ * the root frame, static markup attributes to the list node with the
+ * `listbox` role. The name and `id` name the list, not a frame without a role.
  */
 describe('атрибуты потребителя — узлу списка', () => {
 	it('aria-label, id и data-* — на [role=listbox], не на корне; класс и стиль — на корне', () => {
@@ -439,9 +443,9 @@ describe('состав', () => {
 	})
 
 	/**
-	 * Фасад собирается конструктором из тех же входов, и `items` он уже
-	 * записал: связка второй раз их не пишет. Сеттер `items` без `trackBy` —
-	 * это очистка и новый набор.
+	 * The facade is assembled by the constructor from the same inputs and has
+	 * already written `items`: the binding does not write them again. The
+	 * `items` setter without `trackBy` is a clear and a new set.
 	 */
 	it('items пишется один раз: без очистки и повторного добавления', () => {
 		const engine = createEngine<TItem>()
@@ -529,10 +533,10 @@ describe('состав', () => {
 	})
 
 	/**
-	 * Входы фасада — `mode`, `items`, `engine` у списка и `selected` у
-	 * элемента — входы того же элемента, атрибутами в DOM они не остаются.
-	 * Атрибуты потребителя остаются: у списка — на узле списка, у элемента —
-	 * на строке.
+	 * Facade inputs (`mode`, `items`, `engine` of the list and `selected` of an
+	 * item) are inputs of the same element and do not stay in the DOM as
+	 * attributes. The consumer's attributes do: on the list node for the list,
+	 * on the row for an item.
 	 */
 	it('входы фасада — не атрибуты, атрибуты потребителя — атрибуты', () => {
 		@Component({
@@ -580,10 +584,10 @@ describe('состав', () => {
 	})
 
 	/**
-	 * `id` — вход `TIdPlugin` элемента, а не статика, которая едет на строку: строке его
-	 * пишет плагин связок в её набор, и тот же `id` берёт ссылка
-	 * `aria-activedescendant` списка. `title` ядро не называет — его база
-	 * переносит на строку статикой.
+	 * `id` is an input of the item's `TIdPlugin`, not a static attribute moved
+	 * to the row: the links plugin writes it into the row's set, and the
+	 * list's `aria-activedescendant` takes the same `id`. The core does not
+	 * name `title`, so the base moves it to the row as a static attribute.
 	 */
 	it('класс и стиль потребителя — корню элемента, остальное — строке', () => {
 		@Component({
@@ -636,7 +640,7 @@ describe('состав', () => {
 		expect(selection()).toEqual(['true'])
 	})
 
-	/** Место элемента в коллекции — стилем корня: ряд — флексбокс. */
+	/** The item's place in the collection is a style of its root: the row is a flexbox. */
 	it('корень элемента стоит по месту в коллекции', () => {
 		mountHost(ItemsHost)
 
@@ -664,8 +668,8 @@ describe('отметка выбранного и слоты', () => {
 	})
 
 	/**
-	 * Обёртка стоит у всех, включая невыбранных: она резервирует место, иначе
-	 * строки прыгали бы при выборе. Иконка внутри — только у выбранного.
+	 * Every item has the wrapper, unselected ones too: it reserves the space,
+	 * or rows would jump on selection. The icon inside is only on the selected.
 	 */
 	it('обёртка — у каждого элемента, иконка — у выбранного, из дерева доступности убрана', () => {
 		@Component({
@@ -733,7 +737,7 @@ describe('отметка выбранного и слоты', () => {
 		const fixture = mountHost(IndicatorSlotHost)
 
 		expect(document.querySelector('.custom')).toBeNull()
-		// Шаблон слота — не содержимое строки: текст элемента на месте
+		// The slot template is not the row's content: the item's text is in place
 		expect(rowOf('A').textContent?.trim()).toBe('A')
 
 		click(fixture, rowOf('A'))
@@ -806,8 +810,9 @@ describe('отметка выбранного и слоты', () => {
 	})
 
 	/**
-	 * Проброс целиком: scope `item` — scope слота элемента плюс сам элемент.
-	 * `text` и `selected` держит элемент, и выбор доходит до шаблона.
+	 * The relay is whole: the `item` scope is the item slot's scope plus the
+	 * item itself. The item holds `text` and `selected`, and selection reaches
+	 * the template.
 	 */
 	it('item получает text и selected элемента, selected следует за выбором', () => {
 		@Component({
@@ -839,9 +844,9 @@ describe('отметка выбранного и слоты', () => {
 	})
 
 	/**
-	 * Шаблон непрозрачен: что он нарисовал, элемент не видит, — и шаблон,
-	 * заданный списку, рисуется у каждого элемента вместо своей отметки, как
-	 * сниппет у Svelte. У React пустая отрисовка уступает место своей.
+	 * A template is opaque: the item cannot see what it drew, so a template
+	 * given to the list is drawn in every item instead of its own indicator,
+	 * like a Svelte snippet. In React an empty render gives way to the own one.
 	 */
 	it('item-indicator-icon задан — у каждого элемента вместо своей отметки', () => {
 		@Component({
@@ -868,7 +873,7 @@ describe('отметка выбранного и слоты', () => {
 						? 'icon'
 						: 'empty',
 			)
-		// Текст отметки входит в текст строки — строки берём по месту
+		// The indicator's text is part of the row's text: take the rows by position
 		const rowAt = (index: number) => find(listItems()[index], '.so-button', HTMLElement)
 
 		expect(marks()).toEqual(['slot:false', 'empty'])
@@ -911,18 +916,19 @@ describe('отметка выбранного и слоты', () => {
 })
 
 /**
- * Группы — как у Vue (`ui/vue/__tests__/list-groups.spec.ts`). Из данных:
- * секции нарисованного (`drawnSections`) — группа с подписью в
- * `<div so-list-box-group>`, элементы без группы — прямо в списке, а между
- * секциями, пока их просит список (`groupSeparators`, по умолчанию выключен),
- * — немой разделитель; группы из `groups` — первыми, остальное — по месту.
- * Элементы в группе — из шаблона списка, и слой лифта списка они видят и
- * внутри группы. Разметкой: `<div so-list-box-group>` входит в ту же
- * группировку своим слоем лифта, и секции описывают её. Стрелки ходят тем же
- * порядком, что элементы стоят на экране.
+ * Groups, as in Vue (`ui/vue/__tests__/list-groups.spec.ts`). From data: the
+ * drawn sections (`drawnSections`) are a labelled group in
+ * `<div so-list-box-group>`, items without a group sit right in the list, and
+ * between sections, while the list asks for them (`groupSeparators`, off by
+ * default), goes a silent separator; groups from `groups` come first, the
+ * rest in place. Items in a group come from the list's template and still
+ * see the list's elevator layer inside the group. In markup,
+ * `<div so-list-box-group>` joins the same grouping with its elevator layer,
+ * and the sections describe it. Arrows move in the order items stand on
+ * screen.
  */
 describe('группы', () => {
-	/** В данных «Морковь» стоит между фруктами, у «Воды» группы нет. */
+	/** In the data «Морковь» stands between the fruits, «Вода» has no group. */
 	const MIXED = [
 		{ value: 'apple', text: 'Яблоко', _: { group: 'fruit' } },
 		{ value: 'carrot', text: 'Морковь', _: { group: 'veg' } },
@@ -930,7 +936,7 @@ describe('группы', () => {
 		{ value: 'pear', text: 'Груша', _: { group: 'fruit' } },
 	]
 
-	/** Секции `MIXED` на экране — без разделителей и с ними. */
+	/** The sections of `MIXED` on screen, without and with separators. */
 	const SECTIONS = [['Фрукты', ['Яблоко', 'Груша']], ['Овощи', ['Морковь']], 'Вода']
 	const SEPARATED = [['Фрукты', ['Яблоко', 'Груша']], '—', ['Овощи', ['Морковь']], '—', 'Вода']
 
@@ -966,7 +972,7 @@ describe('группы', () => {
 		readonly separated = signal(true)
 	}
 
-	/** Части списка: группа — подписью и текстами элементов, разделитель — `—`. */
+	/** The list's parts: a group as its label and item texts, a separator as `—`. */
 	const parts = (fixture: ComponentFixture<unknown>) =>
 		[...listOf(fixture).children].map((node) => {
 			if (node.classList.contains('so-list-box-group')) {
@@ -997,7 +1003,7 @@ describe('группы', () => {
 			expect(label.getAttribute('role')).toBe('presentation')
 		}
 
-		// Элементы группы — в коллекции списка: выбор пишет им `aria-selected`
+		// The group's items are in the list's collection: selection writes their `aria-selected`
 		expect(selection()).toEqual(['false', 'false', 'false', 'false'])
 	})
 
@@ -1054,7 +1060,7 @@ describe('группы', () => {
 		])
 	})
 
-	/** «Вода» — над группой «Фрукты», «Сок» — под ней: группы не заявлены. */
+	/** «Вода» is above the «Фрукты» group, «Сок» below it: the groups are not declared. */
 	@Component({
 		standalone: true,
 		imports: [TListBoxComponent, TListBoxItemComponent, TListBoxGroupComponent],
@@ -1072,7 +1078,7 @@ describe('группы', () => {
 		readonly label = signal('Фрукты')
 	}
 
-	/** Секции коротко: подпись группы (`null` — без группы) и значения элементов. */
+	/** Sections in brief: the group label (`null` without a group) and the item values. */
 	const brief = (engine: TListBoxCollection) =>
 		engine.extensions.group.sections.map(({ group, items }) => [
 			group === null ? null : (group.label ?? ''),
@@ -1132,7 +1138,7 @@ describe('типы', () => {
 			EventEmitter<TSelectionMode>
 		>()
 		expectTypeOf<TListBoxComponent>().toHaveProperty('soEngineCreate')
-		// Отметка элемента — значением: выход приходит элементу, чья отметка сменилась
+		// An item's selection is a value: the output comes to the item whose selection changed
 		expectTypeOf<TListBoxItemComponent['soChangeSelected']>().toEqualTypeOf<
 			EventEmitter<boolean>
 		>()
@@ -1147,11 +1153,11 @@ describe('типы', () => {
 })
 
 /**
- * A removed list goes silently, its items too: Angular destroys a removed
- * subtree children first, and the owner heard its items leave one by one, an
- * item — its siblings. Angular takes the subtree out of the document first,
- * and a placed component out of the document sends nothing
- * (`TComponentBase`), as an element of Web Components.
+ * A removed list goes silently, its items too. Angular destroys a removed
+ * subtree children first, so the owner heard its items leave one by one, and
+ * an item heard its siblings. But Angular takes the subtree out of the
+ * document first, and a placed component out of the document sends nothing
+ * (`TComponentBase`), like a Web Components element.
  */
 describe('события снятия', () => {
 	it('список и его элементы под @if уходят молча', async () => {

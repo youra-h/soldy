@@ -12,7 +12,7 @@ import { listenersOf } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
 import { Root, setLanguage } from './Root'
 
-/** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
+/** What to draw: the fixture by its key, without a key — the component's preview. */
 function drawing(component: string, fixture: string | undefined): TPreview {
 	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
 
@@ -24,18 +24,19 @@ function drawing(component: string, fixture: string | undefined): TPreview {
 }
 
 /**
- * Хост Solid.
+ * The Solid host.
  *
- * Превью — свой корень Solid (`render`) на узле оболочки, корень дерева —
- * `LocaleProvider` (`Root`): контекст оболочки в чужой корень не проходит, и
- * язык шапки корню даёт хост. Пропсы корня и язык — сигналы: тело компонента
- * Solid выполняется один раз, и смену он узнаёт только от сигнала. Смена
- * пропсов — новое значение сигнала, а не новое монтирование, и провайдер
- * пишет новую локаль в свой источник — компоненты не перемонтируются.
+ * A preview is its own Solid root (`render`) on the shell's node, with
+ * `LocaleProvider` on top (`Root`): the shell's context does not reach another
+ * root, so the host gives the root the header's language. The root's props and
+ * the language are signals: a Solid component body runs once and learns of a
+ * change only from a signal. New props are a new signal value, not a new
+ * mount, and the provider writes a new locale to its source — the components
+ * are not remounted.
  *
- * Синхронно без сброса: Solid рисует корень и применяет смену сигнала тем же
- * вызовом, и к возврату из `mount`, `update` и `setLocale` DOM уже новый, как
- * обещает контракт.
+ * Synchronous without a flush: Solid draws the root and applies a signal change
+ * within the same call, so the DOM is up to date when `mount`, `update` and
+ * `setLocale` return, as the contract promises.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),

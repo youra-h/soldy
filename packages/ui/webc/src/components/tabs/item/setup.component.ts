@@ -27,7 +27,8 @@ export function setupTabsItem(
 		{ props },
 		{ bundle: adapter.bundle },
 	).use(TCollectionItemExtension, {
-		item: adapter,
+		item: adapter.instance,
+		member: adapter,
 		elevator: createWebcElevator(host),
 	})
 

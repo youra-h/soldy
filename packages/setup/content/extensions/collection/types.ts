@@ -1,13 +1,14 @@
 /**
- * Контракты расширений коллекции: инстанс, к которому они подключаются, и их опции.
+ * Contracts of the collection extensions: the instance each is installed on, and its options.
  */
 
 import type { TCollectionEngine, TItemContext } from '@soldy-ui/core'
 import type { TElevatorFactory } from '../../../protected/adapter/elevator'
 
 /**
- * Инстанс, к которому подключается расширение: фасад, владеющий коллекцией.
- * Принятие компонента привязывает владельца к движку, уничтожение — снимает.
+ * The instance `TCollectionExtension` is installed on: the facade that owns
+ * the collection. Acceptance binds the owner to the engine, destruction
+ * releases it.
  */
 export type TCollectionOwner = {
 	readonly engine: TCollectionEngine<any, any>
@@ -20,31 +21,23 @@ export interface ICollectionExtensionOptions {
 }
 
 /**
- * Инстанс, к которому подключается расширение: item-фасад, принимающий контекст
- * элемента на монтирование и отпускающий его в конце.
+ * The instance `TCollectionItemExtension` is installed on: the item facade,
+ * which takes the item context for the mount and lets it go at the end.
  */
 export type TCollectionItemFacade = {
 	setContext(context: TItemContext<any, any>): void
 	clearContext(): void
 }
 
-/** What the collection detaches with itself: a context of a member (`TCollectionMembers`). */
+/** A context the collection detaches with itself (`TCollectionMembers`). */
 export interface IDetachable {
 	detach(): void
 }
 
-/**
- * The own context of a component in a collection — of its own descriptor,
- * not of the facade: its instance is the collection's element, and the
- * collection detaches it with itself (`TCollectionMembers`).
- */
-export type TCollectionMember<TInstance extends object = object> = {
-	readonly instance: TInstance
-	detach(): void
-}
-
 export interface ICollectionItemExtensionOptions {
-	/** The item's own context: its instance is the collection's element. */
-	item: TCollectionMember
+	/** The collection's item: the instance of the item's own descriptor. */
+	item: object
+	/** The item's own context: the collection detaches it with itself. */
+	member: IDetachable
 	elevator: TElevatorFactory
 }

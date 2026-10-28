@@ -1,6 +1,6 @@
 /**
- * The contexts being accepted right now — only while `TBuilt.accept` runs.
- * The consumer's sink of such a context drops the event (`TEventCallbacks`):
+ * The contexts being accepted right now, only while `TBuilt.accept` runs. The
+ * consumer's sink of such a context drops its events (`TEventCallbacks`):
  * what the acceptance writes is the starting state.
  */
 
@@ -24,7 +24,7 @@ export function accepting(
 	}
 }
 
-/** Is the context being accepted right now. */
+/** Whether the context is being accepted right now. */
 export function isAccepting(context: IAdapterContext): boolean {
 	return now.has(context)
 }

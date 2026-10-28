@@ -1,72 +1,59 @@
 /**
- * TCollectionItemExtension — элемент коллекции: сборка при монтировании и вход в коллекцию.
+ * TCollectionItemExtension — an item of a collection: its assembly on mount
+ * and its entry into the collection.
  *
- * Режим фасада: facade + itemDescriptor (Tabs/Accordion/...).
+ * The work follows the context's phases; when each comes is the adapter
+ * runtime's call:
  *
- * Работа разделена по фазам контекста:
+ * - **assembly** (constructor) — through the lift: the own collection's
+ *   engine, its registrar and the markup group above the item; the item
+ *   context goes into the facade, `meta` is taken from the props. Nothing is
+ *   written into the owner's storage. The context releases the assembly props
+ *   on `connect()`, so the extension is installed right after the context is
+ *   created;
+ * - **entry** (`attach`) — registration in the owner's collection and
+ *   `meta.apply`. This writes into someone else's storage, so it waits until
+ *   the framework accepts the component: React assembles on render, and a
+ *   discarded render would leave a phantom in the engine, while an item added
+ *   after the mount would update its owner in the middle of a child's render.
+ *   From entry to teardown the item's own context and the facade's are
+ *   members of the collection (`TCollectionMembers`): when the whole
+ *   collection comes down, the owner's `detach` detaches them, and an item
+ *   does not hear its siblings leave;
+ * - **teardown** (`destroy`) — leaving the collection and releasing the item
+ *   context.
  *
- * - **сборка** (конструктор) — движок своей коллекции, её регистратор и
- *   связка группы разметки над элементом через лифт, контекст элемента в
- *   фасад, `meta` из пропсов. В чужое хранилище она не пишет. Пропсы сборки
- *   контекст держит до `connect()`, поэтому расширение ставят до него — сразу
- *   за сборкой контекста;
- * - **вход** (`attach` контекста) — регистрация в коллекции владельца и
- *   `meta.apply`. Это запись в чужое хранилище, поэтому она ждёт, пока
- *   фреймворк примет компонент: у React сборка идёт на рендере, и отброшенный
- *   рендер оставил бы в движке фантом, а элемент, добавленный после
- *   монтирования, обновлял бы владельца посреди рендера ребёнка;
- * - **снятие** (`destroy` контекста) — выход из коллекции и освобождение
- *   контекста элемента.
+ * The own collection is the nearest one above, if the item is of it. The lift
+ * gives the nearest engine, and it may be foreign: a tag outside Tags under an
+ * app-wide `<Toasts>`, a tag or a radio in a Tabs panel. Whose an item is, the
+ * engine's factory knows (`factoryOf(...).isSource`): anything else it turns
+ * into an item of its own class — a radio entering Tabs became a tab — and the
+ * facade, lacking its own collection's extensions, failed to assemble. A
+ * foreign collection is treated as absent: no item context, no entry, no
+ * `meta`, the item renders on its own. There is no warning: under `<Toasts>`
+ * almost any single item stands under a foreign collection, legitimately.
  *
- * Between entering and leaving the item is a member of the collection
- * (`TCollectionMembers`): its own context and the facade's. The owner's
- * `detach` detaches them: the framework is removing the whole collection, and
- * an item still heard would hear its siblings go.
+ * The item context (`TItemContext`) belongs to this mount. Its item adapters
+ * subscribe to the engine's extensions, and the engine outlives the mount: a
+ * data item hidden by a filter or a page stays in the collection and mounts
+ * again, React reassembles without unmounting (StrictMode, `<Activity>`). So
+ * teardown releases the context, or every show would leave subscribers on the
+ * engine, and clears the facade, since React rereads the state of a destroyed
+ * assembly and the facade would recreate the adapters. One context per item
+ * for all mounts would not do: a tab and its panel take the same item's
+ * context, and one releasing it would break the other.
  *
- * Когда наступает `attach`, решает рантайм адаптера.
+ * An item removed from the collection while mounted destroys its context
+ * (`TItemContext.destroy`). A markup item leaving on teardown is not a
+ * removal: `rendered` of an external `ctrl` stays as it is, and mounted again
+ * the item renders.
  *
- * Своя коллекция — ближайшая выше по дереву, если элемент её. Лифт отдаёт
- * движок ближайшей коллекции, а она бывает чужой: тег вне Tags под
- * `<Toasts>`, который оборачивает приложение, тег или радио в панели Tabs.
- * Чей элемент, знает фабрика движка (`factoryOf`): всё, что не элемент её
- * класса (`isSource`), она превращает в новый элемент своего класса, — радио,
- * вошедшее из панели в Tabs, становилось табом. А фасаду элемента нужны
- * расширения своей коллекции — тегу выбор, — и под чужой без них сборка
- * падала. Набор расширений признаком не годится: при совпавшем чужая
- * коллекция прошла бы проверку (радио под Tabs).
- *
- * Чужая коллекция — как будто её нет: ни контекста, ни входа, ни `meta`, и
- * элемент рисуется сам по себе, как тег-чип без набора. Выше лифт не ищет —
- * он отдаёт только ближайший слой. Предупреждения нет: под `<Toasts>` почти
- * любой одиночный элемент стоит под чужой коллекцией, и это законный случай.
- *
- * Контекст элемента (`TItemContext`) — этого монтирования и живёт ровно
- * столько же: сборка отдаёт его фасаду, снятие отвязывает от фасада и
- * отпускает (`release`). Его item-адаптеры подписаны на расширения движка, а
- * движок живёт дольше монтирования: элемент из данных (`items`) остаётся в
- * коллекции, когда фильтр или страница его прячут, и монтируется заново,
- * когда показывают, а React пересобирает элемент, не размонтируя
- * (StrictMode, `<Activity>`). Неотпущенный контекст оставлял бы на движке
- * подписчиков с каждым показом. Отвязать фасад так же обязательно: React
- * перечитывает состояние уже уничтоженной сборки, и фасад, державший
- * отпущенный контекст, создал бы адаптеры заново. Один контекст на элемент
- * для всех монтирований не заводится: таб и его панель берут контекст одного
- * элемента, и освобождение одним сломало бы другого.
- *
- * Удалили элемент из коллекции, пока он смонтирован, — контекст уничтожается
- * (`TItemContext.destroy`): адаптеры отпущены, элемент больше не рисуется.
- * Выход элемента разметки при снятии удалением не считается: элемент уходит
- * из коллекции потому, что кончилось его монтирование, и `rendered` чужого
- * `ctrl` остаётся его — смонтированный снова, он рисуется.
- *
- * Элемент внутри группы разметки (`Menu.Group`, `ListBox.Group` и соседи)
- * входит в её группу: ключ, который опускает проводка группы
- * (`TItemGroupExtension`), ложится в `meta` элемента меткой `group` — тем же
- * каналом, что `_.group` в данных. Ключ берёт только элемент, которого вход
- * добавляет в состав (сверка — до регистрации, как `owned` у регистратора):
- * у элемента из данных метка своя, из данных, даже когда владелец рисует его
- * в группе секции. И только из своей коллекции: пункты подменю в группе меню
- * — элементы коллекции подменю, а не меню.
+ * An item inside a markup group (`Menu.Group`, `ListBox.Group` and the like)
+ * joins that group: the key lowered by `TItemGroupExtension` goes into the
+ * item's `meta` as `group`, the channel `_.group` takes in data. Only an item
+ * the entry adds to the list takes the key — a data item keeps the group of
+ * its data, even when the owner renders it inside a section — and only from
+ * its own collection: submenu items inside a menu group are the submenu's.
  */
 
 import { TItemContext, batchOf, factoryOf, metaOf, plainOf } from '@soldy-ui/core'
@@ -81,7 +68,7 @@ import { COLLECTION_MEMBERS_ELEVATOR } from './keys'
 import { collectItemProps } from './item-props'
 import type { ICollectionItemExtensionOptions, TCollectionItemFacade } from './types'
 
-/** Движок ближайшей коллекции, если элемент её: фабрика признаёт его своим. */
+/** The nearest collection's engine, if the item is of it: its factory takes the item as its own. */
 function ownEngine(
 	engine: TCollectionEngine<any, any> | undefined,
 	item: object,
@@ -98,38 +85,36 @@ export class TCollectionItemExtension {
 		context: TInstanceContext<TCollectionItemFacade>,
 		options: ICollectionItemExtensionOptions,
 	) {
-		const { elevator } = options
-		const item = options.item.instance
+		const { item, member, elevator } = options
 		const { props } = context
 
-		// Пропсы сборки контекст отпускает на `connect()`. Пустой `meta` вместо
-		// ошибки молча потерял бы `selected` и `active` из разметки
+		// The context releases the assembly props on `connect()`. An empty
+		// `meta` instead of an error would silently lose the markup's
+		// `selected` and `active`
 		if (!props) {
 			throw new Error(
 				'TCollectionItemExtension ставится до connect(): пропсы сборки, из которых берётся meta элемента, контекст уже отпустил',
 			)
 		}
 
-		// Чужая коллекция — как будто её нет
+		// A foreign collection is treated as absent
 		const engine = ownEngine(elevator(ITEM_CONTEXT_ELEVATOR).up(), item)
-		// Регистратор кладёт тот же владелец, что и движок: у чужой коллекции
-		// и он чужой
+		// The registrar and the members are lowered by the owner of the engine:
+		// a foreign collection's are foreign too
 		const register = engine ? elevator(COLLECTION_ENGINE_ELEVATOR).up() : undefined
-		// Members — of the same owner
 		const members = engine ? elevator(COLLECTION_MEMBERS_ELEVATOR).up() : undefined
-		// Группа разметки над элементом — если она группа его коллекции
+		// The markup group above the item — if it is a group of its collection
 		const link = engine ? elevator(ITEM_GROUP_ELEVATOR).up() : undefined
 		const groupKey = link && link.engine === engine ? link.key : undefined
-		// Пропсы элемента для `meta` движка — из пропсов сборки
 		const meta = collectItemProps(context.descriptor.props, props)
-		// Контекст элемента — этого монтирования. Фасад получает его при сборке:
-		// разметка читает его с первой отрисовки
+		// The facade gets the item context on assembly: the markup reads it
+		// from the first render
 		const itemContext = engine ? new TItemContext(item, engine.extensions) : undefined
 		const plain = plainOf<object>(engine)
 
 		if (itemContext) context.instance.setContext(itemContext)
 
-		// Элемент удалили из коллекции, пока он смонтирован
+		// The item was removed from the collection while mounted
 		const removed = (e: TRemoveEvent<object>): void => {
 			if (e.item === item) itemContext?.destroy()
 		}
@@ -137,8 +122,8 @@ export class TCollectionItemExtension {
 		context.events.on('attach', () => {
 			plain?.events.on('item:removed', removed)
 
-			// Ключ группы разметки — только элементу, которого вход добавит в
-			// состав: у элемента из данных метка группы — из данных
+			// The group key goes only to an item the entry adds to the list: a
+			// data item takes its group from the data
 			const grouped = groupKey !== undefined && !batchOf<object>(engine)?.items.includes(item)
 
 			// The group enters the grouping before its first item: React accepts the
@@ -147,21 +132,21 @@ export class TCollectionItemExtension {
 
 			if (register) this._leave = register(item, context.bundle)
 
-			members?.add(options.item, context)
+			members?.add(member, context)
 
-			// `meta` — после регистрации: движок применяет его к элементу, который уже в нём
+			// `meta` after the registration: the engine applies it to an item already in it
 			metaOf<object>(engine)?.apply(item, grouped ? { ...meta, group: groupKey } : meta)
 		})
 
 		context.events.on('destroy', () => {
-			// Подписка снимается до выхода: свой выход — не удаление из коллекции
+			// Unsubscribed before leaving: its own leaving is not a removal
 			plain?.events.off('item:removed', removed)
-			members?.delete(options.item, context)
+			members?.delete(member, context)
 
 			this._leave?.()
 			this._leave = undefined
 
-			// Фасад — без контекста: чтение после снятия создало бы адаптеры заново
+			// The facade without its context: a read after teardown would recreate the adapters
 			context.instance.clearContext()
 			itemContext?.release()
 		})

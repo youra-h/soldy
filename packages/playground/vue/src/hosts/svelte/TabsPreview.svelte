@@ -9,8 +9,8 @@
 </script>
 
 <!--
-	Первый таб активен сразу — иначе ни одна панель не смонтируется. Панели —
-	слотом `content`, вне списка табов.
+	The first tab is active at once, otherwise no panel would mount. The panels
+	go in the `content` slot, outside the tab list.
 -->
 <Tabs {...bind}>
 	{#each COLLECTION_ITEMS as item, index (item.value)}

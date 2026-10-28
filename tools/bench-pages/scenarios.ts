@@ -1,12 +1,13 @@
 /**
- * Сценарии страниц — что делает пользователь с компонентом: нажать, набрать,
- * открыть и закрыть оверлей, выбрать, прокрутить. Общие для всех фреймворков:
- * превью хостов одни, и разметка частей у всех одна (классы `so-*`).
+ * Page scenarios — what a user does with a component: press, type, open and
+ * close an overlay, select, scroll. Shared by all frameworks: the hosts'
+ * previews are the same, and so is the parts' markup (the `so-*` classes).
  *
- * Сценарий действует на первые `act` копий страницы и возвращает, сколько
- * действий сделал. События — из скрипта страницы, полной цепочкой указателя
- * (`pointerdown` … `click`): плагины слушают и нажатие, и клик. Набор —
- * `insertText`, как вставляет его браузер (`beforeinput` и `input`).
+ * A scenario acts on the first `act` copies of the page and returns how many
+ * actions it made. Events are sent from the page script, with the full pointer
+ * chain (`pointerdown` … `click`): plugins listen to both the press and the
+ * click. Typing is `insertText`, the way the browser inserts it (`beforeinput`
+ * and `input`).
  */
 export type TScenario = (scope: HTMLElement, act: number) => Promise<number>
 
@@ -55,7 +56,7 @@ export function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** Событие указателя в центре узла. */
+/** A pointer event at the node's vertical middle, `at` of its width across. */
 export function pointer(element: Element, type: string, at = 0.5): void {
 	const box = element.getBoundingClientRect()
 	const init: PointerEventInit = {
@@ -76,7 +77,7 @@ export function pointer(element: Element, type: string, at = 0.5): void {
 	)
 }
 
-/** Нажатие мышью: указатель, фокус и клик, как у настоящего нажатия. */
+/** A mouse press: pointer, focus and click, as in a real press. */
 export async function press(element: Element | null | undefined, at = 0.5): Promise<number> {
 	if (!(element instanceof HTMLElement)) return 0
 
@@ -92,7 +93,7 @@ export async function press(element: Element | null | undefined, at = 0.5): Prom
 	return 1
 }
 
-/** Клавиша на узле: `keydown` и `keyup`. */
+/** A key on the node: `keydown` and `keyup`. */
 export async function key(element: Element | null | undefined, name: string): Promise<number> {
 	if (!element) return 0
 
@@ -107,8 +108,9 @@ export async function key(element: Element | null | undefined, name: string): Pr
 }
 
 /**
- * Escape — узлу под фокусом, как с клавиатуры. Фокус ушёл из открытой панели
- * — самой панели: Escape слушает слой, а не документ.
+ * Escape to the focused node, as from the keyboard. If the focus has left the
+ * open panel, to the panel itself: the layer listens to Escape, not the
+ * document.
  */
 export function escape(panel?: HTMLElement | null): Promise<number> {
 	const focused = document.activeElement
@@ -116,7 +118,7 @@ export function escape(panel?: HTMLElement | null): Promise<number> {
 	return key(panel && !panel.contains(focused) ? panel : (focused ?? document.body), 'Escape')
 }
 
-/** Набор в поле: фокус и вставка текста, потом уход фокуса. */
+/** Typing into a field: focus and text insertion, then the focus leaves. */
 export async function type(element: Element | null | undefined, text: string): Promise<number> {
 	if (!(element instanceof HTMLElement)) return 0
 
@@ -129,7 +131,7 @@ export async function type(element: Element | null | undefined, text: string): P
 	return 1
 }
 
-/** Первые `act` узлов по селектору — у каждой копии свой. */
+/** The first `act` nodes by the selector — one per copy. */
 export function first<T extends Element = HTMLElement>(
 	scope: Element,
 	selector: string,
@@ -138,26 +140,26 @@ export function first<T extends Element = HTMLElement>(
 	return [...scope.querySelectorAll<T>(selector)].slice(0, act)
 }
 
-/** Открытая панель слоя по классу — их телепортирует слой в конец документа. */
+/** An open layer panel by its class — the layer teleports panels to the end of the document. */
 export function open(selector: string): HTMLElement | null {
 	return document.querySelector<HTMLElement>(`${selector}[data-open="true"]`)
 }
 
-/** Нажать кнопку с подписью внутри узла. */
+/** The button with the given label inside the node. */
 export function button(scope: Element, text: string): HTMLElement | undefined {
 	return [...scope.querySelectorAll<HTMLElement>('.so-button')].find(
 		(node) => node.textContent?.trim() === text,
 	)
 }
 
-/** Первые `act` кнопок с подписью — по кнопке у каждой копии. */
+/** The first `act` buttons with the label — one per copy. */
 export function labelled(scope: Element, text: string, act: number): HTMLElement[] {
 	return [...scope.querySelectorAll<HTMLElement>('.so-button')]
 		.filter((node) => node.textContent?.trim() === text)
 		.slice(0, act)
 }
 
-/** Сценарий на каждую из `act` копий: сумма действий. */
+/** A scenario run on each of the `act` copies: the sum of their actions. */
 export function each(selector: string, run: (copy: HTMLElement) => Promise<number>): TScenario {
 	return async (scope, act) => {
 		let done = 0
@@ -168,7 +170,7 @@ export function each(selector: string, run: (copy: HTMLElement) => Promise<numbe
 	}
 }
 
-/** Открыть оверлей кнопкой, сделать внутри и закрыть Escape. */
+/** Open an overlay with a button, act inside it, and close it with Escape. */
 export async function overlay(
 	opener: Element | null | undefined,
 	panel: string,
@@ -211,7 +213,7 @@ export const SCENARIOS: Record<string, TScenario> = {
 
 		return (await press(items[1])) + (await press(items[2]))
 	}),
-	// Поле с вводом (`editable` превью): панель открывает стрелка и набор
+	// An editable field (the preview's `editable`): the arrow and typing open the panel
 	select: each('.so-select', async (copy) => {
 		const arrow = copy.querySelector('.so-select__arrow')
 		let done = await press(arrow)
@@ -289,8 +291,8 @@ export const SCENARIOS: Record<string, TScenario> = {
 		const triggers = first(scope, '.so-tooltip .so-button', act)
 		let done = 0
 
-		// Наведение — с задержкой открытия (400 мс), на первой копии; на
-		// остальных — фокус, он открывает сразу
+		// Hover waits for the open delay (400 ms), on the first copy only; the
+		// focus opens at once, on every copy
 		const hovered = triggers[0]
 
 		if (hovered) {
@@ -400,7 +402,7 @@ export const SCENARIOS: Record<string, TScenario> = {
 		let done = 0
 
 		for (const list of first(scope, '.so-list-box__list', act)) {
-			// Прокручивает предок окна: ближайший со своей прокруткой
+			// The window's nearest ancestor with its own scroll is the one to scroll
 			let scroller: HTMLElement | null = list
 
 			while (scroller && scroller.scrollHeight <= scroller.clientHeight) {

@@ -77,9 +77,9 @@ import type { TLocale, TMotionMode } from '@soldy-ui/plugins'
 import type { TComponentEntry, TComponentGroup, TThemeEntry, TIconPackEntry } from './types'
 
 /**
- * Группы меню страницы свойств с подписями — в порядке меню. Ключ — группа
- * записи реестра, поэтому запись покрывает `TComponentGroup` целиком: группа
- * без подписи не скомпилируется. Слои наследования — последними.
+ * Menu groups of the props page with their labels, in menu order. The key is
+ * the registry entry's group, so the record covers `TComponentGroup` whole: a
+ * group without a label does not compile. Inheritance layers go last.
  */
 export const COMPONENT_GROUPS: Readonly<Record<TComponentGroup, string>> = {
 	forms: 'Формы',
@@ -92,18 +92,18 @@ export const COMPONENT_GROUPS: Readonly<Record<TComponentGroup, string>> = {
 }
 
 /**
- * Реестр компонентов стенда.
+ * The playground's component registry.
  *
- * Пишется руками, потому что в библиотеке его нет: дескрипторы разложены по
- * ручным barrel-файлам, а поля `name` у дескриптора не существует — опознать
- * компонент в рантайме можно только по `ctor.name` или `ctor.baseClass`.
- * Порядок записей здесь ни на что не влияет: меню идёт группами (`group`,
- * порядок — `COMPONENT_GROUPS`), а внутри группы, как и витрина, — по
- * алфавиту (`catalog.ts` оболочки).
+ * Written by hand because the library has none: descriptors sit in
+ * hand-written barrel files, and a descriptor has no `name` field, so at
+ * runtime a component is recognized only by `ctor.name` or `ctor.baseClass`.
+ * Entry order here does not matter: the menu goes by groups (`group`, ordered
+ * by `COMPONENT_GROUPS`), and within a group, like the showcase, alphabetically
+ * (the shell's `catalog.ts`).
  *
- * Группа `layers` — слои наследования. Страницу они имеют (по ним удобно
- * смотреть, какие пропы откуда приходят), но на витрине им делать нечего:
- * это не компоненты, а уровни контракта.
+ * The `layers` group holds inheritance layers. They have a page (handy for
+ * seeing which props come from where) but no place on the showcase: they are
+ * levels of the contract, not components.
  */
 export const COMPONENTS: readonly TComponentEntry[] = [
 	{
@@ -489,21 +489,21 @@ export function findComponent(id: string): TComponentEntry | undefined {
 }
 
 /**
- * Темы. Тёмная схема — не отдельная тема, а атрибут `${value}-dark`, поэтому
- * в списке её нет: она включается свитчем.
+ * Themes. The dark scheme is not a separate theme but the `${value}-dark`
+ * attribute, so it is not listed: a switch turns it on.
  */
 export const THEMES: readonly TThemeEntry[] = [{ id: 'oren', label: 'Oren', value: 'oren' }]
 
-/** Пакеты иконок. Реализуют контракт `ICON_ROLES`. */
+/** Icon packs. They implement the `ICON_ROLES` contract. */
 export const ICON_PACKS: readonly TIconPackEntry[] = [
 	{ id: 'material', label: 'Material' },
 	{ id: 'lucide', label: 'Lucide' },
 ]
 
 /**
- * Режимы движения библиотеки (`useMotion`) с подписями — в порядке списка в
- * шапке. Ключ — режим, поэтому запись покрывает `TMotionMode` целиком: новый
- * режим библиотеки стенд попросит у себя на компиляции.
+ * The library's motion modes (`useMotion`) with labels, in the order of the
+ * header list. The key is the mode, so the record covers `TMotionMode` whole: a
+ * new library mode fails the playground's compilation until it is added here.
  */
 export const MOTION_MODES: Readonly<Record<TMotionMode, string>> = {
 	system: 'Как в системе',
@@ -511,23 +511,24 @@ export const MOTION_MODES: Readonly<Record<TMotionMode, string>> = {
 	reduce: 'Без движения',
 }
 
-/** Язык в списке шапки: подпись и локаль библиотеки. */
+/** A language in the header list: its label and the library locale. */
 export type TLocaleEntry = {
 	readonly label: string
 	readonly locale: TLocale
 }
 
 /**
- * Языки библиотеки на стенде — по тегу BCP 47, в порядке списка в шапке:
- * локаль уходит провайдеру (`LocaleProvider` вокруг стенда). Своего языка у
- * компонента нет, поэтому посмотреть строки, подписи дат, неделю и формат
- * поля на другом языке можно только отсюда.
+ * The library's languages on the playground, by BCP 47 tag, in the order of the
+ * header list: the locale goes to the provider (`LocaleProvider` around the
+ * playground). A component has no language of its own, so this is the only
+ * place to see strings, date labels, the week and field formats in another
+ * language.
  *
- * Сначала — готовые локали библиотеки (языки ООН). Дальше — языки без готовых
- * строк, собранные поверх английской (`extendLocale`): строки английские, а
- * Intl — свой. Подборка — по тому, что язык меняет: справа налево (`he-IL`,
- * `ar-EG` — ещё и арабские цифры), буддийский год (`th-TH`), числа слитно с
- * подписью (`ja-JP`).
+ * First come the library's ready locales (UN languages). Then languages
+ * without ready strings, built over English (`extendLocale`): English strings,
+ * their own Intl. Picked by what the language changes: right to left
+ * (`he-IL`; `ar-EG` also has Arabic digits), the Buddhist year (`th-TH`),
+ * numbers joined to their label (`ja-JP`).
  */
 export const LOCALES: Readonly<Record<string, TLocaleEntry>> = {
 	'en-US': { label: 'English', locale: enUS },

@@ -40,7 +40,7 @@ export function setupMenuSubmenu(
 		MenuCollectionItemDescriptor(),
 		{ props },
 		{ bundle: adapter.bundle },
-	).use(TCollectionItemExtension, { item: adapter, elevator })
+	).use(TCollectionItemExtension, { item: adapter.instance, member: adapter, elevator })
 
 	// Для своих пунктов — меню
 	const collectionAdapter = createWebcAdapterContext(

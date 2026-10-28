@@ -10,20 +10,20 @@ export type TOutputListener = {
 }
 
 /**
- * Listeners of all the events of a component or a part — in Angular.
+ * Listeners of all the events of a component or a part, in Angular.
  *
- * The list is the surface of its descriptors (`componentDescriptors`, a
- * part's — `TComponentEntry.parts`) in the Angular profile (`TSurface`): own
- * events and the props' triggers, of a collection — the facade's too. The
- * adapter declares the component's outputs by the same surface, so there is a
- * listener for exactly what the component declared. An event added appears on
- * the stand by itself.
+ * The list is the surface of its descriptors (`componentDescriptors`, or a
+ * part's from `TComponentEntry.parts`) in the Angular profile (`TSurface`):
+ * its own events and the props' triggers, and for a collection the facade's
+ * too. The adapter declares the component's outputs by the same surface, so
+ * there is a listener for exactly what the component declares. A new event
+ * shows up on the playground by itself.
  *
  * The output's name is Angular's (`soChangeText`), and the sink gets the full
- * core name (`change:text`): the scenario journal and the page console are one
- * for all frameworks. The argument is what the output's consumer got: the
+ * core name (`change:text`): the scenario journal and the page console are the
+ * same for all frameworks. The argument is what the output's consumer got: the
  * first argument of the core event, the one its output sends. `update:<prop>`
- * is Vue's v-model, Angular has none.
+ * is Vue's v-model; Angular has none.
  */
 export function listenersOf(
 	descriptors: readonly IComponentDescriptor[],
@@ -38,11 +38,11 @@ export function listenersOf(
 }
 
 /**
- * Subscribe the listeners to a component's outputs — as the bindings
- * `(soChangeText)` in a consumer's template. An output of the adapter is a
- * getter, and its first read creates the emitter. An output the surface
- * declares and the component lacks is a mismatch of the adapter with the
- * descriptor, and it is not muted. Returns the unsubscription.
+ * Subscribes the listeners to a component's outputs, like `(soChangeText)`
+ * bindings in a consumer's template. An adapter output is a getter, and its
+ * first read creates the emitter. An output the surface declares but the
+ * component lacks is a mismatch between the adapter and the descriptor, and
+ * it throws. Returns the unsubscribe function.
  */
 export function listen(component: object, listeners: readonly TOutputListener[]): () => void {
 	const subscriptions = listeners.map(({ output, listener }) => {
@@ -61,9 +61,9 @@ export function listen(component: object, listeners: readonly TOutputListener[])
 }
 
 /**
- * Listeners of the preview's parts, by part name (`partsOf`): the host gives
- * them to the injector of the preview, and the parts marked `pg-part` in its
- * markup take theirs (`PartDirective`).
+ * Listeners of the preview's parts, by part name (`partsOf`): the host
+ * provides them in the preview's injector, and each part marked `pg-part` in
+ * its markup takes its own (`PartDirective`).
  */
 export const PART_LISTENERS = new InjectionToken<
 	Readonly<Record<string, readonly TOutputListener[]>>

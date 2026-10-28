@@ -5,14 +5,15 @@
  * 1. Core → Svelte: a subscription to the binding state; a property read in a
  *    tracking context keeps its value in a raw rune
  * 2. Svelte → Core: input props in an effect
- * 3. The component is accepted — `adapter.attach()` at initialisation
- * 4. Events — to the `onXxx` callback props, after the acceptance
- * 5. The root — by an attachment: to `TElementPlugin`, to the component's
+ * 3. The component is accepted: `adapter.attach()` at initialisation
+ * 4. Events go to the `onXxx` callback props, after the acceptance and until
+ *    `detach`
+ * 5. The root, by an attachment: to `TElementPlugin`, to the component's
  *    `ref` and to the `rootElement` rune
  * 6. Cleanup on destroy
  *
- * The collection facade is bound by `useCollectionAdapter` — before the
- * component, — and `joinBindings` joins it with the component's binding.
+ * The collection facade is bound by `useCollectionAdapter`, before the
+ * component, and `joinBindings` joins it with the component's binding.
  * AGENTS.md (Svelte), «Связка».
  */
 
@@ -22,13 +23,13 @@ import type { IAdapterContext, IComponentContract, TAdapterState, TExchange } fr
 import { SvelteProfile } from '../common'
 import { joinState, type TJoinedState } from './state'
 
-/** Пропсы, которые компонент не съел; `ref` он берёт из `$props()` сам. */
+/** The props the component did not take; it takes `ref` from `$props()` itself. */
 type TForwardProps<TProps extends object> = Omit<Partial<TProps>, 'children' | 'ctrl' | 'ref'>
 
-/** Приёмник корня — связываемый проп `ref` компонента: `(node) => (ref = node)`. */
+/** The root's receiver: the component's bindable `ref` prop, `(node) => (ref = node)`. */
 export type TRootReceiver = (node: Element | null) => void
 
-/** Сборка без своего корня (`setupControl`): узел отдавать некому. */
+/** An assembly without its own root (`setupControl`): there is no one to give the node to. */
 const NO_RECEIVER: TRootReceiver = () => {}
 
 export type TBinding<
@@ -38,36 +39,36 @@ export type TBinding<
 > = {
 	readonly ctrl: C['instance']
 	readonly state: TState
-	/** Атрибуты корня от потребителя, вместе с его attachment-ами (ключи-символы). */
+	/** The consumer's root attributes, with its attachments (symbol keys). */
 	readonly forwardProps: TForwardProps<TProps>
-	/** Корень, привязанный к `TElementPlugin`; не отрисован — `null`. */
+	/** The root bound to `TElementPlugin`; `null` before the render. */
 	readonly rootElement: Element | null
-	/** Attachment корня: привязка к `TElementPlugin`, затем `ref` компонента. */
+	/** The root's attachment: binds to `TElementPlugin`, then the component's `ref`. */
 	attachElement: (node: Element) => () => void
-	/** Только привязка — корню внутри обёртки (`toWrappedRootProps`). */
+	/** Only the binding: for a root inside a wrapper (`toWrappedRootProps`). */
 	bindRef: (node: Element) => () => void
-	/** Только `ref` — обёртке корня. */
+	/** Only the `ref`: for the root's wrapper. */
 	consumerRef: (node: Element) => () => void
 }
 
-/** Связка фасада коллекции: своего `ctrl` и корня у него нет. */
+/** The binding of a collection facade: it has no `ctrl` and no root of its own. */
 export type TCollectionBinding<TState extends object, TProps extends object = object> = {
 	readonly state: TState
-	/** What the facade leaves of the given attributes: `joinBindings` hands it the component's rest. */
+	/** The attributes the facade leaves; `joinBindings` passes it the component's rest. */
 	forward: (props: TForwardProps<TProps>) => TForwardProps<TProps>
 }
 
 /**
- * Own rune of a binding property that a tracking context has read — a raw
- * rune (`$state.raw`). The core hands out values, not handles on live state,
- * and reports a change with a new value (AGENTS.md, «Контракт границы core →
- * ui»). The deep `$state` rune wrapped everything composite in a proxy — the
- * array of a table row's cells, each cell, its `aria` and `dataset` — with a
- * source per key read, and there is no point in watching them: nobody changes
- * them in place. In the table that was a third of a row's memory
+ * The own rune of a binding property a tracking context has read: a raw rune
+ * (`$state.raw`). The core hands out values, not handles on live state, and
+ * reports a change with a new value (AGENTS.md, «Контракт границы core →
+ * ui»). The deep `$state` rune wrapped everything composite in a proxy (the
+ * array of a table row's cells, each cell, its `aria` and `dataset`) with a
+ * source per key read, and there is nothing to watch: nobody changes them in
+ * place. In the table that was a third of a row's memory
  * (benchmarks/table/svelte.md, 869fmcau7).
  *
- * `born` — the binding's version when the rune was made (see `TValues`).
+ * `born` is the binding's version when the rune was made (see `TValues`).
  */
 class TRawValue {
 	value = $state.raw<unknown>()
@@ -106,7 +107,7 @@ class TValueStore implements TValues {
 	version = $state.raw(0)
 }
 
-/** Whether the property has arrived — as an object property, a symbol never has. */
+/** Whether the property has arrived; as an object property, a symbol never has. */
 function has({ values }: TValues, name: string | symbol): name is string {
 	return typeof name === 'string' && values.has(name)
 }
@@ -138,8 +139,8 @@ function write(target: TValues, name: string, value: unknown): void {
 }
 
 /**
- * Binding state — a proxy over its properties, one handler for all bindings.
- * A getter per property — a closure, its scopes and a pair of accessors — cost
+ * Binding state: a proxy over its properties, one handler for all bindings.
+ * A getter per property (a closure, its scopes and a pair of accessors) cost
  * a table row kilobytes (benchmarks/table/svelte.md).
  */
 const STATE: ProxyHandler<TValues> = {
@@ -157,7 +158,7 @@ const STATE: ProxyHandler<TValues> = {
 			: undefined,
 }
 
-/** Общая часть `useAdapter` и `useCollectionAdapter`. */
+/** What `useAdapter` and `useCollectionAdapter` share. */
 function useExchange(
 	adapter: IAdapterContext,
 	getProps: () => object,
@@ -174,24 +175,24 @@ function useExchange(
 		}),
 	)
 
-	// 2. Эффект читает все пропсы, связка пишет только сменившиеся
+	// 2. The effect reads all props, the binding writes only the changed ones
 	$effect(() => {
 		exchange.inputs.full(getProps())
 	})
 
-	// 3. The component's initialisation — on the server too — is its mount: a
+	// 3. The component's initialisation, on the server too, is its mount: a
 	// collection item joins the collection by the server markup, in DOM order
 	adapter.attach()
 
-	// 4. Events — after the acceptance: what it writes is the starting state,
-	// as in the other adapters (benchmarks/parity/README.md). A component with
+	// 4. Events after the acceptance: what it writes is the starting state, as
+	// in the other adapters (benchmarks/parity/README.md). A component with
 	// collection facades binds them first: the facade, accepted, writes into
-	// the component — the months of Calendar's grids, Table's `dataset`. One
-	// subscription for the whole life, at initialisation, as the state: in an
+	// the component (the months of Calendar's grids, Table's `dataset`). One
+	// subscription for the whole life, at initialisation, like the state: in an
 	// effect it began after the children, and the markup items that joined the
 	// collection while mounting never reached the consumer. The callback is
 	// read lazily and called untracked: an event comes in the middle of
-	// rendering too — an item joins inside the owner's block, — and a consumer
+	// rendering too (an item joins inside the owner's block), and a consumer
 	// writing its state there would be an unsafe mutation for Svelte.
 	// `onDestroy` unsubscribes on the server, where effects do not run
 	const stop = exchange.events.listen((exportName, args) => {
@@ -204,16 +205,17 @@ function useExchange(
 
 	onDestroy(stop)
 
-	// The consumer hears nothing once the teardown began, as in the other
-	// adapters (benchmarks/parity/README.md): it stops on `detach`. The
-	// teardown begins in a pre-effect: Svelte destroys a block's effects in the
+	// The consumer stops on `detach`: it hears nothing once the teardown began,
+	// as in the other adapters (benchmarks/parity/README.md). `detach` comes
+	// from a pre-effect's teardown: Svelte destroys a block's effects in the
 	// order they were made, and a pre-effect is made at once, before the
 	// template's blocks, while `$effect` and `onDestroy` wait for the mount and
-	// come after them. Detached there, the consumer heard the children go — the
+	// come after them. Stopped in those, the consumer heard the children go (the
 	// markup items leaving the collection with an ever shorter list, the root's
-	// unbinding. An item is detached by its collection too, before its siblings
-	// go one by one (`TCollectionMembers`). The nodes are removed before any
-	// effect: the blur of a removed node still reaches the consumer
+	// unbinding). A collection item is also detached by its collection, before
+	// the siblings go one by one (`TCollectionMembers`). The nodes are removed
+	// before any effect, so the blur of a removed node still reaches the
+	// consumer
 	adapter.events.on('detach', stop)
 	$effect.pre(() => () => adapter.detach())
 
@@ -224,8 +226,8 @@ function useExchange(
 }
 
 /**
- * Не съеденное связкой и attachment-ы потребителя: их Svelte передаёт пропами
- * с ключом-символом, и связка их не видит.
+ * What the binding did not take, plus the consumer's attachments: Svelte
+ * passes them as props with symbol keys, and the binding does not see them.
  */
 function forwardOf<TProps extends object>(exchange: TExchange, props: TProps): Partial<TProps> {
 	const forward = exchange.forward(props)
@@ -237,7 +239,7 @@ function forwardOf<TProps extends object>(exchange: TExchange, props: TProps): P
 	return forward
 }
 
-/** `receive` — приёмник корня; у сборки без своего корня (`setupControl`) его нет. */
+/** `receive` is the root's receiver; an assembly without its own root (`setupControl`) has none. */
 export function useAdapter<C extends IComponentContract, TProps extends object>(
 	adapter: IAdapterContext<C>,
 	getProps: () => TProps,
@@ -248,7 +250,7 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 
 	let rootElement = $state.raw<Element | null>(null)
 
-	// 5. Смена тега пересоздаёт узел: очистка отвязывает прежний
+	// 5. A tag change recreates the node: the cleanup unbinds the previous one
 	const bindRef = (node: Element): (() => void) => {
 		adapter.bindElement(node)
 		rootElement = node
@@ -259,8 +261,8 @@ export function useAdapter<C extends IComponentContract, TProps extends object>(
 		}
 	}
 
-	// Мимо слежения: сеттер `bind:ref={get, set}` — код потребителя, и
-	// прочитанное в нём перезапускало бы attachment
+	// Untracked: the `bind:ref={get, set}` setter is consumer code, and what it
+	// reads would rerun the attachment
 	const consumerRef = (node: Element): (() => void) => {
 		untrack(() => receive(node))
 
@@ -312,10 +314,10 @@ export function useCollectionAdapter<F extends IComponentContract, TProps extend
 }
 
 /**
- * The binding of a component with its facades — one, for the markup: the
- * state of all of them as one view, the attributes of the last facade (each
- * takes its own from the rest of the previous one, the first — from the
- * component's), `ctrl` and the root of the component.
+ * One binding of a component and its facades, for the markup: the state of
+ * all of them as one view, the attributes of the last facade (each takes its
+ * own from the rest of the previous one, the first from the component's),
+ * `ctrl` and the root of the component.
  */
 export function joinBindings<
 	C extends IComponentContract,

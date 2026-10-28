@@ -34,7 +34,8 @@ export default {
 			{ props },
 			{ bundle: adapter.bundle },
 		).use(TTabsContentBindingExtension, {
-			content: adapter,
+			content: adapter.instance,
+			member: adapter,
 			elevator: VueElevatorFactory,
 		})
 

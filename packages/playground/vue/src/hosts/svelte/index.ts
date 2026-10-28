@@ -12,7 +12,7 @@ import { instanceSnippet, propSnippet } from './snippet'
 import { TLive, language } from './live.svelte'
 import Root from './Root.svelte'
 
-/** Чем рисовать: фикстура по ключу, без ключа — превью компонента. */
+/** What to draw: the fixture by its key, without a key — the component's preview. */
 function drawing(component: string, fixture: string | undefined): TPreview {
 	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
 
@@ -24,19 +24,19 @@ function drawing(component: string, fixture: string | undefined): TPreview {
 }
 
 /**
- * Хост Svelte.
+ * The Svelte host.
  *
- * Превью — свой корень Svelte (`mount`) на узле оболочки, корень дерева —
- * `LocaleProvider` (`Root.svelte`): контекст оболочки в чужой корень не
- * проходит, и язык шапки корню даёт хост. Пропсы корня и язык — ячейки
- * `$state.raw` (`live.svelte.ts`): смена — новая отрисовка того же корня, а
- * не новое монтирование, и провайдер пишет новую локаль в свой источник —
- * компоненты не перемонтируются.
+ * A preview is its own Svelte root (`mount`) on the shell's node, with
+ * `LocaleProvider` on top (`Root.svelte`): the shell's context does not reach
+ * another root, so the host gives the root the header's language. The root's
+ * props and the language are `$state.raw` cells (`live.svelte.ts`): a change
+ * redraws the same root instead of mounting a new one, and the provider writes
+ * a new locale to its source — the components are not remounted.
  *
- * Всё — через `flushSync`: контракт обещает компонент в DOM к возврату из
- * `mount`, а Svelte применяет смены на своём такте. Пропсы и язык оболочка
- * меняет из своих наблюдателей, вне такта Svelte, и синхронный сброс там
- * законен.
+ * Every change goes through `flushSync`: the contract promises the component
+ * in the DOM when `mount` returns, and Svelte applies changes on its own tick.
+ * The shell changes props and language from its own watchers, outside
+ * Svelte's tick, where a synchronous flush is allowed.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),

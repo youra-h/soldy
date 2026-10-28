@@ -4,9 +4,10 @@
  * 1. Binds the component to Vue through the exchange `adapter.connect()` in
  *    `setup()`: the state record, the inputs, the events and `update:<prop>`
  *    for `v-model`
- * 2. Accepts the component — `adapter.attach()` in `setup()`
+ * 2. Accepts the component: `adapter.attach()` in `setup()`
  * 3. Binds the root DOM element to `TElementPlugin` through the context
- * 4. Calls `adapter.destroy()` when the component unmounts
+ * 4. Calls `adapter.detach()` when the unmount begins and `adapter.destroy()`
+ *    when it ends
  *
  * The template gets a view of the binding (`./view.ts`): a component with
  * facades joins them with `joinBindings`, and adds its own values with
@@ -29,10 +30,7 @@ import type { IPluginBundle } from '@soldy-ui/plugins'
 import { VueProfile } from '../common'
 import { bindingOf } from './view'
 
-/**
- * Вспомогательный тип: извлекает публичные свойства и геттеры из контроллера (TInstance),
- * исключая методы (функции).
- */
+/** The public properties and getters of the controller (`TInstance`), without its methods. */
 export type TExtractControllerState<TInstance> = {
 	[
 		K in keyof TInstance as TInstance[K] extends (...args: never[]) => unknown ? never : K
@@ -85,7 +83,7 @@ export function toBindingState<C extends IComponentContract, TProps>(
 	return record as TBindingState<C, TProps>
 }
 
-/** A new key of a plain record, as an assignment would make it, but keeping the record a fast object. */
+/** Adds a key to a plain record like an assignment would, but keeps the record a fast object. */
 function define(record: Record<string, unknown>, name: string, value: unknown): void {
 	Object.defineProperty(record, name, {
 		value,
@@ -108,30 +106,29 @@ export function useAdapterParts(
 	const offs: Array<() => void> = []
 
 	// 1. Core → Vue: one shallow reactive record per context. The subscription
-	// hands every property with triggers over at once — through the same call
-	// a trigger uses: that is how the record gets its keys, all of them before
-	// the first render.
+	// hands over every property with triggers at once, through the same call a
+	// trigger uses: that is how the record gets all its keys before the first
+	// render.
 	//
-	// Vue creates a `Dep` for a key when an effect reads it — the render, — so
-	// a property the markup does not read costs a slot of the record: a
-	// `shallowRef` per property cost a `RefImpl` and a `Dep` on every one of
-	// them (benchmarks/pages/vue.md, 869fmjnaq). The record is shallow: the
-	// core hands values, not handles on live state, and reports a change with a
-	// new value (AGENTS.md, «Контракт границы core → ui»). A deep record would
-	// wrap everything composite — the cell array of a table row, every cell,
-	// its `aria` and `dataset`, the collection items — in proxies with a
-	// dependency per read key, and nobody changes them in place: in the table
-	// that was almost a fifth of a row's memory (benchmarks/table/history.md,
-	// 869fekb4g).
+	// Vue creates a `Dep` for a key only when an effect (the render) reads it,
+	// so a property the markup does not read costs one slot of the record; a
+	// `shallowRef` per property cost a `RefImpl` and a `Dep` on each
+	// (benchmarks/pages/vue.md, 869fmjnaq). The record is shallow: the core
+	// hands out values, not handles on live state, and reports a change with a
+	// new value (AGENTS.md, «Контракт границы core → ui»). A deep record
+	// wrapped everything composite (a table row's cell array, every cell, its
+	// `aria` and `dataset`, the collection items) in proxies with a dependency
+	// per read key, though nobody changes them in place: in the table that was
+	// almost a fifth of a row's memory (benchmarks/table/history.md, 869fekb4g).
 	//
-	// A new key — the values handed over inside `subscribe()` — is defined on
-	// the plain record, past the proxy: nobody has read it yet, and the proxy's
+	// A new key (a value handed over inside `subscribe()`) is defined on the
+	// plain record, past the proxy: nobody has read it yet, and the proxy's
 	// `set` with a trigger on every key cost a page about 5% of its mount
 	// (benchmarks/pages/vue.md, 869fmjnaq). Defined, not assigned: assigning
-	// new keys by name turns a record of more than a dozen keys into a
-	// dictionary, while defining keeps it a fast object whose shape every mount
-	// of the type shares. A key the record has is a change and goes through
-	// the proxy, which notifies whoever read it
+	// new keys turns a record of more than a dozen keys into a dictionary,
+	// while defining keeps it a fast object whose shape all mounts of the type
+	// share. A key the record already has is a change and goes through the
+	// proxy, which notifies whoever read it
 	const record: Record<string, unknown> = {}
 	const state = shallowReactive(record)
 
@@ -145,17 +142,16 @@ export function useAdapterParts(
 	// 2. Vue → core: the inputs go to the core as a full set before a render
 	// that brought a new vnode from the parent. A parent pass that changed the
 	// props updates the component, and Vue calls `onBeforeUpdate` with the new
-	// props already in place and before the render; a render of the
-	// component's own state keeps the vnode and leaves the inputs alone.
-	// Unchanged inputs write nothing: the input memory swallows a repeat. The
-	// starting values were applied by the context assembly, so only changes
-	// go here.
+	// props already in place, before the render; a render of the component's
+	// own state keeps the vnode and leaves the inputs alone. Unchanged inputs
+	// write nothing: the input memory swallows a repeat. The context assembly
+	// applied the starting values, so only changes go here.
 	//
-	// Not a `watch` over the props: to have Vue track the inputs its getter
-	// read every one of them, and each read of the props proxy creates a `Dep`
-	// and a `Link` for its key, present or not, on top of the effect with its
-	// scheduler and closures — on every component. That was a tenth of a
-	// button and a seventh of a Select page (benchmarks/pages/vue.md, 869fmhuag)
+	// Not a `watch` over the props: for Vue to track the inputs its getter read
+	// every one of them, and each read of the props proxy creates a `Dep` and a
+	// `Link` for its key, present or not, on top of the effect with its
+	// scheduler and closures, on every component. That was a tenth of a button
+	// and a seventh of a Select page (benchmarks/pages/vue.md, 869fmhuag)
 	const instance = getCurrentInstance()
 	let vnode = instance?.vnode
 
@@ -172,20 +168,20 @@ export function useAdapterParts(
 	// before the server markup
 	adapter.attach()
 
-	// 4. Events: the core's events and `update:<prop>` for `v-model` — the
-	// exchange sends it by the profile, right after the core event.
+	// 4. Events: the core's events and `update:<prop>` for `v-model`, which the
+	// exchange sends by the profile right after the core event.
 	//
 	// After the acceptance: what it writes is the starting state, as in the
 	// other adapters (benchmarks/parity/README.md). A component with collection
 	// facades binds them first: the facade, accepted, writes into the
-	// component — the months of Calendar's grids, Table's `dataset`.
+	// component (the months of Calendar's grids, Table's `dataset`).
 	//
 	// The consumer hears nothing once the unmount began: it stops on `detach`,
-	// the teardown's first moment (`onBeforeUnmount`). Vue unmounts the
-	// parent's hooks first and its children after, and the markup items
-	// leaving the collection sent `update:items` with an ever shorter list —
-	// `v-model:items` of a `v-if`-ed owner emptied the parent's list. The blur
-	// of the removed node went out the same way
+	// sent from `onBeforeUnmount`. Vue calls the parent's `beforeUnmount` hooks
+	// before it unmounts the children; stopped later, the consumer heard the
+	// markup items leave the collection with an ever shorter `update:items`
+	// (`v-model:items` of a `v-if`-ed owner emptied the parent's list), and the
+	// blur of the removed node
 	if (emit)
 		adapter.events.on(
 			'detach',
@@ -196,7 +192,7 @@ export function useAdapterParts(
 
 	// 5. Cleanup. Unsubscribing is a must: with an external `ctrl` that
 	// outlives the component, `adapter.destroy()` leaves `instance.events`
-	// alone — the handlers would pile up with every mount
+	// alone, and the handlers would pile up with every mount
 	onUnmounted(() => {
 		offs.forEach((off) => off())
 		adapter.destroy()
@@ -207,7 +203,7 @@ export function useAdapterParts(
 
 /**
  * The node behind a template ref: Vue puts a component's instance there when
- * the root is drawn by a component — Icon's `tag` is its glyph — and the node
+ * the root is drawn by a component (Icon's `tag` is its glyph), and the node
  * is that instance's `$el`.
  */
 function elementOf(root: unknown): Element | null {
@@ -219,7 +215,7 @@ function elementOf(root: unknown): Element | null {
 }
 
 /**
- * The ref of the root bound to `TElementPlugin` — only where the bundle has
+ * The ref of the root bound to `TElementPlugin`, only where the bundle has
  * the plugin: headless layers do not. A facade shares the component's bundle
  * and has no node of its own, so `useCollectionAdapter` does not call this.
  *

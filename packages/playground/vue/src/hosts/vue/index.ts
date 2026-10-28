@@ -13,15 +13,15 @@ import { listenersOf } from './events'
 import { instanceSnippet, propSnippet } from './snippet'
 
 /**
- * Язык шапки — один на все корни хоста. Корень читает его на отрисовке, и
- * смена доходит до провайдера каждого корня без перемонтирования.
+ * The header's language, one for all the host's roots. A root reads it on
+ * render, so a change reaches every root's provider without a remount.
  */
 const locale = shallowRef<TLocale>(enUS)
 
-/** Сколько приложений превью смонтировано — номер в префиксе id следующего (см. `mount`). */
+/** Preview apps mounted so far: the number in the next one's id prefix (see `mount`). */
 let apps = 0
 
-/** What to draw with: a fixture by its key, without one — the component's preview. */
+/** What to draw: the fixture under its key, or without one the component's preview. */
 function drawing(component: string, fixture: string | undefined): TPreview {
 	const found = fixture === undefined ? PREVIEWS[component] : FIXTURES[fixture]
 
@@ -31,24 +31,25 @@ function drawing(component: string, fixture: string | undefined): TPreview {
 }
 
 /**
- * Хост Vue.
+ * The Vue host.
  *
- * Превью монтируется своим приложением (`createApp`) на узел оболочки, а не
- * деревом оболочки: так же рисуют и хосты остальных фреймворков, и дорога
- * отрисовки у всех одна. Корень — `LocaleProvider`: контекст оболочки
- * (`provide`) в чужое приложение не проходит, и язык шапки корню даёт хост.
+ * The preview mounts as its own app (`createApp`) on the shell's node, not in
+ * the shell's tree: the other frameworks' hosts draw the same way, so the
+ * render path is one for all. The root is a `LocaleProvider`: the shell's
+ * context (`provide`) does not cross into another app, so the host gives the
+ * root the header's language.
  *
- * Пропсы приложение держит в своём `shallowRef`: `update` подменяет набор
- * целиком, и Vue отдаёт компоненту то, что сменилось.
+ * The app keeps the props in its own `shallowRef`: `update` swaps the whole
+ * set, and Vue passes the component what changed.
  *
- * Префикс id у каждого приложения свой (`app.config.idPrefix`). `useId` Vue
- * выводит id из места в дереве приложения, и у двух одинаковых превью — их по
- * два на строку страницы — совпали бы id монтирования, а с ними `id` частей и
- * пометки панелей владельцами (`data-owner`). Плагины слоя находят панель по
- * пометке первой в документе, и жест, фокус и немой фон уходили бы на чужую
- * скрытую панель. Несколько приложений на странице Vue и просит различать
- * префиксом; `v` — по умолчанию, у оболочки. Сторожит «пометки панелей
- * владельцами не повторяются» в `__tests__/smoke/suite.ts`.
+ * Each app has its own id prefix (`app.config.idPrefix`). Vue's `useId`
+ * derives an id from the place in the app tree, so two identical previews
+ * (a page row has two) would share mount ids, and with them the parts' `id`
+ * and the panels' owner marks (`data-owner`). Layer plugins find a panel by
+ * the first mark in the document, so the gesture, focus and inert background
+ * would go to someone else's hidden panel. Vue asks to tell several apps on a
+ * page apart by prefix; `v`, the default, is the shell's. Guarded by
+ * «пометки панелей владельцами не повторяются» in `__tests__/smoke/suite.ts`.
  */
 const host: IPreviewHost = {
 	previews: Object.keys(PREVIEWS),
