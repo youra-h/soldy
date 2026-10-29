@@ -330,8 +330,8 @@ tools: Read, Write, Edit, Glob, Grep, Bash, mcp__clickup__clickup_take, mcp__cli
    см. `docs/agents/build.md`, «Версии пакетов»), пишет `CHANGELOG.md`,
    удаляет использованные changeset'ы и обновляет `package-lock.json`. В
    pre-режим не входишь — это решение владельца. Первый выпуск после выхода
-   из pre-режима (`"mode": "exit"` в `.changeset/pre.json`) снимает суффикс
-   `alpha` у всех пакетов и удаляет `pre.json` и `.changeset/pre/` — так и
+   из pre-режима (`"mode": "exit"` в `.changeset/pre.json`) поднимает все
+   пакеты до `0.3.0`, снимая суффикс `alpha`, и удаляет `pre.json` — так и
    должно быть.
    Ни версии, ни `CHANGELOG.md` руками не правишь — даже если текст
    changeset'а кривой: это правка к PR задачи, а не к выпуску, её называешь
