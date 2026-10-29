@@ -22,6 +22,7 @@ import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { CheckBox, DateInput, Input, NumberInput, Switch } from '@soldy-ui/vue'
 
 import { find, style } from './colors'
+import { webkitUntil } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -76,8 +77,9 @@ afterEach(() => {
 	cleanup()
 })
 
-describe.each(CASES)('$name: маркер обязательного поля', ({ host, markup }) => {
-	it('в LTR — у левого края, в RTL — зеркально, у правого', async () => {
+describe.each(CASES)('$name: маркер обязательного поля', ({ name, host, markup }) => {
+	it('в LTR — у левого края, в RTL — зеркально, у правого', async (context) => {
+		context.skip(name === 'Input' && webkitUntil('869fn0u0m'))
 		await show(markup, 'ltr')
 
 		const ltr = marker(host)

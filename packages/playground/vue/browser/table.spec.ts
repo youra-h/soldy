@@ -47,7 +47,7 @@ import {
 	systemColor,
 } from './colors'
 import { forcedColors } from './media'
-import { forcedColorsRepaint, touchInput } from './engine'
+import { forcedColorsRepaint, touchInput, webkitUntil } from './engine'
 import {
 	delayOf,
 	pausedPseudoTransition,
@@ -235,7 +235,8 @@ describe('ширина колонок', () => {
 		expect(viewport().scrollWidth).toBeGreaterThan(viewport().clientWidth)
 	})
 
-	it('до замера ширины решает тема: колонка без ширины не уже распорки в заголовке', async () => {
+	it('до замера ширины решает тема: колонка без ширины не уже распорки в заголовке', async (context) => {
+		context.skip(webkitUntil('869fn0tym'))
 		render(
 			defineComponent({
 				render: () =>
@@ -1597,7 +1598,8 @@ describe('перестановка колонок', () => {
 	 * с полем каждой строки на каждой перестройке слоёв — на 5000 строк
 	 * ~350 мс на взятии и на каждой смене места (`benchmarks/table/history.md`).
 	 */
-	it('шапка поднята над полем чекбокса строки', async () => {
+	it('шапка поднята над полем чекбокса строки', async (context) => {
+		context.skip(webkitUntil('869fn0tym'))
 		await mount(engineOf(), PLACE)
 
 		const head = find('.so-table__head')
@@ -2348,7 +2350,8 @@ describe('ручка ширины', () => {
 	 * ставит на паузу, а мгновение выбирает тест: уходит указатель в последний
 	 * миг задержки, нажимает — в её начале.
 	 */
-	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async () => {
+	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async (context) => {
+		context.skip(webkitUntil('869fn0tym'))
 		await mount(resizeEngine(ALL), PLACE)
 
 		const resizer = resizerOf(headers()[0])

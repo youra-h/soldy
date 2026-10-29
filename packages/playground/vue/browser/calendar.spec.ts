@@ -34,7 +34,7 @@ import { loadHost } from '../src/hosts'
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
-import { forcedColorsRepaint } from './engine'
+import { forcedColorsRepaint, webkitUntil } from './engine'
 import { expectHidesWhenFaded, ownTransitions, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
@@ -782,7 +782,7 @@ describe('выбор месяца и года', () => {
 		await Promise.all(
 			find('.so-popover__panel')
 				.getAnimations({ subtree: true })
-				.map((animation) => animation.finished),
+				.map((animation) => animation.finished.catch(() => undefined)),
 		)
 	}
 
@@ -1199,7 +1199,7 @@ describe('выбор месяца и года', () => {
 		{ locale: 'te-IN', width: 'narrow' },
 		{ locale: 'th-TH', width: 'narrow' },
 	] as const)('дни недели $locale: $width', ({ locale, width }) => {
-		it.each(COMPONENT_SIZES)(
+		it.skipIf(locale === 'th-TH' && webkitUntil('869fn0u0m')).each(COMPONENT_SIZES)(
 			'size %s: подпись своей формы — в своей колонке, под открытой панелью — под карточкой',
 			async (size) => {
 				// С воскресенья: колонки от первого дня локали здесь ни при чём

@@ -61,20 +61,24 @@ vue/          @soldy-ui/playground-vue — the application
   src/        the shell: pages, header and menus, prop rows, the preview stage
     hosts/    one folder per framework: previews, scenario fixtures, mounting
   __tests__/  the shell and every host, in jsdom
-  browser/    layout and browser default actions, in real Chromium
+  browser/    layout and browser default actions, in real Chromium and WebKit
+  browser-server/  the Playwright server in Docker that runs WebKit on Windows
 ```
 
 ## Tests
 
 ```bash
 npm run test:playground          # Vitest: shared/__tests__ and vue/__tests__
-npx playwright install chromium  # once per machine, and again after a Playwright upgrade
-npm run test:layout              # vue/browser in Chromium; builds the theme CSS first
+npx playwright install chromium webkit  # once per machine (Windows: chromium), again after an upgrade
+npm run test:layout              # vue/browser in Chromium and WebKit; builds the theme CSS first
+npm run test:layout:webkit       # vue/browser in WebKit, in Docker: how WebKit runs on Windows
 ```
 
-`test:layout` runs in the Chromium that Playwright installs, pinned by `package-lock.json`, not in
-the system Chrome. Neither command runs the scenarios of the tests page: they run in the
-playground, from that page.
+`test:layout` runs in the Chromium and WebKit that Playwright installs, pinned by
+`package-lock.json`, not in the system Chrome. WebKit is the engine of Safari and of every browser
+on iOS. On Windows it doesn't start, so there `test:layout` runs Chromium only, and
+`test:layout:webkit` runs WebKit on a Playwright server in Docker (Docker Desktop must be running).
+Neither command runs the scenarios of the tests page: they run in the playground, from that page.
 
 ## Rules
 

@@ -78,9 +78,17 @@ jobs:
       - name: Тесты
         run: npm run test:playground
 
+  # The browser run, a leg per browser: Chromium and WebKit, the engine of
+  # Safari and of every browser on iOS. In one leg the two browsers shared the
+  # runner's pages, and the run took twice as long as either of them alone.
   layout:
-    name: Тесты — браузер
+    name: Тесты — браузер (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    strategy:
+      # A red browser doesn't stop the other one.
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
 
     steps:
       - uses: actions/checkout@v4
@@ -92,35 +100,33 @@ jobs:
 
       - run: npm ci
 
-      # The browsers of test:layout — Chromium and WebKit, the engine of Safari
-      # and of every browser on iOS — are pinned by the Playwright revision in
-      # package-lock, so the cache follows the lock file and the set of
-      # browsers: a Playwright upgrade honestly downloads the new revision, and
-      # a cache saved without a browser isn't taken for a full one. System
-      # libraries don't go into the cache — they are installed every time.
-      - name: Кэш браузеров Playwright
+      # The browser is pinned by the Playwright revision in package-lock, so its
+      # cache follows the lock file: a Playwright upgrade honestly downloads the
+      # new revision. System libraries don't go into the cache — they are
+      # installed every time.
+      - name: Кэш браузера Playwright
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-chromium-webkit-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Установка браузеров
+      - name: Установка браузера
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium webkit
+        run: npx playwright install ${{ matrix.browser }}
 
-      - name: Системные зависимости браузеров
-        run: npx playwright install-deps chromium webkit
+      - name: Системные зависимости браузера
+        run: npx playwright install-deps ${{ matrix.browser }}
 
       # A dropped connection to a tab (`VITEST_BROWSER_CONNECTION_CLOSED`)
       # doesn't name its cause: whether the OOM killer took the process, the
       # renderer crashed or the whole browser exited. So the memory of the
       # machine and of the browser processes goes to a file every 5 s, and on
       # failure the step below prints it with the kernel log. `DEBUG=pw:browser`
-      # is the browsers' own output and their exit codes.
+      # is the browser's own output and its exit code.
       #
-      # test:layout builds the theme CSS itself — the browser run checks it —
-      # and runs every spec in both browsers.
+      # It is test:layout for one browser: the theme CSS, which the browser run
+      # checks, and the specs of the browser's project.
       - name: Тесты
         env:
           DEBUG: pw:browser
@@ -138,12 +144,15 @@ jobs:
                 }' | head -12
             done
           ) > "$RUNNER_TEMP/memory.log" 2>&1 &
-          npm run test:layout
+          npm run build:css --workspace=@soldy-ui/theme-oren
+          npm run test:browser --workspace=@soldy-ui/playground-vue -- --project "layout (${{ matrix.browser }})"
 
       # The same user scenario on all six platforms: the component's events and
       # the accessibility tree after every step, compared with Vue
-      # (benchmarks/parity/README.md). The report goes to the log.
+      # (benchmarks/parity/README.md). The report goes to the log. It runs in
+      # Chromium, so in its leg.
       - name: Сверка платформ
+        if: matrix.browser == 'chromium'
         run: npm run test:parity
 
       - name: Память и журнал ядра при падении

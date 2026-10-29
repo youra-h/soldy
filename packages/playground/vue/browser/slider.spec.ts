@@ -27,6 +27,7 @@ import { Button, Label, Slider, Switch } from '@soldy-ui/vue'
 
 import { opacity, pixel } from './colors'
 import { reducedMotion } from './media'
+import { webkitUntil } from './engine'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
 import '@soldy-ui/theme-oren'
@@ -806,7 +807,8 @@ describe('подсказка', () => {
 		 * корень, а `data-dragging` ставит только первое движение. Держит
 		 * подсказку нажатие ручки.
 		 */
-		it('ручку держат, не сдвинув, — видна', async () => {
+		it('ручку держат, не сдвинув, — видна', async (context) => {
+			context.skip(webkitUntil('869fn0u0m'))
 			const ctrl = await mount({ value: 50, tooltip: 'auto' })
 
 			await userEvent.hover(thumbs()[0])

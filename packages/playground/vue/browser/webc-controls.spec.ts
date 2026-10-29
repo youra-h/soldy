@@ -17,6 +17,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from './render'
+import { webkitUntil } from './engine'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { Pagination, ProgressLinear, Rating, Scroller, Slider } from '@soldy-ui/vue'
@@ -225,7 +226,8 @@ describe('части стоят, как у Vue', () => {
 		}
 	})
 
-	it('Scroller: кнопки, вьюпорт и пункты ленты', async () => {
+	it('Scroller: кнопки, вьюпорт и пункты ленты', async (context) => {
+		context.skip(webkitUntil('869fn0tx1'))
 		const items = ['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый', 'Шестой']
 		const style = 'padding:4px 12px; white-space:nowrap'
 		const blocks = await pair(

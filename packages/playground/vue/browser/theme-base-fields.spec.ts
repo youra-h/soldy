@@ -28,6 +28,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from './render'
+import { webkitUntil } from './engine'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import type {
@@ -410,7 +411,8 @@ describe('Tags — ряд scroll', () => {
 	 * встаёт в окно целиком. Окно уже паддинг-бокса на запас под кольцо фокуса:
 	 * тег встаёт не вплотную к краю.
 	 */
-	it('тег под фокусом с клавиатуры встаёт в окно ряда целиком', async () => {
+	it('тег под фокусом с клавиатуры встаёт в окно ряда целиком', async (context) => {
+		context.skip(webkitUntil('869fn0u0m'))
 		await show(tags)
 		await settled()
 

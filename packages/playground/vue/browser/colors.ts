@@ -1,30 +1,30 @@
 /**
- * Чем меряются цвета в настоящем браузере — общее для спеков, которые смотрят
- * на тему (`button-view.spec.ts`, `switch-view.spec.ts`, `tabs-view.spec.ts`,
- * `toasts.spec.ts`).
+ * How colors are measured in a real browser — shared by the specs that look
+ * at the theme (`button-view.spec.ts`, `switch-view.spec.ts`,
+ * `tabs-view.spec.ts`, `toasts.spec.ts`).
  *
- * Цвета вида решает дизайн, и спеки их не знают (`themes/oren/AGENTS.md`, «Что
- * тестом не проверяется»). Знают они отношение: насколько цвет ушёл от
- * подложки и в какую сторону, а читается ли текст на своём фоне — отношение
- * контраста по WCAG (`contrast`). Одна копия на всех — счёт светлоты, яркости
- * и слой поверх слоя тут неочевидные, и разъехаться двум копиям было бы нечему
- * помешать.
+ * The colors of a view are the design's call, and the specs don't know them
+ * (`themes/oren/AGENTS.md`, «Что тестом не проверяется»). They know relations:
+ * how far a color moved from its backdrop and which way, and whether text
+ * reads on its background — the WCAG contrast ratio (`contrast`). One copy for
+ * everyone: lightness, luminance and layer over layer are not obvious here, and
+ * nothing would keep two copies from drifting apart.
  *
- * Исключение — режим принудительных цветов: палитру там выбирает
- * пользователь, и часть, которую тема красит сама, обязана взять его
- * системный цвет. С ним спеки и сверяют её (`systemColor`, индикаторы
- * выполнения — `progress-linear.spec.ts` и `progress-spinner.spec.ts`).
+ * The exception is forced colors mode: there the user picks the palette, and a
+ * part the theme paints itself must take the user's system color. That is what
+ * the specs compare it with (`systemColor`; progress indicators —
+ * `progress-linear.spec.ts` and `progress-spinner.spec.ts`).
  */
 
 /**
- * Вычисленный стиль узла или его псевдоэлемента. Псевдоэлемент нужен не ради
- * красоты: линию под списком табов и полосу под активным табом тема рисует
- * `::before` и `::after`, своего узла у них нет вовсе.
+ * The computed style of a node or of its pseudo-element. The pseudo-element is
+ * no luxury: the theme draws the line under the tab list and the bar under the
+ * active tab with `::before` and `::after`, they have no node of their own.
  */
 export const style = (element: Element, pseudo?: string): CSSStyleDeclaration =>
 	getComputedStyle(element, pseudo)
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector; without it the test fails here, not on reading a property. */
 export const find = (selector: string, root: ParentNode = document): HTMLElement => {
 	const element = root.querySelector(selector)
 
@@ -33,16 +33,17 @@ export const find = (selector: string, root: ParentNode = document): HTMLElement
 	return element
 }
 
-/** Фигуры рисунка SVG: то, что браузер красит заливкой или обводкой. */
+/** Shapes of an SVG picture: what the browser paints with fill or stroke. */
 const SHAPES = 'path, circle, ellipse, line, polyline, polygon, rect'
 
 /**
- * Цвет рисунка иконки — то, чем пакет рисует её фигуру: заливка, а у фигуры
- * без заливки — обводка (линии Lucide). Тема задаёт цвет иконки переменной
- * `--so-icon-color`, а не `fill` у корня (`docs/agents/theming.md`, «Пакеты
- * иконок»), поэтому у корня `svg` цвета рисунка не видно — только у фигур.
- * Иконка — корень `svg` или корень `span` с `<svg>` рисунка внутри (Web
- * Components); фигуры нет — тест падает здесь.
+ * The color of an icon's picture — what the pack paints its shape with: the
+ * fill, or the stroke of a shape without fill (Lucide lines). The theme sets
+ * the icon color with the `--so-icon-color` variable, not `fill` on the root
+ * (`docs/agents/theming.md`, «Пакеты иконок»), so the root `svg` doesn't show
+ * the picture's color — only the shapes do. The icon is an `svg` root or a
+ * `span` root with the picture's `<svg>` inside (Web Components); without a
+ * shape the test fails here.
  */
 export function iconPaint(icon: Element): string {
 	const svg = icon instanceof SVGSVGElement ? icon : icon.querySelector(':scope > svg')
@@ -56,25 +57,32 @@ export function iconPaint(icon: Element): string {
 }
 
 /**
- * Переход цвета доигрывает, прежде чем цвет читают: у контролов темы он длится
- * 200 мс, и кадр сразу после наведения застаёт цвет в начале пути.
+ * A color transition plays out before the color is read: on the theme's
+ * controls it lasts 200 ms, and the frame right after hovering catches the
+ * color at the start of its way. A transition another one interrupted is
+ * cancelled, and its `finished` rejects — for the wait that is an end too:
+ * WebKit interrupts transitions Chromium lets play out.
  */
 export const settled = (element: Element): Promise<unknown> =>
-	Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished))
+	Promise.all(
+		element
+			.getAnimations({ subtree: true })
+			.map((animation) => animation.finished.catch(() => undefined)),
+	)
 
 /**
- * Цвет поверх подложки — тем же холстом, которым его кладёт браузер.
+ * A color over its backdrop — through the same canvas the browser lays it with.
  *
- * Разбирать строку вычисленного стиля самим нельзя: `getComputedStyle` отдаёт
- * цвет в том пространстве, в котором он объявлен, и у темы это `oklch()` у
- * ступеней и `oklab()` у вуали, а не `rgb()`. Канва принимает любую из этих
- * записей, кладёт слой на слой ровно так же, как страница, и отдаёт
- * получившиеся байты sRGB.
+ * Parsing the computed style string ourselves won't do: `getComputedStyle`
+ * gives a color in the space it was declared in, and the theme uses `oklch()`
+ * for steps and `oklab()` for veils, not `rgb()`. The canvas takes any of
+ * them, lays layer over layer exactly as the page does and gives back the
+ * resulting sRGB bytes.
  *
- * Строку, которая не цвет, холст молча пропускает и кладёт слой прежним
- * цветом — от прошлого вызова. Так `none` у `fill` отметки совпал бы с цветом,
- * прочитанным перед ним, и сверка прошла бы на чужом цвете. Поэтому такая
- * строка роняет тест здесь.
+ * A string that is not a color the canvas skips silently, laying the layer in
+ * the previous call's color. So `none` of a mark's `fill` would match the color
+ * read before it, and the comparison would pass on someone else's color. Such
+ * a string fails the test here.
  */
 const paint = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
 
@@ -94,10 +102,11 @@ export function pixel(colors: string[]): Uint8ClampedArray {
 }
 
 /**
- * Цвет градиента в фоне узла — первый цвет в `background-image`. Так тема
- * кладёт слой одного цвета поверх `background-color`: заливку текущей
- * страницы Pagination — переход фона её не ведёт, — и линию под закреплённой
- * шапкой Table нижним пикселем фона. Градиента нет — тест падает здесь.
+ * The gradient color in a node's background — the first color of
+ * `background-image`. That's how the theme lays a one-color layer over
+ * `background-color`: the fill of the current Pagination page (the background
+ * transition doesn't carry it) and the line under the sticky Table head as the
+ * bottom pixel of the background. Without a gradient the test fails here.
  */
 export function gradientColor(element: Element): string {
 	const image = style(element).backgroundImage
@@ -109,10 +118,10 @@ export function gradientColor(element: Element): string {
 }
 
 /**
- * Системный цвет в текущем режиме, как его разрешает браузер. Проба не
- * подчиняется режиму (`forced-color-adjust: none`): иначе браузер заменил бы и
- * её цвет. `Canvas` — фон страницы в этом режиме: им браузер заменяет фоны
- * темы.
+ * A system color in the current mode, as the browser resolves it. The probe
+ * doesn't obey the mode (`forced-color-adjust: none`), or the browser would
+ * replace its color too. `Canvas` is the page background in the mode: the
+ * browser replaces the theme's backgrounds with it.
  */
 export function systemColor(
 	keyword: 'Highlight' | 'HighlightText' | 'GrayText' | 'CanvasText' | 'Canvas' | 'ButtonText',
@@ -130,15 +139,16 @@ export function systemColor(
 	return color
 }
 
-/** Непрозрачность цвета: у вуали она меньше единицы, у ступени равна ей. */
+/** The opacity of a color: below one for a veil, one for a step. */
 export const opacity = (color: string): number => pixel([color])[3] / 255
 
 /**
- * Рисует ли браузер контур узла: стиль задан, толщина есть, цвет не
- * прозрачный. Прозрачный контур — вторая половина кромки панелей: в обычном
- * режиме его не видно, а в режиме принудительных цветов браузер красит его
- * системным цветом, и он становится рамкой. Псевдоэлемент — как у `style()`:
- * карточку активного таба `contained` тема рисует `::before` списка.
+ * Whether the browser draws the node's outline: a style is set, there is a
+ * width, the color isn't transparent. A transparent outline is the second half
+ * of the panels' edge: invisible in the normal mode, while in forced colors
+ * mode the browser paints it a system color and it becomes a border. The
+ * pseudo-element is as in `style()`: the theme draws the card of the active
+ * `contained` tab with the list's `::before`.
  */
 export const outlined = (element: Element, pseudo?: string): boolean => {
 	const { outlineStyle, outlineWidth, outlineColor } = style(element, pseudo)
@@ -147,9 +157,9 @@ export const outlined = (element: Element, pseudo?: string): boolean => {
 }
 
 /**
- * Байт канала sRGB — в линейный свет: из него считаются и OKLab, и яркость
- * WCAG. Порог перегиба у WCAG 2 записан как 0,03928, у sRGB — 0,04045, но
- * между ними не лежит ни одного байта, и счёт один.
+ * An sRGB channel byte to linear light: both OKLab and WCAG luminance come
+ * from it. WCAG 2 writes the knee as 0.03928, sRGB as 0.04045, but no byte lies
+ * between them, and the result is the same.
  */
 function linear(value: number): number {
 	const unit = value / 255
@@ -158,8 +168,9 @@ function linear(value: number): number {
 }
 
 /**
- * Цвет слоёв в OKLab: светлота и две оси цвета — `a` (зелёный — красный) и
- * `b` (синий — жёлтый). Слои кладутся тем же холстом (`pixel`).
+ * The color of layers in OKLab: lightness and two color axes — `a`
+ * (green–red) and `b` (blue–yellow). Layers go through the same canvas
+ * (`pixel`).
  */
 export function oklab(colors: string[]): { lightness: number; a: number; b: number } {
 	const [red, green, blue] = pixel(colors)
@@ -176,16 +187,16 @@ export function oklab(colors: string[]): { lightness: number; a: number; b: numb
 }
 
 /**
- * Светлота OKLab — единственная мера, сравнимая между схемами: шкала темы
- * инвертирована по ролям, и одинаковый на глаз шаг у тёмных цветов меньше по
- * sRGB, чем у светлых (`tokens-dark.css`).
+ * OKLab lightness — the only measure comparable between schemes: the theme's
+ * scale is inverted by roles, and a step equal to the eye is smaller in sRGB
+ * among dark colors than among light ones (`tokens-dark.css`).
  */
 export const lightness = (colors: string[]): number => oklab(colors).lightness
 
 /**
- * Тон слоёв — угол на плоскости цвета OKLab, в градусах, и насыщенность —
- * расстояние от серого. По тону видно семейство цвета, а не его ступень: у
- * вуали и у ступени одного семейства он один.
+ * The hue of layers — the angle on the OKLab color plane, in degrees — and the
+ * chroma — the distance from gray. The hue shows the color family, not its
+ * step: a veil and a step of one family share it.
  */
 export function hue(colors: string[]): { angle: number; chroma: number } {
 	const { a, b } = oklab(colors)
@@ -193,14 +204,14 @@ export function hue(colors: string[]): { angle: number; chroma: number } {
 	return { angle: (Math.atan2(b, a) * 180) / Math.PI, chroma: Math.hypot(a, b) }
 }
 
-/** Насколько цвет отошёл от подложки — со знаком: плюс светлее, минус темнее. */
+/** How far a color moved from its backdrop, signed: plus is lighter, minus darker. */
 export const shift = (color: string, backdrop: string): number =>
 	lightness([backdrop, color]) - lightness([backdrop])
 
 /**
- * Относительная яркость слоёв по WCAG 2 — из байтов холста (`pixel`). Слои
- * обязаны закрыть холст целиком: у просвечивающего итога байты цвета без его
- * прозрачности — не тот цвет, который видно.
+ * The relative luminance of layers by WCAG 2 — from the canvas bytes
+ * (`pixel`). The layers must cover the canvas fully: for a see-through result
+ * the color bytes without its transparency are not the color one sees.
  */
 function luminance(colors: string[]): number {
 	const [red, green, blue, alpha] = pixel(colors)
@@ -211,13 +222,14 @@ function luminance(colors: string[]): number {
 }
 
 /**
- * Отношение контраста по WCAG 2 — от 1 до 21: цвет поверх подложки против
- * самой подложки. Подложка — слои снизу вверх, первым — непрозрачный: под
- * подписью кнопки на плашке тоста лежат плашка и фон кнопки, вуаль поверх
- * плашки. Слои кладутся тем же холстом, что и у светлоты, то есть так, как их
- * кладёт браузер, а не по токенам: описание на 95 % и тень кнопок видны только
- * так. Пороги — у спеков, по WCAG: тексту кегля `text-sm` — 4,5 (1.4.3),
- * графике — значку, крестику, кольцу фокуса — 3 (1.4.11).
+ * The WCAG 2 contrast ratio, from 1 to 21: a color over its backdrop against
+ * the backdrop itself. The backdrop is layers bottom up, an opaque one first:
+ * under a button's label on a toast lie the toast and the button's background,
+ * a veil over the toast. Layers go through the same canvas as for lightness —
+ * the way the browser lays them, not by tokens: a description at 95 % and the
+ * buttons' shade show only so. Thresholds are the specs', by WCAG: 4.5 for
+ * `text-sm` text (1.4.3), 3 for graphics — an icon, a cross, a focus ring
+ * (1.4.11).
  */
 export const contrast = (color: string, backdrop: string[]): number => {
 	const front = luminance([...backdrop, color])

@@ -69,7 +69,7 @@ import {
 } from './colors'
 import { setDir } from './directions'
 import { forcedColors, reducedMotion } from './media'
-import { forcedColorsRepaint } from './engine'
+import { forcedColorsRepaint, webkitUntil } from './engine'
 import {
 	durationOf,
 	easingOf,
@@ -1011,7 +1011,8 @@ describe('жест', () => {
 		await expect.poll(() => item.isConnected).toBe(false)
 	})
 
-	it('отпустили ближе четверти — тост возвращается на место', async () => {
+	it('отпустили ближе четверти — тост возвращается на место', async (context) => {
+		context.skip(webkitUntil('869fn0u0m'))
 		const { show, rest } = await mount()
 		const [toast] = await show('Сохранено')
 

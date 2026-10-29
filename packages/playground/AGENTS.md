@@ -37,8 +37,12 @@ Playwright (конфиг `vitest.browser.config.ts`).
   открывает через прокси рядом с сервером (`browser-server/proxy.ts`): на
   каждую перепроверку модуля (ответ 304) WebKit открывает своё соединение —
   около 18 тысяч за прогон, — и проброшенные на машину напрямую они исчерпали
-  её порты: на середине прогона модули переставали грузиться. На Linux и
-  macOS WebKit идёт рядом с Chromium, в `test:layout`.
+  её порты: на середине прогона модули переставали грузиться. Прогон в Docker
+  идёт на шрифтах образа и с задержкой до сервера в контейнере, и спеки,
+  завязанные на ширину текста и тайминг, там бывают красными при зелёном CI
+  (`narrow-window.spec.ts`, `anchored-swipe.spec.ts`, ореол `slider.spec.ts` —
+  задача 869fn0u0m). На Linux и macOS WebKit идёт рядом с Chromium, в
+  `test:layout`.
 - Перед первым прогоном на машине: `npx playwright install chromium` (на Linux
   и macOS — `chromium webkit`). Ставится в `%LOCALAPPDATA%\ms-playwright`
   (Windows) или `~/.cache/ms-playwright`. После апгрейда Playwright ревизия
@@ -50,15 +54,18 @@ Playwright (конфиг `vitest.browser.config.ts`).
   `ms-playwright/chromium_headless_shell-<rev>/chrome-headless-shell-win64/`,
   положив рядом пустой файл `INSTALLATION_COMPLETE`. Нужны **оба**: headless
   идёт через headless-shell.
-- CI ставит браузеры сам: кэш `~/.cache/ms-playwright` по `package-lock.json`
-  и набору браузеров, `playwright install chromium webkit` при промахе,
-  `install-deps` всегда.
-- Прогон в CI — своя задача «Тесты — браузер», оба браузера одним
-  `test:layout`. Обрыв связи с вкладкой (`VITEST_BROWSER_CONNECTION_CLOSED`)
-  причины не называет, поэтому задача каждые 5 с пишет память машины и
-  процессов браузеров, а при падении печатает её вместе с журналом ядра (OOM
-  killer) и `/dev/shm` — шаг «Память и журнал ядра при падении»; вывод самих
-  браузеров и код их выхода даёт `DEBUG=pw:browser`.
+- CI ставит браузер сам: кэш `~/.cache/ms-playwright` по `package-lock.json`
+  и браузеру, `playwright install <браузер>` при промахе, `install-deps`
+  всегда.
+- Прогон в CI — своя задача «Тесты — браузер (<браузер>)», матрицей: проект
+  Chromium и проект WebKit идут параллельно, каждый на своём раннере (одним
+  `test:layout` два браузера делили страницы раннера, и прогон шёл вдвое
+  дольше); сверка платформ — в ноге Chromium. Обрыв связи с вкладкой
+  (`VITEST_BROWSER_CONNECTION_CLOSED`) причины не называет, поэтому задача
+  каждые 5 с пишет память машины и процессов браузера, а при падении печатает
+  её вместе с журналом ядра (OOM killer) и `/dev/shm` — шаг «Память и журнал
+  ядра при падении»; вывод самого браузера и код его выхода даёт
+  `DEBUG=pw:browser`.
 - **Чего у движка нет по природе, спек пропускает явно** — флагом из
   `browser/engine.ts` (`describe.runIf(touchInput)`), а причину называет
   комментарий флага: протокол DevTools (касания `tap`, `touchDrag` и

@@ -68,7 +68,7 @@ npm run generate --workspace=@soldy-ui/angular
 CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов (включая
 `test:plugins`) четырьмя параллельными задачами — «Тесты — ядро, setup,
 плагины, тема», «Тесты — <адаптер>» матрицей по адаптерам, «Тесты — стенд»
-и «Тесты — браузер», — а задачей «Сборка и типы» — типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
+и «Тесты — браузер (<браузер>)» матрицей по Chromium и WebKit, — а задачей «Сборка и типы» — типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
 «Типы — Plugins», «Типы — Themes», «Типы — Playground», «Типы — React», «Типы —
 Svelte», «Типы — Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
 сгенерированных файлов — `packages/ui/angular/src/generated`,
