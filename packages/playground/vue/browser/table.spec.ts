@@ -96,7 +96,11 @@ function engineOf(columns: readonly TTableColumnSource[] = [NAME, CITY, AGE]): T
 	return engine
 }
 
-/** A table in a container of the given width and writing direction. */
+/**
+ * A table in a container of the given width and writing direction, with its
+ * columns laid out: until the core's layout the theme decides the widths, and
+ * the boxes a test takes then would move under it.
+ */
 async function mount(
 	engine: TTableCollection,
 	width = 600,
@@ -113,6 +117,7 @@ async function mount(
 	)
 
 	await new Promise((resolve) => requestAnimationFrame(resolve))
+	await laidOut()
 }
 
 /** The head's column headers, in order. */
@@ -268,6 +273,41 @@ describe('ширина колонок', () => {
 		expect(name.dataset.sized).toBe('false')
 		expect(width(name)).toBeGreaterThanOrEqual(minimum)
 		expect(find('.so-table').hasAttribute('data-overflow')).toBe(false)
+	})
+
+	/**
+	 * Before the measure, in a place wider than the columns, the table is the sum
+	 * of their widths, not the place: as wide as the place, it would hand the
+	 * excess out to every column, the selection column included, and the layout
+	 * plugin, measuring that column with its share, would give the core a place
+	 * short by it — the columns would be laid out twice. So the selection column
+	 * is as wide before the measure as after it, and the first layout is the final
+	 * one.
+	 */
+	it('до замера в широком месте таблица — сумма колонок: колонка выбора своей ширины, раскладка — с первого раза', async () => {
+		render(
+			defineComponent({
+				render: () =>
+					h('div', { style: 'width: 600px' }, [
+						h(Table, { engine: engineOf(), aria_label: 'Сотрудники' }),
+					]),
+			}),
+		)
+
+		// The same frame as the mount: the layout plugin hasn't measured the window yet
+		const table = find('.so-table')
+		const select = find('.so-table__select')
+		const sum = () => [select, ...headers()].reduce((total, cell) => total + width(cell), 0)
+		const before = width(select)
+
+		expect(table.hasAttribute('data-overflow')).toBe(false)
+		expect(width(table)).toBeLessThan(600)
+		expect(Math.abs(width(table) - sum())).toBeLessThanOrEqual(EPSILON)
+
+		await laidOut()
+
+		expect(Math.abs(width(select) - before)).toBeLessThanOrEqual(EPSILON)
+		expect(Math.abs(width(table) - 600)).toBeLessThanOrEqual(EPSILON)
 	})
 })
 
@@ -1925,7 +1965,6 @@ describe('ручка ширины', () => {
 
 			columnOf(engine, 'name').events.on('commit', (value) => commits.push(value))
 			await mount(engine, PLACE, 'ltr', DEFERRED)
-			await laidOut()
 
 			const [name, city, age] = headers()
 			const before = [name, city, age].map(width)

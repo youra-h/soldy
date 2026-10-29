@@ -70,11 +70,14 @@
  * to all columns, the widths would drift from the core's, and the handle
  * wouldn't hold the edge. The core has already summed them by the place: in the
  * filling modes the sum is the place, and wider than it the window scrolls.
- * While a width is missing — the place isn't measured yet (the first frame, the
- * server) or there is no core layout — a column without a width takes its
- * minimum (below, at the header). A table narrower than the sum of the widths
- * is as wide as the sum; with more place than the sum, the excess goes to all
- * columns in proportion to their widths — until the core lays them out.
+ * Until the core lays the columns out by a measured place (no `data-overflow`
+ * yet — the first frame, the server), a column without a width takes its
+ * minimum (below, at the header), and the table is the sum of the widths too:
+ * as wide as the place, it would hand the excess out to every column, the
+ * selection column included, and the layout plugin, measuring that column with
+ * its share, would give the core a place short by it — the columns would be
+ * laid out twice. Measured, the table is as wide as the place while a width is
+ * missing — there are no columns.
  *
  * The window (`__viewport`) is a block as wide as the place, with the table in
  * it. The base makes it a block, not the tag: the window is a `div` by default
@@ -226,11 +229,13 @@
 	--so-disabled-opacity: 1;
 }
 
-/* A width is known for every shown column (`data-sized`) — the table is as wide
- * as their sum (see above). A fixed table is never narrower than the sum of its
- * column widths, whatever width it is given (CSS 2.1, 17.5.2.1), so at zero it
- * is exactly the sum. Without columns there is no flag — an empty head would
- * collapse the table. */
+/* The table is as wide as the sum of its column widths (see above) until the
+ * place is measured (no `data-overflow`) and once a width is known for every
+ * shown column (`data-sized`). A fixed table is never narrower than the sum of
+ * its column widths, whatever width it is given (CSS 2.1, 17.5.2.1), so at zero
+ * it is exactly the sum. A measured table without columns has no `data-sized` —
+ * an empty head would collapse it. */
+.so-table:not([data-overflow]),
 .so-table[data-sized='true'] {
 	inline-size: 0;
 }

@@ -129,8 +129,7 @@ describe('раскладка — как у Vue', () => {
 		const webc = stages[0]
 
 		// Both tables laid out: until the core's layout the theme decides the
-		// widths, and the first layout counts on the selection column as wide as
-		// it was then — the plugin measures it again once the table has settled
+		// widths, and a few frames don't promise it under load
 		for (const root of [document.querySelector('.vue'), webc]) {
 			if (!root) throw new Error('no table place')
 
