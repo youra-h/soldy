@@ -1,0 +1,27 @@
+{
+  // The starter extends SvelteKit's generated config (`"extends": "$app/tsconfig"`), and
+  // `svelte-kit sync` warns that this one does not. Its options are written out here: the
+  // repository parses every tsconfig in it (`source-paths.spec.ts` of `@soldy-ui/setup`), and
+  // the generated config exists only in the run's copy
+  "compilerOptions": {
+    "rootDirs": [".", "./.svelte-kit/types"],
+    "types": ["$app/types"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "allowJs": true,
+    "checkJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "module": "esnext",
+    "target": "esnext",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "strict": true
+  },
+  "include": ["src", "vite.config.ts"]
+}

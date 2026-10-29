@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Soldy UI — Vite + Web Components</title>
+	</head>
+	<body>
+		<main>
+			<button is="so-button" id="open" text="Open dialog"></button>
+			<div is="so-dialog" id="settings">
+				<span slot="title">Settings</span>
+				<p>Dialog content</p>
+			</div>
+			<div is="so-input" placeholder="Name" aria-label="Name"></div>
+			<div is="so-select" placeholder="City" aria-label="City">
+				<div is="so-select-item" value="kzn" text="Kazan"></div>
+				<div is="so-select-item" value="msk" text="Moscow"></div>
+				<div is="so-select-item" value="oms" text="Omsk"></div>
+			</div>
+			<div
+				is="so-table"
+				aria-label="Staff"
+				columns='[{"field":"name","text":"Name","rowHeader":true},{"field":"age","text":"Age","align":"end"}]'
+				items='[{"data":{"name":"Anna","age":30}},{"data":{"name":"Boris","age":41}}]'
+			></div>
+			<div is="so-date-picker" aria_label="Date"></div>
+		</main>
+		<script type="module" src="/src/main.ts"></script>
+	</body>
+</html>

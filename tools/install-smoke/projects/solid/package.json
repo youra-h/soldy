@@ -1,0 +1,23 @@
+{
+  "name": "soldy-install-solid",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -b",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/solid": "*",
+    "@soldy-ui/theme-oren": "*",
+    "solid-js": "^1.9.17"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-solid": "^2.11.14"
+  }
+}
