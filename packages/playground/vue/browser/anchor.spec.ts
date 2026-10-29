@@ -1,16 +1,17 @@
 /**
- * `TAnchorPlugin` в настоящем браузере: раскладка, которую jsdom не считает.
+ * `TAnchorPlugin` in a real browser: the layout jsdom doesn't compute.
  *
- * `getBoundingClientRect()` в jsdom всегда нули, поэтому измерение панели,
- * flip у края окна, сторона открытой панели, пока окно едет, и пересчёт без
- * scroll/resize (по `ResizeObserver`) проверяются только здесь. Юнит-тесты
- * плагина (`overlay.spec.ts`) те же сценарии гоняют на заглушках координат —
- * здесь эти координаты считает настоящий layout-движок браузера. Так же и
- * слежение по открытости: гаснет панель здесь настоящим переходом темы.
+ * `getBoundingClientRect()` in jsdom is always zeros, so measuring the panel,
+ * flip at the window's edge, the side of an open panel while the window moves
+ * and the recalculation without scroll/resize (by `ResizeObserver`) are
+ * checked only here. The plugin's unit tests (`overlay.spec.ts`) run the same
+ * scenarios on stubbed coordinates — here the browser's real layout engine
+ * computes them. So does tracking by the open state: here the panel fades by
+ * the theme's real transition.
  *
- * Здесь же — граница, внутрь которой плагин сдвигает панель: настоящую полосу
- * прокрутки не подставить заглушкой, а без неё `innerWidth` и видимая область
- * совпадают и сторож пуст. Ради этого с прогона снят `--hide-scrollbars`
+ * Here too is the boundary the plugin shifts the panel inside: a real scrollbar
+ * can't be stubbed, and without it `innerWidth` and the visible area coincide
+ * and the guard is empty. For that the run drops `--hide-scrollbars`
  * (`vitest.browser.config.ts`).
  */
 
@@ -32,9 +33,9 @@ const OPTIONS = ['Москва', 'Тверь', 'Тула', 'Казань', 'Са
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
- * Якорь-кнопка и `Frame` над ней. Ссылку на якорь плагин получает как
- * `Element` напрямую, а не через `rootElement` компонента — как это делают
- * Select и Popover.
+ * An anchor button and a `Frame` above it. The plugin gets the anchor directly
+ * as an `Element`, not through a component's `rootElement`, the way Select and
+ * Popover pass it.
  */
 const TopStartHarness = defineComponent({
 	data() {
@@ -76,7 +77,7 @@ const TopStartHarness = defineComponent({
 	},
 })
 
-/** Тот же якорь, но ширина переключается кликом — без единого scroll/resize окна. */
+/** The same anchor, but a click toggles its width — without a scroll or resize of the window. */
 const ResizableAnchorHarness = defineComponent({
 	data() {
 		return { anchorEl: null as Element | null, wide: false }
@@ -116,12 +117,13 @@ const ResizableAnchorHarness = defineComponent({
 })
 
 /**
- * Якорь, у которого кликом меняются только рамка и паддинг: содержимое то же,
- * content-box прежний, border-box вырос.
+ * An anchor whose click changes only the border and the padding: the content
+ * is the same, the content box unchanged, the border box grown.
  *
- * `box-sizing: content-box` здесь обязателен и задан явно: на стенде и в теме
- * глобально `border-box`, и при нём фиксированные `width`/`height` удержали бы
- * внешний размер якоря — меняться было бы нечему.
+ * `box-sizing: content-box` is required here and set explicitly: the theme's
+ * reset gives `so-*` nodes, this anchor among them, `border-box`, and with it
+ * the fixed `width`/`height` would keep the anchor's outer size — nothing would
+ * change.
  */
 const PaddedAnchorHarness = defineComponent({
 	data() {
@@ -166,8 +168,8 @@ const PaddedAnchorHarness = defineComponent({
 })
 
 /**
- * Панель над якорем с `matchWidth` и текстом, который переносится: якорь
- * сужается кликом, и от новой ширины панель становится выше.
+ * A panel above the anchor with `matchWidth` and a text that wraps: a click
+ * narrows the anchor, and at the new width the panel grows taller.
  */
 const WrappingPanelHarness = defineComponent({
 	data() {
@@ -207,7 +209,7 @@ const WrappingPanelHarness = defineComponent({
 	},
 })
 
-/** Якорь внутри `dir="rtl"`: `-start` обязан выравниваться по правому краю. */
+/** An anchor inside `dir="rtl"`: `-start` must align to the right edge. */
 const RtlHarness = defineComponent({
 	data() {
 		return { anchorEl: null as Element | null }
@@ -246,8 +248,9 @@ const RtlHarness = defineComponent({
 })
 
 /**
- * Якорь шире панели, панель над ним по центру (`top`). Направление письма —
- * параметром: центр от него не зависит, и в RTL панель стоит там же.
+ * An anchor wider than the panel, the panel centered above it (`top`). The
+ * writing direction is a parameter: the center doesn't depend on it, and in RTL
+ * the panel stands in the same place.
  */
 const centerHarness = (dir: 'ltr' | 'rtl') =>
 	defineComponent({
@@ -292,10 +295,10 @@ const centerHarness = (dir: 'ltr' | 'rtl') =>
 	})
 
 /**
- * Якорь и `Frame` сбоку от него — `end-start`: панель у конца строки якоря,
- * верхние края вровень. Где якорь стоит в строке страницы, задаёт `justify`:
- * `center` — место есть с обеих сторон, `flex-end` — у правого края окна.
- * Направление письма — `dir`.
+ * An anchor and a `Frame` beside it — `end-start`: the panel at the end of the
+ * anchor's line, top edges level. Where the anchor stands in the page's line is
+ * set by `justify`: `center` — there is room on both sides, `flex-end` — at the
+ * window's right edge. The writing direction is `dir`.
  */
 const besideHarness = (justify: 'center' | 'flex-end', dir: 'ltr' | 'rtl' = 'ltr') =>
 	defineComponent({
@@ -340,13 +343,13 @@ const besideHarness = (justify: 'center' | 'flex-end', dir: 'ltr' | 'rtl' = 'ltr
 	})
 
 /**
- * Якорь у самого правого края страницы, которая выше окна, и панель заметно
- * шире места справа от него.
+ * An anchor at the very right edge of a page taller than the window, and a
+ * panel notably wider than the room to its right.
  *
- * Филлер `200vh` здесь не для прокрутки, а ради полосы: она и есть предмет
- * теста. `innerWidth` считает полосу своей, `documentElement.clientWidth` —
- * нет, и от того, какую границу взял shift, зависит, видно панель целиком или
- * её край спрятан под полосой.
+ * The `200vh` filler is here not for scrolling but for the scrollbar: it is the
+ * test's subject. `innerWidth` counts the bar in, `documentElement.clientWidth`
+ * doesn't, and which boundary shift took decides whether the panel is seen
+ * whole or its edge hides under the bar.
  */
 const RightEdgeHarness = defineComponent({
 	data() {
@@ -384,7 +387,7 @@ const RightEdgeHarness = defineComponent({
 	},
 })
 
-/** Select с опциями. Без `placement` проп не пишется вовсе — работает умолчание. */
+/** Select with options. Without `placement` the prop isn't written at all — the default works. */
 const selectWith = (placement?: TSelectPlacement) =>
 	h(
 		Select,
@@ -397,7 +400,7 @@ const selectWith = (placement?: TSelectPlacement) =>
 		},
 	)
 
-/** Поле почти у нижнего края окна — панели внизу не хватит места. */
+/** The field almost at the window's bottom edge — the panel won't have room below. */
 const selectAtBottom = (placement?: TSelectPlacement) => ({
 	render: () =>
 		h('div', [
@@ -406,14 +409,14 @@ const selectAtBottom = (placement?: TSelectPlacement) => ({
 		]),
 })
 
-/** Поле у верхнего края страницы — панели сверху места нет. */
+/** The field at the page's top edge — the panel has no room above. */
 const selectAtTop = (placement?: TSelectPlacement) => ({
 	render: () => h('div', { style: 'width: 320px' }, [selectWith(placement)]),
 })
 
 /**
- * Поле у нижнего края окна посреди длинной страницы: под ним ещё экран, и
- * окну есть куда ехать.
+ * The field at the window's bottom edge in the middle of a long page: there is
+ * another screen below it, and the window has room to move.
  */
 const selectOnLongPage = () => ({
 	render: () =>
@@ -428,27 +431,28 @@ const panel = () => document.querySelector('.so-test-panel') as HTMLElement
 const anchor = () => document.querySelector('.so-test-anchor') as HTMLElement
 
 beforeEach(() => {
-	// Тема читается с корня документа — тот же атрибут, что в `index.html`.
+	// The theme is read from the document's root — the same attribute as in `index.html`.
 	document.documentElement.dataset.soTheme = 'oren'
 })
 
 /**
- * `render()` не убирает за собой сам — без очистки якоря и панели прежних
- * тестов остаются в документе, и `document.querySelector` в следующем тесте
- * находит чужой узел вместо своего.
+ * `render()` doesn't clean up after itself — without the cleanup the anchors
+ * and panels of previous tests stay in the document, and `document.querySelector`
+ * in the next test finds someone else's node instead of its own.
  */
 afterEach(() => {
 	cleanup()
-	// Окно, которое прокрутил тест, возвращается к началу
+	// The window a test scrolled goes back to the start
 	window.scrollTo(0, 0)
 })
 
 describe('измерение панели', () => {
 	/**
-	 * Пока панель скрыта через `v-show`, её размер — ноль, и первый расчёт
-	 * координат (по событию `show`) использует ещё нулевую высоту. Правильную
-	 * высоту получает `ResizeObserver` кадром позже, когда панель уже видна —
-	 * без него `top-start` на первом открытии стоял бы неверно.
+	 * While the panel is hidden by `v-show`, its size is zero, and the first
+	 * calculation of coordinates (on the `show` event) still uses the zero
+	 * height. `ResizeObserver` gets the right height a frame later, when the
+	 * panel is visible — without it `top-start` would stand wrong on the first
+	 * opening.
 	 */
 	it('top-start верно стоит на первом же открытии', async () => {
 		render(TopStartHarness)
@@ -466,36 +470,36 @@ describe('измерение панели', () => {
 })
 
 describe('flip', () => {
-	/** Отступ панели от поля — `anchor_offset` у Select. */
+	/** The panel's gap to the field — Select's `anchor_offset`. */
 	const OFFSET = 4
-	/** Шаг прокрутки за кадр, px. */
+	/** A scroll step per frame, px. */
 	const STEP = 3
 
 	const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
 	const field = () => document.querySelector('.so-select__field input') as HTMLElement
 	const selectPanel = () => document.querySelector('.so-select__panel') as HTMLElement
 
-	/** Место под полем — по корню Select: он и есть якорь панели. */
+	/** The room below the field — by the Select root: it is the panel's anchor. */
 	const below = () =>
 		(window.visualViewport?.height ?? window.innerHeight) -
 		find('.so-select').getBoundingClientRect().bottom
 
-	/** Место, которое нужно открытой панели с её стороны поля. */
+	/** The room an open panel needs on its side of the field. */
 	const needed = () => selectPanel().getBoundingClientRect().height + OFFSET
 
 	/**
-	 * Сдвиг окна, с которого под полем влезает открытая панель, — с запасом в
-	 * восемь шагов прокрутки. Меряется при окне в начале.
+	 * The window's offset from which an open panel fits below the field — with a
+	 * margin of eight scroll steps. Measured with the window at the start.
 	 */
 	const farWhereBelowFits = () => Math.ceil(needed() - below()) + 8 * STEP
 
 	/**
-	 * Стрелка — кликом в странице, а не `userEvent`. После закрытия стрелка
-	 * ещё поворачивается переходом темы, и Playwright сочтёт её нестабильной:
-	 * повторяя клик, он прокручивает цель к низу окна
-	 * (`scrollIntoView({ block: 'end' })`) — туда, где снизу панель не влезает,
-	 * и сторону показ выбрал бы уже там. Эти случаи проверяют сторону, а не
-	 * ввод.
+	 * The arrow — by a click in the page, not by `userEvent`. After closing, the
+	 * arrow still turns by the theme's transition, and Playwright would deem it
+	 * unstable: repeating the click, it scrolls the target to the window's bottom
+	 * (`scrollIntoView({ block: 'end' })`) — where the panel doesn't fit below,
+	 * and showing would pick the side there. These cases check the side, not the
+	 * input.
 	 */
 	const toggleInPage = async () => {
 		arrow().click()
@@ -514,7 +518,7 @@ describe('flip', () => {
 		)
 	})
 
-	/** `bottom` запрещает flip: панель остаётся снизу, хоть там и не влезает. */
+	/** `bottom` forbids flip: the panel stays below, though it doesn't fit there. */
 	it('placement: bottom у низа окна остаётся снизу', async () => {
 		render(selectAtBottom('bottom'))
 
@@ -527,7 +531,7 @@ describe('flip', () => {
 		)
 	})
 
-	/** `top` у верха страницы: места сверху нет, но сторона потребителя держится. */
+	/** `top` at the page's top: there is no room above, but the consumer's side holds. */
 	it('placement: top у верха страницы остаётся сверху', async () => {
 		render(selectAtTop('top'))
 
@@ -540,11 +544,11 @@ describe('flip', () => {
 	})
 
 	/**
-	 * Окно едет, как его ведёт палец на телефоне: по нескольку пикселей за
-	 * кадр, через прежнюю границу «снизу влезает» и обратно. Правило без памяти
-	 * на этой границе уводило открытую панель вниз и возвращало наверх — она
-	 * скакала. Открытая панель держит сторону, пока на ней влезает, а заново
-	 * сторону выбирает следующее открытие.
+	 * The window moves as a finger drives it on a phone: a few pixels a frame,
+	 * across the former "fits below" boundary and back. A rule without memory
+	 * took the open panel down at that boundary and back up — it jumped. An open
+	 * panel keeps its side while it fits there, and the next opening picks the
+	 * side anew.
 	 */
 	it('открытая панель держит сторону, пока окно едет через границу «снизу влезает»', async () => {
 		render(selectOnLongPage())
@@ -552,8 +556,8 @@ describe('flip', () => {
 		await userEvent.click(arrow())
 		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
 
-		// С этого сдвига окна снизу панель влезает, и прежнее правило увело бы
-		// её вниз. Окно проезжает его с запасом
+		// From this window offset the panel fits below, and the former rule would
+		// take it down. The window passes it with a margin
 		const far = farWhereBelowFits()
 
 		const placements: Array<string | null> = []
@@ -583,8 +587,8 @@ describe('flip', () => {
 
 		expect(placements, 'смены стороны').toEqual([])
 
-		// Закрыли и, когда панель исчезла, открыли там, где снизу влезает, —
-		// сторону выбирает показ
+		// Closed and, once the panel has disappeared, opened where it fits below —
+		// showing picks the side
 		await scrollWindow(far)
 		await toggleInPage()
 		await expect.poll(() => getComputedStyle(selectPanel()).display).toBe('none')
@@ -601,10 +605,10 @@ describe('flip', () => {
 	})
 
 	/**
-	 * Сторону показ выбирает заново и тогда, когда закрытая панель ещё гаснет:
-	 * гаснущая держит сторону, как открытая, но забывает её показ, а не конец
-	 * угасания. Переходы закрытия стоят на паузе — показ застаёт панель
-	 * гаснущей, как бы ни медлил прогон.
+	 * Showing picks the side anew also when the closed panel still fades: a
+	 * fading one keeps its side like an open one, and it is showing that forgets
+	 * the side, not the end of the fade. The closing's transitions are paused —
+	 * showing finds the panel fading however slow the run.
 	 */
 	it('показ во время угасания выбирает сторону заново', async () => {
 		render(selectOnLongPage())
@@ -618,7 +622,7 @@ describe('flip', () => {
 		window.scrollTo(0, far)
 		await nextFrame()
 
-		// Открытая панель держит сторону и там, где снизу влезает
+		// An open panel keeps its side even where it fits below
 		expect(selectPanel().getAttribute('data-placement')).toBe('top-start')
 
 		await toggleInPage()
@@ -644,14 +648,15 @@ describe('flip', () => {
 })
 
 /**
- * Сама причина дрожи на телефоне: страницу там прокручивает композитор, а
- * `scroll` приходит в JS кадром позже. Панель `fixed` до него стоит, а поле
- * уже уехало. Панель у якоря на странице — `absolute`, в документе, и
- * прокрутку окна браузер применяет к ней вместе с полем.
+ * The very cause of the jitter on a phone: there the compositor scrolls the
+ * page, and `scroll` reaches JS a frame later. A `fixed` panel stands still
+ * until then, while the field has already moved. A panel at an anchor on the
+ * page is `absolute`, in the document, and the browser applies the window's
+ * scrolling to it together with the field.
  *
- * Измеряем сразу за `scrollTo`, в той же задаче: раскладка уже прокручена, а
- * `scroll` браузер шлёт только на следующем кадре, и пересчитать плагин ещё
- * ничего не мог.
+ * Measured right after `scrollTo`, in the same task: the layout is already
+ * scrolled, while the browser sends `scroll` only in the next frame, and the
+ * plugin couldn't have recalculated anything yet.
  */
 describe('прокрутка окна', () => {
 	const arrow = () => document.querySelector('.so-select__arrow') as HTMLElement
@@ -688,8 +693,9 @@ describe('прокрутка окна', () => {
 	})
 
 	/**
-	 * Поле в шапке `fixed` прокрутка окна не двигает — и панель у него
-	 * `fixed`: в документе она уезжала бы от поля до пересчёта.
+	 * The window's scrolling doesn't move a field in a `fixed` header — and its
+	 * panel is `fixed` too: in the document it would move away from the field
+	 * until the recalculation.
 	 */
 	it('у поля в fixed-шапке панель стоит с ним ещё до события scroll', async () => {
 		render({
@@ -715,10 +721,11 @@ describe('прокрутка окна', () => {
 	})
 
 	/**
-	 * Панель в документе фокус может прокрутить к себе. DatePicker уводит фокус
-	 * на день кадром позже показа — раньше, чем панель измерена: она ещё стоит
-	 * под полем, по нулевой высоте. Прокрутка к ней увела бы страницу, и
-	 * панель осталась бы внизу. Фокус в панель окно не прокручивает.
+	 * Focus can scroll a panel in the document into view. DatePicker moves focus
+	 * to a day a frame after showing — before the panel is measured: it still
+	 * stands below the field, by its zero height. Scrolling to it would carry the
+	 * page away, and the panel would stay below. Focus going into the panel
+	 * doesn't scroll the window.
 	 */
 	it('DatePicker у нижнего края открывается над полем, окно стоит', async () => {
 		render({
@@ -745,15 +752,16 @@ describe('прокрутка окна', () => {
 })
 
 /**
- * Место панели плагин считает, только пока она на экране: показана или ещё
- * гаснет. Поле здесь во внутренней прокрутке, а панель в `body`, и за полем
- * её двигает только пересчёт по `scroll` блока. Гаснущая панель идёт за полем
- * до конца, а закрытая на прокрутку не отвечает: место её стоит.
+ * The plugin computes the panel's place only while it is on screen: shown or
+ * still fading. The field here is in an inner scroll, and the panel is in
+ * `body`, so only the recalculation on the block's `scroll` moves it after the
+ * field. A fading panel follows the field to the end, and a closed one doesn't
+ * answer scrolling: its place stands.
  */
 describe('слежение по открытости', () => {
 	const arrow = () => find('.so-select__arrow')
 	const selectPanel = () => find('.so-select__panel')
-	/** Зазор между полем и панелью под ним: у панели, которая идёт за полем, он прежний. */
+	/** The gap between the field and the panel below it: unchanged while the panel follows. */
 	const gap = () =>
 		selectPanel().getBoundingClientRect().top -
 		find('.so-select').getBoundingClientRect().bottom
@@ -795,7 +803,7 @@ describe('слежение по открытости', () => {
 
 		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled)
 
-		// Конец закрытия плагин узнаёт микрозадачей за концом перехода
+		// The plugin learns of the closing's end a microtask after the transition's end
 		await nextFrame()
 
 		const top = selectPanel().style.top
@@ -821,11 +829,11 @@ describe('пересчёт без scroll/resize окна', () => {
 	})
 
 	/**
-	 * Наблюдатели смотрят border-box — ровно то, что плагин меряет
-	 * `getBoundingClientRect()`. У якоря меняются только рамка и паддинг:
-	 * content-box прежний, и с умолчанием `content-box` уведомления бы не было
-	 * вовсе, а `y` и ширина панели держались бы устаревшими до ближайшего
-	 * scroll/resize окна.
+	 * The observers watch the border box — exactly what the plugin measures by
+	 * `getBoundingClientRect()`. Only the anchor's border and padding change: the
+	 * content box is the same, and with the `content-box` default there would be
+	 * no notification at all, and the panel's `y` and width would stay stale
+	 * until the window's next scroll/resize.
 	 */
 	it('у якоря сменились только рамка и паддинг — bottom-start и matchWidth едут следом', async () => {
 		render(PaddedAnchorHarness)
@@ -836,8 +844,8 @@ describe('пересчёт без scroll/resize окна', () => {
 
 		await userEvent.click(anchor())
 
-		// Сначала убеждаемся, что поменялся именно border-box якоря: иначе
-		// проверка ниже прошла бы и на неподвижной панели.
+		// First make sure it is the anchor's border box that changed: otherwise
+		// the check below would pass on a motionless panel too.
 		await expect
 			.poll(() => anchor().getBoundingClientRect().width)
 			.toBeGreaterThan(before.width)
@@ -852,10 +860,11 @@ describe('пересчёт без scroll/resize окна', () => {
 	})
 
 	/**
-	 * На уведомление якоря плагин снимает наблюдение панели до следующего
-	 * кадра, иначе её уведомление пропускалось бы в том же шаге. От новой
-	 * ширины текст перенёсся, и панель выросла, пока за ней никто не следил:
-	 * поправить `y` плагин может только по вернувшемуся наблюдению.
+	 * On the anchor's notification the plugin stops observing the panel until
+	 * the next frame — otherwise the panel's notification would be skipped in the
+	 * same step. At the new width the text wrapped, and the panel grew while
+	 * nobody watched it: the plugin can correct `y` only by the returned
+	 * observation.
 	 */
 	it('якорь сузился, текст панели перенёсся — top-start поправляет y по вернувшемуся наблюдению', async () => {
 		render(WrappingPanelHarness)
@@ -881,10 +890,11 @@ describe('RTL', () => {
 
 		const anchorRect = anchor().getBoundingClientRect()
 
-		// Ширина панели известна браузеру сразу (у неё нет скрытой фазы), а
-		// координата приходит асинхронно — через `ready`/`ResizeObserver`.
-		// Опрашиваем именно её, а не размер, иначе можно поймать кадр до того,
-		// как плагин пересчитал `x` под RTL.
+		// The browser knows the panel's width at once (it has no hidden phase),
+		// while the coordinate comes asynchronously — through
+		// `ready`/`ResizeObserver`. So the coordinate is polled, not the size:
+		// otherwise a frame before the plugin recalculated `x` for RTL could be
+		// caught.
 		await expect
 			.poll(() => panel().getBoundingClientRect().right)
 			.toBeCloseTo(anchorRect.right, 0)
@@ -892,13 +902,13 @@ describe('RTL', () => {
 })
 
 describe('центр', () => {
-	/** Середина прямоугольника по горизонтали. */
+	/** The rectangle's horizontal middle. */
 	const middle = (rect: DOMRect) => rect.left + rect.width / 2
 
 	/**
-	 * Ширину панели плагин узнаёт по `ready` и `ResizeObserver`, поэтому
-	 * середину опрашиваем: на кадре до замера панель стоит серединой якоря
-	 * своим левым краем.
+	 * The plugin learns the panel's width by `ready` and `ResizeObserver`, so the
+	 * middle is polled: in the frame before the measurement the panel stands with
+	 * its left edge at the anchor's middle.
 	 */
 	it.each(['ltr', 'rtl'] as const)(
 		'%s: top ставит середину панели над серединой якоря',
@@ -919,13 +929,14 @@ describe('центр', () => {
 })
 
 /**
- * Стороны строки: `end-start` ставит панель у конца строки якоря, верхние края
- * вровень. Конец — логический: в LTR справа, в RTL слева. У правого края окна
- * flip переносит панель к началу строки, а `data-placement` называет
- * логическую сторону, на которой она встала.
+ * The line's sides: `end-start` puts the panel at the end of the anchor's line,
+ * top edges level. The end is logical: on the right in LTR, on the left in RTL.
+ * At the window's right edge flip moves the panel to the line's start, and
+ * `data-placement` names the logical side it stood on.
  *
- * Координаты плагин узнаёт по `ready` и `ResizeObserver`, поэтому край панели
- * опрашиваем: на кадре до замера панель стоит по нулевой ширине.
+ * The plugin learns the coordinates by `ready` and `ResizeObserver`, so the
+ * panel's edge is polled: in the frame before the measurement the panel stands
+ * by a zero width.
  */
 describe('боковые стороны', () => {
 	it('end-start в LTR — справа от якоря, верхние края вровень', async () => {
@@ -945,7 +956,7 @@ describe('боковые стороны', () => {
 
 		const anchorRect = anchor().getBoundingClientRect()
 
-		// Справа места под панель действительно нет
+		// There really is no room for the panel on the right
 		expect(document.documentElement.clientWidth - anchorRect.right).toBeLessThan(100)
 
 		await expect
@@ -971,12 +982,12 @@ describe('боковые стороны', () => {
 
 describe('граница — видимая область', () => {
 	/**
-	 * Ширина полосы на время теста своя, известная.
+	 * The scrollbar's width for the test's time is its own, a known one.
 	 *
-	 * Платформенная разная — локально Windows, в CI Ubuntu, — а где-то полоса и
-	 * вовсе накладная и места не занимает. Сторожить этот спек должен не её:
-	 * ему нужно, чтобы `innerWidth` и `clientWidth` расходились заведомо
-	 * заметнее субпиксельного допуска.
+	 * The platform's one differs — Windows locally, Ubuntu in CI, — and
+	 * somewhere the bar is an overlay taking no room at all. It isn't what this
+	 * spec guards: it needs `innerWidth` and `clientWidth` to differ surely more
+	 * than the subpixel tolerance.
 	 */
 	const SCROLLBAR = 20
 
@@ -994,11 +1005,11 @@ describe('граница — видимая область', () => {
 	})
 
 	/**
-	 * Сторож правки 869f4puaa: границей shift служит `window.visualViewport`, а
-	 * не `window.innerWidth`. Разница между ними и есть ширина классической
-	 * полосы прокрутки, поэтому без полосы в прогоне (Playwright запускает
-	 * Chromium с `--hide-scrollbars`, флаг снят в `vitest.browser.config.ts`)
-	 * тест зелёный при любой реализации.
+	 * The guard of fix 869f4puaa: shift's boundary is `window.visualViewport`,
+	 * not `window.innerWidth`. The difference between them is the width of a
+	 * classic scrollbar, so without a bar in the run (Playwright starts Chromium
+	 * with `--hide-scrollbars`, the flag is dropped in
+	 * `vitest.browser.config.ts`) the test is green with any implementation.
 	 */
 	it('панель у правого края прижата к видимой области, а не к innerWidth', async () => {
 		render(RightEdgeHarness)
@@ -1008,16 +1019,16 @@ describe('граница — видимая область', () => {
 		const root = document.documentElement
 		const anchorRect = anchor().getBoundingClientRect()
 
-		// Сдвиг действительно нужен: без него панель, выровненная по левому
-		// краю якоря, ушла бы за край видимой области.
+		// The shift is really needed: without it the panel, aligned to the
+		// anchor's left edge, would go past the visible area's edge.
 		await expect.poll(() => panel().getBoundingClientRect().width).toBeCloseTo(300, 0)
 		expect(anchorRect.left + 300, 'без сдвига панель не помещается').toBeGreaterThan(
 			root.clientWidth,
 		)
 
-		// Правый край панели совпал с краем видимой области. Сравнение
-		// двустороннее: «зазор меньше пикселя» выполняется и у панели, которая
-		// уехала за край, — то есть ровно в том случае, который сторожим.
+		// The panel's right edge matches the visible area's edge. The comparison is
+		// two-sided: "a gap under a pixel" holds for a panel that went past the
+		// edge too — exactly the case under guard.
 		await expect
 			.poll(() => panel().getBoundingClientRect().right)
 			.toBeCloseTo(root.clientWidth, 0)

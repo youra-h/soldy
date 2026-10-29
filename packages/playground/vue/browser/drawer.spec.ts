@@ -1,19 +1,21 @@
 /**
- * Drawer в настоящем браузере: раскладка темы, переход и жест указателем.
+ * Drawer in a real browser: the theme's layout, the transition and the pointer
+ * gesture.
  *
- * Край, размер и место в контейнере раскладывает тема, без замеров, — jsdom
- * их не считает, и юнит-тесты (`ui/vue/__tests__/drawer.spec.ts`) видят только
- * классы, переменные и `data-*`. Здесь — что из них выходит на экране:
- * панель у своего края (логического — в RTL `start` справа), во всю высоту
- * или ширину, внутри контейнера — в его границах; въезд и выезд — переходом
- * темы: без вспышки в первых кадрах, подложка темнеет вместе с панелью, а без
- * движения панель проявляется и гаснет на месте. Прокрутка страницы, запертая
- * под панелью, возвращается, когда панель выехала, — вернись она на
- * закрытии, панель съехала бы вбок в начале выезда.
+ * The edge, the size and the place in a container are laid out by the theme,
+ * without measuring, — jsdom doesn't compute them, and the unit tests
+ * (`ui/vue/__tests__/drawer.spec.ts`) see only classes, variables and `data-*`.
+ * Here is what they make on screen: the panel at its edge (a logical one — in
+ * RTL `start` is on the right), full height or width, inside a container —
+ * within its bounds; sliding in and out goes by the theme's transition: no
+ * flash in the first frames, the backdrop darkens together with the panel, and
+ * without motion the panel fades in and out in place. The page's scrolling,
+ * locked under the panel, comes back once the panel has slid out: back on
+ * closing, it would shift the panel sideways at the start of its slide.
  *
- * Жест — настоящей мышью и пальцем: захват указателя, `touch-action`,
- * прокрутку касанием и то, что нажатие на полосу не уводит фокус, jsdom не
- * выполняет вовсе.
+ * The gesture — with a real mouse and a finger: jsdom performs neither pointer
+ * capture, nor `touch-action`, nor scrolling by touch, nor a press on the strip
+ * that doesn't take focus away.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -31,50 +33,51 @@ import { classicScrollbars, touchInput } from './engine'
 
 import '@soldy-ui/theme-oren'
 
-/** Ширина боковой панели по умолчанию в теме oren: `20rem`. */
+/** The side panel's default width in the oren theme: `20rem`. */
 const DEFAULT_WIDTH = 320
 
-/** Полоса подложки, которую тема оставляет при любом размере панели: `3rem`. */
+/** The strip of backdrop the theme leaves at any panel size: `3rem`. */
 const GAP = 48
 
-/** Зона захвата полосы жеста — не меньше 24px: минимум цели по WCAG 2.5.8. */
+/** The gesture strip's grip zone — at least 24px: the target minimum of WCAG 2.5.8. */
 const GRIP_ZONE = 24
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 1
 
 /**
- * Первые кадры въезда, мс: шесть кадров при 60 Гц. Прошли к этому мгновению
- * панель и затемнение почти весь путь — въезд выглядит вспышкой.
+ * The first frames of sliding in, ms: six frames at 60 Hz. Had the panel and
+ * the dimming covered almost all their path by this moment, the slide would
+ * look like a flash.
  */
 const FIRST_FRAMES = 100
 
-/** Доля пути, дальше которой въезд за первые кадры — вспышка. */
+/** The share of the path past which sliding in during the first frames is a flash. */
 const FLASH_SHARE = 2 / 3
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Содержимое с двумя остановками Tab. */
+/** Content with two Tab stops. */
 const inside = (): VNode[] => [
 	h('button', { class: 'so-test-first' }, 'Первая'),
 	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 type TShowOptions = {
-	/** Панель в контейнере 600 × 300 с отступом от края страницы */
+	/** The panel in a 600 × 300 container offset from the page's edge */
 	contained?: boolean
-	/** Направление контейнера */
+	/** The container's direction */
 	dir?: TLine
 	content?: () => VNode[]
-	/** Подписчик `close:before` */
+	/** A `close:before` subscriber */
 	onCloseBefore?: (event: TCloseEvent) => void
-	/** Страница выше экрана — с полосой прокрутки */
+	/** The page is taller than the screen — with a scrollbar */
 	tall?: boolean
 }
 
 /**
- * Страница с кнопкой, которая открывает панель, и панель на `v-model:visible`
- * — на странице или в контейнере.
+ * A page with a button that opens the panel, and the panel on
+ * `v-model:visible` — on the page or in a container.
  */
 const show = async (
 	props: Partial<IDrawerProps> = {},
@@ -137,7 +140,7 @@ const show = async (
 	return { shown, reasons }
 }
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector; without it the test fails here, not on reading a property. */
 const find = (selector: string): HTMLElement => {
 	const element = document.querySelector(selector)
 
@@ -154,15 +157,16 @@ const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
 /**
- * Открыть событием в самой странице, а не через `userEvent`: переход читается
- * сразу после рендера и не успевает доиграть, как бы ни медлил прогон.
+ * Open by an event in the page itself, not through `userEvent`: the transition
+ * is read right after the render and has no time to play out, however slow the
+ * run.
  */
 const openInPage = async () => {
 	opener().click()
 	await nextTick()
 }
 
-/** Закрыть Escape — так же, событием в самой странице, у узла под фокусом. */
+/** Close by Escape — the same way, by an event in the page itself, at the focused node. */
 const escapeInPage = async () => {
 	active()?.dispatchEvent(
 		new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
@@ -170,20 +174,20 @@ const escapeInPage = async () => {
 	await nextTick()
 }
 
-/** Открыть кнопкой страницы, дождаться фокуса в панели и конца въезда. */
+/** Open by the page's button, wait for focus in the panel and for the end of sliding in. */
 const open = async () => {
 	await userEvent.click(opener())
 	await expect.poll(active).toBe(find('.so-test-first'))
 	await settled(panel())
 }
 
-/** Видимая область — граница, от которой тема отсчитывает край панели. */
+/** The visible area — the boundary from which the theme counts the panel's edge. */
 const viewport = () => ({
 	width: document.documentElement.clientWidth,
 	height: document.documentElement.clientHeight,
 })
 
-/** Отступы панели от четырёх краёв области. */
+/** The panel's gaps to the four edges of an area. */
 const gaps = (
 	box: DOMRect,
 	area: { left: number; top: number; width: number; height: number },
@@ -194,14 +198,14 @@ const gaps = (
 	bottom: area.top + area.height - box.bottom,
 })
 
-/** Протянуть мышью от точки узла на `dx`, `dy` — настоящими событиями, по шагам. */
+/** Drag the mouse from the node's middle by `dx`, `dy` — with real events, in steps. */
 const drag = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 	const box = from.getBoundingClientRect()
 	const x = box.width / 2
 	const y = box.height / 2
 
-	// `force`: точка отпускания — за пределами узла, и проверка попадания
-	// Playwright ждала бы, пока узел окажется под ней
+	// `force`: the release point is outside the node, and Playwright's hit check
+	// would wait until the node is under it
 	return userEvent.dragAndDrop(from, from, {
 		sourcePosition: { x, y },
 		targetPosition: { x: x + dx, y: y + dy },
@@ -224,8 +228,8 @@ afterEach(async () => {
 
 describe('край', () => {
 	/**
-	 * Панель прижата к своему краю вплотную и тянется во всю другую ось.
-	 * `start` и `end` — логические стороны: в RTL они меняются местами.
+	 * The panel is pressed close to its edge and stretches along the whole other
+	 * axis. `start` and `end` are logical sides: in RTL they swap.
 	 */
 	it.each<[TDrawerPlacement, 'ltr' | 'rtl', 'left' | 'right' | 'top' | 'bottom']>([
 		['end', 'ltr', 'right'],
@@ -330,19 +334,19 @@ describe('внутри контейнера', () => {
 		expect(Math.abs(box.bottom)).toBeLessThan(EPSILON)
 		expect(Math.round(cover.width)).toBe(Math.round(host.width))
 		expect(Math.round(cover.height)).toBe(Math.round(host.height))
-		// Подложка не на весь экран: выше контейнера — страница
+		// The backdrop doesn't cover the whole screen: above the container is the page
 		expect(document.elementFromPoint(host.left + 4, host.top - 4)).not.toBe(backdrop())
-		// Прокрутку документа панель в контейнере не запирает
+		// A panel in a container doesn't lock the document's scrolling
 		expect(getComputedStyle(document.documentElement).overflow).not.toBe('hidden')
 	})
 })
 
 describe('въезд и выезд', () => {
 	/**
-	 * Переход держит тема: `@starting-style` даёт показанной панели
-	 * положение за краем, `allow-discrete` откладывает `display: none` до
-	 * конца выезда. Хуков под анимацию у кода нет — видно это по переходу на
-	 * самой панели.
+	 * The theme holds the transition: `@starting-style` gives the shown panel a
+	 * place beyond its edge, `allow-discrete` defers `display: none` until the
+	 * end of sliding out. The code has no animation hooks — it is seen by the
+	 * transition on the panel itself.
 	 */
 	it('открытие — панель въезжает переходом, закрытие — выезжает и только потом пропадает', async () => {
 		await show()
@@ -354,7 +358,8 @@ describe('въезд и выезд', () => {
 		await settled(panel())
 		await escapeInPage()
 
-		// Выезжает: до конца перехода панель в документе, а не `display: none`
+		// It slides out: until the transition's end the panel is in the document,
+		// not `display: none`
 		expect(panel().dataset.open).toBe('false')
 		expect(getComputedStyle(panel()).display).not.toBe('none')
 
@@ -362,11 +367,11 @@ describe('въезд и выезд', () => {
 	})
 
 	/**
-	 * Вспышка — это первые кадры: панель и затемнение к ним почти доехали. Так
-	 * было с кривой vaul на 300 мс — под девять десятых пути за 100 мс. Порог —
-	 * во времени, а не в доле длительности: так ловится и укороченная
-	 * длительность. Переходы стоят на паузе, и мгновение выбирает тест, а не
-	 * скорость прогона.
+	 * A flash is the first frames: by then the panel and the dimming have almost
+	 * arrived. So it was with the vaul curve at 300 ms — nearly nine tenths of the
+	 * path in 100 ms. The threshold is in time, not a share of the duration: so a
+	 * shortened duration is caught too. The transitions are paused, and the
+	 * moment is chosen by the test, not by the run's speed.
 	 */
 	it('въезд без вспышки: за первые 100 мс панель и затемнение не проходят двух третей пути', async () => {
 		await show()
@@ -377,7 +382,7 @@ describe('въезд и выезд', () => {
 			transitionOf(backdrop(), 'opacity'),
 		]
 
-		// Путь панели — по её рамке: в вычисленном `translate` смесь процентов и px
+		// The panel's path — by its box: the computed `translate` mixes percents and px
 		const look = () => ({
 			edge: panel().getBoundingClientRect().left,
 			shade: Number(getComputedStyle(backdrop()).opacity),
@@ -399,7 +404,7 @@ describe('въезд и выезд', () => {
 		const end = look()
 		const share = (key: 'edge' | 'shade') => (early[key] - start[key]) / (end[key] - start[key])
 
-		// Путь начат — иначе проверка ниже прошла бы и на застывшей панели
+		// The path has begun — otherwise the check below would pass on a frozen panel too
 		expect(share('edge')).toBeGreaterThan(0)
 		expect(share('shade')).toBeGreaterThan(0)
 
@@ -408,8 +413,9 @@ describe('въезд и выезд', () => {
 	})
 
 	/**
-	 * Затемнение — часть того же движения: начинается и кончается вместе с
-	 * панелью. Выезд короче въезда: закрытую панель не ждут.
+	 * The dimming is part of the same motion: it starts and ends together with
+	 * the panel. Sliding out is shorter than sliding in: nobody waits for a closed
+	 * panel.
 	 */
 	it('подложка идёт вместе с панелью, выезд короче въезда', async () => {
 		const durations = () => ({
@@ -435,17 +441,17 @@ describe('въезд и выезд', () => {
 	})
 
 	/**
-	 * Въезд и выезд — движение, и без него (здесь — по просьбе системы) панель
-	 * проявляется и гаснет на месте прозрачностью, как окно Dialog, а
-	 * подложка темнеет и светлеет, как всегда. Исчезает панель по-прежнему
-	 * после перехода. Режим приложения поверх системы —
-	 * `browser/motion-mode.spec.ts`.
+	 * Sliding in and out is motion, and without it (here — at the system's
+	 * request) the panel fades in and out in place by opacity, like a Dialog,
+	 * while the backdrop darkens and lightens as always. The panel still
+	 * disappears after the transition. The application's mode over the system's
+	 * one — `browser/motion-mode.spec.ts`.
 	 */
 	it('система просит меньше движения — панель проявляется и гаснет на месте', async () => {
 		await reducedMotion('reduce')
 		await show()
 
-		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		// The emulation is on — otherwise the guard would check the usual mode
 		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
 		await openInPage()
@@ -454,8 +460,8 @@ describe('въезд и выезд', () => {
 		expect(transitioning(panel())).not.toContain('translate')
 		expect(transitioning(backdrop())).toContain('opacity')
 
-		// Начало проявления — на том же месте, где панель встанет: переход
-		// стоит на паузе, и мгновение выбирает тест
+		// Fading in starts at the place where the panel will stand: the transition
+		// is paused, and the moment is chosen by the test
 		const fade = transitionOf(panel(), 'opacity')
 
 		fade.pause()
@@ -474,7 +480,7 @@ describe('въезд и выезд', () => {
 
 		const place = panel().getBoundingClientRect().left
 
-		// Гаснет на месте и до конца перехода остаётся в документе
+		// It fades in place and stays in the document until the transition's end
 		await whileLeaving(panel(), escapeInPage, () => {
 			expect(transitioning(panel()), 'не едет').not.toContain('translate')
 			expect(panel().getBoundingClientRect().left, 'панель на месте').toBe(place)
@@ -485,14 +491,15 @@ describe('въезд и выезд', () => {
 })
 
 /**
- * Боковая панель въезжает из-за своего края и уезжает за него. Место у края —
- * логическое, его браузер ставит сам, а сторону сдвига — тема: у сдвига
- * логических направлений нет. Знак она берёт у ближайшего `dir`, как браузер —
- * направленность, поэтому панель с `direction="ltr"` в RTL-предке въезжает из-за
- * своего края, а не из-за противоположного (`browser/directions.ts`).
+ * A side panel slides in from beyond its edge and slides out past it. The place
+ * at the edge is logical, and the browser sets it itself, while the side of the
+ * shift is set by the theme: a shift has no logical directions. The theme takes
+ * the sign from the nearest `dir`, as the browser takes the directionality, so
+ * a panel with `direction="ltr"` in an RTL ancestor slides in from beyond its
+ * own edge, not the opposite one (`browser/directions.ts`).
  *
- * Предок панели на странице — `body`: туда она уходит телепортом. Предок панели
- * в контейнере — сам контейнер.
+ * The panel's ancestor on the page is `body`: the teleport takes it there. The
+ * ancestor of a panel in a container is the container itself.
  */
 describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name', (scenario) => {
 	const sides = sidesOf(scenario.line)
@@ -520,8 +527,8 @@ describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name'
 				: { left: 0, right: viewport().width }
 			const entry = transitionOf(panel(), 'translate')
 
-			// Начало въезда — положение закрытой панели: переход стоит на паузе, и
-			// мгновение выбирает тест
+			// Sliding in starts at the closed panel's position: the transition is
+			// paused, and the moment is chosen by the test
 			entry.pause()
 			entry.currentTime = 0
 
@@ -531,11 +538,11 @@ describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name'
 
 			const box = panel().getBoundingClientRect()
 
-			// Отступ открытой панели от своего края и заход закрытой за него
+			// The open panel's gap to its edge and how far the closed one goes past it
 			const gap = edge === 'left' ? box.left - area.left : area.right - box.right
 			const beyond = edge === 'left' ? area.left - away.right : away.left - area.right
 
-			// Открытая — у своего края: направление сцены то, что ждёт тест
+			// The open one is at its edge: the scene's direction is the one the test expects
 			expect(Math.abs(gap), `открытая — у края ${edge}`).toBeLessThan(EPSILON)
 			expect(beyond, `закрытая — целиком за краем ${edge}`).toBeGreaterThan(-EPSILON)
 		},
@@ -543,25 +550,26 @@ describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name'
 })
 
 /**
- * Прокрутку страницы под панелью запирает замок, и полоса прокрутки уходит
- * вместе с ней. Вернись она, едва панель закрыли, область просмотра сузилась
- * бы, и панель у правого края начала бы выезд, съехав на всю ширину полосы.
- * Поэтому прокрутка возвращается, когда панель исчезла.
+ * The page's scrolling under the panel is locked, and the scrollbar goes with
+ * it. Back as soon as the panel is closed, it would narrow the viewport, and a
+ * panel at the right edge would start sliding out shifted by the bar's whole
+ * width. So scrolling comes back once the panel has disappeared.
  */
 describe.runIf(classicScrollbars)('прокрутка страницы', () => {
-	/** Прокрутка страницы заперта: замок держит `overflow` у `html`. */
+	/** The page's scrolling is locked: the lock holds `overflow` on `html`. */
 	const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
 
 	it('пока панель выезжает, прокрутка заперта и панель не сдвинута, а исчезла — прокрутка вернулась', async () => {
 		await show({}, { tall: true })
 
-		// Полоса занимает место — иначе панели не от чего съезжать, и сторож пуст
+		// The bar takes room — otherwise the panel has nothing to shift from, and
+		// the guard is empty
 		expectClassicScrollbar()
 
 		await open()
 
-		// Место панели без выезда: `offsetLeft` не видит `translate`, а рамку
-		// двигает сам выезд
+		// The panel's place without the slide: `offsetLeft` doesn't see
+		// `translate`, while its box is moved by the slide itself
 		const place = panel().offsetLeft
 
 		await whileLeaving(panel(), escapeInPage, () => {
@@ -659,7 +667,7 @@ describe('жест', () => {
 
 		await drag(handle(), -200, 0)
 
-		// Сдвиг уходит кадром позже, и панель едет на место переходом
+		// The offset goes a frame later, and the panel travels back by a transition
 		await expect
 			.poll(() => Math.abs(panel().getBoundingClientRect().right - edge) < EPSILON)
 			.toBe(true)
@@ -731,22 +739,22 @@ describe('жест', () => {
 	})
 
 	/**
-	 * Палец — не мышь. Касание браузер сам захватывает за узлом под пальцем, и
-	 * жест, который переносит захват на панель, этот узел захвата лишает. А в
-	 * теле, которое прокручивается, `touch-action` панели не действует, и
-	 * касание браузер забирает под прокрутку. Протяжка — командой протокола
-	 * DevTools (`commands.touchDrag`).
+	 * A finger isn't a mouse. The browser captures a touch to the node under the
+	 * finger by itself, and the gesture, moving the capture to the panel, takes
+	 * it from that node. And in a body that scrolls, the panel's `touch-action`
+	 * doesn't apply, and the browser takes the touch for scrolling. The drag is a
+	 * DevTools protocol command (`commands.touchDrag`).
 	 */
 	describe.runIf(touchInput)('пальцем', () => {
-		/** Абзац в теле, за который тянут всю панель, и две остановки Tab. */
+		/** A paragraph in the body to pull the whole panel by, and two Tab stops. */
 		const text = (): VNode[] => [
 			h('p', { class: 'so-test-text', style: 'width: 120px' }, 'Текст тела'),
 			...inside(),
 		]
 
 		/**
-		 * Тело выше панели — прокручивается. Абзац — на 300 px ниже начала
-		 * тела: протяжка от него вверх остаётся в окне.
+		 * The body is taller than the panel — it scrolls. The paragraph is 300 px
+		 * below the body's start: a drag up from it stays within the window.
 		 */
 		const tallText = (): VNode[] => [
 			...inside(),
@@ -756,15 +764,16 @@ describe('жест', () => {
 		]
 
 		/**
-		 * Края с осью жеста: боковой — по горизонтали, нижний — по вертикали.
-		 * Нижняя — своей высоты: протяжка на её половину остаётся в окне.
+		 * Edges with the gesture's axis: a side one — horizontal, the bottom one —
+		 * vertical. The bottom panel has its own height: a drag by half of it stays
+		 * within the window.
 		 */
 		const EDGES = [
 			['end', { placement: 'end' }],
 			['bottom', { placement: 'bottom', height: 300 }],
 		] as const
 
-		/** Путь пальца к краю — на полразмера панели по оси края. */
+		/** The finger's path to the edge — half the panel's size along the edge's axis. */
 		const halfway = (placement: 'end' | 'bottom'): [number, number] => {
 			const box = panel().getBoundingClientRect()
 
@@ -799,8 +808,8 @@ describe('жест', () => {
 		)
 
 		/**
-		 * Поперёк оси касание — не жест: прокрутку тела браузер ведёт сам, и
-		 * гашение касания во время жеста её не трогает.
+		 * A touch across the axis isn't the gesture: the browser scrolls the body by
+		 * itself, and the touch cancelled during a gesture doesn't affect that.
 		 */
 		it('end, за всю панель: по телу вертикально — тело прокрутилось, панель открыта', async () => {
 			const { reasons } = await show({ swipe: 'panel' }, { content: tallText })
@@ -814,8 +823,8 @@ describe('жест', () => {
 		})
 
 		/**
-		 * Вдоль оси тело прокручивается само, и жест из него не начинается
-		 * (`scrollsAlong`) — у пальца то же правило, что у мыши.
+		 * Along the axis the body scrolls by itself, and the gesture doesn't start
+		 * from it (`scrollsAlong`) — a finger has the same rule as a mouse.
 		 */
 		it('bottom, за всю панель: тело выше панели — протяжка вверх прокручивает его, панель открыта', async () => {
 			const { reasons } = await show(
@@ -846,8 +855,8 @@ describe('закрытие', () => {
 	})
 
 	/**
-	 * Панель закрывается ещё на `pointerdown`, и фокус возвращается сразу —
-	 * модель фокуса гасит `mousedown` этого нажатия, как у окна.
+	 * The panel closes on `pointerdown` already, and focus returns at once — the
+	 * focus model cancels this press's `mousedown`, as with a dialog.
 	 */
 	it('нажатие по подложке закрывает, фокус остаётся на кнопке, с которой открыли', async () => {
 		const { reasons } = await show()
