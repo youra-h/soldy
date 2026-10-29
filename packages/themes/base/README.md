@@ -80,11 +80,10 @@ The library — `@soldy-ui/core`, `@soldy-ui/setup` and the rest — shares one 
 package has a version of its own. A theme depends on the library by a range, `^` and the library
 version it is built against: the `so-*` classes, the `data-*` attributes and the `--so-*`
 variables are what a theme is written against, and a release that breaks them falls outside that
-range — from the first release without a suffix on: the pre-releases of one version
-(`0.3.0-alpha.N`) all fall inside it. On this package a theme depends by its exact version, with no
-`^`: its CSS goes into the theme's stylesheet and its plugins run with the theme's behavior, so both
-have to come from one release. And it is a dependency, not a dev dependency: the behavior of the
-theme imports its plugins at run time.
+range: before `1.0` a breaking change bumps the minor version (`0.3.1` → `0.4.0`). On this package a
+theme depends by its exact version, with no `^`: its CSS goes into the theme's stylesheet and its
+plugins run with the theme's behavior, so both have to come from one release. And it is a
+dependency, not a dev dependency: the behavior of the theme imports its plugins at run time.
 
 ```json
 {

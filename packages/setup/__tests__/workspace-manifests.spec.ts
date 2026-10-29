@@ -744,34 +744,32 @@ function checkChangesets(
 }
 
 /**
- * Before `1.0` the library is not ready, and the version says so with a
- * suffix: changesets is in pre-mode, a release is `0.3.0-alpha.0`. A version
- * without a suffix is allowed — pre-mode starts from it — while a suffix of
- * another tag means the mode was changed past changesets.
+ * Before `1.0` a version is `0.x` without a suffix: the `0.x` itself marks the
+ * library as unstable, and a breaking change bumps the minor. So changesets is
+ * not in pre-mode. A suffix stays only while `.changeset/pre.json` leaves the
+ * mode (`exit`): the next `changeset version` drops it together with the file.
  */
 function checkPrerelease(
 	preState: TPreState | undefined,
 	library: readonly TWorkspacePackage[],
 ): string[] {
-	const violations: string[] = []
-
-	for (const { dir, manifest } of library) {
-		const { version } = manifest
-
-		if (typeof version !== 'string' || !version.startsWith('0.')) {
-			continue
-		}
-
-		if (preState?.mode !== 'pre') {
-			violations.push(
-				`${dir}: версия ${version}, а changesets не в pre-режиме — до 1.0 выпуск идёт с суффиксом (npx changeset pre enter alpha)`,
-			)
-		} else if (version.includes('-') && !version.includes(`-${preState.tag}.`)) {
-			violations.push(`${dir}: версия ${version}, а тег pre-режима — ${preState.tag}`)
-		}
+	if (preState?.mode === 'pre') {
+		return [
+			`.changeset/pre.json: pre-режим «${preState.tag}» — до 1.0 версия идёт 0.x без суффикса (npx changeset pre exit)`,
+		]
 	}
 
-	return violations
+	if (preState?.mode === 'exit') {
+		return []
+	}
+
+	return library.flatMap(({ dir, manifest }) => {
+		const { version } = manifest
+
+		return typeof version === 'string' && version.startsWith('0.') && version.includes('-')
+			? [`${dir}: версия ${version} с суффиксом — до 1.0 версия идёт 0.x без суффикса`]
+			: []
+	})
 }
 
 describe('манифесты пакетов воркспейса', () => {
@@ -871,12 +869,12 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('до 1.0 выпуск идёт pre-режимом, с суффиксом версии', () => {
+	it('до 1.0 версия идёт 0.x без суффикса, pre-режима нет', () => {
 		const violations = checkPrerelease(readPreState(), library)
 
 		expect(
 			violations,
-			'Pre-режим разошёлся с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
+			'Версии разошлись с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
 		).toEqual([])
 	})
 })
@@ -1467,27 +1465,31 @@ describe('сторож манифестов', () => {
 		expect(checkChangesets([changeset('major')], [library({})])).toEqual([])
 	})
 
-	it('версия 0.x без pre-режима — нарушение', () => {
+	it('pre-режим — нарушение, какие бы ни были версии', () => {
 		const message =
-			'packages/example: версия 0.3.0, а changesets не в pre-режиме — до 1.0 выпуск идёт с суффиксом (npx changeset pre enter alpha)'
-
-		expect(checkPrerelease(undefined, [library({ version: '0.3.0' })])).toEqual([message])
-		expect(
-			checkPrerelease({ mode: 'exit', tag: 'alpha' }, [library({ version: '0.3.0' })]),
-		).toEqual([message])
-	})
-
-	it('суффикс не того тега — нарушение', () => {
-		expect(
-			checkPrerelease({ mode: 'pre', tag: 'alpha' }, [library({ version: '0.3.0-beta.1' })]),
-		).toEqual(['packages/example: версия 0.3.0-beta.1, а тег pre-режима — alpha'])
-	})
-
-	it('pre-режим с суффиксом своего тега или до первого выпуска, версия 1.x — без нарушений', () => {
+			'.changeset/pre.json: pre-режим «alpha» — до 1.0 версия идёт 0.x без суффикса (npx changeset pre exit)'
 		const alpha = { mode: 'pre', tag: 'alpha' }
 
-		expect(checkPrerelease(alpha, [library({ version: '0.3.0-alpha.2' })])).toEqual([])
-		expect(checkPrerelease(alpha, [library({ version: '0.2.0' })])).toEqual([])
+		expect(checkPrerelease(alpha, [library({ version: '0.3.0-alpha.2' })])).toEqual([message])
+		expect(checkPrerelease(alpha, [library({ version: '0.3.0' })])).toEqual([message])
+	})
+
+	it('версия 0.x с суффиксом без pre.json — нарушение', () => {
+		expect(checkPrerelease(undefined, [library({ version: '0.3.0-alpha.7' })])).toEqual([
+			'packages/example: версия 0.3.0-alpha.7 с суффиксом — до 1.0 версия идёт 0.x без суффикса',
+		])
+	})
+
+	// The next `changeset version` drops the suffix together with pre.json
+	it('выход из pre-режима с суффиксом — без нарушений', () => {
+		const exit = { mode: 'exit', tag: 'alpha' }
+
+		expect(checkPrerelease(exit, [library({ version: '0.3.0-alpha.7' })])).toEqual([])
+		expect(checkPrerelease(exit, [library({ version: '0.3.0' })])).toEqual([])
+	})
+
+	it('0.x без суффикса и версия 1.x — без нарушений', () => {
+		expect(checkPrerelease(undefined, [library({ version: '0.3.0' })])).toEqual([])
 		expect(checkPrerelease(undefined, [library({})])).toEqual([])
 	})
 })

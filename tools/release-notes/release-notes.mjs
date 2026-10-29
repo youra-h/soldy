@@ -125,8 +125,7 @@ export function entriesOf(changelog, version) {
  * Tag and title of the GitHub Release for the published packages: `v<version>`
  * of the library when it is among them; otherwise the title lists the packages
  * (`theme-base@0.3.1, theme-oren@0.3.1`) and the release takes the tag that
- * changesets gave the first of them. A suffix on any version makes it a
- * pre-release.
+ * changesets gave the first of them.
  */
 export function releaseOf(published, shared) {
 	if (published.length === 0) {
@@ -134,7 +133,6 @@ export function releaseOf(published, shared) {
 	}
 
 	const library = new Set(published.filter(({ name }) => shared.has(name)).map((p) => p.version))
-	const prerelease = published.some(({ version }) => version.includes('-'))
 
 	if (library.size > 1) {
 		throw new Error(
@@ -145,13 +143,13 @@ export function releaseOf(published, shared) {
 	if (library.size === 1) {
 		const [version] = library
 
-		return { tag: `v${version}`, title: `v${version}`, prerelease }
+		return { tag: `v${version}`, title: `v${version}` }
 	}
 
 	const sorted = [...published].sort((a, b) => a.name.localeCompare(b.name))
 	const title = sorted.map(({ name, version }) => `${shortName(name)}@${version}`).join(', ')
 
-	return { tag: `${sorted[0].name}@${sorted[0].version}`, title, prerelease }
+	return { tag: `${sorted[0].name}@${sorted[0].version}`, title }
 }
 
 /**

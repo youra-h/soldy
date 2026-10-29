@@ -60,7 +60,8 @@ jobs:
         run: npm run check:published-imports
 
       # changeset publish publishes every package whose version npm does not
-      # have and tags it `<package>@<version>`.
+      # have, under the npm tag `latest` (there is no pre-mode), and tags it
+      # `<package>@<version>` in git.
       - if: steps.check.outputs.publish == 'true'
         name: Публикация
         run: npx changeset publish
@@ -68,25 +69,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
-      # In pre-mode changesets publishes under the tag of the mode (`alpha`),
-      # and `npm i @soldy-ui/vue` without a version would install the release
-      # before the suffix. Until a release without a suffix exists, `latest` is
-      # the fresh pre-release (docs/agents/build.md, «Версии пакетов») — of
-      # every package, at its own version. No publication condition: a rerun
-      # after a failed step brings the tags along, and a repeat is harmless.
-      - name: Тег latest — на выпуск
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          node tools/release-notes/cli.mjs packages > "$RUNNER_TEMP/packages.txt"
-          while read -r spec; do
-            npm dist-tag add "$spec" latest
-          done < "$RUNNER_TEMP/packages.txt"
-
       # One GitHub Release per release: `v<version>` of the library, and
       # without it — on the tag of its first package. The notes read every
-      # package at its own version (tools/release-notes); a version with a
-      # suffix makes it a pre-release.
+      # package at its own version (tools/release-notes).
       - if: steps.check.outputs.publish == 'true'
         name: Теги и GitHub Release
         env:

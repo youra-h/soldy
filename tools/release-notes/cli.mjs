@@ -1,8 +1,7 @@
 // Release steps of .github/workflows/release.yml (docs/agents/build.md,
 // «Версии пакетов»):
 //
-//   node tools/release-notes/cli.mjs packages            # name@version of every package that goes to npm
-//   node tools/release-notes/cli.mjs unpublished         # those npm does not have yet
+//   node tools/release-notes/cli.mjs unpublished         # name@version of every package npm does not have yet
 //   node tools/release-notes/cli.mjs notes <links>       # notes for name@version lines from stdin
 //   node tools/release-notes/cli.mjs release <links> <sha>  # the GitHub Release for them
 //
@@ -26,7 +25,7 @@ import {
 const ROOT = resolve(import.meta.dirname, '../..')
 
 const USAGE = [
-	'node tools/release-notes/cli.mjs packages|unpublished',
+	'node tools/release-notes/cli.mjs unpublished',
 	'node tools/release-notes/cli.mjs notes <links>',
 	'node tools/release-notes/cli.mjs release <links> <sha>',
 ].join('\n')
@@ -68,11 +67,8 @@ function readPublished() {
 }
 
 function run(command, args) {
-	if (command === 'packages' || command === 'unpublished') {
-		const packages = npmPackages(ROOT)
-		const listed = command === 'packages' ? packages : unpublishedOf(packages, view)
-
-		for (const { name, version } of listed) {
+	if (command === 'unpublished' && args.length === 0) {
+		for (const { name, version } of unpublishedOf(npmPackages(ROOT), view)) {
 			console.log(`${name}@${version}`)
 		}
 
@@ -93,22 +89,10 @@ function run(command, args) {
 			return 0
 		}
 
-		const { tag, title, prerelease } = releaseOf(published, shared)
-		const flags = prerelease ? ['--prerelease'] : []
+		const { tag, title } = releaseOf(published, shared)
 		const { status } = spawnSync(
 			'gh',
-			[
-				'release',
-				'create',
-				tag,
-				'--title',
-				title,
-				'--target',
-				sha,
-				'--notes-file',
-				'-',
-				...flags,
-			],
+			['release', 'create', tag, '--title', title, '--target', sha, '--notes-file', '-'],
 			{ input: notes, stdio: ['pipe', 'inherit', 'inherit'] },
 		)
 

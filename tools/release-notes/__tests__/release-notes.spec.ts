@@ -28,7 +28,7 @@ const SHARED = new Set(['@soldy-ui/core', '@soldy-ui/vue'])
 const CORE_CHANGELOG = [
 	'# @soldy-ui/core',
 	'',
-	'## 0.3.0-alpha.8',
+	'## 0.4.0',
 	'',
 	'### Minor Changes',
 	'',
@@ -39,9 +39,9 @@ const CORE_CHANGELOG = [
 	'',
 	'- def5678: Select: the panel closes on Escape',
 	'- Updated dependencies [abc1234]',
-	'  - @soldy-ui/plugins@0.3.0-alpha.8',
+	'  - @soldy-ui/plugins@0.4.0',
 	'',
-	'## 0.3.0-alpha.7',
+	'## 0.3.2',
 	'',
 	'### Patch Changes',
 	'',
@@ -63,7 +63,7 @@ function pkg(name: string, version: string, text = '') {
 
 describe('пункты раздела версии', () => {
 	it('пункты changeset с продолжением, без строк зависимостей', () => {
-		expect(entriesOf(CORE_CHANGELOG, '0.3.0-alpha.8')).toEqual([
+		expect(entriesOf(CORE_CHANGELOG, '0.4.0')).toEqual([
 			{
 				kind: 'Minor Changes',
 				text: 'Tabs: `closeable` is renamed to `closable`\n  — rename it in your templates',
@@ -73,13 +73,13 @@ describe('пункты раздела версии', () => {
 	})
 
 	it('раздел кончается на следующей версии', () => {
-		expect(entriesOf(CORE_CHANGELOG, '0.3.0-alpha.7')).toEqual([
+		expect(entriesOf(CORE_CHANGELOG, '0.3.2')).toEqual([
 			{ kind: 'Patch Changes', text: 'An older change' },
 		])
 	})
 
 	it('раздела версии нет — пунктов нет', () => {
-		expect(entriesOf(CORE_CHANGELOG, '0.3.0-alpha.9')).toEqual([])
+		expect(entriesOf(CORE_CHANGELOG, '0.4.1')).toEqual([])
 	})
 
 	it('раздел из одних зависимостей — пунктов нет', () => {
@@ -98,9 +98,9 @@ describe('пункты раздела версии', () => {
 
 describe('имя и версия пакета', () => {
 	it('@ скоупа — не разделитель', () => {
-		expect(parseSpec('@soldy-ui/core@0.3.0-alpha.8')).toEqual({
+		expect(parseSpec('@soldy-ui/core@0.4.0')).toEqual({
 			name: '@soldy-ui/core',
-			version: '0.3.0-alpha.8',
+			version: '0.4.0',
 		})
 		expect(shortName('@soldy-ui/theme-oren')).toBe('theme-oren')
 	})
@@ -113,11 +113,11 @@ describe('имя и версия пакета', () => {
 describe('что не опубликовано', () => {
 	it('пакет, версии которого в npm нет, — в списке', () => {
 		const npm = new Map([
-			['@soldy-ui/core@0.3.0-alpha.8', '0.3.0-alpha.8'],
+			['@soldy-ui/core@0.4.0', '0.4.0'],
 			['@soldy-ui/theme-oren@0.3.1', undefined],
 		])
 		const packages = [
-			{ name: '@soldy-ui/core', version: '0.3.0-alpha.8' },
+			{ name: '@soldy-ui/core', version: '0.4.0' },
 			{ name: '@soldy-ui/theme-oren', version: '0.3.1' },
 		]
 
@@ -130,16 +130,12 @@ describe('что не опубликовано', () => {
 describe('GitHub Release выпуска', () => {
 	it('с библиотекой — её версией, тема с другой версией его не меняет', () => {
 		const published = [
-			{ name: '@soldy-ui/core', version: '0.3.0-alpha.8' },
-			{ name: '@soldy-ui/theme-oren', version: '0.3.0-alpha.11' },
-			{ name: '@soldy-ui/vue', version: '0.3.0-alpha.8' },
+			{ name: '@soldy-ui/core', version: '0.4.0' },
+			{ name: '@soldy-ui/theme-oren', version: '0.3.5' },
+			{ name: '@soldy-ui/vue', version: '0.4.0' },
 		]
 
-		expect(releaseOf(published, SHARED)).toEqual({
-			tag: 'v0.3.0-alpha.8',
-			title: 'v0.3.0-alpha.8',
-			prerelease: true,
-		})
+		expect(releaseOf(published, SHARED)).toEqual({ tag: 'v0.4.0', title: 'v0.4.0' })
 	})
 
 	it('без библиотеки — на теге первого пакета, в заголовке все пакеты', () => {
@@ -151,23 +147,13 @@ describe('GitHub Release выпуска', () => {
 		expect(releaseOf(published, SHARED)).toEqual({
 			tag: '@soldy-ui/theme-base@0.4.1',
 			title: 'theme-base@0.4.1, theme-oren@0.4.2',
-			prerelease: false,
 		})
-	})
-
-	it('суффикс у любой версии — предварительный выпуск', () => {
-		const published = [
-			{ name: '@soldy-ui/core', version: '1.2.0' },
-			{ name: '@soldy-ui/icons-lucide', version: '1.1.0-beta.0' },
-		]
-
-		expect(releaseOf(published, SHARED).prerelease).toBe(true)
 	})
 
 	it('библиотека двумя версиями — ошибка', () => {
 		const published = [
-			{ name: '@soldy-ui/core', version: '0.3.0-alpha.8' },
-			{ name: '@soldy-ui/vue', version: '0.3.0-alpha.9' },
+			{ name: '@soldy-ui/core', version: '0.4.0' },
+			{ name: '@soldy-ui/vue', version: '0.4.1' },
 		]
 
 		expect(() => releaseOf(published, SHARED)).toThrow('more than one version')
@@ -182,28 +168,21 @@ describe('заметки выпуска', () => {
 	it('пункт — один раз, с пакетами; тема — со своей версией', () => {
 		const shared = 'Tags: the close button is keyboard-reachable'
 		const packages = [
-			pkg(
-				'@soldy-ui/core',
-				'0.3.0-alpha.8',
-				changelog('@soldy-ui/core', '0.3.0-alpha.8', [shared]),
-			),
+			pkg('@soldy-ui/core', '0.4.0', changelog('@soldy-ui/core', '0.4.0', [shared])),
 			pkg(
 				'@soldy-ui/theme-oren',
-				'0.3.0-alpha.11',
-				changelog('@soldy-ui/theme-oren', '0.3.0-alpha.11', [
-					shared,
-					'Tags: a calmer focus ring',
-				]),
+				'0.3.5',
+				changelog('@soldy-ui/theme-oren', '0.3.5', [shared, 'Tags: a calmer focus ring']),
 			),
-			pkg('@soldy-ui/vue', '0.3.0-alpha.8', changelog('@soldy-ui/vue', '0.3.0-alpha.8', [])),
+			pkg('@soldy-ui/vue', '0.4.0', changelog('@soldy-ui/vue', '0.4.0', [])),
 		]
 
 		expect(notesOf(packages, SHARED, LINKS)).toBe(
 			[
 				'### Patch Changes',
 				'',
-				`- ${shared} (\`@soldy-ui/core\`, \`@soldy-ui/theme-oren@0.3.0-alpha.11\`)`,
-				'- Tags: a calmer focus ring (`@soldy-ui/theme-oren@0.3.0-alpha.11`)',
+				`- ${shared} (\`@soldy-ui/core\`, \`@soldy-ui/theme-oren@0.3.5\`)`,
+				'- Tags: a calmer focus ring (`@soldy-ui/theme-oren@0.3.5`)',
 				'',
 			].join('\n'),
 		)
@@ -214,13 +193,13 @@ describe('заметки выпуска', () => {
 		const oren = [
 			'# @soldy-ui/theme-oren',
 			'',
-			'## 0.3.0-alpha.12',
+			'## 0.4.3',
 			'',
 			'### Patch Changes',
 			'',
 			'- 2222222: Released now',
 			'',
-			'## 0.3.0-alpha.9',
+			'## 0.4.0',
 			'',
 			'### Patch Changes',
 			'',
@@ -228,27 +207,19 @@ describe('заметки выпуска', () => {
 			'',
 		].join('\n')
 		const packages = [
-			pkg(
-				'@soldy-ui/core',
-				'0.3.0-alpha.9',
-				changelog('@soldy-ui/core', '0.3.0-alpha.9', ['A fix']),
-			),
-			pkg('@soldy-ui/theme-oren', '0.3.0-alpha.12', oren),
+			pkg('@soldy-ui/core', '0.4.0', changelog('@soldy-ui/core', '0.4.0', ['A fix'])),
+			pkg('@soldy-ui/theme-oren', '0.4.3', oren),
 		]
 		const notes = notesOf(packages, SHARED, LINKS)
 
-		expect(notes).toContain('- Released now (`@soldy-ui/theme-oren@0.3.0-alpha.12`)')
+		expect(notes).toContain('- Released now (`@soldy-ui/theme-oren@0.4.3`)')
 		expect(notes).not.toContain('Released earlier')
 	})
 
 	it('тема без своих пунктов — последней строкой, пакет библиотеки — нет', () => {
 		const packages = [
-			pkg(
-				'@soldy-ui/core',
-				'0.3.0-alpha.8',
-				changelog('@soldy-ui/core', '0.3.0-alpha.8', ['A fix']),
-			),
-			pkg('@soldy-ui/vue', '0.3.0-alpha.8', changelog('@soldy-ui/vue', '0.3.0-alpha.8', [])),
+			pkg('@soldy-ui/core', '0.4.0', changelog('@soldy-ui/core', '0.4.0', ['A fix'])),
+			pkg('@soldy-ui/vue', '0.4.0', changelog('@soldy-ui/vue', '0.4.0', [])),
 			pkg('@soldy-ui/theme-oren', '0.3.1', changelog('@soldy-ui/theme-oren', '0.3.1', [])),
 		]
 		const notes = notesOf(packages, SHARED, LINKS)
@@ -268,12 +239,8 @@ describe('заметки выпуска', () => {
 	it('пунктов больше предела — ссылки на changelog пакетов с пунктами', () => {
 		const many = Array.from({ length: INLINE_LIMIT + 1 }, (_, index) => `Change ${index}`)
 		const packages = [
-			pkg(
-				'@soldy-ui/core',
-				'0.3.0-alpha.8',
-				changelog('@soldy-ui/core', '0.3.0-alpha.8', many),
-			),
-			pkg('@soldy-ui/vue', '0.3.0-alpha.8', changelog('@soldy-ui/vue', '0.3.0-alpha.8', [])),
+			pkg('@soldy-ui/core', '0.4.0', changelog('@soldy-ui/core', '0.4.0', many)),
+			pkg('@soldy-ui/vue', '0.4.0', changelog('@soldy-ui/vue', '0.4.0', [])),
 			pkg(
 				'@soldy-ui/theme-oren',
 				'0.3.1',
@@ -294,11 +261,7 @@ describe('заметки выпуска', () => {
 
 	it('пунктов нет ни у кого — так и сказано', () => {
 		const packages = [
-			pkg(
-				'@soldy-ui/core',
-				'0.3.0-alpha.8',
-				CORE_CHANGELOG.replace(/- [0-9a-f]{7}: .*/g, ''),
-			),
+			pkg('@soldy-ui/core', '0.4.0', CORE_CHANGELOG.replace(/- [0-9a-f]{7}: .*/g, '')),
 		]
 
 		expect(notesOf(packages, SHARED, LINKS)).toBe('No changes in the packages.\n')
