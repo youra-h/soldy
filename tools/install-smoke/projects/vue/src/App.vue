@@ -20,7 +20,7 @@ const rows = [{ data: { name: 'Anna', age: 30 } }, { data: { name: 'Boris', age:
 
 <template>
 	<main>
-		<Button text="Open dialog" @click="open = true" />
+		<Button text="Open dialog" variant="accent" @click="open = true" />
 		<Dialog v-model:visible="open">
 			<template #title>Settings</template>
 			<p>Dialog content</p>

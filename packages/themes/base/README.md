@@ -115,6 +115,11 @@ import 'my-theme'
 useTheme(theme)
 ```
 
+Where the stylesheet goes depends on the build: an import from a module, as above, with Vite,
+Next.js, SvelteKit and SolidStart; `@import 'my-theme';` in `src/styles.css` with Angular CLI; `css`
+in `nuxt.config.ts` with Nuxt. The behavior is imported from a module in every build — step 6 has
+it bring the values of the theme along.
+
 ### 2. The stylesheet: this package first
 
 Import this package first in the theme's stylesheet and build the stylesheet into one file, with
@@ -252,6 +257,13 @@ The registries: `IComponentVariants`, `IButtonViews` (also the rows of ListBox a
 pills of Tags), `ITabsViews`, `ICheckBoxViews`, `IRadioGroupViews`, `ISkeletonShapes`,
 `ISkeletonAnimations`. Declare every modifier your CSS has, and nothing it does not have.
 
+The augmentation works once the file is in the application's program, and the package name brings
+it there only from a module of TS. The stylesheet is not always imported from one: Angular CLI and
+Nuxt take it from their configs, and there `variant="accent"` fails the type check. So the
+declarations of `./setup`, which every application imports, reference this file (step 6): the
+values reach the types wherever the stylesheet is plugged in, and the list of values stays in one
+place.
+
 ### 6. The behavior: `./setup`
 
 A theme hands over its plugins as one `defineTheme` object, and `useTheme` registers them for every
@@ -260,6 +272,8 @@ component of their type, including those drawn as parts of other components. Thi
 plugins of this package in its object:
 
 ```ts
+/// <reference types="my-theme" preserve="true" />
+
 import { TTable, TTabs, TToasts } from '@soldy-ui/core'
 import { defineTheme } from '@soldy-ui/setup'
 import { TTableHeadPlugin, TTabsViewPlugin, TToastsFrontPlugin } from '@soldy-ui/theme-base/setup'
@@ -273,6 +287,11 @@ export default defineTheme({
   ],
 })
 ```
+
+The reference on top names the theme's own package: its `types` is `index.d.ts`, and the
+declarations of `./setup` bring the values of step 5 along. Keep `preserve="true"` — tsc drops a
+plain reference from the declarations it emits, as it drops `import type {}`. Done when the built
+`dist/setup/index.d.ts` carries the reference.
 
 - **`TTabsViewPlugin`**, on Tabs, writes on the bar `.so-tabs__bar` — the list of tabs with the
   slots `leading` and `trailing` at its edges: `--so-tabs-active-pos` and `--so-tabs-active-size`

@@ -261,6 +261,25 @@ declare module '@soldy-ui/core' {
 класс строкой. Пропсы React, Solid и Svelte и шаблоны Vue выводятся из пропсов
 ядра и получают имена темы сами.
 
+**Значения едут с поведением темы.** Дополнение действует, когда `index.d.ts`
+темы — в программе TS приложения, а по имени пакета его туда приносит только
+импорт из модуля TS. Лист стилей так подключает не каждая сборка: Angular CLI
+берёт его из `styles` в `angular.json`, Nuxt — из `css` в `nuxt.config.ts`, и
+`variant="accent"` там падал на типах (`TS2322: Type '"accent"' is not
+assignable to type 'undefined'`). Поведение темы (`./setup`) приложение
+импортирует из TS в любой сборке — ради `useTheme`. Поэтому исходник
+поведения открывается директивой
+`/// <reference types="<пакет темы>" preserve="true" />`, и декларации
+`./setup` приносят `index.d.ts` с собой. Форма — суть решения: `import type {}`
+tsc из деклараций выкидывает, директиву без `preserve="true"` — тоже (TS ≥
+5.5), а `path` запрещает `@typescript-eslint/triple-slash-reference`. Список
+значений остаётся один, в `index.d.ts`: копия дополнения в `setup/` или другой
+`types` в манифесте были бы вторым путём к тем же типам. Строка
+`import type {}` в каждом приложении, которую велел бы README, отвергнута:
+забытая, она молча делала бы тип `never`. Так устроена oren
+(`packages/themes/oren/AGENTS.md`, «Поведение темы: `setup/`») и своя тема по
+шагам (`packages/themes/base/README.md`, «Make your own theme»).
+
 `view` у ListBox и Accordion — псевдоним `TButtonView`, а не свой реестр:
 строку рисует `Button`, и вид списка — это вид его строк. Со своим реестром
 проброс `view` в строку нельзя было бы типизировать. Проброс остаётся: это
@@ -331,6 +350,13 @@ declare module '@soldy-ui/core' {
   `[view]="'…'"`, `{ view: '…' }`).
 - `themes/oren/__tests__/theme-values.spec.ts` — каждый модификатор темы в CSS
   объявлен в `index.d.ts`.
+- `themes/oren/__tests__/package-build.spec.ts` — декларации `./setup`, которые
+  эмиттер tsc выпускает из исходника, ссылаются на имя пакета, а оно ведёт в
+  `index.d.ts`. Проверен поломкой: без `preserve="true"` ссылки в декларациях
+  нет.
+- Прогон установки (`docs/agents/build.md`, «Прогон установки») — у кнопки
+  страницы каждого проекта `variant="accent"`: в Angular CLI, Angular SSR и Nuxt
+  проверка типов проходит, только если значения дошли через `./setup`.
 - Стенд сверяет свои списки значений с `index.d.ts` oren (см. «Playground»).
 
 ## Движение: один режим на библиотеку (критично)

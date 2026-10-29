@@ -26,14 +26,12 @@ yourself. To make a theme of your own on the same layer, see
 
 ## Usage
 
-The stylesheet and the theme's own behavior are plugged in side by side, in the application's entry
-point:
+The theme comes in two parts: the stylesheet and the behavior. The behavior is plugged in once, in
+the application's entry point:
 
 ```ts
 import { useTheme } from '@soldy-ui/setup'
 import oren from '@soldy-ui/theme-oren/setup'
-
-import '@soldy-ui/theme-oren'
 
 useTheme(oren)
 ```
@@ -43,6 +41,22 @@ layer. Without it the styles are in place, but what CSS takes from plugin variab
 there is no bar under the active tab, the card of the active tab does not move to a new one, focus
 in a table body slips under a sticky head that wraps into several rows, and the toasts behind the
 front one of a stack take its height at once, with no transition.
+
+The stylesheet goes where the build takes styles from:
+
+- **Vite** — Vue, React, Svelte, Solid, Web Components: `import '@soldy-ui/theme-oren'` in the
+  entry module, next to `useTheme`;
+- **Next.js** — the same import in the root layout, `app/layout.tsx`;
+- **SvelteKit** — the same import in the root layout, `src/routes/+layout.svelte`;
+- **SolidStart** — the same import in `src/app.tsx`;
+- **Angular CLI** — `@import '@soldy-ui/theme-oren';` in `src/styles.css`, the file listed in
+  `styles` of `angular.json`. Not an `import` in `main.ts`: Angular CLI puts CSS imported from a
+  module into a chunk the page never loads;
+- **Nuxt** — `css: ['@soldy-ui/theme-oren']` in `nuxt.config.ts`.
+
+The values of the theme — `variant`, `view`, `shape`, `animation` — come with the behavior: the
+declarations of `@soldy-ui/theme-oren/setup` reference them, so `variant="accent"` type-checks
+however the stylesheet is plugged in.
 
 The dark scheme is switched on with an attribute on the root element:
 

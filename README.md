@@ -157,6 +157,11 @@ useTheme(oren)
 createApp(App).mount('#app')
 ```
 
+Angular CLI and Nuxt plug the stylesheet in their own way instead — `@import` in `src/styles.css`
+and `css` in `nuxt.config.ts`; where it goes in each build is in
+[packages/themes/oren/README.md](packages/themes/oren/README.md#usage). The values of the theme reach
+the types with `./setup` either way.
+
 The dark scheme is switched on with `<html data-so-theme="oren-dark">`.
 
 Motion — panels sliding in, thumbs travelling, indicators running — follows the system's
