@@ -14,7 +14,7 @@ import type { ITemplateContext } from './types'
 
 /** Класс элемента: по нему шаблон находит имя и тег, под которыми тот зарегистрирован. */
 export type TPartClass<T extends HTMLElement> = {
-	is(node: unknown): node is T
+	[Symbol.hasInstance](node: unknown): node is T
 }
 
 export type TDetailOptions = {
@@ -37,7 +37,7 @@ export function createItem<T extends HTMLElement>(owner: Document, part: TPartCl
 
 	const element = owner.createElement(registration.tag, { is: registration.name })
 
-	if (!part.is(element)) {
+	if (!(element instanceof part)) {
 		throw new Error(
 			`[soldy] <${registration.tag} is="${registration.name}"> не элемент своего класса`,
 		)

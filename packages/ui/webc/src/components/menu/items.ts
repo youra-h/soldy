@@ -182,7 +182,7 @@ export function drawItems(
 		rowsOf(sections ?? [], submenus, separated),
 		(row) => rowOf(ctx, row, submenus),
 		(node, row) => {
-			if (row.kind === 'group' && TMenuGroupElement.is(node))
+			if (row.kind === 'group' && node instanceof TMenuGroupElement)
 				fillGroup(ctx, node, row.section, submenus)
 		},
 	)
