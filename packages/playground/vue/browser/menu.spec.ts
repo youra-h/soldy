@@ -112,6 +112,9 @@ const openByKey = async (key = '{ArrowDown}') => {
 	trigger().focus()
 	await userEvent.keyboard(key)
 	await expect.poll(isOpen).toBe(true)
+	await expect
+		.poll(() => items().some((item) => find('.so-button', item) === active()))
+		.toBe(true)
 }
 
 beforeEach(() => {
