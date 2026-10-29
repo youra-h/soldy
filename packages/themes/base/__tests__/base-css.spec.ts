@@ -471,7 +471,8 @@ describe('слой базы', () => {
 
 		index?.walkAtRules('import', (rule) => {
 			const [, file = '', layer = ''] =
-				/^'\.\/(?:components\/)?([\w-]+)\.css'\s+layer\(([\w.-]+)\)$/.exec(rule.params) ?? []
+				/^'\.\/(?:components\/)?([\w-]+)\.css'\s+layer\(([\w.-]+)\)$/.exec(rule.params) ??
+				[]
 
 			imports.push({ layer, file })
 		})

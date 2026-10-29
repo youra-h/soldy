@@ -109,7 +109,7 @@ export type TSplitSheet = {
 	readonly common: string
 	/** Part → its file: the blocks of its layers. */
 	readonly parts: ReadonlyMap<string, string>
-	/** The whole sheet: the shared part and every part, in their order. */
+	/** The whole sheet: the statement of every layer, then the compiled sheet with the same rules. */
 	readonly whole: string
 }
 
@@ -204,18 +204,27 @@ export function splitSheet(
 		}
 	}
 
-	visit(postcss.parse(css).nodes, '')
+	const root = postcss.parse(css)
+
+	visit(root.nodes, '')
 
 	const order = [...parts.keys()]
 	const files = new Map(order.map((part) => [part, (parts.get(part) ?? []).join('')]))
-	const head = `${banner.join('')}@layer ${layers.join(',')};${common.join('')}`
+	const statement = `${banner.join('')}@layer ${layers.join(',')};`
+	// The whole sheet keeps the order of the compiled one — the shared layer of
+	// themes first, then the theme: the same rules in the same layers as in the
+	// pieces, and gzip finds the repeats of neighbouring parts next to each
+	// other. Its own statements give way to the one of every layer
+	const compiled = root.nodes.filter(
+		(node) => node.type !== 'comment' && !(node.type === 'atrule' && node.nodes === undefined),
+	)
 
 	return {
 		layers,
 		order,
-		common: head,
+		common: statement + common.join(''),
 		parts: files,
-		whole: head + order.map((part) => files.get(part)).join(''),
+		whole: statement + compiled.join(''),
 	}
 }
 

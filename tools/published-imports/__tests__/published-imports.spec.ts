@@ -236,6 +236,19 @@ describe('точки входа — в тарболле', () => {
 		])
 	})
 
+	it('цель шаблона подпути — на месте, когда в тарболле есть файл под неё', () => {
+		// Stylesheets per component, as the theme oren ships them: `./*.css`
+		const manifest: TManifest = {
+			name: '@soldy-ui/theme-sample',
+			exports: { './*.css': './dist/components/*.css' },
+		}
+
+		expect(findMissingEntries(manifest, ['dist/components/button.css'])).toEqual([])
+		expect(findMissingEntries(manifest, ['dist/index.css', 'dist/components.css'])).toEqual([
+			'dist/components/*.css',
+		])
+	})
+
 	it('цели `main` и `types` без `exports` — как у адаптера Angular', () => {
 		const manifest: TManifest = {
 			name: '@soldy-ui/sample',

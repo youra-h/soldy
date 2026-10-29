@@ -525,15 +525,23 @@ never loads, and the components stay unstyled. The values of the theme, such as
 `variant="accent"`, reach the template type check with `@soldy-ui/theme-oren/setup`.
 
 The `initial` budget of Angular CLI counts the raw bytes of the initial JavaScript and the global
-styles, and a project made by `ng new` fails the build above 1 MB. The theme's stylesheet holds the
-CSS of every component — 356 kB raw, 35 kB gzip — and a page with a Button, an Input, a Select, a
-Dialog, a Table and a DatePicker adds 698 kB of JavaScript (170 kB gzip): 1.05 MB raw, 205 kB over
-the network. Raise the error threshold of the `initial` entry in `budgets` of the `production`
-configuration in `angular.json`:
+styles, and a project made by `ng new` fails the build above 1 MB. `@soldy-ui/theme-oren` holds the
+CSS of every component — 361 kB raw, 36 kB gzip — and a page with a Button, an Input, a Select, a
+Dialog, a Table and a DatePicker adds 698 kB of JavaScript (170 kB gzip): over the threshold. Import
+the stylesheets of the components your pages use instead — each one with the shared part of the
+theme:
 
-```json
-{ "type": "initial", "maximumWarning": "500kB", "maximumError": "2MB" }
+```css
+@import '@soldy-ui/theme-oren/button.css';
+@import '@soldy-ui/theme-oren/dialog.css';
+@import '@soldy-ui/theme-oren/input.css';
+@import '@soldy-ui/theme-oren/select.css';
+@import '@soldy-ui/theme-oren/table.css';
+@import '@soldy-ui/theme-oren/date-picker.css';
 ```
+
+The same page then loads 205 kB of CSS, 903 kB in all, within the budget (the theme's README,
+[Only the components you use](https://github.com/youra-h/soldy-ui/tree/main/packages/themes/oren#only-the-components-you-use)).
 
 ## Documentation
 
