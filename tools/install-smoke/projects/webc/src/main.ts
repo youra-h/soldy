@@ -8,11 +8,12 @@ import '@soldy-ui/theme-oren'
 useIcons(material)
 useTheme(oren)
 
-// As the README of the adapter writes it: `instanceof` gives the element's props
+// As the README of the adapter writes it: `is()` gives the element its full
+// type, props included — `instanceof` stops at the native class of the tag
 const dialog = document.getElementById('settings')
 
 document.getElementById('open')?.addEventListener('click', () => {
-	if (dialog instanceof TDialogElement) {
+	if (TDialogElement.is(dialog)) {
 		dialog.visible = true
 	}
 })

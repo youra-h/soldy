@@ -539,7 +539,10 @@ list taken out of the window draws all of its items again.
 ```
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
-a core instance can be handed over as `ctrl` before the element is connected:
+a core instance can be handed over as `ctrl` before the element is connected. Check a node with the
+element's class, `TButtonElement.is(el)`: it gives the node the element's full type, props
+included, while `instanceof` narrows only to the native class of the tag (`HTMLButtonElement`),
+which knows none of them:
 
 ```ts
 import { TButton } from '@soldy-ui/core'
@@ -547,7 +550,7 @@ import { TButtonElement } from '@soldy-ui/webc'
 
 const el = document.createElement('button', { is: 'so-button' })
 
-if (el instanceof TButtonElement) {
+if (TButtonElement.is(el)) {
   el.ctrl = new TButton({ text: 'Save' })
   el.addEventListener('so:action:press', () => console.log('pressed'))
   document.body.append(el)
