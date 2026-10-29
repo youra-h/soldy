@@ -42,6 +42,13 @@ export const classicScrollbars = chromium
 export const forcedColorsRepaint = !webkit
 
 /**
+ * Pointer capture takes `:hover` along: the capturing node is hovered, wherever
+ * the pointer is, and the node under it is not. WebKit, like Safari, keeps
+ * `:hover` on the node under the pointer.
+ */
+export const captureMovesHover = !webkit
+
+/**
  * Arrows of a native radio group go round: from the last radio to the first
  * and back. WebKit stops at the ends, and RadioGroup keeps the native
  * keyboard of the browser.

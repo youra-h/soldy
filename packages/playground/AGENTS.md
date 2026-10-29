@@ -40,10 +40,10 @@ Playwright (конфиг `vitest.browser.config.ts`).
   её порты: на середине прогона модули переставали грузиться. Прогон в Docker
   идёт на шрифтах образа и с задержкой до сервера в контейнере, и спеки,
   завязанные на ширину текста и тайминг, там бывают красными при зелёном CI —
-  например, `narrow-window.spec.ts`, `anchored-swipe.spec.ts`, протяжка в
-  `slider.spec.ts` и `table-sticky-head.spec.ts`, панель подменю в
-  `angular-host.spec.ts` (задача 869fn0u0m). На Linux и macOS WebKit идёт
-  рядом с Chromium, в `test:layout`.
+  например, `narrow-window.spec.ts`, `anchored-swipe.spec.ts`,
+  `table-sticky-head.spec.ts`, панель подменю в `angular-host.spec.ts`
+  (задача 869fn1mnm). На Linux и macOS WebKit идёт рядом с Chromium, в
+  `test:layout`.
 - Перед первым прогоном на машине: `npx playwright install chromium` (на Linux
   и macOS — `chromium webkit`). Ставится в `%LOCALAPPDATA%\ms-playwright`
   (Windows) или `~/.cache/ms-playwright`. После апгрейда Playwright ревизия
@@ -73,10 +73,12 @@ Playwright (конфиг `vitest.browser.config.ts`).
   композиция IME `compose` — только у Chromium; касания в WebKit — мобильный
   прогон, задача 869fjcb0p), накладная полоса прокрутки, перекраска страницы
   браузером в режиме принудительных цветов (у Safari режима нет, эмуляция
-  WebKit отвечает только медиазапросу), стрелки нативного радио по кругу,
-  Shift+F10 как клавиша контекстного меню. Что у движка есть, а библиотека или
-  спек делают не так, — чинят в теме, плагинах или спеке, а до починки
-  пропускают временно: `webkitUntil('<задача>')`, с задачей на снятие.
+  WebKit отвечает только медиазапросу), `:hover`, который захват указателя
+  уводит на захватившего (WebKit, как Safari, держит его на узле под
+  указателем), стрелки нативного радио по кругу, Shift+F10 как клавиша
+  контекстного меню. Что у движка есть, а библиотека или спек делают не так, —
+  чинят в теме, плагинах или спеке, а до починки пропускают временно:
+  `webkitUntil('<задача>')`, с задачей на снятие.
   Настройки системы (`browser/media.ts`) эмулирует команда `emulateMedia`
   (`page.emulateMedia` Playwright) — в обоих браузерах.
 - Спек зелёный локально и красный в CI — прогнать его на Linux, в образе

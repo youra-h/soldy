@@ -1,19 +1,21 @@
 /**
- * Маркер обязательного поля в настоящем браузере — точка в углу начала
- * строки у Input, NumberInput, DateInput, CheckBox и Switch.
+ * The required-field marker in a real browser — a dot in the line-start corner
+ * of Input, NumberInput, DateInput, CheckBox and Switch.
  *
- * Маркер — псевдоэлемент `::after` с абсолютной позицией, и угол ему задаёт
- * общее правило, а не каждый контрол сам: у CheckBox и Switch — правило общего
- * слоя тем (`themes/base/src/required.css`), у полей — миксин темы, пока их
- * структура в ней (`themes/oren/src/mixins/_required.scss`). Сторона у
- * угла логическая: в RTL начало строки — справа. Раньше маркер стоял слева в
- * любом направлении и в RTL оказывался у конца поля — у Input, CheckBox и
- * Switch; DateInput задавал сторону сам. Раскладки jsdom не считает — поэтому
- * спек браузерный.
+ * The marker is an absolutely positioned `::after`, and its corner comes from
+ * one shared rule, not from each control: the shared theme layer's
+ * (`themes/base/src/required.css`). The corner's side is logical: in RTL the
+ * line starts on the right. Before, the marker stood on the left in any
+ * direction and in RTL ended up at the field's end — at Input, CheckBox and
+ * Switch; DateInput set its side itself. jsdom computes no layout, hence a
+ * browser spec.
  *
- * Своего узла у псевдоэлемента нет, и место маркера спек читает из
- * вычисленного стиля: у абсолютно позиционированного элемента браузер отдаёт
- * `left` и `right` посчитанными — в пикселях от краёв содержащего блока.
+ * A pseudo-element has no node of its own, and the spec reads the marker's
+ * place from the computed style: for an absolutely positioned element the
+ * browser resolves `left` and `right` — in pixels from the containing block's
+ * edges. Across directions only the inset from the line's start is compared:
+ * the far one also takes the field's width, which is not the marker's, and
+ * WebKit lays a native field out a pixel narrower in RTL.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -22,18 +24,17 @@ import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { CheckBox, DateInput, Input, NumberInput, Switch } from '@soldy-ui/vue'
 
 import { find, style } from './colors'
-import { webkitUntil } from './engine'
 
 import '@soldy-ui/theme-oren'
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 0.5
 
 type TDir = 'ltr' | 'rtl'
 
-/** Обязательный контрол и узел, чей `::after` рисует маркер. */
+/** A required control and the node whose `::after` draws the marker. */
 const CASES: readonly { name: string; host: string; markup: () => VNode }[] = [
 	{ name: 'Input', host: '.so-input', markup: () => h(Input, { required: true }) },
 	{
@@ -54,7 +55,7 @@ const CASES: readonly { name: string; host: string; markup: () => VNode }[] = [
 	{ name: 'Switch', host: '.so-switch', markup: () => h(Switch, { required: true }) },
 ]
 
-/** Разметка в сцене заданного направления — направление страницы, у предка. */
+/** The markup in a scene of the given direction — the page's, on an ancestor. */
 async function show(markup: () => VNode, dir: TDir): Promise<void> {
 	render(defineComponent({ render: () => h('div', { dir, style: 'padding: 16px' }, [markup()]) }))
 
@@ -62,11 +63,11 @@ async function show(markup: () => VNode, dir: TDir): Promise<void> {
 	await nextFrame()
 }
 
-/** Место маркера: отступы его коробки от левого и правого края содержащего блока. */
+/** The marker's place: its box's insets from the containing block's left and right edges. */
 function marker(host: string): { left: number; right: number } {
 	const look = style(find(host), '::after')
 
-	// Маркер нарисован: без него проверка сторон ниже прошла бы вхолостую
+	// The marker is drawn: without it the side checks below would pass idly
 	expect(look.content, 'маркер нарисован').not.toBe('none')
 	expect(look.position).toBe('absolute')
 
@@ -77,9 +78,8 @@ afterEach(() => {
 	cleanup()
 })
 
-describe.each(CASES)('$name: маркер обязательного поля', ({ name, host, markup }) => {
-	it('в LTR — у левого края, в RTL — зеркально, у правого', async (context) => {
-		context.skip(name === 'Input' && webkitUntil('869fn0u0m'))
+describe.each(CASES)('$name: маркер обязательного поля', ({ host, markup }) => {
+	it('в LTR — у левого края, в RTL — зеркально, у правого', async () => {
 		await show(markup, 'ltr')
 
 		const ltr = marker(host)
@@ -89,10 +89,12 @@ describe.each(CASES)('$name: маркер обязательного поля', 
 
 		const rtl = marker(host)
 
-		// Начало строки в LTR — слева: маркер у левого края, а не у правого
+		// The line starts on the left in LTR and on the right in RTL: the marker
+		// is nearer to that edge
 		expect(ltr.left, 'LTR: ближе к левому краю').toBeLessThan(ltr.right)
+		expect(rtl.right, 'RTL: ближе к правому краю').toBeLessThan(rtl.left)
 
+		// The inset from the line's start is mirrored
 		expect(Math.abs(rtl.right - ltr.left), 'RTL: от правого края').toBeLessThanOrEqual(EPSILON)
-		expect(Math.abs(rtl.left - ltr.right), 'RTL: от левого края').toBeLessThanOrEqual(EPSILON)
 	})
 })

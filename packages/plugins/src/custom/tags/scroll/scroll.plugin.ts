@@ -7,50 +7,52 @@ import type { IDomEventTarget } from '../../../utils'
 import type { TTagsScrollPluginEvents } from './types'
 
 /**
- * TTagsScrollPlugin — доводка элемента под фокусом в ряду тегов `scroll`.
+ * TTagsScrollPlugin — brings the focused element of a `scroll` tags row into
+ * view.
  *
- * Ряд `scroll` прокручивается сам, и у его края элемент под фокусом оставался
- * срезанным: частично видимый браузер при фокусе не докручивает вовсе, а
- * целиком скрытый ставит по центру — и тогда срезанным остаётся его тег.
- * Поэтому по `focusin` тег под фокусом в окно ряда доводит плагин. Окно —
- * паддинг-бокс ряда без `scroll-padding` (`scrollWindowOf`): сколько места
- * держать у края, знает только тема — у самостоятельного ряда это запас под
- * кольцо фокуса, в поле Select — ширина подсказки. Счёт — общая доводка
- * (`nearestShift`), та же, что у ленты (`TScrollerViewportPlugin`).
+ * A `scroll` row scrolls by itself, and at its edge the focused element stayed
+ * cut: a partly visible one the browser doesn't scroll to on focus at all, a
+ * fully hidden one it centres — and then its tag stays cut. So on `focusin`
+ * the plugin brings the focused tag into the row's window: the padding box
+ * without `scroll-padding` (`scrollWindowOf`). How much room to keep at the
+ * edge only the theme knows — the focus ring's margin in a standalone row, the
+ * fade's width in a Select field. The arithmetic is shared with the scroller
+ * (`nearestShift`, `TScrollerViewportPlugin`).
  *
- * Плагин, а не расширение или разметка: и прямоугольники, и прокрутка — это
- * операции над DOM. Решения:
- * - в окно встаёт тег — прямой ребёнок ряда, а не сам элемент под фокусом.
- *   Фокус получает строка тега или его крестик, а кольцо фокуса в режиме
- *   выбора рисует пилюля: со строкой в окне и пилюлей за краем кольцо и
- *   крестик оставались бы срезанными. А крестик без подписи не скажет, какой
- *   тег он закроет. Тег шире окна накрывает окно, а элемент под фокусом лежит
- *   в окне;
- * - сдвиг — ближайший, при котором тег в окне, а не «начало к началу», как у
- *   ленты: снапа у ряда нет, и ставить тег к началу окна незачем;
- * - только фокус с клавиатуры (`:focus-visible`). Фокус от нажатия мышью
- *   браузер сам не докручивает, и правильно: сдвинься ряд между нажатием и
- *   отпусканием, под указателем оказался бы другой тег, и `click` не дошёл бы;
- * - сдвиг синхронный, прямо в обработчике, и мгновенный (`instant`), как у
- *   ленты (`TScrollerViewportPlugin`). Свою докрутку фокуса браузер делает
- *   тоже мгновенно и плавную анимацию перебил бы. При переходе Tab он
- *   докручивает ещё до `focusin`, после `focus()` — сразу за ним, и после
- *   нашего сдвига ему уже нечего делать.
+ * A plugin, not an extension or markup: boxes and scrolling are DOM
+ * operations. Decisions:
+ * - the tag — the row's direct child — goes into the window, not just the
+ *   focused element. Focus lands on the tag's line or its close button, while
+ *   in selection mode the ring is drawn by the pill: with the line in the
+ *   window and the pill past the edge, the ring and the close button stayed
+ *   cut, and a close button without its label doesn't tell which tag it
+ *   closes. A tag wider than the window covers it, with the focused element
+ *   inside;
+ * - the shift is the nearest one that puts the tag in the window, not start to
+ *   start as in the scroller: the row has no snap;
+ * - keyboard focus only (`:focus-visible`). The browser doesn't scroll to the
+ *   focus of a mouse press either, and rightly: had the row moved between the
+ *   press and the release, another tag would be under the pointer, and `click`
+ *   would miss;
+ * - the shift is synchronous, right in the handler, and instant, as in the
+ *   scroller. The browser's own scroll to focus is instant too and would cut a
+ *   smooth one short. On Tab it scrolls before `focusin`, after `focus()` —
+ *   right after it, and after our shift it has nothing left to do.
  *
- * Путь у доводки один: тег доводит только этот плагин — и при входе в набор
- * по Tab, и после `focus()` плагина клавиатуры (`TTagsKeyboardPlugin`:
- * стрелки, `Home`/`End`, сосед закрытого тега). Своей докрутки у плагина
- * клавиатуры нет: `focus()` после нажатия клавиши браузер считает фокусом с
- * клавиатуры, и `focusin` приходит сюда с `:focus-visible`.
+ * The plugin is the only path that brings a tag in: on entering the set by
+ * Tab and after `focus()` of the keyboard plugin (`TTagsKeyboardPlugin`:
+ * arrows, `Home`/`End`, the neighbour of a closed tag). The keyboard plugin
+ * doesn't scroll by itself: `focus()` after a key press the browser counts as
+ * keyboard focus, and `focusin` comes here with `:focus-visible`.
  *
- * Слушает, только пока `overflow === 'scroll'`: в `wrap` ряд не
- * прокручивается. Режим выражен подпиской, а не проверкой внутри
- * обработчика.
+ * Listens only while `overflow === 'scroll'`: in `wrap` the row doesn't
+ * scroll. The mode is expressed by the subscription, not by a check in the
+ * handler.
  */
 export class TTagsScrollPlugin extends TBasePlugin<ITags, TTagsScrollPluginEvents> {
-	/** Корень набора: в `scroll` он и есть прокручиваемый ряд. */
+	/** The set's root: in `scroll` it is the scrolling row. */
 	private _root: Element | null = null
-	/** Узел, на котором слушатель висит сейчас; `null` — не висит. */
+	/** The node the listener is on now; `null` — it isn't on any. */
 	private _listening: IDomEventTarget | null = null
 	private _owner: ITags | null = null
 
@@ -84,7 +86,7 @@ export class TTagsScrollPlugin extends TBasePlugin<ITags, TTagsScrollPluginEvent
 
 	private readonly _onOverflowChange = (): void => this._syncListener()
 
-	/** Слушатель висит на корне, пока узел есть и ряд прокручивается сам. */
+	/** The listener is on the root while there is a node and the row scrolls by itself. */
 	private _syncListener(): void {
 		const target: IDomEventTarget | null =
 			this._owner?.overflow === 'scroll' ? this._root : null
@@ -99,11 +101,12 @@ export class TTagsScrollPlugin extends TBasePlugin<ITags, TTagsScrollPluginEvent
 	}
 
 	/**
-	 * Фокус с клавиатуры пришёл в ряд — довести его тег в окно (почему так — в
-	 * описании плагина).
+	 * Keyboard focus came into the row — bring its tag into the window (why —
+	 * in the class description).
 	 *
-	 * Сам ряд бывает остановкой Tab, когда своих в нём нет: браузер делает её у
-	 * прокручиваемой области. Он и есть окно, и доводить его некуда.
+	 * The row itself is a Tab stop when it has none of its own: the browser
+	 * makes one of a scrolling area. It is the window, and there is nowhere to
+	 * bring it.
 	 */
 	private readonly _onFocusIn = (event: FocusEvent): void => {
 		const root = this._root
@@ -119,6 +122,18 @@ export class TTagsScrollPlugin extends TBasePlugin<ITags, TTagsScrollPluginEvent
 			item: itemOf(target, root).getBoundingClientRect(),
 		})
 
-		if (shift !== null) root.scrollBy({ left: shift, behavior: 'instant' })
+		if (shift !== null) root.scrollBy({ left: wholePixels(shift), behavior: 'instant' })
 	}
+}
+
+/**
+ * The shift in whole pixels, rounded away from zero. WebKit keeps the scroll
+ * position in whole pixels and truncates a fractional target toward zero: the
+ * tag stopped short of the window by under a pixel, and the row keeps exactly
+ * the focus ring's width at its edge, so the ring was cut. From a whole
+ * position the target stays whole, and in both engines the row moves no less
+ * than the tag needs. The arithmetic (`nearestShift`) stays exact.
+ */
+function wholePixels(shift: number): number {
+	return Math.sign(shift) * Math.ceil(Math.abs(shift))
 }

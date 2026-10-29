@@ -1,19 +1,20 @@
 /**
- * Ползунок в настоящем браузере: раскладка и настоящий ввод.
+ * The slider in a real browser: layout and real input.
  *
- * jsdom не считает раскладку — у дорожки там нет ни ширины, ни положения, — и
- * не выполняет действий браузера: нативный сдвиг поля от стрелки и действие
- * подписи `Label` на `click` он не делает вовсе. Поэтому жест здесь — настоящим
- * вводом Playwright (`userEvent` с позицией), а не синтетическим
- * `PointerEvent`: только так видно, что нажатие гасит выделение и фокус
- * браузера, захват указателя доводит отпускание до корня, а стрелка делает
- * ровно один шаг — ядра, без нативного.
+ * jsdom computes no layout — the track has neither width nor place there, —
+ * and doesn't perform the browser's actions: the native field step from an
+ * arrow and the `Label` action on `click` it doesn't do at all. So the gesture
+ * here is real Playwright input (`userEvent` with a position), not a synthetic
+ * `PointerEvent`: only so does it show that a press suppresses the browser's
+ * selection and focus, the pointer capture brings the release to the root, and
+ * an arrow makes exactly one step — the core's, without the native one.
  *
- * Переходы темы, цвет ореола ручки и её тень — тоже здесь: jsdom стилей не
- * считает и переходов не заводит.
+ * The theme's transitions, the thumb's halo colour and its shadow are here
+ * too: jsdom computes no styles and starts no transitions.
  *
- * Позиции — от левого верхнего угла дорожки: её коробка — ход центров ручек,
- * 0 и 1 доли — её края по оси (контракт темы с плагином указателя).
+ * Positions are from the track's top-left corner: its box is the travel of the
+ * thumb centres, fractions 0 and 1 are its edges along the axis (the theme's
+ * contract with the pointer plugin).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -27,7 +28,7 @@ import { Button, Label, Slider, Switch } from '@soldy-ui/vue'
 
 import { opacity, pixel } from './colors'
 import { reducedMotion } from './media'
-import { webkitUntil } from './engine'
+import { captureMovesHover } from './engine'
 import { settled, transitionEvents, transitionRuns } from './transitions'
 
 import '@soldy-ui/theme-oren'
@@ -35,18 +36,18 @@ import '@soldy-ui/theme-oren'
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 type THarness = {
-	/** Направление письма страницы */
+	/** The page's writing direction */
 	dir?: 'ltr' | 'rtl'
-	/** Ползунок в подписи `Label` */
+	/** The slider in a `Label` */
 	label?: boolean
-	/** Кнопка «До» перед ползунком — чтобы было откуда прийти по Tab */
+	/** A button before the slider — to have where to Tab in from */
 	before?: boolean
 }
 
 /**
- * Ползунок на странице шириной 400 px. Значение держит экземпляр ядра: по нему
- * тест и читает результат жеста. Сверху отступ шире: подсказка `auto` встаёт
- * над ручкой, за коробкой ползунка.
+ * The slider on a page 400 px wide. The core instance holds the value: the
+ * test reads the gesture's result from it. The top padding is wider: the
+ * `auto` tooltip stands above the thumb, past the slider's box.
  */
 async function mount(
 	props: Partial<ISliderProps> = {},
@@ -65,14 +66,14 @@ async function mount(
 		}),
 	)
 
-	// Плагины получают корень кадром
+	// Plugins get the root a frame later
 	await nextFrame()
 	await nextFrame()
 
 	return ctrl
 }
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector; without it the test fails here, not on reading a property. */
 function find(selector: string): HTMLElement {
 	const element = document.querySelector(selector)
 
@@ -87,7 +88,7 @@ const range = () => find('.so-slider__range')
 const thumbs = () => all('.so-slider__thumb')
 const fields = () => all('.so-slider__input')
 
-/** Поле ручки `index`; нет его — тест падает здесь. */
+/** The field of thumb `index`; without it the test fails here. */
 function field(index: number): HTMLInputElement {
 	const node = fields()[index]
 
@@ -97,8 +98,8 @@ function field(index: number): HTMLInputElement {
 }
 
 /**
- * Точка у доли хода `fraction` — от левого верхнего угла дорожки: по оси —
- * доля её длины, поперёк — середина.
+ * The point at fraction `fraction` of travel — from the track's top-left
+ * corner: along the axis the fraction of its length, across it the middle.
  */
 function along(fraction: number, orientation: 'horizontal' | 'vertical' = 'horizontal') {
 	const box = track().getBoundingClientRect()
@@ -108,7 +109,7 @@ function along(fraction: number, orientation: 'horizontal' | 'vertical' = 'horiz
 		: { x: box.width / 2, y: box.height * fraction }
 }
 
-/** Центр узла по горизонтали — в координатах окна. */
+/** The node's horizontal centre — in window coordinates. */
 const centerX = (node: Element) => {
 	const box = node.getBoundingClientRect()
 
@@ -116,8 +117,8 @@ const centerX = (node: Element) => {
 }
 
 /**
- * Слои `box-shadow` узла: цвет, сдвиг, размытие и разлёт. Запятая внутри
- * скобок цвета слои не делит.
+ * The node's `box-shadow` layers: colour, offset, blur and spread. A comma
+ * inside a colour's parentheses doesn't split layers.
  */
 function shadows(element: Element) {
 	return getComputedStyle(element)
@@ -131,8 +132,8 @@ function shadows(element: Element) {
 }
 
 /**
- * Цвет кольца ореола ручки — слоя без сдвига и размытия, с разлётом; кольца
- * нет — тест падает здесь.
+ * The colour of the thumb's halo ring — the layer without offset and blur,
+ * with spread; without the ring the test fails here.
  */
 function halo(thumb: Element): string {
 	const ring = shadows(thumb).find(
@@ -145,9 +146,9 @@ function halo(thumb: Element): string {
 }
 
 /**
- * Точка за ползунком: в 20 px от края дорожки — дальше отступа корня под
- * полручки, — на уровне её середины. Координаты — от левого верхнего угла
- * `body`: указатель уходит на страницу.
+ * A point past the slider: 20 px from the track's edge — beyond the root's
+ * inset for half a thumb, — level with the track's middle. Coordinates are from
+ * the top-left corner of `body`: the pointer goes out onto the page.
  */
 function beyond(edge: 'left' | 'right') {
 	const box = track().getBoundingClientRect()
@@ -155,6 +156,25 @@ function beyond(edge: 'left' | 'right') {
 	const x = edge === 'left' ? box.left - 20 : box.right + 20
 
 	return { x: x - page.left, y: box.top + box.height / 2 - page.top }
+}
+
+/**
+ * A point at fraction `fraction` of the track along the axis and below the
+ * first thumb, a thumb's side away from it — past its halo, a third of the
+ * side. From the top-left corner of `body`. A drag leads the pointer there,
+ * off the thumb that follows it: WebKit keeps `:hover` on the node under the
+ * pointer, and the thumb would be hovered in the middle of the drag. Below,
+ * not above: above the thumb stands its tooltip, the thumb's child.
+ */
+function under(fraction: number) {
+	const box = track().getBoundingClientRect()
+	const thumb = thumbs()[0].getBoundingClientRect()
+	const page = document.body.getBoundingClientRect()
+
+	return {
+		x: box.left + box.width * fraction - page.left,
+		y: thumb.bottom + thumb.height - page.top,
+	}
 }
 
 beforeEach(() => {
@@ -192,9 +212,9 @@ describe('раскладка', () => {
 })
 
 /**
- * Подписи меток — зрительная шкала: значение и границы объявляет само поле.
- * Подпись `Label` называет поле всем своим текстом, а метки лежат внутри неё,
- * и без `aria-hidden` скринридер прочёл бы «Мин Макс Цена».
+ * Mark labels are a visual scale: the field announces the value and the bounds
+ * itself. A `Label` names the field by all its text, and the marks lie inside
+ * it: without `aria-hidden` a screen reader would read «Мин Макс Цена».
  */
 describe('подписи меток', () => {
 	it('в подписи Label на экране, но в имя поля не входят', async () => {
@@ -219,13 +239,14 @@ describe('подписи меток', () => {
 })
 
 /**
- * Подпись называет своим содержимым одно поле, первое. Второе поле внутри неё
- * для этого имени — встроенный контрол (accname 1.2, шаг 2C), и его значение
- * вошло бы в имя первого: «80 Цена». Поэтому у нескольких ручек имя каждой,
- * первой тоже, даёт `thumbLabels`: `aria-label` поля сильнее подписи. Имена
- * сверяются точно: в них нет ни текста подписи, ни значения соседнего поля.
- * Имя самого ползунка (`aria_label`) у нескольких ручек называет их группу —
- * корень, — а не каждое поле.
+ * A label names one field by its content, the first one. The second field
+ * inside it is an embedded control for that name (accname 1.2, step 2C), and
+ * its value would enter the first one's name: «80 Цена». So with several
+ * thumbs each one's name, the first's too, comes from `thumbLabels`: a
+ * field's `aria-label` is stronger than the label. The names are compared
+ * exactly: they hold neither the label's text nor the neighbour field's value.
+ * The slider's own name (`aria_label`) with several thumbs names their group —
+ * the root, — not each field.
  */
 describe('имена ручек', () => {
 	it('в подписи Label имя каждой ручки — ровно её имя из thumbLabels', async () => {
@@ -295,8 +316,8 @@ describe('нажатие на дорожке', () => {
 
 describe('протяжка', () => {
 	/**
-	 * Взялись за ручку на 6 px правее центра — это полтора шага. Без
-	 * смещения захвата значение прыгнуло бы к точке нажатия.
+	 * The thumb is taken 6 px right of its centre — a step and a half. Without
+	 * the grab offset the value would jump to the press point.
 	 */
 	it('ручка идёт за указателем со смещением захвата', async () => {
 		const ctrl = await mount({ value: 50 })
@@ -312,9 +333,10 @@ describe('протяжка', () => {
 	})
 
 	/**
-	 * Взялись за ручку на 6 px ближе к краю, к которому тянут, и увели
-	 * указатель за ползунок. Ручка идёт со смещением захвата, и доля указателя,
-	 * прижатая к краю дорожки, не довела бы её до края на эти 6 px.
+	 * The thumb is taken 6 px nearer the edge it is dragged to, and the pointer
+	 * is led past the slider. The thumb follows with the grab offset, and the
+	 * pointer's fraction clamped to the track's edge would leave it those 6 px
+	 * short of the edge.
 	 */
 	it('взятая не за середину ручка доходит до края хода, когда указатель за ползунком', async () => {
 		const ctrl = await mount({ value: [10, 90] })
@@ -348,9 +370,9 @@ describe('протяжка', () => {
 	})
 
 	/**
-	 * Отпустили над текстом подписи — вне ползунка, но внутри `label`. Без
-	 * захвата указателя и без погашенного `click` подпись отдала бы фокус
-	 * первому полю.
+	 * Released over the label's text — outside the slider, but inside the
+	 * `label`. Without the pointer capture and the suppressed `click` the label
+	 * would give focus to the first field.
 	 */
 	it('в подписи Label фокус остаётся на тянутой ручке', async () => {
 		const ctrl = await mount({ value: [20, 80] }, { label: true })
@@ -364,14 +386,16 @@ describe('протяжка', () => {
 	})
 
 	/**
-	 * Фокус полю ставит плагин указателя — скриптом, и видимость такого фокуса
-	 * Chromium берёт у прошлого. Прошлый пришёл с клавиатуры — без
-	 * `focusVisible: false` кольцо ручки встало бы от нажатия мышью.
+	 * The pointer plugin focuses the field by script, and Chromium takes the
+	 * visibility of such focus from the previous one. The previous came from
+	 * the keyboard — without `focusVisible: false` the thumb's ring would show
+	 * from a mouse press.
 	 */
 	it('нажатие мышью после фокуса с клавиатуры — фокус у поля, кольца нет', async () => {
 		await mount({ value: 50 }, { before: true })
 
-		// На «До» с клавиатуры: Tab в поле и Shift+Tab обратно
+		// Onto the button before it from the keyboard: Tab into the field and
+		// Shift+Tab back
 		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
@@ -385,21 +409,21 @@ describe('протяжка', () => {
 })
 
 /**
- * Щелчок к меткам — настоящим вводом: радиус в px переводится в долю по
- * длине настоящей дорожки, доводку довозит переход темы, стоянку на метке
- * держат настоящие часы. Метка — 50, радиус по умолчанию — 8 px.
+ * Snapping to marks by real input: the radius in px turns into a fraction of
+ * the real track's length, the theme's transition carries the settle, a real
+ * clock keeps the hold at a mark. The mark is 50, the default radius 8 px.
  */
 describe('щелчок к меткам', () => {
 	const MARK = [{ value: 50 }]
 
-	/** Точка в `px` от метки вдоль дорожки: плюс — к `max`. */
+	/** A point `px` from the mark along the track: plus is toward `max`. */
 	const nearMark = (px: number) => {
 		const { x, y } = along(0.5)
 
 		return { x: x + px, y }
 	}
 
-	/** Значение, в которое встала бы ручка без щелчка в точке `nearMark(px)`. */
+	/** The value the thumb would take without snapping at point `nearMark(px)`. */
 	const freeValue = (px: number) =>
 		Math.round((nearMark(px).x / track().getBoundingClientRect().width) * 100)
 
@@ -467,10 +491,11 @@ describe('щелчок к меткам', () => {
 	})
 
 	/**
-	 * «Сразу» — в окне стоянки (250 мс по часам), поэтому жест идёт командой
-	 * без паузы перед отпусканием (`quickDrag`): у `dragAndDrop` между
-	 * движением и отпусканием круг RPC, и под нагрузкой отпускание приходило,
-	 * когда стоянка уже кончилась и ручка честно догнала указатель.
+	 * "At once" is within the hold window (250 ms by the clock), so the gesture
+	 * goes by a command without a pause before the release (`quickDrag`):
+	 * `dragAndDrop` has an RPC round trip between the move and the release, and
+	 * under load the release came when the hold was over and the thumb had
+	 * rightly caught up with the pointer.
 	 */
 	it('hold: отпустили сразу за меткой — ручка осталась на метке', async () => {
 		const ctrl = await mount({ value: 20, marks: MARK, snap: 'hold' })
@@ -481,10 +506,11 @@ describe('щелчок к меткам', () => {
 	})
 
 	/**
-	 * Кнопка зажата, указатель за меткой и стоит: ручка стоит на метке, а
-	 * когда стоянка кончилась — догоняет его без единого движения указателя.
-	 * Смены значения записаны со временем: так видна и сама стоянка, и её
-	 * длина, как бы долго ни шёл ответ браузера тесту.
+	 * The button is held, the pointer is past the mark and stands: the thumb
+	 * stays on the mark, and when the hold is over it catches up without a
+	 * single pointer move. The value changes are recorded with times: so both
+	 * the hold and its length show, however long the browser's answer to the
+	 * test takes.
 	 */
 	it('hold: ручка стоит на пересечённой метке и догоняет стоящий указатель', async () => {
 		const ctrl = await mount({ value: 20, marks: MARK, snap: 'hold' })
@@ -507,7 +533,7 @@ describe('щелчок к меткам', () => {
 		const [held, caught] = changes
 
 		expect(changes.map(({ value }) => value)).toEqual([50, 60])
-		// Стоянка по умолчанию — 250 мс; запас — на огрубление часов
+		// The default hold is 250 ms; the margin is for the clock's coarsening
 		expect(caught.at - held.at).toBeGreaterThanOrEqual(240)
 	})
 })
@@ -536,23 +562,24 @@ describe('клавиатура', () => {
 })
 
 /**
- * Заливка идёт вместе с ручкой. Ход позиций тема анимирует только вне
- * протяжки и без просьбы системы убрать движение — у ручки и у заливки
- * одинаково, иначе одна отстаёт от другой на длину перехода.
+ * The fill goes with the thumb. The theme animates the travel only outside a
+ * drag and when the system doesn't ask to reduce motion — alike for the thumb
+ * and the fill, otherwise one lags behind the other by the transition's
+ * length.
  *
- * Переходы ловит слушатель, повешенный до действия, а не снимок после него:
- * ответ Playwright на ввод идёт кругом RPC и может прийти позже, чем кончится
- * переход в 150 мс, — тогда и `getAnimations()`, и геометрия позеленели бы и
- * с отстающей заливкой.
+ * Transitions are caught by a listener set before the action, not by a
+ * snapshot after it: Playwright's answer to input goes by an RPC round trip and
+ * may come after a 150 ms transition is over, — then both `getAnimations()`
+ * and the geometry would turn green with a lagging fill too.
  */
 describe('заливка', () => {
-	/** Насколько край заливки отстал от центра ручки, px. */
+	/** How far the fill's edge lags behind the thumb's centre, px. */
 	const lag = () => Math.abs(range().getBoundingClientRect().right - centerX(thumbs()[0]))
 
 	/**
-	 * Фокус на поле первой ручки — нажатием на её центр, значение не
-	 * меняется. События переходов от нажатия приходят раньше, чем тест повесит
-	 * слушатель.
+	 * Focus on the first thumb's field — by a press on its centre, the value
+	 * doesn't change. The transition events of the press come before the test
+	 * sets its listener.
 	 */
 	const focusThumb = async () => {
 		await userEvent.click(thumbs()[0])
@@ -571,7 +598,7 @@ describe('заливка', () => {
 		await commands.mouseDown()
 
 		try {
-			// Взялись за центр ручки — значение не прыгнуло
+			// Taken by the thumb's centre — the value didn't jump
 			expect(ctrl.value).toBe(20)
 
 			await userEvent.hover(track(), { position: along(0.6) })
@@ -588,8 +615,8 @@ describe('заливка', () => {
 	})
 
 	/**
-	 * Положительный контроль: без него тест протяжки прошёл бы и у темы, где
-	 * переход заливки просто удалили.
+	 * A positive control: without it the drag test would pass with a theme
+	 * where the fill's transition was simply removed.
 	 */
 	it('клавиша — заливка едет переходом', async () => {
 		const ctrl = await mount({ value: 20 })
@@ -623,13 +650,13 @@ describe('заливка', () => {
 })
 
 /**
- * Подсказка со значением — разметка внутри ручки, место и видимость ей даёт
- * тема. Что её рисует ядро и какой у неё текст, проверяет адаптер
- * (`ui/vue/__tests__/slider.spec.ts`); здесь — то, чего jsdom не считает:
- * раскладка, наведение, `:focus-visible` и захват указателя.
+ * The value tooltip is markup inside the thumb, the theme gives its place and
+ * visibility. That the core draws it and with what text the adapter checks
+ * (`ui/vue/__tests__/slider.spec.ts`); here is what jsdom doesn't compute:
+ * layout, hover, `:focus-visible` and pointer capture.
  */
 describe('подсказка', () => {
-	/** Подсказка ручки `index`; нет её — тест падает здесь. */
+	/** The tooltip of thumb `index`; without it the test fails here. */
 	function tooltip(index = 0): HTMLElement {
 		const node = all('.so-slider__tooltip')[index]
 
@@ -638,14 +665,14 @@ describe('подсказка', () => {
 		return node
 	}
 
-	/** Центр узла по вертикали — в координатах окна. */
+	/** The node's vertical centre — in window coordinates. */
 	const centerY = (node: Element) => {
 		const box = node.getBoundingClientRect()
 
 		return box.top + box.height / 2
 	}
 
-	/** Насколько центр подсказки ушёл от центра первой ручки по оси `axis`, px. */
+	/** How far the tooltip's centre is off the first thumb's centre on axis `axis`, px. */
 	const offCenter = (axis: 'x' | 'y') => {
 		const center = axis === 'x' ? centerX : centerY
 
@@ -653,9 +680,10 @@ describe('подсказка', () => {
 	}
 
 	/**
-	 * Подсказка — дитя ручки и едет с ней по построению: и в протяжке, где
-	 * ручка идёт за указателем, и в переходе темы после смены значения. Ширина
-	 * плашки меняется с текстом, центр — нет.
+	 * The tooltip is the thumb's child and moves with it by construction: in a
+	 * drag, where the thumb follows the pointer, and in the theme's transition
+	 * after a value change. The plate's width changes with the text, the centre
+	 * doesn't.
 	 */
 	it('центр подсказки — на центре ручки: в протяжке и после смены значения', async () => {
 		const ctrl = await mount({ value: 20, tooltip: 'always' })
@@ -682,9 +710,9 @@ describe('подсказка', () => {
 	})
 
 	/**
-	 * Над ручкой — за ореолом: ореол (треть стороны ручки) появляется под
-	 * наведением и на плашку не заходит. Подсказку, которая видна всегда,
-	 * горизонтальный ползунок держит внутри своей коробки.
+	 * Above the thumb — past the halo: the halo (a third of the thumb's side)
+	 * appears under hover and doesn't run onto the plate. A tooltip that is
+	 * always visible a horizontal slider keeps inside its box.
 	 */
 	it('горизонтальная — над ручкой за ореолом; always — в коробке ползунка', async () => {
 		await mount({ value: 50, tooltip: 'always' })
@@ -697,7 +725,7 @@ describe('подсказка', () => {
 		expect(tip.top).toBeGreaterThanOrEqual(root.top - 0.5)
 	})
 
-	/** С конца строки стоят подписи меток — подсказка встаёт с её начала. */
+	/** Mark labels stand at the line's end — the tooltip stands at its start. */
 	it('вертикальная — сбоку, со стороны начала строки; в RTL — зеркально', async () => {
 		await mount({ value: 50, tooltip: 'always', orientation: 'vertical' })
 
@@ -718,17 +746,18 @@ describe('подсказка', () => {
 	})
 
 	/**
-	 * `auto`: когда показывать, решает тема — наведение на ручку, её нажатие,
-	 * `data-dragging` и `:focus-visible` поля. Каждая причина проверяется при
-	 * снятых остальных: иначе тест прошёл бы и без неё.
+	 * `auto`: the theme decides when to show — a hover on the thumb, its press,
+	 * `data-dragging` and the field's `:focus-visible`. Each cause is checked
+	 * with the others off: otherwise the test would pass without it.
 	 *
-	 * Видна ли подсказка, тест смотрит, когда её переходы доиграли: гаснет
-	 * плашка переходом, и всё это время она ещё видна. Ждать числом
-	 * миллисекунд нельзя: наведение уходит с ручки не в миг действия, и
-	 * переход, начатый позже, застал бы плашку ещё видимой.
+	 * Whether the tooltip shows the test checks once its transitions have
+	 * played: the plate fades by a transition, and all that time it still
+	 * shows. Waiting a number of milliseconds won't do: the hover leaves the
+	 * thumb not at the moment of the action, and a transition started later
+	 * would find the plate still visible.
 	 */
 	describe('auto', () => {
-		/** Видна ли подсказка, когда её переходы доиграли. */
+		/** Whether the tooltip shows once its transitions have played. */
 		const shown = async () => {
 			await settled(tooltip())
 
@@ -738,15 +767,15 @@ describe('подсказка', () => {
 		const hovered = () => thumbs()[0].matches(':hover')
 
 		beforeEach(async () => {
-			// Курсор с прошлого теста остался там, где его оставили, а ползунок
-			// встанет на то же место: уводим его в угол страницы
+			// The cursor stayed where the previous test left it, and the slider will
+			// stand in the same place: move it to the page's corner
 			await userEvent.hover(document.body, { position: { x: 0, y: 0 } })
 		})
 
 		/**
-		 * Скрыта `visibility`, а не одной прозрачностью: прозрачная плашка
-		 * ловила бы наведение, и подсказка всплывала бы от курсора над пустым
-		 * местом у ручки.
+		 * Hidden by `visibility`, not by opacity alone: a transparent plate would
+		 * catch the hover, and the tooltip would pop up from a cursor over empty
+		 * space by the thumb.
 		 */
 		it('в покое скрыта; курсор там, где она стоит, её не показывает', async () => {
 			await mount({ value: 50, tooltip: 'auto' })
@@ -765,8 +794,9 @@ describe('подсказка', () => {
 		})
 
 		/**
-		 * Курсор, перешедший с ручки на подсказку, её не прячет (WCAG 1.4.13):
-		 * подсказка — дитя ручки, и указатель она не гасит.
+		 * A cursor moved from the thumb onto the tooltip doesn't hide it (WCAG
+		 * 1.4.13): the tooltip is the thumb's child and doesn't block the
+		 * pointer.
 		 */
 		it('курсор на ручке показывает, на самой подсказке — держит, ушёл — скрыта', async () => {
 			await mount({ value: 50, tooltip: 'auto' })
@@ -803,12 +833,14 @@ describe('подсказка', () => {
 		})
 
 		/**
-		 * Нажатие захватывает указатель корнем, и наведение уходит с ручки на
-		 * корень, а `data-dragging` ставит только первое движение. Держит
-		 * подсказку нажатие ручки.
+		 * The press captures the pointer by the root, and the hover leaves the
+		 * thumb for the root, while `data-dragging` comes only with the first
+		 * move. The tooltip is held by the press of the thumb. In WebKit the
+		 * hover stays on the thumb under the pointer (`captureMovesHover`), and
+		 * the press can't be told from it there.
 		 */
 		it('ручку держат, не сдвинув, — видна', async (context) => {
-			context.skip(webkitUntil('869fn0u0m'))
+			context.skip(!captureMovesHover)
 			const ctrl = await mount({ value: 50, tooltip: 'auto' })
 
 			await userEvent.hover(thumbs()[0])
@@ -826,18 +858,18 @@ describe('подсказка', () => {
 		})
 
 		/**
-		 * Нажали мимо ручки: ручка прыгнула к указателю, но ни наведения, ни
-		 * нажатия у неё нет — подсказку держит `data-dragging`.
+		 * Pressed off the thumb and led below it (`under`): the thumb jumped to
+		 * the pointer and follows it, but has neither the hover nor the press —
+		 * the tooltip is held by `data-dragging`.
 		 */
-		it('ручку тянут — видна', async (context) => {
-			context.skip(webkitUntil('869fn0u0m'))
+		it('ручку тянут — видна', async () => {
 			const ctrl = await mount({ value: 50, tooltip: 'auto' })
 
 			await userEvent.hover(track(), { position: along(0.1) })
 			await commands.mouseDown()
 
 			try {
-				await userEvent.hover(track(), { position: along(0.3) })
+				await userEvent.hover(document.body, { position: under(0.3) })
 
 				expect(ctrl.dragging).toBe(true)
 				expect(thumbs()[0].matches(':hover, :active')).toBe(false)
@@ -850,9 +882,9 @@ describe('подсказка', () => {
 	})
 
 	/**
-	 * Подпись называет поле всем своим текстом, а подсказка лежит внутри неё.
-	 * Её текст в имя не входит: подсказка под `aria-hidden`, значение
-	 * объявляет само поле.
+	 * A label names the field by all its text, and the tooltip lies inside it.
+	 * Its text doesn't enter the name: the tooltip is under `aria-hidden`, the
+	 * field announces the value itself.
 	 */
 	it('в подписи Label имя поля — ровно текст подписи', async () => {
 		await mount({ value: 50, tooltip: 'always' }, { label: true })
@@ -864,24 +896,30 @@ describe('подсказка', () => {
 })
 
 /**
- * Ореол ручки — вуаль состояний той же плотности, что подсветка наведения и
- * нажатия у остальных компонентов темы: под наведением — как фон кнопки
- * `plain` того же варианта под наведением, в протяжке — как её фон при
- * нажатии. Своей плотности у ореола нет. Ни плотностей, ни палитры спек не
- * знает: эталон — кнопка рядом, цвета сверяются холстом (`./colors`).
+ * The thumb's halo is the state veil of the same density as the hover and the
+ * press of the theme's other components: under the hover — the background of a
+ * `plain` button of the same variant under the hover, held or dragged — its
+ * background when pressed. The halo has no density of its own. The spec knows
+ * neither densities nor the palette: the reference is the button beside it,
+ * colours are compared on a canvas (`./colors`).
  *
- * Ореол — кольцо `box-shadow` ручки: слой без сдвига и размытия, с разлётом.
- * Тянут ручку нажатием мимо неё, как в «ручку тянут — видна»: ни наведения,
- * ни нажатия у ручки нет, и ореол держит `data-dragging`.
+ * The halo is a `box-shadow` ring of the thumb: a layer without offset and
+ * blur, with spread. Held — pressed on the thumb and not moved: in WebKit the
+ * hover stays on the thumb, and the press has to win over it. Dragged — pressed
+ * off the thumb and led below it, as in «ручку тянут — видна»: the thumb has
+ * neither the hover nor the press, and the halo is held by `data-dragging`.
  */
 describe('ореол', () => {
-	/** Обе схемы: цвета у них свои, а плотности общие. */
+	/** Both schemes: their colours differ, the densities are shared. */
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
-	/** Указатель — на узел мимо ползунка и кнопки. */
+	/** The pointer onto a node off the slider and the button. */
 	const away = () => userEvent.hover(find('.so-test-away'))
 
-	/** Ползунок варианта и под ним эталон — кнопка `plain` того же варианта. */
+	/**
+	 * A slider of the variant and the reference below it — a `plain` button of
+	 * the same variant.
+	 */
 	async function show(variant: TComponentVariant) {
 		render(
 			defineComponent({
@@ -894,13 +932,13 @@ describe('ореол', () => {
 			}),
 		)
 
-		// Плагины получают корень кадром
+		// Plugins get the root a frame later
 		await nextFrame()
 		await nextFrame()
 		await away()
 	}
 
-	/** Ореол под наведением — когда доиграл его переход. */
+	/** The halo under the hover — once its transition has played. */
 	async function hovered(): Promise<string> {
 		const thumb = thumbs()[0]
 
@@ -910,7 +948,27 @@ describe('ореол', () => {
 		return halo(thumb)
 	}
 
-	/** Ореол, пока ручку тянут, — когда доиграл его переход. */
+	/** The halo while the thumb is held without moving — once its transition has played. */
+	async function held(): Promise<string> {
+		const thumb = thumbs()[0]
+
+		await userEvent.hover(thumb)
+		await commands.mouseDown()
+
+		try {
+			await expect.poll(() => thumb.matches(':active')).toBe(true)
+
+			expect(thumb.dataset.dragging).not.toBe('true')
+
+			await settled(thumb)
+
+			return halo(thumb)
+		} finally {
+			await commands.mouseUp()
+		}
+	}
+
+	/** The halo while the thumb is dragged — once its transition has played. */
 	async function dragged(): Promise<string> {
 		const thumb = thumbs()[0]
 
@@ -918,7 +976,7 @@ describe('ореол', () => {
 		await commands.mouseDown()
 
 		try {
-			await userEvent.hover(track(), { position: along(0.3) })
+			await userEvent.hover(document.body, { position: under(0.3) })
 			await expect.poll(() => thumb.dataset.dragging).toBe('true')
 
 			expect(thumb.matches(':hover, :active')).toBe(false)
@@ -932,8 +990,9 @@ describe('ореол', () => {
 	}
 
 	/**
-	 * Фон эталона под наведением и при нажатии — когда доиграл переход цвета.
-	 * Кнопка мыши отпускается мимо кнопки.
+	 * The reference's background under the hover and when pressed — once its
+	 * colour transition has played. The mouse button is released off the
+	 * button.
 	 */
 	async function reference(): Promise<{ hover: string; press: string }> {
 		const button = find('.so-button')
@@ -961,15 +1020,17 @@ describe('ореол', () => {
 		})
 
 		it.each(COMPONENT_VARIANTS)(
-			'variant="%s": под наведением — вуаль наведения кнопки, в протяжке — вуаль нажатия',
+			'variant="%s": под наведением — вуаль наведения кнопки, держат и тянут — вуаль нажатия',
 			async (variant) => {
 				await show(variant)
 
 				const hover = await hovered()
+				const hold = await held()
 				const drag = await dragged()
 				const button = await reference()
 
 				expect(pixel([hover]), 'наведение').toEqual(pixel([button.hover]))
+				expect(pixel([hold]), 'держат').toEqual(pixel([button.press]))
 				expect(pixel([drag]), 'протяжка').toEqual(pixel([button.press]))
 			},
 		)
@@ -977,24 +1038,28 @@ describe('ореол', () => {
 })
 
 /**
- * Тень ручки — та же, что у ручки Switch: ручка контрола — одна роль, у неё
- * один цвет (`--so-component-knob`) и одна тень (`themes/oren/AGENTS.md`,
- * «Три роли цвета»). Тени спек не знает: эталон — ручка Switch рядом.
+ * The thumb's shadow is that of the Switch thumb: a control's thumb is one
+ * role with one colour (`--so-component-knob`) and one shadow
+ * (`themes/oren/AGENTS.md`, «Три роли цвета»). The spec knows no shadows: the
+ * reference is the Switch thumb beside it.
  *
- * Тень — слои `box-shadow` со сдвигом или размытием. Кольца в неё не входят:
- * ни ореол ручки, ни пустые кольца, которые Tailwind кладёт в ту же
- * `box-shadow`. Под наведением к тени ручки прибавляется ореол, а сама тень
- * остаётся прежней.
+ * The shadow is the `box-shadow` layers with offset or blur. Rings don't count:
+ * neither the thumb's halo nor the empty rings Tailwind puts in the same
+ * `box-shadow`. Under hover the halo adds to the thumb's shadow, and the shadow
+ * itself stays the same.
  */
 describe('тень ручки', () => {
-	/** Обе схемы: своя тень одной из ручек в тёмной схеме развела бы их там. */
+	/**
+	 * Both schemes: a shadow of its own for one of the thumbs in the dark scheme
+	 * would set them apart there.
+	 */
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
-	/** Тень узла — слои со сдвигом или размытием. */
+	/** The node's shadow — the layers with offset or blur. */
 	const shade = (element: Element) =>
 		shadows(element).filter(({ x, y, blur }) => x !== 0 || y !== 0 || blur !== 0)
 
-	/** Ползунок и под ним эталон — выключенный Switch; указатель — мимо обоих. */
+	/** The slider and the reference below it — an unchecked Switch; the pointer off both. */
 	async function show() {
 		render(
 			defineComponent({
@@ -1007,7 +1072,7 @@ describe('тень ручки', () => {
 			}),
 		)
 
-		// Плагины получают корень кадром
+		// Plugins get the root a frame later
 		await nextFrame()
 		await nextFrame()
 		await userEvent.hover(find('.so-test-away'))
@@ -1030,7 +1095,8 @@ describe('тень ручки', () => {
 			await userEvent.hover(thumb)
 			await settled(thumb)
 
-			// Ореол — кольцо в той же `box-shadow`; кольца нет — `halo` падает здесь
+			// The halo is a ring in the same `box-shadow`; without the ring `halo`
+			// fails here
 			expect(opacity(halo(thumb)), 'ореол прозрачный').toBeGreaterThan(0)
 			expect(shade(thumb), 'под наведением').toEqual(reference)
 		})
