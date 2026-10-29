@@ -784,6 +784,34 @@ describe('слои шапки', () => {
 		return engine
 	}
 
+	/**
+	 * The pointer events a header gets, in order: the type, the pointer's `x` in
+	 * the window and the class of the event's node. Only for the message of a
+	 * failed drag: in WebKit in Docker the drag once didn't take, repeated runs
+	 * didn't catch it again, and the journal names the link that didn't arrive.
+	 */
+	function pointerJournal(header: HTMLElement): string[] {
+		const journal: string[] = []
+
+		for (const type of [
+			'pointerdown',
+			'gotpointercapture',
+			'pointermove',
+			'pointerup',
+			'lostpointercapture',
+			'pointercancel',
+		]) {
+			header.addEventListener(type, (event) => {
+				const x = event instanceof PointerEvent ? Math.round(event.clientX) : ''
+				const target = event.target instanceof Element ? event.target.classList[0] : ''
+
+				journal.push(`${type} ${x} ${target}`)
+			})
+		}
+
+		return journal
+	}
+
 	it('полоса ручки — над соседом; протяжка на Δ — колонка шире на Δ', async () => {
 		const engine = await mountStuck()
 		const [name] = headers()
@@ -796,6 +824,7 @@ describe('слои шапки', () => {
 
 		const handle = box(resizer)
 		const x = handle.left + handle.width / 2
+		const journal = pointerJournal(name)
 
 		await pointAt(x, y)
 		await commands.mouseDown()
@@ -807,7 +836,10 @@ describe('слои шапки', () => {
 			await commands.mouseUp()
 		}
 
-		expect(engine.extensions.columns.columns[0].width).toBe(160)
+		expect(
+			engine.extensions.columns.columns[0].width,
+			`события указателя у заголовка: ${journal.join(', ')}`,
+		).toBe(160)
 		expect(Math.abs(box(name).width - 160)).toBeLessThanOrEqual(EPSILON)
 	})
 

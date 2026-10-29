@@ -456,6 +456,13 @@ function menuPartsOf(anchor: Element | null): string {
  * «Поделиться» submenu opened by a click on its row, from the row's corner. Two
  * panels are on screen then, and each one's parts are found by its `id`.
  * Measured and removed — it doesn't get in the next render's way.
+ *
+ * The row is clicked once the menu has taken focus into its panel: an open
+ * menu does that a frame after its root is declared (`TOverlayFocusPlugin`),
+ * and focus coming to the menu's panel is focus leaving a submenu opened before
+ * it — the submenu closes (`TDismissPlugin` with `focusOutside`). The boxes
+ * settle without waiting for that frame, and under load the click came before
+ * it. The submenu is measured once it is open.
  */
 async function menuOf(framework: string, submenu: boolean): Promise<TBox[]> {
 	const host = await loadHost(framework)
@@ -474,12 +481,23 @@ async function menuOf(framework: string, submenu: boolean): Promise<TBox[]> {
 		const row = () => document.querySelector(`${panel} .so-menu-item > [aria-haspopup="menu"]`)
 
 		await measure(trigger, menuPartsOf(trigger()))
+		await expect
+			.poll(() => document.querySelector(panel)?.contains(document.activeElement), {
+				message: `${framework}: фокус в панели меню`,
+			})
+			.toBe(true)
 
 		const share = row()
 
 		if (!(share instanceof HTMLElement)) throw new Error(`${framework}: строки подменю нет`)
 
 		share.click()
+
+		await expect
+			.poll(() => row()?.getAttribute('aria-expanded'), {
+				message: `${framework}: подменю открыто`,
+			})
+			.toBe('true')
 
 		return await measure(row, menuPartsOf(row()))
 	} finally {

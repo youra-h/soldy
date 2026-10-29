@@ -1,45 +1,49 @@
 /**
- * Стенд в узком окне: не прокручивается вбок, а шапка — полоска в одну строку.
+ * The stand in a narrow window: it doesn't scroll sideways, and the header is
+ * a one-line strip.
  *
- * Основная область стенда (`.pg__main`) прокручивается сама, и всё, что шире
- * неё, уводит её вбок. В окне телефона (375 px) так было в двух местах.
- * Строка свойства держала имя и контрол рядом, двумя колонками фиксированной
- * ширины, и вместе с зазором они не помещались. Широкая ячейка витрины
- * (`span 2`) в сетке из одной дорожки достраивала вторую, неявную, и
- * растягивала сетку почти вдвое шире окна. Одна дорожка у витрины бывает и в
- * окне шире узкого: меню стоит колонкой и забирает место у сетки, — поэтому
- * случай с меню идёт отдельным окном, а широкое окно сверяет, что там
- * широкая ячейка по-прежнему занимает две дорожки.
+ * The stand's main area (`.pg__main`) scrolls by itself, and anything wider
+ * than it scrolls it sideways. In a phone window (375 px) that happened in two
+ * places. A prop row kept the name and the control side by side, in two
+ * fixed-width columns, and with the gap they didn't fit. The showcase's wide
+ * cell (`span 2`) in a one-track grid built a second, implicit track and
+ * stretched the grid almost twice as wide as the window. The showcase has one
+ * track in a window wider than narrow too — the menu stands as a column and
+ * takes the grid's room, — so the case with the menu gets a window of its own,
+ * and a wide window checks that the wide cell still spans two tracks there.
  *
- * Имя свойства стоит над полем ввода или выбора в любом окне — подпись поля
- * сверху, — а у переключателя слева от него, в одну строку с ним: под именем
- * узкий Switch стоял один в пустой строке. Строку тест сверяет в окнах
- * телефонов от 360 до 414 px и в окне 900 px, у каждой строки страницы: имя
- * над полем или рядом с переключателем, подсказка под ними, имя и подсказка —
- * от начала строки; поле не выходит из строки и шириной одно во всех окнах —
- * во всё окно оно у края узкой раскладки тянулось бы почти на 700 px. Длинное
- * имя рядом с переключателем в окне телефона не переносится: колонка имени —
- * по имени, а не до 40 % строки, как у темы по умолчанию.
+ * The prop's name stands above an input or a select in any window — the
+ * field's label on top, — and before a switch, in one line with it: under the
+ * name the narrow Switch stood alone in an empty line. The test checks every
+ * row of the page in phone windows from 360 to 414 px and in a 900 px window:
+ * the name above the field or beside the switch, the hint under them, the name
+ * and the hint from the row's start; the field stays in its row and has one
+ * width in every window — across the whole window it would stretch almost to
+ * 700 px at the edge of the narrow layout. A long name beside a switch doesn't
+ * wrap in a phone window: the name's column is as wide as the name, not up to
+ * 40 % of the row, as the theme's default is.
  *
- * Шапка в окне телефона занимала полэкрана: контролы переносились в несколько
- * строк. В узком окне она теперь полоска в одну строку — кнопка меню,
- * название, кнопка настроек, — а контролы уезжают в панель настроек, ссылка
- * на тесты — в панель меню, над списком. Полоску тест сверяет в тех же окнах
- * телефонов. Под названием — версия библиотеки, подписью, и в полоске не
- * обрезаны ни название, ни она: продолжением названия в строку версия на
- * шрифте шире системного Windows (DejaVu Sans) не помещалась в окно 360 px, а
- * шапку окна в 900 px уводила в третий ряд контролов. Панели — по содержимому
- * и по закрытию: меню закрывает переход по ссылке, настройки выбор фреймворка
- * не закрывает, обе закрывает окно, ставшее широким. Плашка «движение
- * выключено» в панели переносит текст, а не режет его. В окне шире узкого
- * кнопок нет, ссылка и контролы — в шапке, как прежде. Флаги панелей живут в
- * модуле (`useSidebar`) и переживают тест, поэтому открытые панели тест
- * закрывает сам, после каждого случая.
+ * In a phone window the header took half the screen: the controls wrapped into
+ * several lines. In a narrow window it is now a one-line strip — the menu
+ * button, the title, the settings button, — while the controls go into the
+ * settings panel and the link to the tests into the menu panel, above the
+ * list. The test checks the strip in the same phone windows. Under the title
+ * is the library's version, as a caption, and neither is cut in the strip: as
+ * a continuation of the title in one line, the version didn't fit a 360 px
+ * window on a font wider than Windows' system one (DejaVu Sans), and pushed
+ * the header of a 900 px window into a third row of controls. The panels are
+ * checked by content and by closing: following a link closes the menu,
+ * choosing a framework doesn't close the settings, a window that has become
+ * wide closes both. The «движение выключено» banner in the panel wraps its
+ * text instead of cutting it. In a window wider than narrow there are no
+ * buttons, and the link and the controls are in the header, as before. The
+ * panels' flags live in a module (`useSidebar`) and outlive the test, so the
+ * test closes open panels itself, after every case.
  *
- * Ширину задаёт окно (`page.viewport`), а не `body`: раскладку стенда считают
- * от окна правило `@media` в `src/styles.css` и `useSidebar`
- * (см. `tags-preview.spec.ts`). Каждый случай сверяет и саму раскладку, ради
- * которой взято окно, — иначе тест мерил бы другую.
+ * The width is set by the window (`page.viewport`), not by `body`: the stand's
+ * layout is computed from the window by the `@media` rule in `src/styles.css`
+ * and by `useSidebar` (see `tags-preview.spec.ts`). Every case also checks the
+ * layout the window was taken for — otherwise the test would measure another.
  */
 
 import { afterEach, describe, it, expect } from 'vitest'
@@ -62,18 +66,18 @@ useTheme(oren)
 
 const HEIGHT = 800
 
-/** Окна телефонов: в каждом стенд в узкой раскладке. */
+/** Phone windows: in each the stand is in the narrow layout. */
 const PHONES = [360, 375, 414]
 
-/** Ширина сетки витрины, с которой в неё помещаются две дорожки: 2 × 280 + 16. */
+/** The showcase grid's width from which two tracks fit in it: 2 × 280 + 16. */
 const TWO_TRACKS = 576
 
-/** Ширина поля под именем в строке свойства (`.pg-prop__head`) — одна в любом окне. */
+/** The width of the field under the name in a prop row (`.pg-prop__head`) — one in any window. */
 const CONTROL_WIDTH = 220
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
 
-/** Открыть страницу стенда в окне заданной ширины. */
+/** Open a stand page in a window of the given width. */
 const open = async (width: number, path: string) => {
 	document.documentElement.dataset.soTheme = 'oren'
 
@@ -85,7 +89,7 @@ const open = async (width: number, path: string) => {
 	await settle()
 }
 
-/** Узел по селектору — или ошибка с его именем. */
+/** A node by selector — or an error naming it. */
 const find = (selector: string): HTMLElement => {
 	const node = document.querySelector(selector)
 
@@ -94,16 +98,16 @@ const find = (selector: string): HTMLElement => {
 	return node
 }
 
-/** Меню ушло в выезжающую панель — раскладка узкого окна. */
+/** The menu went into a drawer — the narrow window's layout. */
 const narrowLayout = () => document.querySelector('.pg--narrow') !== null
 
-/** Имя узла для сообщения: тег и классы. */
+/** A node's name for a message: the tag and the classes. */
 const label = (node: Element) => [node.tagName.toLowerCase(), ...node.classList].join('.')
 
-/** Середина коробки по вертикали. */
+/** The box's vertical middle. */
 const middleOf = (box: DOMRect) => box.top + box.height / 2
 
-/** Прямоугольники текста узла — по одному на строку. */
+/** The rectangles of a node's text — one per line. */
 const textRects = (node: Element) => {
 	const range = document.createRange()
 
@@ -112,16 +116,16 @@ const textRects = (node: Element) => {
 	return [...range.getClientRects()]
 }
 
-/** Сколько строк занимает текст узла. */
+/** How many lines a node's text takes. */
 const linesOf = (node: Element) => new Set(textRects(node).map((rect) => Math.round(rect.top))).size
 
-/** Ширина текста узла одной строкой: перенесённый — его строки подряд. */
+/** The width of a node's text as one line: a wrapped one — its lines in a row. */
 const textWidthOf = (node: Element) => textRects(node).reduce((sum, rect) => sum + rect.width, 0)
 
 /**
- * Что вылезает за край содержимого области — только для сообщения упавшей
- * проверки: самые внешние такие узлы, которых ничто внутри области не
- * обрезает.
+ * What sticks out past the edge of the area's content — only for the message
+ * of a failed check: the outermost such nodes that nothing inside the area
+ * clips.
  */
 const overflowing = (main: HTMLElement): string => {
 	const edge =
@@ -146,7 +150,7 @@ const overflowing = (main: HTMLElement): string => {
 		.join(', ')
 }
 
-/** Область не прокручивается вбок: содержимое не шире её видимой части. */
+/** The area doesn't scroll sideways: its content is no wider than its visible part. */
 const expectNoSideScroll = () => {
 	const main = find('.pg__main')
 
@@ -154,14 +158,15 @@ const expectNoSideScroll = () => {
 }
 
 /**
- * Шапка каждой строки страницы свойств — поле `Field`: имя свойства, коробки
- * шапки, подписи, контрола и подсказки, дорожка переключателя, если редактор
- * — Switch, и зазоры поля. Подсказка есть у каждой строки: описание пропа
- * обязательно (`shared/__tests__/manifest.spec.ts`). Коробка имени — у
- * подписи, а не у `<code>` в ней: строчная коробка ниже строки, и зазор до
- * контрола разошёлся бы на полуинтерлиньяж. Строки и ширину текста имени
- * тест считает по тексту `<code>`: прямоугольники подписи несли бы ещё и
- * коробку самого `<code>`, и ширина вышла бы вдвое.
+ * The head of every row of the props page — a `Field`: the prop's name, the
+ * boxes of the head, the label, the control and the hint, the switch's track
+ * if the editor is a Switch, and the field's gaps. Every row has a hint: a
+ * prop's description is required (`shared/__tests__/manifest.spec.ts`). The
+ * name's box is the label's, not that of the `<code>` in it: an inline box is
+ * lower than the line, and the gap to the control would be off by half the
+ * leading. The lines and the text width of the name are counted by the text of
+ * `<code>`: the label's rectangles would also carry the box of `<code>`
+ * itself, and the width would come out double.
  */
 const propHeads = () => {
 	const heads = [...document.querySelectorAll('.pg-prop__head')]
@@ -188,14 +193,14 @@ const propHeads = () => {
 			textWidth: textWidthOf(text),
 			control: control.getBoundingClientRect(),
 			helper: helper.getBoundingClientRect(),
-			// Видимая часть переключателя; у строки с полем ввода или выбора его нет
+			// The switch's visible part; a row with an input or a select has none
 			track: track?.getBoundingClientRect() ?? null,
-			// Подпись сверху — столбец без `row-gap`: зазоры до контрола и до
-			// подсказки тема ставит им отступом сверху
+			// The label on top — a column without `row-gap`: the theme sets the gaps
+			// to the control and to the hint as their top margins
 			above: parseFloat(getComputedStyle(control).marginBlockStart),
 			below: parseFloat(getComputedStyle(helper).marginBlockStart),
-			// Подпись в начале строки — сетка: переключатель от имени отделяет
-			// зазор колонок, подсказку от них — зазор строк
+			// The label at the row's start — a grid: the column gap separates the
+			// switch from the name, the row gap the hint from them
 			beside: parseFloat(grid.columnGap),
 			under: parseFloat(grid.rowGap),
 		}
@@ -204,20 +209,21 @@ const propHeads = () => {
 
 type THead = ReturnType<typeof propHeads>[number]
 
-/** Строка со Switch: у неё есть дорожка переключателя. */
+/** A row with a Switch: it has the switch's track. */
 const isToggle = (head: THead): head is THead & { track: DOMRect } => head.track !== null
 
 /**
- * Шапки строк страницы. Строки каждого вида на странице есть — иначе
- * проверка вида прошла бы впустую.
+ * The heads of the page's rows. Rows of each kind are on the page — otherwise
+ * a kind's check would pass for nothing.
  *
- * Строка с полем — столбец: имя над контролом на зазоре подписи, подсказка
- * под контролом на своём, все три — от начала строки. Контрол не выходит из
- * строки, и ширина у него одна в любом окне.
+ * A row with a field is a column: the name above the control at the label's
+ * gap, the hint under the control at its own, all three from the row's start.
+ * The control stays in its row, and its width is one in any window.
  *
- * Строка со Switch — имя в начале строки, в одну строку текста, за ним на
- * зазоре колонок переключатель, по центру строки имени; подсказка под ними
- * на зазоре строк — от начала строки, как имя, а не от переключателя.
+ * A row with a Switch: the name at the row's start, in one line of text, after
+ * it at the column gap the switch, centred on the name's line; the hint under
+ * them at the row gap — from the row's start, like the name, not from the
+ * switch.
  */
 const expectHeads = () => {
 	const heads = propHeads()
@@ -266,7 +272,7 @@ const expectHeads = () => {
 	}
 }
 
-/** Ширины широкой и обычной ячеек витрины и зазор между дорожками. */
+/** The widths of the showcase's wide and regular cells and the gap between the tracks. */
 const cells = () => {
 	const gap = parseFloat(getComputedStyle(find('.pg-grid')).columnGap)
 	const wide = find('.pg-cell--wide').getBoundingClientRect().width
@@ -297,13 +303,20 @@ describe('стенд в узком окне не прокручивается в
 	})
 
 	/**
-	 * Колонку имени у строки со Switch тема по умолчанию держит не шире 40 %
-	 * поля, и в окне телефона длинное имя рвалось посреди слова, хотя за
-	 * переключателем оставалось полстроки. Имена Button коротки — длинные есть
-	 * у плагинов Dialog (`hideOutside_enabled`).
+	 * By default the theme keeps the name's column of a row with a Switch no
+	 * wider than 40 % of the field, and in a phone window a long name broke
+	 * mid-word, though half the row was left after the switch. The names of
+	 * Button are short — the long ones belong to Dialog's plugins
+	 * (`hideOutside_enabled`, the longest switch name on the stand).
+	 *
+	 * The case holds only while the name is wider than 40 % of the row, and the
+	 * name's width is the font's: the monospace of the Playwright image in Docker
+	 * is half an em wide, narrower than Windows' and CI's, and at 360 px the name
+	 * took 37 % of the row there. So the window is the narrowest phone's, 320 px:
+	 * there the name takes 43 % of the row even on that font.
 	 */
-	it('360 px, страница свойств: длинное имя у переключателя — в одну строку', async () => {
-		await open(360, '/vue/dialog')
+	it('320 px, страница свойств: длинное имя у переключателя — в одну строку', async () => {
+		await open(320, '/vue/dialog')
 
 		expect(narrowLayout(), 'меню в выезжающей панели').toBe(true)
 
@@ -358,16 +371,16 @@ describe('стенд в узком окне не прокручивается в
 	})
 })
 
-/** Контролы шапки в порядке разметки — в шапке или в панели настроек. */
+/** The header's controls in markup order — in the header or in the settings panel. */
 const SETTINGS = ['Фреймворк', 'Анимация движения', 'Язык', 'Тема', 'Иконки', 'Тёмная']
 
 const header = () => find('.pg__header')
 
-/** Кнопка шапки по имени — как её находит скринридер; нет кнопки — `null`. */
+/** A header button by name — as a screen reader finds it; no button — `null`. */
 const headerButton = (name: string) =>
 	page.elementLocator(header()).getByRole('button', { name, exact: true }).query()
 
-/** Выезжающая панель узкого окна по заголовку: «Меню» или «Настройки». */
+/** A narrow window's drawer by its title: «Меню» or «Настройки». */
 const panel = (title: string): HTMLElement => {
 	const found = [...document.querySelectorAll('.pg__drawer')].find(
 		(node) => node.querySelector('.so-drawer__title')?.textContent?.trim() === title,
@@ -378,10 +391,10 @@ const panel = (title: string): HTMLElement => {
 	return found
 }
 
-/** Панель на экране. Закрытую Drawer прячет, а не снимает. */
+/** The panel is on screen. Drawer hides a closed one rather than removing it. */
 const shown = (node: HTMLElement) => getComputedStyle(node).display !== 'none'
 
-/** Открыть панель её кнопкой в шапке и дождаться, пока она въедет. */
+/** Open a panel with its button in the header and wait until it has slid in. */
 const openPanel = async (title: string): Promise<HTMLElement> => {
 	const button = headerButton(title)
 
@@ -397,14 +410,14 @@ const openPanel = async (title: string): Promise<HTMLElement> => {
 	return node
 }
 
-/** Подпись контрола — подпись его поля `Field`. */
+/** A control's caption — the label of its `Field`. */
 const CAPTION = '.pg__control > .so-field__label'
 
-/** Подписи контролов в порядке разметки. */
+/** The controls' captions in markup order. */
 const labelsOf = (scope: Element) =>
 	[...scope.querySelectorAll(CAPTION)].map((node) => node.textContent?.trim())
 
-/** Контрол по подписи. */
+/** A control by its caption. */
 const controlOf = (scope: Element, label: string): HTMLElement => {
 	const found = [...scope.querySelectorAll('.pg__control')].find(
 		(node) => node.querySelector(CAPTION)?.textContent?.trim() === label,
@@ -415,7 +428,7 @@ const controlOf = (scope: Element, label: string): HTMLElement => {
 	return found
 }
 
-/** Коробка узла внутри контрола — или ошибка с селектором. */
+/** The box of a node inside a control — or an error with the selector. */
 const boxIn = (control: Element, selector: string): DOMRect => {
 	const node = control.querySelector(selector)
 
@@ -424,7 +437,7 @@ const boxIn = (control: Element, selector: string): DOMRect => {
 	return node.getBoundingClientRect()
 }
 
-/** Выбрать пункт Select контрола, как человек: открыть список и нажать пункт. */
+/** Choose an item of a control's Select, as a person does: open the list and press the item. */
 const choose = async (control: Element, text: string) => {
 	const field = control.querySelector('.so-select input')
 
@@ -432,7 +445,7 @@ const choose = async (control: Element, text: string) => {
 
 	await userEvent.click(field)
 
-	// Список телепортирован — пункт ищется по связке поля со списком
+	// The list is teleported — the item is found by the field's link to the list
 	const list = document.getElementById(field.getAttribute('aria-controls') ?? '')
 	const option = [...(list?.querySelectorAll('[role="option"]') ?? [])].find(
 		(node) => node.textContent?.trim() === text,
@@ -445,7 +458,8 @@ const choose = async (control: Element, text: string) => {
 
 describe('шапка в узком окне', () => {
 	afterEach(async () => {
-		// Флаги панелей — в модуле и переживают тест: открытую закрывает её крестик
+		// The panels' flags live in a module and outlive the test: an open one is
+		// closed by its cross
 		for (const node of document.querySelectorAll<HTMLElement>('.pg__drawer')) {
 			if (!shown(node)) continue
 
@@ -535,7 +549,8 @@ describe('шапка в узком окне', () => {
 
 		expect(labelsOf(settings)).toEqual(SETTINGS)
 
-		// Столбец: подпись над контролом, поле Select — во всю ширину панели
+		// A column: the caption above the control, the Select field across the
+		// panel's width
 		const { width } = column.getBoundingClientRect()
 
 		for (const label of SETTINGS) {
@@ -550,10 +565,11 @@ describe('шапка в узком окне', () => {
 			}
 		}
 
-		// Хост React — заранее, загрузчиком, как его грузит роутер. Адрес роутер
-		// меняет, только когда хост загружен, а первая загрузка хоста при
-		// соседних прогонах дольше ожидания адреса ниже. Тест про панель, а не
-		// про скорость загрузки — и ожидание не растягивается догадкой о машине
+		// The React host — beforehand, by the loader, the way the router loads it.
+		// The router changes the address only once the host is loaded, and the
+		// host's first load, with runs going on beside, takes longer than the wait
+		// for the address below. The test is about the panel, not the load speed,
+		// and the wait isn't stretched by a guess about the machine
 		await loadHost('react')
 
 		await choose(controlOf(settings, 'Фреймворк'), 'React')
@@ -641,7 +657,8 @@ describe('шапка в узком окне', () => {
 		expect(bar.querySelector('.pg__switch')?.textContent?.trim()).toBe('Тесты')
 		expect(labelsOf(bar)).toEqual(SETTINGS)
 
-		// Контролы — flex-элементы шапки, а не столбец обёртки настроек
+		// The controls are the header's flex items, not a column of the settings
+		// wrapper
 		const framework = controlOf(bar, 'Фреймворк').getBoundingClientRect()
 		const motion = controlOf(bar, 'Анимация движения').getBoundingClientRect()
 

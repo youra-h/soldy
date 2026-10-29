@@ -1,43 +1,58 @@
 /**
- * Замер открытой панели у триггера и открытого слоя у края или по центру окна
- * — для сверки раскладки двух отрисовок: Vue и Web Components
- * (`webc-frame.spec.ts`), Vue и Angular (`angular-host.spec.ts`).
+ * Measuring an open panel at its trigger and an open layer at the window's
+ * edge or centre — to compare the layout of two renders: Vue and Web
+ * Components (`webc-frame.spec.ts`, `webc-collections.spec.ts`,
+ * `webc-dates.spec.ts`), Vue and Angular (`angular-host.spec.ts`).
  *
- * Панель встаёт у якоря, поэтому её место сверяется не от угла окна, а от
- * триггера: рамки триггера и панели с её частями — от его угла. Окно и
- * выезжающая панель стоят у края или по центру окна, и их рамки с подложкой и
- * частями сверяются от угла окна. Тема видит у слоёв разных фреймворков одни
- * классы и одну разметку, и рамки обязаны совпасть.
+ * A panel stands at its anchor, so its place is compared not from the window's
+ * corner but from the trigger: the boxes of the trigger and of the panel with
+ * its parts — from the trigger's corner. A dialog and a drawer stand at an edge
+ * or in the middle of the window, and their boxes with the backdrop and the
+ * parts are compared from the window's corner. The theme sees the same classes
+ * and the same markup in the layers of different frameworks, and the boxes
+ * must match.
  */
 
-/** Рамка узла от угла триггера, в пикселях. */
+import { expect } from 'vitest'
+
+/** A node's box from the trigger's corner, in pixels. */
 export type TBox = { x: number; y: number; width: number; height: number }
 
-/** Блок, в котором стоит компонент, — один на обе отрисовки. */
+/** The block the component stands in — one for both renders. */
 export const BOX = 'padding: 48px 24px; width: 400px'
 
-/** Части открытого поповера: панель, обёртка содержимого, содержимое, крестик и иконка в нём. */
+/** The parts of an open popover: the panel, the content wrapper, the content, the cross and its icon. */
 export const POPOVER_PARTS =
 	'.so-popover__panel, .so-popover__content, .so-popover__content > *, .so-popover__close, .so-popover__close .so-icon'
 
-/** Части открытой подсказки: панель и обёртка текста. */
+/** The parts of an open tooltip: the panel and the text wrapper. */
 export const TOOLTIP_PARTS = '.so-tooltip__panel, .so-tooltip__content'
 
-/** Части открытого окна: подложка, окно, заголовок, тело с содержимым, подвал с кнопками, крестик. */
+/** The parts of an open dialog: the backdrop, the dialog, the title, the body with its content, the footer with its buttons, the cross. */
 export const DIALOG_PARTS =
 	'.so-dialog__backdrop, .so-dialog, .so-dialog__title, .so-dialog__body, .so-dialog__body > *, .so-dialog__footer, .so-dialog__footer > *, .so-dialog__close'
 
-/** Части открытой выезжающей панели — те же, что у окна. */
+/** The parts of an open drawer — the same as the dialog's. */
 export const DRAWER_PARTS =
 	'.so-drawer__backdrop, .so-drawer, .so-drawer__title, .so-drawer__body, .so-drawer__body > *, .so-drawer__footer, .so-drawer__footer > *, .so-drawer__close'
 
-/** Кадр: привязка панели считает место после него. */
+/**
+ * How long an open panel or layer may take to stand still, ms. A limit in
+ * time, not in frames: a count of frames is a guess about the machine, and
+ * under load frames come rarely.
+ */
+const SETTLE_TIMEOUT = 5000
+
+/** What a read of standing boxes returns; anything else is what keeps them from it. */
+const STILL = 'стоят'
+
+/** A frame: the panel's anchoring computes the place after it. */
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
- * Рамки триггера и открытой панели с её частями — от угла триггера. Части
- * ищутся по документу: панель телепортирована. Скрытые части рамок не имеют и
- * не считаются. Панели нет — пусто.
+ * The boxes of the trigger and of the open panel with its parts — from the
+ * trigger's corner. The parts are looked up in the document: the panel is
+ * teleported. Hidden parts have no boxes and don't count. No panel — empty.
  */
 function boxesOf(trigger: () => Element | null, parts: string): TBox[] {
 	const anchor = trigger()
@@ -62,33 +77,59 @@ function boxesOf(trigger: () => Element | null, parts: string): TBox[] {
 }
 
 /**
- * Рамки, когда панель встала: доиграли переходы темы — проявление панели, — и
- * два кадра подряд рамки те же. Место панели привязка досчитывает кадром после
- * показа, а под нагрузкой кадры идут реже, и число кадров не загадывается.
- * Переход, перебитый новым значением или переносом узла, отменяется, и его
- * `finished` отклонён: для ожидания это тоже конец — устоялось ли, решают рамки.
+ * Boxes that stand still: each read waits for a frame and for the document's
+ * transitions to play out — the panel's appearance, the drawer sliding in, —
+ * and two reads in a row give the same boxes, and not none. A transition
+ * interrupted by a new value or by moving the node is cancelled, and its
+ * `finished` is rejected: for the wait that is an end too — whether things
+ * have settled, the boxes decide.
+ *
+ * The wait is limited in time (`SETTLE_TIMEOUT`), and the error names what the
+ * last read saw: no boxes — the panel or the layer didn't open; other boxes
+ * than the read before — it is still moving, with both reads.
  */
-export async function measure(trigger: () => Element | null, parts: string): Promise<TBox[]> {
+async function stillBoxes(read: () => TBox[], message: string): Promise<TBox[]> {
 	let previous = ''
+	let boxes: TBox[] = []
 
-	for (let frame = 0; frame < 60; frame += 1) {
-		await nextFrame()
-		await Promise.all(
-			document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+	await expect
+		.poll(
+			async () => {
+				await nextFrame()
+				await Promise.all(
+					document
+						.getAnimations()
+						.map((animation) => animation.finished.catch(() => undefined)),
+				)
+
+				const before = previous
+
+				boxes = read()
+				previous = JSON.stringify(boxes)
+
+				if (boxes.length === 0) return 'рамок нет: не открыто'
+				if (previous !== before) return `едут: ${before} → ${previous}`
+
+				return STILL
+			},
+			{ timeout: SETTLE_TIMEOUT, interval: 0, message },
 		)
+		.toBe(STILL)
 
-		const boxes = boxesOf(trigger, parts)
-		const current = JSON.stringify(boxes)
-
-		if (boxes.length > 0 && current === previous) return boxes
-
-		previous = current
-	}
-
-	throw new Error(`${parts}: открытая панель не встала за 60 кадров`)
+	return boxes
 }
 
-/** Рамки открытого слоя и его частей — от угла окна: они стоят у края или по центру экрана. */
+/**
+ * The boxes of the trigger and of the open panel with its parts, once the
+ * panel stands still: the anchoring computes its place a frame after it shows,
+ * and under load frames come rarely, so their number isn't guessed
+ * (`stillBoxes`).
+ */
+export function measure(trigger: () => Element | null, parts: string): Promise<TBox[]> {
+	return stillBoxes(() => boxesOf(trigger, parts), `${parts}: открытая панель не встала`)
+}
+
+/** The boxes of an open layer and its parts — from the window's corner: they stand at an edge or in the middle of the screen. */
 function windowBoxesOf(parts: string): TBox[] {
 	return [...document.querySelectorAll(parts)]
 		.filter((node) => node.getClientRects().length > 0)
@@ -104,27 +145,7 @@ function windowBoxesOf(parts: string): TBox[] {
 		})
 }
 
-/**
- * Рамки, когда слой встал: доиграли переходы темы — проявление окна, въезд
- * панели, — и два кадра подряд рамки те же. Перебитый переход отменяется, и
- * его `finished` отклонён: для ожидания это тоже конец, как в `measure`.
- */
-export async function measureLayer(parts: string): Promise<TBox[]> {
-	let previous = ''
-
-	for (let frame = 0; frame < 60; frame += 1) {
-		await nextFrame()
-		await Promise.all(
-			document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
-		)
-
-		const boxes = windowBoxesOf(parts)
-		const current = JSON.stringify(boxes)
-
-		if (boxes.length > 0 && current === previous) return boxes
-
-		previous = current
-	}
-
-	throw new Error(`${parts}: открытый слой не встал за 60 кадров`)
+/** The boxes of an open layer and its parts, once the layer stands still (`stillBoxes`). */
+export function measureLayer(parts: string): Promise<TBox[]> {
+	return stillBoxes(() => windowBoxesOf(parts), `${parts}: открытый слой не встал`)
 }
