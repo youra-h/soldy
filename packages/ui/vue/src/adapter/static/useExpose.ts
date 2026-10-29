@@ -1,65 +1,83 @@
 /**
- * Закрытый экземпляр: что `ref` потребителя видит у компонента.
+ * The closed instance: what the consumer's `ref` sees of a component.
  *
- * Поверхностей управления у компонента две — пропсы с событиями и `ctrl`
- * (AGENTS.md, «Две поверхности управления»), а `ref` — путь к корню, `$el`, а
- * не третья. Поэтому экземпляр снаружи закрыт: свойства Vue (`$el`, `$props`,
- * `$slots`…) он отдаёт, а привязки шаблона — `ctrl`, состояние, выходы
- * плагинов — нет. Корень `$el` даёт сам Vue, а компоненту, у которого корень
- * шаблона — телепорт, — `exposeRoot`.
+ * A component has two control surfaces — props with events, and `ctrl`
+ * (AGENTS.md, «Две поверхности управления») — and `ref` is the way to the
+ * root, `$el`, not a third one. So the instance is closed from outside: it
+ * gives the own properties of Vue (`$el`, `$props`, `$slots`…) and not the
+ * bindings of the template — `ctrl`, the state, the outputs of plugins. The
+ * root `$el` comes from Vue itself, and for a component whose template root is
+ * a teleport, from `exposeRoot`.
  *
- * Закрывают две записи, рантайм и тип, и обе нужны: vue-tsc проверяет шаблон
- * компонента по публичному типу его экземпляра, поэтому опция, которую видит
- * тип, закрыла бы и шаблон.
+ * Two records close it, the run time and the type, and both are needed:
+ * vue-tsc checks the template of a component by the public type of its
+ * instance, so an option the type sees would close the template too.
  *
- * - `useExpose()` — опция `expose` компонента (`setup.component.ts`), закрывает
- *   экземпляр в рантайме;
- * - `TClosedComponent` — тип компонента в точке его экспорта, закрывает
- *   экземпляр в типе.
+ * - `useExpose()` — the `expose` option of a component (`setup.component.ts`),
+ *   closes the instance at run time;
+ * - `TClosedComponent` — the type of a component at its export, closes the
+ *   instance in the type.
  */
 
 import type { ComponentCustomProperties, ComponentPublicInstance } from 'vue'
 
 /**
- * Опция `expose` компонента: пустой список — экземпляр не открывает ничего,
- * кроме свойств Vue.
+ * The `expose` option of a component: an empty list — the instance opens
+ * nothing but the properties of Vue.
  *
- * Своя у каждого компонента: из `extends` Vue её не берёт (предупреждает и
- * игнорирует), поэтому в `base.component.ts` её нет.
+ * Every component has its own: Vue does not take it from `extends` (it warns
+ * and ignores it), so `base.component.ts` has none.
  *
- * Тип — `string[]`, а не пустой кортеж: из `expose: []` vue-tsc вывел бы
- * закрытый тип экземпляра, а по нему он проверяет и шаблон компонента — из
- * шаблона пропали бы все привязки. Тип закрывает `TClosedComponent`.
+ * The type is `string[]`, not an empty tuple: from `expose: []` vue-tsc would
+ * infer the closed type of the instance and check the template of the
+ * component by it too — every binding would vanish from the template. The
+ * type is closed by `TClosedComponent`.
  */
 export function useExpose(): string[] {
 	return []
 }
 
 /**
- * Свойства, которые Vue отдаёт у закрытого экземпляра: `$el`, `$props`,
- * `$slots`, `$emit`… Глобальных свойств приложения
- * (`ComponentCustomProperties`) закрытый экземпляр не отдаёт.
+ * The named keys of a type, without its index signatures: `string`, `number`
+ * and patterns such as `$${string}`. An object with no properties
+ * (`Record<never, never>`) satisfies an index signature and never a named key.
  */
-type TInstanceKeys = Exclude<keyof ComponentPublicInstance, keyof ComponentCustomProperties>
+type TNamedKeys<T> = keyof {
+	[K in keyof T as Record<never, never> extends Record<K, unknown> ? never : K]: T[K]
+}
 
-/** Закрытый экземпляр в типе: только свойства Vue, привязок шаблона нет. */
+/**
+ * The properties Vue gives on the closed instance: `$el`, `$props`, `$slots`,
+ * `$emit`… The globals of the application (`ComponentCustomProperties`) the
+ * closed instance does not give. Only the named ones are subtracted: Nuxt
+ * types the injections of its plugins with a pattern, `$${string}`, and
+ * subtracting it would take `$props` away and with it the check of the props
+ * in templates.
+ */
+type TInstanceKeys = Exclude<
+	TNamedKeys<ComponentPublicInstance>,
+	TNamedKeys<ComponentCustomProperties>
+>
+
+/** The closed instance in the type: only the properties of Vue, no template bindings. */
 export type TClosedInstance<TInstance extends ComponentPublicInstance> = Pick<
 	TInstance,
 	TInstanceKeys
 >
 
 /**
- * Компонент, экземпляр которого закрыт (`useExpose`): пропсы, события и слоты
- * у него прежние — их vue-tsc берёт из `$props`, `$emit` и `$slots`, — а
- * экземпляр из `ref` типизирован свойствами Vue.
+ * A component whose instance is closed (`useExpose`): its props, events and
+ * slots stay — vue-tsc takes them from `$props`, `$emit` and `$slots` — while
+ * the instance from `ref` is typed by the properties of Vue.
  *
- * Тип ставится в точке экспорта компонента, а не опцией: шаблону нужен
- * открытый тип, потребителю — закрытый (см. шапку файла). Приведения здесь
- * нет: открытый экземпляр — подтип закрытого, и компонент присваивается такому
- * типу как есть, под проверкой компилятора.
+ * The type is set at the export of the component, not by an option: the
+ * template needs the open type, the consumer the closed one (see the head of
+ * the file). There is no cast here: the open instance is a subtype of the
+ * closed one, and the component is assigned to this type as it is, under the
+ * check of the compiler.
  *
- * Конструктор заменён целиком (`Omit` снимает сигнатуру исходного): с двумя
- * сигнатурами `new` выбрал бы исходную, открытую.
+ * The constructor is replaced as a whole (`Omit` drops the signature of the
+ * original): with two `new` signatures the original, open one would be chosen.
  */
 export type TClosedComponent<TComponent extends new (...args: any[]) => ComponentPublicInstance> =
 	Omit<TComponent, never> & (new (...args: any[]) => TClosedInstance<InstanceType<TComponent>>)
