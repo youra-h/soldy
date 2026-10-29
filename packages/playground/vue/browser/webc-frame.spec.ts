@@ -29,6 +29,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { cleanup, render } from './render'
+import { webkitUntil } from './engine'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { TButton, TComponentView, TFrame, createEngineToasts } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, zhCN, type IPluginContext, type TLocale } from '@soldy-ui/plugins'
@@ -170,7 +171,7 @@ const PANEL = `<section class="place">
 	<div is="so-frame" visible target="#first"><button is="so-button" text="Сохранить"></button></div>
 </section>`
 
-describe('<div is="so-frame"> · перенос в браузере', () => {
+describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос в браузере', () => {
 	it('панель в цели, на месте якорь; Frame и кнопка собраны по разу, с локалью провайдера', () => {
 		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
 

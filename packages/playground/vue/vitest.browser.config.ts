@@ -1,14 +1,14 @@
 import { defineConfig } from 'vitest/config'
-import type { BrowserCommandContext } from 'vitest/node'
+import type { BrowserCommandContext, BrowserInstanceOption } from 'vitest/node'
 import { defineBrowserCommand, playwright } from '@vitest/browser-playwright'
 import { aliases, constants, plugins } from './vite.base.ts'
 
 /**
- * Кнопка мыши отдельно от движения. `userEvent` жмёт и отпускает её только
- * вместе с движением (`click`, `dragAndDrop`), а жесту бывает нужна пауза с
- * зажатой кнопкой — стоянка ручки ползунка на метке
- * (`browser/slider.spec.ts`). Двигает мышь по-прежнему `userEvent.hover`: он
- * и переводит точку из рамки теста в координаты страницы. Типы команд —
+ * The mouse button apart from movement. `userEvent` presses and releases it
+ * only together with movement (`click`, `dragAndDrop`), while a gesture may
+ * need a pause with the button held — the slider thumb resting on a mark
+ * (`browser/slider.spec.ts`). The mouse is still moved by `userEvent.hover`:
+ * it turns a point in the test frame into page coordinates. Command types —
  * `browser/commands.d.ts`.
  */
 const mouseDown = defineBrowserCommand(async ({ page }) => {
@@ -19,32 +19,44 @@ const mouseUp = defineBrowserCommand(async ({ page }) => {
 	await page.mouse.up()
 })
 
-/** Точка в долях рамки узла: `x` — по ширине, `y` — по высоте. */
+/** A point in fractions of the node's box: `x` of the width, `y` of the height. */
 type TFraction = { x: number; y: number }
 
 /**
- * Протяжка мышью без паузы перед отпусканием: нажать в точке `from`, довести
- * до `to` и сразу отпустить. Движение и отпускание уходят в браузер одним
- * тактом процесса прогона — событиями мыши протокола DevTools
- * (`Input.dispatchMouseEvent`) одной сессии, а их браузер выполняет по
- * порядку. У `dragAndDrop` между ними круг RPC, а под нагрузкой — и простой
- * процесса прогона: окно, которое жест держит по часам (стоянка ручки на
- * метке — 250 мс, `browser/slider.spec.ts`), кончалось до отпускания.
- * Одновременные вызовы `page.mouse` порядка не обещают — отпускание обгоняло
- * движение. Кнопку Playwright не нажимает, и его состояние мыши с браузером не
- * расходится. Узел — селектор CSS в рамке теста, рамку страницы считает
- * Playwright.
+ * A mouse drag without a pause before the release: press at `from`, move to
+ * `to` and release at once. `dragAndDrop` has an RPC round trip between the
+ * movement and the release, and under load the runner process stalls as
+ * well: a window the gesture keeps by the clock (the thumb resting on a mark,
+ * 250 ms, `browser/slider.spec.ts`) ran out before the release.
+ *
+ * Chromium gets the movement and the release in one tick of the runner, as
+ * mouse events of the DevTools protocol (`Input.dispatchMouseEvent`) on one
+ * session, which the browser executes in order; concurrent `page.mouse` calls
+ * don't promise order — the release overtook the movement. Other browsers
+ * have no such protocol and get Playwright's mouse call after call: no RPC
+ * round trip between the calls, only Playwright's own. The node is a CSS
+ * selector in the test frame; Playwright computes its page box.
  */
 const quickDrag = defineBrowserCommand<[selector: string, from: TFraction, to: TFraction]>(
-	async ({ page, frame }, selector, from, to) => {
+	async ({ page, frame, project }, selector, from, to) => {
 		const box = await (await frame()).locator(selector).boundingBox()
 
-		if (!box) throw new Error(`${selector}: узла нет или он не нарисован`)
+		if (!box) throw new Error(`${selector}: no node, or it is not rendered`)
 
 		const point = ({ x, y }: TFraction) => ({
 			x: box.x + box.width * x,
 			y: box.y + box.height * y,
 		})
+
+		if (project.config.browser.name !== 'chromium') {
+			await page.mouse.move(point(from).x, point(from).y)
+			await page.mouse.down()
+			await page.mouse.move(point(to).x, point(to).y)
+			await page.mouse.up()
+
+			return
+		}
+
 		const session = await page.context().newCDPSession(page)
 		const left = { button: 'left', clickCount: 1 } as const
 
@@ -76,42 +88,44 @@ const quickDrag = defineBrowserCommand<[selector: string, from: TFraction, to: T
 )
 
 /**
- * Пауза от прошлого касания, после которой касание уже не второе в двойном.
- * Двойное касание браузер разбирает иначе — выделяет слово и открывает
- * контекстное меню, — а касание следующего теста шло за касанием прошлого
- * быстрее окна Chromium (оно короче 350 мс).
+ * The pause after the previous touch past which a touch is no longer the
+ * second of a double one. The browser handles a double touch differently —
+ * selects a word and opens the context menu — and the touch of the next test
+ * followed the previous one faster than Chromium's window (under 350 ms).
  */
 const DOUBLE_TAP_PAUSE = 500
 
-/** Когда кончилось прошлое касание — по часам процесса прогона. */
+/** When the previous touch ended, by the runner process's clock. */
 let lastTap = 0
 
-/** Точка касания — в координатах страницы. */
+/** A touch point, in page coordinates. */
 type TTouchPoint = { x: number; y: number }
 
-/** Событие касания протокола DevTools: `touchEnd` точек не несёт. */
+/** A touch event of the DevTools protocol: `touchEnd` carries no points. */
 type TTouchEvent = {
 	type: 'touchStart' | 'touchMove' | 'touchEnd'
 	touchPoints: TTouchPoint[]
 }
 
-/** Шаг жеста: событие касания или пауза пальца на месте, мс. */
+/** A gesture step: a touch event, or the finger resting in place, ms. */
 type TTouchStep = TTouchEvent | { wait: number }
 
 /**
- * Палец — событиями касания протокола DevTools (`Input.dispatchTouchEvent`).
- * `userEvent` касаться не умеет, а `touchscreen` Playwright требует контекста
- * с `hasTouch` — он сменил бы устройство всем браузерным спекам. Касание
- * протокола браузер разбирает как настоящее: `pointerdown` с
- * `pointerType: 'touch'`, фокус и каретка в редактируемом узле, `click` — всё
- * от одного жеста (`browser/date-input.spec.ts`, «сенсорный режим»). Узел —
- * селектором CSS в рамке теста, точку страницы — центр узла — считает
- * Playwright, а события от неё строит команда (`events`).
+ * A finger, as touch events of the DevTools protocol
+ * (`Input.dispatchTouchEvent`), so Chromium only: specs skip touch elsewhere
+ * (`browser/engine.ts`). `userEvent` can't touch, and Playwright's
+ * `touchscreen` needs a context with `hasTouch`, which would turn every spec
+ * into a touch device. The browser handles a protocol touch as a real one:
+ * `pointerdown` with `pointerType: 'touch'`, focus and caret in an editable
+ * node, `click` — all from one gesture (`browser/date-input.spec.ts`, «сенсорный
+ * режим»). The node is a CSS selector in the test frame; Playwright computes
+ * the point — the node's centre — and the command builds the events from it
+ * (`events`).
  *
- * Окно двойного касания у команд общее: с касанием прошлой команды касание
- * этой двойного не составит — команда выжидает паузу от него. Протяжка тоже
- * его выжидает: протяжка сразу после касания — двойное касание с протяжкой, то
- * есть масштаб.
+ * The commands share the double-touch window: a touch never makes a double
+ * one with the touch of the previous command — the command waits out the
+ * pause after it. A drag waits too: a drag right after a touch is a double
+ * touch with a drag, that is zoom.
  */
 async function touch(
 	{ page, frame }: BrowserCommandContext,
@@ -120,7 +134,7 @@ async function touch(
 ): Promise<void> {
 	const box = await (await frame()).locator(selector).boundingBox()
 
-	if (!box) throw new Error(`${selector}: узла нет или он не нарисован`)
+	if (!box) throw new Error(`${selector}: no node, or it is not rendered`)
 
 	const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 	const pause = lastTap + DOUBLE_TAP_PAUSE - Date.now()
@@ -140,8 +154,8 @@ async function touch(
 }
 
 /**
- * Касание пальцем — в центре узла: `touchStart` и `touchEnd`. Касаний `count`
- * подряд, без пауз между ними: два — двойное касание.
+ * A finger touch at the node's centre: `touchStart` and `touchEnd`. `count`
+ * touches in a row, without pauses between them: two make a double touch.
  */
 const tap = defineBrowserCommand<[selector: string, count?: number]>(
 	(context, selector, count = 1) =>
@@ -154,12 +168,13 @@ const tap = defineBrowserCommand<[selector: string, count?: number]>(
 )
 
 /**
- * Протяжка пальцем — от центра узла на `dx`, `dy`: `touchStart`, `touchMove`
- * равными шагами (`steps`) и `touchEnd` в последней точке. Жест смахивания
- * (`browser/drawer.spec.ts`, «пальцем»): касание, в отличие от мыши, браузер
- * сам захватывает за узлом под пальцем и забирает под прокрутку. `hold` —
- * сколько палец стоит на месте до первого шага, мс: долгое нажатие, которым
- * палец берёт элемент коллекции (`browser/drag-and-drop.spec.ts`, «пальцем»).
+ * A finger drag from the node's centre by `dx`, `dy`: `touchStart`,
+ * `touchMove` in equal steps (`steps`) and `touchEnd` at the last point. The
+ * swipe gesture (`browser/drawer.spec.ts`, «пальцем»): unlike the mouse, the
+ * browser itself captures a touch to the node under the finger and takes it
+ * for scrolling. `hold` — how long the finger rests before the first step,
+ * ms: the long press with which a finger takes a collection item
+ * (`browser/drag-and-drop.spec.ts`, «пальцем»).
  */
 const touchDrag = defineBrowserCommand<
 	[selector: string, dx: number, dy: number, steps?: number, hold?: number]
@@ -176,17 +191,19 @@ const touchDrag = defineBrowserCommand<
 )
 
 /**
- * Текст без клавиш — так его вставляет экранная клавиатура или IME:
- * `beforeinput` (`insertText`) и `input`, без `keydown`. Незавершённую
- * композицию он же завершает.
+ * Text without keys, the way an on-screen keyboard or an IME inserts it:
+ * `beforeinput` (`insertText`) and `input`, without `keydown`. It also
+ * completes a pending composition.
  */
 const insertText = defineBrowserCommand(async ({ page }, text: string) => {
 	await page.keyboard.insertText(text)
 })
 
 /**
- * Текст незавершённой композиции IME — `compositionstart`, `compositionupdate`
- * и `insertCompositionText`, которые не отменить. Завершает её `insertText`.
+ * The text of a pending IME composition — `compositionstart`,
+ * `compositionupdate` and `insertCompositionText`, which can't be cancelled.
+ * `insertText` completes it. The DevTools protocol, so Chromium only: specs
+ * skip composition elsewhere (`browser/engine.ts`).
  */
 const compose = defineBrowserCommand(async ({ page }, text: string) => {
 	const session = await page.context().newCDPSession(page)
@@ -202,27 +219,64 @@ const compose = defineBrowserCommand(async ({ page }, text: string) => {
 	}
 })
 
+/** System settings the theme answers to (`browser/media.ts`). */
+type TEmulatedMedia = {
+	reducedMotion?: 'reduce' | 'no-preference'
+	forcedColors?: 'active' | 'none'
+}
+
 /**
- * Прогон в настоящем браузере — для того, что jsdom не считает вовсе.
+ * System settings as Playwright emulates them (`page.emulateMedia`), in every
+ * browser: the browser answers a media query as if the setting were chosen in
+ * the system. A setting the call doesn't name keeps its value.
+ */
+const emulateMedia = defineBrowserCommand<[media: TEmulatedMedia]>(async ({ page }, media) => {
+	await page.emulateMedia(media)
+})
+
+/**
+ * WebKit — the engine of Safari and of every browser on iOS.
  *
- * Дымовые тесты стенда живут в `vitest.config.ts` и обходятся jsdom: им важна
- * разметка, а не её раскладка. Но раскладку — flex, ширины, переносы — jsdom не
- * вычисляет в принципе: `getBoundingClientRect()` там всегда нули. Из-за этого
- * баг «в `multiple` input Select уезжает под теги» не ловился ни одним из 175
- * зелёных тестов адаптера: ломалась не разметка, а результат расчёта.
+ * Playwright ships WebKit for Windows too, but there it doesn't start (the
+ * browser process hangs at launch). So on Windows WebKit runs only on a
+ * Playwright server in Docker: `npm run test:layout:webkit` starts one
+ * (`browser-server/cli.ts`) and passes its address in `WEBKIT_SERVER`.
+ * Elsewhere — CI on Linux — WebKit starts next to Chromium.
+ */
+function webkit(): BrowserInstanceOption[] {
+	const server = process.env.WEBKIT_SERVER
+
+	if (server) {
+		return [
+			{ browser: 'webkit', provider: playwright({ connectOptions: { wsEndpoint: server } }) },
+		]
+	}
+
+	return process.platform === 'win32' ? [] : [{ browser: 'webkit', provider: playwright() }]
+}
+
+/**
+ * A run in a real browser — for what jsdom doesn't compute at all.
  *
- * Здесь же — действия браузера по умолчанию: ввод символа, переключение
- * чекбокса, клик из Enter или пробела на `<button>`. jsdom их тоже не
- * выполняет, поэтому отменённое действие там не видно: корень контрола глушил
- * Enter и пробел вложенных полей и кнопок при зелёных тестах
- * (`browser/keyboard-activation.spec.ts`).
+ * The stand's smoke tests live in `vitest.config.ts` and do with jsdom: they
+ * care about the markup, not its layout. But jsdom doesn't compute layout —
+ * flex, widths, wrapping — at all: `getBoundingClientRect()` is always zeros
+ * there. So the bug "with `multiple`, the Select input slides under the tags"
+ * wasn't caught by any of 175 green adapter tests: what broke was the
+ * computed result, not the markup.
  *
- * Отдельный конфиг, а не флаг в общем: браузерный прогон на порядок дороже, и
- * гонять в нём дымовые тесты незачем. Тема здесь, в отличие от jsdom-конфига,
- * подключена — проверяем мы именно её CSS, и берётся он собранным
- * (`dist/index.css`), поэтому перед прогоном тему надо собрать. Корневой
- * `npm run test:layout` делает это сам. Плагины, константы и алиасы — общие
- * с остальными конфигами стенда (`vite.base.ts`).
+ * Default browser actions go here too: typing a character, toggling a
+ * checkbox, a click from Enter or Space on a `<button>`. jsdom doesn't perform
+ * them either, so a cancelled action isn't visible there: the control root
+ * swallowed Enter and Space of nested fields and buttons while the tests were
+ * green (`browser/keyboard-activation.spec.ts`).
+ *
+ * A config of its own, not a flag in the shared one: the browser run costs an
+ * order of magnitude more, and smoke tests have no business there. Unlike the
+ * jsdom config, the theme is connected — its CSS is what's checked — and it is
+ * taken built (`dist/index.css`), so the theme is built before the run; the
+ * root `npm run test:layout` does it itself. Plugins, constants and aliases
+ * are shared with the other stand configs (`vite.base.ts`).
  */
 export default defineConfig({
 	plugins: plugins(),
@@ -230,44 +284,58 @@ export default defineConfig({
 	test: {
 		name: 'layout',
 		include: ['browser/**/*.spec.ts'],
-		// `browser/devtools.ts` — пустой хук devtools Vue, первым: Vue читает
-		// его с первым приложением. `__tests__/setup.ts` — общий с jsdom
-		// (заглушки и иконки), `browser/setup.ts` — сторож ошибок окна, только
-		// для браузера.
+		// `browser/devtools.ts` is an empty Vue devtools hook, first: Vue reads
+		// it with the first app. `__tests__/setup.ts` is shared with jsdom
+		// (stubs and icons), `browser/setup.ts` guards window errors, browser
+		// only.
 		setupFiles: ['./browser/devtools.ts', './__tests__/setup.ts', './browser/setup.ts'],
-		// Консоль страницы в прогон не пересылается. Журнал сценариев стенда
-		// (`shared/src/scenarios/journal.ts`) печатает каждое событие вместе с
-		// аргументами — экземплярами ядра и плагинов, — а перехват Vitest
-		// раскладывает каждый аргумент целиком на странице и гонит по RPC:
-		// около полумиллиона строк за прогон. Шпионы `vi.spyOn(console, …)`
-		// работают на странице и от перехвата не зависят; ошибки окна ловит
-		// `browser/setup.ts`. Память вкладки от журнала стережёт
-		// `browser/stand.ts`.
+		// The page console isn't forwarded to the run. The stand's scenario
+		// journal (`shared/src/scenarios/journal.ts`) prints every event with
+		// its arguments — core and plugin instances — and Vitest's interception
+		// serializes each argument whole on the page and sends it over RPC:
+		// about half a million lines per run. `vi.spyOn(console, …)` spies work
+		// on the page and don't depend on the interception; window errors are
+		// caught by `browser/setup.ts`. Tab memory from the journal is guarded
+		// by `browser/stand.ts`.
 		disableConsoleIntercept: true,
 		browser: {
 			enabled: true,
 			headless: true,
-			// Браузер — тот, что Playwright возит с собой, закреплённый ревизией
-			// в package-lock, а не системный Chrome (`channel: 'chrome'`): тот у
-			// каждого своей версии и обновляется сам, и расхождение между машинами
-			// выглядело бы плавающим тестом. Перед первым прогоном нужен
-			// `npx playwright install chromium`; CI делает это сам и кэширует.
-			//
-			// Полосы прокрутки в прогоне настоящие. Playwright в headless
-			// запускает Chromium с `--hide-scrollbars`: полоса не рисуется и не
-			// занимает места, и `innerWidth === documentElement.clientWidth ===
-			// visualViewport.width`. Пока три границы совпадают, любой сторож
-			// раскладки у края окна пуст — прятаться не подо что, и тест
-			// «панель не уехала под полосу» проходит при любой реализации
-			// `TAnchorPlugin` (`browser/anchor.spec.ts`, «граница — видимая
-			// область»). Возвращать флаг «ради чистоты скриншотов» нельзя:
-			// вместе с ним уйдёт и сторож. Прогон остаётся headless — снят
-			// ровно один аргумент.
-			provider: playwright({
-				launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
-			}),
-			instances: [{ browser: 'chromium' }],
-			commands: { mouseDown, mouseUp, quickDrag, tap, touchDrag, insertText, compose },
+			// Browsers are the ones Playwright ships, pinned by the revision in
+			// package-lock, not the system Chrome (`channel: 'chrome'`): that one
+			// has its own version on each machine and updates itself, and the
+			// drift would look like a flaky test. Before the first run:
+			// `npx playwright install chromium` (on Linux and macOS also
+			// `webkit`); CI installs and caches them itself.
+			instances: [
+				{
+					browser: 'chromium',
+					// Real scrollbars. In headless Playwright starts Chromium with
+					// `--hide-scrollbars`: the bar isn't drawn and takes no space,
+					// and `innerWidth === documentElement.clientWidth ===
+					// visualViewport.width`. While the three bounds coincide, any
+					// layout guard at the window edge is empty — there is nothing to
+					// hide under — and the test "the panel didn't slide under the
+					// bar" passes with any `TAnchorPlugin` (`browser/anchor.spec.ts`,
+					// «граница — видимая область»). Don't bring the flag back "for
+					// clean screenshots": the guard goes with it. The run stays
+					// headless — exactly one argument is removed.
+					provider: playwright({
+						launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
+					}),
+				},
+				...webkit(),
+			],
+			commands: {
+				mouseDown,
+				mouseUp,
+				quickDrag,
+				tap,
+				touchDrag,
+				insertText,
+				compose,
+				emulateMedia,
+			},
 		},
 	},
 	resolve: {

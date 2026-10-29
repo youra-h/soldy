@@ -35,6 +35,7 @@ import { COMPONENT_SIZES } from '@soldy-ui/playground-shared'
 import { DateInput, LocaleProvider } from '@soldy-ui/vue'
 
 import { expectClearSquare } from './clear-button'
+import { touchInput } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -475,7 +476,7 @@ describe('время', () => {
 	})
 })
 
-describe('сенсорный режим', () => {
+describe.runIf(touchInput)('сенсорный режим', () => {
 	/** Селектор части — касание ищет узел в рамке теста. */
 	const part = (type: string) => `.so-date-input__segment[data-type="${type}"]`
 

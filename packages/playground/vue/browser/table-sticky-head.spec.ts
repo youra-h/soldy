@@ -31,6 +31,7 @@ import { Button, Dialog, Popover, Table, Virtual } from '@soldy-ui/vue'
 
 import { find, gradientColor, opacity, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
+import { webkitUntil } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -486,7 +487,7 @@ describe('линия под шапкой', () => {
  * поверхности места строка под углом заголовка видна, только когда под ним
  * проходит её линия.
  */
-describe('снимок шапки', () => {
+describe.skipIf(webkitUntil('869fn0tym'))('снимок шапки', () => {
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
 	/** Прокрутки, на которых под углы и середину шапки заходят строки и их линии. */

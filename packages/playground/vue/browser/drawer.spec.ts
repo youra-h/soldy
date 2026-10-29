@@ -27,6 +27,7 @@ import { DIRECTION_CASES, setDir, sidesOf, type TLine } from './directions'
 import { reducedMotion } from './media'
 import { durationOf, settled, transitionOf, transitioning, whileLeaving } from './transitions'
 import { expectClassicScrollbar } from './viewport'
+import { classicScrollbars, touchInput } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -548,7 +549,7 @@ describe.each(DIRECTION_CASES)('выезд по ближайшему dir: $name'
  * бы, и панель у правого края начала бы выезд, съехав на всю ширину полосы.
  * Поэтому прокрутка возвращается, когда панель исчезла.
  */
-describe('прокрутка страницы', () => {
+describe.runIf(classicScrollbars)('прокрутка страницы', () => {
 	/** Прокрутка страницы заперта: замок держит `overflow` у `html`. */
 	const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
 
@@ -739,7 +740,7 @@ describe('жест', () => {
 	 * касание браузер забирает под прокрутку. Протяжка — командой протокола
 	 * DevTools (`commands.touchDrag`).
 	 */
-	describe('пальцем', () => {
+	describe.runIf(touchInput)('пальцем', () => {
 		/** Абзац в теле, за который тянут всю панель, и две остановки Tab. */
 		const text = (): VNode[] => [
 			h('p', { class: 'so-test-text', style: 'width: 120px' }, 'Текст тела'),

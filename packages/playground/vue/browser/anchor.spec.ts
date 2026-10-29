@@ -534,10 +534,9 @@ describe('flip', () => {
 		await userEvent.click(arrow())
 
 		await expect.poll(() => selectPanel().getAttribute('data-placement')).toBe('top-start')
-
-		expect(selectPanel().getBoundingClientRect().bottom).toBeLessThanOrEqual(
-			field().getBoundingClientRect().top + 1,
-		)
+		await expect
+			.poll(() => selectPanel().getBoundingClientRect().bottom)
+			.toBeLessThanOrEqual(field().getBoundingClientRect().top + 1)
 	})
 
 	/**

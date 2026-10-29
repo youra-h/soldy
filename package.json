@@ -40,6 +40,7 @@
     "test:webc": "npm run test --workspace=@soldy-ui/webc",
     "test:playground": "npm run test --workspace=@soldy-ui/playground-shared && npm run test --workspace=@soldy-ui/playground-vue",
     "test:layout": "npm run build:css --workspace=@soldy-ui/theme-oren && npm run test:browser --workspace=@soldy-ui/playground-vue",
+    "test:layout:webkit": "npm run build:css --workspace=@soldy-ui/theme-oren && npm run test:browser:webkit --workspace=@soldy-ui/playground-vue --",
     "test:parity": "npm run build:css --workspace=@soldy-ui/theme-oren && node tools/bench-pages/parity.mjs && node tools/bench-pages/parity-report.mjs",
     "compare:styles": "npm run compare:styles --workspace=@soldy-ui/playground-vue --"
   },

@@ -48,7 +48,8 @@ npm run test:setup   # setup
 npm run test:plugins # plugins
 npm run test:vue     # Vue adapter (likewise test:react, test:angular, …)
 npm run test:theme   # theme token invariants
-npm run test:layout  # layout and interaction in real Chromium (needs `npx playwright install chromium`)
+npm run test:layout  # layout and interaction in real Chromium and WebKit (`npx playwright install chromium webkit`)
+npm run test:layout:webkit  # the same in WebKit via Docker: on Windows WebKit doesn't start natively
 npm run lint         # ESLint, with auto-fix
 npm run format       # Prettier
 npm run build        # build all library packages

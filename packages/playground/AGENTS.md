@@ -17,12 +17,37 @@ Playwright (конфиг `vitest.browser.config.ts`).
 вложенных полей и кнопок, а тесты оставались зелёными. Сторожит
 `keyboard-activation.spec.ts`.
 
-- Браузер — **Chromium, который ставит Playwright**, закреплённый ревизией из
-  `package-lock.json`. Системный Chrome (`channel: 'chrome'`) не использовать:
-  у каждого своя версия, расхождения выглядят как плавающие тесты.
-- Перед первым прогоном на машине: `npx playwright install chromium`. Ставится
-  в `%LOCALAPPDATA%\ms-playwright` (Windows) или `~/.cache/ms-playwright`.
-  После апгрейда Playwright ревизия меняется — установить заново.
+- Браузеров два — **Chromium и WebKit, которые ставит Playwright**,
+  закреплённые ревизией из `package-lock.json`, и каждый спек идёт в обоих
+  (`instances` конфига). WebKit — движок Safari и любого браузера на iOS;
+  встроенные элементы Web Components там держит полифил. Системный Chrome
+  (`channel: 'chrome'`) не использовать: у каждого своя версия, расхождения
+  выглядят как плавающие тесты.
+- **На Windows WebKit от Playwright не запускается** (процесс браузера виснет
+  на старте), поэтому там `npm run test:layout` гонит только Chromium, а
+  WebKit — `npm run test:layout:webkit` (фильтры и флаги Vitest — после `--`).
+  Скрипт (`browser-server/cli.ts`) поднимает сервер Playwright в Docker, гонит
+  на нём проект WebKit и гасит сервер; нужен запущенный Docker Desktop, образ
+  (`mcr.microsoft.com/playwright:v<версия>-noble`) первый прогон скачивает
+  сам. Сервер — установленный `playwright-core`, подключённый в контейнер, а
+  образ — той же версии: иначе протоколы клиента и сервера не сойдутся.
+  Установленная версия разошлась с `package-lock.json` — скрипт
+  останавливается и просит `npm install` (сторожит
+  `__tests__/browser-server.spec.ts`). Страницы прогона браузер в контейнере
+  открывает через прокси рядом с сервером (`browser-server/proxy.ts`): на
+  каждую перепроверку модуля (ответ 304) WebKit открывает своё соединение —
+  около 18 тысяч за прогон, — и проброшенные на машину напрямую они исчерпали
+  её порты: на середине прогона модули переставали грузиться. Прогон в Docker
+  идёт на шрифтах образа и с задержкой до сервера в контейнере, и спеки,
+  завязанные на ширину текста и тайминг, там бывают красными при зелёном CI —
+  например, `narrow-window.spec.ts`, `anchored-swipe.spec.ts`, протяжка в
+  `slider.spec.ts` и `table-sticky-head.spec.ts`, панель подменю в
+  `angular-host.spec.ts` (задача 869fn0u0m). На Linux и macOS WebKit идёт
+  рядом с Chromium, в `test:layout`.
+- Перед первым прогоном на машине: `npx playwright install chromium` (на Linux
+  и macOS — `chromium webkit`). Ставится в `%LOCALAPPDATA%\ms-playwright`
+  (Windows) или `~/.cache/ms-playwright`. После апгрейда Playwright ревизия
+  меняется — установить заново.
 - Если загрузчик Playwright падает (`Download failure`, соединение с
   `cdn.playwright.dev` висит без данных), это его сетевой стек, а не сеть:
   скачать архивы curl-ом по URL из лога и распаковать в
@@ -30,14 +55,30 @@ Playwright (конфиг `vitest.browser.config.ts`).
   `ms-playwright/chromium_headless_shell-<rev>/chrome-headless-shell-win64/`,
   положив рядом пустой файл `INSTALLATION_COMPLETE`. Нужны **оба**: headless
   идёт через headless-shell.
-- CI ставит Chromium сам: кэш `~/.cache/ms-playwright` по `package-lock.json`,
-  `playwright install chromium` при промахе, `install-deps` всегда.
-- Прогон в CI — своя задача «Тесты — браузер». Обрыв связи с вкладкой
+- CI ставит браузер сам: кэш `~/.cache/ms-playwright` по `package-lock.json`
+  и браузеру, `playwright install <браузер>` при промахе, `install-deps`
+  всегда.
+- Прогон в CI — своя задача «Тесты — браузер (<браузер>)», матрицей: проект
+  Chromium и проект WebKit идут параллельно, каждый на своём раннере (одним
+  `test:layout` два браузера делили страницы раннера, и прогон шёл вдвое
+  дольше); сверка платформ — в ноге Chromium. Обрыв связи с вкладкой
   (`VITEST_BROWSER_CONNECTION_CLOSED`) причины не называет, поэтому задача
-  каждые 5 с пишет память машины и процессов Chromium, а при падении печатает
+  каждые 5 с пишет память машины и процессов браузера, а при падении печатает
   её вместе с журналом ядра (OOM killer) и `/dev/shm` — шаг «Память и журнал
-  ядра при падении»; вывод самого Chromium и код его выхода даёт
+  ядра при падении»; вывод самого браузера и код его выхода даёт
   `DEBUG=pw:browser`.
+- **Чего у движка нет по природе, спек пропускает явно** — флагом из
+  `browser/engine.ts` (`describe.runIf(touchInput)`), а причину называет
+  комментарий флага: протокол DevTools (касания `tap`, `touchDrag` и
+  композиция IME `compose` — только у Chromium; касания в WebKit — мобильный
+  прогон, задача 869fjcb0p), накладная полоса прокрутки, перекраска страницы
+  браузером в режиме принудительных цветов (у Safari режима нет, эмуляция
+  WebKit отвечает только медиазапросу), стрелки нативного радио по кругу,
+  Shift+F10 как клавиша контекстного меню. Что у движка есть, а библиотека или
+  спек делают не так, — чинят в теме, плагинах или спеке, а до починки
+  пропускают временно: `webkitUntil('<задача>')`, с задачей на снятие.
+  Настройки системы (`browser/media.ts`) эмулирует команда `emulateMedia`
+  (`page.emulateMedia` Playwright) — в обоих браузерах.
 - Спек зелёный локально и красный в CI — прогнать его на Linux, в образе
   Playwright той версии, что в `package-lock.json`
   (`mcr.microsoft.com/playwright:v<версия>-noble`): копия репозитория
@@ -53,8 +94,8 @@ Playwright (конфиг `vitest.browser.config.ts`).
   `mouseUp` из `commands` (`vitest.browser.config.ts`, типы —
   `browser/commands.d.ts`), а мышь двигает `userEvent.hover` с `position`.
 - Касаться и вводить без клавиш `userEvent` не умеет. Касание пальцем — команда
-  `tap` (протоколом DevTools: `hasTouch` контекста сменил бы устройство всем
-  спекам); оно всегда одиночное — команда выжидает окно двойного касания от
+  `tap` (протоколом DevTools, только Chromium: `hasTouch` контекста сменил бы
+  устройство всем спекам); оно всегда одиночное — команда выжидает окно двойного касания от
   прошлого, а двойное даёт `count`. Протяжка пальцем — `touchDrag`: от центра
   узла на `dx`, `dy` шагами, тем же протоколом. Окно двойного касания у неё с
   `tap` общее и выжидается так же: протяжка сразу за касанием — двойное

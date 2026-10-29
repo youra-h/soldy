@@ -69,6 +69,7 @@ import {
 } from './colors'
 import { setDir } from './directions'
 import { forcedColors, reducedMotion } from './media'
+import { forcedColorsRepaint, webkitUntil } from './engine'
 import {
 	durationOf,
 	easingOf,
@@ -579,7 +580,7 @@ describe('вид', () => {
 	 * красит системным цветом (`forced-colors.spec.ts`, «кромка панели»). Она —
 	 * у каждой плашки: у залитой кольца нет и в обычном режиме, а контур тот же.
 	 */
-	it.each(SCHEMES)(
+	it.runIf(forcedColorsRepaint).each(SCHEMES)(
 		'%s: в режиме принудительных цветов рамка — у каждой плашки',
 		async (scheme) => {
 			await forcedColors('active')
@@ -1010,7 +1011,8 @@ describe('жест', () => {
 		await expect.poll(() => item.isConnected).toBe(false)
 	})
 
-	it('отпустили ближе четверти — тост возвращается на место', async () => {
+	it('отпустили ближе четверти — тост возвращается на место', async (context) => {
+		context.skip(webkitUntil('869fn0u0m'))
 		const { show, rest } = await mount()
 		const [toast] = await show('Сохранено')
 

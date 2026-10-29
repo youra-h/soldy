@@ -47,6 +47,7 @@ import {
 	systemColor,
 } from './colors'
 import { forcedColors } from './media'
+import { forcedColorsRepaint, touchInput, webkitUntil } from './engine'
 import {
 	delayOf,
 	pausedPseudoTransition,
@@ -234,7 +235,8 @@ describe('ширина колонок', () => {
 		expect(viewport().scrollWidth).toBeGreaterThan(viewport().clientWidth)
 	})
 
-	it('до замера ширины решает тема: колонка без ширины не уже распорки в заголовке', async () => {
+	it('до замера ширины решает тема: колонка без ширины не уже распорки в заголовке', async (context) => {
+		context.skip(webkitUntil('869fn0tym'))
 		render(
 			defineComponent({
 				render: () =>
@@ -930,7 +932,7 @@ describe('линии строк', () => {
 		 * пропала бы. Она обязана стать цветом текста системы, как рамки,
 		 * которые браузер красит сам.
 		 */
-		describe('принудительные цвета', () => {
+		describe.runIf(forcedColorsRepaint)('принудительные цвета', () => {
 			it.each(SCHEMES)('%s: линия строки — цветом текста системы', async (scheme) => {
 				await forcedColors('active')
 				await showLines(scheme)
@@ -1112,7 +1114,7 @@ describe('перестановка колонок', () => {
 	 * протокола DevTools (`commands.touchDrag`), от середины заголовка за
 	 * середину соседа.
 	 */
-	it('пальцем — колонка на новом месте, column:move один раз', async () => {
+	it.runIf(touchInput)('пальцем — колонка на новом месте, column:move один раз', async () => {
 		const engine = moveEngine()
 		const moves: string[][] = []
 
@@ -1150,7 +1152,7 @@ describe('перестановка колонок', () => {
 		const [name, city] = headers()
 		const table = find('.so-table')
 		const cell = () => find('.so-table-row__cell')
-		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
+		const rest = { cursor: style(cell()).cursor, select: style(table).userSelect }
 
 		expect(rest.cursor).not.toBe('grabbing')
 		expect(rest.select).not.toBe('none')
@@ -1161,7 +1163,7 @@ describe('перестановка колонок', () => {
 
 			expect(name.dataset.dragging).toBe('true')
 			await expect.poll(() => style(cell()).cursor).toBe('grabbing')
-			expect(style(cell()).userSelect).toBe('none')
+			expect(style(table).userSelect).toBe('none')
 		} finally {
 			await commands.mouseUp()
 		}
@@ -1169,7 +1171,7 @@ describe('перестановка колонок', () => {
 		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 		await expect.poll(() => table.hasAttribute('data-dragging')).toBe(false)
 		expect(style(cell()).cursor).toBe(rest.cursor)
-		expect(style(cell()).userSelect).toBe(rest.select)
+		expect(style(table).userSelect).toBe(rest.select)
 	})
 
 	/**
@@ -1596,7 +1598,8 @@ describe('перестановка колонок', () => {
 	 * с полем каждой строки на каждой перестройке слоёв — на 5000 строк
 	 * ~350 мс на взятии и на каждой смене места (`benchmarks/table/history.md`).
 	 */
-	it('шапка поднята над полем чекбокса строки', async () => {
+	it('шапка поднята над полем чекбокса строки', async (context) => {
+		context.skip(webkitUntil('869fn0tym'))
 		await mount(engineOf(), PLACE)
 
 		const head = find('.so-table__head')
@@ -2347,7 +2350,8 @@ describe('ручка ширины', () => {
 	 * ставит на паузу, а мгновение выбирает тест: уходит указатель в последний
 	 * миг задержки, нажимает — в её начале.
 	 */
-	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async () => {
+	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async (context) => {
+		context.skip(webkitUntil('869fn0tym'))
 		await mount(resizeEngine(ALL), PLACE)
 
 		const resizer = resizerOf(headers()[0])
@@ -2473,7 +2477,7 @@ describe('ручка ширины', () => {
 
 		const table = find('.so-table')
 		const cell = () => find('.so-table-row__cell')
-		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
+		const rest = { cursor: style(cell()).cursor, select: style(table).userSelect }
 		const box = resizerOf(headers()[0]).getBoundingClientRect()
 
 		expect(rest.cursor).not.toBe('col-resize')
@@ -2485,13 +2489,13 @@ describe('ручка ширины', () => {
 
 		try {
 			await expect.poll(() => style(cell()).cursor).toBe('col-resize')
-			expect(style(cell()).userSelect).toBe('none')
+			expect(style(table).userSelect).toBe('none')
 		} finally {
 			await commands.mouseUp()
 		}
 
 		await expect.poll(() => table.hasAttribute('data-resizing')).toBe(false)
 		expect(style(cell()).cursor).toBe(rest.cursor)
-		expect(style(cell()).userSelect).toBe(rest.select)
+		expect(style(table).userSelect).toBe(rest.select)
 	})
 })

@@ -38,7 +38,8 @@ npm run test:setup   # Vitest — @soldy-ui/setup
 npm run test:vue
 npm run test:angular # спеки Angular — билдером @angular/build:unit-test, см. «Angular-специфика»
 npm run test:theme   # Vitest — инварианты токенов темы oren
-npm run test:layout  # раскладка и действия браузера в настоящем Chromium (сам собирает тему)
+npm run test:layout  # раскладка и действия браузера в настоящих Chromium и WebKit (сам собирает тему; на Windows — только Chromium)
+npm run test:layout:webkit  # тот же прогон в WebKit через Docker — так его гоняют на Windows, см. packages/playground/AGENTS.md
 npm run test:side-effects  # `sideEffects` пакетов и сборка одной кнопки, см. docs/agents/build.md
 npm run compare:styles -- <до.css>  # вычисленные стили частей на стенде: лист темы «до» против dist
 npm run lint         # ESLint (auto-fix)
@@ -77,7 +78,7 @@ npm run generate --workspace=@soldy-ui/angular
 CI (`.github/workflows/ci.yml`) гоняет тесты всех пакетов (включая
 `test:plugins`) четырьмя параллельными задачами — «Тесты — ядро, setup,
 плагины, тема», «Тесты — <адаптер>» матрицей по адаптерам, «Тесты — стенд»
-и «Тесты — браузер», — а задачей «Сборка и типы» — типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
+и «Тесты — браузер (<браузер>)» матрицей по Chromium и WebKit, — а задачей «Сборка и типы» — типы по шагам «Типы — Core», «Типы — Setup», «Типы — Vue»,
 «Типы — Plugins», «Типы — Themes», «Типы — Playground», «Типы — React», «Типы —
 Svelte», «Типы — Solid», «Типы — Web Components», «Типы — Angular», проверку дрейфа
 сгенерированных файлов — `packages/ui/angular/src/generated`,

@@ -1,18 +1,19 @@
 name: CI
 
-# Ветки проверяются через PR, main — после мержа. Без фильтра по веткам пуш в
-# ветку с открытым PR запускал CI дважды: раз на push, раз на pull_request.
+# Branches are checked through their PR, main after the merge. Without the
+# branch filter a push to a branch with an open PR ran CI twice: on push and on
+# pull_request.
 on:
   push:
     branches: [main]
   pull_request:
 
 jobs:
-  # Тесты — четырьмя задачами параллельно, а сборка и типы — пятой. Одной
-  # очередью на раннере в 4 ядра шаг тестов дорос до 24 минут: наборы шли друг
-  # за другом, хотя друг от друга не зависят. Задачи тестов ничего не собирают
-  # (браузерный прогон — только CSS темы): тесты и стенд ходят в соседей
-  # исходниками, и этим доказано, что сборка им не нужна.
+  # Tests run as four jobs in parallel, the build and types as a fifth. As one
+  # queue on a 4-core runner the test step grew to 24 minutes: the suites ran
+  # one after another, though they don't depend on each other. Test jobs build
+  # nothing (the browser run, only the theme CSS): tests and the stand import
+  # their neighbours from source, which proves they need no build.
   unit:
     name: Тесты — ядро, setup, плагины, тема
     runs-on: ubuntu-latest
@@ -38,13 +39,13 @@ jobs:
           npm run test:plugins
           npm run test:theme
 
-  # Ключ матрицы — не `adapter`: под этим именем матрицу нижних границ читает
-  # сторож tools/min-peers (`workspace.spec.ts`).
+  # The matrix key isn't `adapter`: under that name the guard of tools/min-peers
+  # (`workspace.spec.ts`) reads the matrix of lower bounds.
   adapters:
     name: Тесты — ${{ matrix.suite }}
     runs-on: ubuntu-latest
     strategy:
-      # Красный адаптер не снимает прогон остальных.
+      # A red adapter doesn't cancel the others.
       fail-fast: false
       matrix:
         suite: [vue, react, svelte, solid, webc, angular]
@@ -79,9 +80,17 @@ jobs:
       - name: Тесты
         run: npm run test:playground
 
+  # The browser run, a leg per browser: Chromium and WebKit, the engine of
+  # Safari and of every browser on iOS. In one leg the two browsers shared the
+  # runner's pages, and the run took twice as long as either of them alone.
   layout:
-    name: Тесты — браузер
+    name: Тесты — браузер (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    strategy:
+      # A red browser doesn't stop the other one.
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
 
     steps:
       - uses: actions/checkout@v4
@@ -93,30 +102,33 @@ jobs:
 
       - run: npm ci
 
-      # Браузер для test:layout закреплён ревизией Playwright из package-lock,
-      # поэтому кэш привязан к lock-файлу: апгрейд Playwright честно перекачает
-      # новую ревизию. Системные библиотеки в кэш не попадают — ставим всегда.
-      - name: Кэш браузеров Playwright
+      # The browser is pinned by the Playwright revision in package-lock, so its
+      # cache follows the lock file: a Playwright upgrade honestly downloads the
+      # new revision. System libraries don't go into the cache — they are
+      # installed every time.
+      - name: Кэш браузера Playwright
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Установка Chromium
+      - name: Установка браузера
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium
+        run: npx playwright install ${{ matrix.browser }}
 
-      - name: Системные зависимости Chromium
-        run: npx playwright install-deps chromium
+      - name: Системные зависимости браузера
+        run: npx playwright install-deps ${{ matrix.browser }}
 
-      # Обрыв связи с вкладкой (`VITEST_BROWSER_CONNECTION_CLOSED`) причины не
-      # называет: убил ли процесс OOM killer, упал ли рендерер, вышел ли
-      # Chromium целиком. Поэтому память машины и процессов браузера пишется в
-      # файл каждые 5 с, а при падении её печатает шаг ниже вместе с журналом
-      # ядра. `DEBUG=pw:browser` — вывод самого Chromium и код его выхода.
+      # A dropped connection to a tab (`VITEST_BROWSER_CONNECTION_CLOSED`)
+      # doesn't name its cause: whether the OOM killer took the process, the
+      # renderer crashed or the whole browser exited. So the memory of the
+      # machine and of the browser processes goes to a file every 5 s, and on
+      # failure the step below prints it with the kernel log. `DEBUG=pw:browser`
+      # is the browser's own output and its exit code.
       #
-      # test:layout сам собирает CSS темы — браузерный прогон проверяет его.
+      # It is test:layout for one browser: the theme CSS, which the browser run
+      # checks, and the specs of the browser's project.
       - name: Тесты
         env:
           DEBUG: pw:browser
@@ -126,7 +138,7 @@ jobs:
               echo "== $(date +%T)"
               free -m | sed -n 2p
               ps -eo pid=,rss=,args= --sort=-rss | awk '
-                /headless_shell|chrom|node/ && !/awk/ {
+                /headless_shell|chrom|WPE|MiniBrowser|node/ && !/awk/ {
                   name = $3; sub(/.*\//, "", name)
                   kind = name == "node" ? $4 : "browser"
                   if (match($0, /--type=[a-z-]+/)) kind = substr($0, RSTART + 7, RLENGTH - 7)
@@ -134,12 +146,15 @@ jobs:
                 }' | head -12
             done
           ) > "$RUNNER_TEMP/memory.log" 2>&1 &
-          npm run test:layout
+          npm run build:css --workspace=@soldy-ui/theme-oren
+          npm run test:browser --workspace=@soldy-ui/playground-vue -- --project "layout (${{ matrix.browser }})"
 
       # The same user scenario on all six platforms: the component's events and
       # the accessibility tree after every step, compared with Vue
-      # (benchmarks/parity/README.md). The report goes to the log.
+      # (benchmarks/parity/README.md). The report goes to the log. It runs in
+      # Chromium, so in its leg.
       - name: Сверка платформ
+        if: matrix.browser == 'chromium'
         run: npm run test:parity
 
       - name: Память и журнал ядра при падении
@@ -147,7 +162,7 @@ jobs:
         run: |
           cat "$RUNNER_TEMP/memory.log"
           df -h /dev/shm
-          sudo dmesg -T | grep -iE 'oom|killed process|out of memory|segfault|chrom|headless' || echo 'в журнале ядра — ничего о памяти и браузере'
+          sudo dmesg -T | grep -iE 'oom|killed process|out of memory|segfault|chrom|headless|wpe|minibrowser' || echo 'в журнале ядра — ничего о памяти и браузере'
 
   build:
     name: Сборка и типы
@@ -163,19 +178,20 @@ jobs:
 
       - run: npm ci
 
-      # Декларации выпускает второй шаг `build` каждого пакета (у адаптеров
-      # Svelte и Angular — тот же проход `svelte-package` и ng-packagr), и
-      # соседей он резолвит как пакеты, то есть по их собранным `.d.ts`, —
-      # отсюда порядок очереди.
+      # Declarations come from the second step of each package's `build` (for
+      # the Svelte and Angular adapters, the same pass of `svelte-package` and
+      # ng-packagr), which resolves neighbours as packages, by their built
+      # `.d.ts` — hence the order of the queue.
       - name: Сборка пакетов
         run: npm run build
 
-      # Сразу после сборки: проверяется то, что уедет в npm, — файлы тарболлов
-      # (`npm pack --dry-run`), а не исходники. Пакет объявляет в dependencies
-      # или peerDependencies всё, что импортируют его JS, декларации и
-      # компоненты Svelte: в репозитории необъявленный пакет всё равно лежит в
-      # общем node_modules, а у потребителя на pnpm его нет. Несобранный пакет
-      # проверку не проходит — его точек входа нет в тарболле.
+      # Right after the build: what goes to npm is checked — the tarball files
+      # (`npm pack --dry-run`), not the sources. A package declares in
+      # dependencies or peerDependencies everything its JS, declarations and
+      # Svelte components import: in the repository an undeclared package still
+      # lies in the shared node_modules, while a consumer on pnpm doesn't have
+      # it. An unbuilt package fails the check: its entry points aren't in the
+      # tarball.
       - name: Импорты пакетов объявлены
         run: npm run check:published-imports
 
@@ -201,21 +217,23 @@ jobs:
       - name: Типы — Plugins
         run: npx tsc --noEmit -p packages/plugins/tsconfig.json
 
-      # Программа на пакет темы: тесты — сторожа CSS и спеки плагинов
-      # раскладки, — поведение `setup/` и конфиги сборки (у oren — и шаг
-      # Tailwind). Соседей и своё поведение они читают исходниками.
+      # A program per theme package: the tests — CSS guards and specs of the
+      # layout plugins — the `setup/` behaviour and the build configs (for oren,
+      # the Tailwind step too). Neighbours and their own behaviour are read from
+      # source.
       - name: Типы — Themes
         run: |
           npx tsc --noEmit -p packages/themes/base/tsconfig.json
           npx tsc --noEmit -p packages/themes/oren/tsconfig.json
 
-      # Стенд — единственное место, где компоненты рисуются всеми пропами разом
-      # и в двух режимах (проп и экземпляр ядра). Молча сломавшаяся страница
-      # обесценивает его целиком, поэтому типы проверяются наравне с адаптерами.
-      # Оболочка — Vue (vue-tsc), а хост превью фреймворка — своя программа
-      # типов со своей разметкой: строка на хост. `.svelte` хоста Svelte
-      # проверяет svelte-check, а не tsc, а шаблоны хоста Angular — ngc, как у
-      # пакета адаптера (эмита нет: noEmit в tsconfig хоста).
+      # The stand is the only place where components are drawn with all their
+      # props at once and in two modes (prop and core instance). A page broken
+      # silently devalues it entirely, so its types are checked on a par with
+      # the adapters. The shell is Vue (vue-tsc), and each framework's preview
+      # host is a type program of its own, with its own markup: a line per host.
+      # The `.svelte` of the Svelte host is checked by svelte-check, not tsc, and
+      # the templates of the Angular host by ngc, as in the adapter package (no
+      # emit: noEmit is in the host's tsconfig).
       - name: Типы — Playground
         run: |
           npx tsc --noEmit -p packages/playground/shared/tsconfig.json
@@ -238,50 +256,53 @@ jobs:
       - name: Типы — Web Components
         run: npx tsc --noEmit -p packages/ui/webc/tsconfig.json
 
-      # ngc, а не tsc: кроме TS проверяет шаблоны @Component (strictTemplates) и
-      # ограничения AOT — например, сигнальный viewChild() вне инициализатора
-      # поля (NG8110). Эмита нет: noEmit стоит в tsconfig пакета. Там же из
-      # программы исключён dist — «Сборка пакетов» выше его уже собрала.
+      # ngc, not tsc: besides TS it checks @Component templates (strictTemplates)
+      # and AOT restrictions — say, a signal viewChild() outside a field
+      # initializer (NG8110). No emit: noEmit is in the package's tsconfig, which
+      # also excludes dist from the program — «Сборка пакетов» above built it.
       - name: Типы — Angular
         run: npx ngc -p packages/ui/angular/tsconfig.json
 
-      # Сгенерированные метаданные закоммичены: Angular AOT требует статические
-      # массивы inputs/outputs. Если дескриптор изменили, а generate не запускали,
-      # компонент молча разъедется с дескриптором.
+      # The generated metadata is committed: Angular AOT needs static inputs and
+      # outputs arrays. A descriptor changed without running generate would
+      # silently drift apart from its component.
       - name: Angular — дрейф сгенерированных метаданных
         run: |
           npm run generate --workspace=@soldy-ui/angular
           git diff --exit-code packages/ui/angular/src/generated
 
-      # Список иконок тоже закоммичен готовым: генератор собирает его из SVG
-      # рядом и пишет в шапку пометку @license о происхождении иконок. Если SVG
-      # или генератор поправили, а generate не запускали, пакет уедет со старыми
-      # иконками или со старой пометкой. Сборки генератор не требует.
+      # The icon list is committed ready too: the generator builds it from the
+      # SVG next to it and writes an @license note on the icons' origin into its
+      # header. With the SVG or the generator changed and generate not run, the
+      # package would ship the old icons or the old note. The generator needs no
+      # build.
       - name: Иконки — дрейф сгенерированного списка
         run: |
           npm run generate --workspace=@soldy-ui/icons-material
           npm run generate --workspace=@soldy-ui/icons-lucide
           git diff --exit-code packages/icons/material/src/index.ts packages/icons/lucide/src/index.ts
 
-      # Стенд один: оболочка на Vue, превью — хосты фреймворков, и хосты
-      # собираются вместе с ней, каждый своим ленивым куском. Хост Angular
-      # собирает из исходников адаптера, как остальные хосты, компилятор Angular
-      # (`src/vite-angular.ts` стенда), а пакеты Angular доводит его линкер.
+      # The stand is one: a Vue shell with framework hosts for previews, and the
+      # hosts are built with it, each as a lazy chunk of its own. The Angular
+      # host is built from the adapter sources, like the other hosts, by the
+      # Angular compiler (the stand's `src/vite-angular.ts`), and its linker
+      # finishes the Angular packages.
       #
-      # Тему здесь не пересобираем: её собрал корневой build выше, а build:css
-      # темы вычистил бы её же `dist/setup` — у CSS-сборки `emptyOutDir`.
+      # The theme isn't rebuilt here: the root build above built it, and the
+      # theme's build:css would wipe its own `dist/setup` — the CSS build has
+      # `emptyOutDir`.
       - name: Сборка стенда
         run: npm run build --workspace=@soldy-ui/playground-vue
 
-  # Нижние границы peer адаптеров (см. docs/agents/build.md, «Версии пакетов»):
-  # «Тесты — <адаптер>» гоняют спеки на версиях из lock, и обещание в
-  # peerDependencies без этой задачи ничем не проверялось — так пакет Angular
-  # обещал 21.1, а меню в нём работало верно только с 22.1.6.
+  # Lower bounds of the adapters' peers (docs/agents/build.md, «Версии пакетов»):
+  # «Тесты — <адаптер>» runs the specs on the lock's versions, and without this
+  # job nothing checked the promise of peerDependencies — so the Angular package
+  # promised 21.1, while its menu worked right only from 22.1.6.
   min-peers:
     name: Минимальные версии
     runs-on: ubuntu-latest
     strategy:
-      # Красный адаптер не снимает прогон остальных: граница у каждого своя.
+      # A red adapter doesn't cancel the others: each has a bound of its own.
       fail-fast: false
       matrix:
         adapter: [vue, react, svelte, solid, angular]
@@ -289,9 +310,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Node 24, а не 22: подмене нужен npm 11. У npm 10 overrides корня не
-      # доходят до зависимостей воркспейсов, и копия из devDependencies адаптера
-      # осталась бы версией lock — «Проверка дерева» её поймала бы.
+      # Node 24, not 22: the substitution needs npm 11. With npm 10 the root's
+      # overrides don't reach the workspaces' dependencies, and the copy from the
+      # adapter's devDependencies would stay at the lock's version —
+      # «Проверка дерева» would catch it.
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -299,19 +321,20 @@ jobs:
 
       - run: npm ci
 
-      # Пакеты фреймворка — нижними границами peer адаптера во всём дереве:
-      # overrides в манифесте корня и npm update по ним. Только в раннере —
-      # манифест и lock репозитория не меняются. Список выводит скрипт из
-      # манифеста адаптера, руками версии нигде не выписаны.
+      # The framework's packages at the adapter's lower peer bounds across the
+      # whole tree: overrides in the root manifest and npm update by them. In the
+      # runner only — the repository's manifest and lock don't change. The script
+      # derives the list from the adapter's manifest; no version is written out
+      # by hand.
       - name: Нижние границы peer
         run: node tools/min-peers/cli.ts pin @soldy-ui/${{ matrix.adapter }}
 
-      # Копию другой версии, оставшуюся в дереве, взяли бы спеки или инструменты
-      # тестов, и прогон был бы зелёным впустую.
+      # A copy of another version left in the tree would be picked up by the
+      # specs or the test tools, and the run would be green for nothing.
       - name: Проверка дерева
         run: node tools/min-peers/cli.ts verify @soldy-ui/${{ matrix.adapter }}
 
-      # Только спеки: сборка, типы и браузерный прогон идут в своих задачах.
+      # Specs only: the build, types and the browser run go in jobs of their own.
       - name: Спеки
         run: npm run test:${{ matrix.adapter }}
 
@@ -387,7 +410,7 @@ jobs:
   lint:
     name: Линт
     runs-on: ubuntu-latest
-    # Линт роняет сборку по всему репозиторию (см. AGENTS.md, «`any`: где он честный»).
+    # Lint fails the build across the whole repository (AGENTS.md, «`any`: где он честный»).
 
     steps:
       - uses: actions/checkout@v4
@@ -402,24 +425,25 @@ jobs:
       - name: Линт
         run: npm run lint:ci
 
-      # Неотформатированный файл — ловушка для следующего, кто запустит
-      # `npm run format`: его правка утонет в чужих строках.
+      # An unformatted file is a trap for the next one to run `npm run format`:
+      # their change would drown in someone else's lines.
       - name: Форматирование
         run: npx prettier --check .
 
   changeset:
     name: Changeset
     runs-on: ubuntu-latest
-    # PR, который меняет библиотечный пакет, несёт .changeset/*.md (см. AGENTS.md,
-    # «Версии пакетов»). Только на PR: на push в main сравнивать не с чем — HEAD там
-    # и есть origin/main, и проверка была бы зелёной всегда. Не на release/*: в PR
-    # выпуска changeset'ы уже удалены (см. .claude/agents/developer.md, «Выпуск»).
+    # A PR that changes a library package carries .changeset/*.md (AGENTS.md,
+    # «Версии пакетов»). On PRs only: on a push to main there is nothing to compare
+    # with — HEAD there is origin/main, and the check would always be green. Not on
+    # release/*: a release PR has its changesets removed already
+    # (.claude/agents/developer.md, «Выпуск»).
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/')
 
     steps:
-      # Полная история: changeset status ищет, где ветка отошла от origin/main
-      # (git merge-base). Клон по умолчанию — один merge-коммит PR без ветки main
-      # и без общего предка.
+      # Full history: changeset status looks for where the branch left
+      # origin/main (git merge-base). The default clone is the PR's single merge
+      # commit, without the main branch and without a common ancestor.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -431,7 +455,8 @@ jobs:
 
       - run: npm ci
 
-      # Пакет изменён, а changeset'а в PR нет — код 1. Пустой changeset проходит.
+      # A package changed and no changeset in the PR — exit code 1. An empty
+      # changeset passes.
       - name: Changeset
         run: npx changeset status --since=origin/main
 
