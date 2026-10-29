@@ -1,23 +1,21 @@
 /**
- * Контролы и навигация Web Components в настоящем браузере:
+ * Controls and navigation of Web Components in a real browser:
  * `<span is="so-progress-linear">`, `<span is="so-slider">`,
- * `<span is="so-rating">`, `<nav is="so-pagination">` и
+ * `<span is="so-rating">`, `<nav is="so-pagination">` and
  * `<div is="so-scroller">`.
  *
- * Теме корень элемента Web Components — то же, что корень остальных
- * адаптеров: дорожка, заливка, метки, ручки и подсказки ползунка, звёзды и
- * ручка оценки, стрелки и страницы пагинации, кнопки и вьюпорт ленты стоят
- * так же, как у Vue, на тех же местах и тех же размеров. Ручку тянет
- * настоящий указатель, а стрелка на поле — ровно один шаг ядра: плагины те же,
- * что у Vue, а части они находят по классам и прямыми детьми. jsdom не
- * считает ни раскладки, ни действий браузера. Разметку и наборы ядра
- * сторожат `ui/webc/__tests__/progress-linear.spec.ts`, `slider.spec.ts`,
- * `rating.spec.ts`, `pagination.spec.ts` и `scroller.spec.ts`.
+ * To the theme the root of an element is the root of any other adapter: the
+ * parts of the bar, the slider, the rating, the pagination and the strip stand
+ * where Vue's stand, of the same size. A real pointer drags the thumb, and an
+ * arrow on the field is exactly one step of the core: the plugins are Vue's,
+ * and they find the parts by class and as direct children. jsdom computes
+ * neither layout nor browser actions; the markup and the core's sets are
+ * guarded by `ui/webc/__tests__/progress-linear.spec.ts`, `slider.spec.ts`,
+ * `rating.spec.ts`, `pagination.spec.ts` and `scroller.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from './render'
-import { webkitUntil } from './engine'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick } from 'vue'
 import { Pagination, ProgressLinear, Rating, Scroller, Slider } from '@soldy-ui/vue'
@@ -32,13 +30,14 @@ import '@soldy-ui/theme-oren'
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Узел разметки Web Components теста — снимается после каждого. */
+/** The test's Web Components markup, removed after each test. */
 let stage: HTMLElement | null = null
 
 /**
- * Разметка на странице, слушатели плагинов — на элементах. Плагины вешают их
- * по `ready` узла, а `TElementPlugin` объявляет узел через кадр. Свойства
- * элемента — до вставки: метки списком атрибутом не задать.
+ * The markup on the page, with the plugins' listeners on the elements: the
+ * plugins attach them on the node's `ready`, and `TElementPlugin` announces the
+ * node a frame later. Element properties go before the insertion: an attribute
+ * can't carry a list of marks.
  */
 async function show(html: string, props: Record<string, unknown> = {}): Promise<HTMLElement> {
 	const node = document.createElement('div')
@@ -68,7 +67,7 @@ afterEach(() => {
 	cleanup()
 })
 
-/** Узел по селектору; нет его или он не того вида — тест падает здесь. */
+/** The node by selector; without it, or of another kind, the test fails here. */
 function find<T extends Element>(root: ParentNode, selector: string, type: new () => T): T {
 	const node = root.querySelector(selector)
 
@@ -77,16 +76,16 @@ function find<T extends Element>(root: ParentNode, selector: string, type: new (
 	return node
 }
 
-/** Узлы по селектору — HTML-элементы. */
+/** HTML elements by selector. */
 const all = (root: ParentNode, selector: string): HTMLElement[] =>
 	[...root.querySelectorAll(selector)].filter(
 		(node): node is HTMLElement => node instanceof HTMLElement,
 	)
 
 /**
- * Место узла в блоке — от его угла — и размер, в пикселях. Узел без коробки
- * (`display: none` — пустая подпись метки) места не имеет: его прямоугольник
- * нулевой и стоит в углу окна, а не блока.
+ * The node's place in the block, from the block's corner, and its size, in
+ * pixels. A node without a box (`display: none`, as an empty mark label) has
+ * no place: its rectangle is zero, at the corner of the window, not the block.
  */
 function placeIn(node: Element, block: Element) {
 	if (node.getClientRects().length === 0) return { x: 0, y: 0, width: 0, height: 0 }
@@ -102,23 +101,23 @@ function placeIn(node: Element, block: Element) {
 	}
 }
 
-/** Блок одной ширины для пары компонентов. */
+/** A block of one width for the pair of components. */
 const BOX = 'width: 400px; padding: 48px 24px 24px'
 
 /**
- * Компонент Web Components и компонент Vue стоят рядом — в одинаковых блоках
- * одной ширины. Тема видит у них одни классы и одну разметку внутри корня, и
- * части встают на те же места.
+ * A Web Components element and a Vue component side by side, in equal blocks
+ * of one width. The theme sees the same classes and markup inside the root,
+ * and the parts take the same places.
  */
 async function pair(
 	vue: () => ReturnType<typeof h>,
 	html: string,
 	props: Record<string, unknown> = {},
 ): Promise<{ vue: HTMLElement; webc: HTMLElement }> {
-	// Указатель остался там, где его бросил прошлый тест или спек, а часть под
-	// ним наведением меняет коробку — звезда Rating поднимается масштабом:
-	// уводим его в угол страницы, в отступ блока. Не `unhover`: тот ставит
-	// указатель в центр `body`, а там встанет пара.
+	// The pointer is where the last test or spec left it, and a part under it
+	// changes its box on hover (a Rating star scales up): move it to the page
+	// corner, into the block's padding. Not `unhover`: that puts the pointer at
+	// the center of `body`, where the pair will stand
 	await userEvent.hover(document.body, { position: { x: 0, y: 0 } })
 
 	render(defineComponent({ render: () => h('div', { class: 'vue', style: BOX }, [vue()]) }))
@@ -133,10 +132,10 @@ async function pair(
 }
 
 /**
- * Части одного селектора у обоих — по порядку, на тех же местах и тех же
- * размеров. Часть бывает и без коробки — пустую подпись метки тема прячет по
- * `:empty`, а метка нулевой протяжённости вдоль оси, — но хотя бы у одной есть
- * размер: сверка не впустую. Части — любые элементы, у значка звезды это
+ * The parts of one selector in both, in order, at the same places and of the
+ * same sizes. A part may have no box — the theme hides an empty mark label by
+ * `:empty`, and a mark has no extent along the axis — but one at least has a
+ * size, so the check isn't empty. Parts are any elements: a star's icon is an
  * `<svg>`.
  */
 function expectSameParts(blocks: { vue: HTMLElement; webc: HTMLElement }, part: string): void {
@@ -226,8 +225,7 @@ describe('части стоят, как у Vue', () => {
 		}
 	})
 
-	it('Scroller: кнопки, вьюпорт и пункты ленты', async (context) => {
-		context.skip(webkitUntil('869fn0tx1'))
+	it('Scroller: кнопки, вьюпорт и пункты ленты', async () => {
 		const items = ['Первый', 'Второй', 'Третий', 'Четвёртый', 'Пятый', 'Шестой']
 		const style = 'padding:4px 12px; white-space:nowrap'
 		const blocks = await pair(
@@ -239,6 +237,19 @@ describe('части стоят, как у Vue', () => {
 				.map((item) => `<span class="so-test-item" style="${style}">${item}</span>`)
 				.join('')}</div>`,
 		)
+
+		// Until the strip is measured, the base layer of themes hides both
+		// buttons by design, and the measurement comes a frame after `ready`. In
+		// WebKit the polyfill brings the element to life after the insertion, its
+		// frames queue behind the test's, and the two frames of `show` miss the
+		// measurement. Wait for it, not for frames
+		await expect
+			.poll(() =>
+				[blocks.vue, blocks.webc].map(
+					(block) => find(block, '.so-scroller', HTMLElement).dataset.canNext,
+				),
+			)
+			.toEqual(['true', 'true'])
 
 		for (const part of [
 			'.so-scroller',
@@ -260,7 +271,7 @@ function isRating(node: Element | null): node is TRatingElementProps {
 	return node instanceof TRatingElement
 }
 
-/** Ползунок Web Components на странице шириной 400 px. */
+/** A Web Components slider on a page 400 px wide. */
 async function slider(html: string): Promise<TSliderElementProps> {
 	const root = await show(`<div style="${BOX}">${html}</div>`)
 	const node = root.querySelector('[is="so-slider"]')
@@ -270,7 +281,7 @@ async function slider(html: string): Promise<TSliderElementProps> {
 	return node
 }
 
-/** Точка у доли хода `fraction` — от левого верхнего угла дорожки. */
+/** The point at `fraction` of the travel, from the track's top left corner. */
 function along(track: Element, fraction: number) {
 	const box = track.getBoundingClientRect()
 
@@ -288,8 +299,8 @@ describe('указатель и клавиши — как у Vue', () => {
 	})
 
 	/**
-	 * Взялись за ручку на 6 px правее центра — это полтора шага. Без смещения
-	 * захвата значение прыгнуло бы к точке нажатия.
+	 * The thumb is grabbed 6 px right of its center, a step and a half. Without
+	 * the grab offset the value would jump to the press point.
 	 */
 	it('Slider: ручка идёт за указателем со смещением захвата', async () => {
 		const el = await slider('<span is="so-slider" value="50"></span>')
