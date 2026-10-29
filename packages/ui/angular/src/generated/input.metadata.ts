@@ -4,7 +4,6 @@ import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -12,6 +11,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/input/manifest'
 
 export const InputInputNames = [
@@ -36,21 +36,8 @@ export const InputInputNames = [
 	'id',
 ] as const
 export const InputOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soInput',
 	'soInputValue',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soActionCreate',
 	'soActionPress',
 	'soActionClick',
@@ -60,14 +47,6 @@ export const InputOutputNames = [
 	'soNamesCreate',
 	'soInputControlCreate',
 	'soInputCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeDisabled',
@@ -109,7 +88,7 @@ export const InputOutputNames = [
 	],
 	outputs: [...InputOutputNames],
 })
-export abstract class TInputSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TInputSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

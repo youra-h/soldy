@@ -8,7 +8,6 @@ import type {
 } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -16,6 +15,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor, facade } from '../components/tabs/manifest'
 
 export const TabsInputNames = [
@@ -41,19 +41,6 @@ export const TabsInputNames = [
 	'trackBy',
 ] as const
 export const TabsOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soActionCreate',
 	'soActionPress',
 	'soActionClick',
@@ -66,14 +53,6 @@ export const TabsOutputNames = [
 	'soActiveTabCreate',
 	'soKeyboardCreate',
 	'soDragCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeDisabled',
@@ -134,7 +113,7 @@ export const TabsOutputNames = [
 	],
 	outputs: [...TabsOutputNames],
 })
-export abstract class TTabsSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TTabsSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

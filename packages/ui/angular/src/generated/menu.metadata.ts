@@ -8,13 +8,13 @@ import type {
 } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor, facade } from '../components/menu/manifest'
 
 export const MenuInputNames = [
@@ -37,19 +37,6 @@ export const MenuInputNames = [
 	'groups',
 ] as const
 export const MenuOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soBundlesCreate',
 	'soElementsCreate',
 	'soDismissCreate',
@@ -60,14 +47,6 @@ export const MenuOutputNames = [
 	'soHoverCreate',
 	'soFocusCreate',
 	'soIdsCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeOpen',
@@ -124,7 +103,7 @@ export const MenuOutputNames = [
 	],
 	outputs: [...MenuOutputNames],
 })
-export abstract class TMenuSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TMenuSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

@@ -57,7 +57,9 @@ function payloadOf(args: readonly unknown[]): unknown {
 
 /**
  * The output type of a descriptor event: the `declare` field of the generated
- * `T<Name>Surface`. The getter behind it is the base's, on the class prototype.
+ * `T<Name>Surface`. The getter behind it is the base's: on the prototype of the
+ * component's class, of an output every visual component has — on that of the
+ * generated `TViewSurface`.
  */
 export type TOutputEmitter<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,

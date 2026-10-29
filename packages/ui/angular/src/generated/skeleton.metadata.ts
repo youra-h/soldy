@@ -3,13 +3,13 @@ import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/skeleton/manifest'
 
 export const SkeletonInputNames = [
@@ -25,28 +25,7 @@ export const SkeletonInputNames = [
 	'height',
 ] as const
 export const SkeletonOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soLayoutCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeVariant',
 	'soChangeShape',
 	'soChangeAnimation',
@@ -70,7 +49,7 @@ export const SkeletonOutputNames = [
 	],
 	outputs: [...SkeletonOutputNames],
 })
-export abstract class TSkeletonSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TSkeletonSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

@@ -4,13 +4,13 @@ import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/popover/manifest'
 
 export const PopoverInputNames = [
@@ -32,19 +32,6 @@ export const PopoverInputNames = [
 	'dismiss_enabled',
 ] as const
 export const PopoverOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soAriaCreate',
 	'soDismissCreate',
 	'soDismissDismiss',
@@ -53,14 +40,6 @@ export const PopoverOutputNames = [
 	'soIdsCreate',
 	'soNamesCreate',
 	'soSwipeCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeOpen',
 	'soChangeClosable',
 	'soChangeLazyMount',
@@ -98,7 +77,7 @@ export const PopoverOutputNames = [
 	],
 	outputs: [...PopoverOutputNames],
 })
-export abstract class TPopoverSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TPopoverSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

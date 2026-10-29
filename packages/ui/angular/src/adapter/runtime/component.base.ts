@@ -3,8 +3,9 @@
  * lifecycle, outputs, slots and the root. AGENTS.md (Angular), «Корень-хост
  * ведёт базовый `TComponentBase`».
  *
- * - constructor: the output getters (once per class), the root by its spec
- *   (`TRootSpec`, strategies in `root/`) and the subtree flag for descendants;
+ * - constructor: the getters of the component's own outputs (once per class),
+ *   the root by its spec (`TRootSpec`, strategies in `root/`) and the subtree
+ *   flag for descendants;
  * - `ngOnInit`: assembly by the component's setup function in its injection
  *   context, and the sink of core events;
  * - `ngOnChanges`: changed inputs go to the core;
@@ -13,7 +14,9 @@
  *
  * A component extends the generated `T<Name>Surface`, not the base: the
  * surface declares inputs and outputs with their types for strict templates
- * and gives the base their names.
+ * and gives the base their names. A visual surface extends the generated
+ * `TViewSurface` between it and the base: the ancestor declares the outputs
+ * every visual component has, and the surface — only its own.
  */
 
 import {
@@ -271,14 +274,16 @@ export abstract class TComponentBase<
 	}
 
 	/**
-	 * The output getters on the prototype of the instance's class, one per
-	 * output: the first instance of the class defines them, the next ones find
-	 * them there. Not generated code: the getter is the same for every output
-	 * but its name, and generated per output it weighed 72 KB on a page of six
-	 * components (benchmarks/install/angular.md).
+	 * The output getters on a prototype, one per output: the first instance
+	 * defines them, the next ones find them there. The base gives the prototype
+	 * of the instance's class the outputs its surface declares; the generated
+	 * `TViewSurface` gives its own prototype the outputs every visual component
+	 * has — once per application. Not generated code: the getter is the same for
+	 * every output but its name, and generated per output it weighed 72 KB on a
+	 * page of six components (benchmarks/install/angular.md).
 	 */
-	private static _defineOutputs(prototype: object, names: readonly string[]): void {
-		// The getters are defined all at once, so the first one marks the class
+	protected static _defineOutputs(prototype: object, names: readonly string[]): void {
+		// The getters are defined all at once, so the first one marks the prototype
 		if (names.length === 0 || Object.hasOwn(prototype, names[0])) return
 
 		for (const name of names) {

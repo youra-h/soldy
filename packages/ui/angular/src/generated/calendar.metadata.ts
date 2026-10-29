@@ -8,13 +8,13 @@ import type {
 } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor, facade } from '../components/calendar/manifest'
 
 export const CalendarInputNames = [
@@ -42,21 +42,8 @@ export const CalendarInputNames = [
 	'mode',
 ] as const
 export const CalendarOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soInput',
 	'soInputValue',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soActionCreate',
 	'soActionPress',
 	'soActionClick',
@@ -70,14 +57,6 @@ export const CalendarOutputNames = [
 	'soPointerCreate',
 	'soIdsCreate',
 	'soNamesCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeDisabled',
@@ -129,7 +108,7 @@ export const CalendarOutputNames = [
 	],
 	outputs: [...CalendarOutputNames],
 })
-export abstract class TCalendarSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TCalendarSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

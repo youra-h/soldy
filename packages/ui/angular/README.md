@@ -527,7 +527,7 @@ never loads, and the components stay unstyled. The values of the theme, such as
 The `initial` budget of Angular CLI counts the raw bytes of the initial JavaScript and the global
 styles, and a project made by `ng new` fails the build above 1 MB. The theme's stylesheet holds the
 CSS of every component — 356 kB raw, 35 kB gzip — and a page with a Button, an Input, a Select, a
-Dialog, a Table and a DatePicker adds 698 kB of JavaScript (170 kB gzip): 1.05 MB raw, 205 kB over
+Dialog, a Table and a DatePicker adds 677 kB of JavaScript (169 kB gzip): 1.03 MB raw, 205 kB over
 the network. Raise the error threshold of the `initial` entry in `budgets` of the `production`
 configuration in `angular.json`:
 

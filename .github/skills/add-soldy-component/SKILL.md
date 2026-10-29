@@ -181,8 +181,12 @@ export { <Name>Descriptor as descriptor } from '@soldy-ui/setup'
 - Запусти `npm run generate --workspace=@soldy-ui/angular` → появится
   `src/generated/<name>.metadata.ts` с `<Name>InputNames` / `<Name>OutputNames` и
   `T<Name>Surface` — абстрактной директивой, которая объявляет входы и выходы
-  компонента вместе с их типами для строгого шаблона. **Файл коммитится**, CI
-  проверяет, что он не разъехался с дескриптором.
+  компонента вместе с их типами для строгого шаблона. Выходы, общие для всех
+  визуальных компонентов (`soShow`, `soChangeVisible` и остальные события
+  `ComponentViewDescriptor`), объявляет один раз её предок `TViewSurface`
+  (`src/generated/view.metadata.ts`): в `<Name>OutputNames` визуального
+  компонента их нет, типы же всех выходов — у `T<Name>Surface`. **Файл
+  коммитится**, CI проверяет, что он не разъехался с дескриптором.
 
 - `index.ts` реэкспортирует сгенерированное оттуда же:
 
@@ -212,7 +216,8 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
 ```
 
 - `<name>.component.ts` — оболочка. Наследует сгенерированный `T<Name>Surface`
-  (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
+  (он — `TComponentBase`, у визуального компонента — через предка `TViewSurface`,
+  `packages/ui/angular/src/adapter/runtime/component.base.ts`),
   состояние читается как `state()` (сигнал). Корень ведёт база: компонент
   зовёт только `super(setup<Name>, { strategy: 'host' })` — свою setup-функцию
   и описание корня (`TRootSpec`); имена входов и выходов подставляет `T<Name>Surface`.
@@ -221,8 +226,9 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
   считает ядро, компонент называет имя выхода (`style: 'fractionStyle'` у
   ProgressSpinner), а корень, который видимость не прячет, — `hides: false`
   (Skeleton). Эмиттеры выходов компонент не заводит: геттер выхода, который
-  база ставит на прототип класса по списку имён `T<Name>Surface`, заводит
-  эмиттер при первом чтении. Своих `inputs` и
+  база ставит на прототип класса по списку имён `T<Name>Surface` (общих
+  выходов — на прототип `TViewSurface`), заводит эмиттер при первом чтении.
+  Своих `inputs` и
   `outputs` в `@Component` нет: их объявляет `T<Name>Surface`, и вход,
   объявленный здесь ещё раз, строгий шаблон потребителя пропускал бы без
   сверки значения — это ловит `packages/ui/angular/__tests__/inputs.spec.ts`:

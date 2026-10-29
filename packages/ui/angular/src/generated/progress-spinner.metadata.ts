@@ -3,13 +3,13 @@ import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/progress-spinner/manifest'
 
 export const ProgressSpinnerInputNames = [
@@ -29,28 +29,7 @@ export const ProgressSpinnerInputNames = [
 	'aria_describedBy',
 ] as const
 export const ProgressSpinnerOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soAriaCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeValue',
@@ -81,7 +60,7 @@ export const ProgressSpinnerOutputNames = [
 	],
 	outputs: [...ProgressSpinnerOutputNames],
 })
-export abstract class TProgressSpinnerSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TProgressSpinnerSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

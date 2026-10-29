@@ -8,7 +8,6 @@ import type {
 } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -16,6 +15,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor, facade } from '../components/accordion/item/manifest'
 
 export const AccordionItemInputNames = [
@@ -37,21 +37,8 @@ export const AccordionItemInputNames = [
 	'selected',
 ] as const
 export const AccordionItemOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soInput',
 	'soInputValue',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soActionCreate',
 	'soActionPress',
 	'soActionClick',
@@ -59,14 +46,6 @@ export const AccordionItemOutputNames = [
 	'soActionBlur',
 	'soAriaCreate',
 	'soIdsCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeDisabled',
@@ -106,7 +85,7 @@ export const AccordionItemOutputNames = [
 	],
 	outputs: [...AccordionItemOutputNames],
 })
-export abstract class TAccordionItemSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TAccordionItemSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

@@ -4,13 +4,13 @@ import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/table/column/manifest'
 
 export const TableColumnInputNames = [
@@ -21,30 +21,9 @@ export const TableColumnInputNames = [
 	'direction',
 ] as const
 export const TableColumnOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soIdsCreate',
 	'soNamesCreate',
 	'soResizeCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeField',
 	'soChangeText',
 	'soChangeWidth',
@@ -74,7 +53,7 @@ export const TableColumnOutputNames = [
 	],
 	outputs: [...TableColumnOutputNames],
 })
-export abstract class TTableColumnSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TTableColumnSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>
