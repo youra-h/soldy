@@ -1,21 +1,22 @@
 /**
- * Жест панелей у поля в настоящем браузере: Select и DatePicker — смахнуть
- * панель, чтобы закрыть.
+ * The gesture of the panels at a field in a real browser: Select and
+ * DatePicker — swipe the panel to close it.
  *
- * Правила жеста — порог, путь, скорость, сопротивление — проверяет плагин
- * (`plugins/__tests__/swipe.plugin.spec.ts`) на разметке, которую строит сам,
- * а jsdom ни раскладки, ни захвата указателя не выполняет. Здесь — что из
- * разметки и темы выходит на экране, по образцу поповера у триггера
- * (`popover-swipe.spec.ts`): полоса у края со стороны поля и не накрывает
- * содержимое, `touch-action` на панели, настоящая мышь закрывает панель от
- * поля — вниз под ним, вверх над ним, — а к полю возвращает её на место, и
- * смахнутая уходит дальше от поля, пока гаснет, а пропадает, когда догасла.
- * Без движения панель с полосой гаснет на месте.
+ * The gesture's rules — threshold, path, velocity, resistance — are checked by
+ * the plugin's spec (`plugins/__tests__/swipe.plugin.spec.ts`) on markup it
+ * builds itself, and jsdom performs neither layout nor pointer capture. Here is
+ * what the markup and the theme make on screen, after the popover at its
+ * trigger (`popover-swipe.spec.ts`): the strip is at the edge on the field's
+ * side and doesn't cover the content, `touch-action` is on the panel, a real
+ * mouse closes the panel away from the field — down below it, up above it, —
+ * and towards the field returns it to its place, and a swiped panel leaves
+ * further from the field while it fades and disappears once it has faded.
+ * Without motion a panel with a strip fades in place.
  *
- * Своё у каждого: у Select фокус всё время на поле, и нажатие на полосу его
- * не уводит; у DatePicker закрытие жестом возвращает фокус в поле, как
- * Escape, а прокручивается содержимое панели, и из него жест за всю панель
- * не начинается.
+ * Each has its own: in Select focus stays on the field all the time, and a
+ * press on the strip doesn't take it away; in DatePicker closing by the gesture
+ * returns focus to the field, like Escape, and the panel's content scrolls,
+ * and a gesture by the whole panel doesn't start from it.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -27,24 +28,31 @@ import type { TSwipe } from '@soldy-ui/core'
 
 import { reducedMotion } from './media'
 import {
+	durationOf,
 	expectFadesInPlace,
 	expectHidesWhenFaded,
-	ownTransitions,
+	pausedTransitions,
 	settled,
-	whileLeaving,
 } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
-/** Зона захвата полосы жеста — не меньше 24px: минимум цели по WCAG 2.5.8. */
+/** The gesture strip's grip zone — at least 24px: the target minimum of WCAG 2.5.8. */
 const GRIP_ZONE = 24
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 1
+
+/**
+ * The moments of the fade, as its shares, at which a leaving panel's place is
+ * read: from the start to near the end — at the end `display` takes it off the
+ * screen.
+ */
+const MOMENTS = [0, 0.25, 0.5, 0.75]
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector; without it the test fails here, not on reading a property. */
 const find = (selector: string): HTMLElement => {
 	const element = document.querySelector(selector)
 
@@ -56,29 +64,30 @@ const find = (selector: string): HTMLElement => {
 const active = () => document.activeElement
 
 type TShowOptions = {
-	/** За что тянуть; не задан — жеста нет */
+	/** What to pull by; not set — no gesture */
 	swipe?: TSwipe
-	/** Панель над полем: снизу места мало */
+	/** The panel above the field: there is little room below */
 	above?: boolean
 }
 
-/** Компонент с панелью у поля — всё, что общим проверкам нужно о нём знать. */
+/** A component with a panel at its field — all the shared checks need to know about it. */
 type TCase = {
 	readonly name: string
-	/** Страница с компонентом на `v-model:open` */
+	/** A page with the component on `v-model:open` */
 	readonly show: (options?: TShowOptions) => Promise<{ opened: Ref<boolean> }>
-	/** Открыть, как пользователь, и дождаться, пока панель встанет на место */
+	/** Open it as a user does and wait until the panel stands in its place */
 	readonly open: () => Promise<void>
 	readonly panel: string
 	readonly handle: string
-	/** Содержимое панели, которое полоса не накрывает */
+	/** The panel's content, which the strip doesn't cover */
 	readonly content: string
 }
 
 /**
- * Страница: компонент в обёртке с отступом сверху. У Select панель над полем
- * ставит `placement: 'top'`, у DatePicker стороны на выбор нет — поле стоит у
- * низа окна, и flip ставит её над ним сам.
+ * The page: the component in a wrapper with a top padding. For Select the
+ * panel goes above the field by `placement: 'top'`; DatePicker has no side to
+ * choose — the field stands at the window's bottom, and flip puts the panel
+ * above it by itself.
  */
 const mountPage = async (top: number, scene: () => VNode): Promise<void> => {
 	render(
@@ -93,7 +102,7 @@ const mountPage = async (top: number, scene: () => VNode): Promise<void> => {
 	await nextFrame()
 }
 
-/** Модель открытости — как `v-model:open` у потребителя. */
+/** The open model — like a consumer's `v-model:open`. */
 const openModel = () => {
 	const opened = ref(false)
 
@@ -148,7 +157,7 @@ const DATE_PICKER: TCase = {
 	},
 	async open() {
 		await userEvent.click(find('.so-date-picker__trigger'))
-		// Фокус уходит на день сетки кадром позже — панель уже на месте
+		// Focus goes to a grid day a frame later — the panel is in place by then
 		await expect.poll(() => active()?.classList.contains('so-calendar-item')).toBe(true)
 		await settled(find('.so-date-picker__panel'))
 	},
@@ -157,14 +166,14 @@ const DATE_PICKER: TCase = {
 	content: '.so-date-picker__content',
 }
 
-/** Протянуть мышью от середины узла на `dy` по вертикали — настоящими событиями, по шагам. */
+/** Drag the mouse from the node's middle by `dy` vertically — with real events, in steps. */
 const drag = (from: HTMLElement, dy: number, steps = 10) => {
 	const box = from.getBoundingClientRect()
 	const x = box.width / 2
 	const y = box.height / 2
 
-	// `force`: точка отпускания — за пределами узла, и проверка попадания
-	// Playwright ждала бы, пока узел окажется под ней
+	// `force`: the release point is outside the node, and Playwright's hit check
+	// would wait until the node is under it
 	return userEvent.dragAndDrop(from, from, {
 		sourcePosition: { x, y },
 		targetPosition: { x, y: y + dy },
@@ -277,7 +286,7 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 
 			await drag(handle(), -150)
 
-			// Сдвиг уходит кадром позже, и панель едет на место переходом
+			// The offset goes a frame later, and the panel travels back by a transition
 			await expect
 				.poll(() => Math.abs(panel().getBoundingClientRect().top - top) < EPSILON)
 				.toBe(true)
@@ -289,49 +298,61 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 	})
 
 	/**
-	 * Смахнутая панель не моргает: плагин сдвиг на закрытии не снимает, а тема
-	 * уводит закрытую панель дальше от поля, как поповер у триггера, — уход
-	 * начинается с места, где её отпустили, и идёт дальше, пока панель гаснет.
-	 * Обе панели выше пути жеста, и до своей высоты закрытой есть куда ехать:
-	 * встань она там, где её отпустили, — уход не сработал. Пропадает панель,
-	 * когда догасла, а не доехав: хвоста пути за угасанием не видно.
+	 * A swiped panel doesn't blink: the plugin keeps the offset on closing, and
+	 * the theme takes the closed panel further from the field, like the popover
+	 * from its trigger, — the leaving starts where the panel was released and
+	 * goes on while it fades. Both panels are taller than the gesture's path,
+	 * and up to their own height a closed one has room to go: had it stopped
+	 * where it was released, the leaving wouldn't have worked. The panel
+	 * disappears once it has faded, not once it has arrived: the tail of the
+	 * path past the fade isn't seen.
+	 *
+	 * The path is read at moments of the fade (`MOMENTS`), on the panel's
+	 * transitions paused from their start (`pausedTransitions`), and not frame by
+	 * frame: under load frames come rarely, and in WebKit in Docker the panel
+	 * was on screen for a single frame of its fade.
 	 */
 	it('уход смахнутой панели — от места, где отпустили, дальше от поля, гаснет на ходу', async () => {
 		await show({ swipe: 'handle' })
 		await open()
 
 		const start = panel().getBoundingClientRect().top
-		const transitions = ownTransitions(panel())
-		const positions: number[] = []
-		const seen = await whileLeaving(
-			panel(),
-			() => drag(handle(), 150),
-			() => {
-				positions.push(panel().getBoundingClientRect().top)
-			},
-		)
+		const leaving = await pausedTransitions(panel(), () => drag(handle(), 150))
+		const display = leaving.get('display')
 
-		expect(seen).toBeGreaterThan(1)
-		expect(positions[0]).toBeGreaterThan(start + EPSILON)
-		expect(positions[positions.length - 1]).toBeGreaterThan(positions[0] + EPSILON)
+		if (display === undefined) throw new Error('display: перехода не было')
+
+		// On screen the panel stays as long as `display` runs — the fade's time
+		const fade = durationOf(display)
+		const positions = MOMENTS.map((share) => {
+			for (const transition of leaving.values()) transition.currentTime = fade * share
+
+			return panel().getBoundingClientRect().top
+		})
+
+		expect(positions[0], 'уход — от места, где отпустили').toBeGreaterThan(start + EPSILON)
+		expect(positions[positions.length - 1], 'уходит дальше от поля').toBeGreaterThan(
+			positions[0] + EPSILON,
+		)
 
 		for (let index = 1; index < positions.length; index += 1) {
 			expect(positions[index] - positions[index - 1]).toBeGreaterThanOrEqual(-EPSILON)
 		}
 
-		expectHidesWhenFaded(transitions)
+		expectHidesWhenFaded(leaving)
 	})
 
 	/**
-	 * Без движения (здесь — по просьбе системы) панель с полосой от поля не
-	 * уходит: гаснет на месте, как панель без жеста, и пропадает, когда
-	 * догасла. Времени ухода у неё нет, и `display` брать его не должен.
+	 * Without motion (here — at the system's request) a panel with a strip
+	 * doesn't leave the field: it fades in place, like a panel without a
+	 * gesture, and disappears once it has faded. It has no leaving time, and
+	 * `display` must not take it.
 	 */
 	it('без движения — гаснет на месте и пропадает, когда догасла', async () => {
 		await reducedMotion('reduce')
 		await show({ swipe: 'handle' })
 
-		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		// The emulation is on — otherwise the guard would check the usual mode
 		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
 		await open()
@@ -369,7 +390,7 @@ describe('DatePicker', () => {
 	const content = () => find('.so-date-picker__content')
 	const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
-	/** Открыли кнопкой: возврат — в поле, на первую часть (en-US — месяц), а не на кнопку. */
+	/** Opened by the button: focus returns to the field, to its first part (the month in en-US), not to the button. */
 	it('после закрытия жестом фокус возвращается в поле, как после Escape', async () => {
 		await DATE_PICKER.show({ swipe: 'handle' })
 		await DATE_PICKER.open()
@@ -392,11 +413,11 @@ describe('DatePicker', () => {
 	})
 
 	/**
-	 * В низком окне календарь выше панели. Прокручивается содержимое, а не
-	 * панель: плагин жеста отдаёт касание вдоль оси панели жесту, и
-	 * прокручиваемую саму панель палец бы не прокрутил, а у содержимого
-	 * прокрутка своя. Из неё жест за всю панель не начинается — она
-	 * прокручивается сама.
+	 * In a low window the calendar is taller than the panel. The content
+	 * scrolls, not the panel: the gesture plugin gives a touch along the
+	 * panel's axis to the gesture, and a finger wouldn't scroll a scrollable
+	 * panel itself, while the content has a scroll of its own. A gesture by the
+	 * whole panel doesn't start from it — it scrolls by itself.
 	 */
 	it('прокручивается содержимое, а не панель, и из него жест не начинается', async () => {
 		await page.viewport(1000, 300)
@@ -412,8 +433,9 @@ describe('DatePicker', () => {
 		expect(getComputedStyle(panel()).touchAction).toBe('pan-x pinch-zoom')
 		expect(getComputedStyle(content()).touchAction).toBe('auto')
 
-		// Дальше четверти высоты панели: начнись жест — панель закрылась бы. И в
-		// пределах окна: ниже его края указатель странице уже не попадает
+		// Further than a quarter of the panel's height: had the gesture started,
+		// the panel would have closed. And within the window: below its edge the
+		// pointer doesn't reach the page anymore
 		await drag(find('.so-calendar__weekday'), 100)
 		await nextFrame()
 
