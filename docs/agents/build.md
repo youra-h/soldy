@@ -641,9 +641,9 @@ SvelteKit с `adapter-node`, SolidStart и Angular SSR. Каждый — ста�
 - **Angular**: лист темы — `@import` в `src/styles.css`, а не `import` в
   `main.ts`. CSS из модуля TS Angular CLI кладёт в кусок, который страница не
   грузит, и тема молча не подключалась. Бюджет начальной загрузки — 2 МБ
-  вместо 1 МБ, у Angular SSR тоже: лист oren (356 КБ) и JS страницы (698 КБ, у
-  Angular SSR с гидратацией — 739 КБ) вместе больше порога ошибки нового
-  проекта на 54 и 95 КБ (benchmarks/install/angular.md). Порог 1 МБ вернёт лист
+  вместо 1 МБ, у Angular SSR тоже: лист oren (356 КБ) и JS страницы (677 КБ, у
+  Angular SSR с гидратацией — 719 КБ) вместе больше порога ошибки нового
+  проекта на 33 и 75 КБ (benchmarks/install/angular.md). Порог 1 МБ вернёт лист
   темы по компонентам — задача 869fn397y;
 - **Angular SSR**: `allowedHosts: ["localhost"]` — сервер отвечает только
   доверенным хостам;
