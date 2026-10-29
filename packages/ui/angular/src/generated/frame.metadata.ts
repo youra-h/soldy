@@ -3,13 +3,13 @@ import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/frame/manifest'
 
 export const FrameInputNames = [
@@ -36,31 +36,10 @@ export const FrameInputNames = [
 	'aria_describedBy',
 ] as const
 export const FrameOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soChangeZIndex',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soLayoutCreate',
 	'soAnchorCreate',
 	'soAriaCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeTarget',
 	'soChangeX',
 	'soChangeY',
@@ -106,7 +85,7 @@ export const FrameOutputNames = [
 	],
 	outputs: [...FrameOutputNames],
 })
-export abstract class TFrameSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TFrameSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

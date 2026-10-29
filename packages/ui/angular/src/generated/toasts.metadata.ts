@@ -8,7 +8,6 @@ import type {
 } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -16,6 +15,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor, facade } from '../components/toasts/manifest'
 
 export const ToastsInputNames = [
@@ -34,20 +34,7 @@ export const ToastsInputNames = [
 	'trackBy',
 ] as const
 export const ToastsOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soChangeZIndex',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soBundlesCreate',
 	'soElementsCreate',
 	'soTimerCreate',
@@ -56,14 +43,6 @@ export const ToastsOutputNames = [
 	'soCascadeCreate',
 	'soLayoutCreate',
 	'soNamesCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeTarget',
 	'soChangePlacement',
 	'soChangeLayout',
@@ -108,7 +87,7 @@ export const ToastsOutputNames = [
 	],
 	outputs: [...ToastsOutputNames],
 })
-export abstract class TToastsSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TToastsSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

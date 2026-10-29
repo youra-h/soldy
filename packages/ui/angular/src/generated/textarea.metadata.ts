@@ -3,7 +3,6 @@ import { Directive, ElementRef, viewChild } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -11,6 +10,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/textarea/manifest'
 
 export const TextareaInputNames = [
@@ -39,21 +39,8 @@ export const TextareaInputNames = [
 	'id',
 ] as const
 export const TextareaOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soInput',
 	'soInputValue',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soActionCreate',
 	'soActionPress',
 	'soActionClick',
@@ -64,14 +51,6 @@ export const TextareaOutputNames = [
 	'soIdsCreate',
 	'soInputCreate',
 	'soAutoresizeCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeDisabled',
@@ -122,7 +101,7 @@ export const TextareaOutputNames = [
 	],
 	outputs: [...TextareaOutputNames],
 })
-export abstract class TTextareaSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TTextareaSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

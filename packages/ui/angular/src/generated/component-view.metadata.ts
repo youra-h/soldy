@@ -3,13 +3,13 @@ import { Directive } from '@angular/core'
 import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
 	type TSetup,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/component-view/manifest'
 
 export const ComponentViewInputNames = [
@@ -19,29 +19,7 @@ export const ComponentViewInputNames = [
 	'visible',
 	'direction',
 ] as const
-export const ComponentViewOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
-] as const
+export const ComponentViewOutputNames = [] as const
 
 @Directive({
 	inputs: [
@@ -53,7 +31,7 @@ export const ComponentViewOutputNames = [
 	],
 	outputs: [...ComponentViewOutputNames],
 })
-export abstract class TComponentViewSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TComponentViewSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>
