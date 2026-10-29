@@ -1,22 +1,24 @@
 /**
- * Dialog в настоящем браузере: раскладка и переход темы, действия браузера.
+ * Dialog in a real browser: the theme's layout and transition, the browser's
+ * actions.
  *
- * Место, размер, отступ от краёв экрана и разворот раскладывает тема, без
- * замеров, — jsdom их не считает, и юнит-тесты
- * (`ui/vue/__tests__/dialog.spec.ts`) видят только классы и переменные. Здесь
- * — что из них выходит на экране: окно по центру и у сторон (логических — в
- * RTL `start` справа), на своём отступе от краёв, развёрнутое на весь экран,
- * длинное содержимое прокручивается в теле. Появление и исчезание — переходом
- * темы: окно проявляется и гаснет вместе с подложкой, на месте, и так при
- * любых настройках движения в системе. Прокрутка страницы, запертая под
- * окном, возвращается, когда окно исчезло, — вернись она на закрытии, окно
- * съехало бы вбок, пока гаснет.
+ * Place, size, the offset from the screen's edges and maximizing are laid out
+ * by the theme, without measuring, — jsdom doesn't compute them, and the unit
+ * tests (`ui/vue/__tests__/dialog.spec.ts`) see only classes and variables.
+ * Here is what they make on screen: the dialog in the center and at the sides
+ * (logical ones — in RTL `start` is on the right), at its offset from the
+ * edges, maximized to the whole screen, long content scrolling in the body.
+ * Appearing and disappearing go by the theme's transition: the dialog fades in
+ * and out together with the backdrop, in place, whatever the system's motion
+ * settings. The page's scrolling, locked under the dialog, comes back once the
+ * dialog has disappeared: back on closing, it would shift the dialog sideways
+ * while it fades.
  *
- * Действие `mousedown` jsdom тоже не выполняет: там видно лишь, что модель
- * фокуса его гасит. Здесь — что нажатие по подложке правда не уносит фокус:
- * ни возвращённый на кнопку, с которой открыли, ни оставшийся в окне, которое
- * закрывается только кнопкой. И что Tab ходит по кругу в порядке, который
- * ведёт сам браузер.
+ * jsdom doesn't perform the action of `mousedown` either: there one sees only
+ * that the focus model cancels it. Here — that a press on the backdrop really
+ * doesn't take focus away: neither the one returned to the button that opened
+ * the dialog, nor the one staying in a dialog that closes only by a button.
+ * And that Tab goes around in the order the browser itself keeps.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -42,34 +44,34 @@ import { classicScrollbars } from './engine'
 import '@soldy-ui/theme-oren'
 
 /**
- * Отступ окна от края экрана в теме oren: `calc(var(--spacing) * 4)`. Один на
- * место у стороны и на потолок размера.
+ * The dialog's offset from the screen's edge in the oren theme:
+ * `calc(var(--spacing) * 4)`. One for the place at a side and for the size cap.
  */
 const GAP = 16
 
-/** Ширина окна по умолчанию в теме oren: `32rem`. */
+/** The dialog's default width in the oren theme: `32rem`. */
 const DEFAULT_WIDTH = 512
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 1
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Содержимое с двумя остановками Tab. */
+/** Content with two Tab stops. */
 const inside = (): VNode[] => [
 	h('button', { class: 'so-test-first' }, 'Первая'),
 	h('button', { class: 'so-test-second' }, 'Вторая'),
 ]
 
 type TPageOptions = {
-	/** Страница выше экрана — с полосой прокрутки */
+	/** The page is taller than the screen — with a scrollbar */
 	tall?: boolean
 }
 
 /**
- * Страница с кнопкой, которая открывает окно, и окно на `v-model:visible`.
- * В подвале — ещё одна остановка Tab. Кроме пропсов окна — обработчики его
- * событий (`onLayout:offset:before`).
+ * A page with a button that opens the dialog, and the dialog on
+ * `v-model:visible`. The footer has one more Tab stop. Besides the dialog's
+ * props — handlers of its events (`onLayout:offset:before`).
  */
 const show = async (
 	props: Partial<IDialogProps> & Record<string, unknown> = {},
@@ -118,7 +120,7 @@ const show = async (
 	return shown
 }
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector; without it the test fails here, not on reading a property. */
 const find = (selector: string): HTMLElement => {
 	const element = document.querySelector(selector)
 
@@ -133,22 +135,23 @@ const opener = () => find('.so-test-opener')
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 const active = () => document.activeElement
 
-/** Открыть кнопкой страницы и дождаться, пока фокус уйдёт в окно. */
+/** Open by the page's button and wait until focus goes into the dialog. */
 const open = async () => {
 	await userEvent.click(opener())
 	await expect.poll(active).toBe(find('.so-test-first'))
 }
 
 /**
- * Открыть событием в самой странице, а не через `userEvent`: переход читается
- * сразу после рендера и не успевает доиграть, как бы ни медлил прогон.
+ * Open by an event in the page itself, not through `userEvent`: the transition
+ * is read right after the render and has no time to play out, however slow the
+ * run.
  */
 const openInPage = async () => {
 	opener().click()
 	await nextTick()
 }
 
-/** Закрыть Escape — так же, событием в самой странице, у узла под фокусом. */
+/** Close by Escape — the same way, by an event in the page itself, at the focused node. */
 const escapeInPage = async () => {
 	active()?.dispatchEvent(
 		new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
@@ -156,13 +159,13 @@ const escapeInPage = async () => {
 	await nextTick()
 }
 
-/** Видимая область — граница, от которой тема отсчитывает место окна. */
+/** The visible area — the boundary from which the theme counts the dialog's place. */
 const viewport = () => ({
 	width: document.documentElement.clientWidth,
 	height: document.documentElement.clientHeight,
 })
 
-/** Отступы окна от четырёх краёв видимой области. */
+/** The dialog's gaps to the four edges of the visible area. */
 const gaps = () => {
 	const box = panel().getBoundingClientRect()
 	const { width, height } = viewport()
@@ -177,8 +180,8 @@ const gaps = () => {
 
 beforeEach(async () => {
 	document.documentElement.dataset.soTheme = 'oren'
-	// Шире окна по умолчанию с отступами: иначе окно упёрлось бы в потолок по
-	// ширине, и центр со сторонами выглядели бы одинаково
+	// Wider than the default dialog with its offsets: otherwise the dialog would
+	// hit the width cap, and the center and the sides would look the same
 	await page.viewport(1000, 700)
 })
 
@@ -200,8 +203,8 @@ describe('место', () => {
 	})
 
 	/**
-	 * Окно прижато к своей стороне с отступом и стоит по центру другой оси.
-	 * `start` и `end` — логические стороны: в RTL они меняются местами.
+	 * The dialog is pressed to its side at the offset and centered on the other
+	 * axis. `start` and `end` are logical sides: in RTL they swap.
 	 */
 	it.each<[TDialogPlacement, 'ltr' | 'rtl', 'left' | 'right' | 'top' | 'bottom']>([
 		['start', 'ltr', 'left'],
@@ -219,7 +222,7 @@ describe('место', () => {
 		const [near, far] = horizontal ? [box.top, box.bottom] : [box.left, box.right]
 
 		expect(Math.abs(box[edge] - GAP)).toBeLessThan(EPSILON)
-		// По другой оси — по центру
+		// Centered on the other axis
 		expect(Math.abs(near - far)).toBeLessThan(EPSILON)
 	})
 })
@@ -299,16 +302,17 @@ describe('размер', () => {
 })
 
 /**
- * Отступ — поля области экрана, в которую тема вписывает окно: у центра окно
- * по центру области, у стороны — у её края, и во всех случаях область —
- * потолок размера. Проверяется окном больше экрана: оно упирается в потолок,
- * и зазоры до краёв экрана — это и есть отступы.
+ * The offset is the margins of the screen area the theme fits the dialog into:
+ * in the center the dialog is centered in the area, at a side — at its edge,
+ * and in every case the area is the size cap. Checked with a dialog larger than
+ * the screen: it hits the cap, and its gaps to the screen's edges are the
+ * offsets.
  */
 describe('отступ', () => {
-	/** Больше экрана с любым отступом: окно упирается в потолок. */
+	/** Larger than the screen at any offset: the dialog hits the cap. */
 	const HUGE = { width: 5000, height: 5000 } as const
 
-	/** Зазор до края совпал с ожидаемым в пределах допуска. */
+	/** The gap to an edge matches the expected one within the tolerance. */
 	const near = (actual: number, expected: number) =>
 		expect(Math.abs(actual - expected)).toBeLessThan(EPSILON)
 
@@ -347,8 +351,8 @@ describe('отступ', () => {
 	})
 
 	/**
-	 * У стороны окно стоит от своего края на отступ, а по другой оси — по
-	 * центру. `start` и `end` — логические: в RTL меняются местами.
+	 * At a side the dialog stands at the offset from its edge and is centered on
+	 * the other axis. `start` and `end` are logical: in RTL they swap.
 	 */
 	it.each<[TDialogPlacement, 'ltr' | 'rtl', 'left' | 'right']>([
 		['start', 'ltr', 'left'],
@@ -389,7 +393,7 @@ describe('отступ', () => {
 
 		const { left, right, top, bottom } = gaps()
 
-		// Поровну от краёв области — а они в 200 и 20 от краёв экрана
+		// Equally far from the area's edges — and those are 200 and 20 from the screen's
 		near(top - 200, bottom - 20)
 		near(left, right)
 	})
@@ -424,25 +428,25 @@ describe('подложка', () => {
 })
 
 describe('появление и исчезание', () => {
-	/** Свойства, которые идут переходом, кроме `display`: тот только откладывает скрытие. */
+	/** The properties that transition, besides `display`: that one only defers hiding. */
 	const moving = (element: Element) =>
 		transitioning(element).filter((property) => property !== 'display')
 
-	/** Длительность и кривая перехода прозрачности на узле. */
+	/** The duration and curve of the opacity transition on the node. */
 	const timingOf = (element: Element) => {
 		const transition = transitionOf(element, 'opacity')
 
 		return { duration: durationOf(transition), easing: easingOf(transition) }
 	}
 
-	/** Переход прозрачности у окна и подложки — в эту минуту. */
+	/** The opacity transition of the dialog and the backdrop — right now. */
 	const timings = () => ({ panel: timingOf(panel()), backdrop: timingOf(backdrop()) })
 
 	/**
-	 * Переход держит тема: `@starting-style` даёт показанным окну и подложке
-	 * нулевую прозрачность, `allow-discrete` откладывает `display: none` до
-	 * конца исчезания. Хуков под анимацию у кода нет — видно это по переходу
-	 * на самих узлах.
+	 * The theme holds the transition: `@starting-style` gives the shown dialog
+	 * and backdrop zero opacity, `allow-discrete` defers `display: none` until
+	 * the end of the disappearing. The code has no animation hooks — it is seen
+	 * by the transition on the nodes themselves.
 	 */
 	it('открытие — окно и подложка проявляются, закрытие — гаснут и только потом пропадают', async () => {
 		await show()
@@ -456,7 +460,7 @@ describe('появление и исчезание', () => {
 		await settled(backdrop())
 		await escapeInPage()
 
-		// Гаснут: до конца перехода окно и подложка в документе, а не `display: none`
+		// They fade: until the transition's end both are in the document, not `display: none`
 		for (const element of [panel(), backdrop()]) {
 			expect(element.dataset.open).toBe('false')
 			expect(transitioning(element)).toContain('opacity')
@@ -468,8 +472,9 @@ describe('появление и исчезание', () => {
 	})
 
 	/**
-	 * Окно появляется на своём месте, а не выезжает, а разворот и размер
-	 * меняются сразу. Переходом по всем свойствам поехали бы и они.
+	 * The dialog appears in its place rather than sliding in, and maximizing and
+	 * size change at once. With a transition of all properties they would travel
+	 * too.
 	 */
 	it('переходит только прозрачность: окно не выезжает, разворот — сразу', async () => {
 		await show({ maximizable: true })
@@ -490,9 +495,9 @@ describe('появление и исчезание', () => {
 	})
 
 	/**
-	 * Затемнение — часть того же появления: начинается и кончается вместе с
-	 * окном и идёт тем же темпом. Исчезание короче появления: закрытое окно
-	 * не ждут.
+	 * The dimming is part of the same appearing: it starts and ends together with
+	 * the dialog and goes at the same pace. Disappearing is shorter than
+	 * appearing: nobody waits for a closed dialog.
 	 */
 	it('окно и подложка идут вместе, исчезание короче появления', async () => {
 		await show()
@@ -513,15 +518,16 @@ describe('появление и исчезание', () => {
 	})
 
 	/**
-	 * Прозрачность — не движение: окно стоит на месте, и режим движения
-	 * переход не трогает. Сторож решения: без него переход спрятали бы в
-	 * надстройку движения темы, как ход ручек Slider.
+	 * Opacity isn't motion: the dialog stands in place, and the motion mode
+	 * doesn't touch the transition. A guard of that decision: without it the
+	 * transition would be hidden in the theme's motion add-on, like the travel of
+	 * the Slider handles.
 	 */
 	it('система просит меньше движения — окно всё равно проявляется и гаснет', async () => {
 		await reducedMotion('reduce')
 		await show()
 
-		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		// The emulation is on — otherwise the guard would check the usual mode
 		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
 		await openInPage()
@@ -533,7 +539,7 @@ describe('появление и исчезание', () => {
 		await settled(panel())
 		await escapeInPage()
 
-		// Гаснет: до конца перехода окно в документе
+		// It fades: until the transition's end the dialog is in the document
 		expect(panel().dataset.open).toBe('false')
 		expect(getComputedStyle(panel()).display).not.toBe('none')
 
@@ -542,16 +548,16 @@ describe('появление и исчезание', () => {
 })
 
 /**
- * Прокрутку страницы под окном запирает замок, и полоса прокрутки уходит
- * вместе с ней. Вернись она, едва окно закрыли, область просмотра сузилась бы,
- * и окно по центру съехало бы на полширины полосы, пока гаснет. Поэтому
- * прокрутка возвращается, когда окно исчезло.
+ * The page's scrolling under the dialog is locked, and the scrollbar goes with
+ * it. Back as soon as the dialog is closed, it would narrow the viewport, and
+ * the centered dialog would shift by half the bar's width while it fades. So
+ * scrolling comes back once the dialog has disappeared.
  */
 describe.runIf(classicScrollbars)('прокрутка страницы', () => {
-	/** Прокрутка страницы заперта: замок держит `overflow` у `html`. */
+	/** The page's scrolling is locked: the lock holds `overflow` on `html`. */
 	const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
 
-	/** Рамка окна — место и размер. */
+	/** The dialog's frame — place and size. */
 	const frame = () => {
 		const { left, top, width, height } = panel().getBoundingClientRect()
 
@@ -561,28 +567,27 @@ describe.runIf(classicScrollbars)('прокрутка страницы', () => {
 	it('пока окно гаснет, прокрутка заперта и окно на месте, а исчезло — прокрутка вернулась', async () => {
 		await show({}, inside, { tall: true })
 
-		// Полоса занимает место — иначе окну не от чего съезжать, и сторож пуст
+		// The bar takes room — otherwise the dialog has nothing to shift from, and
+		// the guard is empty
 		expectClassicScrollbar()
 
 		await open()
 		await settled(panel())
 
 		const place = frame()
-		const seen = await whileLeaving(panel(), escapeInPage, () => {
+
+		await whileLeaving(panel(), escapeInPage, () => {
 			expect(locked(), 'прокрутка заперта').toBe(true)
 			expect(frame(), 'окно на месте').toEqual(place)
 		})
-
-		// Окно застали гаснущим — иначе проверять было нечего
-		expect(seen).toBeGreaterThan(1)
 
 		await expect.poll(locked).toBe(false)
 		expectClassicScrollbar()
 	})
 
 	/**
-	 * Открытие перебивает переход закрытия. Замок так и лежит — его ещё не
-	 * отпускали, — а следующее закрытие отпускает его один раз.
+	 * Opening interrupts the closing's transition. The lock stays — it hasn't
+	 * been released yet, — and the next closing releases it once.
 	 */
 	it('открыли снова, пока окно гаснет: прокрутка заперта, следующее закрытие её возвращает', async () => {
 		await show({}, inside, { tall: true })
@@ -594,14 +599,14 @@ describe.runIf(classicScrollbars)('прокрутка страницы', () => {
 		await escapeInPage()
 		await nextFrame()
 
-		// Окно ещё гаснет — открытие перебьёт его переход
+		// The dialog still fades — opening will interrupt its transition
 		expect(transitioning(panel())).toContain('opacity')
 
 		await openInPage()
 		await expect.poll(active).toBe(find('.so-test-first'))
 		await settled(panel())
 
-		// Перебитый переход отменён, а замок так и лежит
+		// The interrupted transition is cancelled, and the lock stays
 		expect(locked()).toBe(true)
 
 		await escapeInPage()
@@ -660,9 +665,9 @@ describe('фокус', () => {
 	})
 
 	/**
-	 * Окно закрывается ещё на `pointerdown`, и фокус возвращается сразу. Не
-	 * погаси модель фокуса `mousedown` этого нажатия — его действие унесло бы
-	 * возвращённый фокус на `body`.
+	 * The dialog closes on `pointerdown` already, and focus returns at once. Had
+	 * the focus model not cancelled this press's `mousedown`, its action would
+	 * carry the returned focus to `body`.
 	 */
 	it('нажатие по подложке закрывает, и фокус остаётся на кнопке, с которой открыли', async () => {
 		await show()
@@ -675,9 +680,9 @@ describe('фокус', () => {
 	})
 
 	/**
-	 * Окно, которое закрывается только кнопкой, нажатие по подложке не
-	 * закрывает — и фокус из него не уходит: с `body` Tab повёл бы на
-	 * страницу под окном.
+	 * A dialog that closes only by a button isn't closed by a press on the
+	 * backdrop — and focus doesn't leave it: from `body` Tab would lead to the
+	 * page under the dialog.
 	 */
 	it('dismissible: false — нажатие по подложке фокус из окна не уводит, Tab остаётся в окне', async () => {
 		await show({ dismissible: false })

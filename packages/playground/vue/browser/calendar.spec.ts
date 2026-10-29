@@ -35,7 +35,7 @@ import { find, lightness, outlined, pixel, settled, style, systemColor } from '.
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
 import { forcedColorsRepaint } from './engine'
-import { expectHidesWhenFaded, ownTransitions, whileLeaving } from './transitions'
+import { expectHidesWhenFaded, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -1497,8 +1497,8 @@ describe('выбор месяца и года', () => {
 	 * place first. The panel goes once it has faded.
 	 *
 	 * `close` closes the panel. The card's place is `card`, and without it —
-	 * where the first frame of leaving found it: a swiped one is closed by the
-	 * release, and where that was shows only then. Returns that place.
+	 * where the first moment of the leaving found it: a swiped one is closed by
+	 * the release, and where that was shows only then. Returns that place.
 	 */
 	const expectFadingInPlace = async (
 		close: () => Promise<unknown>,
@@ -1506,11 +1506,10 @@ describe('выбор месяца и года', () => {
 	): Promise<DOMRect> => {
 		const panel = find('.so-popover__panel')
 		const backdrop = box('.so-popover__panel')
-		const transitions = ownTransitions(panel)
 		const opacities: number[] = []
 		let place = card
 
-		const seen = await whileLeaving(panel, close, () => {
+		const transitions = await whileLeaving(panel, close, () => {
 			place ??= box('.so-calendar__picker')
 
 			expectSameBox(box('.so-popover__panel'), backdrop)
@@ -1518,7 +1517,6 @@ describe('выбор месяца и года', () => {
 			opacities.push(Number(style(panel).opacity))
 		})
 
-		expect(seen).toBeGreaterThan(1)
 		expect(Math.min(...opacities)).toBeLessThan(1)
 
 		for (let index = 1; index < opacities.length; index += 1) {

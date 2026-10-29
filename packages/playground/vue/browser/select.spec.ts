@@ -1,14 +1,16 @@
 /**
- * Select в настоящем браузере: появление и исчезание панели, форма кнопки
- * очистки и области стрелки, фокус после нажатия по стрелке и по тегу,
- * прозрачность выключенной опции.
+ * Select in a real browser: the panel appearing and disappearing, the shape of
+ * the clear button and of the arrow's area, focus after a press on the arrow
+ * and on a tag, the opacity of a disabled option.
  *
- * Панель — Frame, телепортированный в `body`, и открытость для темы ей пишет
- * её слой: `data-open` корня Select до телепортированной панели не доходит.
- * Переход держит тема (`themes/oren/src/mixins/_anchored.scss`), хуков под
- * анимацию у кода нет, а jsdom переходов не ведёт — увидеть их можно только
- * здесь, на самом узле. Раскладку поля с тегами сторожит `select-tags.spec.ts`,
- * сторону панели у края окна — `anchor.spec.ts`.
+ * The panel is a Frame teleported to `body`, and its layer writes the open
+ * state for the theme on it: `data-open` of the Select root doesn't reach the
+ * teleported panel. The theme holds the transition
+ * (`themes/oren/src/mixins/_anchored.scss`), the code has no animation hooks,
+ * and jsdom doesn't run transitions — they can be seen only here, on the node
+ * itself. The layout of the field with tags is guarded by
+ * `select-tags.spec.ts`, the panel's side at the window's edge — by
+ * `anchor.spec.ts`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -28,8 +30,9 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 const CITIES = ['Москва', 'Тверь', 'Тула', 'Казань']
 
 /**
- * Select на странице, корень объявлен плагинам: `TElementPlugin` ждёт кадр.
- * `below` — пустое место под полем, высотой CSS: с ним страница выше окна.
+ * Select on the page, its root declared to the plugins: `TElementPlugin` waits
+ * a frame. `below` — empty space under the field, a CSS height: with it the
+ * page is taller than the window.
  */
 const show = async (props: Record<string, unknown> = {}, below?: string) => {
 	render(
@@ -55,15 +58,15 @@ const show = async (props: Record<string, unknown> = {}, below?: string) => {
 }
 
 /**
- * Select с выбранным значением и кнопкой очистки: в слоте поля у конца стоят
- * очистка и стрелка.
+ * Select with a chosen value and the clear button: the field's end slot holds
+ * the clear button and the arrow.
  */
 const showClearable = (
 	size?: (typeof COMPONENT_SIZES)[number],
 	props: Record<string, unknown> = {},
 ) => show({ clearable: true, size, value: '0', ...props })
 
-/** Узел по селектору внутри корня; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector inside a root; without it the test fails here, not on reading a property. */
 const find = (selector: string, root: ParentNode = document): HTMLElement => {
 	const element = root.querySelector(selector)
 
@@ -75,20 +78,21 @@ const find = (selector: string, root: ParentNode = document): HTMLElement => {
 const field = () => find('.so-select__field input')
 const panel = () => find('.so-select__panel')
 
-/** Опции панели — по тексту. */
+/** The panel's option nodes. */
 const options = (): HTMLElement[] => [...panel().querySelectorAll<HTMLElement>('.so-select-item')]
 
 /**
- * Тексты опций, которые не спрятал отбор. Опцию из разметки отбор прячет её
- * `visible` (`display: none`), а не убирает из разметки, и у опции своё
- * значение `display` и тогда, когда пропала вся панель.
+ * The texts of the options the filter hasn't hidden. The filter hides an option
+ * from markup by its `visible` (`display: none`) rather than removing it from
+ * markup, and an option has its own `display` value even when the whole panel
+ * is gone.
  */
 const shownOptions = (): string[] =>
 	options()
 		.filter((option) => getComputedStyle(option).display !== 'none')
 		.map((option) => option.textContent?.trim() ?? '')
 
-/** Опция с текстом; нет её — тест падает здесь, а не на нажатии. */
+/** The option with a text; without it the test fails here, not on the press. */
 const option = (text: string): HTMLElement => {
 	const found = options().find((element) => element.textContent?.trim() === text)
 
@@ -103,14 +107,15 @@ beforeEach(() => {
 
 afterEach(() => {
 	cleanup()
-	// Окно, которое прокрутил тест, возвращается к началу
+	// The window a test scrolled goes back to the start
 	window.scrollTo(0, 0)
 })
 
 /**
- * Появление и исчезание — переход темы по `data-open` панели, как у поповера у
- * триггера без жеста: панель проявляется и гаснет на месте, одной
- * прозрачностью, а закрытая, пока гаснет, нажатий не ловит.
+ * Appearing and disappearing are the theme's transition by the panel's
+ * `data-open`, as with a popover at its trigger without a gesture: the panel
+ * fades in and out in place, by opacity alone, and a closed one catches no
+ * presses while it fades.
  */
 describe('появление и исчезание', () => {
 	it('открытие — панель проявляется, закрытие — гаснет на месте и до конца нажатий не ловит', async () => {
@@ -120,13 +125,13 @@ describe('появление и исчезание', () => {
 
 		await userEvent.click(field())
 
-		// `transitionrun` браузер шлёт кадром позже пересчёта стиля
+		// The browser sends `transitionrun` a frame after the style recalc
 		await expect.poll(() => runs).toContain('opacity')
 		expect(panel().dataset.open).toBe('true')
 
 		await settled(panel())
 
-		// Фокус остаётся на поле — Escape закрывает панель с него
+		// Focus stays on the field — Escape closes the panel from there
 		expect(document.activeElement).toBe(field())
 
 		await expectFadesInPlace(panel(), () => userEvent.keyboard('{Escape}'))
@@ -134,11 +139,12 @@ describe('появление и исчезание', () => {
 })
 
 /**
- * Набор с отбором обычно кончается закрытием панели — выбором в `single`, Tab
- * с поля, нажатием мимо, — и набранное плагин ввода снимает тем же действием.
- * Отбор он снимает, только когда закрытая панель догасла (`TEditablePlugin`):
- * иначе гаснущая панель на миг показала бы весь список и вытянулась бы до его
- * высоты — вспышка. Закрытая панель показывает то, что показывала.
+ * Typing with a filter usually ends by closing the panel — a choice in
+ * `single`, Tab from the field, a press outside, — and the input plugin clears
+ * the typed text by the same action. It clears the filter only once the closed
+ * panel has faded (`TEditablePlugin`): otherwise the fading panel would show
+ * the whole list for a moment and stretch to its height — a flash. A closed
+ * panel shows what it showed.
  */
 describe('отбор: гаснущая панель держит отобранное', () => {
 	it.each<[string, () => Promise<unknown>]>([
@@ -158,7 +164,7 @@ describe('отбор: гаснущая панель держит отобран�
 
 			const { height } = panel().getBoundingClientRect()
 
-			const seen = await whileLeaving(panel(), close, () => {
+			await whileLeaving(panel(), close, () => {
 				expect(shownOptions(), 'опции гаснущей панели').toEqual(['Москва'])
 				expect(
 					Math.abs(panel().getBoundingClientRect().height - height),
@@ -166,11 +172,8 @@ describe('отбор: гаснущая панель держит отобран�
 				).toBeLessThan(1)
 			})
 
-			// Исчезни панель сразу, проверять было бы нечего, и сторож прошёл бы сам
-			expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(0)
-
-			// Догасла — отбор снят уже закрытой, и открытая снова панель
-			// показывает весь список
+			// Faded — the filter is cleared on the closed panel, and the panel
+			// opened again shows the whole list
 			await expect.poll(shownOptions).toEqual(CITIES)
 
 			await userEvent.click(find('.so-select__arrow'))
@@ -182,11 +185,11 @@ describe('отбор: гаснущая панель держит отобран�
 })
 
 /**
- * Кнопку очистки рисует поле — Input внутри Select, — и форма у неё та же:
- * квадрат со стороной в строку слота на любом размере (`clear-button.ts`).
- * Раньше Select рисовал кнопку сам, и на крупных размерах она выходила низкой
- * и широкой. Клик очищает поле и панель не открывает: до корня, который
- * тумблит панель, он не всплывает.
+ * The clear button is drawn by the field — the Input inside Select, — and its
+ * shape is the same: a square with a side of the slot's row at any size
+ * (`clear-button.ts`). Earlier Select drew the button itself, and at large
+ * sizes it came out low and wide. A click clears the field and doesn't open the
+ * panel: it doesn't bubble up to the root that toggles the panel.
  */
 describe('кнопка очистки', () => {
 	it.each(COMPONENT_SIZES)('%s: квадрат высотой в строку слота, иконка внутри', async (size) => {
@@ -215,7 +218,7 @@ describe('кнопка очистки', () => {
 	})
 })
 
-/** Ширина и высота узла — те же, что у образца, с допуском на субпиксели. */
+/** The node's width and height are the sample's, within a subpixel tolerance. */
 const expectSameSize = (element: Element, sample: Element, label: string) => {
 	const own = element.getBoundingClientRect()
 	const other = sample.getBoundingClientRect()
@@ -224,7 +227,7 @@ const expectSameSize = (element: Element, sample: Element, label: string) => {
 	expect(own.height, `${label}: высота`).toBeCloseTo(other.height, 0)
 }
 
-/** Значок внутри узла; нет его — тест падает здесь, а не на замере. */
+/** The icon inside the node; without it the test fails here, not on measuring. */
 const glyph = (element: Element): SVGSVGElement => {
 	const icon = element.querySelector('svg')
 
@@ -234,13 +237,14 @@ const glyph = (element: Element): SVGSVGElement => {
 }
 
 /**
- * Область нажатия стрелки — её обёртка целиком (`TSelectPointerPlugin` ищет
- * её от цели нажатия), а в `editable` по тексту поля панель не открывается, и
- * стрелка — единственное место, которое её открывает. Своей коробки у обёртки
- * не было: область совпадала со значком, а значок брал кегль страницы на любом
- * размере, и на `2xl` в поле 44px в стрелку надо было попасть 23px. Теперь
- * обёртка — квадрат очистки рядом, в строку слота, а значок — её значка: кегль
- * поля по размеру (`themes/base/src/components/select.css`).
+ * The arrow's press area is its whole wrapper (`TSelectPointerPlugin` looks for
+ * it from the press target), and in `editable` the field's text doesn't open
+ * the panel, so the arrow is the only place that opens it. The wrapper had no
+ * box of its own: the area matched the icon, and the icon took the page's font
+ * size at any size — at `2xl` in a 44px field the arrow was a 23px target. Now
+ * the wrapper is the square of the clear button next to it, the slot's row
+ * high, and its icon is the clear button's: the field's font size by size
+ * (`themes/base/src/components/select.css`).
  */
 describe('стрелка', () => {
 	it.each(COMPONENT_SIZES)('%s: область — квадрат очистки, значок — её значка', async (size) => {
@@ -255,10 +259,10 @@ describe('стрелка', () => {
 	})
 
 	/**
-	 * Область — вся строка слота по высоте: нажатие у верхнего края строки над
-	 * серединой стрелки открывает панель. Пока областью был значок, он стоял
-	 * посередине строки, такое нажатие доставалось слоту, и панель оставалась
-	 * закрытой.
+	 * The area is the slot's whole row high: a press at the row's top edge above
+	 * the arrow's middle opens the panel. While the area was the icon, it stood
+	 * in the row's middle, such a press went to the slot, and the panel stayed
+	 * closed.
 	 */
 	it.each(COMPONENT_SIZES)(
 		'%s: в editable нажатие у края строки над стрелкой открывает панель',
@@ -278,7 +282,7 @@ describe('стрелка', () => {
 	)
 })
 
-/** Текст опции, на которую ссылается `aria-activedescendant` поля; ссылки нет — `null`. */
+/** The text of the option the field's `aria-activedescendant` points to; no reference — `null`. */
 const highlighted = (): string | null => {
 	const id = field().getAttribute('aria-activedescendant')
 
@@ -286,12 +290,12 @@ const highlighted = (): string | null => {
 }
 
 /**
- * DOM-фокус комбобокса всегда на поле, и клавиши Select берёт только с него.
- * Стрелка — немой узел, и `mousedown` по ней уносил фокус на `body`: панель
- * открывалась, а ↓ с `body` до корня Select не доходил — подсветка стояла, и
- * прокручивалась страница. Нажатие мимо остановок Tab поля
- * `TSelectPointerPlugin` гасит в обоих режимах и ставит фокус в поле, как у
- * нативного `<select>`.
+ * The combobox's DOM focus is always on the field, and Select takes keys only
+ * from it. The arrow is a mute node, and a `mousedown` on it carried focus to
+ * `body`: the panel opened, but ↓ from `body` didn't reach the Select root —
+ * the highlight stood still, and the page scrolled. `TSelectPointerPlugin`
+ * cancels a press outside the field's Tab stops in both modes and puts focus in
+ * the field, as a native `<select>` does.
  */
 describe('нажатие по стрелке', () => {
 	it.each<[string, Record<string, unknown>]>([
@@ -302,8 +306,8 @@ describe('нажатие по стрелке', () => {
 		async (_, props) => {
 			await show(props, '300vh')
 
-			// Страница выше окна — иначе ↓ на `body` прокручивать нечего, и
-			// сторож прошёл бы сам
+			// The page is taller than the window — otherwise ↓ on `body` has
+			// nothing to scroll, and the guard would pass by itself
 			expect(
 				document.documentElement.scrollHeight,
 				'высота страницы против окна',
@@ -314,7 +318,7 @@ describe('нажатие по стрелке', () => {
 
 			expect(document.activeElement, 'фокус после нажатия по стрелке').toBe(field())
 
-			// Окно — после клика: перед кликом Playwright сам докручивает цель в окно
+			// The window after the click: before clicking, Playwright scrolls the target into it
 			const scrollY = window.scrollY
 			const scrolls: number[] = []
 			const record = () => scrolls.push(window.scrollY)
@@ -325,8 +329,8 @@ describe('нажатие по стрелке', () => {
 				await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}')
 				await expect.poll(highlighted).toBe('Тула')
 
-				// Событие `scroll` браузер шлёт в шаге кадра: прокрутку от клавиш
-				// видно не сразу
+				// The browser sends `scroll` in a frame's step: scrolling by the keys
+				// shows up later
 				await nextFrame()
 				await nextFrame()
 				await nextFrame()
@@ -365,27 +369,28 @@ describe('нажатие по стрелке', () => {
 })
 
 /**
- * Строка тега в поле — `Button` на `div`, чей `tabindex="-1"` только гасит её
- * собственную остановку Tab: действия у строки нет, а фокус от нажатия она
- * принимала. `TSelectPointerPlugin` нажатие по ней не гасил — строка считалась
- * контролом, — и фокус уходил с поля на неё: в select-only клик по тегу
- * открывал панель, но ↓ со строки до клавиатуры Select не доходил, и
- * прокручивалась страница. Правило поля спрашивает об остановке Tab, а строка
- * тега — не остановка, а часть поля: нажатие по ней гасится, и фокус встаёт в
- * поле. Крестик тега — остановка, его нажатие правило не трогает.
+ * A tag's row in the field is a `Button` on a `div`, whose `tabindex="-1"` only
+ * removes its own Tab stop: the row has no action, yet it took focus from a
+ * press. `TSelectPointerPlugin` didn't cancel a press on it — the row counted
+ * as a control, — and focus left the field for it: in select-only a click on a
+ * tag opened the panel, but ↓ from the row didn't reach the Select keyboard,
+ * and the page scrolled. The field's rule asks about a Tab stop, and a tag's
+ * row is no stop but part of the field: a press on it is cancelled, and focus
+ * goes to the field. A tag's close button is a stop, and the rule leaves its
+ * press alone.
  */
 describe('нажатие по тегу', () => {
-	/** Выбор в два тега; `below` — пустое место под полем, как у `show`. */
+	/** A selection of two tags; `below` — empty space under the field, as for `show`. */
 	const showTags = async (props: Record<string, unknown>, below?: string) => {
 		await show({ mode: 'multiple', value: ['0', '1'], ...props }, below)
 
-		// Значение становится тегами, когда опции вошли в коллекцию
+		// The value turns into tags once the options have joined the collection
 		await expect
 			.poll(() => document.querySelectorAll('.so-select__tags .so-tags-item').length)
 			.toBe(2)
 	}
 
-	/** Текст строки первого тега — не крестик. */
+	/** The text of the first tag's row — not the close button. */
 	const tagText = () =>
 		find(
 			'.so-select__tags .so-tags-item > .so-button:not(.so-tags-item__close) .so-button__text',
@@ -397,8 +402,8 @@ describe('нажатие по тегу', () => {
 	])('%s: фокус — в поле, и ↓ ходит по опциям, а страница стоит', async (_, props, opens) => {
 		await showTags(props, '300vh')
 
-		// Страница выше окна — иначе ↓ прокручивать нечего, и сторож прошёл
-		// бы сам
+		// The page is taller than the window — otherwise ↓ has nothing to
+		// scroll, and the guard would pass by itself
 		expect(
 			document.documentElement.scrollHeight,
 			'высота страницы против окна',
@@ -406,9 +411,9 @@ describe('нажатие по тегу', () => {
 
 		await userEvent.click(tagText())
 
-		// Клик по полю тумблит панель только в select-only: в `editable` её
-		// открывает стрелка. Кадры — чтобы панель, открытая зря, успела
-		// объявить себя
+		// A click on the field toggles the panel only in select-only: in
+		// `editable` the arrow opens it. The frames let a panel opened by mistake
+		// declare itself
 		await nextFrame()
 		await nextFrame()
 
@@ -417,7 +422,7 @@ describe('нажатие по тегу', () => {
 		)
 		expect(document.activeElement, 'фокус после нажатия по тегу').toBe(field())
 
-		// Окно — после клика: перед кликом Playwright сам докручивает цель в окно
+		// The window after the click: before clicking, Playwright scrolls the target into it
 		const scrollY = window.scrollY
 		const scrolls: number[] = []
 		const record = () => scrolls.push(window.scrollY)
@@ -425,16 +430,16 @@ describe('нажатие по тегу', () => {
 		window.addEventListener('scroll', record)
 
 		try {
-			// Первая ↓ подсвечивает первую выбранную опцию, в `editable` — и
-			// открывает панель; следующие сдвигают подсветку
+			// The first ↓ highlights the first chosen option, in `editable` it also
+			// opens the panel; the next ones move the highlight
 			await userEvent.keyboard('{ArrowDown}')
 			await expect.poll(highlighted).toBe('Москва')
 
 			await userEvent.keyboard('{ArrowDown}{ArrowDown}')
 			await expect.poll(highlighted).toBe('Тула')
 
-			// Событие `scroll` браузер шлёт в шаге кадра: прокрутку от клавиш
-			// видно не сразу
+			// The browser sends `scroll` in a frame's step: scrolling by the keys
+			// shows up later
 			await nextFrame()
 			await nextFrame()
 			await nextFrame()
@@ -473,16 +478,17 @@ describe('нажатие по тегу', () => {
 })
 
 /**
- * Крестик тега — остановка Tab поля, и нажатие по нему правило поля не трогает:
- * фокус встаёт на крестик. Тег уходит вместе с ним, и фокус уходил на страницу:
- * ↓ с `body` до клавиатуры Select не доходил и прокручивал страницу. Закрытый
- * тег отдаёт фокус крестику соседа, а последний — полю: ряд тегов стоит перед
- * ним, и своего правила у Select для этого нет.
+ * A tag's close button is a Tab stop of the field, and the field's rule leaves
+ * a press on it alone: focus goes to the button. The tag leaves together with
+ * it, and focus used to fall to the page: ↓ from `body` didn't reach the Select
+ * keyboard and scrolled the page. A closed tag gives focus to its neighbour's
+ * close button, and the last one — to the field: the row of tags stands before
+ * it, and Select has no rule of its own for that.
  */
 describe('закрытие тега крестиком', () => {
 	const tagCount = () => document.querySelectorAll('.so-select__tags .so-tags-item').length
 
-	/** Крестик тега по тексту — по его имени от локали. */
+	/** A tag's close button by the tag's text — by the button's name from the locale. */
 	const closeOf = (text: string) =>
 		find(`.so-select__tags .so-tags-item__close[aria-label="Close ${text}"]`)
 
@@ -495,8 +501,8 @@ describe('закрытие тега крестиком', () => {
 			await show({ mode: 'multiple', value: ['0'], ...props }, '300vh')
 			await expect.poll(tagCount).toBe(1)
 
-			// Страница выше окна — иначе ↓ прокручивать нечего, и сторож прошёл
-			// бы сам
+			// The page is taller than the window — otherwise ↓ has nothing to
+			// scroll, and the guard would pass by itself
 			expect(
 				document.documentElement.scrollHeight,
 				'высота страницы против окна',
@@ -507,7 +513,7 @@ describe('закрытие тега крестиком', () => {
 
 			expect(document.activeElement, 'фокус после закрытия тега').toBe(field())
 
-			// Окно — после клика: перед кликом Playwright сам докручивает цель в окно
+			// The window after the click: before clicking, Playwright scrolls the target into it
 			const scrollY = window.scrollY
 			const scrolls: number[] = []
 			const record = () => scrolls.push(window.scrollY)
@@ -515,16 +521,16 @@ describe('закрытие тега крестиком', () => {
 			window.addEventListener('scroll', record)
 
 			try {
-				// Первая ↓ открывает панель и подсвечивает первую опцию —
-				// выбранных больше нет, — следующие сдвигают подсветку
+				// The first ↓ opens the panel and highlights the first option — no
+				// chosen ones are left, — the next ones move the highlight
 				await userEvent.keyboard('{ArrowDown}')
 				await expect.poll(highlighted).toBe('Москва')
 
 				await userEvent.keyboard('{ArrowDown}{ArrowDown}')
 				await expect.poll(highlighted).toBe('Тула')
 
-				// Событие `scroll` браузер шлёт в шаге кадра: прокрутку от клавиш
-				// видно не сразу
+				// The browser sends `scroll` in a frame's step: scrolling by the keys
+				// shows up later
 				await nextFrame()
 				await nextFrame()
 				await nextFrame()
@@ -549,9 +555,9 @@ describe('закрытие тега крестиком', () => {
 })
 
 /**
- * Прозрачность, с которой узел виден на странице: своя, умноженная на
- * прозрачность всех предков. Панель телепортирована в `body`, и предки опции —
- * панель и её список, а не поле.
+ * The opacity the node is seen with on the page: its own times the opacity of
+ * all its ancestors. The panel is teleported to `body`, and an option's
+ * ancestors are the panel and its list, not the field.
  */
 const visibleOpacity = (element: Element): number => {
 	let opacity = 1
@@ -564,11 +570,12 @@ const visibleOpacity = (element: Element): number => {
 }
 
 /**
- * Выключенная опция гаснет одной строкой, как пункт ListBox: строка — Button и
- * гасит себя сама по своему `data-disabled`, а обёртка опции прозрачность не
- * трогает. Раньше гасла и обёртка, и опция выходила вдвое бледнее такого же
- * пункта ListBox (`themes/base/src/components/select.css`). Чисел
- * темы проверка не знает: образец — выключенный пункт ListBox рядом.
+ * A disabled option dims by its row alone, like a ListBox item: the row is a
+ * Button and dims itself by its own `data-disabled`, while the option's wrapper
+ * leaves the opacity alone. Earlier the wrapper dimmed too, and the option came
+ * out twice as pale as the same ListBox item
+ * (`themes/base/src/components/select.css`). The check knows no theme numbers:
+ * the sample is a disabled ListBox item next to it.
  */
 describe('выключенная опция', () => {
 	it('гаснет так же, как выключенный пункт ListBox', async () => {
@@ -594,7 +601,7 @@ describe('выключенная опция', () => {
 
 		await userEvent.click(field())
 		await expect.poll(() => panel().dataset.open).toBe('true')
-		// Панель проявляется переходом прозрачности: мерить, когда он доиграл
+		// The panel fades in by an opacity transition: measure once it has played out
 		await settled(panel())
 
 		const sample = visibleOpacity(

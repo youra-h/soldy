@@ -1,15 +1,17 @@
 /**
- * Жест Popover в настоящем браузере: смахнуть панель, чтобы закрыть.
+ * The Popover gesture in a real browser: swipe the panel to close it.
  *
- * Правила жеста — порог, путь, скорость, сопротивление — проверяет плагин
- * (`plugins/__tests__/swipe.plugin.spec.ts`) на разметке, которую строит сам,
- * а jsdom ни раскладки, ни захвата указателя не выполняет. Здесь — что из
- * разметки и темы выходит на экране: полоса у края со стороны триггера и не
- * накрывает содержимое, `touch-action` на панели, нажатие на полосу фокус не
- * уводит, а настоящая мышь закрывает панель от триггера — вниз под ним, вверх
- * над ним, внутри контейнера к своему краю (`edge`, полоса — у противоположного)
- * — и к триггеру возвращает её на место. Смахнутая уходит, пока гаснет, а
- * пропадает, когда догасла; без движения панель с полосой гаснет на месте.
+ * The gesture's rules — threshold, path, velocity, resistance — are checked by
+ * the plugin's spec (`plugins/__tests__/swipe.plugin.spec.ts`) on markup it
+ * builds itself, and jsdom performs neither layout nor pointer capture. Here is
+ * what the markup and the theme make on screen: the strip is at the edge on the
+ * trigger's side and doesn't cover the content, `touch-action` is on the panel,
+ * a press on the strip doesn't take focus away, and a real mouse closes the
+ * panel away from the trigger — down below it, up above it, inside a container
+ * towards its edge (`edge`, the strip at the opposite one), — and towards the
+ * trigger returns it to its place. A swiped panel leaves while it fades and
+ * disappears once it has faded; without motion a panel with a strip fades in
+ * place.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -21,37 +23,32 @@ import type { IPopoverProps } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 import { reducedMotion } from './media'
-import {
-	expectFadesInPlace,
-	expectHidesWhenFaded,
-	ownTransitions,
-	whileLeaving,
-} from './transitions'
+import { expectFadesInPlace, expectHidesWhenFaded, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
 type TTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 
-/** Зона захвата полосы жеста — не меньше 24px: минимум цели по WCAG 2.5.8. */
+/** The gesture strip's grip zone — at least 24px: the target minimum of WCAG 2.5.8. */
 const GRIP_ZONE = 24
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 1
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 type TShowOptions = {
-	/** Отступ страницы сверху, px: под триггером мало места — панель над ним */
+	/** The page's top padding, px: with little room below the trigger the panel goes above it */
 	top?: number
-	/** Поповер в контейнере 400 × 300: панель у его края, а не у триггера */
+	/** The popover in a 400 × 300 container: the panel at its edge, not at the trigger */
 	contained?: boolean
-	/** Направление контейнера: в RTL начало строки — справа */
+	/** The container's direction: in RTL a line starts on the right */
 	dir?: 'ltr' | 'rtl'
 }
 
 /**
- * Страница с поповером на `v-model:open`: триггер и две кнопки в панели — две
- * остановки Tab, и фокус при открытии встаёт на первую.
+ * A page with a popover on `v-model:open`: the trigger and two buttons in the
+ * panel — two Tab stops, and opening puts focus on the first.
  */
 const show = async (
 	props: Partial<IPopoverProps> = {},
@@ -112,7 +109,7 @@ const show = async (
 	return { opened }
 }
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by selector; without it the test fails here, not on reading a property. */
 const find = (selector: string): HTMLElement => {
 	const element = document.querySelector(selector)
 
@@ -127,11 +124,11 @@ const handle = () => find('.so-popover__handle')
 const active = () => document.activeElement
 const isOpen = () => getComputedStyle(panel()).display !== 'none'
 
-/** Открыть кликом и дождаться, пока фокус уйдёт в панель, а панель встанет на место. */
+/** Open by a click and wait until focus goes into the panel and the panel stands in its place. */
 const open = async () => {
 	await userEvent.click(trigger())
 	await expect.poll(active).toBe(find('.so-test-first'))
-	// Панель в контейнере въезжает от своего края: геометрия — после перехода
+	// A panel in a container slides in from its edge: the geometry is read after the transition
 	await Promise.all(
 		panel()
 			.getAnimations()
@@ -139,14 +136,14 @@ const open = async () => {
 	)
 }
 
-/** Протянуть мышью от середины узла на `dx`, `dy` — настоящими событиями, по шагам. */
+/** Drag the mouse from the node's middle by `dx`, `dy` — with real events, in steps. */
 const dragBy = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 	const box = from.getBoundingClientRect()
 	const x = box.width / 2
 	const y = box.height / 2
 
-	// `force`: точка отпускания — за пределами узла, и проверка попадания
-	// Playwright ждала бы, пока узел окажется под ней
+	// `force`: the release point is outside the node, and Playwright's hit check
+	// would wait until the node is under it
 	return userEvent.dragAndDrop(from, from, {
 		sourcePosition: { x, y },
 		targetPosition: { x: x + dx, y: y + dy },
@@ -155,7 +152,7 @@ const dragBy = (from: HTMLElement, dx: number, dy: number, steps = 10) => {
 	})
 }
 
-/** Протянуть мышью от середины узла на `dy` по вертикали. */
+/** Drag the mouse from the node's middle by `dy` vertically. */
 const drag = (from: HTMLElement, dy: number, steps = 10) => dragBy(from, 0, dy, steps)
 
 beforeEach(async () => {
@@ -264,7 +261,7 @@ describe('жест', () => {
 
 		await drag(handle(), -150)
 
-		// Сдвиг уходит кадром позже, и панель едет на место переходом
+		// The offset goes a frame later, and the panel travels back by a transition
 		await expect
 			.poll(() => Math.abs(panel().getBoundingClientRect().top - top) < EPSILON)
 			.toBe(true)
@@ -275,9 +272,9 @@ describe('жест', () => {
 	})
 
 	/**
-	 * Панель в контейнере прижата к краю `edge`, полоса — у противоположного
-	 * края, смахивают к краю. Физическая сторона — с учётом направления
-	 * контейнера: `start` в RTL — справа.
+	 * A panel in a container is pressed to its `edge`, the strip is at the
+	 * opposite edge, and it is swiped towards the edge. The physical side
+	 * follows the container's direction: `start` in RTL is on the right.
 	 */
 	describe('внутри контейнера — к своему краю', () => {
 		type TSide = 'top' | 'bottom' | 'left' | 'right'
@@ -289,7 +286,7 @@ describe('жест', () => {
 			right: 'left',
 		}
 
-		/** Шаг к стороне: куда тянуть, чтобы панель ушла к ней. */
+		/** A step towards a side: where to pull for the panel to go to it. */
 		const toward: Record<TSide, [number, number]> = {
 			top: [0, -150],
 			bottom: [0, 150],
@@ -355,31 +352,27 @@ describe('жест', () => {
 })
 
 /**
- * Смахнутая панель не моргает: плагин снимает сдвиг вместе с закрытием, а
- * тема уводит закрытую панель к её стороне, как выезжающую панель, — уход
- * начинается с места, где её отпустили, и идёт дальше, пока панель гаснет.
- * Вернись она на место, а потом погасни, — было бы видно мигание. Пропадает
- * панель, когда догасла, а не доехав: хвоста пути за угасанием не видно.
+ * A swiped panel doesn't blink: the plugin keeps the offset on closing, and
+ * the theme takes the closed panel to its side, like a drawer, — the leaving
+ * starts where the panel was released and goes on while it fades. Had it
+ * returned to its place and then faded, a blink would show. The panel
+ * disappears once it has faded, not once it has arrived: the tail of the path
+ * past the fade isn't seen.
  */
 describe('уход смахнутой панели', () => {
-	/**
-	 * Смахнуть панель `swipe` и снять её положение по оси в каждом кадре
-	 * ухода, пока она не пропала.
-	 */
+	/** Swipe the panel by `swipe` and read its position on the axis at each moment of leaving. */
 	const leaving = async (axis: 'top' | 'left', swipe: () => Promise<unknown>) => {
-		const transitions = ownTransitions(panel())
 		const positions: number[] = []
-		const seen = await whileLeaving(panel(), swipe, () => {
+		const transitions = await whileLeaving(panel(), swipe, () => {
 			positions.push(panel().getBoundingClientRect()[axis])
 		})
 
-		expect(seen).toBeGreaterThan(1)
 		expectHidesWhenFaded(transitions)
 
 		return positions
 	}
 
-	/** Идут в одну сторону: каждое следующее не ближе к началу, чем прошлое. */
+	/** One way: each next position is no closer to the start than the previous one. */
 	const expectOneWay = (positions: number[], sign: 1 | -1) => {
 		for (let index = 1; index < positions.length; index += 1) {
 			expect((positions[index] - positions[index - 1]) * sign).toBeGreaterThanOrEqual(
@@ -416,15 +409,16 @@ describe('уход смахнутой панели', () => {
 	})
 
 	/**
-	 * Без движения (здесь — по просьбе системы) панель с полосой от триггера
-	 * не уходит: гаснет на месте, как панель без жеста, и пропадает, когда
-	 * догасла. Времени ухода у неё нет, и `display` брать его не должен.
+	 * Without motion (here — at the system's request) a panel with a strip
+	 * doesn't leave the trigger: it fades in place, like a panel without a
+	 * gesture, and disappears once it has faded. It has no leaving time, and
+	 * `display` must not take it.
 	 */
 	it('без движения — гаснет на месте и пропадает, когда догасла', async () => {
 		await reducedMotion('reduce')
 		await show({ swipe: 'handle' })
 
-		// Эмуляция действует — иначе сторож проверял бы обычный режим
+		// The emulation is on — otherwise the guard would check the usual mode
 		expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
 		await open()

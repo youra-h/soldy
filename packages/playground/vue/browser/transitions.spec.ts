@@ -5,14 +5,18 @@
  * The helpers watch a transition from the action's start, not after it: the
  * response of `userEvent` and commands goes over an RPC round trip and under
  * load comes later than the node disappears or the transition plays out. Here
- * the action is made so — it returns three times later than the transition, —
- * and the helper still catches it.
+ * the action is made so — it returns once the transition would have played
+ * out, — and the helper still catches it. Under load frames come rarely too:
+ * where it matters, the page is kept busy after the closing (`stall`), and the
+ * next frame comes after the transition's end.
  *
  * `whileLeaving` — on a node with its own opacity and `display` transition
  * (`allow-discrete`) in the inline style and with `data-open`, like a layer's:
- * the leaving frames are caught, frames before the closing don't get into
- * `check`, and the helper throws an error of `check` only after the action's
- * end.
+ * `check` runs at every moment of the leaving, with the node closed and on
+ * screen and its opacity lower at each next moment, and after the helper the
+ * node is gone. A closing without a transition is an error after the action,
+ * not the test's timeout, and an error of `check` comes out with the node's
+ * transitions played out — no layer is left paused.
  *
  * `pausedPseudoTransition` — on a node whose flag lights `::before` up by a
  * transition with a delay, and the node itself by one without: the transition
@@ -22,13 +26,20 @@
  *
  * `pausedTransitions` — on the same node as `whileLeaving`: its own transitions
  * are caught paused from their start, `display` among them, so the closed node
- * stays on screen. The action started no own transition — an error after the
- * action, not the test's timeout.
+ * stays on screen — also when the next frame comes after their end. The action
+ * started no own transition — an error after the action, not the test's
+ * timeout.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 
-import { delayOf, pausedPseudoTransition, pausedTransitions, whileLeaving } from './transitions'
+import {
+	delayOf,
+	MOMENTS,
+	pausedPseudoTransition,
+	pausedTransitions,
+	whileLeaving,
+} from './transitions'
 
 /** The node's closing transition duration, ms. */
 const DURATION = 100
@@ -36,7 +47,25 @@ const DURATION = 100
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-/** An open node on the page — with a closing transition or without one. */
+/**
+ * Keep the page busy for `ms` — as under load: no frame comes meanwhile. The
+ * microtasks queued so far run first, as they do after a change of the page.
+ */
+const stall = async (ms: number): Promise<void> => {
+	await Promise.resolve()
+
+	const end = performance.now() + ms
+
+	while (performance.now() < end) {
+		// Busy: the next frame waits
+	}
+}
+
+/**
+ * An open node on the page — with a closing transition or without one. Its
+ * style is computed before returning: without a previous style a transition
+ * has nothing to start from.
+ */
 const mount = (transition: boolean): HTMLElement => {
 	const node = document.createElement('div')
 
@@ -50,6 +79,8 @@ const mount = (transition: boolean): HTMLElement => {
 
 	document.body.append(node)
 
+	expect(getComputedStyle(node).opacity, 'до закрытия узел виден').toBe('1')
+
 	return node
 }
 
@@ -61,17 +92,25 @@ const close = (node: HTMLElement): void => {
 }
 
 /**
- * The action: for two frames the node is open, then it closes, and the action
- * returns three times later than the transition — when the node is long gone.
+ * The action: for two frames the node is open, then it closes together with a
+ * twin — a node with the same closing transition, which the helper doesn't
+ * watch. The page stays busy for three transitions' time, and the action
+ * returns once the twin is gone. Without the pause the node would be gone too,
+ * and a look after the action would catch nothing: otherwise the guard is
+ * empty.
  */
 const lateClose = (node: HTMLElement) => async (): Promise<void> => {
+	const twin = mount(true)
+
 	await nextFrame()
 	await nextFrame()
 	close(node)
-	await delay(DURATION * 3)
+	close(twin)
+	await stall(DURATION * 3)
 
-	// A look after the action would catch nothing anymore — otherwise the guard is empty
-	expect(getComputedStyle(node).display, 'к концу действия узел исчез').toBe('none')
+	await expect
+		.poll(() => getComputedStyle(twin).display, { message: 'к концу действия двойник исчез' })
+		.toBe('none')
 }
 
 /** The delay and the duration of the `::before` transition, ms. */
@@ -120,27 +159,50 @@ afterEach(() => {
 })
 
 describe('whileLeaving', () => {
-	it('ответ действия позже перехода: кадры ухода застаны, открытых среди них нет', async () => {
+	it('ответ действия позже перехода: мгновения ухода застаны, узел в них закрыт и на экране', async () => {
 		const node = mount(true)
-		const states: Array<string | undefined> = []
-		const seen = await whileLeaving(node, lateClose(node), () => {
-			states.push(node.dataset.open)
+		const moments: Array<{ open: string | undefined; display: string; opacity: number }> = []
+
+		await whileLeaving(node, lateClose(node), () => {
+			const style = getComputedStyle(node)
+
+			moments.push({
+				open: node.dataset.open,
+				display: style.display,
+				opacity: Number(style.opacity),
+			})
 		})
 
-		expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
-		expect(states, 'check видит только закрытый узел').toEqual(
-			Array.from({ length: seen }, () => 'false'),
-		)
+		expect(moments, 'проверка — в каждом мгновении').toHaveLength(MOMENTS.length)
+
+		moments.forEach(({ open, display, opacity }, index) => {
+			expect(open, `мгновение ${index}: узел закрыт`).toBe('false')
+			expect(display, `мгновение ${index}: узел на экране`).toBe('block')
+
+			// The moments are different points of the fade, not one look repeated
+			if (index > 0) {
+				expect(opacity, `мгновение ${index}: прозрачность ниже прошлой`).toBeLessThan(
+					moments[index - 1].opacity,
+				)
+			}
+		})
+
+		expect(getComputedStyle(node).display, 'после помощника узел исчез').toBe('none')
 	})
 
-	it('закрытие без перехода — ни одного кадра на экране', async () => {
+	it('закрытие без перехода — ошибка после действия, а не таймаут', async () => {
 		const node = mount(false)
 		let checks = 0
-		const seen = await whileLeaving(node, lateClose(node), () => {
-			checks += 1
-		})
 
-		expect(seen).toBe(0)
+		await expect(
+			whileLeaving(
+				node,
+				async () => close(node),
+				() => {
+					checks += 1
+				},
+			),
+		).rejects.toThrow('после действия переходов у самого узла нет')
 		expect(checks).toBe(0)
 	})
 
@@ -162,27 +224,18 @@ describe('whileLeaving', () => {
 		expect(acted).toBe(false)
 	})
 
-	it('ошибку check помощник бросает, когда действие кончилось', async () => {
+	it('ошибку проверки помощник бросает, а переходы узла доиграны', async () => {
 		const node = mount(true)
-		let finished = false
 
-		// The rejection is caught when it comes: so it shows whether the action was
-		// over by then
-		const outcome = await whileLeaving(
-			node,
-			async () => {
-				await lateClose(node)()
-				finished = true
-			},
-			() => {
+		await expect(
+			whileLeaving(node, lateClose(node), () => {
 				throw new Error('проверка не прошла')
-			},
-		).then(
-			() => 'прошло',
-			(error: unknown) => ({ error, finished }),
-		)
+			}),
+		).rejects.toThrow('проверка не прошла')
 
-		expect(outcome).toEqual({ error: new Error('проверка не прошла'), finished: true })
+		// Played out, not left paused: the node is gone at once, without a frame
+		expect(node.getAnimations(), 'переходов на паузе не осталось').toEqual([])
+		expect(getComputedStyle(node).display, 'узел исчез').toBe('none')
 	})
 })
 
@@ -232,6 +285,28 @@ describe('pausedTransitions', () => {
 		// `display` is paused too: the closed node stays on screen at any moment the
 		// test chooses
 		expect(getComputedStyle(node).display).toBe('block')
+	})
+
+	/**
+	 * WebKit counts a transition from the frame before its style change, and
+	 * under load the next frame — with the transition's own `transitionrun` —
+	 * came after the transition's end. Here the page is busy after the closing
+	 * for three transitions' time.
+	 */
+	it('следующий кадр позже конца перехода: переходы узла пойманы на паузе с начала', async () => {
+		const node = mount(true)
+		const transitions = await pausedTransitions(node, async () => {
+			await nextFrame()
+			close(node)
+			await stall(DURATION * 3)
+		})
+
+		expect([...transitions.keys()].sort()).toEqual(['display', 'opacity'])
+
+		for (const transition of transitions.values()) {
+			expect(transition.playState).toBe('paused')
+			expect(Number(transition.currentTime)).toBeLessThan(DURATION / 2)
+		}
 	})
 
 	it('действие переходов узла не завело — ошибка после действия, а не таймаут', async () => {
