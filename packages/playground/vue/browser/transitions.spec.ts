@@ -6,7 +6,9 @@
  * response of `userEvent` and commands goes over an RPC round trip and under
  * load comes later than the node disappears or the transition plays out. Here
  * the action is made so — it returns once the transition would have played
- * out, — and the helper still catches it.
+ * out, — and the helper still catches it. Under load frames come rarely too:
+ * where it matters, the page is kept busy after the closing (`stall`), and the
+ * next frame comes after the transition's end.
  *
  * `whileLeaving` — on a node with its own opacity and `display` transition
  * (`allow-discrete`) in the inline style and with `data-open`, like a layer's:
@@ -24,8 +26,9 @@
  *
  * `pausedTransitions` — on the same node as `whileLeaving`: its own transitions
  * are caught paused from their start, `display` among them, so the closed node
- * stays on screen. The action started no own transition — an error after the
- * action, not the test's timeout.
+ * stays on screen — also when the next frame comes after their end. The action
+ * started no own transition — an error after the action, not the test's
+ * timeout.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -44,7 +47,25 @@ const DURATION = 100
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-/** An open node on the page — with a closing transition or without one. */
+/**
+ * Keep the page busy for `ms` — as under load: no frame comes meanwhile. The
+ * microtasks queued so far run first, as they do after a change of the page.
+ */
+const stall = async (ms: number): Promise<void> => {
+	await Promise.resolve()
+
+	const end = performance.now() + ms
+
+	while (performance.now() < end) {
+		// Busy: the next frame waits
+	}
+}
+
+/**
+ * An open node on the page — with a closing transition or without one. Its
+ * style is computed before returning: without a previous style a transition
+ * has nothing to start from.
+ */
 const mount = (transition: boolean): HTMLElement => {
 	const node = document.createElement('div')
 
@@ -57,6 +78,8 @@ const mount = (transition: boolean): HTMLElement => {
 	}
 
 	document.body.append(node)
+
+	expect(getComputedStyle(node).opacity, 'до закрытия узел виден').toBe('1')
 
 	return node
 }
@@ -71,9 +94,10 @@ const close = (node: HTMLElement): void => {
 /**
  * The action: for two frames the node is open, then it closes together with a
  * twin — a node with the same closing transition, which the helper doesn't
- * watch, — and the action returns once the twin is gone. Without the pause the
- * node would be gone too, and a look after the action would catch nothing:
- * otherwise the guard is empty.
+ * watch. The page stays busy for three transitions' time, and the action
+ * returns once the twin is gone. Without the pause the node would be gone too,
+ * and a look after the action would catch nothing: otherwise the guard is
+ * empty.
  */
 const lateClose = (node: HTMLElement) => async (): Promise<void> => {
 	const twin = mount(true)
@@ -82,6 +106,7 @@ const lateClose = (node: HTMLElement) => async (): Promise<void> => {
 	await nextFrame()
 	close(node)
 	close(twin)
+	await stall(DURATION * 3)
 
 	await expect
 		.poll(() => getComputedStyle(twin).display, { message: 'к концу действия двойник исчез' })
@@ -260,6 +285,28 @@ describe('pausedTransitions', () => {
 		// `display` is paused too: the closed node stays on screen at any moment the
 		// test chooses
 		expect(getComputedStyle(node).display).toBe('block')
+	})
+
+	/**
+	 * WebKit counts a transition from the frame before its style change, and
+	 * under load the next frame — with the transition's own `transitionrun` —
+	 * came after the transition's end. Here the page is busy after the closing
+	 * for three transitions' time.
+	 */
+	it('следующий кадр позже конца перехода: переходы узла пойманы на паузе с начала', async () => {
+		const node = mount(true)
+		const transitions = await pausedTransitions(node, async () => {
+			await nextFrame()
+			close(node)
+			await stall(DURATION * 3)
+		})
+
+		expect([...transitions.keys()].sort()).toEqual(['display', 'opacity'])
+
+		for (const transition of transitions.values()) {
+			expect(transition.playState).toBe('paused')
+			expect(Number(transition.currentTime)).toBeLessThan(DURATION / 2)
+		}
 	})
 
 	it('действие переходов узла не завело — ошибка после действия, а не таймаут', async () => {

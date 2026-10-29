@@ -237,8 +237,10 @@ export const expectHidesWhenFaded = (transitions: ReadonlyMap<string, CSSTransit
  * panel is measured open, `close` closes it, and at every moment of its
  * leaving (`whileLeaving`) it catches no presses — the pointer in its middle
  * hits what is under it, — doesn't move, and its opacity only decreases. Only
- * the opacity transitions: of the panel's own transitions, besides `display`,
- * — only `opacity`. The panel disappears once it has faded
+ * the opacity transitions: of the panel's own transitions the closing started,
+ * besides `display`, — only `opacity`. They are the ones `whileLeaving`
+ * caught, not `transitionrun` events: WebKit sent none for the transitions
+ * paused at their start. The panel disappears once it has faded
  * (`expectHidesWhenFaded`).
  */
 export const expectFadesInPlace = async (
@@ -246,7 +248,6 @@ export const expectFadesInPlace = async (
 	close: () => Promise<unknown>,
 ): Promise<void> => {
 	const { top, left, width, height } = panel.getBoundingClientRect()
-	const runs = ownTransitionRuns(panel)
 	const opacities: number[] = []
 
 	const transitions = await whileLeaving(panel, close, () => {
@@ -261,7 +262,7 @@ export const expectFadesInPlace = async (
 	})
 
 	expect(
-		runs.filter((name) => name !== 'display'),
+		[...transitions.keys()].filter((name) => name !== 'display'),
 		'переходит одна прозрачность',
 	).toEqual(['opacity'])
 	expectHidesWhenFaded(transitions)
@@ -394,13 +395,21 @@ export const pausedPseudoTransition = async (
 }
 
 /**
- * The node's own transitions the action started — all of them paused from the
- * first own `transitionrun`. The properties of one style change start together,
- * in the frame that sends their events, so they are caught at their start
- * whatever the frame rate. From there the transitions' moment is chosen by the
- * test (`currentTime`), and not by the frames: under load they come rarely — in
- * WebKit in Docker a swiped panel was on screen for a single frame of its
- * fade, — nor by the action's response, which goes over an RPC round trip.
+ * The node's own transitions the action started — all of them paused at their
+ * start, together: the properties of one style change start together. From
+ * there the transitions' moment is chosen by the test (`currentTime`), and not
+ * by the frames: under load they come rarely — in WebKit in Docker a swiped
+ * panel was on screen for a single frame of its fade, — nor by the action's
+ * response, which goes over an RPC round trip.
+ *
+ * They are caught when the node's own attributes change — `data-open` of a
+ * layer, a class, the inline style: the observer's microtask comes in the same
+ * task as the change, and reading the animations there starts the transitions
+ * at once. Not by `transitionrun`, which comes with the next frame: WebKit
+ * counts a transition from the frame before its style change, and when the
+ * next frame came later than the fade (105 ms), the panel's transitions were
+ * over by their own `transitionrun`. A change from elsewhere — an ancestor's
+ * class, a media query — is caught by the first own `transitionrun`.
  *
  * Transitions of children and of pseudo-elements aren't the node's own and run
  * their course, and so do the node's later ones. No own transition after the
@@ -412,8 +421,8 @@ export const pausedTransitions = async (
 ): Promise<ReadonlyMap<string, CSSTransition>> => {
 	const paused = new Map<string, CSSTransition>()
 
-	const listener = (event: TransitionEvent) => {
-		if (event.target !== element || event.pseudoElement !== '' || paused.size > 0) return
+	const pauseOwn = (): void => {
+		if (paused.size > 0) return
 
 		for (const animation of element.getAnimations()) {
 			if (
@@ -429,6 +438,13 @@ export const pausedTransitions = async (
 		}
 	}
 
+	const observer = new MutationObserver(pauseOwn)
+
+	const listener = (event: TransitionEvent) => {
+		if (event.target === element && event.pseudoElement === '') pauseOwn()
+	}
+
+	observer.observe(element, { attributes: true })
 	element.addEventListener('transitionrun', listener)
 
 	try {
@@ -437,6 +453,7 @@ export const pausedTransitions = async (
 			.poll(() => paused.size, { message: 'после действия переходов у самого узла нет' })
 			.toBeGreaterThan(0)
 	} finally {
+		observer.disconnect()
 		element.removeEventListener('transitionrun', listener)
 	}
 
