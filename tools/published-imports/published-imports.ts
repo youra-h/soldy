@@ -226,6 +226,21 @@ function targetsOf(value: unknown): string[] {
 }
 
 /**
+ * Whether a target is in the tarball. A target of a subpath pattern of
+ * `exports` (`./dist/components/*.css` behind `./*.css`) is there when the
+ * tarball holds a file it leads to: `*` stands for any text, `/` included, as
+ * Node resolves the pattern.
+ */
+function isShipped(target: string, shipped: ReadonlySet<string>): boolean {
+	if (!target.includes('*')) return shipped.has(target)
+
+	const escape = (text: string) => text.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+	const pattern = new RegExp(`^${target.split('*').map(escape).join('.+')}$`)
+
+	return [...shipped].some((path) => pattern.test(path))
+}
+
+/**
  * Цели точек входа, которых нет в тарболле (`paths` — пути от корня пакета),
  * без `./` в начале. Такой пакет не собран или его сборку не везёт `files`, и
  * проверять в нём нечего: несобранный пакет прошёл бы проверку импортов
@@ -238,5 +253,5 @@ export function findMissingEntries(manifest: TManifest, paths: readonly string[]
 		posix.normalize(target),
 	)
 
-	return [...new Set(targets)].filter((target) => !shipped.has(target))
+	return [...new Set(targets)].filter((target) => !isShipped(target, shipped))
 }

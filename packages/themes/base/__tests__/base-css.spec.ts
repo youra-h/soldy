@@ -455,6 +455,33 @@ describe('слой базы', () => {
 	it('каждое правило базы — в слое so или его подслое', () => {
 		expect(outsideLayer(css)).toEqual([])
 	})
+
+	it('первым — порядок подслоёв, и каждая часть — в своём, в том же порядке', () => {
+		// The statement orders the parts before any rule: a theme cuts the shared
+		// layer into files by these sublayers, and the cascade does not depend on
+		// the order an application loads them in. An import into a sublayer the
+		// statement lacks would land after every declared one
+		const index = sources.find(({ name }) => name === 'index.css')?.root
+		const first = index?.nodes.find((node) => node.type !== 'comment')
+		const declared =
+			first?.type === 'atrule' && first.name === 'layer' && first.nodes === undefined
+				? first.params.split(',').map((name) => name.trim())
+				: []
+		const imports: { layer: string; file: string }[] = []
+
+		index?.walkAtRules('import', (rule) => {
+			const [, file = '', layer = ''] =
+				/^'\.\/(?:components\/)?([\w-]+)\.css'\s+layer\(([\w.-]+)\)$/.exec(rule.params) ??
+				[]
+
+			imports.push({ layer, file })
+		})
+
+		expect(declared.length).toBeGreaterThan(0)
+		expect(imports.map(({ layer }) => layer)).toEqual(declared)
+		expect(imports.filter(({ layer, file }) => layer !== `so.${file}`)).toEqual([])
+		expect(declared[0]).toBe('so.reset')
+	})
 })
 
 describe('выключенное в базе', () => {

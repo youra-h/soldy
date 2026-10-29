@@ -3,20 +3,26 @@ import { join, resolve } from 'node:path'
 import { build as viteBuild } from 'vite'
 
 /**
- * Темы репозитория и их CSS — для сторожей, которые годятся любой теме.
+ * The themes of the repository and their CSS — for the guards that fit any
+ * theme.
  *
- * Тема — каждый пакет `packages/themes/*`, кроме самой базы: база входит в CSS
- * каждой темы, и сторожа видят её там. Список не хардкодится: новая тема
- * попадает под сторожей сама.
+ * A theme is every package of `packages/themes/*` but the shared layer itself:
+ * the shared layer goes into the CSS of every theme, and the guards see it
+ * there. The list is not hardcoded: a new theme falls under the guards by
+ * itself.
  *
- * CSS темы собирается в памяти её же конфигом (`vite.config.ts` пакета), тем
- * же, что у её `build:css`: сторожа читают то, что уезжает в пакет, — Sass,
- * `@apply` и то, что выпускает Tailwind, там развёрнуты, — и не зависят от
- * `dist`: шаг «Тесты» в CI идёт до сборки. Тему без такого конфига помощник
- * собрать не умеет и падает, а не пропускает её молча.
+ * The CSS of a theme is built in memory by its own config (`vite.config.ts` of
+ * the package), the one of its `build:css`: the guards read what goes into the
+ * package — Sass, `@apply` and what Tailwind puts out are expanded there, — and
+ * do not depend on `dist`: the step «Тесты» in CI runs before the build. The
+ * guards read the whole sheet, the file `style` of the manifest names: it
+ * carries every rule of the theme, and the stylesheets of components next to
+ * it are cut out of it (oren — `layers.ts` of the package). A theme without
+ * such a config the helper cannot build, and it fails instead of skipping the
+ * theme silently.
  *
- * Пустым сторож проходит на любом CSS, поэтому каждый проверяет, что у oren
- * он не пуст: сборка дошла до того, что он сторожит.
+ * An empty guard passes on any CSS, so each one checks that on oren it is not
+ * empty: the build reached what it guards.
  */
 
 const BASE = resolve(import.meta.dirname, '..')
@@ -32,18 +38,21 @@ export type TTheme = {
 	readonly dir: string
 }
 
-/** Имя пакета из манифеста; манифест без имени — ошибка, а не пропуск. */
-function nameOf(dir: string): string {
+/** A string field of the manifest; without it — an error, not a skip. */
+function fieldOf(dir: string, field: 'name' | 'style'): string {
 	const manifest: unknown = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
-	const name =
-		typeof manifest === 'object' && manifest !== null && 'name' in manifest
-			? manifest.name
+	const value =
+		typeof manifest === 'object' && manifest !== null && field in manifest
+			? Reflect.get(manifest, field)
 			: undefined
 
-	if (typeof name !== 'string') throw new Error(`${dir}/package.json: нет имени пакета`)
+	if (typeof value !== 'string') throw new Error(`${dir}/package.json: нет поля ${field}`)
 
-	return name
+	return value
 }
+
+/** The name of the package from its manifest. */
+const nameOf = (dir: string): string => fieldOf(dir, 'name')
 
 export const THEMES: readonly TTheme[] = readdirSync(THEMES_DIR, { withFileTypes: true })
 	.filter((entry) => entry.isDirectory())
@@ -59,6 +68,9 @@ async function buildCss({ name, dir }: TTheme): Promise<string> {
 		throw new Error(`${name}: нет vite.config.ts — как собрать CSS темы, помощник не знает`)
 	}
 
+	// The whole sheet is the file of the manifest's `style`: of the CSS files of
+	// the build it is the one whose name ends that path
+	const style = fieldOf(dir, 'style')
 	const result = await viteBuild({
 		root: dir,
 		configFile,
@@ -69,12 +81,12 @@ async function buildCss({ name, dir }: TTheme): Promise<string> {
 		if (!('output' in output)) throw new Error(`${name}: CSS-сборка ушла в режим наблюдения`)
 
 		return output.output.flatMap((file) =>
-			file.type === 'asset' && file.fileName.endsWith('.css') ? [file.source] : [],
+			file.type === 'asset' && style.endsWith(`/${file.fileName}`) ? [file.source] : [],
 		)
 	})
 
 	if (sheets.length !== 1) {
-		throw new Error(`${name}: CSS-сборка отдала листов ${sheets.length}, ожидается один`)
+		throw new Error(`${name}: листов ${style} в CSS-сборке ${sheets.length}, ожидается один`)
 	}
 
 	const [sheet] = sheets

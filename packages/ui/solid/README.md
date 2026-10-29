@@ -226,6 +226,11 @@ useIcons(material)
 useTheme(oren)
 ```
 
+`@soldy-ui/theme-oren` is the stylesheet of every component. To take only the components your
+pages use, import their stylesheets instead — `@soldy-ui/theme-oren/button.css`,
+`@soldy-ui/theme-oren/select.css`, one per component, each with the shared part of the theme
+(the theme's README, [Only the components you use](https://github.com/youra-h/soldy-ui/tree/main/packages/themes/oren#only-the-components-you-use)).
+
 ## Server rendering
 
 Server rendering and hydration — SolidStart, or Vite SSR with `vite-plugin-solid({ ssr: true })` —

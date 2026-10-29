@@ -219,9 +219,13 @@ describe.each(PACKS)('$name', ({ pack, loaded }) => {
 		})
 
 		it('своё умолчание темы перекрашивает иконку пакета, а место — сильнее его', async () => {
-			// Умолчание другой темы — не цвет текста: так видно, что оно доходит и
-			// до заливки Material, и до линии Lucide
-			themeRule('.so-icon { --so-icon-color: var(--so-accent-500); }')
+			// The default of another theme is not the text color: so it is seen
+			// to reach both the fill of Material and the line of Lucide. A rule of
+			// the theme stands in the layer of its part — CSS outside layers is
+			// the application's and overrides the theme whole
+			themeRule(
+				'@layer components.so.icon { .so-icon { --so-icon-color: var(--so-accent-500); } }',
+			)
 			await show(scheme)
 
 			const accent = bytes(token('--so-accent-500'))

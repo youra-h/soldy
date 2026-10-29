@@ -1,80 +1,97 @@
-/* ─── Общий слой тем ─────────────────────────────────────────
- * То, что нужно частям soldy в любой теме, а не облику одной: сброс узлов
- * библиотеки (`reset.css`), знак направления письма (`direction.css`),
- * гашение выключенного (`disabled.css`) и структура частей — раскладка и
- * механика (`components/`), числа которых — переменные с умолчанием: общие
- * шкалы (`caption.css`, маркер обязательного поля — `required.css`, зона
- * нажатия мелкой кнопки — `target.css`, подпись и разделитель групп —
- * `group.css`), общее нескольких слоёв (панель у якоря — `anchored.css`,
- * полоса жеста — `swipe.css`, поверхность места панелей — `place.css`,
- * модальный слой — `modal.css`) и шкалы блоков в их файлах. Облик — цвет,
- * рамки, скругления, тени, виды и движение — рисует тема. Чистый CSS — без
- * препроцессора и без Tailwind: тема берёт файл как есть, своим сборщиком, и в
- * её CSS база входит целиком.
+/* ─── The shared layer of themes ─────────────────────────────
+ * What the parts of soldy need in any theme, not the look of one: a reset of
+ * the library's nodes (`reset.css`), the writing-direction sign
+ * (`direction.css`), the fading of a disabled part (`disabled.css`) and the
+ * structure of the parts — layout and mechanics (`components/`), whose numbers
+ * are variables with defaults: the shared scales (`caption.css`, the marker of
+ * a required field — `required.css`, the tap zone of a small button —
+ * `target.css`, the label and the separator of groups — `group.css`), what
+ * several layers share (a panel at its anchor — `anchored.css`, the swipe
+ * strip — `swipe.css`, the surface of the place in panels — `place.css`, the
+ * modal layer — `modal.css`) and the scales of blocks in their files. The look
+ * — color, borders, radii, shadows, views and motion — is the theme's. Plain
+ * CSS, with no preprocessor and no Tailwind: a theme takes the file as is, with
+ * its own bundler, and the whole of this layer goes into its CSS.
  *
- * Правила базы — в слое `so`: имя слоя у документа общее, как имя класса, и
- * потому с префиксом. Сброс — подслой `so.reset`, нижний: правила слоя вне его
- * подслоёв сильнее любого подслоя, и остальные правила базы перекрывают сброс,
- * не споря с ним специфичностью. Правила темы вне слоёв перекрывают всю базу.
+ * The rules live in the layer `so`: a layer name is shared by the whole
+ * document, like a class name, and so it carries the prefix. Each part is a
+ * sublayer of its own — `so.<file>` — and the statement below declares their
+ * order before any rule: a sublayer named later wins over an earlier one
+ * whatever the specificity, and a rule of one part never overrides a rule of
+ * another by its weight or by its place in the file. The order stays the same
+ * however a theme splits this layer into files and in whatever order an
+ * application loads them (`AGENTS.md` of the package, «Слои»). The reset is the
+ * first sublayer: every other rule of this layer overrides it. The rules of a
+ * theme in its own later layer, or outside layers, override this whole layer.
  *
- * Тема подключает базу импортом по имени пакета: `@import
- * '@soldy-ui/theme-base';` — слой `so` встаёт там, где его импортировали.
- * Тема на Tailwind кладёт базу в его слой `base`, на место preflight
- * (`@import '@soldy-ui/theme-base' layer(base);`, так делает oren): порядок
- * против утилит Tailwind приложения тот же, что у preflight. Порядок слоёв у
- * приложения, которое подключает базу само, — README пакета.
+ * The order of the parts: the shared mechanics and scales first, then a part
+ * before the parts that hold it and set its nodes. The clear square and the
+ * header buttons of a window take the scale padding off a button with the same
+ * weight, the paging buttons and the title of Calendar, the buttons of
+ * DateInput and DatePicker, the arrows of Pagination and the close button of a
+ * toast take its padding and height — so all of them stand after
+ * `button.css`; the modal layer stands right before the window for that
+ * reason, not among the shared scales. Calendar sets its month and year picker
+ * — a Popover with a ListBox inside — over the rules of those two, so it and
+ * DatePicker, which holds it, stand after Popover and ListBox.
  *
- * Части внутри слоя — в том порядке, в каком их стили подключает тема oren:
- * правила разных блоков с одной специфичностью спорят порядком. Модальный
- * слой стоит перед окном, а не с общими шкалами: его кнопки шапки снимают поле
- * размера Button той же специфичностью, и он обязан быть ниже `button.css`.
- * Так же снимают шкалу Button кнопки листания Calendar и Scroller, кнопки
- * DateInput и DatePicker, стрелки Pagination и крестик тоста — их файлы ниже
- * него по порядку темы. */
+ * A theme takes this layer by the name of the package: `@import
+ * '@soldy-ui/theme-base';` — the layer `so` stands where it was imported. A
+ * theme on Tailwind puts it into Tailwind's layer `base`, in place of
+ * preflight (`@import '@soldy-ui/theme-base' layer(base);`, as oren does): its
+ * order against the utilities of the application's Tailwind is the one of
+ * preflight. The layer order of an application that loads this layer itself —
+ * the README of the package. */
 
-@layer so.reset;
+@layer so.reset, so.direction, so.disabled, so.caption, so.required, so.target, so.group,
+	so.anchored, so.swipe, so.place, so.icon, so.button, so.check-box, so.accordion, so.date-input,
+	so.modal, so.dialog, so.drag-and-drop, so.drawer, so.input, so.label, so.field, so.list-box,
+	so.menu, so.number-input, so.pagination, so.popover, so.calendar, so.date-picker,
+	so.progress-linear, so.progress-spinner, so.radio-group, so.rating, so.scroller, so.select,
+	so.skeleton, so.slider, so.switch, so.table, so.tabs, so.tags, so.textarea, so.toasts,
+	so.tooltip;
 
 @import './reset.css' layer(so.reset);
-@import './direction.css' layer(so);
-@import './disabled.css' layer(so);
-@import './caption.css' layer(so);
-@import './required.css' layer(so);
-@import './target.css' layer(so);
-@import './group.css' layer(so);
-@import './anchored.css' layer(so);
-@import './swipe.css' layer(so);
-@import './place.css' layer(so);
-@import './components/button.css' layer(so);
-@import './components/check-box.css' layer(so);
-@import './components/accordion.css' layer(so);
-@import './components/calendar.css' layer(so);
-@import './components/date-input.css' layer(so);
-@import './components/date-picker.css' layer(so);
-@import './modal.css' layer(so);
-@import './components/dialog.css' layer(so);
-@import './components/drag-and-drop.css' layer(so);
-@import './components/drawer.css' layer(so);
-@import './components/icon.css' layer(so);
-@import './components/input.css' layer(so);
-@import './components/label.css' layer(so);
-@import './components/field.css' layer(so);
-@import './components/list-box.css' layer(so);
-@import './components/menu.css' layer(so);
-@import './components/number-input.css' layer(so);
-@import './components/pagination.css' layer(so);
-@import './components/popover.css' layer(so);
-@import './components/progress-linear.css' layer(so);
-@import './components/progress-spinner.css' layer(so);
-@import './components/radio-group.css' layer(so);
-@import './components/rating.css' layer(so);
-@import './components/scroller.css' layer(so);
-@import './components/select.css' layer(so);
-@import './components/skeleton.css' layer(so);
-@import './components/slider.css' layer(so);
-@import './components/switch.css' layer(so);
-@import './components/table.css' layer(so);
-@import './components/tabs.css' layer(so);
-@import './components/tags.css' layer(so);
-@import './components/textarea.css' layer(so);
-@import './components/toasts.css' layer(so);
-@import './components/tooltip.css' layer(so);
+@import './direction.css' layer(so.direction);
+@import './disabled.css' layer(so.disabled);
+@import './caption.css' layer(so.caption);
+@import './required.css' layer(so.required);
+@import './target.css' layer(so.target);
+@import './group.css' layer(so.group);
+@import './anchored.css' layer(so.anchored);
+@import './swipe.css' layer(so.swipe);
+@import './place.css' layer(so.place);
+@import './components/icon.css' layer(so.icon);
+@import './components/button.css' layer(so.button);
+@import './components/check-box.css' layer(so.check-box);
+@import './components/accordion.css' layer(so.accordion);
+@import './components/date-input.css' layer(so.date-input);
+@import './modal.css' layer(so.modal);
+@import './components/dialog.css' layer(so.dialog);
+@import './components/drag-and-drop.css' layer(so.drag-and-drop);
+@import './components/drawer.css' layer(so.drawer);
+@import './components/input.css' layer(so.input);
+@import './components/label.css' layer(so.label);
+@import './components/field.css' layer(so.field);
+@import './components/list-box.css' layer(so.list-box);
+@import './components/menu.css' layer(so.menu);
+@import './components/number-input.css' layer(so.number-input);
+@import './components/pagination.css' layer(so.pagination);
+@import './components/popover.css' layer(so.popover);
+@import './components/calendar.css' layer(so.calendar);
+@import './components/date-picker.css' layer(so.date-picker);
+@import './components/progress-linear.css' layer(so.progress-linear);
+@import './components/progress-spinner.css' layer(so.progress-spinner);
+@import './components/radio-group.css' layer(so.radio-group);
+@import './components/rating.css' layer(so.rating);
+@import './components/scroller.css' layer(so.scroller);
+@import './components/select.css' layer(so.select);
+@import './components/skeleton.css' layer(so.skeleton);
+@import './components/slider.css' layer(so.slider);
+@import './components/switch.css' layer(so.switch);
+@import './components/table.css' layer(so.table);
+@import './components/tabs.css' layer(so.tabs);
+@import './components/tags.css' layer(so.tags);
+@import './components/textarea.css' layer(so.textarea);
+@import './components/toasts.css' layer(so.toasts);
+@import './components/tooltip.css' layer(so.tooltip);

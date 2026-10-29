@@ -129,11 +129,15 @@ the CSS of this package inside it:
 @import '@soldy-ui/theme-base';
 ```
 
-Its rules live in the cascade layer `so`, the reset in the sub-layer `so.reset`, so any rule of the
-theme outside a layer overrides them without fighting specificity. A theme built with Tailwind puts
-the package into Tailwind's `base` layer, where preflight used to be, so it stays below the
-application's utilities — and imports Tailwind in parts, without preflight, which would reset the
-whole page:
+Its rules live in the cascade layer `so`, each part of it in a sub-layer of its own named after its
+file — `so.reset` first, then `so.direction`, `so.button` and the rest — and the first line of the
+package declares their order before any rule. A later sub-layer wins over an earlier one whatever
+the specificity, so the order holds however the layer is cut into files: a theme that ships a
+stylesheet per component cuts its built sheet by these sub-layers, and an application may load the
+pieces in any order. Any rule of the theme in a later layer, or outside layers, overrides this
+package without fighting specificity. A theme built with Tailwind puts the package into
+Tailwind's `base` layer, where preflight used to be, so it stays below the application's
+utilities — and imports Tailwind in parts, without preflight, which would reset the whole page:
 
 ```css
 @layer theme, base, components, utilities;
@@ -324,8 +328,8 @@ A plugin whose data only your own look needs belongs to your theme, in the same 
 
 The checks of this package run on the built CSS of every theme in the
 [repository](https://github.com/youra-h/soldy-ui): a package in `packages/themes/` with a
-`vite.config.ts` that builds its stylesheet into one CSS file is picked up by
-`npm run test --workspace=@soldy-ui/theme-base` by itself. Outside the repository the same rules
+`vite.config.ts` that builds its stylesheet — the file `style` of its manifest names, with every
+rule of the theme — is picked up by `npm run test --workspace=@soldy-ui/theme-base` by itself. Outside the repository the same rules
 hold — each check is a rule of step 3 or 4:
 
 - `theme-reads` — every `--so-*` variable your stylesheet reads is your own or in the contract;

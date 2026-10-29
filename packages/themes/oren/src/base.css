@@ -1,25 +1,34 @@
-/* Tailwind — частями: тема и утилиты, без preflight. Preflight сбрасывает
- * все элементы документа, а тема не стилизует страницу (корневой `AGENTS.md`,
- * «Темы: у пакета темы свои инструкции»): то, на что части soldy в нём
- * опирались, даёт сброс узлов библиотеки из общего слоя тем
- * (`@soldy-ui/theme-base`, там же знак направления письма). База встаёт в
- * слой `base`, на место preflight: правила темы вне слоёв и утилиты
- * приложения перекрывают её в прежнем порядке. Порядок слоёв — прежний, как у
- * `@import 'tailwindcss'`.
+/* Tailwind in parts: the theme and the utilities, without preflight. Preflight
+ * resets every element of the document, and the theme does not style the page
+ * (root `AGENTS.md`, «Темы: у пакета темы свои инструкции»): what the parts of
+ * soldy relied on in it comes from the reset of the library's nodes of the
+ * shared layer of themes (`@soldy-ui/theme-base`, with the writing-direction
+ * sign). The layer order is the one of `@import 'tailwindcss'`.
  *
- * Поиск классов выключен — `source(none)` у импорта утилит. Стилям
- * компонентов он не нужен — `@apply` разворачивает утилиту на месте, — а по
- * текстам пакета (типам, документации, тестам) сканер выпускал в dist
- * глобальные классы вроде `.ring` и `.rounded`, и в разметке приложения они
- * получали стили темы. Утилита, нужная в dist отдельным классом, объявляется
- * явно: `@source inline(…)`. Сторожа — `__tests__/tailwind-scan.spec.ts` и
- * `sealed.spec.ts` общего слоя (`packages/themes/base/__tests__/`). */
+ * Every rule of the theme is in a layer, and the place of each layer is the
+ * same in the whole sheet and in the stylesheets of components (`AGENTS.md` of
+ * the package, «Слои: лист целиком и по компонентам»). The shared layer goes
+ * into `base`, in place of preflight, each of its parts in its own sublayer
+ * (`base.so.<part>`). The theme goes into `components`: tokens and schemes in
+ * `components.so.tokens`, each part in `components.so.<part>` (`index.scss`).
+ * So the utilities of the application's Tailwind, and any CSS of the
+ * application outside layers, override the theme without fighting its
+ * specificity.
+ *
+ * The search for classes is off — `source(none)` on the import of the
+ * utilities. The styles of the components do not need it — `@apply` expands a
+ * utility in place, — and from the texts of the package (types, docs, tests)
+ * the scanner put global classes like `.ring` and `.rounded` into dist, and the
+ * markup of an application got the styles of the theme on them. A utility
+ * needed in dist as a class of its own is declared explicitly: `@source
+ * inline(…)`. Guards — `__tests__/tailwind-scan.spec.ts` and `sealed.spec.ts`
+ * of the shared layer (`packages/themes/base/__tests__/`). */
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 @import '@soldy-ui/theme-base' layer(base);
-@import './tokens.css';
-/* Строго после tokens.css: у `:root` и `[data-so-theme='oren-dark']`
- * одинаковая специфичность, побеждает тот, кто ниже. */
-@import './tokens-dark.css';
+@import './tokens.css' layer(components.so.tokens);
+/* Strictly after tokens.css: `:root` and `[data-so-theme='oren-dark']` have
+ * the same specificity, and the lower one wins. */
+@import './tokens-dark.css' layer(components.so.tokens);
 @import './utilities.css';

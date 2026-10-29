@@ -58,6 +58,42 @@ The values of the theme — `variant`, `view`, `shape`, `animation` — come wit
 declarations of `@soldy-ui/theme-oren/setup` reference them, so `variant="accent"` type-checks
 however the stylesheet is plugged in.
 
+### Only the components you use
+
+The stylesheet `@soldy-ui/theme-oren` carries every component. Next to it lies a stylesheet per
+component, `@soldy-ui/theme-oren/<component>.css`, named after the component in kebab case:
+`button.css`, `list-box.css`, `date-picker.css`. Each one carries the shared part — the tokens and
+the color schemes, the reset of the library's nodes, the size scales — and the parts of its
+component, the inner ones included: `select.css` brings Input, Tags and Button, because Select
+draws its field, its tags and its rows with them. Take the stylesheets of the components your pages
+use, wherever the whole stylesheet would go — with Angular CLI in `src/styles.css`:
+
+```css
+@import '@soldy-ui/theme-oren/button.css';
+@import '@soldy-ui/theme-oren/select.css';
+@import '@soldy-ui/theme-oren/dialog.css';
+```
+
+The bundler puts a file several stylesheets share once, and the order of the imports does not
+matter: the shared part declares the order of the cascade layers before any rule. A component you
+put into a slot of another — a Button in the footer of a Dialog — is yours to import as well.
+
+### Your CSS wins
+
+Every rule of the theme lives in a cascade layer: the structure in Tailwind's layer `base`, the
+look in `components`. Your CSS outside layers and the utilities of your own Tailwind override the
+theme without fighting its specificity — `<Button class="rounded-none">` takes the utility, and a
+rule `.so-button { … }` of your stylesheet needs no extra weight.
+
+A page reset outside layers wins the same way: `button { background-color: transparent }` of a
+reset or of Tailwind 3 preflight takes the fill off every Button. Import such a reset into a layer
+of its own before the theme — a layer named first is the weakest:
+
+```css
+@import 'modern-normalize' layer(reset);
+@import '@soldy-ui/theme-oren';
+```
+
 The dark scheme is switched on with an attribute on the root element:
 
 ```html
