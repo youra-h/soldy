@@ -1,0 +1,24 @@
+{
+  "name": "soldy-install-nuxt",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "nuxt typecheck",
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/theme-oren": "*",
+    "@soldy-ui/vue": "*",
+    "nuxt": "^4.6.3",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vue-tsc": "^3.3.13"
+  }
+}

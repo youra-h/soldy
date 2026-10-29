@@ -1,0 +1,25 @@
+{
+  "name": "soldy-install-solid-start",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/solid": "*",
+    "@soldy-ui/theme-oren": "*",
+    "@solidjs/start": "^2.0.0",
+    "nitro": "^3.0.260610-beta",
+    "solid-js": "^1.9.14",
+    "vite": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "typescript": "~7.0.2"
+  }
+}

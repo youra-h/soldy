@@ -272,6 +272,7 @@ tools/
   eslint/           local ESLint rule (soldy/no-explicit-any) and tests for the lint blocks
   vite/             shared Vite library build config for the packages
   published-imports/  check that built packages declare every package they import
+  install-smoke/    built packages installed into a clean project of every framework, run in Chromium
   agent-flow/       ClickUp ↔ Claude Code task pipeline
 docs/               architecture overview
 ```

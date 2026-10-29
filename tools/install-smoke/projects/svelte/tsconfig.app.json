@@ -1,0 +1,24 @@
+{
+  // The starter extends `@tsconfig/svelte/tsconfig.json`; its options (5.0) are written out
+  // here: the repository parses every tsconfig in it (`source-paths.spec.ts` of
+  // `@soldy-ui/setup`), and a package to extend is installed only in the run's copy
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "module": "esnext",
+    "types": ["svelte", "vite/client"],
+    "allowArbitraryExtensions": true,
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "moduleDetection": "force"
+  },
+  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
+}

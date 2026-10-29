@@ -1,0 +1,22 @@
+{
+  "name": "soldy-install-svelte",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "svelte-check --tsconfig ./tsconfig.app.json --fail-on-warnings && tsc -p tsconfig.node.json",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/svelte": "*",
+    "@soldy-ui/theme-oren": "*",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "^24.19.2",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5"
+  }
+}
