@@ -38,7 +38,7 @@ import { serve } from './serve.mjs'
  * behind.
  *
  * The result is `results/soak-<framework>.json`, of a replay —
- * `results/soak-replay-<framework>.json`; the summary goes to the log.
+ * `results/soak-replay-<framework>-<a>-<b>.json`; the summary goes to the log.
  */
 const { values } = parseArgs({
 	options: {
@@ -404,7 +404,10 @@ async function replay(fw) {
 
 	await browser.close()
 	Object.assign(result, { before, end: after })
-	fs.writeFileSync(path.join(out, `soak-replay-${fw}.json`), JSON.stringify(result, null, '\t'))
+	fs.writeFileSync(
+		path.join(out, `soak-replay-${fw}-${from}-${to}.json`),
+		JSON.stringify(result, null, '\t'),
+	)
 
 	const heap = slope(result.after.slice(WARM).map((m) => m.heap))
 	const grown = Object.fromEntries(COUNTERS.map(([key]) => [key, after[key] - before[key]]))
