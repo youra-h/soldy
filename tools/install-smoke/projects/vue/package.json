@@ -1,0 +1,24 @@
+{
+  "name": "soldy-install-vue",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "vue-tsc -b",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/theme-oren": "*",
+    "@soldy-ui/vue": "*",
+    "vue": "^3.5.44"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5",
+    "vue-tsc": "^3.3.13"
+  }
+}

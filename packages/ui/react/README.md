@@ -149,6 +149,30 @@ useIcons(material)
 useTheme(oren)
 ```
 
+## Server Components
+
+The components are Client Components: every module of the package that needs React opens with
+`'use client'`, so a Server Component — a page of the Next.js App Router — imports them as they
+are, without wrappers. The entry of the package is not a client module, so the types and the
+helpers without React import into a Server Component too.
+
+A Server Component gets each component as a reference, without its properties, so it writes the
+parts by their flat names; a Client Component writes either:
+
+```tsx
+// app/page.tsx — a Server Component
+import { Tabs, TabsItem } from '@soldy-ui/react'
+
+export default function Page() {
+  return (
+    <Tabs>
+      <TabsItem value="a" text="First" />
+      <TabsItem value="b" text="Second" />
+    </Tabs>
+  )
+}
+```
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — the component set and what each
