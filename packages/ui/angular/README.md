@@ -540,7 +540,7 @@ theme:
 @import '@soldy-ui/theme-oren/date-picker.css';
 ```
 
-The same page then loads 205 kB of CSS, 903 kB in all, within the budget (the theme's README,
+The same page then loads 205 kB of CSS, 882 kB in all, within the budget (the theme's README,
 [Only the components you use](https://github.com/youra-h/soldy-ui/tree/main/packages/themes/oren#only-the-components-you-use)).
 
 ## Documentation
