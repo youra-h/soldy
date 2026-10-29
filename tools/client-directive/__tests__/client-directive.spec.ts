@@ -7,6 +7,8 @@ import {
 	findClientModules,
 	hasClientDirective,
 	importsOfModule,
+	importsWithParts,
+	isPartsModule,
 	isReactSpecifier,
 	reachesReact,
 	reexportsOnly,
@@ -109,6 +111,106 @@ describe('модуль из одних импортов и экспортов с
 	})
 })
 
+describe('модуль частей вешает на владельца части и больше ничего не исполняет', () => {
+	/** Imports of a module of parts as the bundle writes them, `withParts` among them. */
+	const imports = [
+		'import { withParts } from "@soldy-ui/setup";',
+		'import { Tabs as Tabs$1 } from "./Tabs.js";',
+		'import { TabsItem } from "./item/Item.js";',
+		'import { memo } from "./memo.js";',
+	].join('\n')
+
+	it.each([
+		[
+			'исходная форма',
+			[
+				"import { withParts } from '@soldy-ui/setup'",
+				"import { Tabs as TabsComponent } from './Tabs'",
+				"import { TabsItem } from './item'",
+				"import { TabsContent } from './content'",
+				"export * from './item'",
+				"export * from './content'",
+				'export const Tabs = withParts(TabsComponent, { Item: TabsItem, Content: TabsContent })',
+			].join('\n'),
+		],
+		[
+			'форма бандла',
+			[
+				'import { TabsItem } from "./item/Item.js";',
+				'import { Tabs as Tabs$1 } from "./Tabs.js";',
+				'import { TabsContent } from "./content/Content.js";',
+				'import { withParts } from "@soldy-ui/setup";',
+				'//#region src/components/tabs/index.ts',
+				'var Tabs = withParts(Tabs$1, {',
+				'\tItem: TabsItem,',
+				'\tContent: TabsContent',
+				'});',
+				'//#endregion',
+				'export { Tabs, TabsContent, TabsItem };',
+			].join('\n'),
+		],
+		[
+			'переименованный импорт',
+			[
+				'import { withParts as withParts$1 } from "@soldy-ui/setup";',
+				'import { List as List$1 } from "./List.js";',
+				'import { Item } from "./Item.js";',
+				'var List = withParts$1(List$1, { Item });',
+				'export { List, Item };',
+			].join('\n'),
+		],
+	])('%s — модуль частей', (_title, text) => {
+		expect(isPartsModule(text)).toBe(true)
+	})
+
+	it.each([
+		[
+			'withParts из относительного модуля',
+			[
+				'import { withParts } from "./parts.js";',
+				'import { Tabs as Tabs$1 } from "./Tabs.js";',
+				'import { TabsItem } from "./item/Item.js";',
+				'var Tabs = withParts(Tabs$1, { Item: TabsItem });',
+				'export { Tabs };',
+			].join('\n'),
+		],
+		[
+			'withParts без импорта',
+			[
+				'import { Tabs as Tabs$1 } from "./Tabs.js";',
+				'import { TabsItem } from "./item/Item.js";',
+				'var Tabs = withParts(Tabs$1, { Item: TabsItem });',
+				'export { Tabs };',
+			].join('\n'),
+		],
+		[
+			'Object.assign вместо withParts',
+			`${imports}\nvar Tabs = Object.assign(Tabs$1, { Item: TabsItem });\nexport { Tabs };`,
+		],
+		[
+			'вызов в аргументе владельца',
+			`${imports}\nvar Tabs = withParts(memo(Tabs$1), { Item: TabsItem });\nexport { Tabs };`,
+		],
+		[
+			'вызов в аргументе части',
+			`${imports}\nvar Tabs = withParts(Tabs$1, { Item: memo(TabsItem) });\nexport { Tabs };`,
+		],
+		[
+			'лишняя инструкция рядом',
+			`${imports}\nvar Tabs = withParts(Tabs$1, { Item: TabsItem });\nTabs.displayName = "Tabs";\nexport { Tabs };`,
+		],
+		['частей нет вовсе', `${imports}\nexport { Tabs$1 as Tabs, TabsItem };`],
+	])('%s — не модуль частей', (_title, text) => {
+		expect(isPartsModule(text)).toBe(false)
+	})
+
+	it('импорт withParts — из @soldy-ui/setup, под любым именем', () => {
+		expect(importsWithParts('import { withParts as parts } from "@soldy-ui/setup";')).toBe(true)
+		expect(importsWithParts('import { withParts } from "./parts.js";')).toBe(false)
+		expect(importsWithParts('import { useIcons } from "@soldy-ui/setup";')).toBe(false)
+	})
+})
+
 describe('импорты модуля сборки — по тексту', () => {
 	it('относительный путь — модуль сборки от папки модуля, остальное — пакеты', () => {
 		const module: TBuiltModule = {
@@ -168,8 +270,10 @@ describe('плагин сборки', () => {
 		const modules = await buildFixture()
 		const marked = [...modules].filter(([, code]) => hasClientDirective(code))
 
+		// `list.js` only hangs a part on its owner, so a server module; `menu.js`
+		// calls a function of a client module next to `withParts`, so a client one
 		expect(marked.map(([file]) => file).sort()).toEqual(
-			['button.js', 'context.js', 'hooks.js', 'item.js', 'list.js'].sort(),
+			['boundary.js', 'button.js', 'context.js', 'hooks.js', 'item.js', 'menu.js'].sort(),
 		)
 		// The directive opens the module, ahead of its imports, and only once:
 		// the bundle keeps the one `context.ts` writes itself
