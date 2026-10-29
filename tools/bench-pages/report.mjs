@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { slope } from './measure.mjs'
 
 /**
  * Таблицы журнала из итога прогона (`results/<фреймворк>.json`, его пишет
@@ -35,24 +36,6 @@ const COUNTERS = [
 	['nodes', 'узлы'],
 	['listeners', 'слушатели'],
 ]
-
-function slope(points) {
-	const n = points.length
-
-	if (n < 2) return 0
-
-	const mx = (n - 1) / 2
-	const my = points.reduce((sum, y) => sum + y, 0) / n
-	let num = 0
-	let den = 0
-
-	points.forEach((y, x) => {
-		num += (x - mx) * (y - my)
-		den += (x - mx) ** 2
-	})
-
-	return num / den
-}
 
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]
 const round = (value, digits = 1) => Math.round(value * 10 ** digits) / 10 ** digits

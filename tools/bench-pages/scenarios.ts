@@ -7,7 +7,8 @@
  * actions it made. Events are sent from the page script, with the full pointer
  * chain (`pointerdown` … `click`): plugins listen to both the press and the
  * click. Typing is `insertText`, the way the browser inserts it (`beforeinput`
- * and `input`).
+ * and `input`). Every user action goes through `action`: a decider, if set, is
+ * asked before it, an observer, if set, hears of it after.
  */
 export type TScenario = (scope: HTMLElement, act: number) => Promise<number>
 
@@ -19,16 +20,77 @@ export type TScenario = (scope: HTMLElement, act: number) => Promise<number>
  */
 export type TStepObserver = (label: string) => Promise<void>
 
+/**
+ * What to do with a user action: `do` it, `skip` it, or `stop` — do it and
+ * end the scenario at once, before the frames after it: the scenario throws
+ * `TScenarioStopped`, and its caller takes the page down in the middle of the
+ * action.
+ */
+export type TStepDecision = 'do' | 'skip' | 'stop'
+
+/**
+ * Decider of the scenario's steps: asked before every user action with its
+ * label, and the scenario waits for the answer. The soak session (`soak.mjs`)
+ * decides at random; the other runs have no decider, and every action is done.
+ */
+export type TStepDecider = (label: string) => Promise<TStepDecision>
+
+/** The scenario its decider stopped right after the action `label`. */
+export class TScenarioStopped extends Error {
+	readonly label: string
+
+	constructor(label: string) {
+		super(`[bench-pages] сценарий остановлен: ${label}`)
+		this.label = label
+	}
+}
+
 let observer: TStepObserver | undefined
+let decider: TStepDecider | undefined
 
 /** Set or clear the step observer. */
 export function observeSteps(next: TStepObserver | undefined): void {
 	observer = next
 }
 
+/** Set or clear the step decider. */
+export function decideSteps(next: TStepDecider | undefined): void {
+	decider = next
+}
+
 /** End of a user action: the observer gets its label. */
 export async function step(label: string): Promise<void> {
 	await observer?.(label)
+}
+
+/** Nothing to wait for after an action. */
+function atOnce(): Promise<void> {
+	return Promise.resolve()
+}
+
+/**
+ * A user action: the decider has its say (without one the action is done),
+ * `run` sends the input, `after` waits for what it set going — two frames
+ * unless told otherwise — and the observer gets the label. Returns the actions
+ * made: 1, or 0 if skipped.
+ */
+export async function action(
+	label: string,
+	run: () => void,
+	after: () => Promise<void> = frames,
+): Promise<number> {
+	const decision = decider ? await decider(label) : 'do'
+
+	if (decision === 'skip') return 0
+
+	run()
+
+	if (decision === 'stop') throw new TScenarioStopped(label)
+
+	await after()
+	await step(label)
+
+	return 1
 }
 
 /**
@@ -81,16 +143,14 @@ export function pointer(element: Element, type: string, at = 0.5): void {
 export async function press(element: Element | null | undefined, at = 0.5): Promise<number> {
 	if (!(element instanceof HTMLElement)) return 0
 
-	pointer(element, 'pointerdown', at)
-	pointer(element, 'mousedown', at)
-	element.focus({ preventScroll: true })
-	pointer(element, 'pointerup', at)
-	pointer(element, 'mouseup', at)
-	element.click()
-	await frames()
-	await step(`press ${describe(element)}`)
-
-	return 1
+	return action(`press ${describe(element)}`, () => {
+		pointer(element, 'pointerdown', at)
+		pointer(element, 'mousedown', at)
+		element.focus({ preventScroll: true })
+		pointer(element, 'pointerup', at)
+		pointer(element, 'mouseup', at)
+		element.click()
+	})
 }
 
 /** A key on the node: `keydown` and `keyup`. */
@@ -99,12 +159,10 @@ export async function key(element: Element | null | undefined, name: string): Pr
 
 	const init: KeyboardEventInit = { key: name, bubbles: true, cancelable: true, composed: true }
 
-	element.dispatchEvent(new KeyboardEvent('keydown', init))
-	element.dispatchEvent(new KeyboardEvent('keyup', init))
-	await frames()
-	await step(`key ${name} ${describe(element)}`)
-
-	return 1
+	return action(`key ${name} ${describe(element)}`, () => {
+		element.dispatchEvent(new KeyboardEvent('keydown', init))
+		element.dispatchEvent(new KeyboardEvent('keyup', init))
+	})
 }
 
 /**
@@ -122,13 +180,17 @@ export function escape(panel?: HTMLElement | null): Promise<number> {
 export async function type(element: Element | null | undefined, text: string): Promise<number> {
 	if (!(element instanceof HTMLElement)) return 0
 
-	element.focus({ preventScroll: true })
-	document.execCommand('insertText', false, text)
-	await frames()
-	element.blur()
-	await step(`type "${text}" ${describe(element)}`)
-
-	return 1
+	return action(
+		`type "${text}" ${describe(element)}`,
+		() => {
+			element.focus({ preventScroll: true })
+			document.execCommand('insertText', false, text)
+		},
+		async () => {
+			await frames()
+			element.blur()
+		},
+	)
 }
 
 /** The first `act` nodes by the selector — one per copy. */
@@ -292,26 +354,39 @@ export const SCENARIOS: Record<string, TScenario> = {
 		let done = 0
 
 		// Hover waits for the open delay (400 ms), on the first copy only; the
-		// focus opens at once, on every copy
+		// focus opens at once, on every copy. Hover and leave are one action,
+		// focus and blur too
 		const hovered = triggers[0]
 
 		if (hovered) {
-			pointer(hovered, 'pointerenter')
-			await wait(450)
-			await frames()
-			await step(`hover ${describe(hovered)}`)
-			pointer(hovered, 'pointerleave')
-			await step(`leave ${describe(hovered)}`)
-			done += 1
+			const label = describe(hovered)
+			const entered = await action(
+				`hover ${label}`,
+				() => pointer(hovered, 'pointerenter'),
+				async () => {
+					await wait(450)
+					await frames()
+				},
+			)
+
+			if (entered) {
+				await action(`leave ${label}`, () => pointer(hovered, 'pointerleave'), atOnce)
+				done += 1
+			}
 		}
 
 		for (const trigger of triggers) {
-			trigger.focus({ preventScroll: true })
-			await frames(3)
-			await step(`focus ${describe(trigger)}`)
-			trigger.blur()
-			await step(`blur ${describe(trigger)}`)
-			done += 1
+			const label = describe(trigger)
+			const focused = await action(
+				`focus ${label}`,
+				() => trigger.focus({ preventScroll: true }),
+				() => frames(3),
+			)
+
+			if (focused) {
+				await action(`blur ${label}`, () => trigger.blur(), atOnce)
+				done += 1
+			}
 		}
 
 		await frames()
@@ -355,12 +430,11 @@ export const SCENARIOS: Record<string, TScenario> = {
 	},
 	scroller: each('.so-scroller', async (copy) => {
 		const viewport = copy.querySelector('.so-scroller__viewport')
+		const scrolled = await action('scroll so-scroller__viewport', () =>
+			viewport?.scrollBy({ left: 200 }),
+		)
 
-		viewport?.scrollBy({ left: 200 })
-		await frames()
-		await step('scroll so-scroller__viewport')
-
-		return (await press(copy.querySelector('.so-scroller__prev'))) + 1
+		return scrolled + (await press(copy.querySelector('.so-scroller__prev')))
 	}),
 	'list-box': each('.so-list-box', async (copy) => {
 		const options = copy.querySelectorAll('[role="option"]')
@@ -411,13 +485,25 @@ export const SCENARIOS: Record<string, TScenario> = {
 
 			if (!scroller || scroller === document.documentElement) continue
 
-			scroller.scrollTop = scroller.scrollHeight
-			await frames(3)
-			await step(`scroll end ${describe(scroller)}`)
-			scroller.scrollTop = 0
-			await frames(3)
-			await step(`scroll start ${describe(scroller)}`)
-			done += 1
+			// To the end and back to the start is one action
+			const target = scroller
+			const label = describe(target)
+			const ended = await action(
+				`scroll end ${label}`,
+				() => {
+					target.scrollTop = target.scrollHeight
+				},
+				() => frames(3),
+			)
+			const started = await action(
+				`scroll start ${label}`,
+				() => {
+					target.scrollTop = 0
+				},
+				() => frames(3),
+			)
+
+			if (ended || started) done += 1
 		}
 
 		return done

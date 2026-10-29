@@ -1,8 +1,8 @@
-import { chromium } from 'playwright'
 import { build } from 'vite'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
+import { open, slope, warmup } from './measure.mjs'
 import { serve } from './serve.mjs'
 
 /**
@@ -40,7 +40,7 @@ import { serve } from './serve.mjs'
  * event listeners (the `Performance.getMetrics` counters — nodes and listeners
  * someone holds count even when detached) and live core instances —
  * components (`TComponent`) and event buses (`TEventEmitter`) — via
- * `Runtime.queryObjects`.
+ * `Runtime.queryObjects` (`measure.mjs`, shared with the soak session).
  *
  * The result is `results/<framework>.json`; `report.mjs` builds the journal
  * tables from it.
@@ -75,79 +75,8 @@ const out = path.resolve(import.meta.dirname, 'results')
 
 fs.mkdirSync(out, { recursive: true })
 
-/** Наклон прямой по точкам — рост за цикл, методом наименьших квадратов. */
-function slope(points) {
-	const n = points.length
-
-	if (n < 2) return 0
-
-	const mx = (n - 1) / 2
-	const my = points.reduce((sum, y) => sum + y, 0) / n
-	let num = 0
-	let den = 0
-
-	points.forEach((y, x) => {
-		num += (x - mx) * (y - my)
-		den += (x - mx) ** 2
-	})
-
-	return num / den
-}
-
 async function measureFramework(fw) {
-	const browser = await chromium.launch()
-	const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } })
-	const errors = []
-
-	page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
-	page.on('console', (m) => {
-		if (m.type() === 'error') errors.push(`console.error: ${m.text().slice(0, 300)}`)
-	})
-	await page.goto(base + '?fw=' + fw)
-	await page.waitForFunction(() => 'bench' in window, null, { timeout: 120_000 })
-
-	const cdp = await page.context().newCDPSession(page)
-
-	await cdp.send('Performance.enable')
-
-	/** Живые объекты с прототипом из `bench.prototypes` — и его наследники. */
-	async function alive(name) {
-		const group = 'bench-count'
-		const { result } = await cdp.send('Runtime.evaluate', {
-			expression: `bench.prototypes.${name}`,
-			objectGroup: group,
-		})
-		const { objects } = await cdp.send('Runtime.queryObjects', {
-			prototypeObjectId: result.objectId,
-			objectGroup: group,
-		})
-		const { result: length } = await cdp.send('Runtime.callFunctionOn', {
-			objectId: objects.objectId,
-			functionDeclaration: 'function () { return this.length }',
-			returnByValue: true,
-		})
-
-		await cdp.send('Runtime.releaseObjectGroup', { objectGroup: group })
-
-		return length.value
-	}
-
-	async function measure() {
-		await cdp.send('HeapProfiler.collectGarbage')
-		await cdp.send('HeapProfiler.collectGarbage')
-
-		const { metrics } = await cdp.send('Performance.getMetrics')
-		const metric = (name) => metrics.find((m) => m.name === name)?.value ?? NaN
-
-		return {
-			heap: metric('JSHeapUsedSize'),
-			nodes: metric('Nodes'),
-			listeners: metric('JSEventListeners'),
-			components: await alive('component'),
-			emitters: await alive('emitter'),
-		}
-	}
-
+	const { browser, page, errors, measure, settled } = await open(base, fw)
 	const evaluate = (fn, arg) => page.evaluate(fn, arg)
 	const all = await evaluate(() => bench.pages)
 	const pages = values.pages ? values.pages.split(',') : [...all, 'all', 'empty']
@@ -169,14 +98,7 @@ async function measureFramework(fw) {
 
 	result.start = start
 
-	/** Замер после паузы: таймеры приложения, которые держат снятое, отработали. */
-	async function settled() {
-		await page.waitForTimeout(SETTLE)
-
-		return measure()
-	}
-
-	/** Страница циклами: веса, замеры после снятия и осевшие — после разогрева и в конце. */
+	/** A page in cycles: weights, measurements after unmounting, settled ones after the warm-up and at the end. */
 	async function cyclesOf(id) {
 		const cycles = []
 		let before = await measure()
@@ -196,12 +118,12 @@ async function measureFramework(fw) {
 			before = after
 
 			if (cycle === WARM - 1) {
-				base = await settled()
+				base = await settled(SETTLE)
 				before = base
 			}
 		}
 
-		result.pages[id] = { cycles, base, end: await settled(), errors: errors.length }
+		result.pages[id] = { cycles, base, end: await settled(SETTLE), errors: errors.length }
 		console.log(fw, id, summary(result.pages[id]))
 	}
 
@@ -213,21 +135,14 @@ async function measureFramework(fw) {
 	// Warming only the run's own pages is not enough: `all` holds a single copy
 	// of each component per cycle and kept warming up through its own measured
 	// cycles (~33 KB/cycle with every counter in place)
-	const warmup = [...all, ...pages.filter((id) => !all.includes(id))]
 	const warmStart = performance.now()
 
-	for (const id of warmup) {
-		await evaluate(([p, n]) => bench.mount(p, n), [id, N])
-		await evaluate(([p, act]) => bench.scenario(p, act), [id, ACT])
-		await evaluate(() => bench.locale())
-		await evaluate(() => bench.unmount())
-	}
-
+	await warmup(page, [...all, ...pages.filter((id) => !all.includes(id))], N, ACT)
 	console.log(fw, 'прогрев', `${Math.round((performance.now() - warmStart) / 1000)} с`)
 
 	for (const id of pages) await cyclesOf(id)
 
-	// Обход: все страницы подряд, кругами, — что копится от смены компонентов
+	// The tour: every page in turn, in rounds — what builds up from changing components
 	if (!values.pages) {
 		const rounds = []
 
@@ -262,7 +177,7 @@ async function measureFramework(fw) {
 	return result
 }
 
-/** Строка журнала прогона: вес первой страницы и рост за циклы после разогрева — осевший. */
+/** The run's log line: the first page's weight and the settled growth over the cycles after the warm-up. */
 function summary({ cycles, base, end: last }) {
 	const measured = cycles.slice(WARM)
 	const kb = (x) => Math.round(x / 1024)

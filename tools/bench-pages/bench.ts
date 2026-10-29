@@ -15,7 +15,13 @@ import {
 import '@soldy-ui/theme-oren'
 import oren from '@soldy-ui/theme-oren/setup'
 import '../../packages/playground/vue/browser/page.css'
-import { observeSteps, SCENARIOS } from './scenarios'
+import {
+	decideSteps,
+	observeSteps,
+	SCENARIOS,
+	TScenarioStopped,
+	type TStepDecision,
+} from './scenarios'
 
 declare global {
 	interface Window {
@@ -28,8 +34,8 @@ declare global {
  * The measurement page (`window.bench`): the preview host of the framework
  * from `?fw=` mounts a component's page — N copies in one root
  * (`TPreviewMount.count`) — a scenario acts on it, and the page is taken down.
- * The runner (`run.mjs`) measures over the DevTools protocol; here is only
- * what the app does.
+ * The runners (`run.mjs`, the soak session `soak.mjs`) measure over the
+ * DevTools protocol; here is only what the app does.
  *
  * The hosts are the developer stand's (`packages/playground/vue/src/hosts/`):
  * all six frameworks have the same previews with the same data, so the pages
@@ -197,6 +203,119 @@ async function locale(): Promise<void> {
 
 /** Prototypes whose live objects the runner counts with `Runtime.queryObjects`. */
 const prototypes = { component: TComponent.prototype, emitter: TEventEmitter.prototype }
+
+/** An integer hash: the murmur3 finalizer. */
+function mix(value: number): number {
+	let hash = value | 0
+
+	hash = Math.imul(hash ^ (hash >>> 16), 0x85ebca6b)
+	hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35)
+
+	return (hash ^ (hash >>> 16)) >>> 0
+}
+
+/**
+ * A seeded generator, numbers in [0, 1): mulberry32 started from a hash of the
+ * seed and the number, so the same pair gives the same sequence, and
+ * neighbouring numbers do not repeat each other a step apart.
+ */
+function generator(seed: number, index: number): () => number {
+	let state = mix(mix(seed) ^ index)
+
+	return () => {
+		state = (state + 0x6d2b79f5) | 0
+
+		let t = Math.imul(state ^ (state >>> 15), state | 1)
+
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+	}
+}
+
+/** What a soak transition is drawn from: the seed, its number, the pages, the most copies and acted copies. */
+type TTransitionDraw = {
+	seed: number
+	index: number
+	pages: readonly string[]
+	copies: number
+	act: number
+}
+
+/**
+ * A transition of the soak session: the page, its copies, the copies the
+ * scenario acted on, the decisions before its user actions in order — the
+ * action's label, after `skip`, `locale` or `stop` unless it was simply done —
+ * and the action the page was taken down in the middle of (`null` — the
+ * scenario ran to its end).
+ */
+type TTransition = {
+	page: string
+	copies: number
+	act: number
+	steps: string[]
+	stopped: string | null
+}
+
+/**
+ * Odds of the decisions before a user action of a soak transition; the rest
+ * is `do`. `locale` switches the page's language there and back and then does
+ * the action: the switch lands on whatever the scenario left open.
+ */
+const odds = { skip: 0.2, locale: 0.05, stop: 0.02 }
+
+/** The decision a draw from [0, 1) falls on. */
+function decide(draw: number): TStepDecision | 'locale' {
+	if (draw < odds.skip) return 'skip'
+	if (draw < odds.skip + odds.locale) return 'locale'
+	if (draw < odds.skip + odds.locale + odds.stop) return 'stop'
+
+	return 'do'
+}
+
+/**
+ * A transition of the soak session (`soak.mjs`): a page drawn from `pages`
+ * with 1 to `copies` copies (`all` — one of each), its scenario on 1 to `act`
+ * of them with a decision before every user action (`decideSteps`), and the
+ * page taken down — at once, without the frames after it, in the middle of
+ * the action that got `stop`. Everything is drawn from the generator of the
+ * seed and the number: the same pair is the same transition, and a path the
+ * session found replays alone.
+ */
+async function transition(draw: TTransitionDraw): Promise<TTransition> {
+	const random = generator(draw.seed, draw.index)
+	const pick = (count: number) => Math.floor(random() * count)
+	const page = draw.pages[pick(draw.pages.length)]
+	const count = page === 'all' ? 1 : 1 + pick(draw.copies)
+	const act = 1 + pick(Math.min(count, draw.act))
+	const steps: string[] = []
+	let stopped: string | null = null
+
+	try {
+		await mount(page, count)
+		decideSteps(async (label) => {
+			const decision = decide(random())
+
+			steps.push(decision === 'do' ? label : `${decision} ${label}`)
+
+			if (decision !== 'locale') return decision
+
+			await locale()
+
+			return 'do'
+		})
+		await scenario(page, act)
+	} catch (error) {
+		if (!(error instanceof TScenarioStopped)) throw error
+
+		stopped = error.label
+	} finally {
+		decideSteps(undefined)
+		await unmount()
+	}
+
+	return { page, copies: count, act, steps, stopped }
+}
 
 /** An event of the parity journal: the full core name and comparable arguments. */
 type TJournalEntry = { name: string; args: unknown[] }
@@ -586,6 +705,8 @@ const bench = {
 	locale,
 	frames,
 	prototypes,
+	transition,
+	odds,
 	record,
 	take,
 	settle,
