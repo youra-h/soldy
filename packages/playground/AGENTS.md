@@ -39,10 +39,11 @@ Playwright (конфиг `vitest.browser.config.ts`).
   около 18 тысяч за прогон, — и проброшенные на машину напрямую они исчерпали
   её порты: на середине прогона модули переставали грузиться. Прогон в Docker
   идёт на шрифтах образа и с задержкой до сервера в контейнере, и спеки,
-  завязанные на ширину текста и тайминг, там бывают красными при зелёном CI
-  (`narrow-window.spec.ts`, `anchored-swipe.spec.ts`, ореол `slider.spec.ts` —
-  задача 869fn0u0m). На Linux и macOS WebKit идёт рядом с Chromium, в
-  `test:layout`.
+  завязанные на ширину текста и тайминг, там бывают красными при зелёном CI —
+  например, `narrow-window.spec.ts`, `anchored-swipe.spec.ts`, протяжка в
+  `slider.spec.ts` и `table-sticky-head.spec.ts`, панель подменю в
+  `angular-host.spec.ts` (задача 869fn0u0m). На Linux и macOS WebKit идёт
+  рядом с Chromium, в `test:layout`.
 - Перед первым прогоном на машине: `npx playwright install chromium` (на Linux
   и macOS — `chromium webkit`). Ставится в `%LOCALAPPDATA%\ms-playwright`
   (Windows) или `~/.cache/ms-playwright`. После апгрейда Playwright ревизия

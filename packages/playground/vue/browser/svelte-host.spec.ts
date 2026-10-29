@@ -1,28 +1,30 @@
 /**
- * Хост Svelte на странице стенда в настоящем браузере — раскладка, которой
- * jsdom не считает.
+ * The Svelte host on the stand page in a real browser — the layout jsdom
+ * doesn't compute.
  *
- * Разметка Svelte написана по разметке Vue, и тема у них одна, но разойтись
- * они могут молча: пробел между соседними узлами Svelte оставляет текстом, а
- * Vue его вырезает, и вне флекса и сетки такой пробел сдвинул бы части.
- * Поэтому компонент Svelte стоит в ячейке так же, как компонент хоста Vue, —
- * то же место и тот же размер. У превью с обёрткой и содержимым так же стоят
- * и обёртка, и части: подпись вокруг контрола, элементы коллекций, теги,
- * поле Select с обёртками и стрелкой, панель активного таба, ручки и заливка
- * ползунка, звёзды оценки, кнопки и вьюпорт ленты, страницы и стрелки
- * пагинации, части и разделители поля даты, заголовок, кнопки листания,
- * подписи недели и дни календаря, — а у таблицы её окно, корень, заголовки и
- * строки; у окна Virtual — его ряд: список, Select и таблица.
+ * The Svelte markup follows the Vue markup, and the theme is the same, but the
+ * two can drift apart silently: Svelte keeps whitespace between neighbouring
+ * nodes as text, Vue strips it, and outside flex and grid such whitespace would
+ * shift the parts. So the Svelte component sits in its cell exactly like the
+ * component of the Vue host — the same place and size. In previews with a
+ * wrapper and content the wrapper and the parts sit the same too: the label
+ * around a control, collection items, tags, the Select field with its wrappers
+ * and arrow, the active tab's panel, the slider's thumbs and fill, the rating's
+ * stars, the scroller's buttons and viewport, the pagination's pages and
+ * arrows, the date field's parts and separators, the calendar's heading, paging
+ * buttons, weekday labels and days — and the table's window, root, headers and
+ * rows; for the Virtual window, its row: a list, a Select and a table.
  *
- * Оверлеи — дважды. В ячейке — то, что стоит на месте: корень поповера,
- * подсказки и меню с триггером, кнопки окна, выезжающей панели и тостов, поле
- * Select, поле DatePicker с кнопкой календаря. И открытые: панель поповера,
- * список Select с опциями, панель меню с группами, разделителями и пунктами,
- * окно и выезжающая панель с подложкой и частями, регион с тостом, панель
- * DatePicker с календарём — телепортированы в `body`, мимо сцены, — и панель
- * выбора месяца и года, которая остаётся в календаре; их рамки сверяются от
- * угла окна, когда доиграли переходы темы. Пробелы Svelte внутри панелей jsdom
- * не видит: раскладку считает только браузер.
+ * Overlays are checked twice. In the cell — what stays in place: the root of a
+ * popover, tooltip and menu with its trigger, the buttons of the dialog, the
+ * drawer and the toasts, the Select field, the DatePicker field with its
+ * calendar button. And opened: the popover panel, the Select list with options,
+ * the menu panel with groups, separators and items, the dialog and the drawer
+ * with backdrop and parts, the region with a toast, the DatePicker panel with
+ * its calendar — teleported to `body`, past the stage — and the month and year
+ * picker, which stays in the calendar; their boxes are compared from the
+ * window's corner once the theme's transitions have played. jsdom doesn't see
+ * Svelte's whitespace inside panels: only the browser computes layout.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -40,7 +42,9 @@ useTheme(oren)
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 300))
 
-/** Строка страницы по имени пропа. */
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+/** The page's row by the name of its prop. */
 const propRow = (name: string): HTMLElement => {
 	const found = [...document.querySelectorAll('.pg-prop')].find(
 		(node) => node.querySelector('.pg-prop__name')?.textContent?.trim() === name,
@@ -52,24 +56,23 @@ const propRow = (name: string): HTMLElement => {
 }
 
 /**
- * Рамки компонента и его нарисованных частей в первой колонке строки `row` —
- * от угла сцены колонки, в порядке документа: по ним видно и место каждой
- * части в ячейке, и её размер. Строка — `visible`, а у обёртки без
- * представления (Virtual) — её выключатель.
+ * Boxes of the component and its drawn parts in the first column of row `row`,
+ * from the corner of the column's stage, in document order: they show both the
+ * place of each part in the cell and its size. The row is `visible`, and for
+ * the wrapper without a view (Virtual) — its switch. They are taken once the
+ * layout holds still (`settledBoxesIn`).
  */
 async function boxesOf(framework: string, component: string, selector: string, row = 'visible') {
 	await router.push(`/${framework}/${component}`)
-	await settle()
 
-	return boxesIn(selector, row)
+	return settledBoxesIn(selector, row)
 }
 
 /**
- * Рамки компонента Svelte ждут рамок Vue: раскладку превью хост досчитывает
- * своими тактами — окно Virtual урезает ряд до видимых строк, когда измерит
- * себя, — и под нагрузкой CI паузы `settle` не хватало: Svelte отдавал все 105
- * строк ряда вместо 40. Ждётся совпадение, а не время; не сошлось за
- * `timeout` — тест падает с последним замером.
+ * The Svelte component's boxes wait for the Vue ones: the host finishes the
+ * preview's layout over its own ticks — the Virtual window trims the row to the
+ * visible lines once it has measured itself. The wait is for the match, not for
+ * a time; no match within `timeout` — the test fails with the last measurement.
  */
 async function expectSvelteLikeVue(component: string, selector: string, row = 'visible') {
 	const vue = await boxesOf('vue', component, selector, row)
@@ -82,7 +85,42 @@ async function expectSvelteLikeVue(component: string, selector: string, row = 'v
 	return vue
 }
 
-/** Рамки частей в сцене строки `row` текущей страницы — как у `boxesOf`. */
+/**
+ * Frames between two measurements that must agree for the layout to count as
+ * settled: the Virtual window measures itself a frame after its node is ready
+ * (`TElementPlugin`) and trims the row by the next one.
+ */
+const LAYOUT_FRAMES = 4
+
+/**
+ * Boxes of the parts once the layout holds still: a measurement equal to the
+ * one `LAYOUT_FRAMES` frames before. A pause by the clock doesn't promise that:
+ * in WebKit in CI the Vue reference was taken before the Virtual window trimmed
+ * its row — all 105 boxes instead of 40 — and the trimmed Svelte row never
+ * matched it.
+ */
+async function settledBoxesIn(selector: string, row: string) {
+	let last: ReturnType<typeof boxesIn> = []
+
+	await expect
+		.poll(
+			async () => {
+				for (let frame = 0; frame < LAYOUT_FRAMES; frame++) await nextFrame()
+
+				const previous = JSON.stringify(last)
+
+				last = boxesIn(selector, row)
+
+				return JSON.stringify(last) === previous
+			},
+			{ timeout: 5000 },
+		)
+		.toBe(true)
+
+	return last
+}
+
+/** Boxes of the parts in the stage of row `row` of the current page — as in `boxesOf`. */
 function boxesIn(selector: string, row: string) {
 	const stage = propRow(row).querySelector('.pg-col__stage')
 	const parts = [...(stage?.querySelectorAll(selector) ?? [])].filter(
@@ -107,13 +145,13 @@ function boxesIn(selector: string, row: string) {
 	})
 }
 
-/** Что открывает оверлей в сцене: узел, по которому кликнуть, и его имя для ошибки. */
+/** What opens an overlay in the stage: the node to click and its name for the error. */
 type TOpener = {
 	readonly name: string
 	readonly find: (stage: Element) => Element | undefined
 }
 
-/** Кнопка с текстом `text` — триггер поповера, кнопки окна, панели и тостов. */
+/** The button with text `text`: the popover trigger, the dialog, drawer and toasts buttons. */
 const button = (text: string): TOpener => ({
 	name: `кнопка «${text}»`,
 	find: (stage) =>
@@ -123,8 +161,8 @@ const button = (text: string): TOpener => ({
 })
 
 /**
- * Узел по селектору — стрелка Select: превью стенда — `editable`, и панель
- * там открывает клик по стрелке, а не по полю.
+ * A node by selector — the Select arrow: the stand's preview is `editable`, and
+ * there the panel is opened by a click on the arrow, not on the field.
  */
 const node = (selector: string): TOpener => ({
 	name: selector,
@@ -132,11 +170,11 @@ const node = (selector: string): TOpener => ({
 })
 
 /**
- * Рамки открытого оверлея и его частей — от угла окна, в порядке документа:
- * панель телепортирована в `body`, мимо сцены, и стоит у триггера или у края
- * окна. Открывает её клик по узлу `opener` в первой колонке строки
- * `visible`; рамки снимаются, когда доиграли переходы темы — проявление,
- * въезд, место у якоря.
+ * Boxes of an opened overlay and its parts, from the window's corner, in
+ * document order: the panel is teleported to `body`, past the stage, and stands
+ * at its trigger or at the window's edge. A click on the `opener` node in the
+ * first column of row `visible` opens it; the boxes are taken once the theme's
+ * transitions have played — fade-in, slide-in, the place at the anchor.
  */
 async function openedBoxesOf(
 	framework: string,
@@ -187,8 +225,8 @@ beforeEach(async () => {
 })
 
 describe('хост Svelte', () => {
-	// Селектор — компонент и его части: обёртка, элементы коллекций, панели,
-	// нарисованные части разметки
+	// The selector is the component and its parts: the wrapper, collection items,
+	// panels, drawn parts of the markup
 	it.each([
 		['button', '.so-button'],
 		['icon', '.so-icon'],
@@ -238,13 +276,14 @@ describe('хост Svelte', () => {
 			'calendar',
 			'.so-calendar, .so-calendar__month, .so-calendar__heading, .so-calendar__title, .so-calendar__prev, .so-calendar__next, .so-calendar svg, .so-calendar__grid, .so-calendar__weekday, .so-calendar-item, .so-calendar__filler',
 		],
-		// Панель DatePicker телепортирована мимо сцены: в ячейке — поле с кнопкой
+		// The DatePicker panel is teleported past the stage: the cell holds the field and its button
 		[
 			'date-picker',
 			'.so-date-picker, .so-date-picker__field, .so-date-input__segment, .so-date-input__literal, .so-date-input__trailing, .so-date-picker__trigger, .so-date-picker__trigger svg',
 		],
-		// Оверлеи в ячейке: корень с триггером, кнопки, которые открывают окно,
-		// панель и тосты, — панели и регион телепортированы мимо сцены
+		// Overlays in the cell: the root with its trigger, the buttons that open the
+		// dialog, the drawer and the toasts — panels and the region are teleported
+		// past the stage
 		['popover', '.so-popover, .so-popover .so-button'],
 		['tooltip', '.so-tooltip, .so-tooltip .so-button'],
 		['menu', '.so-menu, .so-menu .so-button'],
@@ -256,9 +295,9 @@ describe('хост Svelte', () => {
 	})
 
 	/**
-	 * Ряд окна: список с пределом строк, Select в колонке своей ширины и
-	 * таблица в обёртке. Строки `visible` у обёртки нет — она без
-	 * представления, — и сцена берётся из строки её выключателя.
+	 * The window's row: a list with a row limit, a Select in a column of its own
+	 * width and a table in a wrapper. The wrapper has no `visible` row — it has no
+	 * view — and the stage is taken from the row of its switch.
 	 */
 	it('virtual: ряд окна стоит в ячейке так же, как у Vue', async () => {
 		const selector =
@@ -268,17 +307,18 @@ describe('хост Svelte', () => {
 		expect(vue.length).toBeGreaterThan(3)
 	})
 
-	// Что открывает оверлей, его части и их число: панель, подложка,
-	// заголовок, тело, подвал, крестик и содержимое; у Select — панель,
-	// список и опции; у меню — панель, список, группы с подписями,
-	// разделители, пункты со строками и видимые обёртки строк (отметки,
-	// сочетания, стрелки); у тостов — регион с тостом (пустые регионы других
-	// колонок стоят у того же края), тост, плашка, значок, текст, кнопка
-	// «Отменить» и крестик; у календаря — панель выбора месяца и года, карточка,
-	// список с 12 месяцами и шапка с годом и стрелками; у DatePicker — панель,
-	// содержимое, календарь, месяц, заголовок с кнопкой, кнопки листания, сетка
-	// и подписи недели — без дней: их число зависит от месяца. Число частей —
-	// чтобы неоткрывшийся оверлей не сошёлся сам с собой
+	// What opens the overlay, its parts and their number: the panel, backdrop,
+	// title, body, footer, close button and content; for Select — the panel,
+	// list and options; for the menu — the panel, list, groups with labels,
+	// separators, items with rows and the visible wrappers of rows (marks,
+	// shortcuts, arrows); for toasts — the region with a toast (the empty regions
+	// of the other columns stand at the same edge), the toast, card, icon, text,
+	// the «Отменить» button and the close button; for the calendar — the month
+	// and year picker panel, card, the list of 12 months and the header with the
+	// year and arrows; for DatePicker — the panel, content, calendar, month,
+	// heading with its button, paging buttons, grid and weekday labels — no days:
+	// their number depends on the month. The number of parts keeps an overlay
+	// that didn't open from matching itself
 	it.each([
 		[
 			'popover',
@@ -316,7 +356,7 @@ describe('хост Svelte', () => {
 			'.so-toasts:has(.so-toasts-item), .so-toasts-item, .so-toasts-item__card, .so-toasts-item__icon, .so-toasts-item__text, .so-toasts-item__content > *, .so-toasts-item__close',
 			7,
 		],
-		// Панель выбора месяца и года — в календаре (`contained`), а не в `body`
+		// The month and year picker panel is in the calendar (`contained`), not in `body`
 		[
 			'calendar',
 			node('.so-calendar__title'),

@@ -829,7 +829,8 @@ describe('подсказка', () => {
 		 * Нажали мимо ручки: ручка прыгнула к указателю, но ни наведения, ни
 		 * нажатия у неё нет — подсказку держит `data-dragging`.
 		 */
-		it('ручку тянут — видна', async () => {
+		it('ручку тянут — видна', async (context) => {
+			context.skip(webkitUntil('869fn0u0m'))
 			const ctrl = await mount({ value: 50, tooltip: 'auto' })
 
 			await userEvent.hover(track(), { position: along(0.1) })
