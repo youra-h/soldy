@@ -28,14 +28,10 @@ export abstract class TComponentSurface<TInstance extends IEntity> extends TComp
 		>,
 		spec?: TRootSpec,
 	) {
-		super(ComponentInputNames, setup, spec)
+		super(ComponentInputNames, ComponentOutputNames, setup, spec)
 	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
-	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('soBundleCreate')
-	}
-	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('soPluginEvent')
-	}
+	declare readonly soBundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
+	declare readonly soPluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
 }

@@ -55,7 +55,10 @@ function payloadOf(args: readonly unknown[]): unknown {
 	return args.length > 1 ? args : args[0]
 }
 
-/** The output type of a descriptor event: the getter of the generated `T<Name>Surface`. */
+/**
+ * The output type of a descriptor event: the `declare` field of the generated
+ * `T<Name>Surface`. The getter behind it is the base's, on the class prototype.
+ */
 export type TOutputEmitter<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
 	TEvent extends keyof DescriptorAllEvents<TDescriptorFn>,

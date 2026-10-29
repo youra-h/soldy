@@ -121,7 +121,7 @@ export abstract class TToastsSurface<TInstance extends IEntity> extends TCompone
 		>,
 		spec?: TRootSpec,
 	) {
-		super(ToastsInputNames, setup, spec)
+		super(ToastsInputNames, ToastsOutputNames, setup, spec)
 	}
 	private readonly _rootRef = viewChild<unknown, ElementRef<Element>>('root', {
 		read: ElementRef,
@@ -147,166 +147,58 @@ export abstract class TToastsSurface<TInstance extends IEntity> extends TCompone
 	declare engine: TInputValue<typeof descriptor, 'engine'>
 	declare items: TInputValue<typeof descriptor, 'items'>
 	declare trackBy: TInputValue<typeof descriptor, 'trackBy'>
-	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('soBundleCreate')
-	}
-	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('soPluginEvent')
-	}
-	get soShow(): TOutputEmitter<typeof descriptor, 'show'> {
-		return this.createOutput('soShow')
-	}
-	get soHide(): TOutputEmitter<typeof descriptor, 'hide'> {
-		return this.createOutput('soHide')
-	}
-	get soShowBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
-		return this.createOutput('soShowBefore')
-	}
-	get soShowAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
-		return this.createOutput('soShowAfter')
-	}
-	get soHideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
-		return this.createOutput('soHideBefore')
-	}
-	get soHideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
-		return this.createOutput('soHideAfter')
-	}
-	get soReady(): TOutputEmitter<typeof descriptor, 'ready'> {
-		return this.createOutput('soReady')
-	}
-	get soChangeZIndex(): TOutputEmitter<typeof descriptor, 'change:zIndex'> {
-		return this.createOutput('soChangeZIndex')
-	}
-	get soElementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
-		return this.createOutput('soElementCreate')
-	}
-	get soElementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
-		return this.createOutput('soElementReady')
-	}
-	get soElementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
-		return this.createOutput('soElementRemoved')
-	}
-	get soReadyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
-		return this.createOutput('soReadyCreate')
-	}
-	get soBundlesCreate(): TOutputEmitter<typeof descriptor, 'bundles:create'> {
-		return this.createOutput('soBundlesCreate')
-	}
-	get soElementsCreate(): TOutputEmitter<typeof descriptor, 'elements:create'> {
-		return this.createOutput('soElementsCreate')
-	}
-	get soTimerCreate(): TOutputEmitter<typeof descriptor, 'timer:create'> {
-		return this.createOutput('soTimerCreate')
-	}
-	get soRemovalCreate(): TOutputEmitter<typeof descriptor, 'removal:create'> {
-		return this.createOutput('soRemovalCreate')
-	}
-	get soKeyboardCreate(): TOutputEmitter<typeof descriptor, 'keyboard:create'> {
-		return this.createOutput('soKeyboardCreate')
-	}
-	get soCascadeCreate(): TOutputEmitter<typeof descriptor, 'cascade:create'> {
-		return this.createOutput('soCascadeCreate')
-	}
-	get soLayoutCreate(): TOutputEmitter<typeof descriptor, 'layout:create'> {
-		return this.createOutput('soLayoutCreate')
-	}
-	get soNamesCreate(): TOutputEmitter<typeof descriptor, 'names:create'> {
-		return this.createOutput('soNamesCreate')
-	}
-	get soChangeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
-		return this.createOutput('soChangeRendered')
-	}
-	get soChangeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
-		return this.createOutput('soChangeVisible')
-	}
-	get soChangeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
-		return this.createOutput('soChangeTag')
-	}
-	get soChangeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
-		return this.createOutput('soChangeDirection')
-	}
-	get soChangeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
-		return this.createOutput('soChangeClasses')
-	}
-	get soChangeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
-		return this.createOutput('soChangeAria')
-	}
-	get soChangeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
-		return this.createOutput('soChangeDataset')
-	}
-	get soChangeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
-		return this.createOutput('soChangeAttrs')
-	}
-	get soChangeTarget(): TOutputEmitter<typeof descriptor, 'change:target'> {
-		return this.createOutput('soChangeTarget')
-	}
-	get soChangePlacement(): TOutputEmitter<typeof descriptor, 'change:placement'> {
-		return this.createOutput('soChangePlacement')
-	}
-	get soChangeLayout(): TOutputEmitter<typeof descriptor, 'change:layout'> {
-		return this.createOutput('soChangeLayout')
-	}
-	get soChangeMax(): TOutputEmitter<typeof descriptor, 'change:max'> {
-		return this.createOutput('soChangeMax')
-	}
-	get soChangeDuration(): TOutputEmitter<typeof descriptor, 'change:duration'> {
-		return this.createOutput('soChangeDuration')
-	}
-	get soLayoutChangeStyles(): TOutputEmitter<typeof descriptor, 'layout:change:styles'> {
-		return this.createOutput('soLayoutChangeStyles')
-	}
-	get soEngineCreate(): TOutputEmitter<typeof facade, 'engine:create'> {
-		return this.createOutput('soEngineCreate')
-	}
-	get soItemAddBefore(): TOutputEmitter<typeof facade, 'item:add:before'> {
-		return this.createOutput('soItemAddBefore')
-	}
-	get soItemAdded(): TOutputEmitter<typeof facade, 'item:added'> {
-		return this.createOutput('soItemAdded')
-	}
-	get soItemRemoveBefore(): TOutputEmitter<typeof facade, 'item:remove:before'> {
-		return this.createOutput('soItemRemoveBefore')
-	}
-	get soItemRemoved(): TOutputEmitter<typeof facade, 'item:removed'> {
-		return this.createOutput('soItemRemoved')
-	}
-	get soItemUpdateBefore(): TOutputEmitter<typeof facade, 'item:update:before'> {
-		return this.createOutput('soItemUpdateBefore')
-	}
-	get soItemUpdated(): TOutputEmitter<typeof facade, 'item:updated'> {
-		return this.createOutput('soItemUpdated')
-	}
-	get soItemMoveBefore(): TOutputEmitter<typeof facade, 'item:move:before'> {
-		return this.createOutput('soItemMoveBefore')
-	}
-	get soItemMoved(): TOutputEmitter<typeof facade, 'item:moved'> {
-		return this.createOutput('soItemMoved')
-	}
-	get soItemsClearBefore(): TOutputEmitter<typeof facade, 'items:clear:before'> {
-		return this.createOutput('soItemsClearBefore')
-	}
-	get soChangeCount(): TOutputEmitter<typeof facade, 'change:count'> {
-		return this.createOutput('soChangeCount')
-	}
-	get soReset(): TOutputEmitter<typeof facade, 'reset'> {
-		return this.createOutput('soReset')
-	}
-	get soItemsAdded(): TOutputEmitter<typeof facade, 'items:added'> {
-		return this.createOutput('soItemsAdded')
-	}
-	get soItemsRemoved(): TOutputEmitter<typeof facade, 'items:removed'> {
-		return this.createOutput('soItemsRemoved')
-	}
-	get soChangeShown(): TOutputEmitter<typeof facade, 'change:shown'> {
-		return this.createOutput('soChangeShown')
-	}
-	get soItemClose(): TOutputEmitter<typeof facade, 'item:close'> {
-		return this.createOutput('soItemClose')
-	}
-	get soChangeItems(): TOutputEmitter<typeof facade, 'change:items'> {
-		return this.createOutput('soChangeItems')
-	}
-	get soChangeTrackBy(): TOutputEmitter<typeof facade, 'change:trackBy'> {
-		return this.createOutput('soChangeTrackBy')
-	}
+	declare readonly soBundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
+	declare readonly soPluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
+	declare readonly soShow: TOutputEmitter<typeof descriptor, 'show'>
+	declare readonly soHide: TOutputEmitter<typeof descriptor, 'hide'>
+	declare readonly soShowBefore: TOutputEmitter<typeof descriptor, 'show:before'>
+	declare readonly soShowAfter: TOutputEmitter<typeof descriptor, 'show:after'>
+	declare readonly soHideBefore: TOutputEmitter<typeof descriptor, 'hide:before'>
+	declare readonly soHideAfter: TOutputEmitter<typeof descriptor, 'hide:after'>
+	declare readonly soReady: TOutputEmitter<typeof descriptor, 'ready'>
+	declare readonly soChangeZIndex: TOutputEmitter<typeof descriptor, 'change:zIndex'>
+	declare readonly soElementCreate: TOutputEmitter<typeof descriptor, 'element:create'>
+	declare readonly soElementReady: TOutputEmitter<typeof descriptor, 'element:ready'>
+	declare readonly soElementRemoved: TOutputEmitter<typeof descriptor, 'element:removed'>
+	declare readonly soReadyCreate: TOutputEmitter<typeof descriptor, 'ready:create'>
+	declare readonly soBundlesCreate: TOutputEmitter<typeof descriptor, 'bundles:create'>
+	declare readonly soElementsCreate: TOutputEmitter<typeof descriptor, 'elements:create'>
+	declare readonly soTimerCreate: TOutputEmitter<typeof descriptor, 'timer:create'>
+	declare readonly soRemovalCreate: TOutputEmitter<typeof descriptor, 'removal:create'>
+	declare readonly soKeyboardCreate: TOutputEmitter<typeof descriptor, 'keyboard:create'>
+	declare readonly soCascadeCreate: TOutputEmitter<typeof descriptor, 'cascade:create'>
+	declare readonly soLayoutCreate: TOutputEmitter<typeof descriptor, 'layout:create'>
+	declare readonly soNamesCreate: TOutputEmitter<typeof descriptor, 'names:create'>
+	declare readonly soChangeRendered: TOutputEmitter<typeof descriptor, 'change:rendered'>
+	declare readonly soChangeVisible: TOutputEmitter<typeof descriptor, 'change:visible'>
+	declare readonly soChangeTag: TOutputEmitter<typeof descriptor, 'change:tag'>
+	declare readonly soChangeDirection: TOutputEmitter<typeof descriptor, 'change:direction'>
+	declare readonly soChangeClasses: TOutputEmitter<typeof descriptor, 'change:classes'>
+	declare readonly soChangeAria: TOutputEmitter<typeof descriptor, 'change:aria'>
+	declare readonly soChangeDataset: TOutputEmitter<typeof descriptor, 'change:dataset'>
+	declare readonly soChangeAttrs: TOutputEmitter<typeof descriptor, 'change:attrs'>
+	declare readonly soChangeTarget: TOutputEmitter<typeof descriptor, 'change:target'>
+	declare readonly soChangePlacement: TOutputEmitter<typeof descriptor, 'change:placement'>
+	declare readonly soChangeLayout: TOutputEmitter<typeof descriptor, 'change:layout'>
+	declare readonly soChangeMax: TOutputEmitter<typeof descriptor, 'change:max'>
+	declare readonly soChangeDuration: TOutputEmitter<typeof descriptor, 'change:duration'>
+	declare readonly soLayoutChangeStyles: TOutputEmitter<typeof descriptor, 'layout:change:styles'>
+	declare readonly soEngineCreate: TOutputEmitter<typeof facade, 'engine:create'>
+	declare readonly soItemAddBefore: TOutputEmitter<typeof facade, 'item:add:before'>
+	declare readonly soItemAdded: TOutputEmitter<typeof facade, 'item:added'>
+	declare readonly soItemRemoveBefore: TOutputEmitter<typeof facade, 'item:remove:before'>
+	declare readonly soItemRemoved: TOutputEmitter<typeof facade, 'item:removed'>
+	declare readonly soItemUpdateBefore: TOutputEmitter<typeof facade, 'item:update:before'>
+	declare readonly soItemUpdated: TOutputEmitter<typeof facade, 'item:updated'>
+	declare readonly soItemMoveBefore: TOutputEmitter<typeof facade, 'item:move:before'>
+	declare readonly soItemMoved: TOutputEmitter<typeof facade, 'item:moved'>
+	declare readonly soItemsClearBefore: TOutputEmitter<typeof facade, 'items:clear:before'>
+	declare readonly soChangeCount: TOutputEmitter<typeof facade, 'change:count'>
+	declare readonly soReset: TOutputEmitter<typeof facade, 'reset'>
+	declare readonly soItemsAdded: TOutputEmitter<typeof facade, 'items:added'>
+	declare readonly soItemsRemoved: TOutputEmitter<typeof facade, 'items:removed'>
+	declare readonly soChangeShown: TOutputEmitter<typeof facade, 'change:shown'>
+	declare readonly soItemClose: TOutputEmitter<typeof facade, 'item:close'>
+	declare readonly soChangeItems: TOutputEmitter<typeof facade, 'change:items'>
+	declare readonly soChangeTrackBy: TOutputEmitter<typeof facade, 'change:trackBy'>
 }

@@ -1,31 +1,33 @@
 /**
- * Выходы в строгом шаблоне потребителя и их эмиттеры в рантайме.
+ * Outputs in the consumer's strict template and their emitters at runtime.
  *
- * Шаблоны хостов ниже написаны так, как их пишет приложение: привязка выхода
- * с `$event` в обработчик точного типа. Проверяет их «Типы — Angular» (`ngc`
- * со `strictTemplates`, как в новом приложении Angular). Строгая проверка
- * читает выход как свойство класса — `_t1["soActionPress"].subscribe(($event) => …)`.
- * Выход — геттер сгенерированного `T<Имя>Surface`, от которого наследуется
- * компонент, и тип даёт он; без него привязка падает с TS7053.
+ * The host templates below are written as an application writes them: an
+ * output binding with `$event` into a handler of the exact type. «Типы —
+ * Angular» checks them (`ngc` with `strictTemplates`, as in a new Angular
+ * application). The strict check reads an output as a class property —
+ * `_t1["soActionPress"].subscribe(($event) => …)`. The type comes from the
+ * `declare` field of the generated `T<Name>Surface` the component extends;
+ * without it the binding fails with TS7053.
  *
- * Выход с `any` шаблон пропустил бы молча, поэтому его тип сверен ещё и
- * `expectTypeOf` — его ловит тот же `ngc`. В рантайме обработчик получает
- * первый аргумент события ядра: его отдаёт `syncEvents`.
+ * An output typed `any` would pass the template silently, so its type is also
+ * checked by `expectTypeOf` — the same `ngc` catches it. At runtime the
+ * handler gets the core event's argument: `syncEvents` emits it.
  *
- * Эмиттер выхода заводит первое чтение — та же привязка в шаблоне или подписка
- * из кода. Выход, который никто не читал, эмиттера не заводит и после событий
- * ядра: на такой выход отдавать событие некому. Заведённый эмиттер —
- * собственное свойство экземпляра под именем выхода, по нему здесь и видно,
- * что заведено.
+ * The output's emitter is created by its first read — the same template
+ * binding or a subscription from code — through the getter the base defines on
+ * the class prototype, once per class. An output nobody read creates no
+ * emitter, even after core events: there is no one to give the event to. A
+ * created emitter is an own property of the instance under the output's name,
+ * and that is how the specs see what was created.
  *
- * Хост — на каждый компонент экспорта: выход типизирован, только если
- * компонент наследует свой `T<Имя>Surface`, а не `TComponentBase` напрямую.
+ * A host per exported component: an output is typed only if the component
+ * extends its own `T<Name>Surface`, not `TComponentBase` directly.
  *
- * Имя выхода — `so` и полное имя события ядра в camelCase, у каждого события:
- * на `(x)` у элемента Angular слушает и выход `x`, и событие DOM `x`, и
- * префикс говорит, чьё событие, у всей категории сразу. Сверка — по всем
- * дескрипторам экспорта setup, а с событиями DOM — по схеме компилятора
- * Angular.
+ * An output's name is `so` and the full name of the core event in camelCase,
+ * for every event: on `(x)` of an element Angular listens to both the output
+ * `x` and the DOM event `x`, and the prefix tells whose event it is, for the
+ * whole category at once. Checked against all exported descriptors of setup,
+ * and against DOM events — by the schema of the Angular compiler.
  */
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
@@ -89,8 +91,8 @@ class ComponentHost {
 }
 
 /**
- * Кадр: `TElementPlugin` объявляет узел через `requestAnimationFrame`, и
- * слушатели `TActionPlugin` появляются только после него.
+ * A frame: `TElementPlugin` announces the node through `requestAnimationFrame`,
+ * and the listeners of `TActionPlugin` appear only after it.
  */
 const frame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()))
 
@@ -138,8 +140,8 @@ describe('выход в строгом шаблоне · $event — первый
 })
 
 /**
- * Тип выхода — то, что получает `$event`. С `any` на его месте шаблоны выше
- * скомпилировались бы при любом обработчике.
+ * The output's type is what `$event` gets. With `any` in its place the
+ * templates above would compile with any handler.
  */
 describe('тип выхода · эмиттер первого аргумента события ядра', () => {
 	it('у события с аргументом — его тип', () => {
@@ -160,7 +162,7 @@ describe('тип выхода · эмиттер первого аргумент�
 	})
 })
 
-/** Хосты без привязанных выходов — по одному на компонент экспорта. */
+/** Hosts with no bound outputs — one per exported component. */
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
@@ -191,7 +193,7 @@ class BareComponentHost {
 	readonly component = viewChild.required(TComponentComponent)
 }
 
-/** Хост с одной привязкой выхода: остальные выходы Button никто не читает. */
+/** A host with one output binding: nobody reads the other outputs of Button. */
 @Component({
 	standalone: true,
 	imports: [TButtonComponent],
@@ -208,18 +210,23 @@ class BoundButtonHost {
 }
 
 /**
- * Выходы, чей эмиттер уже заведён: он — собственное свойство экземпляра под
- * именем выхода. Пока выход не читали, на этом имени только геттер прототипа.
+ * Outputs whose emitter is created: it is an own property of the instance
+ * under the output's name. Until the output is read, the name has only the
+ * getter on the prototype.
  */
 const created = (instance: object, outputs: readonly string[]): string[] =>
 	outputs.filter((output) => Object.hasOwn(instance, output))
+
+/** The getter of an output an object holds itself — the prototype of a class. */
+const getterOf = (holder: object, output: string): unknown =>
+	Object.getOwnPropertyDescriptor(holder, output)?.get
 
 describe('эмиттер выхода · заводит первое чтение', () => {
 	it('Button: без привязанных выходов эмиттеров нет и после событий ядра', async () => {
 		const fixture = TestBed.createComponent(BareButtonHost)
 
 		fixture.detectChanges()
-		// Кадр — узел объявлен: прошли `element:ready` и `ready`
+		// A frame — the node is announced: `element:ready` and `ready` have passed
 		await frame()
 
 		fixture.componentInstance.ctrl.visible = false
@@ -267,6 +274,30 @@ describe('эмиттер выхода · заводит первое чтени�
 		expect(view.soChangeVisible).toBe(emitter)
 	})
 
+	/**
+	 * The getters are the base's, on the prototype of the component's class:
+	 * the first instance defines them, and the next one neither replaces them
+	 * nor gets its own.
+	 */
+	it('геттер выхода — на прототипе класса, один на класс', () => {
+		const getters = (): unknown[] =>
+			ButtonOutputNames.map((output) => getterOf(TButtonComponent.prototype, output))
+		const first = TestBed.createComponent(BareButtonHost)
+
+		first.detectChanges()
+
+		const defined = getters()
+
+		expect(defined.filter((getter) => typeof getter !== 'function')).toEqual([])
+
+		const second = TestBed.createComponent(BareButtonHost)
+
+		second.detectChanges()
+
+		expect(getters().filter((getter, index) => getter !== defined[index])).toEqual([])
+		expect(created(second.componentInstance.button(), ButtonOutputNames)).toEqual([])
+	})
+
 	it('привязка в шаблоне заводит эмиттер только своему выходу', () => {
 		const fixture = TestBed.createComponent(BoundButtonHost)
 
@@ -281,8 +312,8 @@ describe('эмиттер выхода · заводит первое чтени�
 	})
 
 	/**
-	 * Приёмник событий стоит с `ngOnInit`, а эмиттер он ищет на каждое событие:
-	 * выход, прочитанный позже, получает события с этого момента.
+	 * The event sink is set in `ngOnInit`, and it looks the emitter up on every
+	 * event: an output read later gets the events from that moment on.
 	 */
 	it('подписка из кода после монтирования получает событие ядра', () => {
 		const fixture = TestBed.createComponent(BareComponentViewHost)
@@ -299,10 +330,10 @@ describe('эмиттер выхода · заводит первое чтени�
 	})
 
 	/**
-	 * Эмиттер, заведённый в контексте компонента, берёт его `DestroyRef`, и
-	 * `outputToObservable` завершается вместе с компонентом. Заведённый вне
-	 * контекста — первым чтением из кода, как здесь, — `DestroyRef` не знал бы,
-	 * и поток остался бы открытым.
+	 * An emitter created in the component's context takes its `DestroyRef`, and
+	 * `outputToObservable` completes with the component. Created outside the
+	 * context — by the first read from code, as here — it would not know the
+	 * `DestroyRef`, and the stream would stay open.
 	 */
 	it('выход, прочитанный после монтирования, завершается вместе с компонентом', () => {
 		const fixture = TestBed.createComponent(BareComponentViewHost)
@@ -323,10 +354,10 @@ describe('эмиттер выхода · заводит первое чтени�
 })
 
 /**
- * Экземпляр объявления в фикстуре: компонент TestBed строит сам, а директиву
- * ставит на элемент. Хоста-контейнера, на который директиву компонента без
- * корня пишет потребитель, TestBed не строит, а выходам всё равно, где она
- * стоит.
+ * An instance of a declaration in a fixture: TestBed builds a component
+ * itself and puts a directive on an element. The container host the consumer
+ * writes the directive of a rootless component on TestBed does not build, and
+ * the outputs do not care where it stands.
  */
 function mountDeclaration({ kind, type }: TDeclaration): {
 	readonly fixture: { detectChanges(): void }
@@ -344,14 +375,14 @@ function mountDeclaration({ kind, type }: TDeclaration): {
 }
 
 /**
- * Выходы объявляет декоратор `T<Имя>Surface`, а эмиттер заводит его же
- * геттер — оба из одного списка генератора. Здесь видно, что на каждый
- * объявленный выход геттер есть: Angular читает выход, только когда его
- * привязали, и выход без геттера упал бы лишь у того, кто его привяжет. У
- * компонентов без корня — директив — так же.
+ * The decorator of `T<Name>Surface` declares the outputs, and the base defines
+ * their getters from the generator's list of the same names. Here every
+ * declared output has a getter on the prototype of its class: Angular reads an
+ * output only when it is bound, and an output without a getter would fail only
+ * for whoever binds it. Rootless components — directives — the same.
  */
 describe('выходы компонентов экспорта · геттер на каждый выход', () => {
-	// Компоненты soldy — не ручным списком: новый попадёт под проверку сам
+	// The soldy components are not a hand-written list: a new one is checked by itself
 	const components = exportedDeclarations().filter(({ soldy }) => soldy)
 
 	it('компоненты найдены в экспорте', () => {
@@ -391,6 +422,12 @@ describe('выходы компонентов экспорта · геттер �
 
 			expect(created(instance, outputs)).toEqual([])
 
+			const prototype: object = Object.getPrototypeOf(instance)
+
+			expect(
+				outputs.filter((output) => typeof getterOf(prototype, output) !== 'function'),
+			).toEqual([])
+
 			outputs.forEach((output, index) => {
 				const emitter: unknown = Reflect.get(instance, output)
 
@@ -407,10 +444,11 @@ function isComponentDescriptor(value: unknown): value is IComponentDescriptor {
 }
 
 /**
- * Дескрипторы компонентов из экспорта `@soldy-ui/setup` — не ручным списком,
- * как в спеках setup: новый попадёт под проверку сам. Фабрика дескриптора —
- * `<Имя>Descriptor` с заглавной (`defineDescriptor` механики её строит, а не
- * отдаёт дескриптор); определения плагинов отсеиваются — у них нет `getProps`.
+ * Component descriptors from the export of `@soldy-ui/setup` — not a
+ * hand-written list, as in the setup specs: a new one is checked by itself. A
+ * descriptor factory is `<Name>Descriptor` with a capital (the mechanics'
+ * `defineDescriptor` builds it rather than returns a descriptor); plugin
+ * definitions drop out — they have no `getProps`.
  */
 function exportedDescriptors(): (readonly [name: string, descriptor: IComponentDescriptor])[] {
 	const entries: Record<string, unknown> = setup
@@ -427,7 +465,7 @@ function exportedDescriptors(): (readonly [name: string, descriptor: IComponentD
 	return result
 }
 
-/** События DOM, которые знает компилятор Angular, — по всем элементам его схемы. */
+/** DOM events the Angular compiler knows — over all elements of its schema. */
 function domEvents(): ReadonlySet<string> {
 	const schema = new DomElementSchemaRegistry()
 
@@ -436,7 +474,7 @@ function domEvents(): ReadonlySet<string> {
 	)
 }
 
-/** Части полного имени ядра с заглавной: `show:before` → `ShowBefore`. */
+/** The parts of the core's full name capitalized: `show:before` → `ShowBefore`. */
 const pascal = (event: string): string =>
 	event
 		.split(/[-:]/)
@@ -445,17 +483,18 @@ const pascal = (event: string): string =>
 		.join('')
 
 /**
- * На `(x)` у элемента Angular ставит и подписку на выход `x`, и слушатель
- * события DOM `x`: выходы делят шаблон с событиями DOM. Префикс `so` говорит,
- * чьё событие, и стоит у каждого выхода, а не у тех, что совпали бы с событием
- * DOM: `(soShow)` рядом с `(soShowBefore)`, `(soChangeValue)` и
- * `(soElementReady)` — одна схема на всю категорию.
+ * On `(x)` of an element Angular sets both a subscription to the output `x`
+ * and a listener of the DOM event `x`: outputs share the template with DOM
+ * events. The `so` prefix tells whose event it is and stands on every output,
+ * not only on those that would clash with a DOM event: `(soShow)` next to
+ * `(soShowBefore)`, `(soChangeValue)` and `(soElementReady)` — one scheme for
+ * the whole category.
  *
- * Перебираются дескрипторы, а не компоненты Angular: под проверку сразу
- * попадают и непортированные — Select с `close`, коллекции с `reset`. Имена
- * выходов — те же, что пишет кодоген (`useOutputs`), события DOM — из схемы
- * компилятора Angular. Сверка по точному имени: `addEventListener` различает
- * регистр.
+ * Descriptors are iterated, not Angular components: the unported ones are
+ * checked at once too — Select with `close`, collections with `reset`. The
+ * output names are those the codegen writes (`useOutputs`), the DOM events —
+ * from the schema of the Angular compiler. Compared by the exact name:
+ * `addEventListener` is case-sensitive.
  */
 describe('имя выхода · so и имя ядра в camelCase', () => {
 	const events = domEvents()
@@ -481,7 +520,7 @@ describe('имя выхода · so и имя ядра в camelCase', () => {
 		expect(wrong).toEqual([])
 	})
 
-	/** Так выходы кнопки видит шаблон потребителя: схема одна, и без префикса нет ни одного. */
+	/** The button's outputs as the consumer's template sees them: one scheme, none without the prefix. */
 	it('Button: событие из одного слова и составное — под одной схемой', () => {
 		const outputs = useOutputs(ButtonDescriptor()).map(([output]) => output)
 

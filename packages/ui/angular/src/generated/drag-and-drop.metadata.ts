@@ -33,20 +33,12 @@ export abstract class TDragAndDropSurface<TInstance extends IEntity> extends TCo
 		>,
 		spec?: TRootSpec,
 	) {
-		super(DragAndDropInputNames, setup, spec)
+		super(DragAndDropInputNames, DragAndDropOutputNames, setup, spec)
 	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
-	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('soBundleCreate')
-	}
-	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('soPluginEvent')
-	}
-	get soMoveBefore(): TOutputEmitter<typeof descriptor, 'move:before'> {
-		return this.createOutput('soMoveBefore')
-	}
-	get soMove(): TOutputEmitter<typeof descriptor, 'move'> {
-		return this.createOutput('soMove')
-	}
+	declare readonly soBundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
+	declare readonly soPluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
+	declare readonly soMoveBefore: TOutputEmitter<typeof descriptor, 'move:before'>
+	declare readonly soMove: TOutputEmitter<typeof descriptor, 'move'>
 }

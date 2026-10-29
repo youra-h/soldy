@@ -2,9 +2,12 @@
  * Codegen of the Angular surfaces: for the manifest of every component it
  * writes `generated/<name>.metadata.ts` — the input and output names and the
  * abstract directive `T<Name>Surface` the component extends. AOT needs literal
- * `inputs` and `outputs`, and the strict template — input fields and output
- * getters with types. AGENTS.md (Angular), «Angular-специфика» and «Генератор:
- * манифесты частей и фасад».
+ * `inputs` and `outputs`, and the strict template — input and output members
+ * with types. Both are `declare` fields: no code at runtime. The getter behind
+ * an output is the base's: it defines one per name of `<Name>OutputNames` on
+ * the class prototype, so a getter costs no generated code per output.
+ * AGENTS.md (Angular), «Angular-специфика» and «Генератор: манифесты частей и
+ * фасад».
  *
  * A component with facades has one surface for all descriptors: its own inputs
  * and outputs first, of the same name — from the first one. The type of an
@@ -34,13 +37,13 @@ function toPascalCase(str: string): string {
 	return str.replace(/(^\w|-\w)/g, (g) => g.replace('-', '').toUpperCase())
 }
 
-/** Имя, под которым дескриптор импортирует сгенерированный файл. */
+/** The name the generated file imports a descriptor under. */
 type TSource = 'descriptor' | 'facade' | 'ownerFacade'
 
 type TInput = readonly [input: string, boolean: boolean]
 type TOutput = readonly [output: string, event: string, source: TSource]
 
-/** По порядку, без повторов: первое вхождение главнее. */
+/** In order, without repeats: the first occurrence wins. */
 function unique<T>(values: readonly T[], key: (value: T) => string): T[] {
 	const seen = new Set<string>()
 
@@ -55,7 +58,7 @@ function unique<T>(values: readonly T[], key: (value: T) => string): T[] {
 	})
 }
 
-/** Тот же вид, что даёт `npm run format`: иначе CI видел бы дрейф там, где его нет. */
+/** The same layout as `npm run format` gives: otherwise CI would see drift where there is none. */
 async function format(content: string, filePath: string): Promise<string> {
 	const config = await prettier.resolveConfig(filePath, { editorconfig: true })
 
@@ -77,7 +80,7 @@ async function generate(): Promise<void> {
 			...(facade ? [['facade', facade] as const] : []),
 			...(ownerFacade ? [['ownerFacade', ownerFacade] as const] : []),
 		]
-		// Булев вход — тот, что булев у дескриптора, от которого взят вход
+		// An input is boolean when it is boolean at the descriptor it comes from
 		const inputs = unique<TInput>(
 			sources.flatMap(([, descriptor]) => {
 				const booleans = new Set(useBooleanInputs(descriptor))
@@ -97,8 +100,8 @@ async function generate(): Promise<void> {
 		const baseParams = [
 			'TInstance',
 			facade ? 'DescriptorInstance<typeof facade>' : 'unknown',
-			// Состояние — и входы плагинов: вход с триггером обмен держит в нём,
-			// как свойство инстанса (`id` у `TIdPlugin`)
+			// State holds plugin inputs too: the exchange keeps an input with a
+			// trigger there, as an instance property (`id` of `TIdPlugin`)
 			'DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>',
 			...(ownerFacade ? ['DescriptorInstance<typeof ownerFacade>'] : []),
 		].join(', ')
@@ -139,10 +142,10 @@ async function generate(): Promise<void> {
 			`@Directive({ inputs: [${declaredInputs.join(', ')}], outputs: [...${constName}OutputNames] })`,
 			`export abstract class T${constName}Surface<TInstance extends IEntity> extends TComponentBase<${baseParams}> {`,
 			`constructor(setup: TSetup<${baseParams}>, spec?: TRootSpec) {`,
-			`super(${constName}InputNames, setup, spec)`,
+			`super(${constName}InputNames, ${constName}OutputNames, setup, spec)`,
 			'}',
-			// Сигнальный запрос — полем: в методе компилятор роняет AOT (NG8110).
-			// `read` задан, иначе `nativeElement` был бы `any`
+			// A signal query is a field: in a method the compiler fails AOT (NG8110).
+			// `read` is set, otherwise `nativeElement` would be `any`
 			...refs.map(
 				(ref) =>
 					`private readonly _${ref}Ref = viewChild<unknown, ElementRef<Element>>(${JSON.stringify(ref)}, { read: ElementRef })`,
@@ -171,12 +174,10 @@ async function generate(): Promise<void> {
 				([input]) =>
 					`declare ${input}: TInputValue<typeof descriptor, ${JSON.stringify(input)}>`,
 			),
-			...outputs.map(([output, event, source]) =>
-				[
-					`get ${output}(): TOutputEmitter<typeof ${source}, ${JSON.stringify(event)}> {`,
-					`return this.createOutput(${JSON.stringify(output)})`,
-					'}',
-				].join('\n'),
+			// The type of an output for the strict template; its getter is the base's
+			...outputs.map(
+				([output, event, source]) =>
+					`declare readonly ${output}: TOutputEmitter<typeof ${source}, ${JSON.stringify(event)}>`,
 			),
 			'}',
 			'',
