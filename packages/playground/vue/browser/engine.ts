@@ -63,6 +63,15 @@ export const radioArrowsWrap = !webkit
 export const contextMenuKey = !webkit
 
 /**
+ * `:hover` comes back to the node under the pointer once its capture is
+ * released. Pointer Events 3 («Implicit release of pointer capture») has the
+ * browser fire the boundary events of the pointer's real position right after
+ * `pointerup`; WebKit fires them — `pointerover` and `pointerenter` reach that
+ * node — but keeps `:hover` on the capture target until the pointer moves.
+ */
+export const hoverAfterCapture = !webkit
+
+/**
  * Skipped in WebKit temporarily, until the named task: there the check fails
  * for a cause the task fixes. The call goes away with the fix.
  */

@@ -1,32 +1,40 @@
 /**
- * Общий слой тем без темы — таблица: страница только с CSS базы
- * (`@soldy-ui/theme-base`), без `@soldy-ui/theme-oren`.
+ * The shared theme layer without a theme — the table: a page with the base's
+ * CSS only (`@soldy-ui/theme-base`), without `@soldy-ui/theme-oren`.
  *
- * Структура Table — раскладка и механика — лежит в базе, а облик и движение в
- * теме (`packages/themes/base/AGENTS.md`, «Перенос структуры»). Без темы
- * таблица голая — без цвета, линий, вуалей и переходов, — но рабочая, и здесь
- * это проверяется тем, что видит пользователь, а не числами базы: таблица с
- * известными ширинами колонок — шириной в их сумму, а не во всю ширину места;
- * колонки шире места — окно прокручивает таблицу вбок, а с закреплённой шапкой
- * — нет, вбок прокручивает контейнер; закреплённая шапка стоит у верха окна
- * прокрутки, и строки, ушедшие под неё, не просвечивают и нажатий над ней не
- * ловят; ячейка, куда фокус ушёл после ↑, встаёт ниже шапки — и когда подписи
- * переносятся, а высоту шапки пишет плагин раскладки (его ставит `useTheme`
- * в `browser/setup.ts`, а CSS она не несёт). Спеки с темой держат базу под темой, и
- * потерянное ею правило тема могла бы закрыть своим, а сторожа CSS
- * (`themes/base/__tests__/`) раскладки не считают.
+ * Table's structure — layout and mechanics — lies in the base, the look and the
+ * motion in the theme (`packages/themes/base/AGENTS.md`, «Перенос структуры»).
+ * Without a theme the table is bare — no color, lines, veils or transitions, —
+ * but working, and here that is checked by what the user sees, not by the
+ * base's numbers: a table with known column widths is as wide as their sum, not
+ * as the whole place; columns wider than the place — the window scrolls the
+ * table sideways, and with a sticky head it doesn't — the container scrolls; the
+ * sticky head stands at the scroll window's top, and the rows gone under it
+ * neither show through nor catch the presses over it, at the rounded corners a
+ * theme gives the headers too, and the line the theme draws under the head stays
+ * visible; a cell focus went to after ↑ stands below the head — also when the
+ * labels wrap and the layout plugin writes the head's height (`useTheme` in
+ * `browser/setup.ts` installs it, and it carries no CSS). The specs with a theme
+ * hold the base under the theme, and the theme could cover a rule the base lost
+ * with its own, while the CSS guards (`themes/base/__tests__/`) don't compute
+ * the layout.
  *
- * Своей поверхности у таблицы нет: непрозрачный фон закреплённой шапки —
- * поверхность места (`--so-place-surface`), а её объявляет место. Здесь место —
- * карточка спека со своим фоном и тем же объявлением рядом, как у приложения.
+ * The table has no surface of its own: the opaque background of the sticky head
+ * is the surface of the place (`--so-place-surface`), and the place declares it.
+ * Here the place is the spec's card with its own background and the same
+ * declaration next to it, as in an app.
  *
- * Страница у файла спека своя (`isolate` прогона), и листа темы на ней нет —
- * это проверяет первый тест. Проверен поломкой: без нулевой ширины у таблицы
- * с `data-sized` (`components/table.css`) она встаёт во всю ширину места, без
- * прокрутки окна по `data-overflow` таблица выходит за окно, а окно стоит, без
- * `sticky` шапка уезжает со строками, без подложки цветом места или без подъёма
- * шапки над телом строки и чекбоксы проступают на снимке шапки, а без отступа
- * прокрутки к фокусу ячейка после ↑ встаёт под шапку.
+ * The spec file has a page of its own (the run's `isolate`), and there is no
+ * theme sheet on it — the first test checks that. Proven by breaking: without
+ * the zero width of a table with `data-sized` (`components/table.css`) it takes
+ * the place's full width, without the window's scroll by `data-overflow` the
+ * table goes past the window while the window stands, without `sticky` the head
+ * leaves with the rows, without the backing in the place's color or without the
+ * head's raise over the body the rows and checkboxes show through on the head's
+ * snapshot, without the squares under the headers the rows show at their
+ * rounded corners, a square without the line's inset covers the theme's line,
+ * and without the scroll margin to focus the cell after ↑ stands under the
+ * head.
  */
 
 import { describe, it, expect, afterAll, afterEach, beforeAll } from 'vitest'
@@ -39,10 +47,10 @@ import { Table } from '@soldy-ui/vue'
 
 import '@soldy-ui/theme-base'
 
-/** Допуск на субпиксельное округление координат, px. */
+/** Tolerance for subpixel rounding of coordinates, px. */
 const EPSILON = 1
 
-/** Фон места спека и поверхность места, которую оно объявляет рядом. */
+/** The background of the spec's place and the place's surface it declares next to it. */
 const PLACE = 'background: rgb(255 255 255); --so-place-surface: rgb(255 255 255)'
 
 const NAME: TTableColumnSource = { field: 'name', text: 'Имя', rowHeader: true }
@@ -50,8 +58,8 @@ const CITY: TTableColumnSource = { field: 'city', text: 'Город' }
 const AGE: TTableColumnSource = { field: 'age', text: 'Возраст', align: 'end' }
 
 /**
- * Подписи, которые переносятся: шапка выше строки шапки, и отступ прокрутки к
- * фокусу верен, только пока её высоту пишет плагин раскладки.
+ * Labels that wrap: the head is higher than the head row, and the scroll margin
+ * to focus is right only while the layout plugin writes its height.
  */
 const LONG: TTableColumnSource[] = [
 	{ ...NAME, text: 'Имя сотрудника полностью, как в паспорте' },
@@ -65,7 +73,7 @@ type TEngineOptions = {
 	grid?: boolean
 }
 
-/** Движок строк: `count` записей по кругу, колонки и режимы — из опций. */
+/** A row engine: `count` records in a cycle, the columns and modes from the options. */
 function engineOf(count = 40, options: TEngineOptions = {}): TTableCollection {
 	const records = Array.from({ length: count }, (_, index) => ({
 		id: index + 1,
@@ -84,7 +92,7 @@ function engineOf(count = 40, options: TEngineOptions = {}): TTableCollection {
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Разметка на странице и кадры: узлы плагины получают по `ready`, кадром. */
+/** The markup on the page and the frames: the plugins get the nodes by `ready`, a frame later. */
 async function show(content: () => VNode): Promise<void> {
 	render(
 		defineComponent({
@@ -98,7 +106,7 @@ async function show(content: () => VNode): Promise<void> {
 	await nextFrame()
 }
 
-/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+/** A node by its selector; without it the test fails here, not on reading a property. */
 function find(selector: string, root: ParentNode = document): HTMLElement {
 	const element = root.querySelector(selector)
 
@@ -111,16 +119,16 @@ const box = (element: Element) => element.getBoundingClientRect()
 
 const width = (element: Element) => box(element).width
 
-/** Таблица — её корень `table`, окно — узел вокруг неё. */
+/** The table is its `table` root, the window the node around it. */
 const table = () => find('table.so-table')
 const viewport = () => find('.so-table__viewport')
 const head = () => find('.so-table__head')
 
-/** Заголовки колонок и строки тела — по порядку. */
+/** The column headers and the body rows, in order. */
 const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-column')]
 const rows = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-row')]
 
-/** Таблица в контейнере прокрутки заданной высоты и ширины. */
+/** A table in a scroll container of the given height and width. */
 const scrollBox = (content: VNode, height = 240, boxWidth = 400): VNode =>
 	h(
 		'div',
@@ -131,11 +139,11 @@ const scrollBox = (content: VNode, height = 240, boxWidth = 400): VNode =>
 		[content],
 	)
 
-/** Таблица с закреплённой шапкой. */
+/** A table with a sticky head. */
 const sticky = (engine: TTableCollection): VNode =>
 	h(Table, { engine, stickyHead: true, aria_label: 'Строки' })
 
-/** Прокрутить контейнер так, чтобы верх строки встал вровень с низом шапки. */
+/** Scroll the container so that the row's top is level with the head's bottom. */
 async function rowUnderHead(scroller: HTMLElement, row: Element): Promise<void> {
 	scroller.scrollTop += box(row).top - box(head()).bottom
 	await nextFrame()
@@ -143,9 +151,9 @@ async function rowUnderHead(scroller: HTMLElement, row: Element): Promise<void> 
 }
 
 /**
- * Окно — не больше рамки прогона: окно больше неё браузер масштабирует, края на
- * снимке шапки сглаживаются, и снимки расходятся сами. Окно у файла одно — оно и
- * у остальных тестов.
+ * The window is no bigger than the run's frame: a bigger window the browser
+ * scales, the edges on the head's snapshot get smoothed, and the snapshots
+ * differ by themselves. The file has one window — the other tests get it too.
  */
 beforeAll(async () => {
 	await page.viewport(1000, 700)
@@ -166,8 +174,8 @@ describe('страница — только общий слой тем', () => {
 })
 
 /**
- * Ширины колонок раскладывает ядро, а место мерит плагин кадром позже
- * монтирования, поэтому раскладку тест ждёт опросом.
+ * The core lays out the column widths, and the plugin measures the place a frame
+ * after mounting, so the test polls for the layout.
  */
 describe('ширины колонок', () => {
 	it('известны у всех колонок — таблица шириной в их сумму, а не во всю ширину места', async () => {
@@ -271,7 +279,7 @@ describe('закреплённая шапка', () => {
 
 		if (!(field instanceof HTMLInputElement)) throw new Error('чекбокса строки нет')
 
-		// Середина поля чекбокса строки — посередине шапки
+		// The middle of the row checkbox's field in the middle of the head
 		const middle = (rect: DOMRect) => rect.top + rect.height / 2
 
 		scroller.scrollTop += middle(box(field)) - middle(box(head()))
@@ -287,13 +295,14 @@ describe('закреплённая шапка', () => {
 	})
 
 	/**
-	 * Что строки под шапкой не просвечивают, видно только в том, что браузер
-	 * нарисовал: снимок шапки, под которую ушли строки, — тот же, что без
-	 * прокрутки. Ячейки и чекбоксы тела — ярким цветом стилем спека: чекбокс
-	 * позиционирован, и шапку над ним держит только её подъём.
+	 * That the rows don't show through the head is seen only in what the browser
+	 * painted: the snapshot of the head with rows gone under it is the same as
+	 * without scrolling. The spec's style paints the body's cells and checkboxes
+	 * in bright colors: the checkbox is positioned, and only the head's raise holds
+	 * the head over it.
 	 */
 	describe('строки под шапкой не просвечивают', () => {
-		/** Прокрутки, на которых под шапку заходят строки и их чекбоксы. */
+		/** The scrolls at which the rows and their checkboxes go under the head. */
 		const SCROLLS = [23, 57, 97, 131]
 
 		const loud = document.createElement('style')
@@ -311,7 +320,7 @@ describe('закреплённая шапка', () => {
 			loud.remove()
 		})
 
-		/** Снимок узла — пиксели, как их нарисовал браузер. */
+		/** A node's snapshot — the pixels as the browser painted them. */
 		async function snapshot(element: Element): Promise<ImageData> {
 			const base64 = await page.screenshot({ element, save: false })
 			const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob()
@@ -326,7 +335,7 @@ describe('закреплённая шапка', () => {
 			return context.getImageData(0, 0, image.width, image.height)
 		}
 
-		/** Сколько пикселей двух снимков одного размера разошлось. */
+		/** How many pixels of two snapshots of one size differ. */
 		function mismatch(reference: ImageData, shot: ImageData): number {
 			let count = 0
 
@@ -365,13 +374,70 @@ describe('закреплённая шапка', () => {
 				).toBe(0)
 			}
 		})
+
+		/**
+		 * A theme rounds the headers' top corners and draws a line under the
+		 * sticky head in the head's background, as oren does; the spec's style
+		 * plays that theme. The row group's background doesn't reach under the
+		 * rounded corners, so the base lays a square of the place's surface under
+		 * each header, and the square stops short of the line by the thickness the
+		 * theme names (`--so-table-head-border`), or it would cover the line.
+		 */
+		it('скруглённые заголовки и линия темы под шапкой: у углов строки не проступают, линия видна', async () => {
+			const LINE = [0, 128, 0, 255]
+			const theme = document.createElement('style')
+
+			theme.textContent = [
+				'.so-test-scroll :is(.so-table-column, .so-table__select) { border-start-start-radius: 8px; border-start-end-radius: 8px; }',
+				'.so-test-scroll .so-table__head { --so-table-head-border: 2px; background-image: linear-gradient(rgb(0 128 0), rgb(0 128 0)); background-position: bottom; background-size: 100% 2px; background-repeat: no-repeat; }',
+			].join('\n')
+			document.head.append(theme)
+
+			try {
+				await show(() => scrollBox(sticky(engineOf(40, { mode: 'multiple' })), 320, 640))
+
+				const scroller = find('.so-test-scroll')
+				const reference = await snapshot(head())
+				const area = box(head())
+				const pixelAt = (shot: ImageData, x: number, y: number): number[] => {
+					const index = (y * shot.width + x) * 4
+
+					return [...shot.data.slice(index, index + 4)]
+				}
+
+				// The line under every header: the two bottom rows of the head
+				for (const cell of head().querySelectorAll('th')) {
+					const x = Math.round(box(cell).left - area.left + box(cell).width / 2)
+
+					for (const y of [reference.height - 1, reference.height - 2]) {
+						expect(pixelAt(reference, x, y), `линия под заголовком, ${x}:${y}`).toEqual(
+							LINE,
+						)
+					}
+				}
+
+				for (const top of SCROLLS) {
+					scroller.scrollTop = top
+					await nextFrame()
+					await nextFrame()
+
+					expect(
+						mismatch(reference, await snapshot(head())),
+						`прокрутка ${top}: пикселей шапки разошлось`,
+					).toBe(0)
+				}
+			} finally {
+				theme.remove()
+			}
+		})
 	})
 
 	/**
-	 * Фокус ниже шапки. Узел, на который ушёл фокус, браузер доводит до окна
-	 * прокрутки, а закреплённая шапка стоит внутри окна — и без отступа прокрутки
-	 * ячейка сетки после ↑ оставалась бы под ней. Отступ — высота шапки, которую
-	 * пишет плагин раскладки: подписи переносятся, и шапка бывает выше строки.
+	 * Focus below the head. The browser brings the node focus went to into the
+	 * scroll window, and the sticky head stands inside the window — without a
+	 * scroll margin a grid cell after ↑ would stay under it. The margin is the
+	 * head's height the layout plugin writes: labels wrap, and the head may be
+	 * higher than a row.
 	 */
 	describe('фокус ниже шапки', () => {
 		const LABELS = [
@@ -379,7 +445,7 @@ describe('закреплённая шапка', () => {
 			{ name: 'подписи в несколько строк', columns: LONG, tall: true },
 		]
 
-		/** Ячейка заголовка строки — по номеру строки тела с нуля. */
+		/** A row header cell — by the body row's number from zero. */
 		const cellOf = (index: number): HTMLElement => {
 			const cell = rows()[index]?.children[0]
 
@@ -401,7 +467,7 @@ describe('закреплённая шапка', () => {
 			await userEvent.click(cellOf(20))
 
 			expect(document.activeElement).toBe(cellOf(20))
-			// Строка выше — под шапкой
+			// The row above is under the head
 			expect(box(cellOf(19)).top).toBeLessThan(box(head()).bottom - EPSILON)
 
 			await userEvent.keyboard('{ArrowUp}')

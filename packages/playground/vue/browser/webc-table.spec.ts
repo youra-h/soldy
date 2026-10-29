@@ -1,15 +1,16 @@
 /**
- * Table и окно `<so-virtual>` Web Components в настоящем браузере.
+ * Table and the `<so-virtual>` window of Web Components in a real browser.
  *
- * Разметку, наборы ядра и данные, которые находят копии образцов, сторожат
- * `ui/webc/__tests__/table.spec.ts` и `virtual.spec.ts`. Здесь то, чего jsdom
- * не считает. Таблица Web Components стоит рядом с таблицей Vue, и тема даёт им
- * одни размеры: место под колонки плагин раскладки мерит по окну — элементу
- * таблицы `<div is="so-table">`, — и ядро раскладывает по нему колонки так же,
- * как у Vue. Окно `<so-virtual>` своей коробки не имеет, а таблица в нём рисует
- * только видимые строки: замер — настоящая прокрутка контейнера и шаг строк
- * темы. Разметку и окно таблицы Vue сторожат `table.spec.ts` и
- * `table-virtual.spec.ts` стенда.
+ * The markup, the core's sets and the data the copies of the samples find are
+ * guarded by `ui/webc/__tests__/table.spec.ts` and `virtual.spec.ts`. Here is
+ * what jsdom doesn't compute. The Web Components table stands next to the Vue
+ * table, and the theme gives them the same sizes: the layout plugin measures the
+ * place for the columns by the window — the table's element
+ * `<div is="so-table">`, — and the core lays the columns out by it as for Vue.
+ * The `<so-virtual>` window has no box of its own, and the table in it draws
+ * only the visible rows: the measure is a real scroll of the container and the
+ * theme's row step. The stand's `table.spec.ts` and `table-virtual.spec.ts`
+ * guard the markup and the window of the Vue table.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -22,17 +23,17 @@ import { TTableElement, TVirtualElement, type TTableElementProps } from '@soldy-
 
 import '@soldy-ui/theme-oren'
 
-/** Допуск на субпиксельное округление, px. */
+/** Tolerance for subpixel rounding, px. */
 const EPSILON = 1
 
-/** Несколько кадров: замер плагинов, перерисовка и узлы новых строк. */
+/** A few frames: the plugins' measures, the repaint and the new rows' nodes. */
 async function frames(count = 3): Promise<void> {
 	for (let index = 0; index < count; index++) {
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 	}
 }
 
-/** Узлы теста вне Vue — снимаются после каждого. */
+/** The test's nodes outside Vue — removed after each one. */
 const stages: HTMLElement[] = []
 
 beforeEach(() => {
@@ -44,7 +45,7 @@ afterEach(() => {
 	cleanup()
 })
 
-/** Узел по селектору; нет его — тест падает здесь. */
+/** A node by its selector; without it the test fails here. */
 function find(root: ParentNode, selector: string): HTMLElement {
 	const node = root.querySelector(selector)
 
@@ -53,7 +54,7 @@ function find(root: ParentNode, selector: string): HTMLElement {
 	return node
 }
 
-/** Узлы по селектору — HTML-элементы. */
+/** Nodes by a selector — HTML elements. */
 const all = (root: ParentNode, selector: string): HTMLElement[] =>
 	[...root.querySelectorAll(selector)].filter(
 		(node): node is HTMLElement => node instanceof HTMLElement,
@@ -63,7 +64,7 @@ function isTable(node: Element): node is TTableElementProps {
 	return node instanceof TTableElement
 }
 
-/** Таблица Web Components кодом: пропсы свойствами до вставки. */
+/** A Web Components table built by code: the props as properties before the insertion. */
 function createTable(props: Record<string, unknown>): TTableElementProps {
 	const el = document.createElement('div', { is: 'so-table' })
 
@@ -74,7 +75,7 @@ function createTable(props: Record<string, unknown>): TTableElementProps {
 	return el
 }
 
-/** Узел стенда вне Vue: блок со своим стилем на странице. */
+/** A stand node outside Vue: a block with its own style on the page. */
 function stage(style: string): HTMLElement {
 	const node = document.createElement('div')
 
@@ -96,7 +97,7 @@ const ITEMS = [
 	{ data: { id: 2, name: 'Борис', city: 'Казань', age: 41 } },
 ]
 
-/** Размер узла на странице. */
+/** A node's size on the page. */
 function size(node: Element) {
 	const { width, height } = node.getBoundingClientRect()
 
@@ -105,10 +106,10 @@ function size(node: Element) {
 
 describe('раскладка — как у Vue', () => {
 	/**
-	 * Колонки без своей ширины раскладывает ядро по месту окна. У Web Components
-	 * окно — сам элемент таблицы, и плагин раскладки находит его родителем
-	 * корня `table`: колонки делят ту же ширину, что у Vue, и таблица во всю
-	 * ширину места.
+	 * The core lays out the columns without a width of their own by the window's
+	 * place. In Web Components the window is the table's element itself, and the
+	 * layout plugin finds it as the parent of the `table` root: the columns share
+	 * the same width as in Vue, and the table is as wide as the place.
 	 */
 	it('окно, таблица, заголовки и ячейки — тех же размеров', async () => {
 		const BOX = 'width: 640px'
@@ -124,9 +125,24 @@ describe('раскладка — как у Vue', () => {
 		await nextTick()
 
 		stage(BOX).appendChild(createTable({ items: ITEMS, columns: COLUMNS, mode: 'multiple' }))
-		await frames()
 
 		const webc = stages[0]
+
+		// Both tables laid out: until the core's layout the theme decides the
+		// widths, and a few frames don't promise it under load
+		for (const root of [document.querySelector('.vue'), webc]) {
+			if (!root) throw new Error('no table place')
+
+			const table = find(root, 'table.so-table')
+
+			await expect
+				.poll(
+					() =>
+						table.dataset.sized === 'true' &&
+						Math.abs(table.getBoundingClientRect().width - 640) <= EPSILON,
+				)
+				.toBe(true)
+		}
 
 		for (const part of [
 			'.so-table__viewport',
@@ -155,7 +171,7 @@ describe('раскладка — как у Vue', () => {
 describe('окно <so-virtual>', () => {
 	const COUNT = 1000
 
-	/** Движок строк: `COUNT` записей, две колонки. */
+	/** A row engine: `COUNT` records, two columns. */
 	function engineOf(): TTableCollection {
 		const records: TTableRecord[] = Array.from({ length: COUNT }, (_, index) => ({
 			id: index + 1,
@@ -172,7 +188,7 @@ describe('окно <so-virtual>', () => {
 		return engine
 	}
 
-	/** Таблица в окне — в контейнере высотой 400 px с прокруткой. */
+	/** A table in the window — in a scrolling container 400 px high. */
 	async function mount(engine: TTableCollection): Promise<HTMLElement> {
 		const scroller = stage('height: 400px; overflow: auto')
 		const virtual = document.createElement('so-virtual')
@@ -186,17 +202,17 @@ describe('окно <so-virtual>', () => {
 		return scroller
 	}
 
-	/** Строки тела в документе. */
+	/** The body's rows in the document. */
 	const rows = (): HTMLElement[] => all(document, '.so-table-row')
 
-	/** Шаг строк — расстояние между верхами двух соседних нарисованных строк. */
+	/** The row step — the distance between the tops of two neighbouring drawn rows. */
 	function step(): number {
 		const [first, second] = rows()
 
 		return second.getBoundingClientRect().top - first.getBoundingClientRect().top
 	}
 
-	/** Номер строки, которая стоит в точке `y` окна браузера. */
+	/** The number of the row standing at the point `y` of the browser window. */
 	function rowAt(y: number): string | null {
 		const x = find(document, '.so-table__body').getBoundingClientRect().left + 100
 
@@ -232,7 +248,7 @@ describe('окно <so-virtual>', () => {
 		const body = find(document, '.so-table__body')
 		const rowStep = step()
 
-		// Верх тела у верха окна прокрутки — плюс полстроки, на строку 500
+		// The body's top at the scroll window's top — plus half a row, onto row 500
 		scroller.scrollTop +=
 			body.getBoundingClientRect().top - scroller.getBoundingClientRect().top
 		scroller.scrollTop += 499 * rowStep
@@ -243,7 +259,7 @@ describe('окно <so-virtual>', () => {
 
 		const before = scroller.scrollTop
 
-		// Место 499 — строка 500, её номер с шапкой — 501
+		// Place 499 is row 500, its number with the head is 501
 		expect(rowAt(edge)).toBe('501')
 
 		await frames()
