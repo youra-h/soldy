@@ -3,11 +3,12 @@
  * watch a layer appear and disappear (`drawer.spec.ts`, `dialog.spec.ts`,
  * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`,
  * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`, `calendar.spec.ts`,
- * `anchor.spec.ts`), a new value travel to its place (`slider.spec.ts`, `progress-linear.spec.ts`,
- * `tabs-line.spec.ts`, `tabs-contained.spec.ts`, the dragged column's
- * neighbour in `table.spec.ts`), a transition start (the width handle's line
- * there waits for the pointer's delay) and what an animation's keyframes drive
- * (`progress-spinner.spec.ts`, `motion-mode.spec.ts`).
+ * `anchor.spec.ts`), a new value travel to its place (`slider.spec.ts`,
+ * `progress-linear.spec.ts`, `tabs-line.spec.ts`, `tabs-contained.spec.ts`,
+ * the dragged column's neighbour in `table.spec.ts`), a transition start (the
+ * width handle's line there waits for the pointer's delay) and what an
+ * animation's keyframes drive (`progress-spinner.spec.ts`,
+ * `motion-mode.spec.ts`).
  *
  * The code has no animation hooks: the theme holds the transition, and it can
  * be seen only on the node itself. The browser creates a `CSSTransition`
