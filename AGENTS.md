@@ -38,7 +38,8 @@ npm run test:setup   # Vitest — @soldy-ui/setup
 npm run test:vue
 npm run test:angular # спеки Angular — билдером @angular/build:unit-test, см. «Angular-специфика»
 npm run test:theme   # Vitest — инварианты токенов темы oren
-npm run test:layout  # раскладка и действия браузера в настоящем Chromium (сам собирает тему)
+npm run test:layout  # раскладка и действия браузера в настоящих Chromium и WebKit (сам собирает тему; на Windows — только Chromium)
+npm run test:layout:webkit  # тот же прогон в WebKit через Docker — так его гоняют на Windows, см. packages/playground/AGENTS.md
 npm run test:side-effects  # `sideEffects` пакетов и сборка одной кнопки, см. docs/agents/build.md
 npm run compare:styles -- <до.css>  # вычисленные стили частей на стенде: лист темы «до» против dist
 npm run lint         # ESLint (auto-fix)

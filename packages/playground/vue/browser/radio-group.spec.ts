@@ -18,6 +18,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { createEngineRadioGroup } from '@soldy-ui/core'
 import type { TRadioGroupCollection } from '@soldy-ui/core'
 import { Button, RadioGroup, RadioGroupItem } from '@soldy-ui/vue'
+import { radioArrowsWrap } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -140,7 +141,8 @@ describe('стрелки переносят отметку', () => {
 		await expect.poll(() => picked.value).toBe('b')
 	})
 
-	it('по кругу: ↓ с последнего — на первое, ↑ с первого — на последнее', async () => {
+	it('по кругу: ↓ с последнего — на первое, ↑ с первого — на последнее', async (context) => {
+		context.skip(!radioArrowsWrap)
 		await show({ value: 'c' })
 
 		radio('c').focus()

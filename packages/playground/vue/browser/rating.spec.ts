@@ -26,6 +26,7 @@ import { Label, Rating } from '@soldy-ui/vue'
 
 import { hue, iconPaint, pixel, style, systemColor } from './colors'
 import { forcedColors, reducedMotion } from './media'
+import { touchInput } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -285,7 +286,7 @@ describe('нажатие ставит оценку', () => {
 		expect(commits).toEqual([{ newValue: 4, oldValue: 0 }])
 	})
 
-	it('касание ставит оценку и не оставляет предпросмотра', async () => {
+	it.runIf(touchInput)('касание ставит оценку и не оставляет предпросмотра', async () => {
 		const ctrl = await mount({ value: 1 })
 
 		await commands.tap('.so-rating__star:nth-child(3)')

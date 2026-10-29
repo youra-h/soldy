@@ -1,32 +1,36 @@
 /**
- * Команды браузерного прогона — объявлены в `vitest.browser.config.ts`
- * (`test.browser.commands`), здесь только их типы.
+ * Commands of the browser run — declared in `vitest.browser.config.ts`
+ * (`test.browser.commands`), only their types here.
  */
 
 import 'vitest/browser'
 
 declare module 'vitest/browser' {
 	interface BrowserCommands {
-		/** Нажать основную кнопку мыши там, где мышь стоит */
+		/** Press the main mouse button where the mouse is */
 		mouseDown: () => Promise<void>
-		/** Отпустить основную кнопку мыши */
+		/** Release the main mouse button */
 		mouseUp: () => Promise<void>
 		/**
-		 * Протянуть мышь от `from` до `to` и отпустить без паузы — движение и
-		 * отпускание одним тактом, без круга RPC между ними. Точки — доли рамки
-		 * узла, селектор CSS — в рамке теста
+		 * Drag the mouse from `from` to `to` and release without a pause — no
+		 * RPC round trip between the movement and the release. Points are
+		 * fractions of the node's box, a CSS selector in the test frame
 		 */
 		quickDrag: (
 			selector: string,
 			from: { x: number; y: number },
 			to: { x: number; y: number },
 		) => Promise<void>
-		/** Коснуться пальцем центра узла `count` раз подряд — селектор CSS в рамке теста */
+		/**
+		 * Touch the node's centre with a finger `count` times in a row — a CSS
+		 * selector in the test frame. Chromium only (`browser/engine.ts`)
+		 */
 		tap: (selector: string, count?: number) => Promise<void>
 		/**
-		 * Протянуть палец от центра узла на `dx`, `dy` за `steps` шагов (по
-		 * умолчанию 10), простояв на месте `hold` мс до первого шага (по
-		 * умолчанию — сразу), — селектор CSS в рамке теста
+		 * Drag a finger from the node's centre by `dx`, `dy` in `steps` steps
+		 * (10 by default), resting `hold` ms before the first step (none by
+		 * default) — a CSS selector in the test frame. Chromium only
+		 * (`browser/engine.ts`)
 		 */
 		touchDrag: (
 			selector: string,
@@ -35,9 +39,17 @@ declare module 'vitest/browser' {
 			steps?: number,
 			hold?: number,
 		) => Promise<void>
-		/** Вставить текст без клавиш, как экранная клавиатура: `beforeinput` и `input` */
+		/** Insert text without keys, like an on-screen keyboard: `beforeinput` and `input` */
 		insertText: (text: string) => Promise<void>
-		/** Текст незавершённой композиции IME; завершает её `insertText` */
+		/**
+		 * The text of a pending IME composition; `insertText` completes it.
+		 * Chromium only (`browser/engine.ts`)
+		 */
 		compose: (text: string) => Promise<void>
+		/** Emulate system settings; a setting the call doesn't name keeps its value (`browser/media.ts`) */
+		emulateMedia: (media: {
+			reducedMotion?: 'reduce' | 'no-preference'
+			forcedColors?: 'active' | 'none'
+		}) => Promise<void>
 	}
 }

@@ -47,6 +47,7 @@ import {
 	systemColor,
 } from './colors'
 import { forcedColors } from './media'
+import { forcedColorsRepaint, touchInput } from './engine'
 import {
 	delayOf,
 	pausedPseudoTransition,
@@ -930,7 +931,7 @@ describe('линии строк', () => {
 		 * пропала бы. Она обязана стать цветом текста системы, как рамки,
 		 * которые браузер красит сам.
 		 */
-		describe('принудительные цвета', () => {
+		describe.runIf(forcedColorsRepaint)('принудительные цвета', () => {
 			it.each(SCHEMES)('%s: линия строки — цветом текста системы', async (scheme) => {
 				await forcedColors('active')
 				await showLines(scheme)
@@ -1112,7 +1113,7 @@ describe('перестановка колонок', () => {
 	 * протокола DevTools (`commands.touchDrag`), от середины заголовка за
 	 * середину соседа.
 	 */
-	it('пальцем — колонка на новом месте, column:move один раз', async () => {
+	it.runIf(touchInput)('пальцем — колонка на новом месте, column:move один раз', async () => {
 		const engine = moveEngine()
 		const moves: string[][] = []
 
@@ -1150,7 +1151,7 @@ describe('перестановка колонок', () => {
 		const [name, city] = headers()
 		const table = find('.so-table')
 		const cell = () => find('.so-table-row__cell')
-		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
+		const rest = { cursor: style(cell()).cursor, select: style(table).userSelect }
 
 		expect(rest.cursor).not.toBe('grabbing')
 		expect(rest.select).not.toBe('none')
@@ -1161,7 +1162,7 @@ describe('перестановка колонок', () => {
 
 			expect(name.dataset.dragging).toBe('true')
 			await expect.poll(() => style(cell()).cursor).toBe('grabbing')
-			expect(style(cell()).userSelect).toBe('none')
+			expect(style(table).userSelect).toBe('none')
 		} finally {
 			await commands.mouseUp()
 		}
@@ -1169,7 +1170,7 @@ describe('перестановка колонок', () => {
 		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 		await expect.poll(() => table.hasAttribute('data-dragging')).toBe(false)
 		expect(style(cell()).cursor).toBe(rest.cursor)
-		expect(style(cell()).userSelect).toBe(rest.select)
+		expect(style(table).userSelect).toBe(rest.select)
 	})
 
 	/**
@@ -2473,7 +2474,7 @@ describe('ручка ширины', () => {
 
 		const table = find('.so-table')
 		const cell = () => find('.so-table-row__cell')
-		const rest = { cursor: style(cell()).cursor, select: style(cell()).userSelect }
+		const rest = { cursor: style(cell()).cursor, select: style(table).userSelect }
 		const box = resizerOf(headers()[0]).getBoundingClientRect()
 
 		expect(rest.cursor).not.toBe('col-resize')
@@ -2485,13 +2486,13 @@ describe('ручка ширины', () => {
 
 		try {
 			await expect.poll(() => style(cell()).cursor).toBe('col-resize')
-			expect(style(cell()).userSelect).toBe('none')
+			expect(style(table).userSelect).toBe('none')
 		} finally {
 			await commands.mouseUp()
 		}
 
 		await expect.poll(() => table.hasAttribute('data-resizing')).toBe(false)
 		expect(style(cell()).cursor).toBe(rest.cursor)
-		expect(style(cell()).userSelect).toBe(rest.select)
+		expect(style(table).userSelect).toBe(rest.select)
 	})
 })

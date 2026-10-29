@@ -19,6 +19,7 @@ import type { DescriptorSlots, MenuDescriptor } from '@soldy-ui/setup'
 
 import { pixel, settled, shift, style, systemColor } from './colors'
 import { forcedColors } from './media'
+import { contextMenuKey } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -461,7 +462,8 @@ describe('контекстное меню', () => {
 		expect(panel().dataset.placement).toBe('top-start')
 	})
 
-	it('Shift+F10 — меню на первом пункте у области, Escape возвращает фокус на неё', async () => {
+	it('Shift+F10 — меню на первом пункте у области, Escape возвращает фокус на неё', async (context) => {
+		context.skip(!contextMenuKey)
 		await showContext()
 		area().focus()
 		await userEvent.keyboard('{Shift>}{F10}{/Shift}')

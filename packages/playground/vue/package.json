@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:browser": "vitest run --config vitest.browser.config.ts",
+    "test:browser:webkit": "node browser-server/cli.ts",
     "compare:styles": "node styles-diff/cli.ts"
   },
   "dependencies": {

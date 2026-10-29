@@ -106,7 +106,7 @@ async function show(scheme: (typeof SCHEMES)[number]): Promise<void> {
 const staged: Element[] = []
 
 /** `<span is="so-icon">` в месте со своим цветом текста, в схеме темы. */
-function showElement(scheme: (typeof SCHEMES)[number]): Element {
+async function showElement(scheme: (typeof SCHEMES)[number]): Promise<Element> {
 	document.documentElement.dataset.soTheme = scheme
 
 	const node = document.createElement('div')
@@ -115,6 +115,7 @@ function showElement(scheme: (typeof SCHEMES)[number]): Element {
 	node.innerHTML = '<span is="so-icon" icon="close"></span>'
 	document.body.append(node)
 	staged.push(node)
+	await nextFrame()
 
 	const icon = node.firstElementChild
 
@@ -200,8 +201,8 @@ describe.each(PACKS)('$name', ({ pack, loaded }) => {
 			},
 		)
 
-		it('умолчание темы: <span is="so-icon"> — рисунок внутри корня цветом текста', () => {
-			const icon = showElement(scheme)
+		it('умолчание темы: <span is="so-icon"> — рисунок внутри корня цветом текста', async () => {
+			const icon = await showElement(scheme)
 
 			expect(bytes(iconPaint(icon))).toEqual(bytes(style(icon).color))
 		})

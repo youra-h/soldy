@@ -34,6 +34,7 @@ import { loadHost } from '../src/hosts'
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
+import { forcedColorsRepaint } from './engine'
 import { expectHidesWhenFaded, ownTransitions, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
@@ -1556,7 +1557,7 @@ describe('выбор месяца и года', () => {
 			)
 		})
 
-		it('рамка — у карточки, а не вокруг подложки', async () => {
+		it.runIf(forcedColorsRepaint)('рамка — у карточки, а не вокруг подложки', async () => {
 			await forcedColors('active')
 			await show({ months: ['2026-09-01'] })
 			await open()

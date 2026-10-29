@@ -92,30 +92,35 @@ jobs:
 
       - run: npm ci
 
-      # Браузер для test:layout закреплён ревизией Playwright из package-lock,
-      # поэтому кэш привязан к lock-файлу: апгрейд Playwright честно перекачает
-      # новую ревизию. Системные библиотеки в кэш не попадают — ставим всегда.
+      # The browsers of test:layout — Chromium and WebKit, the engine of Safari
+      # and of every browser on iOS — are pinned by the Playwright revision in
+      # package-lock, so the cache follows the lock file and the set of
+      # browsers: a Playwright upgrade honestly downloads the new revision, and
+      # a cache saved without a browser isn't taken for a full one. System
+      # libraries don't go into the cache — they are installed every time.
       - name: Кэш браузеров Playwright
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-chromium-webkit-${{ hashFiles('package-lock.json') }}
 
-      - name: Установка Chromium
+      - name: Установка браузеров
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium
+        run: npx playwright install chromium webkit
 
-      - name: Системные зависимости Chromium
-        run: npx playwright install-deps chromium
+      - name: Системные зависимости браузеров
+        run: npx playwright install-deps chromium webkit
 
-      # Обрыв связи с вкладкой (`VITEST_BROWSER_CONNECTION_CLOSED`) причины не
-      # называет: убил ли процесс OOM killer, упал ли рендерер, вышел ли
-      # Chromium целиком. Поэтому память машины и процессов браузера пишется в
-      # файл каждые 5 с, а при падении её печатает шаг ниже вместе с журналом
-      # ядра. `DEBUG=pw:browser` — вывод самого Chromium и код его выхода.
+      # A dropped connection to a tab (`VITEST_BROWSER_CONNECTION_CLOSED`)
+      # doesn't name its cause: whether the OOM killer took the process, the
+      # renderer crashed or the whole browser exited. So the memory of the
+      # machine and of the browser processes goes to a file every 5 s, and on
+      # failure the step below prints it with the kernel log. `DEBUG=pw:browser`
+      # is the browsers' own output and their exit codes.
       #
-      # test:layout сам собирает CSS темы — браузерный прогон проверяет его.
+      # test:layout builds the theme CSS itself — the browser run checks it —
+      # and runs every spec in both browsers.
       - name: Тесты
         env:
           DEBUG: pw:browser
@@ -125,7 +130,7 @@ jobs:
               echo "== $(date +%T)"
               free -m | sed -n 2p
               ps -eo pid=,rss=,args= --sort=-rss | awk '
-                /headless_shell|chrom|node/ && !/awk/ {
+                /headless_shell|chrom|WPE|MiniBrowser|node/ && !/awk/ {
                   name = $3; sub(/.*\//, "", name)
                   kind = name == "node" ? $4 : "browser"
                   if (match($0, /--type=[a-z-]+/)) kind = substr($0, RSTART + 7, RLENGTH - 7)
@@ -146,7 +151,7 @@ jobs:
         run: |
           cat "$RUNNER_TEMP/memory.log"
           df -h /dev/shm
-          sudo dmesg -T | grep -iE 'oom|killed process|out of memory|segfault|chrom|headless' || echo 'в журнале ядра — ничего о памяти и браузере'
+          sudo dmesg -T | grep -iE 'oom|killed process|out of memory|segfault|chrom|headless|wpe|minibrowser' || echo 'в журнале ядра — ничего о памяти и браузере'
 
   build:
     name: Сборка и типы

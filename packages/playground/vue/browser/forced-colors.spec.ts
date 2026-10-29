@@ -70,6 +70,7 @@ import { TOASTS_ITEM_TYPES } from '@soldy-ui/playground-shared'
 
 import { find, outlined, pixel, settled, style, systemColor } from './colors'
 import { forcedColors } from './media'
+import { forcedColorsRepaint } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -213,7 +214,7 @@ const PANELS = [
 	},
 ]
 
-describe.each(PANELS)('$name: кромка панели', ({ panel, markup }) => {
+describe.runIf(forcedColorsRepaint).each(PANELS)('$name: кромка панели', ({ panel, markup }) => {
 	it.each(SCHEMES)('%s: в обычном режиме контура не видно', async (scheme) => {
 		await show(scheme, markup)
 
@@ -244,7 +245,7 @@ describe.each(PANELS)('$name: кромка панели', ({ panel, markup }) =>
  * подменой цветов: цвет вида рядом с системными цветами чужой палитре
  * пользователя, и белый текст на его фоне ничем не обещан.
  */
-describe('Toasts: плашка с видом', () => {
+describe.runIf(forcedColorsRepaint)('Toasts: плашка с видом', () => {
 	const CASES = SCHEMES.flatMap((scheme) => TOASTS_ITEM_TYPES.map((type) => ({ scheme, type })))
 
 	it.each(CASES)(
@@ -272,7 +273,7 @@ describe('Toasts: плашка с видом', () => {
  * фокуса браузера ей не нужно — она контейнер диалога, а не контрол, — и
  * гасит его тот же контур: контур темы перекрывает контур браузера.
  */
-describe('Popover: панель под фокусом', () => {
+describe.runIf(forcedColorsRepaint)('Popover: панель под фокусом', () => {
 	/**
 	 * Поповер без остановок — ни кнопки закрытия, ни фокусируемого
 	 * содержимого — после кнопки, с которой к нему приходят по Tab.
@@ -1140,7 +1141,7 @@ describe.each(LISTS)('$name: строка под стрелками', ({ rows, f
  * фоном, у `outline` — рамка активного таба, а линии ряда — цветом рамок,
  * которые браузер красит сам, карточка — контуром.
  */
-describe('Tabs: активный таб', () => {
+describe.runIf(forcedColorsRepaint)('Tabs: активный таб', () => {
 	const TABS = ['Первый', 'Второй', 'Третий']
 
 	/** Активен средний таб: соседи у него с обеих сторон. */

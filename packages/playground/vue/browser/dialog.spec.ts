@@ -37,6 +37,7 @@ import {
 	whileLeaving,
 } from './transitions'
 import { expectClassicScrollbar } from './viewport'
+import { classicScrollbars } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -546,7 +547,7 @@ describe('появление и исчезание', () => {
  * и окно по центру съехало бы на полширины полосы, пока гаснет. Поэтому
  * прокрутка возвращается, когда окно исчезло.
  */
-describe('прокрутка страницы', () => {
+describe.runIf(classicScrollbars)('прокрутка страницы', () => {
 	/** Прокрутка страницы заперта: замок держит `overflow` у `html`. */
 	const locked = () => getComputedStyle(document.documentElement).overflow === 'hidden'
 

@@ -1,55 +1,29 @@
 /**
- * Эмуляция медиазапросов Chromium — общее для спеков, которые смотрят, как тема
- * отвечает на настройки системы (`drawer.spec.ts`, `slider.spec.ts`,
- * `forced-colors.spec.ts`, `progress-spinner.spec.ts`, `motion-mode.spec.ts`,
- * `tabs-nested.spec.ts`).
+ * Media query emulation, shared by the specs that check how the theme answers
+ * system settings (`drawer.spec.ts`, `slider.spec.ts`, `forced-colors.spec.ts`,
+ * `progress-spinner.spec.ts`, `motion-mode.spec.ts`, `tabs-nested.spec.ts`).
  *
- * Эмуляция — та же, что в DevTools → Rendering: браузер отвечает на
- * медиазапрос так, будто настройку выбрали в системе. Снимается она значением
- * по умолчанию, которое держит и Playwright, чтобы прогон не зависел от
- * настройки машины: `no-preference` у движения, `none` у принудительных
- * цветов.
+ * The browser answers a media query as if the setting were chosen in the
+ * system (the `emulateMedia` command, `vitest.browser.config.ts`). Emulation is
+ * taken off with the default Playwright itself keeps, so the run doesn't
+ * depend on the machine: `no-preference` for motion, `none` for forced colors.
+ * A call sets only its own setting and leaves the other as it is.
  *
- * Вызов CDP заменяет весь список эмулируемых признаков, а признак, которого в
- * списке нет, возвращается к настройке машины. Поэтому каждый вызов отсюда
- * отдаёт оба признака сразу — заданный и текущий другой. Отдельный вызов на
- * признак снимал бы эмуляцию соседа: сброс принудительных цветов после сброса
- * движения оставлял следующим тестам движение машины, и на машине с
- * выключенной анимацией переходы темы пропадали.
- *
- * Одна копия на всех, как у `colors.ts`: разойдись две, один спек молча
- * включал бы режим иначе, чем другой.
+ * One copy for everyone, like `colors.ts`: were there two, one spec would
+ * silently switch a mode differently from another.
  */
 
-import { cdp } from 'vitest/browser'
+import { commands } from 'vitest/browser'
 
-/** Эмулируемые признаки и их текущие значения — все, что ведёт этот модуль. */
-const emulated = {
-	'prefers-reduced-motion': 'no-preference',
-	'forced-colors': 'none',
-}
-
-/** Отдать браузеру весь список признаков разом. */
-const emulate = (): Promise<unknown> =>
-	cdp().send('Emulation.setEmulatedMedia', {
-		features: Object.entries(emulated).map(([name, value]) => ({ name, value })),
-	})
-
-/** Режим «меньше движения»: `reduce` — система просит убрать движение. */
-export const reducedMotion = (value: 'reduce' | 'no-preference'): Promise<unknown> => {
-	emulated['prefers-reduced-motion'] = value
-
-	return emulate()
-}
+/** "Less motion" mode: `reduce` — the system asks to remove motion. */
+export const reducedMotion = (value: 'reduce' | 'no-preference'): Promise<void> =>
+	commands.emulateMedia({ reducedMotion: value })
 
 /**
- * Режим принудительных цветов (высокий контраст Windows): `active` — палитру
- * страницы выбирает система. Эмуляция меняет не только ответ медиазапроса, но
- * и сами цвета: системные ключевые слова (`Highlight`, `GrayText`) берут
- * значения палитры режима.
+ * Forced colors mode (Windows high contrast): `active` — the system chooses
+ * the page palette. The emulation changes not only the media query answer but
+ * the colors themselves: system keywords (`Highlight`, `GrayText`) take the
+ * mode's palette values.
  */
-export const forcedColors = (value: 'active' | 'none'): Promise<unknown> => {
-	emulated['forced-colors'] = value
-
-	return emulate()
-}
+export const forcedColors = (value: 'active' | 'none'): Promise<void> =>
+	commands.emulateMedia({ forcedColors: value })

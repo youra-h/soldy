@@ -22,12 +22,15 @@ import '@soldy-ui/theme-oren'
 /** Узел разметки теста — снимается после каждого. */
 let stage: HTMLElement | null = null
 
-function show(html: string): HTMLElement {
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
+async function show(html: string): Promise<HTMLElement> {
 	const node = document.createElement('div')
 
 	node.innerHTML = html
 	document.body.appendChild(node)
 	stage = node
+	await nextFrame()
 
 	return node
 }
@@ -80,8 +83,8 @@ function reference(size: string): string {
 }
 
 describe.each(COMPONENT_SIZES)('размер %s', (size) => {
-	it('коробка корня — как у корня svg, рисунок — во весь корень', () => {
-		const root = show(`
+	it('коробка корня — как у корня svg, рисунок — во весь корень', async () => {
+		const root = await show(`
 			<div><span is="so-icon" icon="close" size="${size}"></span></div>
 			<div>${reference(size)}</div>
 		`)
@@ -96,8 +99,10 @@ describe.each(COMPONENT_SIZES)('размер %s', (size) => {
 })
 
 describe('размер из разметки', () => {
-	it('width и height — коробка корня, рисунок — во весь корень', () => {
-		const el = icon(show('<span is="so-icon" icon="close" width="40" height="24"></span>'))
+	it('width и height — коробка корня, рисунок — во весь корень', async () => {
+		const el = icon(
+			await show('<span is="so-icon" icon="close" width="40" height="24"></span>'),
+		)
 		const box = rect(el)
 
 		expect([box.width, box.height]).toEqual([40, 24])
@@ -124,9 +129,9 @@ describe('в кнопке', () => {
 	 * авто-отступы. Строчный корень встал бы на базовую линию текста, а
 	 * растянутый рисунок без размера корня занял бы всю область.
 	 */
-	it('кнопка шире иконки — иконка по центру и на месте корня svg', () => {
+	it('кнопка шире иконки — иконка по центру и на месте корня svg', async () => {
 		const style = 'width: 96px; height: 40px'
-		const root = show(`
+		const root = await show(`
 			<button is="so-button" class="own" style="${style}"><span is="so-icon" icon="close"></span></button>
 			<button is="so-button" class="other" style="${style}">${reference('normal')}</button>
 		`)

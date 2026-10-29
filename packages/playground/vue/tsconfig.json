@@ -24,6 +24,7 @@
     "src/**/*",
     "__tests__/**/*",
     "browser/**/*",
+    "browser-server/**/*",
     "styles-diff/**/*",
     "env.d.ts",
     "vite.base.ts",
