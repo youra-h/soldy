@@ -4,9 +4,10 @@ import { resolve } from 'node:path'
 import { lowerBound, pinsOf, readTree, workspaceOf } from '../min-peers.ts'
 
 /**
- * Настоящие манифесты адаптеров и матрица задачи CI «Минимальные версии»
- * (docs/agents/build.md, «Версии пакетов»). Дерево — то, что стоит в
- * репозитории: версии lock или уже подменённые, список от этого не зависит.
+ * The real manifests of the adapters and the matrix of the CI job
+ * «Минимальные версии» (docs/agents/build.md, «Версии пакетов»). The tree is
+ * what the repository has — the versions of the lock or pinned ones; the list
+ * does not depend on it.
  */
 
 const ROOT = resolve(import.meta.dirname, '../../..')
@@ -22,8 +23,11 @@ function specs(field: unknown): [string, string][] {
 }
 
 /**
- * Адаптеры фреймворков — воркспейсы с peer на чужой пакет. Peer на соседа
- * `@soldy-ui/*` (у темы) — точная общая версия, нижней границы у него нет.
+ * Framework adapters — workspaces with a peer on a foreign package. A theme's
+ * peer on the library (`@soldy-ui/*`) is a range from the library release the
+ * theme came out with: the library of the workspace is never older than that
+ * bound, an older one from npm would replace the very packages under test, and
+ * the bound itself was checked by the jobs of that release.
  */
 const adapters = tree
 	.filter(({ location }) => !location.split('/').includes('node_modules'))

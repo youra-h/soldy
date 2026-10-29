@@ -1,14 +1,15 @@
 name: Release
 
-# Публикация в npm (см. docs/agents/build.md, «Версии пакетов»). Публикует
-# только мерж PR выпуска — ветки `release/v<версия>` (обычный мерж) или PR
-# «Выпуск <версия>» (squash). Одной проверки «версии нет в npm» мало: версия,
-# которую ни разу не выпускали (0.1.0), опубликовалась бы с любым push.
+# Publication to npm (docs/agents/build.md, «Версии пакетов»). Only the merge
+# of a release PR publishes: a `release/…` branch (a merge commit) or a PR
+# «Выпуск …» (squash). A check that a version is missing from npm is not
+# enough on its own: a version never released (0.1.0) would go out with any
+# push.
 on:
   push:
     branches: [main]
 
-# Два мержа подряд не публикуют одну версию дважды.
+# Two merges in a row do not publish one version twice.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -16,11 +17,11 @@ concurrency:
 jobs:
   publish:
     name: Публикация в npm
-    if: contains(github.event.head_commit.message, 'release/v') || startsWith(github.event.head_commit.message, 'Выпуск ')
+    if: contains(github.event.head_commit.message, 'release/') || startsWith(github.event.head_commit.message, 'Выпуск ')
     runs-on: ubuntu-latest
     permissions:
-      contents: write # теги и GitHub Release
-      id-token: write # provenance npm
+      contents: write # tags and the GitHub Release
+      id-token: write # npm provenance
 
     steps:
       - uses: actions/checkout@v4
@@ -31,17 +32,20 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      # Группа `fixed` идёт одной версией, поэтому хватает версии ядра. Уже в
-      # npm — перезапуск после удачной публикации, делать нечего.
-      - name: Версия опубликована?
+      # Every package is checked at its own version: the library shares one,
+      # each theme and icon pack has its own. None missing from npm — a rerun
+      # after a successful publication, nothing to do. The list goes to a file
+      # and not through a pipe: the step shell has no `pipefail`, and a failed
+      # check would read as «nothing to publish».
+      - name: Что не опубликовано?
         id: check
         run: |
-          version=$(node -p "require('./packages/core/package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if npm view "@soldy-ui/core@$version" version >/dev/null 2>&1; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-          else
+          node tools/release-notes/cli.mjs unpublished > "$RUNNER_TEMP/unpublished.txt"
+          cat "$RUNNER_TEMP/unpublished.txt"
+          if [ -s "$RUNNER_TEMP/unpublished.txt" ]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
 
       - if: steps.check.outputs.publish == 'true'
@@ -55,8 +59,9 @@ jobs:
         name: Импорты пакетов объявлены
         run: npm run check:published-imports
 
-      # changeset publish публикует каждый пакет, чьей версии в npm нет, и
-      # ставит теги `<пакет>@<версия>`.
+      # changeset publish publishes every package whose version npm does not
+      # have, under the npm tag `latest` (there is no pre-mode), and tags it
+      # `<package>@<version>` in git.
       - if: steps.check.outputs.publish == 'true'
         name: Публикация
         run: npx changeset publish
@@ -64,31 +69,13 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
-      # В pre-режиме changesets публикует под тегом режима (`alpha`), и
-      # `npm i @soldy-ui/vue` без версии ставил бы выпуск до суффикса. Пока
-      # готового выпуска нет, `latest` — свежий предварительный (см.
-      # docs/agents/build.md, «Версии пакетов»). Без условия публикации:
-      # перезапуск после упавшего шага дотягивает тег, повтор безвреден.
-      - name: Тег latest — на выпуск
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          VERSION: ${{ steps.check.outputs.version }}
-        run: |
-          for name in $(node -p "require('./.changeset/config.json').fixed[0].join(' ')"); do
-            npm dist-tag add "$name@$VERSION" latest
-          done
-
-      # Заметки собирает tools/release-notes: пакеты без своих пунктов в них не
-      # попадают, а пунктов мало — они в самих заметках, без ссылок.
+      # One GitHub Release per release: `v<version>` of the library, and
+      # without it — on the tag of its first package. The notes read every
+      # package at its own version (tools/release-notes).
       - if: steps.check.outputs.publish == 'true'
         name: Теги и GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.check.outputs.version }}
         run: |
           git push origin --tags
-          node tools/release-notes/release-notes.mjs "$VERSION" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" > notes.md
-          # Версия с суффиксом (`0.3.0-alpha.0`) — предварительный выпуск
-          flags=()
-          case "$VERSION" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "v$VERSION" --title "v$VERSION" --target "$GITHUB_SHA" --notes-file notes.md "${flags[@]}"
+          node tools/release-notes/cli.mjs release "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA" "$GITHUB_SHA" < "$RUNNER_TEMP/unpublished.txt"

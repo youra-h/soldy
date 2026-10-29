@@ -539,10 +539,9 @@ list taken out of the window draws all of its items again.
 ```
 
 From JavaScript the element is the component: props are its properties, events are DOM events, and
-a core instance can be handed over as `ctrl` before the element is connected. Check a node with the
-element's class, `TButtonElement.is(el)`: it gives the node the element's full type, props
-included, while `instanceof` narrows only to the native class of the tag (`HTMLButtonElement`),
-which knows none of them:
+a core instance can be handed over as `ctrl` before the element is connected. The `is` check of an
+element class gives the node with its props typed; `instanceof` gives the same answer, but types it
+only as the native element of the tag, since the props are set on the prototype at run time:
 
 ```ts
 import { TButton } from '@soldy-ui/core'

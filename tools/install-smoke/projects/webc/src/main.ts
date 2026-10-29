@@ -8,8 +8,7 @@ import '@soldy-ui/theme-oren'
 useIcons(material)
 useTheme(oren)
 
-// As the README of the adapter writes it: `is()` gives the element its full
-// type, props included — `instanceof` stops at the native class of the tag
+// As the README of the adapter writes it: `is` gives the element with its props
 const dialog = document.getElementById('settings')
 
 document.getElementById('open')?.addEventListener('click', () => {

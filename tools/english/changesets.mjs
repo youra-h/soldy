@@ -1,7 +1,7 @@
 // A changeset's text goes into the package CHANGELOG.md as is, and CHANGELOG
 // is written in English (AGENTS.md, «Комментарии, коммиты и CHANGELOG — на
 // английском»). Checks the changesets waiting for a release — `.changeset/*.md`
-// except README; the release has already moved used ones to `.changeset/pre/`.
+// except README; the release deletes the ones it used.
 //
 // node tools/english/changesets.mjs
 

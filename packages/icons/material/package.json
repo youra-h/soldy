@@ -40,7 +40,7 @@
     "build": "vite build -c vite.lib.config.ts && tsc -p tsconfig.build.json",
     "generate": "node scripts/generate.mjs"
   },
-  "dependencies": {
-    "@soldy-ui/setup": "0.3.0-alpha.7"
+  "peerDependencies": {
+    "@soldy-ui/setup": "^0.3.0-alpha.7"
   }
 }
