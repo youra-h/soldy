@@ -85,6 +85,15 @@ look in `components`. Your CSS outside layers and the utilities of your own Tail
 theme without fighting its specificity — `<Button class="rounded-none">` takes the utility, and a
 rule `.so-button { … }` of your stylesheet needs no extra weight.
 
+A page reset outside layers wins the same way: `button { background-color: transparent }` of a
+reset or of Tailwind 3 preflight takes the fill off every Button. Import such a reset into a layer
+of its own before the theme — a layer named first is the weakest:
+
+```css
+@import 'modern-normalize' layer(reset);
+@import '@soldy-ui/theme-oren';
+```
+
 The dark scheme is switched on with an attribute on the root element:
 
 ```html
