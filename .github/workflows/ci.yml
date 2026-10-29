@@ -33,6 +33,7 @@ jobs:
           npm run test:core
           npm run test:eslint
           npm run test:min-peers
+          npm run test:release-notes
           npm run test:install-smoke
           npm run test:side-effects
           npm run test:setup

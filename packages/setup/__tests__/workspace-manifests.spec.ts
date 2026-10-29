@@ -5,54 +5,58 @@ import { join, posix, resolve } from 'node:path'
 import { readChangesets } from '@changesets/read'
 
 /**
- * Сторож раздела «Версии пакетов» (см. AGENTS.md). Версии ведёт changesets:
- * библиотечные пакеты `@soldy-ui/*` — одна группа `fixed` и потому одна версия,
- * стенд — в `ignore`. Библиотечный пакет несёт метаданные: описание, лицензию и
- * путь в репозитории, — а его точки входа ведут на файлы.
+ * Guard of docs/agents/build.md, «Версии пакетов». Versions are kept by
+ * changesets: the library — core, setup, plugins and the adapters — is one
+ * `fixed` group and so one version, every theme and icon pack has a version of
+ * its own, the playground is in `ignore`. A library package carries metadata —
+ * a description, a license, its path in the repository — and its entry points
+ * lead to files.
  *
- * Библиотечный пакет ещё и выкладывается: он не `private`, у скоупа открыт
- * доступ, состав тарболла задан `files`, а текст лицензии и README лежат рядом
- * с манифестом — поля `license` в тарболле мало. Чужое содержимое под своей
- * лицензией пакет называет в `license` (`MIT AND Apache-2.0`) и везёт её текст
- * файлом `LICENSE-<идентификатор>` из `files`. Соседа он объявляет точной
- * общей версией (`0.1.0`): граница между пакетами внутренняя и меняется в
- * любом выпуске, а набор у потребителя собирается из одного выпуска.
+ * A library package is published as well: it is not `private`, the scope is
+ * open, `files` sets the tarball, and the license text and the README lie next
+ * to the manifest — the `license` field alone is not enough in a tarball.
+ * Third-party content under its own license is named in `license`
+ * (`MIT AND Apache-2.0`) and ships its text as `LICENSE-<id>` from `files`. A
+ * neighbour is declared by its exact version (`0.1.0`): the border inside the
+ * group is internal and changes in any release, so a consumer gets a set from
+ * one release. A theme or an icon pack declares a package of the group by a
+ * range (`^0.1.0`): that border is a public contract.
  *
- * Список пакетов не хардкодится: он раскрывается из `workspaces` корневого
- * манифеста, поэтому новый пакет попадает под проверку сам. Список стенда —
- * `ignore` конфига changesets, второго списка здесь нет.
+ * The package list is not hardcoded: it is expanded from `workspaces` of the
+ * root manifest, so a new package falls under the guard by itself. The list of
+ * the playground is `ignore` of the changesets config, there is no second one.
  */
 
 const ROOT = resolve(__dirname, '../../..')
 
-/** Манифест как есть: поля не принимаются на веру, а проверяются по одному. */
+/** A manifest as it is: fields are not taken on trust but checked one by one. */
 type TManifest = Readonly<Record<string, unknown>>
 
 type TWorkspacePackage = {
-	/** Путь от корня репозитория через `/` — то, что пишется в `repository.directory`. */
+	/** Path from the repository root with `/` — what `repository.directory` holds. */
 	readonly dir: string
 	readonly manifest: TManifest
 }
 
-/** Поля `.changeset/config.json`, на которых держится общая версия. */
+/** Fields of `.changeset/config.json` that the shared version rests on. */
 type TChangesetConfig = {
-	/** Группы пакетов, которые выходят одной версией. */
+	/** Groups of packages released at one version. */
 	readonly fixed: readonly (readonly string[])[]
-	/** Пакеты, которые changesets не выпускает, — стенд. */
+	/** Packages changesets does not release: the playground. */
 	readonly ignore: readonly string[]
 }
 
-/** `.changeset/pre.json`: режим предварительных выпусков changesets. */
+/** `.changeset/pre.json`: the pre-release mode of changesets. */
 type TPreState = {
-	/** `pre` — версии выходят с суффиксом, `exit` — следующий выпуск без него. */
+	/** `pre` — versions get a suffix, `exit` — the next release goes without it. */
 	readonly mode: string
-	/** Суффикс версии и тег npm: `alpha` → `0.3.0-alpha.0`. */
+	/** Suffix of the version and the npm tag: `alpha` → `0.3.0-alpha.0`. */
 	readonly tag: string
 }
 
-/** Changeset в том виде, в каком его читает сам changesets (`@changesets/read`). */
+/** A changeset as changesets itself reads it (`@changesets/read`). */
 type TChangeset = {
-	/** Имя файла без `.md`, от `.changeset/`. */
+	/** File name without `.md`, from `.changeset/`. */
 	readonly id: string
 	readonly releases: readonly { readonly name: string; readonly type: string }[]
 }
@@ -84,8 +88,9 @@ function readManifest(dir: string): TManifest {
 }
 
 /**
- * Читает из конфига changesets `fixed` и `ignore`. Нет поля — пустой список, как
- * у самого changesets; поле другой формы — ошибка, а не молча пустой список.
+ * Reads `fixed` and `ignore` from the changesets config. A missing field is an
+ * empty list, as for changesets itself; a field of another shape is an error,
+ * not a silent empty list.
  */
 function readChangesetConfig(): TChangesetConfig {
 	const file = join(ROOT, '.changeset', 'config.json')
@@ -102,7 +107,7 @@ function readChangesetConfig(): TChangesetConfig {
 	return { fixed, ignore }
 }
 
-/** Нет файла — changesets не в pre-режиме: `undefined`, как у самого changesets. */
+/** No file — changesets is not in pre-mode: `undefined`, as for changesets itself. */
 function readPreState(): TPreState | undefined {
 	const file = join(ROOT, '.changeset', 'pre.json')
 
@@ -124,10 +129,10 @@ function joinDir(dir: string, name: string): string {
 }
 
 /**
- * Раскрывает шаблон `workspaces` так же, как npm: каталог, подошедший под
- * шаблон, — пакет, если в нём лежит `package.json`. Шаблоны проекта состоят из
- * имён и `*` на месте сегмента; другой синтаксис glob сторож не понимает и
- * падает, а не пропускает пакеты молча.
+ * Expands a `workspaces` pattern as npm does: a directory matching the pattern
+ * is a package if it holds a `package.json`. The patterns of the project are
+ * names and `*` in place of a segment; other glob syntax the guard does not
+ * understand, and it fails instead of skipping packages silently.
  */
 function expandWorkspace(pattern: string): string[] {
 	let dirs = ['']
@@ -164,7 +169,7 @@ function collectWorkspacePackages(root: TManifest): TWorkspacePackage[] {
 	return [...dirs].map((dir) => ({ dir, manifest: readManifest(dir) }))
 }
 
-/** Библиотечные пакеты — воркспейс без `ignore`: ровно то, что выпускает changesets. */
+/** Library packages — the workspace without `ignore`: exactly what changesets releases. */
 function selectLibrary(
 	packages: readonly TWorkspacePackage[],
 	config: TChangesetConfig,
@@ -174,7 +179,21 @@ function selectLibrary(
 	return packages.filter(({ manifest }) => !ignored.has(manifest.name))
 }
 
-/** Поля манифеста, чьи цели — файлы пакета. */
+/**
+ * Directories of the packages with a version of their own: themes and icon
+ * packs. The themes that ship are not the final ones — applications write
+ * their own — so a theme changes on its own schedule and not with every
+ * release of the library, and an icon pack likewise. Every other library
+ * package belongs to the `fixed` group.
+ */
+const OWN_VERSION_DIRS = ['packages/themes/', 'packages/icons/'] as const
+
+/** A theme or an icon pack: a version of its own, outside the `fixed` group. */
+function hasOwnVersion({ dir }: TWorkspacePackage): boolean {
+	return OWN_VERSION_DIRS.some((prefix) => dir.startsWith(prefix))
+}
+
+/** Manifest fields whose targets are files of the package. */
 const ENTRY_FIELDS = ['main', 'types', 'style', 'exports'] as const
 
 /**
@@ -202,24 +221,24 @@ function gitIgnored(paths: readonly string[]): ReadonlySet<string> {
 	return new Set(stdout.split('\0').filter((path) => path !== ''))
 }
 
-/** Пакет собирается: у него есть скрипт `build`. */
+/** The package is built: it has a `build` script. */
 function hasBuildScript({ manifest }: TWorkspacePackage): boolean {
 	const { scripts } = manifest
 
 	return isRecord(scripts) && typeof scripts.build === 'string'
 }
 
-/** Цель точки входа: как она объявлена в манифесте и куда ведёт от корня репозитория. */
+/** Target of an entry point: as the manifest declares it and where it leads from the repository root. */
 type TEntryTarget = {
-	/** `exports["."]["types"] "./dist/index.d.ts"` — для текста нарушения. */
+	/** `exports["."]["types"] "./dist/index.d.ts"` — for the text of a violation. */
 	readonly declared: string
-	/** Путь от корня репозитория через `/`. */
+	/** Path from the repository root with `/`. */
 	readonly path: string
 }
 
 /**
- * Цели `main`, `types`, `style` и `exports`. `exports` разбирается вглубь:
- * строка — цель, объект — условия или подпути.
+ * Targets of `main`, `types`, `style` and `exports`. `exports` is read in
+ * depth: a string is a target, an object — conditions or subpaths.
  */
 function entryTargets({ dir, manifest }: TWorkspacePackage): TEntryTarget[] {
 	const collect = (field: string, value: unknown): TEntryTarget[] => {
@@ -246,20 +265,22 @@ function entryTargets({ dir, manifest }: TWorkspacePackage): TEntryTarget[] {
 }
 
 /**
- * Пакет отдаёт наружу сборку: хотя бы одна его точка входа ведёт в то, чего
- * в чистом клоне нет. Пока точки входа показывают на исходники, собирать нечего.
+ * The package ships a build: at least one of its entry points leads to what a
+ * clean clone does not have. While the entry points show sources, there is
+ * nothing to build.
  */
 function shipsBuildOutput(pkg: TWorkspacePackage): boolean {
 	return gitIgnored(entryTargets(pkg).map(({ path }) => path)).size > 0
 }
 
 /**
- * Нарушения точек входа: цель `main`, `types`, `style` и `exports` — файл пакета.
+ * Violations of the entry points: a target of `main`, `types`, `style` and
+ * `exports` is a file of the package.
  *
- * Цели, которую игнорирует git, в чистом клоне нет — это выход сборки, и он
- * допустим, только если у пакета есть скрипт `build`. Ответ не зависит от того,
- * собран ли пакет на этой машине. Куда пишет сборщик, сторож не читает: это
- * привязало бы его к одному сборщику.
+ * A target git ignores is absent from a clean clone — it is a build output,
+ * allowed only if the package has a `build` script. The answer does not depend
+ * on whether the package is built on this machine. Where the bundler writes
+ * the guard does not read: that would tie it to one bundler.
  */
 function checkEntryPoints(pkg: TWorkspacePackage): string[] {
 	const buildable = hasBuildScript(pkg)
@@ -280,13 +301,13 @@ function checkEntryPoints(pkg: TWorkspacePackage): string[] {
 }
 
 /**
- * Нарушения полей выкладки: библиотечный пакет выкладывается в npm, а не
- * закрыт от него.
+ * Violations of the publishing fields: a library package goes to npm and is
+ * not closed to it.
  *
- * `private` закрывает пакет от `npm publish` целиком. У скоуплённого пакета
- * доступ по умолчанию `restricted`, и без `publishConfig.access` публикация
- * упала бы на платном тарифе. `files` задаёт состав тарболла: без него наружу
- * уезжает весь каталог пакета вместе с `__tests__` и конфигами.
+ * `private` closes the package to `npm publish` altogether. A scoped package
+ * is `restricted` by default, and without `publishConfig.access` the
+ * publication would fail on a paid plan. `files` sets the tarball: without it
+ * the whole directory goes out, `__tests__` and configs included.
  */
 function checkPublishing(manifest: TManifest): string[] {
 	const violations: string[] = []
@@ -310,14 +331,15 @@ function checkPublishing(manifest: TManifest): string[] {
 	return violations
 }
 
-/** Идентификатор лицензии SPDX: буквы, цифры, точка и дефис — `Apache-2.0`. */
+/** An SPDX license identifier: letters, digits, dot and hyphen — `Apache-2.0`. */
 const SPDX_ID = /^[A-Za-z0-9.-]+$/
 
 /**
- * Чужие лицензии пакета из поля `license`. Своя у всех пакетов одна — MIT, а
- * пакет, который везёт чужое содержимое под другой лицензией, добавляет её
- * выражением SPDX: `MIT AND Apache-2.0`. Выражение другой формы — `undefined`:
- * `OR`, `WITH` и скобки сторож не разбирает, повтор лицензии не принимает.
+ * Third-party licenses of the package from its `license` field. The own one is
+ * MIT for every package, and a package shipping third-party content under
+ * another license adds it as an SPDX expression: `MIT AND Apache-2.0`. An
+ * expression of another shape is `undefined`: the guard does not parse `OR`,
+ * `WITH` and parentheses, nor accept a repeated license.
  */
 function thirdPartyLicenses(license: unknown): readonly string[] | undefined {
 	if (typeof license !== 'string') {
@@ -330,19 +352,21 @@ function thirdPartyLicenses(license: unknown): readonly string[] | undefined {
 	return own === 'MIT' && valid && new Set(others).size === others.length ? others : undefined
 }
 
-/** Файл с текстом чужой лицензии рядом с манифестом: `Apache-2.0` → `LICENSE-Apache-2.0`. */
+/** The file with a third-party license text next to the manifest: `Apache-2.0` → `LICENSE-Apache-2.0`. */
 function licenseFile(id: string): string {
 	return `LICENSE-${id}`
 }
 
 /**
- * Нарушения поля `license` и текстов чужих лицензий в `files`.
+ * Violations of the `license` field and of the third-party license texts in
+ * `files`.
  *
- * Чужая лицензия названа в `license`, иначе сканер лицензий видит одну MIT. Её
- * текст — `LICENSE-<идентификатор>` в `files`: `LICENSE` npm кладёт в тарболл
- * сам, остальное — только по `files`, и пакет назвал бы лицензию, не везя её
- * текста. И обратно: текст в `files` без лицензии в `license` — лицензию убрали
- * из выражения, а содержимое под ней, судя по тарболлу, осталось.
+ * A third-party license is named in `license`, or a license scanner sees MIT
+ * alone. Its text is `LICENSE-<id>` in `files`: npm puts `LICENSE` into the
+ * tarball by itself and the rest only by `files`, so the package would name a
+ * license without shipping its text. And back: a text in `files` without its
+ * license in `license` means the license left the expression while the content
+ * under it, judging by the tarball, stayed.
  */
 function checkLicense(manifest: TManifest): string[] {
 	const { license, files } = manifest
@@ -364,27 +388,27 @@ function checkLicense(manifest: TManifest): string[] {
 	return [...missing, ...stray]
 }
 
-/** Файлы пакета, прочитанные с диска: имя файла → текст, нет файла — undefined. */
+/** Files of the package read from disk: file name → text, `undefined` when missing. */
 type TPackageFiles = Readonly<Record<string, string | undefined>>
 
 /**
- * Перевод строки содержимым не считается: `.gitattributes` нормализует его в
- * LF, и в рабочей копии на Windows у соседних файлов он расходится сам по
- * себе — по тому, какой из них когда чекаутился.
+ * A line break is not content: `.gitattributes` normalizes it to LF, and in a
+ * Windows working copy neighbouring files differ in it on their own — by when
+ * each was checked out.
  */
 function withLf(text: string): string {
 	return text.replace(/\r\n/g, '\n')
 }
 
 /**
- * Нарушения состава тарболла: рядом с манифестом лежат README и LICENSE,
- * лицензия — копия корневой, а на каждую чужую лицензию (`others`) — непустой
- * текст `LICENSE-<идентификатор>`.
+ * Violations of the tarball: README and LICENSE lie next to the manifest, the
+ * license is a copy of the root one, and every third-party license (`others`)
+ * has a non-empty `LICENSE-<id>`.
  *
- * README и LICENSE npm кладёт в тарболл мимо `files`, и оба видит потребитель:
- * поля `license` в манифесте мало — оно называет лицензию, но не несёт её
- * текста, а пакет без README на npm выглядит заброшенным. Текст чужой
- * лицензии уезжает по `files` — это проверяет `checkLicense`.
+ * npm puts README and LICENSE into the tarball past `files`, and the consumer
+ * sees both: the `license` field names the license but does not carry its
+ * text, and a package without a README looks abandoned on npm. A third-party
+ * license text goes out by `files` — `checkLicense` checks that.
  */
 function checkShippedFiles(
 	files: TPackageFiles,
@@ -421,8 +445,8 @@ function checkShippedFiles(
 }
 
 /**
- * Читает файлы пакета, которые уезжают в тарболл рядом с манифестом: README,
- * LICENSE и тексты чужих лицензий `others`.
+ * Reads the files of the package that go into the tarball next to the
+ * manifest: README, LICENSE and the texts of the third-party licenses `others`.
  */
 function readShippedFiles(dir: string, others: readonly string[] = []): TPackageFiles {
 	const read = (name: string): string | undefined => {
@@ -437,7 +461,7 @@ function readShippedFiles(dir: string, others: readonly string[] = []): TPackage
 	return Object.fromEntries(names.map((name) => [name, read(name)]))
 }
 
-/** Нарушения одного библиотечного пакета; пустой список — пакет в порядке. */
+/** Violations of one library package; an empty list — the package is fine. */
 function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	const violations: string[] = []
 	const { description, repository, version } = manifest
@@ -455,7 +479,7 @@ function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 		)
 	}
 
-	// Пакет без версии changesets пропускает молча — он выпал бы из выпуска.
+	// changesets skips a package without a version silently: it would drop out of the release
 	if (typeof version !== 'string' || version === '') {
 		violations.push(`version ${JSON.stringify(version)}, ожидается строка версии`)
 	}
@@ -466,7 +490,7 @@ function checkLibraryPackage({ dir, manifest }: TWorkspacePackage): string[] {
 	return violations.map((violation) => `${dir}: ${violation}`)
 }
 
-/** Поля манифеста, в которых объявляют зависимость. */
+/** Manifest fields that declare a dependency. */
 const DEPENDENCY_FIELDS = [
 	'dependencies',
 	'devDependencies',
@@ -474,23 +498,36 @@ const DEPENDENCY_FIELDS = [
 	'optionalDependencies',
 ] as const
 
+/** `^` and a whole version, `^0.3.0` or `^0.3.0-alpha.7`. */
+const CARET_RANGE = /^\^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+
 /**
- * Нарушения диапазонов на соседей: сосед объявлен точной `<его версией>`.
+ * Violations of the ranges on neighbours. A theme or an icon pack declares a
+ * package of the `fixed` group by a range, `^<version>`; every other neighbour
+ * is declared by its exact `<version>`.
  *
- * Не диапазоном: граница между ядром, setup, плагинами и адаптерами —
- * внутренний контракт, он меняется и в patch, а `^0.1.0` пустил бы к
- * `core@0.1.1` прежний `setup@0.1.0`. Точная версия держит набор из одного
- * выпуска. Протокол `workspace:` npm не понимает вовсе (EUNSUPPORTEDPROTOCOL на
- * `npm install`), поэтому версия литеральная. `"*"` не годится: выпуск
- * переписывает запись, только когда новая версия из неё выпала, а из `"*"`
- * не выпадает ничего — в опубликованном пакете он значил бы «любая версия
- * ядра», включая ту, с которой контракт разошёлся. Версии у группы одна, и её
- * же берёт диапазон: второго списка версий в репозитории нет.
+ * Exact inside the group: the border between core, setup, plugins and the
+ * adapters is internal and changes in a patch too, and `^0.1.0` would let the
+ * former `setup@0.1.0` to `core@0.1.1`. The exact version keeps a set from one
+ * release. A theme's dependency on its base is exact as well: the theme builds
+ * the CSS of the base into its own, and its behavior calls the plugins of the
+ * base, so both must come from one release of the base. The `workspace:`
+ * protocol npm does not understand at all (EUNSUPPORTEDPROTOCOL on
+ * `npm install`), so the version is literal; `"*"` would mean «any version» in
+ * a published package, and a release does not rewrite it — nothing ever falls
+ * out of it.
+ *
+ * A range for themes and icon packs: they live by versions of their own, and
+ * their border with the group — the `so-*` classes, `data-*` and `--so-*` for
+ * a theme — is a public contract, broken only by a minor release before
+ * `1.0`. Whether the range admits the version in the workspace npm checks
+ * itself: otherwise the workspace is not linked.
  */
 function checkInternalRanges(library: readonly TWorkspacePackage[]): string[] {
 	const versions = new Map(
 		library.map(({ manifest }): [unknown, unknown] => [manifest.name, manifest.version]),
 	)
+	const own = new Set<unknown>(library.filter(hasOwnVersion).map(({ manifest }) => manifest.name))
 
 	return library.flatMap(({ dir, manifest }) =>
 		DEPENDENCY_FIELDS.flatMap((field) => {
@@ -507,22 +544,30 @@ function checkInternalRanges(library: readonly TWorkspacePackage[]): string[] {
 					return []
 				}
 
+				const declared = `${dir}: ${field}["${name}"] ${JSON.stringify(range)}`
+
+				if (own.has(manifest.name) && !own.has(name)) {
+					return typeof range === 'string' && CARET_RANGE.test(range)
+						? []
+						: [
+								`${declared}, ожидается диапазон "^<версия>" — тема и иконки зависят от библиотеки диапазоном`,
+							]
+				}
+
 				const expected = String(version)
 
 				return range === expected
 					? []
-					: [
-							`${dir}: ${field}["${name}"] ${JSON.stringify(range)}, ожидается ${JSON.stringify(expected)}`,
-						]
+					: [`${declared}, ожидается ${JSON.stringify(expected)}`]
 			})
 		}),
 	)
 }
 
 /**
- * Одна версия на все библиотечные пакеты, у корня версии нет: changesets
- * поднимает только пакеты воркспейса, и версия корня после первого же выпуска
- * стала бы устаревшей копией.
+ * One version for the `fixed` group, while themes and icon packs have their
+ * own; the root has none: changesets bumps only the packages of the workspace,
+ * and a root version would turn into a stale copy after the first release.
  */
 function checkVersions(root: TManifest, library: readonly TWorkspacePackage[]): string[] {
 	const violations: string[] = []
@@ -534,7 +579,7 @@ function checkVersions(root: TManifest, library: readonly TWorkspacePackage[]): 
 		)
 	}
 
-	for (const { dir, manifest } of library) {
+	for (const { dir, manifest } of library.filter((pkg) => !hasOwnVersion(pkg))) {
 		dirsByVersion.set(manifest.version, [...(dirsByVersion.get(manifest.version) ?? []), dir])
 	}
 
@@ -543,16 +588,16 @@ function checkVersions(root: TManifest, library: readonly TWorkspacePackage[]): 
 			([version, dirs]) => `${JSON.stringify(version)} — ${dirs.join(', ')}`,
 		)
 
-		violations.push(`версии библиотечных пакетов разошлись: ${groups.join('; ')}`)
+		violations.push(`версии пакетов группы fixed разошлись: ${groups.join('; ')}`)
 	}
 
 	return violations
 }
 
 /**
- * Воркспейсы, которые зовёт корневой `build`, — в порядке вызова. Скрипт
- * собирается из `npm run build --workspace=<имя>`, и второго списка пакетов
- * сборки в репозитории нет.
+ * Workspaces the root `build` calls, in calling order. The script is made of
+ * `npm run build --workspace=<name>`, and there is no second list of the
+ * packages to build in the repository.
  */
 function buildOrder(root: TManifest): string[] {
 	const { scripts } = root
@@ -565,13 +610,15 @@ function buildOrder(root: TManifest): string[] {
 }
 
 /**
- * Корневой `build` собирает каждый пакет, который отдаёт наружу сборку, и в
- * порядке зависимостей, а не алфавита: прогон деклараций читает соседа через
- * его манифест, то есть по собранному `dist`. Кто от кого зависит, сторож берёт
- * из `dependencies` манифестов — второго списка нет.
+ * The root `build` builds every package that ships a build, in the order of
+ * dependencies and not of the alphabet: the declarations pass reads a
+ * neighbour through its manifest, that is by its built `dist`. Who depends on
+ * whom the guard takes from `dependencies` of the manifests — there is no
+ * second list.
  *
- * `peerDependencies` не в счёт: их ставит потребитель, а не воркспейс, и тема
- * объявляет ими ядро, которое её сборке CSS не нужно вовсе.
+ * `peerDependencies` do not count: the consumer installs them, not the
+ * workspace, and a theme declares by them the core its CSS build does not need
+ * at all.
  */
 function checkBuildOrder(root: TManifest, library: readonly TWorkspacePackage[]): string[] {
 	const violations: string[] = []
@@ -620,9 +667,10 @@ function checkBuildOrder(root: TManifest, library: readonly TWorkspacePackage[])
 }
 
 /**
- * `fixed` — одна группа, и в ней ровно библиотечные пакеты. Пакет вне группы
- * разошёлся бы с остальными на первом же выпуске, стенд в группе выпускался бы
- * вместе с библиотекой.
+ * `fixed` is one group: every library package except themes and icon packs,
+ * and nothing else. A package of the library outside the group would part
+ * from the others at the first release; a theme in it would be released with
+ * every release of the library, the playground — together with the library.
  */
 function checkFixed(config: TChangesetConfig, library: readonly TWorkspacePackage[]): string[] {
 	const violations: string[] = []
@@ -634,8 +682,15 @@ function checkFixed(config: TChangesetConfig, library: readonly TWorkspacePackag
 		violations.push(`fixed: групп ${config.fixed.length}, ожидается одна`)
 	}
 
-	for (const { dir, manifest } of library) {
-		if (!fixedSet.has(manifest.name)) {
+	for (const pkg of library) {
+		const { dir, manifest } = pkg
+		const grouped = fixedSet.has(manifest.name)
+
+		if (hasOwnVersion(pkg) && grouped) {
+			violations.push(
+				`fixed: ${JSON.stringify(manifest.name)} (${dir}) — у тем и иконок своя версия, в группе их нет`,
+			)
+		} else if (!hasOwnVersion(pkg) && !grouped) {
 			violations.push(
 				`fixed: нет ${JSON.stringify(manifest.name)} (${dir}) — пакет вне общей версии`,
 			)
@@ -651,7 +706,7 @@ function checkFixed(config: TChangesetConfig, library: readonly TWorkspacePackag
 	return violations
 }
 
-/** Имена из `ignore`, которых нет в воркспейсе: исключение стенда без пакета. */
+/** Names in `ignore` missing from the workspace: an exclusion of a playground without its package. */
 function checkIgnore(config: TChangesetConfig, packages: readonly TWorkspacePackage[]): string[] {
 	const names = new Set(packages.map(({ manifest }) => manifest.name))
 
@@ -661,8 +716,8 @@ function checkIgnore(config: TChangesetConfig, packages: readonly TWorkspacePack
 }
 
 /**
- * До `1.0` ломающее изменение поднимает minor: `major` у пакета версии `0.x`
- * выпустил бы `1.0.0` всей группы.
+ * Before `1.0` a breaking change bumps the minor: `major` on a package at
+ * `0.x` would release `1.0.0` of the package, and of its whole group.
  */
 function checkChangesets(
 	changesets: readonly TChangeset[],
@@ -689,34 +744,32 @@ function checkChangesets(
 }
 
 /**
- * До `1.0` библиотека не готова, и версия говорит об этом суффиксом: changesets
- * в pre-режиме, выпуск — `0.3.0-alpha.0`. Версия без суффикса допустима — с неё
- * pre-режим начинается, — а суффикс не того тега значит, что режим сменили
- * мимо changesets.
+ * Before `1.0` a version is `0.x` without a suffix: the `0.x` itself marks the
+ * library as unstable, and a breaking change bumps the minor. So changesets is
+ * not in pre-mode. A suffix stays only while `.changeset/pre.json` leaves the
+ * mode (`exit`): the next `changeset version` drops it together with the file.
  */
 function checkPrerelease(
 	preState: TPreState | undefined,
 	library: readonly TWorkspacePackage[],
 ): string[] {
-	const violations: string[] = []
-
-	for (const { dir, manifest } of library) {
-		const { version } = manifest
-
-		if (typeof version !== 'string' || !version.startsWith('0.')) {
-			continue
-		}
-
-		if (preState?.mode !== 'pre') {
-			violations.push(
-				`${dir}: версия ${version}, а changesets не в pre-режиме — до 1.0 выпуск идёт с суффиксом (npx changeset pre enter alpha)`,
-			)
-		} else if (version.includes('-') && !version.includes(`-${preState.tag}.`)) {
-			violations.push(`${dir}: версия ${version}, а тег pre-режима — ${preState.tag}`)
-		}
+	if (preState?.mode === 'pre') {
+		return [
+			`.changeset/pre.json: pre-режим «${preState.tag}» — до 1.0 версия идёт 0.x без суффикса (npx changeset pre exit)`,
+		]
 	}
 
-	return violations
+	if (preState?.mode === 'exit') {
+		return []
+	}
+
+	return library.flatMap(({ dir, manifest }) => {
+		const { version } = manifest
+
+		return typeof version === 'string' && version.startsWith('0.') && version.includes('-')
+			? [`${dir}: версия ${version} с суффиксом — до 1.0 версия идёт 0.x без суффикса`]
+			: []
+	})
 }
 
 describe('манифесты пакетов воркспейса', () => {
@@ -741,7 +794,7 @@ describe('манифесты пакетов воркспейса', () => {
 	it('у библиотечного пакета рядом README, копия корневой лицензии и тексты чужих', () => {
 		const license = readFileSync(join(ROOT, 'LICENSE'), 'utf-8')
 		const violations = library.flatMap(({ dir, manifest }) => {
-			// Выражение другой формы роняет «библиотечные пакеты заполнены»
+			// An expression of another shape fails «библиотечные пакеты заполнены»
 			const others = thirdPartyLicenses(manifest.license) ?? []
 
 			return checkShippedFiles(readShippedFiles(dir, others), license, others).map(
@@ -756,7 +809,7 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('сосед объявлен точной общей версией', () => {
+	it('сосед объявлен точной версией, библиотека у тем и иконок — диапазоном', () => {
 		const violations = checkInternalRanges(library)
 
 		expect(
@@ -766,7 +819,7 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('библиотечные пакеты идут одной версией, у корня версии нет', () => {
+	it('группа fixed идёт одной версией, у корня версии нет', () => {
 		const violations = checkVersions(root, library)
 
 		expect(
@@ -775,9 +828,13 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('группа fixed — ровно библиотечные пакеты', () => {
+	it('группа fixed — библиотечные пакеты без тем и иконок', () => {
 		const violations = checkFixed(config, library)
 
+		expect(
+			library.filter(hasOwnVersion).length,
+			'ни одной темы и ни одного пакета иконок — каталоги OWN_VERSION_DIRS устарели',
+		).toBeGreaterThan(0)
 		expect(
 			violations,
 			'.changeset/config.json разошёлся с воркспейсом:\n' + violations.join('\n'),
@@ -812,12 +869,12 @@ describe('манифесты пакетов воркспейса', () => {
 		).toEqual([])
 	})
 
-	it('до 1.0 выпуск идёт pre-режимом, с суффиксом версии', () => {
+	it('до 1.0 версия идёт 0.x без суффикса, pre-режима нет', () => {
 		const violations = checkPrerelease(readPreState(), library)
 
 		expect(
 			violations,
-			'Pre-режим разошёлся с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
+			'Версии разошлись с разделом AGENTS.md «Версии пакетов»:\n' + violations.join('\n'),
 		).toEqual([])
 	})
 })
@@ -846,6 +903,18 @@ describe('сторож манифестов', () => {
 			name: '@soldy-ui/other',
 			version,
 			repository: { type: 'git', directory: 'packages/other' },
+		},
+	})
+
+	/** A theme: a version of its own, unlike the `fixed` group of the fixtures. */
+	const theme = (overrides: TManifest = {}): TWorkspacePackage => ({
+		dir: 'packages/themes/example',
+		manifest: {
+			...library({}).manifest,
+			name: '@soldy-ui/theme-example',
+			version: '0.4.0',
+			repository: { type: 'git', directory: 'packages/themes/example' },
+			...overrides,
 		},
 	})
 
@@ -921,7 +990,7 @@ describe('сторож манифестов', () => {
 		])
 	})
 
-	// `dist/` — в корневом .gitignore: сборки в чистом клоне нет.
+	// `dist/` is in the root .gitignore: a clean clone has no build
 	it('цель в выходе сборки — без нарушений со скриптом build, без него — нарушение', () => {
 		const entries = {
 			style: './dist/index.css',
@@ -960,7 +1029,7 @@ describe('сторож манифестов', () => {
 			`packages/example: license ${declared}, ожидается "MIT" или "MIT AND <SPDX-id>…"`,
 		]
 
-		/** Везёт содержимое под Apache-2.0: лицензия названа, её текст — в `files`. */
+		/** Ships content under Apache-2.0: the license is named, its text is in `files`. */
 		const apache = { license: 'MIT AND Apache-2.0', files: ['dist', 'LICENSE-Apache-2.0'] }
 
 		it('лицензия не MIT — нарушение', () => {
@@ -980,7 +1049,8 @@ describe('сторож манифестов', () => {
 			expect(checkLibraryPackage(library(two))).toEqual([])
 		})
 
-		// Своя — первой и одна, чужие — по одной: OR, WITH и скобки сторож не разбирает
+		// The own license first and once, third-party ones one by one: the guard
+		// does not parse OR, WITH and parentheses
 		it('выражение другой формы — нарушение', () => {
 			const expressions = [
 				'Apache-2.0 AND MIT',
@@ -999,7 +1069,7 @@ describe('сторож манифестов', () => {
 			}
 		})
 
-		// `LICENSE` npm кладёт в тарболл сам, остальные тексты — только по files
+		// npm puts `LICENSE` into the tarball by itself, the other texts only by files
 		it('текста чужой лицензии нет в files — нарушение', () => {
 			expect(checkLibraryPackage(library({ ...apache, files: ['dist'] }))).toEqual([
 				'packages/example: files без "LICENSE-Apache-2.0" — лицензия названа, а её текст в тарболл не уедет',
@@ -1043,8 +1113,8 @@ describe('сторож манифестов', () => {
 			])
 		})
 
-		// Перевод строки нормализует git (.gitattributes), и в рабочей копии на
-		// Windows у соседних файлов он расходится сам по себе
+		// git normalizes line breaks (.gitattributes), and in a Windows working
+		// copy neighbouring files differ in them on their own
 		it('та же лицензия с другим переводом строки — без нарушений', () => {
 			const files = { 'README.md': '# @soldy-ui/example\n', LICENSE }
 
@@ -1073,7 +1143,7 @@ describe('сторож манифестов', () => {
 			})
 		})
 
-		// Читатель ходит на диск: у самого сторожа README и LICENSE есть
+		// The reader goes to disk: the guard's own package has README and LICENSE
 		it('файлы пакета читаются с диска', () => {
 			const files = readShippedFiles('packages/setup')
 			const root = readFileSync(join(ROOT, 'LICENSE'), 'utf-8')
@@ -1089,7 +1159,7 @@ describe('сторож манифестов', () => {
 	})
 
 	describe('диапазоны на соседей', () => {
-		/** Зависит от `@soldy-ui/example` — с тем полем и тем диапазоном, что дали. */
+		/** Depends on `@soldy-ui/example` — in the given field, by the given range. */
 		const dependent = (field: string, range: unknown): TWorkspacePackage => ({
 			dir: 'packages/other',
 			manifest: {
@@ -1136,6 +1206,85 @@ describe('сторож манифестов', () => {
 				'packages/other: devDependencies["@soldy-ui/example"] "1.1.0", ожидается "1.2.0"',
 			])
 		})
+
+		describe('тема и иконки — библиотеку диапазоном', () => {
+			/** A theme depending on `@soldy-ui/example` of the group by the given range. */
+			const dependentTheme = (field: string, range: unknown): TWorkspacePackage =>
+				theme({ [field]: { '@soldy-ui/example': range, vue: '^3.5.32' } })
+
+			const caretExpected = (dir: string, field: string, range: string): string =>
+				`${dir}: ${field}["@soldy-ui/example"] ${JSON.stringify(range)}, ожидается диапазон "^<версия>" — тема и иконки зависят от библиотеки диапазоном`
+
+			it('^ от версии — без нарушений, и версия диапазона не обязана быть текущей', () => {
+				for (const field of DEPENDENCY_FIELDS) {
+					for (const range of [`^${VERSION}`, '^1.0.0', '^1.2.0-alpha.7']) {
+						expect(
+							checkInternalRanges([library({}), dependentTheme(field, range)]),
+							`${field} ${range}`,
+						).toEqual([])
+					}
+				}
+			})
+
+			it('точная версия, другой вид диапазона или протокол — нарушение', () => {
+				for (const range of [
+					VERSION,
+					`~${VERSION}`,
+					`>=${VERSION}`,
+					'*',
+					'workspace:^',
+					'^1.2',
+				]) {
+					expect(
+						checkInternalRanges([
+							library({}),
+							dependentTheme('peerDependencies', range),
+						]),
+						range,
+					).toEqual([caretExpected('packages/themes/example', 'peerDependencies', range)])
+				}
+			})
+
+			it('пакет иконок — так же', () => {
+				const icons = {
+					...dependentTheme('dependencies', VERSION),
+					dir: 'packages/icons/example',
+				}
+
+				expect(checkInternalRanges([library({}), icons])).toEqual([
+					caretExpected('packages/icons/example', 'dependencies', VERSION),
+				])
+			})
+
+			// The theme builds the CSS of its base into its own stylesheet
+			it('тема объявляет свою базу точной версией', () => {
+				const derived = (range: string): TWorkspacePackage => ({
+					dir: 'packages/themes/derived',
+					manifest: {
+						...theme().manifest,
+						name: '@soldy-ui/theme-derived',
+						repository: { type: 'git', directory: 'packages/themes/derived' },
+						dependencies: { '@soldy-ui/theme-example': range },
+					},
+				})
+
+				expect(checkInternalRanges([theme(), derived('0.4.0')])).toEqual([])
+				expect(checkInternalRanges([theme(), derived('^0.4.0')])).toEqual([
+					'packages/themes/derived: dependencies["@soldy-ui/theme-example"] "^0.4.0", ожидается "0.4.0"',
+				])
+			})
+
+			// The adapters test against the theme of the workspace
+			it('пакет группы объявляет тему точной версией', () => {
+				const adapter = (range: string): TWorkspacePackage =>
+					library({ devDependencies: { '@soldy-ui/theme-example': range } })
+
+				expect(checkInternalRanges([adapter('0.4.0'), theme()])).toEqual([])
+				expect(checkInternalRanges([adapter('^0.4.0'), theme()])).toEqual([
+					'packages/example: devDependencies["@soldy-ui/theme-example"] "^0.4.0", ожидается "0.4.0"',
+				])
+			})
+		})
 	})
 
 	it('пакет без version — нарушение', () => {
@@ -1148,10 +1297,14 @@ describe('сторож манифестов', () => {
 		expect(checkVersions({ name: 'soldy' }, [library({}), other(VERSION)])).toEqual([])
 	})
 
-	it('версии библиотечных пакетов разошлись — нарушение с их списком', () => {
+	it('версии пакетов группы fixed разошлись — нарушение с их списком', () => {
 		expect(checkVersions({ name: 'soldy' }, [library({}), other('1.3.0')])).toEqual([
-			'версии библиотечных пакетов разошлись: "1.2.0" — packages/example; "1.3.0" — packages/other',
+			'версии пакетов группы fixed разошлись: "1.2.0" — packages/example; "1.3.0" — packages/other',
 		])
+	})
+
+	it('тема своей версией — без нарушений', () => {
+		expect(checkVersions({ name: 'soldy' }, [library({}), other(VERSION), theme()])).toEqual([])
 	})
 
 	it('version у корня — нарушение', () => {
@@ -1161,7 +1314,7 @@ describe('сторож манифестов', () => {
 	})
 
 	describe('порядок корневого build', () => {
-		/** Отдаёт наружу сборку: `dist/` игнорируется git, и в чистом клоне его нет. */
+		/** Ships a build: git ignores `dist/`, and a clean clone has none. */
 		const built = (overrides: TManifest = {}): TWorkspacePackage =>
 			library({
 				main: './dist/index.js',
@@ -1169,7 +1322,7 @@ describe('сторож манифестов', () => {
 				...overrides,
 			})
 
-		/** Зависит от `@soldy-ui/example`, поэтому собирается после него. */
+		/** Depends on `@soldy-ui/example`, so it is built after it. */
 		const dependent: TWorkspacePackage = {
 			dir: 'packages/other',
 			manifest: {
@@ -1209,15 +1362,16 @@ describe('сторож манифестов', () => {
 			])
 		})
 
-		// Скрипт `build` у пакета, чьи точки входа ведут на исходники, — это
-		// адаптер Vue до задачи 02: сборка есть, но наружу уходят исходники
+		// A `build` script on a package whose entry points lead to sources — the
+		// Vue adapter before task 02: there is a build, but sources go out
 		it('пакет со скриптом build, отдающий исходники, — без нарушений', () => {
 			const sources = built({ main: './src/index.ts' })
 
 			expect(checkBuildOrder(script('@soldy-ui/example'), [built(), sources])).toEqual([])
 		})
 
-		// Пакет без скрипта `build` собирать нечем: имя в корневом build уронило бы его
+		// A package without a `build` script has nothing to build with: its name in
+		// the root build would fail it
 		it('пакет без скрипта build в корневом build — нарушение', () => {
 			const root = script('@soldy-ui/example', '@soldy-ui/other')
 
@@ -1248,6 +1402,32 @@ describe('сторож манифестов', () => {
 		expect(
 			checkFixed(config({ fixed: [['@soldy-ui/example']] }), [library({}), other(VERSION)]),
 		).toEqual(['fixed: нет "@soldy-ui/other" (packages/other) — пакет вне общей версии'])
+	})
+
+	it('тема вне fixed — без нарушений', () => {
+		expect(checkFixed(config({}), [library({}), other(VERSION), theme()])).toEqual([])
+	})
+
+	it('тема или иконки в fixed — нарушение', () => {
+		const icons = {
+			...theme({ name: '@soldy-ui/icons-example' }),
+			dir: 'packages/icons/example',
+		}
+		const fixed = [
+			[
+				'@soldy-ui/example',
+				'@soldy-ui/other',
+				'@soldy-ui/theme-example',
+				'@soldy-ui/icons-example',
+			],
+		]
+
+		expect(
+			checkFixed(config({ fixed }), [library({}), other(VERSION), theme(), icons]),
+		).toEqual([
+			'fixed: "@soldy-ui/theme-example" (packages/themes/example) — у тем и иконок своя версия, в группе их нет',
+			'fixed: "@soldy-ui/icons-example" (packages/icons/example) — у тем и иконок своя версия, в группе их нет',
+		])
 	})
 
 	it('стенд в fixed — нарушение', () => {
@@ -1285,27 +1465,31 @@ describe('сторож манифестов', () => {
 		expect(checkChangesets([changeset('major')], [library({})])).toEqual([])
 	})
 
-	it('версия 0.x без pre-режима — нарушение', () => {
+	it('pre-режим — нарушение, какие бы ни были версии', () => {
 		const message =
-			'packages/example: версия 0.3.0, а changesets не в pre-режиме — до 1.0 выпуск идёт с суффиксом (npx changeset pre enter alpha)'
-
-		expect(checkPrerelease(undefined, [library({ version: '0.3.0' })])).toEqual([message])
-		expect(
-			checkPrerelease({ mode: 'exit', tag: 'alpha' }, [library({ version: '0.3.0' })]),
-		).toEqual([message])
-	})
-
-	it('суффикс не того тега — нарушение', () => {
-		expect(
-			checkPrerelease({ mode: 'pre', tag: 'alpha' }, [library({ version: '0.3.0-beta.1' })]),
-		).toEqual(['packages/example: версия 0.3.0-beta.1, а тег pre-режима — alpha'])
-	})
-
-	it('pre-режим с суффиксом своего тега или до первого выпуска, версия 1.x — без нарушений', () => {
+			'.changeset/pre.json: pre-режим «alpha» — до 1.0 версия идёт 0.x без суффикса (npx changeset pre exit)'
 		const alpha = { mode: 'pre', tag: 'alpha' }
 
-		expect(checkPrerelease(alpha, [library({ version: '0.3.0-alpha.2' })])).toEqual([])
-		expect(checkPrerelease(alpha, [library({ version: '0.2.0' })])).toEqual([])
+		expect(checkPrerelease(alpha, [library({ version: '0.3.0-alpha.2' })])).toEqual([message])
+		expect(checkPrerelease(alpha, [library({ version: '0.3.0' })])).toEqual([message])
+	})
+
+	it('версия 0.x с суффиксом без pre.json — нарушение', () => {
+		expect(checkPrerelease(undefined, [library({ version: '0.3.0-alpha.7' })])).toEqual([
+			'packages/example: версия 0.3.0-alpha.7 с суффиксом — до 1.0 версия идёт 0.x без суффикса',
+		])
+	})
+
+	// The next `changeset version` drops the suffix together with pre.json
+	it('выход из pre-режима с суффиксом — без нарушений', () => {
+		const exit = { mode: 'exit', tag: 'alpha' }
+
+		expect(checkPrerelease(exit, [library({ version: '0.3.0-alpha.7' })])).toEqual([])
+		expect(checkPrerelease(exit, [library({ version: '0.3.0' })])).toEqual([])
+	})
+
+	it('0.x без суффикса и версия 1.x — без нарушений', () => {
+		expect(checkPrerelease(undefined, [library({ version: '0.3.0' })])).toEqual([])
 		expect(checkPrerelease(undefined, [library({})])).toEqual([])
 	})
 })
