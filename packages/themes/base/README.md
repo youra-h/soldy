@@ -76,9 +76,15 @@ proves it is done.
 
 ### 1. The package
 
-All `@soldy-ui/*` packages share one version, and a theme depends on them by that exact version,
-with no `^`. This package is a dependency, not a dev dependency: the behavior of the theme imports
-its plugins at run time.
+The library — `@soldy-ui/core`, `@soldy-ui/setup` and the rest — shares one version, and this
+package has a version of its own. A theme depends on the library by a range, `^` and the library
+version it is built against: the `so-*` classes, the `data-*` attributes and the `--so-*`
+variables are what a theme is written against, and a release that breaks them falls outside that
+range — from the first release without a suffix on: the pre-releases of one version
+(`0.3.0-alpha.N`) all fall inside it. On this package a theme depends by its exact version, with no
+`^`: its CSS goes into the theme's stylesheet and its plugins run with the theme's behavior, so both
+have to come from one release. And it is a dependency, not a dev dependency: the behavior of the
+theme imports its plugins at run time.
 
 ```json
 {
@@ -91,8 +97,11 @@ its plugins at run time.
     "./setup": { "types": "./dist/setup/index.d.ts", "default": "./dist/setup/index.js" }
   },
   "files": ["dist", "index.d.ts"],
-  "dependencies": { "@soldy-ui/theme-base": "<version>" },
-  "peerDependencies": { "@soldy-ui/core": "<version>", "@soldy-ui/setup": "<version>" }
+  "dependencies": { "@soldy-ui/theme-base": "<theme-base version>" },
+  "peerDependencies": {
+    "@soldy-ui/core": "^<library version>",
+    "@soldy-ui/setup": "^<library version>"
+  }
 }
 ```
 

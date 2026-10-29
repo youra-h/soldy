@@ -85,8 +85,10 @@ The theme and the icon pack are the same for every adapter.
 | `@soldy-ui/icons-material` | [Material Symbols](https://fonts.google.com/icons) by Google | package MIT, icons Apache-2.0 | `npm install @soldy-ui/icons-material` |
 | `@soldy-ui/icons-lucide`   | [Lucide](https://lucide.dev)                                 | package MIT, icons ISC        | `npm install @soldy-ui/icons-lucide`   |
 
-All `@soldy-ui/*` packages share one version; keep them on the same one. Then plug in the theme and
-the icons at the application entry point, as shown below.
+The adapter and the core packages it brings share one version; keep them on the same one. A theme
+and an icon pack have versions of their own and declare the range of library versions they work
+with, which npm checks on install. Then plug in the theme and the icons at the application entry
+point, as shown below.
 
 ## What it looks like
 

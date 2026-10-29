@@ -45,8 +45,8 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@soldy-ui/core": "0.3.0-alpha.7",
-    "@soldy-ui/plugins": "0.3.0-alpha.7"
+    "@soldy-ui/core": "^0.3.0-alpha.7",
+    "@soldy-ui/plugins": "^0.3.0-alpha.7"
   },
   "devDependencies": {
     "postcss": "^8.5.9",
