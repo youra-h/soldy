@@ -29,12 +29,12 @@
  * the zero width of a table with `data-sized` (`components/table.css`) it takes
  * the place's full width, without the window's scroll by `data-overflow` the
  * table goes past the window while the window stands, without `sticky` the head
- * leaves with the rows, without the backing in the place's color or without the
- * head's raise over the body the rows and checkboxes show through on the head's
- * snapshot, without the squares under the headers the rows show at their
- * rounded corners, a square without the line's inset covers the theme's line,
- * and without the scroll margin to focus the cell after ↑ stands under the
- * head.
+ * leaves with the rows, without the head's background in the place's color or
+ * without the head's raise over the body the rows and checkboxes show through on
+ * the head's snapshot, without the backing under the whole head the rows show at
+ * the headers' rounded corners, a backing without the line's inset covers the
+ * theme's line, and without the scroll margin to focus the cell after ↑ stands
+ * under the head.
  */
 
 import { describe, it, expect, afterAll, afterEach, beforeAll } from 'vitest'
@@ -379,9 +379,9 @@ describe('закреплённая шапка', () => {
 		 * A theme rounds the headers' top corners and draws a line under the
 		 * sticky head in the head's background, as oren does; the spec's style
 		 * plays that theme. The row group's background doesn't reach under the
-		 * rounded corners, so the base lays a square of the place's surface under
-		 * each header, and the square stops short of the line by the thickness the
-		 * theme names (`--so-table-head-border`), or it would cover the line.
+		 * rounded corners, so the base lays the head's background once more under
+		 * the whole head, and the backing stops short of the line by the thickness
+		 * the theme names (`--so-table-head-border`), or it would cover the line.
 		 */
 		it('скруглённые заголовки и линия темы под шапкой: у углов строки не проступают, линия видна', async () => {
 			const LINE = [0, 128, 0, 255]

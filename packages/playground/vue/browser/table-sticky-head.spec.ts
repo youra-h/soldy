@@ -458,19 +458,25 @@ describe('линия под шапкой', () => {
 	 * In this mode the browser would drop the gradient and the background and put
 	 * the page's color instead: the line would vanish. The head goes without the
 	 * replacement, in the system colors of the page and the text, like the row
-	 * lines.
+	 * lines. The base's backing under the whole head (`::after`) goes without it
+	 * too — the head's setting is inherited — and takes the head's background: in
+	 * the theme's color it would cover the page's.
 	 */
 	it.each(SCHEMES)(
-		'%s, принудительные цвета: фон — Canvas, линия — CanvasText',
+		'%s, принудительные цвета: фон и подложка — Canvas, линия — CanvasText',
 		async (scheme) => {
 			document.documentElement.dataset.soTheme = scheme
 			await forcedColors('active')
 			await show(() => scrollBox(sticky(engineOf())))
 
 			const head = headOf()
+			const canvas = pixel([systemColor('Canvas')])
 
-			expect(pixel([style(head).backgroundColor])).toEqual(pixel([systemColor('Canvas')]))
-			expect(pixel([gradientColor(head)])).toEqual(pixel([systemColor('CanvasText')]))
+			expect(pixel([style(head).backgroundColor]), 'фон').toEqual(canvas)
+			expect(pixel([style(head, '::after').backgroundColor]), 'подложка').toEqual(canvas)
+			expect(pixel([gradientColor(head)]), 'линия').toEqual(
+				pixel([systemColor('CanvasText')]),
+			)
 		},
 	)
 })
@@ -482,14 +488,14 @@ describe('линия под шапкой', () => {
  * `elementFromPoint` don't see the painting, and it was the painting the head
  * leaked in. The browser puts the row group's background into each cell's area:
  * at a header's rounded top corners it is cut off — in WebKit the rows showed
- * under the head's outer corners, — and in Chromium a header changed in the
- * middle of its color transition — the prop turned on under the pointer, a
- * column's edge dragged, a column moved — stayed without it and with the old
- * veil until something else repainted it. So the base lays a square of the
- * place's surface under each header, and the theme also paints the backing with
- * the head's shadow (`themes/oren/AGENTS.md`). The squares stop above the line
- * the theme draws under the head: on the snapshot the line shows under every
- * header.
+ * under the head's outer corners, — where a carried header left there is none
+ * of it, and in Chromium a header changed in the middle of its color transition
+ * — the prop turned on under the pointer, a column's edge dragged, a column
+ * moved — stayed without it and with the old veil until something else
+ * repainted it. So the base lays the head's background once more under the
+ * whole head, and the theme also paints the backing with the head's shadow
+ * (`themes/oren/AGENTS.md`). The backing stops above the line the theme draws
+ * under the head: on the snapshot the line shows under every header.
  *
  * The scene is the stand's preview: a 320 px scroll window, forty rows, the
  * stand's columns — with sorting, a width handle and reordering. The body cells
@@ -666,14 +672,20 @@ describe('снимок шапки', () => {
 	const texts = (): Array<string | undefined> =>
 		headers().map((header) => header.textContent?.trim())
 
-	/** The header of the «Имя» column — wherever it stands. */
-	function nameHeader(): HTMLElement {
-		const found = headers().find((header) => header.textContent?.trim() === 'Имя')
+	/** The header of a column by its label — wherever it stands. */
+	function headerOf(text: string): HTMLElement {
+		const found = headers().find((header) => header.textContent?.trim() === text)
 
-		if (!found) throw new Error('заголовка «Имя» нет')
+		if (!found) throw new Error(`заголовка «${text}» нет`)
 
 		return found
 	}
+
+	/** The header of the «Имя» column. */
+	const nameHeader = (): HTMLElement => headerOf('Имя')
+
+	/** The middle of a node along the row. */
+	const middleOf = (element: Element): number => box(element).left + box(element).width / 2
 
 	it.each(SCHEMES)('%s: проп с монтирования, указатель вдали', async (scheme) => {
 		await showPreview(scheme, true)
@@ -755,6 +767,90 @@ describe('снимок шапки', () => {
 		expect(await restOf(nameHeader()), 'заголовок после ухода указателя').toEqual(rest)
 
 		await expectHeadSteady()
+	})
+
+	/**
+	 * A header in the middle of a carry travels on its own layer, and the place it
+	 * left keeps the backing: the backing lies under the whole head and doesn't
+	 * travel with any header. The first column leaves the head's outer start
+	 * corner, the last one its outer end corner, and the middle one, carried past
+	 * its neighbour, the place the neighbour makes room from. Mid-carry the head's
+	 * snapshot over the rows gone under it matches the snapshot without scrolling.
+	 */
+	const CARRIES = [
+		{ carry: 'первую колонку вправо на 90 px', column: 'Имя', to: (x: number) => x + 90 },
+		{ carry: 'последнюю колонку влево на 90 px', column: 'Возраст', to: (x: number) => x - 90 },
+		{
+			carry: 'среднюю колонку за соседа',
+			column: 'Город',
+			to: () => middleOf(headerOf('Возраст')) + 10,
+		},
+	]
+
+	it.each(SCHEMES.flatMap((scheme) => CARRIES.map((carry) => ({ scheme, ...carry }))))(
+		'$scheme: несут $carry, когда строки уже под шапкой',
+		async ({ column, scheme, to }) => {
+			await showPreview(scheme, true)
+			await scrollUnderHead()
+
+			const scroller = find('.so-test-scroll')
+			const header = headerOf(column)
+			const x = middleOf(header)
+			const y = box(header).top + box(header).height / 2
+			const target = to(x)
+
+			await pointAt(x, y)
+			await commands.mouseDown()
+
+			try {
+				await pointAt(x + Math.sign(target - x) * 40, y)
+				await pointAt(target, y)
+
+				expect(header.dataset.dragging).toBe('true')
+
+				await settled(headOf())
+
+				const shot = await snapshot(headOf())
+
+				scroller.scrollTop = 0
+				await frames(2)
+
+				const reference = await snapshot(headOf())
+
+				expect([shot.width, shot.height], 'размер снимка').toEqual([
+					reference.width,
+					reference.height,
+				])
+				expect(mismatch(reference, shot), 'пикселей шапки разошлось').toBe(0)
+			} finally {
+				await commands.mouseUp()
+			}
+
+			// The released header lands, and the gesture is over
+			await expect.poll(() => find('.so-table').hasAttribute('data-dragging')).toBe(false)
+		},
+	)
+
+	/**
+	 * The backing lies under the head and nothing else. In WebKit a row group is
+	 * no containing block for an absolute box, the table is: a backing stretched
+	 * by its insets lay over the whole table, and the rows below the head were
+	 * gone as well. A row below the head shows its cells' color on the snapshot.
+	 */
+	it.each(SCHEMES)('%s: подложка — только под шапкой, строка ниже видна', async (scheme) => {
+		await showPreview(scheme, true)
+		await scrollUnderHead()
+
+		const bottom = box(headOf()).bottom
+		const row = rows().find((node) => box(node).top >= bottom)
+
+		if (!row) throw new Error('строки ниже шапки нет')
+
+		const shot = await snapshot(row)
+		// Near the row's top, in the middle: the cell's padding, away from the text
+		const index = (Math.round(shot.height * 0.15) * shot.width + Math.round(shot.width / 2)) * 4
+
+		expect([...shot.data.slice(index, index + 4)], 'ячейка строки').toEqual([255, 0, 0, 255])
 	})
 })
 

@@ -1426,19 +1426,34 @@
  * the head covers the rows, and the table has no surface of its own. The place
  * declares the surface — the theme's page, a panel, the app's card. The row
  * group's background alone isn't enough: the browser puts it into each cell's
- * area, and a header's rounded corners cut it — in WebKit the rows showed
- * through under the head's outer corners. So under each header there is a
- * square of the same color as well — `::after` over the whole cell with a
- * negative `z-index`: it goes into the head's layer, under the header's
- * background, and the header's veil lies over it. The carried header
- * (`data-dragging`) has no square: it travels on its own layer, and a square
- * under its rounded look would lie on the neighbour. The theme draws the line
- * under the head in the head's background, and the square would cover it too —
- * so it stops short of the cell's bottom by the line's thickness
- * (`--so-table-head-border`; zero without a theme). A theme whose head
- * background doesn't hold in mid-transition of a header's color — Chromium
- * loses it there — also paints the backing with an inset shadow of the head
- * (oren does, together with the line under the head).
+ * area — a header's rounded corners cut it, in WebKit the rows showed through
+ * under the head's outer corners, and the place a carried header left has none
+ * of it. So the head's background lies once more under the whole head — the
+ * head's `::after` with a negative `z-index`: it goes into the head's layer,
+ * under the headers, and their veils lie over it. It travels with no header,
+ * and the place a carried header (`data-dragging`) left stays covered, at the
+ * head's outer corners too. Its color is the head's background itself
+ * (`inherit`): a theme that takes the head out of forced colors and paints it
+ * the system color of the page (oren does) gets the backing in that color too,
+ * while the variable would keep the theme's color there.
+ *
+ * The backing's size is the head's height, not its insets: in WebKit a row
+ * group is no containing block for an absolute box, the table is, and a backing
+ * stretched by its insets covered the whole table, the body included. The
+ * height is the one the layout plugin writes (`--so-table-head-height`, below at
+ * focus); until there is one — the head row, and a head wrapped into several
+ * rows is backed by its first one. The theme draws the line under the head in
+ * the head's background, and the backing would cover it too — so it stops
+ * short of the head's bottom by the line's thickness (`--so-table-head-border`;
+ * zero without a theme). `::after`, not `::before`: the engine wraps a row
+ * group's pseudo-element into an anonymous row, and before the head row it
+ * becomes the first row of the fixed layout — Chromium then lays the table out
+ * zero wide. The selection header is positioned, like the column headers:
+ * WebKit paints a cell without a layer of its own together with the row group's
+ * background, under the backing. A theme whose head background doesn't hold in
+ * mid-transition of a header's color — Chromium loses it there — also paints
+ * the backing with an inset shadow of the head (oren does, together with the
+ * line under the head).
  *
  * Focus below the head: a grid cell focus went up to (↑, PageUp) and a field in
  * a cell after Shift+Tab stand below the head, not behind it. The scroll margin
@@ -1469,16 +1484,16 @@
 	position: relative;
 }
 
-.so-table[data-sticky-head='true']
-	> .so-table__head
-	> .so-table__head-row
-	> :is(.so-table-column:not([data-dragging='true']), .so-table__select)::after {
+.so-table[data-sticky-head='true'] > .so-table__head::after {
 	content: '';
 	position: absolute;
 	inset-inline: 0;
-	inset-block: 0 var(--so-table-head-border, 0px);
+	inset-block-start: 0;
+	block-size: calc(
+		var(--so-table-head-height, var(--so-table-head-row)) - var(--so-table-head-border, 0px)
+	);
 	z-index: -1;
-	background-color: var(--so-place-surface);
+	background-color: inherit;
 }
 
 /* A cell — the grid's focus ring is inside it */

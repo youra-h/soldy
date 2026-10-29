@@ -6,16 +6,19 @@ $sticky-head-line: 1px;
 // The line under the sticky head is the bottom pixel of its backing, and in
 // forced colors mode the backing and the line take the system colors of the
 // page and its text. The backing — the head's background in the color of the
-// place, and a square of it under each header — comes from the shared theme
-// layer (`components/table.css` in `@soldy-ui/theme-base`); here the head also
-// paints it with an inset shadow over the whole `thead`: the first shadow is
-// the line, the second, under it, the surface. The shadow is one property, so
-// the theme writes the backing into it together with the line. A line of the
-// same colors lies in the background too, under the shadow. Why a shadow and
-// not just the background — `_table.scss`, the sticky head.
+// place, and the same background once more under the whole head — comes from
+// the shared theme layer (`components/table.css` in `@soldy-ui/theme-base`);
+// here the head also paints it with an inset shadow over the whole `thead`:
+// the first shadow is the line, the second, under it, the surface. The shadow
+// is one property, so the theme writes the backing into it together with the
+// line. A line of the same colors lies in the background too, under the
+// shadow. Why a shadow and not just the background — `_table.scss`, the sticky
+// head.
 //
-// The squares under the headers stop above the line by its thickness
-// (`--so-table-head-border`), or they would cover it.
+// The backing under the whole head stops above the line by its thickness
+// (`--so-table-head-border`), or it would cover it. Its color is the head's
+// background, so in forced colors mode it is the system color of the page as
+// well.
 @mixin sticky-head-surface($surface: var(--so-place-surface), $line: var(--so-neutral-300)) {
 	--so-table-head-border: #{$sticky-head-line};
 	background-image: linear-gradient($line, $line);
