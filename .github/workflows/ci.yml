@@ -178,6 +178,16 @@ jobs:
       - name: Импорты пакетов объявлены
         run: npm run check:published-imports
 
+      # After the build as well: React Server Components (the Next.js App
+      # Router) run every module a Server Component imports on the server,
+      # where React has no state, effects or context, and only a module that
+      # opens with 'use client' is handed over as a reference instead. The
+      # bundle of a package on React marks its client modules; the step reads
+      # the marks back from dist. An unbuilt package fails: its entries are not
+      # there.
+      - name: Директива 'use client' у модулей React
+        run: npm run check:client-directive
+
       - name: Типы — Core
         run: npx tsc --noEmit -p packages/core/tsconfig.json
 

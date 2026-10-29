@@ -29,6 +29,7 @@
     "test:min-peers": "vitest run --root tools/min-peers",
     "test:side-effects": "vitest run --root tools/side-effects",
     "check:published-imports": "vitest run --root tools/published-imports",
+    "check:client-directive": "vitest run --root tools/client-directive",
     "lint": "eslint . --fix",
     "lint:ci": "eslint .",
     "format": "prettier --write .",
