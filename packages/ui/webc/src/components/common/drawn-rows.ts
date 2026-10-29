@@ -99,7 +99,7 @@ export class TDrawnRows<TItem extends TDrawable> {
 		if (row.kind === 'separator') return
 
 		if (row.kind === 'group') {
-			if (this._spec.group.is(node)) this._fillGroup(ctx, node, row.section)
+			if (node instanceof this._spec.group) this._fillGroup(ctx, node, row.section)
 
 			return
 		}

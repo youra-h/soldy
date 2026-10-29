@@ -1,22 +1,22 @@
 /**
- * Календарь в настоящем браузере — раскладка и фокус.
+ * Calendar in a real browser — layout and focus.
  *
- * Здесь то, чего jsdom не считает вовсе. Раскладка: высота месяца под шесть
- * недель при любом месяце — сетка не прыгает при листании, а соседние месяцы
- * стоят вровень, — кольцо фокуса, которое помещается в ячейку дня, и панель
- * выбора месяца и года: подложка во весь календарь и карточка у её верхнего
- * края — во всю ширину при любом числе сеток, высотой по содержимому, полоса
- * жеста у её низа, кромка в режиме принудительных цветов, — список 4 колонки по 3
- * строки, подписи месяцев и лет, которые переносятся между словами и не рвут
- * слово, а слово шире плитки срезают многоточием, и подписи дней недели —
- * короткие и узкие, по обе стороны правила ядра, — в своих колонках и под
- * карточкой. Фокус: порядок Tab,
- * `:focus-visible`, клик из Enter на кнопке листания, перенос DOM-фокуса за
- * фокусом коллекции, когда узел нового дня появляется кадром позже, и путь
- * фокуса через панель выбора — в том числе после нажатия по подложке и жеста.
- * Цвет: рамка «сегодня» — пара рамки `outlined` у Button, видная и на вуали.
- * Модель проверяет ядро, клавиши и указатель — тесты плагинов, проводку —
- * `ui/vue/__tests__/calendar.spec.ts`.
+ * What jsdom doesn't compute at all. Layout: a month's height fits six weeks in
+ * any month — the grid doesn't jump while paging, and neighbouring months stand
+ * level, — the focus ring fits a day's cell, and the month and year picker: the
+ * backdrop over the whole calendar and the card at its top edge — full width at
+ * any number of grids, content height, the gesture strip at its bottom, the rim
+ * in forced colors mode, — the list of 4 columns by 3 rows, month and year
+ * labels that wrap between words and don't break a word, a word wider than the
+ * tile cut by an ellipsis, and the weekday labels — short and narrow, on both
+ * sides of the core rule, — in their columns and under the card. Focus: the
+ * Tab order, `:focus-visible`, a click from Enter on a paging button, moving
+ * the DOM focus after the collection's focus when the new day's node appears a
+ * frame later, and the focus path through the picker — after a press on the
+ * backdrop and a gesture too. Colour: the "today" frame is the pair of the
+ * Button `outlined` frame, visible on a veil too. The core checks the model,
+ * plugin tests the keys and the pointer, `ui/vue/__tests__/calendar.spec.ts`
+ * the wiring.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -34,23 +34,23 @@ import { loadHost } from '../src/hosts'
 import { find, lightness, outlined, pixel, settled, style, systemColor } from './colors'
 import { DIRECTION_CASES, pointing, setDir, sidesOf, type TLine } from './directions'
 import { forcedColors } from './media'
-import { forcedColorsRepaint, webkitUntil } from './engine'
+import { forcedColorsRepaint } from './engine'
 import { expectHidesWhenFaded, ownTransitions, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 0.5
 
-/** Зона захвата полосы жеста — не меньше 24px: минимум цели по WCAG 2.5.8. */
+/** The gesture strip's grip zone — at least 24px: the target minimum of WCAG 2.5.8. */
 const GRIP_ZONE = 24
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
- * Календарь между двумя кнопками — чтобы было откуда войти по Tab и куда
- * уйти. Узел корня плагины получают кадром позже, дни — ещё позже владельца.
- * `dir` — направление узла, в котором стоит календарь.
+ * The calendar between two buttons — to have where to Tab in from and out to.
+ * Plugins get the root node a frame later, the days later than their owner.
+ * `dir` is the direction of the node the calendar stands in.
  */
 const show = async (props: Record<string, unknown>, dir?: TLine, locale: TLocale = enUS) => {
 	render(
@@ -72,8 +72,9 @@ const show = async (props: Record<string, unknown>, dir?: TLine, locale: TLocale
 }
 
 /**
- * Тот же календарь под провайдером с языком `tag`: своего языка у календаря
- * нет, это тег локали поддерева. Строки — английские, раскладке они не важны.
+ * The same calendar under a provider with language `tag`: the calendar has no
+ * language of its own, it is the subtree locale's tag. The strings are
+ * English, they don't matter for the layout.
  */
 const showIn = (tag: string, props: Record<string, unknown>) =>
 	show(props, undefined, extendLocale(enUS, { tag }))
@@ -84,9 +85,9 @@ const findAll = (selector: string): HTMLElement[] =>
 	)
 
 /**
- * Прямоугольник самих строк текста узла, а не его коробки: область подписи
- * плитки — во всю плитку, колонка дня недели — шире имени. Текст, срезанный
- * многоточием, он отдаёт целиком — той ширины, что текст просит.
+ * The box of the node's text lines themselves, not of its box: a tile's label
+ * area spans the whole tile, a weekday column is wider than the name. Text cut
+ * by an ellipsis it returns whole — as wide as the text asks.
  */
 const labelBox = (node: HTMLElement) => {
 	const range = document.createRange()
@@ -96,7 +97,7 @@ const labelBox = (node: HTMLElement) => {
 	return range.getBoundingClientRect()
 }
 
-/** Ячейка дня по дате — по его имени, полной дате, как её прочтёт скринридер. */
+/** A day's cell by date — by its name, the full date as a screen reader reads it. */
 const dayCell = (date: string): HTMLElement => {
 	const [year, month, day] = date.split('-').map(Number)
 	const label = new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeZone: 'UTC' }).format(
@@ -112,7 +113,7 @@ const tab = () => userEvent.keyboard('{Tab}')
 
 beforeEach(async () => {
 	document.documentElement.dataset.soTheme = 'oren'
-	// Три месяца в ряд: на узком окне они переносятся
+	// Three months in a row: in a narrow window they wrap
 	await page.viewport(1000, 700)
 })
 
@@ -123,9 +124,9 @@ afterEach(() => {
 
 describe('высота месяца', () => {
 	/**
-	 * Февраль 2026 с воскресенья — ровно четыре недели, август — шесть. Ряд
-	 * заголовков у соседей один, и недели у них стоят вровень, только если
-	 * месяц держит место под шесть недель при любой своей длине.
+	 * February 2026 from Sunday is exactly four weeks, August is six.
+	 * Neighbours share one row of titles, and their weeks stand level only if
+	 * a month keeps room for six weeks at any length.
 	 */
 	it('месяцы в четыре и шесть недель одной высоты', async () => {
 		await show({ months: ['2026-02-01', '2026-08-01'] })
@@ -147,7 +148,7 @@ describe('высота месяца', () => {
 		const root = find('.so-calendar')
 		const height = root.getBoundingClientRect().height
 
-		// Март — пять недель, апрель — пять, май — шесть
+		// March has five weeks, April five, May six
 		for (const title of ['March 2026', 'April 2026', 'May 2026']) {
 			find('.so-calendar__next').click()
 			await expect.poll(titles).toEqual([title])
@@ -161,8 +162,9 @@ describe('высота месяца', () => {
 
 describe('кольцо фокуса', () => {
 	/**
-	 * Кольцо рисует плитка дня, ячейка шире её на запас. Соседние дни стоят
-	 * вплотную, и кольцо, вышедшее за ячейку, легло бы на соседа.
+	 * The day's tile draws the ring, and the cell is wider than the tile by a
+	 * margin. Neighbouring days stand close, and a ring past the cell would lie
+	 * on the neighbour.
 	 */
 	it('кольцо дня помещается в его ячейку', async () => {
 		await show({ months: ['2026-09-01'], value: '2026-09-16' })
@@ -197,9 +199,9 @@ describe('кольцо фокуса', () => {
 
 describe('фокус', () => {
 	/**
-	 * Tab идёт за глазом: заголовок первого месяца у начала ряда, за ним — пара
-	 * кнопок листания, потом заголовки следующих месяцев и одна остановка на все
-	 * сетки.
+	 * Tab follows the eye: the first month's title at the row's start, then the
+	 * pair of paging buttons, then the next months' titles and one stop for all
+	 * the grids.
 	 */
 	it('Tab проходит заголовок первого месяца, «назад», «вперёд», заголовки следующих и одну остановку на все сетки', async () => {
 		await show({ months: ['2026-09-01', '2026-10-01'], value: '2026-10-05' })
@@ -261,8 +263,8 @@ describe('фокус', () => {
 	})
 
 	/**
-	 * Выключенная кнопка фокус теряет, и он упал бы на страницу. Плагин
-	 * переводит его на остановку сетки — день, куда уехал фокус коллекции.
+	 * A disabled button loses focus, and it would fall to the page. The plugin
+	 * moves it to the grid's stop — the day the collection's focus went to.
 	 */
 	it('кнопка погасла у границы под фокусом — фокус на день сетки', async () => {
 		await show({ months: ['2026-09-01'], value: '2026-09-16', max: '2026-10-31' })
@@ -277,11 +279,12 @@ describe('фокус', () => {
 })
 
 /**
- * Стрелки — то, что тема зеркалит сама: роль иконки одна, `arrowRight`, а у
- * стрелки нет логических направлений. Знак тема берёт у ближайшего `dir`, как
- * браузер — направленность раскладки, поэтому календарь с `direction="ltr"` в
- * RTL-предке остаётся календарём LTR целиком (`browser/directions.ts`). Панель
- * выбора месяца и года лежит в календаре, и её стрелки идут за ним.
+ * The arrows are what the theme mirrors itself: the icon role is one,
+ * `arrowRight`, and an arrow has no logical directions. The theme takes the
+ * sign from the nearest `dir`, as the browser takes the layout's direction, so
+ * a calendar with `direction="ltr"` under an RTL ancestor stays an LTR calendar
+ * whole (`browser/directions.ts`). The month and year picker lies in the
+ * calendar, and its arrows follow it.
  */
 describe.each(DIRECTION_CASES)('стрелки по ближайшему dir: $name', (scenario) => {
 	const { start, end } = sidesOf(scenario.line)
@@ -303,12 +306,12 @@ describe.each(DIRECTION_CASES)('стрелки по ближайшему dir: $n
 	})
 })
 
-/** Прямоугольник узла. */
+/** The node's box. */
 const rectOf = (node: Element) => node.getBoundingClientRect()
 
 /**
- * Плитка дня в колонке `column` (0 — первый день недели) второй недели
- * месяца: вторая неделя всегда целиком в своём месяце, заполнителей в ней нет.
+ * The day tile in column `column` (0 is the first weekday) of the month's
+ * second week: the second week is always wholly in its month, with no fillers.
  */
 const tileIn = (month: Element, column: number): DOMRect => {
 	const tile = month
@@ -320,7 +323,7 @@ const tileIn = (month: Element, column: number): DOMRect => {
 	return rectOf(tile)
 }
 
-/** Края прямоугольников по строке совпадают — с допуском на субпиксели. */
+/** The boxes' edges along the line match — with a subpixel tolerance. */
 const expectSameColumn = (actual: DOMRect, expected: DOMRect, what: string) => {
 	expect(Math.abs(actual.left - expected.left), `${what}: левый край`).toBeLessThanOrEqual(
 		EPSILON,
@@ -330,21 +333,22 @@ const expectSameColumn = (actual: DOMRect, expected: DOMRect, what: string) => {
 	)
 }
 
-/** Центр прямоугольника по вертикали. */
+/** The box's vertical centre. */
 const middle = (rect: DOMRect) => rect.top + rect.height / 2
 
 /**
- * Шапка — как в календаре Android: заголовок месяца у начала ряда, вровень с
- * плиткой первой колонки, а «назад» и «вперёд» — вплотную у конца, над
- * плитками шестой и седьмой колонок. Шапка панели выбора месяца и года
- * устроена так же: год у начала, стрелки вплотную у конца с тем же зазором.
- * Стороны — логические: в RTL заголовок справа, стрелки слева. Случаи —
- * `browser/directions.ts`: решает ближайший `dir`.
+ * The header is as in the Android calendar: the month's title at the row's
+ * start, level with the first column's tile, and "previous" and "next" close
+ * together at the end, over the sixth and seventh columns' tiles. The month and
+ * year picker's header is the same: the year at the start, the arrows close
+ * together at the end with the same gap. The sides are logical: in RTL the
+ * title is on the right, the arrows on the left. The cases are
+ * `browser/directions.ts`: the nearest `dir` decides.
  */
 describe.each(DIRECTION_CASES)('шапка по ближайшему dir: $name', (scenario) => {
 	const { start, end } = sidesOf(scenario.line)
 
-	/** Между прямоугольниками по строке — от конца первого до начала второго. */
+	/** The gap between boxes along the line — from the first's end to the second's start. */
 	const between = (first: DOMRect, second: DOMRect) =>
 		scenario.line === 'ltr' ? second.left - first.right : first.left - second.right
 
@@ -364,7 +368,7 @@ describe.each(DIRECTION_CASES)('шапка по ближайшему dir: $name'
 		expectSameColumn(prev, tileIn(month, 5), '«назад» над шестой колонкой')
 		expectSameColumn(next, tileIn(month, 6), '«вперёд» над седьмой колонкой')
 
-		// Один ряд, и заголовок на стрелки не заходит
+		// One row, and the title doesn't run into the arrows
 		expect(Math.abs(middle(prev) - middle(title))).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(middle(next) - middle(title))).toBeLessThanOrEqual(EPSILON)
 		expect(between(title, prev)).toBeGreaterThanOrEqual(-EPSILON)
@@ -396,13 +400,14 @@ describe.each(DIRECTION_CASES)('шапка по ближайшему dir: $name'
 })
 
 /**
- * Подвал — строка под сетками во всю ширину календаря, только когда слот
- * передан. Кнопки стоят у конца строки, вровень с плиткой последней колонки, а
- * ширину календаря задают месяцы: подвал в одном ряду с ними раздвинул бы его,
- * и кнопки листания повисли бы за последней колонкой.
+ * The footer is a line under the grids across the calendar's full width, only
+ * when the slot is given. Its buttons stand at the line's end, level with the
+ * last column's tile, and the months set the calendar's width: a footer in one
+ * row with them would widen it, and the paging buttons would hang past the
+ * last column.
  */
 describe('подвал', () => {
-	/** Календарь с подвалом из кнопок с подписями `labels`. */
+	/** A calendar with a footer of buttons labelled `labels`. */
 	const showWithFooter = async (
 		props: Record<string, unknown>,
 		labels: readonly string[],
@@ -448,7 +453,7 @@ describe('подвал', () => {
 
 			expect(footer.top).toBeGreaterThanOrEqual(rectOf(find('.so-calendar__grid')).bottom)
 			expect(Math.abs(last[end] - tileIn(month, 6)[end])).toBeLessThanOrEqual(EPSILON)
-			// Ширину календаря задаёт месяц
+			// The month sets the calendar's width
 			expectSameColumn(rectOf(find('.so-calendar')), rectOf(month), 'календарь — по месяцу')
 		},
 	)
@@ -497,26 +502,27 @@ describe('указатель', () => {
 })
 
 /**
- * Рамка «сегодня» — пара рамки `outlined` у Button: в покое та же ступень,
- * что у рамки кнопки, а на вуали — под наведением и нажатием, на ленте
- * диапазона и в предпросмотре — на ступень сильнее, как рамка кнопки под
- * наведением. Насыщенной ступенью рамка горела ярче любой рамки рядом, а
- * ступени покоя на вуали мало: в тёмной схеме на панели DatePicker лента почти
- * её цвета, и рамка в ней пропадала.
+ * The "today" frame is the pair of the Button `outlined` frame: at rest the
+ * same step as the button's frame, and on a veil — under hover and press, on
+ * the range band and in the preview — a step stronger, like the button's frame
+ * under hover. With a saturated step the frame burned brighter than any frame
+ * nearby, and the resting step is too weak on a veil: in the dark scheme on the
+ * DatePicker panel the band is almost its colour, and the frame vanished in it.
  *
- * Палитры тест не знает, как и сторож видов Button (`button-view.spec.ts`):
- * рамку он сверяет с рамкой кнопки рядом, а на вуали меряет, насколько она
- * ушла от того, что под ней, в сторону текста дня.
+ * The test doesn't know the palette, like the guard of Button views
+ * (`button-view.spec.ts`): it compares the frame with the button's frame
+ * beside it, and on a veil measures how far the frame moved off what is under
+ * it toward the day's text.
  */
 describe('рамка «сегодня»', () => {
-	/** Обе схемы: рамка пропадала только в тёмной, а правило у схем общее. */
+	/** Both schemes: the frame vanished only in the dark one, and the rule is shared. */
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
 	type TScheme = (typeof SCHEMES)[number]
 
 	/**
-	 * Где стоит календарь: на странице и в панели DatePicker — у неё
-	 * поверхность контрола, как у панелей Select и Popover.
+	 * Where the calendar stands: on the page and in the DatePicker panel — it
+	 * has the control surface, like the Select and Popover panels.
 	 */
 	const BACKDROPS = {
 		страница: 'var(--so-neutral-50)',
@@ -529,37 +535,37 @@ describe('рамка «сегодня»', () => {
 		(Object.keys(BACKDROPS) as TBackdrop[]).map((backdrop) => ({ scheme, backdrop })),
 	)
 
-	/** Порог заметности рамки по светлоте OKLab — тот же, что у рамки `outlined` у Button. */
+	/** The frame's visibility threshold in OKLab lightness — the Button `outlined` frame's. */
 	const VISIBLE_BORDER = 0.04
 
-	/** Пропсы календаря от даты «сегодня». */
+	/** Calendar props from the "today" date. */
 	type TProps = (today: string) => Record<string, unknown>
 
-	/** Сегодня по UTC: тот же день отмечает календарь с `timeZone: 'UTC'`. */
+	/** Today in UTC: a calendar with `timeZone: 'UTC'` marks the same day. */
 	const todayInUtc = () => new Date().toISOString().slice(0, 10)
 
-	/** Сутки в миллисекундах. */
+	/** A day in milliseconds. */
 	const DAY = 24 * 60 * 60 * 1000
 
-	/** Дата на `days` дней от `date`. */
+	/** The date `days` days from `date`. */
 	const daysFrom = (date: string, days: number) =>
 		new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10)
 
 	/**
-	 * Диапазон со вчера до завтра: сегодня — его середина, на ленте. Месяц
-	 * сетки задан, и выбор в соседнем месяце её не сдвигает.
+	 * A range from yesterday to tomorrow: today is its middle, on the band. The
+	 * grid's month is set, and a selection in the next month doesn't move it.
 	 */
 	const band: TProps = (today) => ({
 		mode: 'range',
 		value: [daysFrom(today, -1), daysFrom(today, 1)],
 	})
 
-	/** Ряд сцены: части стоят рядом, каждая своей высоты. */
+	/** The scene's row: the parts stand side by side, each of its own height. */
 	const ROW = 'display: flex; gap: 8px; align-items: flex-start'
 
 	/**
-	 * Сцена: на каждой подложке — месяц, в котором сегодня, и кнопка
-	 * `outlined` рядом. Указатель уведён со всех частей.
+	 * The scene: on each backdrop the month with today and an `outlined` button
+	 * beside it. The pointer is moved away from all parts.
 	 */
 	const showToday = async (scheme: TScheme, props: TProps = () => ({})) => {
 		const today = todayInUtc()
@@ -599,7 +605,7 @@ describe('рамка «сегодня»', () => {
 		await settled(document.body)
 	}
 
-	/** Части сцены на подложке: сама подложка, кнопка, день «сегодня» и его плитка. */
+	/** The scene's parts on a backdrop: the backdrop, the button, the "today" day and its tile. */
 	const partsOf = (backdrop: TBackdrop) => {
 		const root = find(`[data-backdrop="${backdrop}"]`)
 		const cell = find('.so-calendar-item[data-today="true"]', root)
@@ -612,7 +618,7 @@ describe('рамка «сегодня»', () => {
 		}
 	}
 
-	/** Цвет рамки — байтами sRGB: запись браузера сравнивать нельзя. */
+	/** The frame's colour as sRGB bytes: the browser's notation can't be compared. */
 	const borderOf = (element: HTMLElement) => pixel([style(element).borderTopColor])
 
 	it.each(CASES)('$scheme, $backdrop: в покое — цвета рамки outlined', async (scenario) => {
@@ -642,24 +648,24 @@ describe('рамка «сегодня»', () => {
 		},
 	)
 
-	/** Вуаль под рамкой. */
+	/** The veil under the frame. */
 	interface IVeil {
 		name: string
-		/** Пропсы календаря, при которых она бывает. */
+		/** The calendar props it occurs with. */
 		props: TProps
-		/** Поставить её и держать, пока идёт замер. */
+		/** Put it on and hold it while the measure runs. */
 		hold: (cell: HTMLElement, measure: () => void) => Promise<void>
-		/** Состояние дня, при котором она стоит. */
+		/** The day's state it stands at. */
 		state: string
-		/** Её цвет. */
+		/** Its colour. */
 		color: (cell: HTMLElement) => string
 	}
 
-	/** Наведение и нажатие красят саму плитку. */
+	/** Hover and press paint the tile itself. */
 	const tileVeil = (cell: HTMLElement) =>
 		style(find('.so-calendar-item__day', cell)).backgroundColor
 
-	/** Лента и предпросмотр лежат под плиткой — псевдоэлементом ячейки. */
+	/** The band and the preview lie under the tile — the cell's pseudo-element. */
 	const bandVeil = (cell: HTMLElement) => style(cell, '::before').backgroundColor
 
 	const VEILS: readonly IVeil[] = [
@@ -675,8 +681,8 @@ describe('рамка «сегодня»', () => {
 			color: tileVeil,
 		},
 		{
-			// Нажали и увели указатель: наведения на дне уже нет, а вуаль
-			// нажатия держится до отпускания
+			// Pressed and led the pointer away: the day has no hover anymore,
+			// and the press veil holds until the release
 			name: 'нажатие',
 			props: () => ({}),
 			hold: async (cell, measure) => {
@@ -702,8 +708,8 @@ describe('рамка «сегодня»', () => {
 			color: bandVeil,
 		},
 		{
-			// Якорь — сам день «сегодня». Указатель ушёл, и предпросмотр идёт
-			// от якоря до фокуса — до того же дня
+			// The anchor is the "today" day itself. The pointer left, and the
+			// preview runs from the anchor to the focus — to the same day
 			name: 'предпросмотр',
 			props: () => ({ mode: 'range' }),
 			hold: async (cell, measure) => {
@@ -728,7 +734,8 @@ describe('рамка «сегодня»', () => {
 				await veil.hold(cell, () => {
 					expect(cell.matches(veil.state), veil.state).toBe(true)
 
-					// Под рамкой — подложка и вуаль: фон плитки лежит и под её рамкой
+					// Under the frame are the backdrop and the veil: the tile's
+					// background lies under its frame too
 					const under = [style(root).backgroundColor, veil.color(cell)]
 					const base = lightness(under)
 					const toward = Math.sign(lightness([...under, style(tile).color]) - base)
@@ -742,9 +749,9 @@ describe('рамка «сегодня»', () => {
 	})
 
 	/**
-	 * На вуали ступень подменяет переменная, а не `border-color`: правило
-	 * рамки на вуали было бы сильнее правила режима принудительных цветов, и на
-	 * подсветке ленты рамка осталась бы ступенью темы, а не текстом подсветки.
+	 * On a veil a variable swaps the step, not `border-color`: a frame rule on a
+	 * veil would be stronger than the forced colors rule, and on the band's
+	 * highlight the frame would stay the theme's step, not the highlight text.
 	 */
 	describe('принудительные цвета', () => {
 		afterEach(async () => {
@@ -766,7 +773,7 @@ describe('рамка «сегодня»', () => {
 describe('выбор месяца и года', () => {
 	const options = () => findAll('.so-calendar__picker-list .so-list-box-item')
 
-	/** Различные значения, с допуском на субпиксели. */
+	/** Distinct values, with a subpixel tolerance. */
 	const distinct = (values: number[]) =>
 		values.reduce<number[]>(
 			(found, value) =>
@@ -776,7 +783,7 @@ describe('выбор месяца и года', () => {
 			[],
 		)
 
-	/** Переходы панели — её и карточки внутри — доиграли: геометрия на месте. */
+	/** The panel's transitions — its own and the card's — have played: the geometry is in place. */
 	const settled = async () => {
 		await nextFrame()
 		await Promise.all(
@@ -786,24 +793,24 @@ describe('выбор месяца и года', () => {
 		)
 	}
 
-	/** Открыть панель нажатием на заголовок и дождаться её на месте. */
+	/** Open the panel by a press on the title and wait for it in place. */
 	const open = async () => {
 		await userEvent.click(find('.so-calendar__title'))
 		await expect.poll(() => options().length).toBe(12)
 		await settled()
 	}
 
-	/** Прямоугольник узла по селектору. */
+	/** The box of a node by selector. */
 	const box = (selector: string) => find(selector).getBoundingClientRect()
 
-	/** Те же место и размер — с допуском на субпиксели. */
+	/** The same place and size — with a subpixel tolerance. */
 	const expectSameBox = (actual: DOMRect, expected: DOMRect) => {
 		for (const side of ['left', 'top', 'width', 'height'] as const) {
 			expect(Math.abs(actual[side] - expected[side])).toBeLessThanOrEqual(EPSILON)
 		}
 	}
 
-	/** Строка опции и область её подписи. */
+	/** The option's line and its label area. */
 	const rowOf = (option: HTMLElement) => {
 		const row = option.querySelector(':scope > .so-button')
 		const text = row?.querySelector(':scope > .so-button__text')
@@ -815,16 +822,16 @@ describe('выбор месяца и года', () => {
 		return { row, text }
 	}
 
-	/** Шаги между соседними значениями по возрастанию. */
+	/** Steps between neighbouring values in ascending order. */
 	const steps = (values: number[]) =>
 		[...values]
 			.sort((a, b) => a - b)
 			.flatMap((value, i, sorted) => (i ? [value - sorted[i - 1]] : []))
 
 	/**
-	 * 12 опций — 4 колонки по 3 строки, шапка над списком. Ячейки поровну по
-	 * ширине и высоте, строка — во всю ячейку, между строками — один небольшой
-	 * зазор по обеим осям, подпись — по центру строки по обеим осям.
+	 * 12 options — 4 columns by 3 rows, the header above the list. Cells are
+	 * equal in width and height, a line fills its cell, between lines there is
+	 * one small gap on both axes, a label is centred in its line on both axes.
 	 */
 	const expectGrid = () => {
 		const items = options()
@@ -839,7 +846,7 @@ describe('выбор месяца и года', () => {
 
 		const [{ width, height }] = boxes
 
-		// Строки — своей высоты: плитка не вытянута
+		// Lines keep their own height: a tile isn't stretched
 		expect(height).toBeLessThanOrEqual(width * 1.2)
 
 		const gaps = [
@@ -870,13 +877,13 @@ describe('выбор месяца и года', () => {
 		)
 	}
 
-	/** Отступ карточки по вертикали и по строке — один, два запаса. */
+	/** The card's padding, vertical and along the line alike — two margins. */
 	const padding = () => parseFloat(getComputedStyle(find('.so-calendar__picker')).paddingTop)
 
 	/**
-	 * Открыть панель с жестом или без. Жест включает расширение `picker` у
-	 * поповера места; выключают его тем же поповером — из выхода `pickers`
-	 * движка, переданного календарю.
+	 * Open the panel with or without the gesture. The `picker` extension turns
+	 * the gesture on at the place's popover; it is turned off by the same
+	 * popover — from the `pickers` output of the engine given to the calendar.
 	 */
 	const openWith = async (props: Record<string, unknown>, swipe: TSwipe) => {
 		const engine = createEngineCalendar()
@@ -889,11 +896,12 @@ describe('выбор месяца и года', () => {
 	}
 
 	/**
-	 * Подложка — сама панель во весь календарь, а выбирают в карточке: она
-	 * выезжает сверху, как выезжающая панель, — от верхнего края календаря и во
-	 * всю его ширину. Меняется только низ: высота карточки — по содержимому,
-	 * шапка над списком, под списком — отступ или полоса жеста, — и под ней
-	 * видно подложку с последними неделями месяца.
+	 * The backdrop is the panel itself over the whole calendar, and the choice
+	 * is made in the card: it slides from the top like a drawer — from the
+	 * calendar's top edge and across its full width. Only the bottom varies:
+	 * the card is as high as its content — the header above the list, the
+	 * padding or the gesture strip under it, — and the backdrop with the
+	 * month's last weeks shows below.
 	 */
 	const expectCard = () => {
 		const calendar = box('.so-calendar')
@@ -940,15 +948,15 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Карточка — одна на весь календарь, сколько бы сеток он ни показывал:
-	 * подложка накрывает все, карточка — во всю ширину календаря у его верхнего
-	 * края.
+	 * The card is one for the whole calendar, however many grids it shows: the
+	 * backdrop covers them all, the card spans the calendar's width at its top
+	 * edge.
 	 */
 	it('три сетки — карточка во всю ширину календаря, у верхнего края', async () => {
 		await show({ months: ['2026-08-01', '2026-09-01', '2026-10-01'] })
 		await open()
 
-		// Три месяца стоят в ряд — иначе проверять нечего
+		// The three months stand in a row — otherwise there's nothing to check
 		expect(
 			distinct(findAll('.so-calendar__month').map((month) => month.offsetTop)),
 		).toHaveLength(1)
@@ -956,11 +964,12 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Панель с `contained` адаптер вправе держать в своих узлах без коробки:
-	 * `Teleport` React на клиенте кладёт её в узел места и обёртку, оба с
-	 * `display: contents`. Тема находит её потомком корня поповера, а не прямым
-	 * ребёнком, и у превью стенда в React подложка и карточка стоят так же, как
-	 * у Vue. Превью рисует хост фреймворка, как на странице стенда.
+	 * An adapter may keep a `contained` panel in its own boxless nodes: React's
+	 * `Teleport` on the client puts it in the place's node and a wrapper, both
+	 * `display: contents`. The theme finds it as a descendant of the popover's
+	 * root, not a direct child, and in the stand's React preview the backdrop
+	 * and the card stand as in Vue. The framework's host draws the preview, as
+	 * on the stand's page.
 	 */
 	it.each([
 		['vue', true],
@@ -983,7 +992,8 @@ describe('выбор месяца и года', () => {
 				await nextFrame()
 				await open()
 
-				// У Vue панель — прямой ребёнок корня поповера, у React — в обёртках
+				// In Vue the panel is a direct child of the popover's root, in React
+				// it is in wrappers
 				expect(
 					find('.so-popover__panel').parentElement === find('.so-calendar__heading'),
 				).toBe(direct)
@@ -996,9 +1006,9 @@ describe('выбор месяца и года', () => {
 	)
 
 	/**
-	 * Тень и кромка-кольцо — слои `box-shadow`. У подложки они сняты и
-	 * остаются слоями нулевого размера, у карточки видны: карточка — та же
-	 * семья, что панели оверлеев.
+	 * The shadow and the rim ring are `box-shadow` layers. The backdrop has
+	 * them removed — they stay as zero-size layers, — the card shows them: the
+	 * card is of the overlay panels' family.
 	 */
 	it('кольцо и тень — у карточки, у подложки ни кромки, ни тени', async () => {
 		await show({ months: ['2026-09-01'] })
@@ -1024,7 +1034,7 @@ describe('выбор месяца и года', () => {
 		},
 	)
 
-	/** Слова подписи, которые разошлись по двум строкам. */
+	/** The label's words that broke across two lines. */
 	const brokenWords = (text: HTMLElement): string[] =>
 		[...text.childNodes].flatMap((node) =>
 			node instanceof Text
@@ -1042,8 +1052,8 @@ describe('выбор месяца и года', () => {
 		)
 
 	/**
-	 * Видимая часть подписи: текст, который область срезает (`overflow` не
-	 * `visible`), виден только в её границах.
+	 * The label's visible part: text the area clips (`overflow` other than
+	 * `visible`) shows only within its bounds.
 	 */
 	const visibleBox = (text: HTMLElement) => {
 		const label = labelBox(text)
@@ -1056,9 +1066,9 @@ describe('выбор месяца и года', () => {
 	}
 
 	/**
-	 * Подпись года переносится только между словами — у `th-TH` она с эрой
-	 * («พ.ศ. 2569»), и многоточие срезало бы номер. На любом размере слова
-	 * целы, подпись не срезана и стоит в своей плитке.
+	 * A year label wraps only between words — in `th-TH` it has the era
+	 * («พ.ศ. 2569»), and an ellipsis would cut the number. At any size the
+	 * words are whole, the label isn't clipped and stands in its tile.
 	 */
 	it.each(COMPONENT_SIZES)(
 		'size %s: годы — так же ровной сеткой 4×3, подписи th-TH с эрой переносятся, а не режутся',
@@ -1089,12 +1099,12 @@ describe('выбор месяца и года', () => {
 	)
 
 	/**
-	 * Имя месяца в несколько слов переносится между словами, а не режется: у
-	 * `vi-VN` оно «Tháng 10», и на крупных размерах шире плитки. Многоточие
-	 * срезало бы номер, и «Tháng 10»–«Tháng 12» стали бы одинаковым «Tháng …».
-	 * На любом размере подпись видна целиком — ничего из неё не срезано, — слова
-	 * целы, и она стоит в своей плитке по ширине и по высоте: две строки в
-	 * плитку помещаются.
+	 * A month name of several words wraps between words and isn't cut: in
+	 * `vi-VN` it is «Tháng 10», wider than the tile at large sizes. An ellipsis
+	 * would cut the number, and «Tháng 10»–«Tháng 12» would all read «Tháng …».
+	 * At any size the label shows whole — nothing of it is clipped, — the words
+	 * are whole, and it stands in its tile in width and height: two lines fit
+	 * the tile.
 	 */
 	it.each(COMPONENT_SIZES)(
 		'size %s: месяцы vi-VN в несколько слов переносятся между словами, а не режутся',
@@ -1104,7 +1114,7 @@ describe('выбор месяца и года', () => {
 
 			expectGrid()
 
-			// Подписи разные — различимы они, если видны целиком (ниже)
+			// The labels differ — they can be told apart if shown whole (below)
 			const names = options().map((option) => rowOf(option).text.textContent?.trim())
 
 			expect(new Set(names).size).toBe(12)
@@ -1117,13 +1127,13 @@ describe('выбор месяца и года', () => {
 				const name = text.textContent?.trim() ?? ''
 
 				expect(brokenWords(text), name).toEqual([])
-				// Ничего не срезано: строки подписи — внутри области текста, а
-				// она срезает всё, что за её краем
+				// Nothing is clipped: the label's lines are inside the text area,
+				// and it clips everything past its edge
 				expect(label.left, name).toBeGreaterThanOrEqual(area.left - EPSILON)
 				expect(label.right, name).toBeLessThanOrEqual(area.right + EPSILON)
 				expect(label.top, name).toBeGreaterThanOrEqual(area.top - EPSILON)
 				expect(label.bottom, name).toBeLessThanOrEqual(area.bottom + EPSILON)
-				// И в своей плитке
+				// And in its tile
 				expect(label.left, name).toBeGreaterThanOrEqual(cell.left - EPSILON)
 				expect(label.right, name).toBeLessThanOrEqual(cell.right + EPSILON)
 				expect(label.top, name).toBeGreaterThanOrEqual(cell.top - EPSILON)
@@ -1133,13 +1143,13 @@ describe('выбор месяца и года', () => {
 	)
 
 	/**
-	 * Слову шире самой плитки переносить некуда — оно режется многоточием, и
-	 * только оно: полей у подписи нет, а разрезать слово переносом подпись не
-	 * даёт. Имя, которому плитки хватает, стоит целым и по центру; шире плитки
-	 * — режется у её края, и видимая часть из плитки не выходит. Самые длинные
-	 * слова — у `ta-IN` («ஜூலை») и `ml-IN` («സെപ്റ്റം», «ഫെബ്രു»); `ar-EG` — то
-	 * же справа налево. Граница в пиксель вокруг ширины плитки — на
-	 * округление: там проверяется только место.
+	 * A word wider than the tile itself has nowhere to wrap — it is cut by an
+	 * ellipsis, and only it: the label has no padding, and it doesn't let a
+	 * word break. A name the tile fits stands whole and centred; one wider than
+	 * the tile is cut at its edge, and the visible part stays in the tile. The
+	 * longest words are in `ta-IN` («ஜூலை») and `ml-IN` («സെപ്റ്റം»,
+	 * «ഫെബ്രു»); `ar-EG` is the same right to left. A pixel around the tile's
+	 * width is left to rounding: there only the place is checked.
 	 */
 	describe.each(['ar-EG', 'ta-IN', 'ml-IN'])('месяцы %s', (locale) => {
 		it.each(COMPONENT_SIZES)(
@@ -1176,41 +1186,61 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Подпись дня недели — короткое имя, если у всей недели локали в нём не
-	 * больше трёх букв, иначе узкое (правило ядра — `weekdayLabelWidth`).
-	 * Проверка — по обе стороны правила. Короткие у `ru-RU`, `fr-FR` («lun.»),
-	 * `zh-CN` и `hi-IN` («मंगल») обязаны поместиться в колонку на любом
-	 * размере. Узкие — у `ar-EG` и `ml-IN`, где короткие — целые слова, и у
-	 * `ta-IN`, `te-IN` и `th-TH`, где в коротких по четыре-пять знаков шириной в
-	 * букву («ஞாயி.», «మంగళ», «อาทิตย์»): такие короткие шире колонки — колонка
-	 * срезала бы их посреди буквы, а под открытой панелью их края выглядывали
-	 * бы из-под карточки. Форму выбирает правило на ICU браузера, и сверка
-	 * текста держит каждую локаль на своей стороне. Подпись стоит в своей
-	 * колонке, и карточка открытой панели накрывает её целиком.
+	 * The weekday label is the short name if every short name of the locale's
+	 * week has at most three letter-wide signs, otherwise the narrow one (the
+	 * core rule, `weekdayLabelWidth`). The table holds both sides of the rule:
+	 * short names of three signs — `ru-RU`, `fr-FR` («lun.»), `zh-CN`, `hi-IN`
+	 * («मंगल»), — and longer ones: whole words in `ar-EG` and `ml-IN`, four or
+	 * five signs in `ta-IN` and `te-IN` («ஞாயி.», «మంగళ»). Such short names are
+	 * wider than the column: it would cut them in the middle of a letter, and
+	 * their ends would peep out from under the card of the open picker.
+	 *
+	 * The rule runs on the browser's ICU, and a locale doesn't take the same side
+	 * everywhere: `th-TH` has whole words for short names in Chromium
+	 * («อาทิตย์») and gets narrow labels, while WebKit's ICU gives abbreviations
+	 * with a dot («อา.»), and the short ones stay. So the spec doesn't tie a
+	 * locale to a form: the whole week is one form of this browser — its `short`
+	 * or `narrow` names, — and that both forms occur in the table is checked
+	 * separately. A label stands in its column, and the card of the open picker
+	 * covers it whole.
 	 */
-	describe.each([
-		{ locale: 'ru-RU', width: 'short' },
-		{ locale: 'fr-FR', width: 'short' },
-		{ locale: 'zh-CN', width: 'short' },
-		{ locale: 'hi-IN', width: 'short' },
-		{ locale: 'ar-EG', width: 'narrow' },
-		{ locale: 'ml-IN', width: 'narrow' },
-		{ locale: 'ta-IN', width: 'narrow' },
-		{ locale: 'te-IN', width: 'narrow' },
-		{ locale: 'th-TH', width: 'narrow' },
-	] as const)('дни недели $locale: $width', ({ locale, width }) => {
-		it.skipIf(locale === 'th-TH' && webkitUntil('869fn0u0m')).each(COMPONENT_SIZES)(
-			'size %s: подпись своей формы — в своей колонке, под открытой панелью — под карточкой',
+	const WEEKDAY_LOCALES = [
+		'ru-RU',
+		'fr-FR',
+		'zh-CN',
+		'hi-IN',
+		'ar-EG',
+		'ml-IN',
+		'ta-IN',
+		'te-IN',
+		'th-TH',
+	] as const
+
+	type TWeekdayWidth = 'short' | 'narrow'
+
+	/** The week of `locale` from Sunday, in names of `width` of this browser. */
+	const weekNames = (locale: string, width: TWeekdayWidth): string[] => {
+		const names = new Intl.DateTimeFormat(locale, { weekday: width, timeZone: 'UTC' })
+
+		// 2026-09-20 is a Sunday
+		return [0, 1, 2, 3, 4, 5, 6].map((day) => names.format(Date.UTC(2026, 8, 20 + day)))
+	}
+
+	/** The labels of the weekday columns, in order. */
+	const weekLabels = () =>
+		findAll('.so-calendar__weekday').map((weekday) => weekday.textContent?.trim())
+
+	describe.each(WEEKDAY_LOCALES)('дни недели %s', (locale) => {
+		it.each(COMPONENT_SIZES)(
+			'size %s: неделя одной формы — в своих колонках, под открытой панелью — под карточкой',
 			async (size) => {
-				// С воскресенья: колонки от первого дня локали здесь ни при чём
+				// From Sunday: columns from the locale's first day don't matter here
 				await showIn(locale, { months: ['2026-09-01'], size, weekStart: 0 })
 
 				const weekdays = findAll('.so-calendar__weekday')
-				const names = new Intl.DateTimeFormat(locale, { weekday: width, timeZone: 'UTC' })
 
-				// 2026-09-20 — воскресенье
-				expect(weekdays.map((weekday) => weekday.textContent?.trim())).toEqual(
-					[0, 1, 2, 3, 4, 5, 6].map((day) => names.format(Date.UTC(2026, 8, 20 + day))),
+				expect([weekNames(locale, 'short'), weekNames(locale, 'narrow')]).toContainEqual(
+					weekLabels(),
 				)
 
 				for (const weekday of weekdays) {
@@ -1240,9 +1270,39 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Мышью целиком: выбор года пересобирает список под месяцы, и Vue
-	 * перерисовывает его между обработчиками того же клика — до корня поповера
-	 * клик доходит с целью, которой в панели уже нет. Панель остаётся открытой.
+	 * Both forms occur in the table, whichever side each locale takes in this
+	 * browser: with one form only, the check above would pass a rule that always
+	 * picks it. A locale whose two lists coincide tells nothing and is not
+	 * counted.
+	 */
+	it('дни недели: среди локалей таблицы — обе формы', async () => {
+		const forms = new Set<TWeekdayWidth>()
+
+		for (const locale of WEEKDAY_LOCALES) {
+			await showIn(locale, { months: ['2026-09-01'], weekStart: 0 })
+
+			const labels = weekLabels()
+			const [form, other] = (['short', 'narrow'] as const).filter((width) => {
+				const names = weekNames(locale, width)
+
+				return (
+					names.length === labels.length && names.every((name, i) => name === labels[i])
+				)
+			})
+
+			if (form && !other) forms.add(form)
+
+			cleanup()
+		}
+
+		expect([...forms].sort()).toEqual(['narrow', 'short'])
+	})
+
+	/**
+	 * All by mouse: choosing a year rebuilds the list for months, and Vue
+	 * redraws it between handlers of the same click — the click reaches the
+	 * popover's root with a target no longer in the panel. The panel stays
+	 * open.
 	 */
 	it('мышью: год — снова месяцы этого года, панель открыта; месяц — закрывает и ставит месяц', async () => {
 		await show({ months: ['2026-09-01'] })
@@ -1276,7 +1336,7 @@ describe('выбор месяца и года', () => {
 		await show({ months: ['2026-09-01'], min: '2026-03-01', max: '2026-10-31' })
 		await open()
 
-		/** Указатель над плиткой с подписью. */
+		/** The cursor over the tile with the label. */
 		const cursorOf = (label: string) => {
 			const option = options().find((item) => item.textContent?.trim() === label)
 
@@ -1303,7 +1363,7 @@ describe('выбор месяца и года', () => {
 		find('.so-calendar__title').focus()
 		await userEvent.keyboard('{Enter}')
 
-		// Список — ListBox: остановка Tab у него — узел списка в корне
+		// The list is a ListBox: its Tab stop is the list node in the root
 		await expect
 			.poll(() => document.activeElement)
 			.toBe(find('.so-calendar__picker-list > .so-list-box__list'))
@@ -1327,7 +1387,7 @@ describe('выбор месяца и года', () => {
 		expect(titles()).toEqual(['September 2026'])
 	})
 
-	/** Точка подложки под карточкой — в координатах панели. */
+	/** A point of the backdrop under the card — in the panel's coordinates. */
 	const underCard = () => {
 		const panel = box('.so-popover__panel')
 		const card = box('.so-calendar__picker')
@@ -1341,8 +1401,8 @@ describe('выбор месяца и года', () => {
 	const expanded = () => find('.so-calendar__title').getAttribute('aria-expanded')
 
 	/**
-	 * Подложку видно под карточкой: нажатие по ней закрывает панель, как
-	 * Escape, — фокус возвращается на заголовок, а не падает на страницу.
+	 * The backdrop shows under the card: a press on it closes the panel, like
+	 * Escape, — focus returns to the title and doesn't fall to the page.
 	 */
 	it('нажатие по подложке закрывает панель, фокус — на заголовок, месяц прежний', async () => {
 		await show({ months: ['2026-09-01'] })
@@ -1356,8 +1416,9 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Нажали в карточке, отпустили на подложке — браузер отдаёт `click` их
-	 * общему предку, самой панели. Это не нажатие по подложке: панель открыта.
+	 * Pressed in the card, released on the backdrop — the browser gives `click`
+	 * to their common ancestor, the panel itself. That is no press on the
+	 * backdrop: the panel stays open.
 	 */
 	it('протяжка из карточки на подложку панель не закрывает', async () => {
 		await show({ months: ['2026-09-01'] })
@@ -1376,10 +1437,11 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Жест — за полосу у низа карточки, вверх: карточка выехала сверху и уходит
-	 * туда же. Подложка стоит, а карточка с полосой идёт за указателем — уедь
-	 * подложка с ней, и она вылезла бы за календарь. Отпущенная, не смахнув,
-	 * карточка возвращается на место.
+	 * The gesture is by the strip at the card's bottom, upward: the card slid
+	 * in from the top and leaves the same way. The backdrop stays, and the card
+	 * with the strip follows the pointer — had the backdrop moved along, it
+	 * would stick out of the calendar. Released without a swipe, the card
+	 * returns to its place.
 	 */
 	it('протяжка за полосу вверх тянет карточку, подложка стоит; отпущенная — на место', async () => {
 		await show({ months: ['2026-09-01'] })
@@ -1412,13 +1474,13 @@ describe('выбор месяца и года', () => {
 		expect(expanded()).toBe('true')
 	})
 
-	/** Протянуть полосу мышью на `dy` по вертикали — настоящими событиями, по шагам. */
+	/** Drag the strip by `dy` vertically with the mouse — real events, in steps. */
 	const dragGrip = (dy: number) => {
 		const grip = find('.so-popover__handle')
 		const { width, height } = grip.getBoundingClientRect()
 
-		// `force`: точка отпускания — за пределами полосы, и проверка попадания
-		// Playwright ждала бы, пока полоса окажется под ней
+		// `force`: the release point is outside the strip, and Playwright's hit
+		// check would wait for the strip to get under it
 		return userEvent.dragAndDrop(grip, grip, {
 			sourcePosition: { x: width / 2, y: height / 2 },
 			targetPosition: { x: width / 2, y: height / 2 + dy },
@@ -1428,15 +1490,15 @@ describe('выбор месяца и года', () => {
 	}
 
 	/**
-	 * Закрытая панель гаснет целиком, карточка вместе с подложкой, и ничего не
-	 * движется: уезжай карточка, её место на миг потемнело бы под ещё не
-	 * погасшей вуалью, — закрытие читалось бы вспышкой. Смахнутая карточка
-	 * гаснет там, где её отпустили, а не вернувшись сначала на место.
-	 * Пропадает панель, когда догасла.
+	 * A closed panel fades whole, the card together with the backdrop, and
+	 * nothing moves: had the card slid away, its place would darken for a
+	 * moment under the veil not yet faded, — the closing would read as a flash.
+	 * A swiped card fades where it was released, not after returning to its
+	 * place first. The panel goes once it has faded.
 	 *
-	 * `close` закрывает панель. Место карточки — `card`, а без него — где её
-	 * застал первый кадр ухода: смахнутую закрывает отпускание, и где оно было,
-	 * видно только тогда. Отдаёт это место.
+	 * `close` closes the panel. The card's place is `card`, and without it —
+	 * where the first frame of leaving found it: a swiped one is closed by the
+	 * release, and where that was shows only then. Returns that place.
 	 */
 	const expectFadingInPlace = async (
 		close: () => Promise<unknown>,
@@ -1507,8 +1569,8 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Выключенная кнопка фокус теряет, и он упал бы на страницу. Плагин
-	 * переводит его на список той же панели.
+	 * A disabled button loses focus, and it would fall to the page. The plugin
+	 * moves it to the list of the same panel.
 	 */
 	it('стрелка погасла у границы лет под фокусом — фокус на список панели', async () => {
 		await show({ months: ['2026-09-01'], max: '2027-10-31' })
@@ -1525,11 +1587,12 @@ describe('выбор месяца и года', () => {
 	})
 
 	/**
-	 * Режим принудительных цветов (высокий контраст Windows): фоны браузер
-	 * заменяет цветом поверхности, а тени убирает. Выбранная плитка — строка
-	 * ListBox без отметки, выбор у неё виден только фоном, — красится системной
-	 * подсветкой; штрих полосы — фон псевдоэлемента — системным цветом текста;
-	 * кромка карточки становится рамкой, а вокруг подложки рамки нет.
+	 * Forced colors mode (Windows high contrast): the browser replaces
+	 * backgrounds with the surface colour and drops shadows. The selected tile —
+	 * a ListBox line without a check mark, its selection shown only by the
+	 * background — is painted with the system highlight; the strip's stroke —
+	 * a pseudo-element's background — with the system text colour; the card's
+	 * rim becomes a frame, and there is no frame around the backdrop.
 	 */
 	describe('принудительные цвета', () => {
 		afterEach(async () => {

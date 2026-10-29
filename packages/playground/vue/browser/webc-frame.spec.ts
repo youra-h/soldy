@@ -1,35 +1,37 @@
 /**
- * `<div is="so-frame">` в настоящем браузере — перенос телепортом не
- * пересобирает.
+ * `<div is="so-frame">` in a real browser: a move by the base doesn't rebuild.
  *
- * Элемент soldy живёт на колбэках DOM: перенос узла — это отключение и
- * подключение его и всего, что внутри, а база заводит связку на каждое
- * подключение. Перенос, который делает сама база, — телепорт в цель и
- * обратно, раскладка света, — связку не трогает: узел едет одной операцией,
- * не выходя из документа, и отключение приходит, когда он снова в документе.
- * Когда и в каком порядке приходят колбэки, решает движок, и jsdom
- * (`ui/webc/__tests__/frame.spec.ts`) лишь повторяет спецификацию. Здесь тот
- * же порядок сверяет Chromium: Frame и кнопка в панели собраны по разу, с
- * локалью провайдера вокруг Frame, перенос, `contained` и смена цели их не
- * пересобирают, а перестановка потребителем — пересобирает, и самого Frame
- * одной операцией тоже, и перестановка места одной операцией: контейнера с
- * якорем — наблюдатель документа, поповера — сразу после его новой сборки.
+ * An element lives on DOM callbacks: a moved node is disconnected and
+ * connected with everything in it, and the base binds anew on each connection.
+ * The base's own moves — the teleport to the target and back, the light into
+ * the template — keep the binding: the node moves in one DOM operation without
+ * leaving the document. The outcome is checked in both engines. Chromium calls
+ * the callbacks within the operation; WebKit has no customized built-ins, and
+ * the polyfill calls them from its observer, microtasks later. So each check
+ * comes once the callbacks are delivered (`delivered`), and its form is one
+ * for both: the synchronous order is guarded by jsdom
+ * (`ui/webc/__tests__/frame.spec.ts`).
  *
- * Панели на Frame — Popover и Tooltip: их Frame — деталь шаблона, а якорь —
- * корень элемента. Раскладку jsdom не считает, и место открытой панели у
- * триггера, её размер и части в ней сверяются здесь с Vue: тема видит у них
- * одни классы и одну разметку.
+ * Frame and the button in its panel are assembled once, with the locale of
+ * the provider around Frame; the teleport, `contained` and a new target don't
+ * rebuild them. A move by the consumer does: of Frame itself in one operation
+ * too, and of its place in one operation — a container with the anchor
+ * through the document observer, a popover after its own new assembly.
  *
- * Слои со своим корнем — Dialog, Drawer и Toasts: окно и выезжающая панель
- * уезжают в `body` сами, с подложкой-спутником перед собой, а регион тостов —
- * корень внутри `<so-toasts>` — без элемента. Открытые, они стоят у края или
- * по центру окна, и их рамки с подложкой и частями сверяются с Vue от угла
- * окна.
+ * Panels on Frame are Popover and Tooltip: their Frame is a detail of the
+ * template, the anchor is the element's root. jsdom has no layout, so the
+ * open panel's place at the trigger, its size and parts are compared with Vue
+ * here: the theme sees the same classes and markup in both.
+ *
+ * Layers with their own root are Dialog, Drawer and Toasts: the dialog and the
+ * drawer go to `body` themselves, with the backdrop companion before them, and
+ * the toast region, a root inside `<so-toasts>`, goes without its element.
+ * Open, they stand at an edge or the center of the window, and their boxes
+ * with the backdrop and parts are compared with Vue from the window's corner.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { cleanup, render } from './render'
-import { webkitUntil } from './engine'
 import { defineComponent, h, nextTick, type VNode } from 'vue'
 import { TButton, TComponentView, TFrame, createEngineToasts } from '@soldy-ui/core'
 import { TBasePlugin, ruRU, zhCN, type IPluginContext, type TLocale } from '@soldy-ui/plugins'
@@ -76,16 +78,22 @@ useIcons(material)
 type TPopoverTriggerScope = DescriptorSlots<typeof PopoverDescriptor>['trigger']
 type TTooltipTriggerScope = DescriptorSlots<typeof TooltipDescriptor>['trigger']
 
-/** Флаш раскладки элемента — на микрозадаче. */
-const flush = () => new Promise<void>((resolve) => queueMicrotask(() => resolve()))
+/**
+ * The element callbacks of the last DOM operation are delivered: the next
+ * task. Chromium calls them within the operation; in WebKit the polyfill of
+ * built-ins calls them from its observer, microtasks later, and the
+ * teleport's document observer reacts the same way. By the next task every
+ * microtask has run, so a rebuild that didn't come by then won't come.
+ */
+const delivered = () => new Promise<void>((resolve) => setTimeout(resolve))
 
-/** Сборки: вид компонента и тег локали, которые плагин видел при установке набора. */
+/** Assemblies: the kind of the component and the locale tag the plugin saw at install. */
 const assembled: (readonly [kind: string, locale: string])[] = []
 
 const kindOf = (instance: unknown): string =>
 	instance instanceof TFrame ? 'frame' : instance instanceof TButton ? 'button' : 'other'
 
-/** Плагин-зонд: сборка ставит его в набор — по одному разу на связку. */
+/** A probe plugin: an assembly installs it into the bundle, once per binding. */
 class TAssemblyProbePlugin extends TBasePlugin<TComponentView> {
 	override install(ctx: IPluginContext, options?: unknown): void {
 		super.install(ctx, options)
@@ -94,17 +102,21 @@ class TAssemblyProbePlugin extends TBasePlugin<TComponentView> {
 	}
 }
 
-/** Теги локали сборок компонентов этого вида — по одному на сборку. */
+/** Locale tags of the assemblies of this kind, one per assembly. */
 const assembledOf = (kind: string): string[] =>
 	assembled.filter(([each]) => each === kind).map(([, tag]) => tag)
 
-/** Узлы теста — снимаются после каждого. */
+/** The test's nodes, removed after each test. */
 const nodes: Element[] = []
 
 let dispose: (() => void) | undefined
 
-afterEach(() => {
+afterEach(async () => {
 	for (const node of nodes.splice(0)) node.remove()
+
+	// The polyfill disconnects the removed elements later: within this test,
+	// not the next one
+	await delivered()
 
 	dispose?.()
 	dispose = undefined
@@ -112,8 +124,8 @@ afterEach(() => {
 })
 
 /**
- * Разметка под провайдером с этой локалью — в конце `body`. Локаль провайдер
- * получает до вставки: элементы собираются уже под ней.
+ * Markup under a provider with this locale, at the end of `body`. The
+ * provider gets the locale before the insertion: the elements assemble under it.
  */
 function stage(html: string, locale: TLocale): HTMLElement {
 	const root = document.createElement('so-locale-provider')
@@ -128,7 +140,7 @@ function stage(html: string, locale: TLocale): HTMLElement {
 	return root
 }
 
-/** Цель с `id` в конце `body`. */
+/** A target with `id` at the end of `body`. */
 function addTarget(id: string): HTMLElement {
 	const target = document.createElement('section')
 
@@ -143,7 +155,7 @@ function isFrame(node: Element | null): node is TFrameElementProps {
 	return node instanceof TFrameElement
 }
 
-/** Frame теста — где бы он ни стоял; нет его — тест падает здесь. */
+/** The test's Frame, wherever it stands; without it the test fails here. */
 function frame(): TFrameElementProps {
 	const node = document.querySelector('[is="so-frame"]')
 
@@ -152,7 +164,7 @@ function frame(): TFrameElementProps {
 	return node
 }
 
-/** Якоря телепорта в поддереве — комментарии на месте увезённых корней. */
+/** Teleport anchors in the subtree: comments in place of the roots taken away. */
 function anchors(scope: Node): Comment[] {
 	const walker = document.createTreeWalker(scope, NodeFilter.SHOW_COMMENT)
 	const found: Comment[] = []
@@ -166,17 +178,19 @@ function anchors(scope: Node): Comment[] {
 	return found
 }
 
-/** Frame с кнопкой в контейнере под провайдером `ruRU`. */
+/** Frame with a button in a container; the tests stage it under `ruRU`. */
 const PANEL = `<section class="place">
 	<div is="so-frame" visible target="#first"><button is="so-button" text="Сохранить"></button></div>
 </section>`
 
-describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос в браузере', () => {
-	it('панель в цели, на месте якорь; Frame и кнопка собраны по разу, с локалью провайдера', () => {
+describe('<div is="so-frame"> · перенос в браузере', () => {
+	it('панель в цели, на месте якорь; Frame и кнопка собраны по разу, с локалью провайдера', async () => {
 		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
 
 		const first = addTarget('first')
 		const root = stage(PANEL, ruRU)
+
+		await delivered()
 
 		expect(frame().parentElement).toBe(first)
 		expect(anchors(root)).toHaveLength(1)
@@ -192,19 +206,22 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 
 		const second = addTarget('second')
 		const root = stage(PANEL, ruRU)
+
+		await delivered()
+
 		const node = frame()
 		const place = root.querySelector('.place')
 
 		node.contained = true
-		await flush()
+		await delivered()
 
 		expect(node.parentElement).toBe(place)
 		expect(anchors(root)).toHaveLength(0)
 
 		node.contained = false
-		await flush()
+		await delivered()
 		node.target = '#second'
-		await flush()
+		await delivered()
 
 		expect(node.parentElement).toBe(second)
 		expect(anchors(root)).toHaveLength(1)
@@ -212,16 +229,21 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 		expect(assembledOf('button')).toEqual([ruRU.tag])
 	})
 
-	it('перестановка потребителем пересобирает Frame и кнопку под новым провайдером', () => {
+	it('перестановка потребителем пересобирает Frame и кнопку под новым провайдером', async () => {
 		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
 
 		const first = addTarget('first')
 		const root = stage(PANEL, ruRU)
 		const other = stage('', zhCN)
+
+		await delivered()
+
 		const node = frame()
 
 		node.remove()
+		await delivered()
 		other.appendChild(node)
+		await delivered()
 
 		expect(node.parentElement).toBe(first)
 		expect(anchors(root)).toHaveLength(0)
@@ -231,10 +253,10 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 	})
 
 	/**
-	 * Сам Frame переставлен одной операцией, без снятия: его новая сборка
-	 * увозит его в цель, и отключение кнопки Chromium доводит внутри этого
-	 * переноса, — а оно всё равно настоящее, и кнопка собрана после Frame, с
-	 * локалью нового места.
+	 * Frame itself is moved in one operation, without removal: its new assembly
+	 * takes it to the target, and Chromium delivers the button's disconnection
+	 * within that move. It is still a real one: the button is assembled after
+	 * Frame, with the locale of the new place.
 	 */
 	it('Frame, переставленный одной операцией, пересобирает и кнопку под новым провайдером', async () => {
 		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
@@ -242,12 +264,13 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 		const first = addTarget('first')
 		const root = stage(PANEL, ruRU)
 		const other = stage('', zhCN)
+
+		await delivered()
+
 		const node = frame()
 
-		// Признак переноса первой сборки держится до микрозадачи
-		await flush()
-
 		other.appendChild(node)
+		await delivered()
 
 		expect(node.parentElement).toBe(first)
 		expect(anchors(root)).toHaveLength(0)
@@ -257,9 +280,9 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 	})
 
 	/**
-	 * Контейнер с якорем переставлен одной операцией: якорь из документа не
-	 * ушёл, а место — уже под другим провайдером. Хозяина у места нет, и
-	 * перестановку ловит наблюдатель документа — микрозадачей позже.
+	 * The container with the anchor is moved in one operation: the anchor stays
+	 * in the document, but the place is under another provider now. The place
+	 * has no owner, and the move is caught by the document observer.
 	 */
 	it('контейнер, переставленный одной операцией, пересобирает Frame и кнопку под новым провайдером', async () => {
 		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin])
@@ -271,11 +294,10 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 
 		if (!place) throw new Error('места нет')
 
-		// Признак переноса первой сборки держится до микрозадачи
-		await flush()
+		await delivered()
 
 		other.appendChild(place)
-		await flush()
+		await delivered()
 
 		expect(frame().parentElement).toBe(first)
 		expect(anchors(root)).toHaveLength(0)
@@ -285,11 +307,13 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 	})
 
 	/**
-	 * Поповер — хозяин места своей панели: его колбэки приходят тем же вызовом
-	 * DOM, и панель с кнопкой в ней собирается заново сразу после него. Зонд
-	 * стоит и на деталях: панель — Frame шаблона поповера.
+	 * The popover owns the place of its panel: its new assembly returns the
+	 * panel to the anchor, not the document observer, and the panel with the
+	 * button in it is assembled after the popover, under its new provider. The
+	 * probe is on the details too: the panel is the Frame of the popover's
+	 * template.
 	 */
-	it('поповер, переставленный одной операцией, сразу пересобирает панель под новым провайдером', async () => {
+	it('поповер, переставленный одной операцией, пересобирает панель под новым провайдером', async () => {
 		dispose = usePlugins(TComponentView, [TAssemblyProbePlugin], { scope: 'all' })
 
 		const root = stage(
@@ -301,26 +325,27 @@ describe.skipIf(webkitUntil('869fn0tx1'))('<div is="so-frame"> · перенос
 
 		if (!popover) throw new Error('поповера нет')
 
-		await flush()
+		await delivered()
 		assembled.length = 0
 
 		other.appendChild(popover)
+		await delivered()
 
 		expect(assembledOf('frame')).toEqual([zhCN.tag])
-		// Триггер, кнопка в панели и крестик
+		// The trigger, the button in the panel and the close button
 		expect(assembledOf('button')).toEqual([zhCN.tag, zhCN.tag, zhCN.tag])
 		expect(document.querySelector('.so-popover__panel')?.parentElement).toBe(document.body)
 		expect(anchors(popover)).toHaveLength(1)
 	})
 })
 
-/** Содержимое панели поповера — абзац и кнопка, как в превью стенда. */
+/** The popover panel's content: a paragraph and a button, as in the playground preview. */
 const TEXT = 'Произвольное содержимое: текст, поля, кнопки'
 
-/** Триггер теста — в обеих отрисовках у него свой класс. */
+/** The test's trigger: it has its own class in both renderings. */
 const trigger = () => document.querySelector('.so-test-trigger')
 
-/** Vue: компонент в блоке, меряется и снимается — следующей отрисовке он не мешает. */
+/** Vue: the component in a block, measured and unmounted to keep out of the next rendering. */
 async function measureVue(content: () => VNode, parts: string): Promise<TBox[]> {
 	render(defineComponent({ render: () => h('div', { style: BOX }, [content()]) }))
 	await nextTick()
@@ -332,7 +357,7 @@ async function measureVue(content: () => VNode, parts: string): Promise<TBox[]> 
 	return boxes
 }
 
-/** Web Components: разметка в блоке — как её пишет потребитель. */
+/** Web Components: markup in a block, as a consumer writes it. */
 async function measureWebc(html: string, parts: string): Promise<TBox[]> {
 	const root = document.createElement('div')
 
@@ -376,7 +401,7 @@ describe('Popover и Tooltip · панель у триггера', () => {
 			POPOVER_PARTS,
 		)
 
-		// Триггер, панель, обёртка, абзац, кнопка, крестик и иконка в нём
+		// Trigger, panel, wrapper, paragraph, button, close button and its icon
 		expect(webc).toHaveLength(7)
 		expect(webc[1].height).toBeGreaterThan(0)
 		expect(webc).toEqual(vue)
@@ -407,7 +432,7 @@ describe('Popover и Tooltip · панель у триггера', () => {
 	})
 })
 
-/** Vue: слой открыт с первой отрисовки, меряется и снимается — следующей не мешает. */
+/** Vue: the layer open from the first render, measured and unmounted to keep out of the next one. */
 async function settledVue(content: () => VNode, parts: string): Promise<TBox[]> {
 	render(defineComponent({ render: content }))
 	await nextTick()
@@ -419,7 +444,7 @@ async function settledVue(content: () => VNode, parts: string): Promise<TBox[]> 
 	return boxes
 }
 
-/** Web Components: разметка, как её пишет потребитель; свойства — до вставки. */
+/** Web Components: markup as a consumer writes it; properties go before the insertion. */
 async function settledWebc(
 	html: string,
 	parts: string,
@@ -435,11 +460,11 @@ async function settledWebc(
 	return measureLayer(parts)
 }
 
-/** Части региона с тостом: регион, тост, плашка, значок, текст, своё содержимое, крестик. */
+/** Parts of the region with a toast: region, toast, card, icon, text, own content, close button. */
 const TOASTS_PARTS =
 	'.so-toasts:has(.so-toasts-item), .so-toasts-item, .so-toasts-item__card, .so-toasts-item__icon, .so-toasts-item__text, .so-toasts-item__content > *, .so-toasts-item__close'
 
-/** Тост образца: текст, описание и своё содержимое; держится, пока не закроют. */
+/** The sample toast: text, description and own content; it stays until closed. */
 const TOAST = {
 	text: 'Черновик сохранён',
 	description: 'Вернуться к нему можно из списка писем',
@@ -476,7 +501,7 @@ describe('Dialog, Drawer и Toasts · открытые стоят, как у Vue
 			DIALOG_PARTS,
 		)
 
-		// Подложка, окно, заголовок, тело, абзац, поле, подвал, две кнопки, крестик
+		// Backdrop, dialog, title, body, paragraph, field, footer, two buttons, close button
 		expect(webc).toHaveLength(10)
 		expect(webc[1].width).toBeGreaterThan(0)
 		expect(webc).toEqual(vue)
@@ -549,7 +574,7 @@ describe('Dialog, Drawer и Toasts · открытые стоят, как у Vue
 			},
 		)
 
-		// Регион, тост, плашка, значок, текст, кнопка «Отменить», крестик
+		// Region, toast, card, icon, text, the undo button, close button
 		expect(webc).toHaveLength(7)
 		expect(webc[0].width).toBeGreaterThan(0)
 		expect(webc).toEqual(vue)

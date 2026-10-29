@@ -509,11 +509,20 @@ import { useIcons, useTheme } from '@soldy-ui/setup'
 import * as material from '@soldy-ui/icons-material'
 import oren from '@soldy-ui/theme-oren/setup'
 
-import '@soldy-ui/theme-oren'
-
 useIcons(material)
 useTheme(oren)
 ```
+
+The theme's stylesheet goes into the global styles, `src/styles.css` — the file listed in `styles`
+of `angular.json`:
+
+```css
+@import '@soldy-ui/theme-oren';
+```
+
+Not an `import` in `main.ts`: Angular CLI puts CSS imported from a module into a chunk the page
+never loads, and the components stay unstyled. The values of the theme, such as
+`variant="accent"`, reach the template type check with `@soldy-ui/theme-oren/setup`.
 
 ## Documentation
 

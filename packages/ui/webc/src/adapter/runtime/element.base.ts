@@ -1,17 +1,17 @@
 /**
- * База элемента: встроенный элемент тега, расширенный классом компонента
- * (customized built-in). `<button is="so-button">` — настоящая кнопка, и
- * форма, `<label>`, фокус и доступность у неё нативные. Фабрика
- * `ElementBase(HTMLButtonElement, spec)` собирает класс над нативным классом
- * тега: база одна, нативный класс у каждого тега свой.
+ * Element base: a built-in element of a tag, extended by the component's class
+ * (customized built-in). `<button is="so-button">` is a real button, and its
+ * form, `<label>`, focus and accessibility are native. The factory
+ * `ElementBase(HTMLButtonElement, spec)` builds the class over the tag's native
+ * class: one base, a native class per tag.
  *
- * Структура шаблона и свет — один раз, при первом подключении. Каждое
- * подключение — новая связка над тем же инстансом и полная отрисовка;
- * отключение снимает связку. Первое подключение, которому собираться рано,
- * уходит в очередь отсрочки, а подключение внутри чужого — в ожидание.
- * Обновления точечные: имена сменившихся пропов копятся до микрозадачи, и
- * флаш применяет только их привязки. AGENTS.md (Web Components), «База
- * элемента».
+ * The template structure and the light are built once, on the first
+ * connection. Each connection is a new binding over the same instance and a
+ * full paint; a disconnection drops the binding. A first connection that comes
+ * too early goes to the deferral queue, one inside another's connection waits
+ * for it. Updates are targeted: names of changed props gather until a
+ * microtask, and the flush applies only their bindings. AGENTS.md (Web
+ * Components), «База элемента».
  */
 
 // First: an element class extends the native class of its tag, and Safari
@@ -50,18 +50,19 @@ import type { TBinding, TBindingState, TUpdateListener } from './useAdapter'
 import { connecting, isConnecting, wait } from './waiting'
 
 /**
- * Атрибут `id` — проп `TIdPlugin`. У корня с полем это проп поля, а не вход
- * корня: два узла с одним `id` сломали бы `<label for>`. Корень без поля несёт
- * `id` сам (панель таба), и атрибут у него — вход.
+ * The `id` attribute is a prop of `TIdPlugin`. On a root with a field it is the
+ * field's prop, not an input of the root: two nodes with one `id` would break
+ * `<label for>`. A root without a field carries the `id` itself (a tab panel),
+ * and there the attribute is an input.
  */
 const ID = 'id'
 
-/** `id` из атрибута: пустой снимает проп, как у нативного `id`. */
+/** `id` from the attribute: an empty one removes the prop, like a native `id`. */
 function idOf(raw: string | null): string | undefined {
 	return raw === null || raw === '' ? undefined : raw
 }
 
-/** Свой проп главнее одноимённого пропа фасада: дельту получают обе связки. */
+/** An own prop wins over a facade prop of the same name: both bindings get the delta. */
 function attributesOf(
 	descriptors: readonly IComponentDescriptor[],
 ): Map<string, IAttributeBinding> {
@@ -76,7 +77,7 @@ function attributesOf(
 	return map
 }
 
-/** Описание корня с шаблоном разошлось — нести некуда. */
+/** The root spec names a node the template didn't build: nowhere to carry it. */
 function built(node: HTMLElement | undefined, what: string): HTMLElement {
 	if (!node) throw new Error(`[soldy] Описание корня объявляет ${what}, а шаблон его не построил`)
 
@@ -85,7 +86,7 @@ function built(node: HTMLElement | undefined, what: string): HTMLElement {
 
 export interface IElementBase<TInstance, TFacade = unknown, TOwnerFacade = unknown> {
 	readonly state: TBindingState<TInstance, TFacade, unknown, TOwnerFacade>
-	/** Инстанс первой сборки достаётся следующим: перестановка не подменяет `el.ctrl`. */
+	/** The next assembly gets the instance of the first one: a move doesn't replace `el.ctrl`. */
 	ctrl: TInstance | undefined
 	connectedCallback(): void
 	disconnectedCallback(): void
@@ -93,8 +94,8 @@ export interface IElementBase<TInstance, TFacade = unknown, TOwnerFacade = unkno
 }
 
 /**
- * Свойства пропов на прототипе — контракт дескриптора, как пропсы React и
- * Solid, без того, что у элемента уже есть по тегу, `HOST_PROPS` и `ctrl`.
+ * Prop properties on the prototype: the descriptor's contract, like React and
+ * Solid props, minus what the element has by its tag, `HOST_PROPS` and `ctrl`.
  */
 export type TElementProps<
 	TDescriptorFn extends (...args: any[]) => IComponentDescriptor,
@@ -103,10 +104,10 @@ export type TElementProps<
 
 export type TDescriptorFactory = () => IComponentDescriptor
 
-/** Свои атрибуты элемента свойствами: значение — атрибут, без него `null`; `undefined` и `null` его снимают. */
+/** Own attributes as properties: the value is the attribute, `null` without it; `undefined` and `null` remove it. */
 export type TOwnAttributes<TOwn extends string> = { [K in TOwn]: string | null | undefined }
 
-/** Тип элемента: нативный элемент тега, своё базы, свойства пропов и своих атрибутов. */
+/** Element type: the tag's native element, the base's members, prop and own attribute properties. */
 export type TElementOf<
 	TNative extends HTMLElement,
 	TDescriptor extends TDescriptorFactory,
@@ -119,7 +120,7 @@ export type TElementOf<
 	TElementProps<TDescriptor, TNative> &
 	TOwnAttributes<TOwn>
 
-/** `TOutputs` — выходы плагинов дескриптора: шаблон читает их в состоянии с типом. */
+/** `TOutputs` are the outputs of the descriptor's plugins: the template reads them typed in the state. */
 export interface IElementSpec<
 	TInstance,
 	TFacade = unknown,
@@ -129,13 +130,13 @@ export interface IElementSpec<
 	TOwn extends string = never,
 > {
 	readonly descriptor: TDescriptor
-	/** Дескриптор фасада коллекции: его пропсы — тоже входы элемента. */
+	/** Descriptor of the collection facade: its props are inputs of the element too. */
 	readonly facade?: TDescriptorFactory
-	/** Дескриптор фасада своей коллекции у пункта с подменю. */
+	/** Descriptor of the facade of its own collection, on an item with a submenu. */
 	readonly ownerFacade?: TDescriptorFactory
 	readonly template: ITemplate<TInstance, TFacade, TOutputs, TOwnerFacade>
 	readonly root?: TRootSpec
-	/** Свои атрибуты сверх пропов (`icon`): значение хранит атрибут, свойство его отражает. */
+	/** Own attributes beyond props (`icon`): the attribute holds the value, the property reflects it. */
 	readonly attributes?: readonly TOwn[]
 	setup(
 		host: HTMLElement,
@@ -145,12 +146,16 @@ export interface IElementSpec<
 	): TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
 }
 
-/** Rest `any[]` — форма конструктора миксина: без неё класс базы с нативным не сложить. */
+/** Rest `any[]` is the mixin constructor shape: without it the base class doesn't combine with the native one. */
 export type TNativeElementClass = new (...args: any[]) => HTMLElement
 
 /**
- * `is` — проверка элемента с его полным типом: свойства пропов база вешает на
- * прототип в рантайме, и тип экземпляра класса о них не знает.
+ * `instanceof` with the class narrows a node to the element with its full
+ * type, by the predicate of `[Symbol.hasInstance]` (TypeScript 5.3+): the base
+ * sets the prop properties on the prototype at run time, and the instance type
+ * of the class doesn't know them. `prototype` and the constructor stay native:
+ * typed as the element, they would not hold for the class the base builds
+ * without a cast.
  */
 export type TElementClass<
 	TInstance,
@@ -159,13 +164,13 @@ export type TElementClass<
 	TElement = IElementBase<TInstance, TFacade, TOwnerFacade>,
 > = (new (...args: any[]) => IElementBase<TInstance, TFacade, TOwnerFacade>) & {
 	readonly observedAttributes: string[]
-	is(node: unknown): node is TElement
+	[Symbol.hasInstance](node: unknown): node is TElement
 }
 
 /**
- * Класс элемента по нативному классу тега и дескриптору. Аннотация экспорта
- * элемента: дескриптор по имени (`typeof ButtonDescriptor`) декларация
- * пишет коротко, а выведенный тип развернула бы целиком.
+ * Element class by the tag's native class and the descriptor. The annotation of
+ * an element export: the declaration names the descriptor (`typeof
+ * ButtonDescriptor`) instead of spelling out the inferred type.
  */
 export type TElementClassOf<
 	TNative extends TNativeElementClass,
@@ -182,12 +187,16 @@ export type TElementClassOf<
 		TElementOf<InstanceType<TNative>, TDescriptor, TInstance, TFacade, TOwnerFacade, TOwn>
 	>
 
-/** Тип элемента класса: `TElementType<typeof TButtonElement>`. */
-export type TElementType<TClass> = TClass extends { is(node: unknown): node is infer T } ? T : never
+/** Element type of a class: `TElementType<typeof TButtonElement>`. */
+export type TElementType<TClass> = TClass extends {
+	[Symbol.hasInstance](node: unknown): node is infer T
+}
+	? T
+	: never
 
 /**
- * Тип результата объявлен явно: класс, выведенный из выражения, TypeScript в
- * декларации не выпустит — у него приватные члены.
+ * The result type is declared: TypeScript doesn't emit a class inferred from an
+ * expression into a declaration, it has private members.
  */
 export function ElementBase<
 	TNative extends TNativeElementClass,
@@ -211,16 +220,17 @@ export function ElementBase<
 		throw new Error('[soldy] Описание корня объявляет id поля, а у дескриптора пропа id нет')
 	}
 
-	// `id` поля — не вход корня, и в карте пропов его нет: атрибут база берёт
-	// пропом и снимает с корня — при построении и на каждую запись из кода.
-	// Входом снятие вернуло бы проп к умолчанию
+	// The field's `id` is not an input of the root and is not in the prop map:
+	// the base takes the attribute as the prop and removes it from the root, on
+	// build and on every write from code. As an input, the removal would reset
+	// the prop to its default
 	const fieldId = (plan.control || plan.fieldId) && attributes.has(ID)
 
 	if (fieldId) attributes.delete(ID)
 
-	/** Входы пропов на корне: их значение в наборе ядра верно всегда. У обёртки их нет. */
+	/** Prop inputs on the root: their value in the core's set is always right. A wrapper has none. */
 	const inputs: ReadonlySet<string> = new Set(plan.wrapped ? [] : attributes.keys())
-	/** Свои атрибуты: имя атрибута → имя свойства. */
+	/** Own attributes: attribute name → property name. */
 	const own: ReadonlyMap<string, string> = new Map(
 		(spec.attributes ?? []).map((name) => [toAttributeName(name), name]),
 	)
@@ -230,7 +240,12 @@ export function ElementBase<
 			return [...attributes.keys(), ...own.keys(), ...(fieldId ? [ID] : [])]
 		}
 
-		static is(
+		/**
+		 * The inherited check, typed with the element: through `super`, since
+		 * `instanceof` the class itself would call this method again. The
+		 * polyfill leaves `Symbol.hasInstance` of the native classes alone.
+		 */
+		static [Symbol.hasInstance](
 			node: unknown,
 		): node is TElementOf<
 			InstanceType<TNative>,
@@ -240,7 +255,7 @@ export function ElementBase<
 			TOwnerFacade,
 			TOwn
 		> {
-			return node instanceof TElementBase
+			return super[Symbol.hasInstance](node)
 		}
 
 		private _binding?: TBinding<TInstance, TFacade, TOutputs, TOwnerFacade>
@@ -250,21 +265,21 @@ export function ElementBase<
 		private readonly _dirty = new Set<string>()
 		private _flushQueued = false
 		private _connected = false
-		/** В очереди отсрочки или в ожидании чужого подключения. */
+		/** In the deferral queue or waiting for another element's connection. */
 		private _deferred = false
 
-		/** Узел, на который база кладёт то, что пишет ядро, и который получает `TElementPlugin`. */
+		/** The node that gets what the core writes and goes to `TElementPlugin`. */
 		private _root: HTMLElement = this
-		/** Внешний узел — на него ложится скрытие. */
+		/** The outer node: hiding goes on it. */
 		private _outer: HTMLElement = this
 		private _companion: HTMLElement | null = null
 		private _teleport?: TTeleport
-		/** Корень на своём месте: у слоя — в цели или на месте. */
+		/** The root is in its place: a layer's root is in the target or in place. */
 		private _placed = true
 
-		/** Свой признак поддерева — один на всё время жизни. */
+		/** Own subtree flag, one for the whole lifetime. */
 		private readonly _subtree = new TSubtree()
-		/** Признак предка — на эту сборку. */
+		/** The ancestor's flag, for this assembly. */
 		private _above?: TAbove
 
 		private readonly _view: ITemplateContext<TInstance, TFacade, TOutputs, TOwnerFacade> =
@@ -273,10 +288,10 @@ export function ElementBase<
 		constructor(...args: ConstructorParameters<TNativeElementClass>) {
 			super(...args)
 			markPlaceOwner(this)
-			// Признак — месту при создании: раньше, чем соберётся кто-то под элементом
+			// The flag goes to the place on creation, before anything under the element assembles
 			provideSubtree(this, this._subtree)
 
-			// Деталь владелец строит раньше её сборки: его набор ждёт поля
+			// The owner builds a detail before its assembly: the owner's set waits for the field
 			if (plan.control) TElementAttributes.of(this).awaitField()
 		}
 
@@ -293,10 +308,10 @@ export function ElementBase<
 		}
 
 		connectedCallback(): void {
-			// Колбэк узла, снятого раньше своей очереди
+			// A callback of a node removed before its turn
 			if (!this.isConnected) return
 
-			// Живая связка — перенос силами базы
+			// A live binding: a move made by the base
 			if (this._connected || this._deferred) return
 
 			const deferral = this._light.built ? undefined : this._deferralOf()
@@ -329,24 +344,26 @@ export function ElementBase<
 			this._binding = undefined
 			this._teleport?.release()
 
-			// Снят со страницы — панели места уходят сразу; переставлен — вернутся при подключении
+			// Off the page: the place's panels leave at once; moved: they return on connection
 			if (!this.isConnected) TTeleport.recall(this)
 		}
 
 		attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
-			// `id` поля, записанный из кода (`el.id`, `setAttribute`), — на поле, как
-			// атрибут разметки. Снятие с корня — своё же, его база пропускает
+			// The field's `id` written from code (`el.id`, `setAttribute`) goes to the
+			// field, like a markup attribute. The removal from the root is the base's
+			// own, and the base skips it
 			if (fieldId && name === ID) {
 				if (value !== null) this._takeFieldId()
 
 				return
 			}
 
-			// Корень без поля несёт `id` сам: атрибут — и вход `TIdPlugin`, и место,
-			// куда `id` кладёт база из набора ядра (у панели таба без своего —
-			// формула таба) или шаблон (поле даты — свой). Свою раскладку база
-			// входом не считает — по значению: колбэк приходит и посреди неё, а с
-			// полифилом — после. Пустой снимает проп, как у поля
+			// A root without a field carries the `id` itself: the attribute is both an
+			// input of `TIdPlugin` and the place where the base puts the `id` of the
+			// core's set (a tab panel without its own: the tab's formula) or the
+			// template does (a date field: its own). The base tells its own painting
+			// from an input by value: the callback comes in the middle of it too, and
+			// after it with the polyfill. An empty one removes the prop, as on a field
 			if (name === ID && attributes.has(ID)) {
 				if (value === null || TElementAttributes.of(this).wanted(name) !== value) {
 					this._write(ID, idOf(value))
@@ -358,7 +375,7 @@ export function ElementBase<
 			const attribute = attributes.get(name)
 
 			if (attribute) {
-				// `undefined` тоже пишется: снятый атрибут возвращает проп к умолчанию
+				// `undefined` is written too: a removed attribute resets the prop to its default
 				this._write(attribute.prop, coerceAttribute(value, attribute))
 
 				return
@@ -375,7 +392,7 @@ export function ElementBase<
 			if (this.isConnected) this.connectedCallback()
 		}
 
-		/** Документ разбирается — главнее всего; под ждущим — его очередь; ожил при регистрации — её. */
+		/** A parsing document wins; under a waiting element, its queue; upgraded on registration, the registration's. */
 		private _deferralOf(): TDeferral | undefined {
 			const owner = this.ownerDocument
 
@@ -402,10 +419,10 @@ export function ElementBase<
 			this._assemble()
 			this._above = followAbove(this, this._onAbove)
 
-			// Панели места — к якорям: соберутся следом, с новым лифтом
+			// The place's panels go back to their anchors and assemble next, with the new elevator
 			if (again) TTeleport.recall(this)
 
-			// Узел плагинам отдаёт первая отрисовка, уже от признака предка
+			// The first paint gives the node to plugins, already by the ancestor's flag
 			this._flush(true)
 		}
 
@@ -413,7 +430,7 @@ export function ElementBase<
 			this._hide(this.state)
 		}
 
-		/** С полифилом колбэки атрибутов приходят после подключения — база их не ждёт. */
+		/** With the polyfill, attribute callbacks come after the connection: the base doesn't wait for them. */
 		private _readAttributes(): void {
 			for (const [name, attribute] of attributes) {
 				if (this._props.isGiven(attribute.prop) || !this.hasAttribute(name)) continue
@@ -452,7 +469,7 @@ export function ElementBase<
 			if (field) {
 				this._handOver(field)
 
-				// После статики разметки: она главнее набора владельца
+				// After the markup's statics: they win over the owner's set
 				if (plan.control) TElementAttributes.of(this).bindField(field)
 			}
 
@@ -462,7 +479,7 @@ export function ElementBase<
 			this._light.distribute(groups, parts.slots)
 		}
 
-		/** Кому уходит статика разметки: полю корня или корню внутри обёртки. */
+		/** Who gets the markup's statics: the root's field or the root inside the wrapper. */
 		private _receiverOf(parts: TTemplateParts): HTMLElement | undefined {
 			if (plan.wrapped) return this._root
 			if (plan.control) return built(parts.control, 'поле')
@@ -470,7 +487,7 @@ export function ElementBase<
 			return undefined
 		}
 
-		/** `id` поля — с корня в проп; пустой снимает его, как у нативного `id`. */
+		/** The field's `id` goes from the root to the prop; an empty one removes it, like a native `id`. */
 		private _takeFieldId(): void {
 			const id = this.getAttribute(ID)
 
@@ -480,7 +497,7 @@ export function ElementBase<
 			this.removeAttribute(ID)
 		}
 
-		/** Колбэков снятие не вызывает: ни один из этих атрибутов элемент не наблюдает. */
+		/** The removal calls no callbacks: the element observes none of these attributes. */
 		private _handOver(target: HTMLElement): void {
 			for (const name of this.getAttributeNames()) {
 				if (plan.keep.has(name) || attributes.has(name) || own.has(name)) continue
@@ -511,7 +528,7 @@ export function ElementBase<
 			this._mark(name)
 		}
 
-		/** Без подключения флаша нет: имя дождётся полной отрисовки следующего. */
+		/** No flush without a connection: the name waits for the full paint of the next one. */
 		private _mark(name: string): void {
 			this._dirty.add(name)
 			this._queueFlush()
@@ -558,10 +575,10 @@ export function ElementBase<
 		}
 
 		private _flush(full = false): void {
-			// Состояние — по именам: у невизуального нет ни классов, ни наборов
+			// State by names: a non-visual component has neither classes nor sets
 			const state: TStateSnapshot = this.state
 			const paint = TPaint.of(this._root)
-			// Имена — до раскладки: смена во время неё дождётся своего флаша
+			// Names before painting: a change during it waits for its own flush
 			const dirty = new Set(this._dirty)
 			const changed = (name: string) => full || dirty.has(name)
 
@@ -601,7 +618,7 @@ export function ElementBase<
 
 			if (placing) this._placed = teleport.place(placeOf(state, layer))
 
-			// Скрытие и свой признак — до привязок: вставленное ими соберётся под новым
+			// Hiding and the own flag before the bindings: what they insert assembles under the new ones
 			if (
 				changed('rendered') ||
 				changed('visible') ||
@@ -616,7 +633,7 @@ export function ElementBase<
 			}
 		}
 
-		/** Скрытие, узел плагинам и свой признак; узел отдаётся на каждый вызов — плагин тот же пропустит. */
+		/** Hiding, the node for plugins and the own flag; the node goes on every call, the plugin skips the same one. */
 		private _hide(state: TStateSnapshot): void {
 			const { hidden, present, subtree } = presenceOf(
 				plan,
@@ -634,9 +651,10 @@ export function ElementBase<
 		}
 
 		/**
-		 * Свойства пропов всех дескрипторов, кроме `ctrl`, `HOST_PROPS` и свойств
-		 * тега: `disabled` кнопки остаётся нативным и доходит до ядра атрибутом.
-		 * Затем свойства своих атрибутов; занятое имя — ошибка описания.
+		 * Prop properties of all descriptors, except `ctrl`, `HOST_PROPS` and the
+		 * tag's properties: a button's `disabled` stays native and reaches the core
+		 * as an attribute. Then the properties of own attributes; a taken name is an
+		 * error of the spec.
 		 */
 		static {
 			const props = new Set(

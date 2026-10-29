@@ -23,7 +23,6 @@ import { defineComponent, h } from 'vue'
 import { Tags } from '@soldy-ui/vue'
 
 import { expectRingInsideHorizontally, expectRingInsideVertically } from './focus-ring'
-import { webkitUntil } from './engine'
 
 import '@soldy-ui/theme-oren'
 
@@ -182,8 +181,7 @@ describe('режим scroll: кольцо фокуса у краёв ряда', 
 	 * это и конец паддинга ряда, поэтому запас под кольцо здесь тот же, что у
 	 * начала.
 	 */
-	it('ряд, докрученный до конца, не срезает кольцо последнего тега', async (context) => {
-		context.skip(webkitUntil('869fn0u0m'))
+	it('ряд, докрученный до конца, не срезает кольцо последнего тега', async () => {
 		const items = [...row().querySelectorAll('.so-tags-item')]
 		const last = items.at(-1)
 
@@ -204,8 +202,7 @@ describe('режим scroll: кольцо фокуса у краёв ряда', 
 		expectRingInsideVertically(last, row(), 'пилюля')
 	})
 
-	it('стрелка на тег у конца ряда, видимый частично, показывает его целиком', async (context) => {
-		context.skip(webkitUntil('869fn0u0m'))
+	it('стрелка на тег у конца ряда, видимый частично, показывает его целиком', async () => {
 		await arrowOntoCutTag(row, 'end')
 	})
 
@@ -325,8 +322,7 @@ describe('режим scroll: элемент под фокусом у края р
 	 * Весь набор с выбором — одна остановка Tab, по тегам ходят стрелки. Кольцо
 	 * рисует пилюля: оно внутри ряда — значит, и крестик, который лежит в ней.
 	 */
-	it('с выбором: тег стрелками до последнего и обратно', async (context) => {
-		context.skip(webkitUntil('869fn0u0m'))
+	it('с выбором: тег стрелками до последнего и обратно', async () => {
 		await crowded({ mode: 'multiple' })
 
 		const tags = items()
