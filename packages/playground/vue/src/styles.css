@@ -43,7 +43,10 @@ body {
 	background: var(--so-neutral-50);
 }
 
-a {
+/* Links of the playground itself, not a part of soldy on the tag `a`
+ * (`<Button tag="a">`): the theme is in cascade layers, and a rule of the page
+ * outside them would take its look off */
+a:not([class^='so-'], [class*=' so-']) {
 	color: inherit;
 	text-decoration: none;
 }
