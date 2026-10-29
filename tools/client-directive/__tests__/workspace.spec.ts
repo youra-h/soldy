@@ -1,16 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join, posix, resolve } from 'node:path'
-import { findClientModules, hasClientDirective, importsOfModule } from '../client-directive.ts'
+import {
+	findClientModules,
+	hasClientDirective,
+	importsOfModule,
+	importsWithParts,
+} from '../client-directive.ts'
 import type { TBuiltModule } from '../client-directive.ts'
 
 /**
  * Guard of the mark of client modules (docs/agents/build.md, «Сборка пакетов»)
  * on the built workspace: a package that renders React — `react` in its
  * `peerDependencies` — opens every client module of its build with
- * `'use client'` and no other module, and its entry stays a server module. The
- * rule is in `client-directive.ts`, the bundle applies it (`plugin.ts`); here
- * are the modules as they lie in `dist`.
+ * `'use client'` and no other module, and its entry and its modules of parts
+ * stay server modules. The rule is in `client-directive.ts`, the bundle
+ * applies it (`plugin.ts`); here are the modules as they lie in `dist`.
  *
  * The packages are the queue of the root `build`, each found through its
  * workspace link in `node_modules`, as `package-builds.spec.ts` finds them: a
@@ -136,7 +141,7 @@ describe("модули React открываются 'use client'", () => {
 
 					if (!client.has(path) && marked) {
 						return [
-							`${path}: 'use client' у модуля, которому React не нужен или который только реэкспортирует`,
+							`${path}: 'use client' у модуля, которому React не нужен, который только реэкспортирует или только вешает части на владельца`,
 						]
 					}
 
@@ -156,6 +161,22 @@ describe("модули React открываются 'use client'", () => {
 			const client = new Set(findClientModules(readModules(dir, entries)))
 
 			expect(entries.filter((entry) => client.has(entry))).toEqual([])
+		})
+
+		// A Server Component writes the parts through the owner (`Tabs.Item`)
+		// only while the module that hangs them on it is a server module: any
+		// other code in that module makes it a client one, and the Server
+		// Component gets the owner as a reference without its parts
+		it.runIf(missing.length === 0)('модуль частей — серверный', () => {
+			const modules = readModules(dir, entries)
+			const client = new Set(findClientModules(modules))
+			const parts = modules
+				.filter(({ text }) => importsWithParts(text))
+				.map(({ path }) => path)
+
+			// Not idle: the build hangs parts at all
+			expect(parts).not.toEqual([])
+			expect(parts.filter((path) => client.has(path))).toEqual([])
 		})
 	})
 })

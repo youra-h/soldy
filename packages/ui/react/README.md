@@ -156,19 +156,67 @@ The components are Client Components: every module of the package that needs Rea
 are, without wrappers. The entry of the package is not a client module, so the types and the
 helpers without React import into a Server Component too.
 
-A Server Component gets each component as a reference, without its properties, so it writes the
-parts by their flat names; a Client Component writes either:
+The parts hang on their owner in a Server Component as well, so it writes `Tabs.Item` the way a
+Client Component does — the flat names (`TabsItem`) work in both:
 
 ```tsx
 // app/page.tsx — a Server Component
-import { Tabs, TabsItem } from '@soldy-ui/react'
+import { Tabs } from '@soldy-ui/react'
 
 export default function Page() {
   return (
-    <Tabs>
-      <TabsItem value="a" text="First" />
-      <TabsItem value="b" text="Second" />
+    <Tabs
+      aria_label="Settings"
+      content={
+        <>
+          <Tabs.Content value="general">General settings</Tabs.Content>
+          <Tabs.Content value="privacy">Privacy settings</Tabs.Content>
+        </>
+      }
+    >
+      <Tabs.Item value="general" text="General" active />
+      <Tabs.Item value="privacy" text="Privacy" />
     </Tabs>
+  )
+}
+```
+
+In the App Router, call `useIcons` and `useTheme` in a client module — a file with `'use client'`
+that the root layout imports — and not in the layout itself. A Server Component runs with its own
+copy of `@soldy-ui/setup`, and what it registers never reaches the Client Components; a client
+module runs where they do — on the server for the HTML, and in the browser:
+
+```tsx
+// app/providers.tsx
+'use client'
+
+import type { ReactNode } from 'react'
+import { useIcons, useTheme } from '@soldy-ui/setup'
+import * as material from '@soldy-ui/icons-material'
+import oren from '@soldy-ui/theme-oren/setup'
+
+useIcons(material)
+useTheme(oren)
+
+export function Providers({ children }: { children: ReactNode }) {
+  return children
+}
+```
+
+```tsx
+// app/layout.tsx — a Server Component
+import type { ReactNode } from 'react'
+import { Providers } from './providers'
+
+import '@soldy-ui/theme-oren'
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   )
 }
 ```
