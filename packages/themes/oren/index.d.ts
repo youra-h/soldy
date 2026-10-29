@@ -1,26 +1,34 @@
 /**
- * Значения оформления темы oren — ровно те, под которые у неё есть CSS.
+ * The values of the look of the oren theme — exactly those it has CSS for.
  *
- * Библиотека своих значений `variant`, `view`, `shape` и `animation` не
- * объявляет: её реестры пусты, и тема дополняет их здесь (корневой
- * `AGENTS.md`, «Оформление: значения объявляет тема»). Подключи тему —
- * `import '@soldy-ui/theme-oren'` — и пропсы компонентов примут эти имена, а
- * опечатку отклонит компилятор.
+ * The library declares no `variant`, `view`, `shape` or `animation` values of
+ * its own: its registries are empty, and the theme augments them here (root
+ * `AGENTS.md`, «Оформление: значения объявляет тема»). Once this file is in
+ * the program, the props of the components take these names, and the compiler
+ * rejects a typo.
  *
- * Значение, которое совпадает с видом блока без модификатора (`normal`,
- * `filled` у Button, `outlined` у CheckBox, `line`, `dot`, `rounded`,
- * `pulse`), своего правила в CSS может не иметь, но объявлено всё равно: его
- * можно задать явно, и `normal` у ProgressLinear, ProgressSpinner и Rating —
- * не база, а нейтраль.
+ * It comes into the program by either of two ways: with the stylesheet
+ * imported from a module of TS — `import '@soldy-ui/theme-oren'` — or with the
+ * behavior, `@soldy-ui/theme-oren/setup`, whose declarations reference this
+ * file. The second works in any build: Angular CLI takes the stylesheet from
+ * `styles` in `angular.json` and Nuxt from `css` in `nuxt.config.ts`, and
+ * there no module of TS imports it.
+ *
+ * A value that is the look of the block without a modifier (`normal`, `filled`
+ * of Button, `outlined` of CheckBox, `line`, `dot`, `rounded`, `pulse`) may
+ * have no rule of its own in the CSS, but it is declared all the same: it can
+ * be set explicitly, and `normal` of ProgressLinear, ProgressSpinner and Rating
+ * is not the base but the neutral.
  */
 export {}
 
 declare module '@soldy-ui/core' {
 	/**
-	 * Смысловой цвет. Без варианта — нейтраль, у ProgressLinear и
-	 * ProgressSpinner — `accent`, а в кнопке — цвет её текста, у звёзд Rating —
-	 * `caution`. Заданный вариант индикатора кнопка не перекрывает, и на её
-	 * заливке того же семейства он почти пропадёт.
+	 * The color by meaning. Without a variant — the neutral; `accent` for
+	 * ProgressLinear and ProgressSpinner, which inside a button take the color
+	 * of its text; `caution` for the stars of Rating. A button does not
+	 * override a variant set on its indicator, and on the button's fill of the
+	 * same family the indicator nearly disappears.
 	 */
 	interface IComponentVariants {
 		normal: true
@@ -30,7 +38,7 @@ declare module '@soldy-ui/core' {
 		caution: true
 	}
 
-	/** Вид кнопки и строк, которые рисует Button: ListBox, Accordion, Tags. */
+	/** The view of a button and of the rows Button draws: ListBox, Accordion, Tags. */
 	interface IButtonViews {
 		filled: true
 		plain: true
@@ -38,7 +46,7 @@ declare module '@soldy-ui/core' {
 		none: true
 	}
 
-	/** Вид табов. Без вида — `line`. */
+	/** The view of tabs. Without a view — `line`. */
 	interface ITabsViews {
 		line: true
 		contained: true
@@ -46,11 +54,11 @@ declare module '@soldy-ui/core' {
 	}
 
 	/**
-	 * Вид чекбокса. Без вида — `outlined`: коробка в рамке, отметка цветом
-	 * варианта. `filled` отличается от него только отмеченной коробкой: она
-	 * залита насыщенным цветом варианта, отметка на ней белая; неотмеченная
-	 * выглядит как у `outlined`. `plain` — без рамки и фона, для плотных
-	 * списков.
+	 * The view of a checkbox. Without a view — `outlined`: a box in a border,
+	 * the check in the color of the variant. `filled` differs from it only in a
+	 * checked box: it is filled with the saturated color of the variant, with a
+	 * white check on it; an unchecked one looks as in `outlined`. `plain` — no
+	 * border and no background, for dense lists.
 	 */
 	interface ICheckBoxViews {
 		outlined: true
@@ -59,22 +67,23 @@ declare module '@soldy-ui/core' {
 	}
 
 	/**
-	 * Вид радио — чем отмечен выбор. Без вида — `dot`: точка внутри тонкого
-	 * кольца, как отметка внутри коробки чекбокса. `ring` — кольцо утолщается.
+	 * The view of a radio — what marks the choice. Without a view — `dot`: a
+	 * dot inside a thin ring, like the check inside the box of a checkbox.
+	 * `ring` — the ring thickens.
 	 */
 	interface IRadioGroupViews {
 		dot: true
 		ring: true
 	}
 
-	/** Форма заглушки. Без формы — `rounded`. */
+	/** The shape of a skeleton. Without a shape — `rounded`. */
 	interface ISkeletonShapes {
 		rect: true
 		rounded: true
 		circle: true
 	}
 
-	/** Анимация заглушки. Без анимации — `pulse`. */
+	/** The animation of a skeleton. Without an animation — `pulse`. */
 	interface ISkeletonAnimations {
 		pulse: true
 		wave: true

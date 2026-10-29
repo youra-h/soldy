@@ -9,7 +9,7 @@ export function DialogDemo() {
 
 	return (
 		<>
-			<Button text="Open dialog" onClick={() => setOpen(true)} />
+			<Button text="Open dialog" variant="accent" onClick={() => setOpen(true)} />
 			<Dialog visible={open} onChangeVisible={setOpen} title="Settings">
 				<p>Dialog content</p>
 			</Dialog>
