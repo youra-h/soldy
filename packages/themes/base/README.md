@@ -309,9 +309,10 @@ plain reference from the declarations it emits, as it drops `import type {}`. Do
   there: a mark drawn from them is not drawn, and only what the theme draws by `data-selected` of
   the tab shows the active one.
 - **`TTableHeadPlugin`**, on Table, writes `--so-table-head-height` on the table root while
-  `stickyHead` is on: this package keeps the focused cell below the sticky head by that height.
-  Without it the offset is one row of the head, and a head wrapped into several rows covers the
-  focus.
+  `stickyHead` is on: this package keeps the focused cell below the sticky head by that height and
+  lays the head's opaque backing over all of it. Without it the offset and the backing are one row
+  of the head: a head wrapped into several rows covers the focus and is backed under its first row
+  only.
 - **`TToastsFrontPlugin`**, on Toasts, writes `--so-toasts-front-height` on the region while the
   toasts cascade: this package gives the toasts behind the height of the front one, and the theme
   may transition it. Without it they take the height of the stack cell — the same height, with no
