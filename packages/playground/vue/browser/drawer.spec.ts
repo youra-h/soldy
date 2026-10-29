@@ -475,12 +475,11 @@ describe('въезд и выезд', () => {
 		const place = panel().getBoundingClientRect().left
 
 		// Гаснет на месте и до конца перехода остаётся в документе
-		const seen = await whileLeaving(panel(), escapeInPage, () => {
+		await whileLeaving(panel(), escapeInPage, () => {
 			expect(transitioning(panel()), 'не едет').not.toContain('translate')
 			expect(panel().getBoundingClientRect().left, 'панель на месте').toBe(place)
 		})
 
-		expect(seen).toBeGreaterThan(1)
 		await expect.poll(isOpen).toBe(false)
 	})
 })
@@ -564,13 +563,11 @@ describe.runIf(classicScrollbars)('прокрутка страницы', () => {
 		// Место панели без выезда: `offsetLeft` не видит `translate`, а рамку
 		// двигает сам выезд
 		const place = panel().offsetLeft
-		const seen = await whileLeaving(panel(), escapeInPage, () => {
+
+		await whileLeaving(panel(), escapeInPage, () => {
 			expect(locked(), 'прокрутка заперта').toBe(true)
 			expect(panel().offsetLeft, 'панель не сдвинута').toBe(place)
 		})
-
-		// Панель застали выезжающей — иначе проверять было нечего
-		expect(seen).toBeGreaterThan(1)
 
 		await expect.poll(locked).toBe(false)
 		expectClassicScrollbar()

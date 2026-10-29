@@ -27,13 +27,7 @@ import { DatePicker, Select, SelectItem } from '@soldy-ui/vue'
 import type { TSwipe } from '@soldy-ui/core'
 
 import { reducedMotion } from './media'
-import {
-	durationOf,
-	expectFadesInPlace,
-	expectHidesWhenFaded,
-	pausedTransitions,
-	settled,
-} from './transitions'
+import { expectFadesInPlace, expectHidesWhenFaded, settled, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -42,13 +36,6 @@ const GRIP_ZONE = 24
 
 /** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 1
-
-/**
- * The moments of the fade, as its shares, at which a leaving panel's place is
- * read: from the start to near the end — at the end `display` takes it off the
- * screen.
- */
-const MOMENTS = [0, 0.25, 0.5, 0.75]
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
@@ -307,28 +294,24 @@ describe.each([SELECT, DATE_PICKER])('$name', ({ show, open, ...selectors }) => 
 	 * disappears once it has faded, not once it has arrived: the tail of the
 	 * path past the fade isn't seen.
 	 *
-	 * The path is read at moments of the fade (`MOMENTS`), on the panel's
-	 * transitions paused from their start (`pausedTransitions`), and not frame by
-	 * frame: under load frames come rarely, and in WebKit in Docker the panel
-	 * was on screen for a single frame of its fade.
+	 * The path is read at the moments of the leaving (`whileLeaving`), on the
+	 * panel's transitions paused from their start, and not frame by frame: under
+	 * load frames come rarely, and in WebKit in Docker the panel was on screen
+	 * for a single frame of its fade.
 	 */
 	it('уход смахнутой панели — от места, где отпустили, дальше от поля, гаснет на ходу', async () => {
 		await show({ swipe: 'handle' })
 		await open()
 
 		const start = panel().getBoundingClientRect().top
-		const leaving = await pausedTransitions(panel(), () => drag(handle(), 150))
-		const display = leaving.get('display')
-
-		if (display === undefined) throw new Error('display: перехода не было')
-
-		// On screen the panel stays as long as `display` runs — the fade's time
-		const fade = durationOf(display)
-		const positions = MOMENTS.map((share) => {
-			for (const transition of leaving.values()) transition.currentTime = fade * share
-
-			return panel().getBoundingClientRect().top
-		})
+		const positions: number[] = []
+		const leaving = await whileLeaving(
+			panel(),
+			() => drag(handle(), 150),
+			() => {
+				positions.push(panel().getBoundingClientRect().top)
+			},
+		)
 
 		expect(positions[0], 'уход — от места, где отпустили').toBeGreaterThan(start + EPSILON)
 		expect(positions[positions.length - 1], 'уходит дальше от поля').toBeGreaterThan(

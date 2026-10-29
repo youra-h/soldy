@@ -777,19 +777,22 @@ describe('слежение по открытости', () => {
 		const open = gap()
 		let scrolled = 0
 
-		// Блок едет на каждом кадре исчезания. `scroll` приходит кадром позже, и
-		// к следующей проверке панель уже стоит за полем
-		const seen = await whileLeaving(
+		// At each moment of the leaving the block scrolls by a step. `scroll`
+		// comes a frame later, and the moment waits until the panel is at the
+		// field again: the leaving is paused, and the panel stays on screen
+		await whileLeaving(
 			selectPanel(),
 			() => userEvent.click(arrow()),
-			() => {
-				expect(Math.abs(gap() - open), `зазор, блок на ${scrolled}px`).toBeLessThan(1)
+			async () => {
 				scrolled += 4
 				scroller.scrollTop = scrolled
+
+				await expect
+					.poll(() => Math.abs(gap() - open), { message: `зазор, блок на ${scrolled}px` })
+					.toBeLessThan(1)
 			},
 		)
 
-		expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
 		expect(scroller.scrollTop, 'блок прокрутился').toBe(scrolled)
 
 		// Конец закрытия плагин узнаёт микрозадачей за концом перехода

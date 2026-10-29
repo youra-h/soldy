@@ -2,8 +2,8 @@
  * The theme's CSS transitions in a real browser — shared by the specs that
  * watch a layer appear and disappear (`drawer.spec.ts`, `dialog.spec.ts`,
  * `popover.spec.ts`, `select.spec.ts`, `date-picker.spec.ts`,
- * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`, `calendar.spec.ts`), a new
- * value travel to its place (`slider.spec.ts`, `progress-linear.spec.ts`,
+ * `popover-swipe.spec.ts`, `anchored-swipe.spec.ts`, `calendar.spec.ts`,
+ * `anchor.spec.ts`), a new value travel to its place (`slider.spec.ts`, `progress-linear.spec.ts`,
  * `tabs-line.spec.ts`, `tabs-contained.spec.ts`, the dragged column's
  * neighbour in `table.spec.ts`), a transition start (the width handle's line
  * there waits for the pointer's delay) and what an animation's keyframes drive
@@ -78,98 +78,83 @@ export const easingOf = (transition: CSSTransition): string => {
 	return easing
 }
 
-/** At most how many frames to wait for the disappearance after the action: two seconds at 60 Hz. */
-const LEAVING_FRAMES = 120
-
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
 /**
- * The action closes the node, and the node disappears: `check` runs in every
- * frame where the node is already closed (`data-open="false"` — the layer
- * writes it on all the nodes of the call) and still on screen, — until
- * `display: none`. Returns how many such frames there were: had the node
- * disappeared at once, there would be nothing to check, and the guard would
- * pass by itself.
+ * The moments of a leaving at which `whileLeaving` checks the node, as shares
+ * of the time the closed node stays on screen: from the start to near the end
+ * — at the end `display` takes it off the screen.
+ */
+export const MOMENTS: readonly number[] = [0, 0.25, 0.5, 0.75]
+
+/**
+ * The action closes the node, and the node disappears: `check` runs at each
+ * moment of the leaving (`MOMENTS`). Before it the helper makes sure the node
+ * is closed (`data-open="false"` — the layer writes it on all the nodes of the
+ * call) and still on screen: a node that disappeared at once fails here, and
+ * the guard can't pass empty. A `check` that returns a promise is awaited
+ * before the next moment.
  *
- * The frames are watched by a loop started before the action, not after it:
- * the response of `userEvent` and commands goes over an RPC round trip and
- * under load comes later than the node has time to disappear — a look after
- * the action would find `display: none` already. So before the action the node
- * must be open (`data-open="true"`): otherwise the loop couldn't tell this
- * closing from a past one, and the guard would be empty.
+ * The leaving is read on the node's own transitions paused from their start
+ * (`pausedTransitions`), at moments the helper sets (`currentTime`) as shares
+ * of the `display` transition — as long as it runs, the closed node is on
+ * screen. Not by the frames: under load they come rarely, and in WebKit in
+ * Docker a panel was on screen for a single frame of its fade. Nor after the
+ * action's response: it goes over an RPC round trip and under load comes when
+ * the node is gone. Before the action the node must be open
+ * (`data-open="true"`): the leaving checked is the one the action caused.
  *
- * The loop keeps an error of `check` and throws it when the action is over: so
- * the drag doesn't spill into the next test, and the rejection isn't left
- * without a handler. The frame limit counts from the end of the action — the
- * action itself takes as long as it needs.
+ * What waits for the closing's end (`afterTransitions`: the scroll lock, the
+ * anchor's tracking, Select's filter) waits for these very transitions, so at
+ * every moment it holds, as while the node fades. Then the transitions play
+ * out (`finish()`), and the helper waits for `display: none`. They play out
+ * when `check` fails too: a layer left paused would hold the lock into the
+ * next test.
+ *
+ * Returns the caught transitions — for `expectHidesWhenFaded`.
  */
 export const whileLeaving = async (
 	element: HTMLElement,
 	action: () => Promise<unknown>,
-	check: () => void,
-): Promise<number> => {
-	if (element.dataset.open !== 'true') {
-		throw new Error(`до действия узел не открыт: data-open="${element.dataset.open}"`)
-	}
+	check: () => void | Promise<void>,
+): Promise<ReadonlyMap<string, CSSTransition>> => {
+	const before = element.dataset.open
 
-	let seen = 0
-	/** Frames after the action's end; while it runs — `null`. */
-	let after: number | null = null
-	/** The action failed: the loop ends without waiting for the node. */
-	let stopped = false
+	if (before !== 'true') throw new Error(`до действия узел не открыт: data-open="${before}"`)
 
-	// The error as a value, not a rejection: while the action runs, the loop has
-	// no handler
-	const leaving = new Promise<{ error: unknown } | null>((resolve) => {
-		const frame = () => {
-			if (stopped) return resolve(null)
-
-			const closed = element.dataset.open === 'false'
-
-			if (closed && getComputedStyle(element).display === 'none') return resolve(null)
-
-			if (after !== null) {
-				if (after === LEAVING_FRAMES) {
-					return resolve({
-						error: new Error(
-							`узел не исчез за ${LEAVING_FRAMES} кадров после действия`,
-						),
-					})
-				}
-
-				after += 1
-			}
-
-			if (closed) {
-				try {
-					check()
-				} catch (error) {
-					return resolve({ error })
-				}
-
-				seen += 1
-			}
-
-			requestAnimationFrame(frame)
-		}
-
-		requestAnimationFrame(frame)
-	})
+	const leaving = await pausedTransitions(element, action)
 
 	try {
-		await action()
-	} catch (error) {
-		stopped = true
-		throw error
+		const display = leaving.get('display')
+
+		if (display === undefined) throw new Error('display: перехода нет — узел исчез сразу')
+
+		const shown = durationOf(display)
+
+		for (const share of MOMENTS) {
+			for (const transition of leaving.values()) transition.currentTime = shown * share
+
+			const open = element.dataset.open
+
+			if (open !== 'false') {
+				throw new Error(`мгновение ${share}: узел не закрыт, data-open="${open}"`)
+			}
+
+			if (getComputedStyle(element).display === 'none') {
+				throw new Error(`мгновение ${share}: закрытого узла на экране нет`)
+			}
+
+			await check()
+		}
+	} finally {
+		for (const transition of leaving.values()) transition.finish()
 	}
 
-	after = 0
+	await expect
+		.poll(() => getComputedStyle(element).display, { message: 'доигранный узел исчез' })
+		.toBe('none')
 
-	const failure = await leaving
-
-	if (failure) throw failure.error
-
-	return seen
+	return leaving
 }
 
 /**
@@ -224,34 +209,13 @@ export const ownTransitionRuns = (element: HTMLElement): string[] => {
 }
 
 /**
- * The node's own transitions by property — as `transitionrun` comes, like
- * `ownTransitionRuns`. The transition is taken in the event itself and can be
- * read after its end too: its duration is caught even if the test got control
- * back when the transition had played out — Playwright's response to input
- * goes over an RPC round trip. For a property that transitioned more than once
- * — the last transition.
- */
-export const ownTransitions = (element: HTMLElement): ReadonlyMap<string, CSSTransition> => {
-	const found = new Map<string, CSSTransition>()
-
-	element.addEventListener('transitionrun', (event) => {
-		if (event.target !== element || event.pseudoElement !== '') return
-
-		found.set(event.propertyName, transitionOf(element, event.propertyName))
-	})
-
-	return found
-}
-
-/**
  * A closed panel at its anchor disappears once it has faded: its `display`
  * runs exactly the opacity's time (`themes/oren/src/mixins/_anchored.scss`) —
  * also for one that leaves the anchor longer. Longer than the opacity — and a
  * faded panel would hang in the layout transparent: the eye doesn't see it, but
  * a screen reader sees a closed panel, and what waits for the closing's end
  * (`afterTransitions`) fires later. Shorter — and the panel would disappear
- * before it has faded. The transitions — `ownTransitions` or
- * `pausedTransitions`, started before the closing.
+ * before it has faded. The transitions are the ones `whileLeaving` returns.
  */
 export const expectHidesWhenFaded = (transitions: ReadonlyMap<string, CSSTransition>): void => {
 	const duration = (property: string): number => {
@@ -269,12 +233,12 @@ export const expectHidesWhenFaded = (transitions: ReadonlyMap<string, CSSTransit
  * The panel fades in place and only then disappears — that is how a panel at
  * its anchor closes without a gesture (`themes/oren/src/mixins/_anchored.scss`):
  * Popover, Select and DatePicker, and without motion — with a gesture too. The
- * panel is measured open, `close` closes it, and in every frame while the
- * closed panel is on screen (`whileLeaving`) it catches no presses — the
- * pointer in its middle hits what is under it, — doesn't move, and its opacity
- * only decreases. Only the opacity transitions: of the panel's own
- * transitions, besides `display`, — only `opacity`. The panel disappears once
- * it has faded (`expectHidesWhenFaded`).
+ * panel is measured open, `close` closes it, and at every moment of its
+ * leaving (`whileLeaving`) it catches no presses — the pointer in its middle
+ * hits what is under it, — doesn't move, and its opacity only decreases. Only
+ * the opacity transitions: of the panel's own transitions, besides `display`,
+ * — only `opacity`. The panel disappears once it has faded
+ * (`expectHidesWhenFaded`).
  */
 export const expectFadesInPlace = async (
 	panel: HTMLElement,
@@ -282,10 +246,9 @@ export const expectFadesInPlace = async (
 ): Promise<void> => {
 	const { top, left, width, height } = panel.getBoundingClientRect()
 	const runs = ownTransitionRuns(panel)
-	const transitions = ownTransitions(panel)
 	const opacities: number[] = []
 
-	const seen = await whileLeaving(panel, close, () => {
+	const transitions = await whileLeaving(panel, close, () => {
 		const box = panel.getBoundingClientRect()
 		const hit = document.elementFromPoint(left + width / 2, top + height / 2)
 
@@ -296,9 +259,6 @@ export const expectFadesInPlace = async (
 		opacities.push(Number(getComputedStyle(panel).opacity))
 	})
 
-	// Had the panel disappeared at once, there would be nothing to check, and
-	// the guard would pass by itself
-	expect(seen, 'кадров на экране после закрытия').toBeGreaterThan(1)
 	expect(
 		runs.filter((name) => name !== 'display'),
 		'переходит одна прозрачность',
@@ -307,7 +267,7 @@ export const expectFadesInPlace = async (
 	expect(Math.min(...opacities), 'прозрачность убывает').toBeLessThan(1)
 
 	for (let index = 1; index < opacities.length; index += 1) {
-		expect(opacities[index], `кадр ${index}`).toBeLessThanOrEqual(opacities[index - 1])
+		expect(opacities[index], `мгновение ${index}`).toBeLessThanOrEqual(opacities[index - 1])
 	}
 }
 

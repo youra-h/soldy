@@ -568,13 +568,11 @@ describe.runIf(classicScrollbars)('прокрутка страницы', () => {
 		await settled(panel())
 
 		const place = frame()
-		const seen = await whileLeaving(panel(), escapeInPage, () => {
+
+		await whileLeaving(panel(), escapeInPage, () => {
 			expect(locked(), 'прокрутка заперта').toBe(true)
 			expect(frame(), 'окно на месте').toEqual(place)
 		})
-
-		// Окно застали гаснущим — иначе проверять было нечего
-		expect(seen).toBeGreaterThan(1)
 
 		await expect.poll(locked).toBe(false)
 		expectClassicScrollbar()

@@ -21,12 +21,7 @@ import type { IPopoverProps } from '@soldy-ui/core'
 import type { DescriptorSlots, PopoverDescriptor } from '@soldy-ui/setup'
 
 import { reducedMotion } from './media'
-import {
-	expectFadesInPlace,
-	expectHidesWhenFaded,
-	ownTransitions,
-	whileLeaving,
-} from './transitions'
+import { expectFadesInPlace, expectHidesWhenFaded, whileLeaving } from './transitions'
 
 import '@soldy-ui/theme-oren'
 
@@ -362,18 +357,13 @@ describe('жест', () => {
  * панель, когда догасла, а не доехав: хвоста пути за угасанием не видно.
  */
 describe('уход смахнутой панели', () => {
-	/**
-	 * Смахнуть панель `swipe` и снять её положение по оси в каждом кадре
-	 * ухода, пока она не пропала.
-	 */
+	/** Swipe the panel with `swipe` and read its position along the axis at each moment of the leaving. */
 	const leaving = async (axis: 'top' | 'left', swipe: () => Promise<unknown>) => {
-		const transitions = ownTransitions(panel())
 		const positions: number[] = []
-		const seen = await whileLeaving(panel(), swipe, () => {
+		const transitions = await whileLeaving(panel(), swipe, () => {
 			positions.push(panel().getBoundingClientRect()[axis])
 		})
 
-		expect(seen).toBeGreaterThan(1)
 		expectHidesWhenFaded(transitions)
 
 		return positions
