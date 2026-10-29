@@ -1,41 +1,50 @@
 @use '../../mixins/veil';
 
-// Линия под закреплённой шапкой — нижним пикселем её подложки, а в режиме
-// принудительных цветов — системные цвета страницы и текста. Подложку — фон
-// шапки цветом места — ставит общий слой тем (`components/table.css` в
-// `@soldy-ui/theme-base`), а здесь её рисует ещё и тень шапки внутрь, во весь
-// `thead`: первая тень — линия, вторая, под ней, — поверхность. Тень — одно
-// свойство, и подложку в ней тема пишет сама, вместе с линией. Линия тех же
-// цветов лежит и фоном, под тенью. Почему тенью, а не фоном, — `_table.scss`,
-// закреплённая шапка.
+// The thickness of the line under the sticky head.
+$sticky-head-line: 1px;
+
+// The line under the sticky head is the bottom pixel of its backing, and in
+// forced colors mode the backing and the line take the system colors of the
+// page and its text. The backing — the head's background in the color of the
+// place, and a square of it under each header — comes from the shared theme
+// layer (`components/table.css` in `@soldy-ui/theme-base`); here the head also
+// paints it with an inset shadow over the whole `thead`: the first shadow is
+// the line, the second, under it, the surface. The shadow is one property, so
+// the theme writes the backing into it together with the line. A line of the
+// same colors lies in the background too, under the shadow. Why a shadow and
+// not just the background — `_table.scss`, the sticky head.
+//
+// The squares under the headers stop above the line by its thickness
+// (`--so-table-head-border`), or they would cover it.
 @mixin sticky-head-surface($surface: var(--so-place-surface), $line: var(--so-neutral-300)) {
+	--so-table-head-border: #{$sticky-head-line};
 	background-image: linear-gradient($line, $line);
 	background-position: bottom;
-	background-size: 100% 1px;
+	background-size: 100% $sticky-head-line;
 	background-repeat: no-repeat;
 	box-shadow:
-		inset 0 -1px $line,
+		inset 0 (-$sticky-head-line) $line,
 		inset 0 0 0 100vmax $surface;
 }
 
-// Цвет таблицы — переменной на корне, а не селекторами по строкам: строки
-// читают её сами, и матрицы «состояние строки × вариант» нет. Цвет один на
-// таблицу — вариант строкам диктует она.
+// The table's color is a variable on the root, not selectors over the rows:
+// the rows read it themselves, and there is no "row state × variant" matrix.
+// One color per table — the table dictates the variant to its rows.
 //
-// Состояния — вуалью, как у строки `plain` у ListBox: таблица стоит и на
-// странице, и на панели, и ступень, отсчитанная от страницы, на панели
-// пропала бы. Плотности — те же, что у Button (`button-state-veil`):
+// States are veils, as on a `plain` ListBox row: a table stands both on the
+// page and on a panel, and a step counted from the page would vanish on a
+// panel. The densities are those of Button (`button-state-veil`):
 //
-// - `--so-table-hover` — наведение: заголовок колонки под указателем, строка
-//   сетки под указателем и под фокусом;
-// - `--so-table-active` — нажатие и выбор: нажатый заголовок, заголовок,
-//   у которого тянут ручку, и выбранная строка. У Button нажатие и выбор
-//   тоже одной плотности;
-// - `--so-table-active-hover` — выбранная строка сетки под указателем или
-//   фокусом: два состояния сразу, плотнее обоих.
+// - `--so-table-hover` — hover: the column header under the pointer, a grid
+//   row under the pointer and under focus;
+// - `--so-table-active` — press and selection: a pressed header, the header
+//   whose handle is being dragged, and a selected row. Button, too, has press
+//   and selection at one density;
+// - `--so-table-active-hover` — a selected grid row under the pointer or
+//   focus: two states at once, denser than both.
 //
-// Текст ячеек не меняется: на выбранной строке данные читаются так же, как на
-// соседних.
+// The cell text doesn't change: data on a selected row reads the same as on
+// the neighbouring ones.
 @mixin table-colors($color) {
 	--so-table-hover: #{veil.tint($color, var(--so-component-state-hover))};
 	--so-table-active: #{veil.tint($color, var(--so-component-state-active))};

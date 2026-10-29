@@ -39,7 +39,6 @@ import * as material from '@soldy-ui/icons-material'
 import { loadHost } from '../src/hosts'
 import { router } from '../src/router'
 import { renderStand } from './stand'
-import { webkitUntil } from './engine'
 import {
 	BOX,
 	DIALOG_PARTS,
@@ -190,8 +189,7 @@ describe('хост Angular', () => {
 		['dialog', '.so-button'],
 		['drawer', '.so-button'],
 		['toasts', '.so-button'],
-	])('%s стоит в ячейке так же, как у Vue', async ([component, selector], context) => {
-		context.skip(component === 'table' && webkitUntil('869fn0tym'))
+	])('%s стоит в ячейке так же, как у Vue', async ([component, selector]) => {
 		const vue = await boxesOf('vue', component, selector)
 		const angular = await boxesOf('angular', component, selector)
 
@@ -204,8 +202,7 @@ describe('хост Angular', () => {
 	 * таблица в обёртке. Строки `visible` у окна нет — оно без представления, —
 	 * и сцена берётся из строки его выключателя.
 	 */
-	it('virtual: ряд окна стоит в ячейке так же, как у Vue', async (context) => {
-		context.skip(webkitUntil('869fn0tym'))
+	it('virtual: ряд окна стоит в ячейке так же, как у Vue', async () => {
 		const selector =
 			'.so-list-box, .so-list-box-item, .so-select, .so-select__field, .so-table__viewport, .so-table, .so-table-row'
 		const vue = await boxesOf('vue', 'virtual', selector, 'enabled')

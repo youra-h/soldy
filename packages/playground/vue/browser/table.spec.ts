@@ -1,24 +1,26 @@
 /**
- * Table в настоящем браузере: раскладка колонок, шапка — подпись и кнопка
- * сортировки рядом с ней, — линии строк, ручка ширины и выбранная строка в
- * принудительных цветах — тема.
+ * Table in a real browser: the column layout, the head — the label and the
+ * sort button next to it, — the row lines, the width handle and a selected row
+ * in forced colors — the theme.
  *
- * Колонки, ячейки, сортировку, выбор и ширины колонок по месту считает ядро
- * (`core/__tests__/table*.spec.ts`), разметку — адаптер
- * (`ui/vue/__tests__/table.spec.ts`). Здесь то, чего jsdom не считает вовсе:
- * ширины, коробки текста, имена в дереве доступности и цвета. Место под
- * колонки — ширину окна таблицы — мерит плагин раскладки, а как таблица
- * лежит, решает общий слой тем (`themes/base/src/components/table.css`):
- * раскладка фиксированная, колонка с шириной — ровно её, таблица с
- * известными ширинами — их сумма, окно прокручивает таблицу шире места, до
- * замера колонка без ширины — не уже распорки в заголовке. Облик — тема
- * (`themes/oren/src/components/table/_table.scss`): линии — рамки строк, а не
- * ячеек: под шапкой — цвета рамки `outlined`, под строкой — тише неё, — и
- * выбранная строка в режиме принудительных цветов — системной подсветкой.
+ * The core computes the columns, cells, sorting, selection and column widths
+ * by the place (`core/__tests__/table*.spec.ts`), the adapter the markup
+ * (`ui/vue/__tests__/table.spec.ts`). Here is what jsdom doesn't compute at
+ * all: widths, text boxes, names in the accessibility tree and colors. The
+ * layout plugin measures the place for the columns — the width of the table's
+ * window, — and the shared theme layer decides how the table lies
+ * (`themes/base/src/components/table.css`): the layout is fixed, a column with
+ * a width gets exactly it, a table with known widths is their sum, the window
+ * scrolls a table wider than the place, and before the measure a column without
+ * a width takes its minimum. The look is the theme's
+ * (`themes/oren/src/components/table/_table.scss`): the lines are row borders,
+ * not cell ones — under the head in the color of the `outlined` border, under a
+ * row quieter than it, — and a selected row in forced colors mode takes the
+ * system highlight.
  *
- * Ручку ширины тянет настоящий ввод Playwright: только так видно, что захват
- * указателя доводит протяжку за полосой до заголовка, а стрелка делает ровно
- * один шаг — ядра, без нативного шага поля.
+ * Playwright's real input drags the width handle: only so is it seen that the
+ * pointer capture carries a drag past the strip to the header, and that an
+ * arrow makes exactly one step — the core's, without the field's native step.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -47,7 +49,7 @@ import {
 	systemColor,
 } from './colors'
 import { forcedColors } from './media'
-import { forcedColorsRepaint, touchInput, webkitUntil } from './engine'
+import { forcedColorsRepaint, hoverAfterCapture, touchInput } from './engine'
 import {
 	delayOf,
 	pausedPseudoTransition,
@@ -60,10 +62,10 @@ import {
 
 import '@soldy-ui/theme-oren'
 
-/** Допуск на субпиксельное округление, px. */
+/** Tolerance for subpixel rounding, px. */
 const EPSILON = 1
 
-/** Сторона зоны нажатия кнопки сортировки — минимум цели указателя по WCAG 2.5.8, px. */
+/** The side of the sort button's hit zone — the minimum pointer target of WCAG 2.5.8, px. */
 const ZONE = 24
 
 const RECORDS = [
@@ -82,7 +84,7 @@ const AGE: TTableColumnSource = {
 	sortable: true,
 }
 
-/** Движок строк с записями и колонками: через него тест выбирает и выключает строки. */
+/** A row engine with records and columns: through it the test selects and disables rows. */
 function engineOf(columns: readonly TTableColumnSource[] = [NAME, CITY, AGE]): TTableCollection {
 	const engine = createEngineTable({
 		items: RECORDS.map((data: TTableRecord) => ({ data })),
@@ -94,7 +96,7 @@ function engineOf(columns: readonly TTableColumnSource[] = [NAME, CITY, AGE]): T
 	return engine
 }
 
-/** Таблица в контейнере заданной ширины и направления письма. */
+/** A table in a container of the given width and writing direction. */
 async function mount(
 	engine: TTableCollection,
 	width = 600,
@@ -113,15 +115,25 @@ async function mount(
 	await new Promise((resolve) => requestAnimationFrame(resolve))
 }
 
-/** Заголовки колонок шапки — по порядку. */
+/** The head's column headers, in order. */
 const headers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-column')]
 
-/** Строки тела — по порядку. */
+/** The body's rows, in order. */
 const rows = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-table-row')]
 
 /**
- * Коробка текста узла — не узла: подпись в кнопке и значение в ячейке стоят в
- * своих полях, и вровень должны стоять буквы, а не коробки.
+ * The columns are laid out: the layout plugin measures the place a frame after
+ * mounting, and until the core lays the columns out by it, the theme decides
+ * their widths — and with them the headers' edges.
+ */
+async function laidOut(): Promise<void> {
+	await expect.poll(() => headers().every((header) => header.dataset.sized === 'true')).toBe(true)
+}
+
+/**
+ * The box of a node's text, not of the node: a label in a button and a value in
+ * a cell stand in their own padding, and it is the letters that must line up,
+ * not the boxes.
  */
 function textBox(element: Element): DOMRect {
 	const range = document.createRange()
@@ -131,15 +143,16 @@ function textBox(element: Element): DOMRect {
 	return range.getBoundingClientRect()
 }
 
-/** Ширина узла. */
+/** A node's width. */
 const width = (element: Element) => element.getBoundingClientRect().width
 
-/** Окно таблицы — узел вокруг неё, который прокручивается вбок. */
+/** The table's window — the node around it that scrolls sideways. */
 const viewport = () => find('.so-table__viewport')
 
 /**
- * Указатель в точку страницы. Наводится на `body`: точка протяжки лежит за
- * полосой, а то и за таблицей, и наведение на сам узел Playwright не принял бы.
+ * The pointer to a point of the page. It hovers `body`: a drag's point lies past
+ * the strip, or even past the table, and Playwright wouldn't take a hover on the
+ * node itself there.
  */
 async function pointAt(x: number, y: number): Promise<void> {
 	const body = document.body.getBoundingClientRect()
@@ -147,7 +160,7 @@ async function pointAt(x: number, y: number): Promise<void> {
 	await userEvent.hover(document.body, { position: { x: x - body.left, y: y - body.top } })
 }
 
-/** Движок без колонки выбора: ширины шапки — только колонки данных. */
+/** An engine without the selection column: the head's widths are only data columns. */
 function resizeEngine(columns: readonly TTableColumnSource[]): TTableCollection {
 	const engine = engineOf(columns)
 
@@ -156,7 +169,7 @@ function resizeEngine(columns: readonly TTableColumnSource[]): TTableCollection 
 	return engine
 }
 
-/** Колонка коллекции по полю. */
+/** The collection's column by its field. */
 function columnOf(engine: TTableCollection, field: string): ITableColumn {
 	const found = engine.extensions.columns.columns.find((column) => column.field === field)
 
@@ -165,10 +178,10 @@ function columnOf(engine: TTableCollection, field: string): ITableColumn {
 	return found
 }
 
-/** Полоса ручки в заголовке. */
+/** The handle's strip in a header. */
 const resizerOf = (header: Element) => find('.so-table-column__resizer', header)
 
-/** Поле ручки в заголовке. */
+/** The handle's field in a header. */
 function fieldOf(header: Element): HTMLInputElement {
 	const field = resizerOf(header).querySelector('input')
 
@@ -177,7 +190,7 @@ function fieldOf(header: Element): HTMLInputElement {
 	return field
 }
 
-/** Протяжка ручки заголовка: нажатие в центре полосы, сдвиг по оси окна, отпускание. */
+/** Dragging a header's handle: a press in the strip's center, a shift along the window's axis, a release. */
 async function drag(header: Element, dx: number): Promise<void> {
 	const box = resizerOf(header).getBoundingClientRect()
 	const x = box.left + box.width / 2
@@ -200,10 +213,11 @@ afterEach(async () => {
 })
 
 /**
- * Ширины колонок раскладывает ядро — по месту окна таблицы и её `columnFit`
- * (`core/__tests__/table-layout.spec.ts`), место мерит плагин кадром позже
- * монтирования, поэтому раскладку тест ждёт опросом. Тема кладёт ширины в
- * заголовки и, когда известны все, ставит таблицу шириной в их сумму.
+ * The core lays out the column widths — by the place of the table's window and
+ * its `columnFit` (`core/__tests__/table-layout.spec.ts`); the plugin measures
+ * the place a frame after mounting, so the test polls for the layout. The theme
+ * puts the widths into the headers and, once all are known, makes the table as
+ * wide as their sum.
  */
 describe('ширина колонок', () => {
 	it('колонка с шириной — ровно её, остальные делят оставшееся место', async () => {
@@ -215,7 +229,7 @@ describe('ширина колонок', () => {
 		await expect.poll(() => name.dataset.sized).toBe('true')
 
 		expect(Math.abs(width(age) - 120)).toBeLessThanOrEqual(EPSILON)
-		// Таблица во всю ширину места, и колонки без ширины делят остаток поровну
+		// The table is as wide as the place, and the columns without a width share the rest equally
 		expect(Math.abs(width(table) - 600)).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(width(name) - width(city))).toBeLessThanOrEqual(EPSILON)
 	})
@@ -235,8 +249,7 @@ describe('ширина колонок', () => {
 		expect(viewport().scrollWidth).toBeGreaterThan(viewport().clientWidth)
 	})
 
-	it('до замера ширины решает тема: колонка без ширины не уже распорки в заголовке', async (context) => {
-		context.skip(webkitUntil('869fn0tym'))
+	it('до замера ширины решает тема: колонка без ширины — в своём минимуме', async () => {
 		render(
 			defineComponent({
 				render: () =>
@@ -246,22 +259,25 @@ describe('ширина колонок', () => {
 			}),
 		)
 
-		// Тот же кадр, что и монтирование: плагин раскладки ещё не мерил окно
+		// The same frame as the mount: the layout plugin hasn't measured the window
+		// yet. The column's minimum is ten header font sizes in oren, and the cell
+		// padding on top
 		const [name] = headers()
-		const strut = parseFloat(style(name).fontSize) * 10
+		const minimum = parseFloat(style(name).fontSize) * 10
 
 		expect(name.dataset.sized).toBe('false')
-		expect(width(name)).toBeGreaterThanOrEqual(strut)
+		expect(width(name)).toBeGreaterThanOrEqual(minimum)
 		expect(find('.so-table').hasAttribute('data-overflow')).toBe(false)
 	})
 })
 
 /**
- * `columnFit` — как колонки без своей ширины делят место окна: `none` — стоят
- * в ширине по умолчанию, `auto` — растут до `maxWidth` во всю ширину окна,
- * `contain` — ровно заполняют окно, сжимаясь до `minWidth`. Не влезли — окно
- * прокручивает таблицу вбок (`data-overflow`), кроме закреплённой шапки: с
- * ней прокручивает контейнер.
+ * `columnFit` — how the columns without a width of their own share the window's
+ * place: `none` — they stand at the default width, `auto` — they grow up to
+ * `maxWidth` to the window's full width, `contain` — they fill the window
+ * exactly, shrinking down to `minWidth`. They don't fit — the window scrolls the
+ * table sideways (`data-overflow`), except with a sticky head: then the
+ * container scrolls.
  */
 describe('раскладка колонок', () => {
 	const NAME_FLEX: TTableColumnSource = {
@@ -272,7 +288,7 @@ describe('раскладка колонок', () => {
 	}
 	const CITY_FLEX: TTableColumnSource = { field: 'city', text: 'Город', minWidth: 100 }
 
-	/** Таблица в месте, ширину которого тест меняет на лету, с пропсами таблицы. */
+	/** A table in a place whose width the test changes on the fly, with the table's props. */
 	async function mountIn(
 		engine: TTableCollection,
 		place: Ref<number>,
@@ -330,7 +346,7 @@ describe('раскладка колонок', () => {
 
 		place.value = 250
 
-		// Ниже ширины по умолчанию: `contain` сжимает, а `auto` стоял бы в 160
+		// Below the default width: `contain` shrinks, while `auto` would stay at 160
 		await expect.poll(() => headers().map(width)).toEqual([125, 125])
 		expect(Math.abs(width(table) - 250)).toBeLessThanOrEqual(EPSILON)
 
@@ -353,16 +369,16 @@ describe('раскладка колонок', () => {
 
 		await expect.poll(() => headers()[0].dataset.sized).toBe('true')
 
-		// Колонки заняли окно без колонки выбора: с ней таблица ровно в окно
+		// The columns took the window without the selection column: with it the table fits the window exactly
 		expect(Math.abs(width(select) + columns() - 400)).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(width(table) - 400)).toBeLessThanOrEqual(EPSILON)
 		expect(table.dataset.overflow).toBe('false')
 	})
 
 	/**
-	 * Колонку, которую тянут за край окна, таблица не обрезает: колонки стали
-	 * шире места — окно прокручивает таблицу вбок, а контейнер вокруг не
-	 * растёт.
+	 * The table doesn't clip a column dragged past the window's edge: the columns
+	 * became wider than the place — the window scrolls the table sideways, and the
+	 * container around it doesn't grow.
 	 */
 	it('протяжка последней колонки за край — окно прокручивается', async () => {
 		const engine = resizeEngine([
@@ -391,7 +407,7 @@ describe('раскладка колонок', () => {
 		expect(width(city)).toBe(240)
 		expect(style(viewport()).overflowX).toBe('auto')
 		expect(viewport().scrollWidth).toBeGreaterThan(viewport().clientWidth)
-		// Прокручивает окно, а не контейнер вокруг
+		// The window scrolls, not the container around it
 		expect(scroller.scrollWidth).toBe(scroller.clientWidth)
 	})
 
@@ -420,9 +436,9 @@ describe('раскладка колонок', () => {
 })
 
 /**
- * Подпись — у всех колонок, и у сортируемой она тоже текст ячейки шапки, а не
- * текст кнопки: кнопка сортировки стоит рядом с подписью и подпись не
- * сдвигает.
+ * Every column has a label, and on a sortable one it is the head cell's text
+ * too, not the button's: the sort button stands next to the label and doesn't
+ * move it.
  */
 describe('подпись шапки вровень с текстом ячеек', () => {
 	it('сортируемая колонка по началу: подпись — над началом текста ячеек', async () => {
@@ -456,22 +472,22 @@ describe('подпись шапки вровень с текстом ячеек'
 })
 
 /**
- * Шапка колонки — подпись и маленькая кнопка сортировки рядом с ней.
- * Сортирует кнопка, а нажатие по ячейке ничего не делает: свой контрол
- * потребитель ставит в подпись. Кнопка — квадрат вокруг стрелки в кегль
- * заголовка, сразу за подписью (у колонки по концу — перед ней), с зоной
- * нажатия не меньше 24 px и кольцом фокуса вокруг себя. Стрелка
- * неотсортированной колонки на покое невидима и проступает вполсилы, когда
- * к заголовку тянутся. Заголовок, с которым что-то делают целиком, — с
- * ручкой ширины или перестановкой, — подсвечен прямоугольником от линии до
- * линии, и видно, где колонка кончается; сортируемый — нет. Верхние углы
- * заголовка мягче — вполовину скругления кнопки, нижние прямые.
+ * A column's head is the label and a small sort button next to it. The button
+ * sorts, and a press on the cell does nothing: the consumer puts their own
+ * control into the label. The button is a square around the arrow in the
+ * header's font, right after the label (before it in a column at the end), with
+ * a hit zone of at least 24 px and a focus ring around itself. An unsorted
+ * column's arrow is invisible at rest and shows at half strength when the
+ * pointer reaches for the header. A header acted upon as a whole — with a width
+ * handle or reordering — is highlighted with a rectangle from line to line, and
+ * one sees where the column ends; a sortable one is not. The header's top
+ * corners are softer — half the button's rounding, the bottom ones square.
  */
 describe('заголовок колонки', () => {
-	/** Сколько от подписи до стрелки при любом выравнивании: зазор ряда и поле кнопки, не больше. */
+	/** How far the arrow is from the label at any alignment: the row's gap and the button's padding, no more. */
 	const GAP = 8
 
-	/** Подпись, кнопка сортировки и её стрелка в заголовке. */
+	/** The label, the sort button and its arrow in a header. */
 	function sortParts(header: Element) {
 		const button = find('.so-table-column__sort', header)
 
@@ -482,14 +498,14 @@ describe('заголовок колонки', () => {
 		}
 	}
 
-	/** Непрозрачность стрелки кнопки сортировки в заголовке — переход доиграл. */
+	/** The opacity of the sort button's arrow in a header, once the transition is over. */
 	async function arrowOf(header: Element): Promise<number> {
 		await settled(header)
 
 		return parseFloat(style(find('.so-table-column__sort-icon', header)).opacity)
 	}
 
-	/** Фон заголовка без указателя на нём — и с указателем посередине. */
+	/** A header's background without the pointer on it — and with the pointer in its middle. */
 	async function hoverBackground(header: Element): Promise<{ idle: string; hover: string }> {
 		await userEvent.hover(find('.so-test-away'))
 		await settled(header)
@@ -503,7 +519,7 @@ describe('заголовок колонки', () => {
 		return { idle, hover: style(header).backgroundColor }
 	}
 
-	/** Таблица с полосой «мимо» над ней: туда уводят указатель. */
+	/** A table with an "away" bar over it: the pointer is taken there. */
 	async function mountAway(engine: TTableCollection, disabled = false): Promise<void> {
 		render(
 			defineComponent({
@@ -518,7 +534,7 @@ describe('заголовок колонки', () => {
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 	}
 
-	/** Середина узла. */
+	/** A node's middle. */
 	function middleOf(element: Element): { x: number; y: number } {
 		const box = element.getBoundingClientRect()
 
@@ -535,15 +551,15 @@ describe('заголовок колонки', () => {
 		const own = button.getBoundingClientRect()
 		const size = parseFloat(style(name).fontSize)
 
-		// Стрелка — в кегль заголовка и его цветом, кнопка — квадрат с полем
-		// вокруг неё
+		// The arrow is in the header's font and color, the button a square with
+		// padding around it
 		expect(style(button).color).toBe(style(name).color)
 		expect(Math.abs(icon.width - size)).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(icon.height - size)).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(own.width - own.height)).toBeLessThanOrEqual(EPSILON)
 		expect(own.width).toBeGreaterThan(icon.width)
 		expect(own.width - icon.width).toBeLessThanOrEqual(GAP)
-		// Кнопка меньше строки шапки и не раздвигает её
+		// The button is smaller than the head row and doesn't stretch it
 		expect(own.height).toBeLessThan(name.getBoundingClientRect().height)
 
 		engine.extensions.sort.sortMode = 'multiple'
@@ -552,7 +568,7 @@ describe('заголовок колонки', () => {
 			{ field: 'age', direction: 'desc' },
 		]
 
-		// Номер приоритета — у обеих отсортированных, кнопка шире квадрата
+		// Both sorted columns get a priority number, and the button is wider than a square
 		await expect
 			.poll(() => find('.so-table-column__sort', age).getBoundingClientRect().width)
 			.toBeGreaterThan(own.width + EPSILON)
@@ -574,9 +590,10 @@ describe('заголовок колонки', () => {
 	})
 
 	/**
-	 * Кнопка мельче минимума цели указателя, и зона нажатия — невидимый
-	 * квадрат по её центру: нажатие в нём — нажатие по кнопке. На подпись
-	 * зона не заходит — свой контрол потребителя в подписи нажимается весь.
+	 * The button is smaller than the minimum pointer target, and the hit zone is
+	 * an invisible square centered on it: a press there is a press on the button.
+	 * The zone doesn't reach over the label — the consumer's own control in the
+	 * label is pressable whole.
 	 */
 	it('зона нажатия кнопки — не меньше 24 px и на подпись не заходит', async () => {
 		await mount(engineOf())
@@ -636,7 +653,7 @@ describe('заголовок колонки', () => {
 		expect(matchMedia('(hover: hover)').matches).toBe(true)
 		expect(await arrowOf(name)).toBe(0)
 
-		// Указатель на подписи, а не на кнопке: тянутся к заголовку
+		// The pointer on the label, not on the button: it reaches for the header
 		await userEvent.hover(caption)
 
 		expect(await arrowOf(name)).toBe(0.5)
@@ -649,7 +666,7 @@ describe('заголовок колонки', () => {
 
 		expect(await arrowOf(name)).toBe(0.5)
 
-		// Отсортированная — целиком
+		// A sorted one — whole
 		engine.extensions.sort.sort = [{ field: 'age', direction: 'asc' }]
 
 		await expect.poll(() => age.dataset.sort).toBe('asc')
@@ -689,8 +706,8 @@ describe('заголовок колонки', () => {
 	})
 
 	/**
-	 * Сортирует кнопка, а не ячейка: подсветка ячейки обещала бы отклик,
-	 * которого не будет. Кнопка своё наведение и нажатие показывает сама.
+	 * The button sorts, not the cell: highlighting the cell would promise a
+	 * response that won't come. The button shows its own hover and press.
 	 */
 	it('сортируемый заголовок под указателем не подсвечен, и нажатие кнопки его не подсвечивает', async () => {
 		await mountAway(engineOf())
@@ -712,7 +729,7 @@ describe('заголовок колонки', () => {
 			await settled(name)
 
 			expect(opacity(style(name).backgroundColor)).toBe(0)
-			// Нажатую кнопку видно по её собственной вуали
+			// The pressed button shows by its own veil
 			expect(opacity(style(button).backgroundColor)).toBeGreaterThan(0)
 		} finally {
 			await commands.mouseUp()
@@ -747,9 +764,9 @@ describe('заголовок колонки', () => {
 	})
 
 	/**
-	 * Стрелку кнопка рисует цветом своего текста — цветом заголовка. В режиме
-	 * принудительных цветов его заменяет браузер, и стрелка остаётся видна;
-	 * кольцо фокуса — системного цвета фокуса, как у любой кнопки.
+	 * The button draws the arrow in its text color — the header's color. In forced
+	 * colors mode the browser replaces it, and the arrow stays visible; the focus
+	 * ring takes the system focus color, as on any button.
 	 */
 	it('принудительные цвета: стрелка — цветом текста кнопки, кольцо фокуса — системным цветом фокуса', async () => {
 		const engine = engineOf()
@@ -776,10 +793,10 @@ describe('заголовок колонки', () => {
 
 describe('линии строк', () => {
 	/**
-	 * Выключенная строка гасит ячейки с данными. Линию под строкой рисует сама
-	 * строка — рамкой в модели слитых границ, — и ячейки её не гасят: погасни
-	 * линия вместе с ячейками, она шла бы бледной под данными и целой под
-	 * чекбоксом.
+	 * A disabled row fades its data cells. The row draws the line under itself — a
+	 * border in the collapsed border model, — and the cells don't fade it: had the
+	 * line faded with the cells, it would run pale under the data and whole under
+	 * the checkbox.
 	 */
 	it('под выключенной строкой линия та же, что под соседней', async () => {
 		const engine = engineOf()
@@ -801,25 +818,27 @@ describe('линии строк', () => {
 	})
 
 	/**
-	 * Цвет линий. Под шапкой — граница: та же ступень, что у рамки `outlined`
-	 * у Button. Под строкой — тише шапки: вуаль нейтрали плотности заливки
-	 * `filled`, на шаг от того, на чём таблица стоит. Ступенью 400 линия шапки
-	 * горела ярче любой рамки рядом, а линию строки тише границы ступень не
-	 * даёт: 200 на поверхности контрола тёмной схемы — сама поверхность.
+	 * The color of the lines. Under the head — a border: the same step as Button's
+	 * `outlined` border. Under a row — quieter than the head: a veil of the neutral
+	 * at the density of the `filled` fill, a step off what the table stands on. At
+	 * step 400 the head's line burned brighter than any border nearby, and no step
+	 * gives a row line quieter than a border: 200 on the dark scheme's control
+	 * surface is the surface itself.
 	 *
-	 * Палитры тест не знает, как и сторож видов Button (`button-view.spec.ts`):
-	 * линию шапки он сверяет с рамкой кнопки рядом, а линию строки меряет —
-	 * насколько она ушла от подложки в сторону текста ячейки.
+	 * The test doesn't know the palette, nor does the guard of Button's views
+	 * (`button-view.spec.ts`): it checks the head's line against the border of the
+	 * button nearby and measures a row's line — how far it went from the backdrop
+	 * toward the cell's text.
 	 */
 	describe('цвет', () => {
-		/** Обе схемы: правило у них общее, а подложки разные. */
+		/** Both schemes: the rule is shared, the backdrops differ. */
 		const SCHEMES = ['oren', 'oren-dark'] as const
 
 		type TScheme = (typeof SCHEMES)[number]
 
 		/**
-		 * Где стоит таблица: на странице и на поверхности контрола — в карточке,
-		 * в панели Popover и Dialog.
+		 * Where the table stands: on the page and on the control surface — in a card,
+		 * in the panel of Popover and Dialog.
 		 */
 		const BACKDROPS = {
 			страница: 'var(--so-neutral-50)',
@@ -833,8 +852,8 @@ describe('линии строк', () => {
 		)
 
 		/**
-		 * Порог заметности линии строки по светлоте OKLab — тот же, что у
-		 * нейтральной заливки `filled` у Button: линия — вуаль той же плотности.
+		 * The threshold of a row line's visibility by OKLab lightness — the same as
+		 * Button's neutral `filled` fill: the line is a veil of the same density.
 		 */
 		const VISIBLE_LINE = 0.02
 
@@ -843,8 +862,8 @@ describe('линии строк', () => {
 		})
 
 		/**
-		 * Сцена: на каждой подложке — таблица и кнопка `outlined` рядом.
-		 * Указатель уведён: под ним рамка кнопки сильнее.
+		 * The scene: on each backdrop — a table and an `outlined` button next to it.
+		 * The pointer is taken away: under it the button's border is stronger.
 		 */
 		async function showLines(scheme: TScheme): Promise<void> {
 			document.documentElement.dataset.soTheme = scheme
@@ -876,7 +895,7 @@ describe('линии строк', () => {
 			await settled(document.body)
 		}
 
-		/** Части сцены на подложке: подложка, строка шапки, строка тела, её ячейка и кнопка. */
+		/** The scene's parts on a backdrop: the backdrop, the head row, a body row, its cell and the button. */
 		const partsOf = (backdrop: TBackdrop) => {
 			const root = find(`[data-backdrop="${backdrop}"]`)
 
@@ -889,7 +908,7 @@ describe('линии строк', () => {
 			}
 		}
 
-		/** Насколько линия ушла от подложки в сторону текста ячейки; минус — за подложку. */
+		/** How far the line went from the backdrop toward the cell's text; a minus — past the backdrop. */
 		function away(line: Element, backdrop: TBackdrop): number {
 			const { root, cell } = partsOf(backdrop)
 			const under = style(root).backgroundColor
@@ -927,10 +946,10 @@ describe('линии строк', () => {
 		)
 
 		/**
-		 * Линия строки — вуаль, то есть цвет с прозрачностью. Фону браузер в этом
-		 * режиме прозрачность оставляет, и линия, которую он красил бы так же,
-		 * пропала бы. Она обязана стать цветом текста системы, как рамки,
-		 * которые браузер красит сам.
+		 * A row's line is a veil, that is a color with transparency. In this mode the
+		 * browser keeps a background's transparency, and a line it painted the same way
+		 * would vanish. It must take the system text color, like the borders the
+		 * browser paints itself.
 		 */
 		describe.runIf(forcedColorsRepaint)('принудительные цвета', () => {
 			it.each(SCHEMES)('%s: линия строки — цветом текста системы', async (scheme) => {
@@ -948,28 +967,29 @@ describe('линии строк', () => {
 })
 
 /**
- * Перестановка колонок — заголовком: пока его тащат, за указателем идёт он
- * один, а колонка встаёт на новое место одной перестановкой, когда
- * отпущенный заголовок доехал до места. С движением соседи уступают ему
- * место, и линии места нет; тело у `head` стоит, у `column` идёт за
- * заголовками. Без движения соседи стоят, а место показывает линия. Нажатие
- * без протяжки остаётся нажатием кнопки сортировки, а протяжка её не нажимает.
- * Клавиши — Ctrl+Shift+←/→ на кнопке, и фокус с неё не уходит.
+ * Columns are moved by their header: while it is carried, it alone follows the
+ * pointer, and the column takes its new place in one move once the released
+ * header has reached it. With motion the neighbours make room for it and there
+ * is no drop line; the body stands still in `head` and follows the headers in
+ * `column`. Without motion the neighbours stand, and a line shows the place. A
+ * press without a drag stays a press of the sort button, and a drag doesn't
+ * press it. The keys are Ctrl+Shift+←/→ on the button, and focus stays on it.
  *
- * Прогон идёт с движением: система его не убирает, режим приложения —
- * системы. Колонка встаёт не на отпускании, а когда заголовок доехал, —
- * порядок после отпускания тест ждёт опросом.
+ * The run goes with motion: the system doesn't reduce it, and the app's mode is
+ * the system's. The column takes its place not on the release but once the
+ * header has arrived — the test polls for the order after the release.
  */
 describe('перестановка колонок', () => {
 	const MOVABLE = [NAME, CITY, AGE].map((column) => ({ ...column, reorderable: true }))
 
 	/**
-	 * Место не шире окна прогона (414 px): протяжка за край окна прокрутила бы
-	 * страницу, и коробки до и после протяжки разошлись бы на прокрутку.
+	 * The place isn't wider than the run's window (414 px): a drag past the
+	 * window's edge would scroll the page, and the boxes before and after the drag
+	 * would differ by the scroll.
 	 */
 	const PLACE = 400
 
-	/** Движок без колонки выбора: заголовки шапки — только колонки данных. */
+	/** An engine without the selection column: the head's headers are only data columns. */
 	function moveEngine(): TTableCollection {
 		const engine = engineOf(MOVABLE)
 
@@ -978,7 +998,7 @@ describe('перестановка колонок', () => {
 		return engine
 	}
 
-	/** Таблица с пропсами в месте `PLACE`. */
+	/** A table with props in the `PLACE` place. */
 	async function mountWith(
 		engine: TTableCollection,
 		props: Record<string, unknown>,
@@ -998,48 +1018,37 @@ describe('перестановка колонок', () => {
 	const fieldsOf = (engine: TTableCollection) =>
 		engine.extensions.columns.columns.map((column) => column.field)
 
-	/** Середина узла. */
+	/** A node's middle. */
 	function middleOf(element: Element): { x: number; y: number } {
 		const box = element.getBoundingClientRect()
 
 		return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
 	}
 
-	/** Левый край узла. */
+	/** A node's left edge. */
 	const left = (element: Element) => element.getBoundingClientRect().left
 
-	/** Края узлов совпали — с допуском на субпиксели. */
+	/** The nodes' edges match — within the subpixel tolerance. */
 	const near = (actual: readonly number[], expected: readonly number[]): boolean =>
 		actual.length === expected.length &&
 		actual.every((value, index) => Math.abs(value - expected[index]) <= EPSILON)
 
-	/** Ячейки строк — все, по строкам. */
+	/** The rows' cells — all of them, row by row. */
 	const cells = (): HTMLElement[] => [
 		...document.querySelectorAll<HTMLElement>('.so-table-row__cell'),
 	]
 
-	/** Сдвиги, которые идут переходом, — у заголовков и ячеек. */
+	/** The shifts running as a transition — on the headers and the cells. */
 	const moving = (): string[] =>
 		[...headers(), ...cells()].flatMap((element) =>
 			transitioning(element).filter((property) => property === 'translate'),
 		)
 
 	/**
-	 * Колонки разложены: место плагин раскладки мерит кадром позже
-	 * монтирования, и до этого ширины колонок, а с ними и края заголовков, ещё
-	 * не те.
-	 */
-	async function laidOut(): Promise<void> {
-		await expect
-			.poll(() => headers().every((header) => header.dataset.sized === 'true'))
-			.toBe(true)
-	}
-
-	/**
-	 * Взять заголовок за середину и нести указатель к точке `x` строки:
-	 * сначала за порог жеста в её сторону, потом туда. Кнопка остаётся зажатой
-	 * — отпускает тест. В сторону точки, а не всегда вправо: у последней
-	 * колонки шаг вправо выходил бы за край окна прогона.
+	 * Take a header by its middle and carry the pointer to the row's point `x`:
+	 * first past the gesture's threshold toward it, then there. The button stays
+	 * pressed — the test releases it. Toward the point, not always to the right: on
+	 * the last column a step to the right would go past the run window's edge.
 	 */
 	async function carry(header: Element, x: number): Promise<void> {
 		const from = middleOf(header)
@@ -1072,10 +1081,10 @@ describe('перестановка колонок', () => {
 		try {
 			await carry(name, middleOf(city).x + 10)
 
-			// Заголовок идёт за указателем
+			// The header follows the pointer
 			expect(name.dataset.dragging).toBe('true')
 			expect(left(name) - before.name.left).toBeGreaterThan(100)
-			// Сосед уступает место на ширину взятого — переходом; линии места нет
+			// The neighbour makes room by the carried one's width — with a transition; no drop line
 			expect(city.dataset.shift).toBe('start')
 			await expect
 				.poll(() => near([left(city)], [before.city - before.name.width]))
@@ -1083,7 +1092,7 @@ describe('перестановка колонок', () => {
 			expect(runs).toContain('translate')
 			expect(city.dataset.drop).toBe('after')
 			expect(style(city, '::before').display).toBe('none')
-			// Дальний сосед и ячейки строк — на месте
+			// The far neighbour and the rows' cells stay in place
 			expect(near([left(age)], [before.age])).toBe(true)
 			expect(near([left(cell), left(cityCell)], before.cells)).toBe(true)
 			expect(fieldsOf(engine)).toEqual(['name', 'city', 'age'])
@@ -1098,7 +1107,7 @@ describe('перестановка колонок', () => {
 			.poll(() => headers().map((header) => header.textContent?.trim()))
 			.toEqual(['Город', 'Имя', 'Возраст'])
 
-		// Ячейки строк — в новом порядке, метки и сдвиги сняты
+		// The rows' cells are in the new order, the marks and shifts are gone
 		expect(rows()[0].children[1].textContent?.trim()).toBe('Анна Смирнова')
 		expect(headers()[1].dataset.dragging).toBeUndefined()
 		expect(headers()[1].dataset.landing).toBeUndefined()
@@ -1108,11 +1117,11 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Палец — не мышь. Касание браузер сам захватывает за узлом заголовка под
-	 * пальцем, и начало жеста, перенося захват на корень, этот узел захвата
-	 * лишает: его `lostpointercapture` всплывает до корня. Протяжка — командой
-	 * протокола DevTools (`commands.touchDrag`), от середины заголовка за
-	 * середину соседа.
+	 * A finger is not a mouse. The browser captures a touch to the header's node
+	 * under the finger by itself, and the gesture's start, moving the capture to the
+	 * root, takes the capture from that node: its `lostpointercapture` bubbles up to
+	 * the root. The drag is a DevTools protocol command (`commands.touchDrag`), from
+	 * the header's middle past the neighbour's middle.
 	 */
 	it.runIf(touchInput)('пальцем — колонка на новом месте, column:move один раз', async () => {
 		const engine = moveEngine()
@@ -1138,10 +1147,11 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Пока несут заголовок — курсор «тащу» и запрет выделения на всей таблице:
-	 * указатель уходит со своего заголовка. Тема ставит их по признаку корня
-	 * (`data-dragging`), который ядро держит только в жесте, с приземлением, —
-	 * когда колонка встала, ячейка тела такая же, как до жеста.
+	 * While a header is carried — the "grabbing" cursor and no selection over the
+	 * whole table: the pointer leaves its header. The theme sets them by the root
+	 * flag (`data-dragging`), which the core keeps only in a gesture, landing
+	 * included, — once the column has landed, a body cell is the same as before the
+	 * gesture.
 	 */
 	it('несут заголовок — курсор «тащу» и без выделения на всей таблице; встал — как было', async () => {
 		const engine = moveEngine()
@@ -1175,37 +1185,39 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Колонка переставляется, когда отпущенный заголовок встал: к этому
-	 * времени он и сдвинутые соседи стоят там, где их поставит новая
-	 * раскладка, а переходы уходят вместе с жестом, — ничего не отъезжает.
-	 * Коробки заголовков снимаются в `column:move` — перестановка уже в
-	 * модели, а Vue ещё не перерисовал, — а заголовков и ячеек первой строки
-	 * — следом за перерисовкой и ещё раз, когда переход сдвига, начнись он, уже
-	 * доиграл бы. С `column:move` корень таблицы слушает и `transitionrun`
-	 * сдвига: событие всплывает до него от заголовков и ячеек.
+	 * The column is moved once the released header has landed: by then it and the
+	 * shifted neighbours stand where the new layout will put them, and the
+	 * transitions leave with the gesture — nothing slides back. The headers' boxes
+	 * are taken in `column:move` — the move is in the model already, and Vue hasn't
+	 * repainted yet, — and those of the headers and the first row's cells right
+	 * after the repaint and once more when a shift transition, had it started,
+	 * would have finished. From `column:move` the table root also listens to the
+	 * shift's `transitionrun`: the event bubbles up to it from the headers and
+	 * cells.
 	 *
-	 * Направлений три, и первое — взятая на место соседа — одно слепо. Vue
-	 * переносит в документе узлы вне наибольшей возрастающей
-	 * последовательности ключей: здесь это сдвинутый сосед, а взятый заголовок
-	 * остаётся на месте. Последнюю колонку в начало и первую через две в конец
-	 * Vue переносит взятой, а сдвинутые соседи с их ячейками остаются в
-	 * документе на своих местах. Со взятым заголовком уезжает и кнопка
-	 * сортировки, которую нажатие сфокусировало, и Chromium, теряя фокус,
-	 * пересчитывает стиль посреди перерисовки: меток на заголовках к этому
-	 * пересчёту уже нет, а признак корня ещё есть. Переход, который держался
-	 * на признаке корня, а не на взятом заголовке, вёл в этом пересчёте ячейки
-	 * соседей от сдвига к нулю (`themes/oren/src/components/table/_table.scss`,
-	 * колонка целиком). В первом направлении взятый не переносится, пересчёта
-	 * посреди перерисовки нет, и перестановка встаёт одним пересчётом.
+	 * There are three directions, and the first — the carried one onto the
+	 * neighbour's place — alone is blind. Vue moves the nodes outside the longest
+	 * increasing sequence of keys in the document: here that is the shifted
+	 * neighbour, and the carried header stays in place. The last column to the start
+	 * and the first past two to the end Vue moves as the carried one, and the
+	 * shifted neighbours with their cells stay in place in the document. With the
+	 * carried header leaves the sort button the press focused, and Chromium, losing
+	 * focus, recalculates style in the middle of the repaint: by this recalc the
+	 * headers have no marks, while the root flag is still there. A transition that
+	 * held on the root flag rather than on the carried header took the neighbours'
+	 * cells from the shift to zero in this recalc
+	 * (`themes/oren/src/components/table/_table.scss`, the whole column). In the
+	 * first direction the carried one isn't moved, there is no recalc in mid
+	 * repaint, and the move lands in one recalc.
 	 */
 	describe('отпустили — заголовок встал на место, потом перестановка; ничего не отъезжает', () => {
-		/** Метки жеста у заголовка: после перестановки их нет ни у кого. */
+		/** The gesture's marks on a header: after the move nobody has them. */
 		const MARKS = ['dragging', 'landing', 'drop', 'shift', 'still']
 
-		/** Дольше перехода сдвига темы (`$reorder-duration`, 200 мс): начнись он — доиграл бы. */
+		/** Longer than the theme's shift transition (`$reorder-duration`, 200 ms): had it started, it would have finished. */
 		const SETTLE = 300
 
-		/** Текст заголовка колонки по полю. */
+		/** A column header's text by the field. */
 		const textOf = (field: string) => MOVABLE.find((column) => column.field === field)?.text
 
 		it.each(
@@ -1229,7 +1241,7 @@ describe('перестановка колонок', () => {
 
 			order.splice(past, 0, ...order.splice(take, 1))
 
-			// Соседи от взятой до места уступают ей место — на её ширину
+			// The neighbours between the carried one and the place make room for it — by its width
 			const shifted = nodes.filter(
 				(_, index) =>
 					index !== take &&
@@ -1286,7 +1298,7 @@ describe('перестановка колонок', () => {
 			const [{ at, heads, cells, boxes }] = seen
 			const placed = headers()
 			let edge = before[0]
-			// Новая раскладка — заголовки подряд в новом порядке, ширины прежние
+			// The new layout — the headers in a row in the new order, with the same widths
 			const laid = placed.map((header) => {
 				const start = edge
 
@@ -1298,14 +1310,14 @@ describe('перестановка колонок', () => {
 			expect(fieldsOf(engine)).toEqual(order)
 			expect(placed.map((header) => header.textContent?.trim())).toEqual(order.map(textOf))
 			expect(near(placed.map(left), laid), 'заголовки — в новой раскладке').toBe(true)
-			// Заголовки доехали до места раньше перестановки, и она их не сдвинула
+			// The headers reached their place before the move, and it didn't shift them
 			expect(near(heads, at), `в перерисовку: ${heads} — ${at}`).toBe(true)
-			// После перерисовки никто не поехал
+			// Nobody moved after the repaint
 			expect(seen[0].moving, 'переходы сдвига после перерисовки').toEqual([])
 			expect(runs, 'начатые переходы сдвига').toEqual([])
 			expect(near(nodes.map(left), heads), 'заголовки стоят').toBe(true)
 			expect(near(cells.map(left), boxes), 'ячейки стоят').toBe(true)
-			// Жеста нет
+			// No gesture
 			expect(root.hasAttribute('data-reorder-preview')).toBe(false)
 			expect(
 				placed.flatMap((header) => MARKS.filter((mark) => mark in header.dataset)),
@@ -1314,8 +1326,9 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Шапка стоит (`none`): и с движением соседи без сдвига и перехода, место
-	 * — линия, а колонка встаёт на отпускании, без приземления.
+	 * The head stands (`none`): with motion too the neighbours have no shift and no
+	 * transition, the place is a line, and the column lands on the release, without
+	 * a landing.
 	 */
 	it('none: соседи стоят, линия видна, колонка встаёт на отпускании', async () => {
 		const engine = moveEngine()
@@ -1342,8 +1355,8 @@ describe('перестановка колонок', () => {
 			await commands.mouseUp()
 		}
 
-		// Без приземления — сразу после отпускания, `plugins/__tests__` проверяет
-		// это без кадров; здесь — что колонка встала и метки сняты
+		// Without a landing — right after the release, `plugins/__tests__` checks it
+		// without frames; here — that the column landed and the marks are gone
 		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 		await expect
 			.poll(() => headers().map((header) => header.textContent?.trim()))
@@ -1367,7 +1380,7 @@ describe('перестановка колонок', () => {
 
 			await expect.poll(() => near([left(cityCell)], [before[1] - width])).toBe(true)
 			expect(near([left(ageCell)], [before[2]])).toBe(true)
-			// Ячейки взятой — спрятаны во всех строках, на месте
+			// The carried column's cells are hidden in every row, in place
 			expect(rows().map((row) => style(row.children[0]).visibility)).toEqual(
 				rows().map(() => 'hidden'),
 			)
@@ -1386,9 +1399,9 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Правила тела темы стоят под признаком корня `data-reorder-preview`, и
-	 * есть он только в жесте: на покое таблица в `column` ячейкам ничего не
-	 * стоит — у них нет ни перехода, ни сдвига, как в `head`.
+	 * The theme's body rules stand under the root flag `data-reorder-preview`,
+	 * present only in a gesture: at rest a `column` table costs its cells nothing —
+	 * they have neither a transition nor a shift, as in `head`.
 	 */
 	it('column на покое: у корня нет признака, у ячеек — ни перехода, ни сдвига', async () => {
 		const engine = moveEngine()
@@ -1397,7 +1410,7 @@ describe('перестановка колонок', () => {
 		await laidOut()
 
 		const root = find('.so-table')
-		// Ни сдвига, ни объявленного перехода сдвига, ни идущего перехода
+		// No shift, no declared shift transition, no running transition
 		const still = () =>
 			moving().length === 0 &&
 			cells().every((cell) => {
@@ -1435,7 +1448,7 @@ describe('перестановка колонок', () => {
 		const width = name.getBoundingClientRect().width
 
 		try {
-			// Первая колонка справа; к концу строки — влево, за середину соседа
+			// The first column is on the right; toward the row's end — to the left, past the neighbour's middle
 			await carry(name, middleOf(city).x - 10)
 
 			expect(city.dataset.shift).toBe('start')
@@ -1489,7 +1502,7 @@ describe('перестановка колонок', () => {
 				await carry(name, middleOf(city).x + 10)
 
 				expect(city.dataset.shift).toBe('start')
-				// Переход шёл бы двести миллисекунд — пара кадров его бы застала
+				// A transition would run two hundred milliseconds — a couple of frames would catch it
 				await new Promise((resolve) => requestAnimationFrame(resolve))
 				await new Promise((resolve) => requestAnimationFrame(resolve))
 
@@ -1508,24 +1521,24 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Линия места нарисована у каждого невзятого заголовка весь жест,
-	 * прозрачной, а метка места только красит её и ставит к краю: линия,
-	 * которая появлялась и пропадала вместе с меткой, перекладывала всю
-	 * таблицу на каждую смену места (`benchmarks/table/history.md`). С движением соседи
-	 * расступаются, и линии нет вовсе — ни у одного заголовка.
+	 * The drop line is drawn on every header not carried for the whole gesture,
+	 * transparent, and the drop mark only colors it and puts it at the edge: a line
+	 * that appeared and vanished with the mark laid the whole table out again on
+	 * every change of the place (`benchmarks/table/history.md`). With motion the
+	 * neighbours make room, and there is no line at all — on any header.
 	 */
 	describe('линия места', () => {
-		/** Линии невзятых заголовков — вычисленный стиль их `::before`. */
+		/** The lines of the headers not carried — the computed style of their `::before`. */
 		const lines = (): CSSStyleDeclaration[] =>
 			headers()
 				.filter((header) => header.dataset.dragging !== 'true')
 				.map((header) => style(header, '::before'))
 
-		/** Линия нарисована: псевдоэлемент есть в раскладке. */
+		/** The line is drawn: the pseudo-element is in the layout. */
 		const drawn = (line: CSSStyleDeclaration): boolean =>
 			line.content !== 'none' && line.display !== 'none'
 
-		/** Линия видна: у неё цвет. */
+		/** The line is visible: it has a color. */
 		const shown = (header: Element): boolean =>
 			opacity(style(header, '::before').backgroundColor) > 0
 
@@ -1552,7 +1565,7 @@ describe('перестановка колонок', () => {
 						expect(lines().every(drawn)).toBe(true)
 						expect([shown(city), shown(age)]).toEqual([true, false])
 
-						// Место уходит дальше: линия соседа остаётся в раскладке и гаснет
+						// The place moves on: the neighbour's line stays in the layout and goes out
 						await pointAt(middleOf(age).x + 10, middleOf(age).y)
 						await expect.poll(() => age.dataset.drop).toBe('after')
 
@@ -1592,14 +1605,15 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Шапка поднята над телом и рисуется после него, и без закрепления. Поле
-	 * чекбокса строки поднято (`z-10`), и без подъёма шапки браузер рисовал бы
-	 * его после заголовков: заголовок, ставший в жесте своим слоем, сверялся бы
-	 * с полем каждой строки на каждой перестройке слоёв — на 5000 строк
-	 * ~350 мс на взятии и на каждой смене места (`benchmarks/table/history.md`).
+	 * The head is raised over the body and painted after it, without sticking too.
+	 * The field of a row's checkbox is raised (`z-10`), and without the head's raise
+	 * the browser would paint it after the headers: a header that became a layer of
+	 * its own in a gesture would be checked against every row's field on every
+	 * layerization — on 5000 rows ~350 ms on the take and on every change of the
+	 * place (`benchmarks/table/history.md`). WebKit turns `relative` on a row group
+	 * into `static`, and the raise is `sticky` without an edge.
 	 */
-	it('шапка поднята над полем чекбокса строки', async (context) => {
-		context.skip(webkitUntil('869fn0tym'))
+	it('шапка поднята над полем чекбокса строки', async () => {
 		await mount(engineOf(), PLACE)
 
 		const head = find('.so-table__head')
@@ -1610,9 +1624,9 @@ describe('перестановка колонок', () => {
 	})
 
 	/**
-	 * Протяжку, начатую на кнопке сортировки, берёт перестановка: жест
-	 * захватывает указатель на корне, и `click` отпускания до кнопки не
-	 * доходит. Нажатие без протяжки остаётся нажатием кнопки.
+	 * A drag started on the sort button goes to the reorder: the gesture captures
+	 * the pointer on the root, and the release's `click` doesn't reach the button.
+	 * A press without a drag stays a press of the button.
 	 */
 	it('протяжка, начатая с кнопки сортировки, не сортирует; нажатие без протяжки — сортирует', async () => {
 		const engine = moveEngine()
@@ -1634,7 +1648,7 @@ describe('перестановка колонок', () => {
 
 		await expect.poll(() => fieldsOf(engine)).toEqual(['city', 'name', 'age'])
 
-		// Нажатие на колонку после протяжки не досталось
+		// The column got no press after the drag
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 		expect(headers().some((header) => header.dataset.sort)).toBe(false)
 
@@ -1674,13 +1688,14 @@ describe('перестановка колонок', () => {
 })
 
 /**
- * Сетка (APG Data Grid) настоящими клавишами: Tab входит в таблицу на ячейку
- * под фокусом сетки и выходит из неё за таблицу, минуя поля и кнопки ячеек;
- * стрелки ведут фокус по ячейкам; строка под фокусом и под указателем
- * подсвечена, ячейка под фокусом с клавиатуры — в кольце внутри своих границ.
+ * The grid (APG Data Grid) with real keys: Tab enters the table on the grid's
+ * focused cell and leaves past the table, skipping the cells' fields and
+ * buttons; the arrows move focus over the cells; the row under focus and under
+ * the pointer is highlighted, a cell focused from the keyboard has a ring
+ * inside its bounds.
  */
 describe('сетка', () => {
-	/** Сетка с выбором строк между двумя кнопками: Tab входит и выходит. */
+	/** A grid with row selection between two buttons: Tab enters and leaves. */
 	async function mountGrid(): Promise<TTableCollection> {
 		const engine = engineOf()
 
@@ -1708,7 +1723,7 @@ describe('сетка', () => {
 		find('.so-test-before').focus()
 		await userEvent.keyboard('{Tab}')
 
-		// Выбор включили после колонок — фокус сетки на первой из них
+		// Selection was turned on after the columns — the grid's focus is on the first of them
 		expect(document.activeElement).toBe(headers()[0])
 
 		await userEvent.keyboard('{ArrowDown}{ArrowRight}')
@@ -1719,7 +1734,7 @@ describe('сетка', () => {
 
 		expect(document.activeElement).toBe(find('.so-test-after'))
 
-		// Shift+Tab — обратно на ту же ячейку: у сетки одна остановка
+		// Shift+Tab — back to the same cell: the grid is one stop
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
 
 		expect(document.activeElement).toBe(rows()[0].children[2])
@@ -1757,7 +1772,7 @@ describe('сетка', () => {
 		expect(engine.extensions.selection.selected).toEqual([engine.extensions.batch.items[1]])
 		expect(second.getAttribute('aria-selected')).toBe('true')
 
-		// Фокус встал на нажатую ячейку — её строка подсвечена и без указателя
+		// Focus went to the pressed cell — its row is highlighted without the pointer too
 		await userEvent.hover(find('.so-test-before'))
 		await settled(document.body)
 
@@ -1783,15 +1798,18 @@ describe('принудительные цвета', () => {
 })
 
 /**
- * Ручка ширины — полоса у конца заголовка с полем `input type="range"`.
+ * The width handle is a strip at the header's end with an `input type="range"`
+ * field.
  *
- * Протяжку ведёт плагин, ширину считает ядро, а раскладка — тема: здесь
- * видно, что край колонки идёт за указателем ровно на сдвиг, в LTR и в RTL,
- * соседи с шириной стоят на месте, а имя заголовка и ползунка — ровно текст
- * колонки, без значения поля.
+ * The plugin runs the drag, the core computes the width, and the layout is the
+ * theme's: here one sees that the column's edge follows the pointer by exactly
+ * the shift, in LTR and RTL, the neighbours with a width stay in place, and the
+ * names of the header and the slider are exactly the column's text, without
+ * the field's value.
  *
- * Таблица — в месте не шире окна прогона (414 px): протяжка за край окна
- * прокрутила бы страницу, и сдвиг указателя разошёлся бы со сдвигом края.
+ * The table is in a place no wider than the run's window (414 px): a drag past
+ * the window's edge would scroll the page, and the pointer's shift would differ
+ * from the edge's.
  */
 describe('ручка ширины', () => {
 	const PLACE = 400
@@ -1834,7 +1852,7 @@ describe('ручка ширины', () => {
 		const resizer = resizerOf(header).getBoundingClientRect()
 		const left = header.getBoundingClientRect().left
 
-		// Полоса — на границе колонок, у левого края заголовка
+		// The strip is on the border between columns, at the header's left edge
 		expect(Math.abs(resizer.left + resizer.width / 2 - left)).toBeLessThanOrEqual(EPSILON)
 
 		await drag(header, -40)
@@ -1858,8 +1876,8 @@ describe('ручка ширины', () => {
 
 		const [header] = headers()
 
-		// До замера окна ширину решает тема, и ручка ждёт раскладки ядра —
-		// кадром позже наблюдателя
+		// Until the window is measured the theme decides the width, and the handle
+		// waits for the core's layout — a frame after the observer
 		await expect.poll(() => header.querySelector('.so-table-column__resizer')).not.toBeNull()
 
 		const before = width(header)
@@ -1871,14 +1889,14 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Отложенная протяжка: таблица в жесте не перекладывается — ширины стоят до
-	 * отпускания, а новую границу показывает призрак — линия на полосе ручки
-	 * (`::after`), сдвинутая на ширину будущей правки.
+	 * A deferred drag: the table isn't laid out again during the gesture — the
+	 * widths stand until the release, and a ghost shows the new border — a line on
+	 * the handle's strip (`::after`), shifted by the coming change.
 	 */
 	describe('отложенная протяжка (deferred)', () => {
 		const DEFERRED = { resizePreview: 'deferred' }
 
-		/** Нажать на полосу и сдвинуть указатель на `dx`, не отпуская. */
+		/** Press the strip and move the pointer by `dx`, without releasing. */
 		async function hold(header: Element, dx: number): Promise<void> {
 			const box = resizerOf(header).getBoundingClientRect()
 			const x = box.left + box.width / 2
@@ -1890,7 +1908,7 @@ describe('ручка ширины', () => {
 			await pointAt(x + dx, y)
 		}
 
-		/** Призрак ручки: виден ли и на сколько сдвинут. */
+		/** The handle's ghost: whether it shows and how far it is shifted. */
 		function ghostOf(header: Element): { shown: boolean; shift: string; height: number } {
 			const style = getComputedStyle(resizerOf(header), '::after')
 
@@ -1907,6 +1925,7 @@ describe('ручка ширины', () => {
 
 			columnOf(engine, 'name').events.on('commit', (value) => commits.push(value))
 			await mount(engine, PLACE, 'ltr', DEFERRED)
+			await laidOut()
 
 			const [name, city, age] = headers()
 			const before = [name, city, age].map(width)
@@ -1918,7 +1937,7 @@ describe('ручка ширины', () => {
 
 				await expect.poll(() => ghostOf(name).shift).toBe('40px')
 				expect(ghostOf(name).shown).toBe(true)
-				// От верха заголовка до низа таблицы
+				// From the header's top to the table's bottom
 				const table = find('.so-table').getBoundingClientRect()
 
 				expect(
@@ -1966,7 +1985,7 @@ describe('ручка ширины', () => {
 			try {
 				await hold(name, 240)
 
-				// maxWidth 300 от ширины 120
+				// maxWidth 300 from the width 120
 				await expect.poll(() => ghostOf(name).shift).toBe('180px')
 			} finally {
 				await commands.mouseUp()
@@ -1976,9 +1995,9 @@ describe('ручка ширины', () => {
 		})
 
 		/**
-		 * Сторож задачи. У последней колонки линия ручки стоит у края таблицы, а
-		 * не посередине полосы, и правило призрака, равное по весу и стоящее
-		 * ниже, перебивало это: призрак вставал на несколько px раньше линии.
+		 * The task's guard. On the last column the handle's line stands at the table's
+		 * edge, not in the middle of the strip, and the ghost's rule of equal weight
+		 * standing below overrode that: the ghost stood a few px before the line.
 		 */
 		it.each([
 			['средней', 0],
@@ -2028,16 +2047,16 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Сторож задачи. Гибкие колонки перед тянутой перераскладывались вместе с
-	 * остальными, и край шёл за указателем вполовину или стоял, а колонка росла
-	 * в обратную сторону. Колонки перед тянутой держат ширину, место отдаёт
-	 * колонка после неё.
+	 * The task's guard. Flexible columns before the dragged one were laid out again
+	 * with the rest, and the edge followed the pointer by half or stood still, while
+	 * the column grew the other way. The columns before the dragged one keep their
+	 * width, the column after it gives the place.
 	 */
 	it('auto, гибкие колонки: край идёт за указателем, левый край стоит', async () => {
 		const FLEX = { resizable: true }
 
-		// Гибкие делят 400 − 60: по 170. Без правила первая сжалась бы к 160, и
-		// край второй ушёл бы на 30, а не на 40
+		// The flexible ones share 400 − 60: 170 each. Without the rule the first would
+		// shrink toward 160, and the second's edge would move by 30, not 40
 		await mount(
 			resizeEngine([
 				{ ...NAME, ...FLEX },
@@ -2063,11 +2082,11 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Сторож задачи. Колонку без своей ширины тема раскладывала, не глядя на
-	 * границы: колонка с границами 120–360 вставала шире места, которое ей
-	 * давала раскладка, — во всю таблицу, — и первая же протяжка или клавиша
-	 * ставила её в границу рывком. Ядро раскладывает её в границах сразу, и
-	 * ручка берёт её от того, что видно.
+	 * The task's guard. The theme laid out a column without its own width ignoring
+	 * the bounds: a column bounded by 120–360 stood wider than the place the layout
+	 * gave it — the whole table, — and the very first drag or key snapped it into
+	 * the bound. The core lays it out within the bounds right away, and the handle
+	 * takes it from what is seen.
 	 */
 	describe('колонка без ширины с границами в широком месте', () => {
 		const BOUNDED: TTableColumnSource = {
@@ -2079,7 +2098,7 @@ describe('ручка ширины', () => {
 			maxWidth: 360,
 		}
 
-		/** Таблица с одной такой колонкой: место дало бы ей 400 px. */
+		/** A table with one such column: the place would give it 400 px. */
 		async function mountBounded(): Promise<{ engine: TTableCollection; header: HTMLElement }> {
 			const engine = resizeEngine([BOUNDED])
 
@@ -2087,7 +2106,7 @@ describe('ручка ширины', () => {
 
 			const [header] = headers()
 
-			// В своей границе, а не во всё место
+			// Within its bound, not the whole place
 			await expect.poll(() => width(header)).toBe(360)
 
 			return { engine, header }
@@ -2099,7 +2118,7 @@ describe('ручка ширины', () => {
 			expect(columnOf(engine, 'name').width).toBe(360)
 			expect(columnOf(engine, 'name').getProps().width).toBeUndefined()
 			expect(header.dataset.sized).toBe('true')
-			// Все гибкие упёрлись в границы — таблица уже места
+			// All flexible ones hit their bounds — the table is narrower than the place
 			expect(width(find('.so-table'))).toBe(360)
 		})
 
@@ -2140,7 +2159,7 @@ describe('ручка ширины', () => {
 		const table = find('.so-table')
 		const [name, city, age] = headers()
 
-		// Излишек места колонкам не раздаётся: таблица — сумма их ширин
+		// The place's excess isn't handed out to the columns: the table is the sum of their widths
 		expect(Math.abs(width(table) - 370)).toBeLessThanOrEqual(EPSILON)
 
 		const cityLeft = city.getBoundingClientRect().left
@@ -2151,7 +2170,7 @@ describe('ручка ширины', () => {
 		expect(Math.abs(width(city) - 150)).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(width(age) - 100)).toBeLessThanOrEqual(EPSILON)
 		expect(Math.abs(width(table) - 390)).toBeLessThanOrEqual(EPSILON)
-		// Соседа сдвинул край колонки — ровно на её прибавку
+		// The column's edge moved the neighbour — by exactly its gain
 		expect(Math.abs(city.getBoundingClientRect().left - (cityLeft + 20))).toBeLessThanOrEqual(
 			EPSILON,
 		)
@@ -2204,8 +2223,8 @@ describe('ручка ширины', () => {
 		expect(page.getByRole('columnheader', { name: 'Имя', exact: true }).query()).toBe(name)
 		expect(page.getByRole('columnheader', { name: 'Город', exact: true }).query()).toBe(city)
 		expect(page.getByRole('slider', { name: 'Имя', exact: true }).query()).toBe(fieldOf(name))
-		// Кнопка сортировки — рядом с подписью, со своим именем от локали: в
-		// имя заголовка оно не входит
+		// The sort button is next to the label, with its own name from the locale: it
+		// isn't part of the header's name
 		expect(page.getByRole('button', { name: 'Sort by Имя', exact: true }).query()).toBe(
 			find('.so-table-column__sort', name),
 		)
@@ -2223,7 +2242,7 @@ describe('ручка ширины', () => {
 			table.right + EPSILON,
 		)
 
-		// На самой границе колонок — полоса
+		// Right on the border between columns — the strip
 		const edge = name.getBoundingClientRect()
 		const hit = document.elementFromPoint(edge.right, edge.top + edge.height / 2)
 
@@ -2231,11 +2250,12 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Кнопка сортировки стоит сразу за подписью, и у подписи во всю ширину
-	 * колонки подходит к её границе вместе со своей зоной нажатия: на `sm` зона
-	 * заходит под полосу. У границы колонок нажатие берёт ручка — полоса над
-	 * кнопкой и её зоной, — а на кнопке — кнопка, и сортирует колонку, не меняя
-	 * её ширины.
+	 * The sort button stands right after the label, and with a label as wide as the
+	 * column it reaches the column's border together with its hit zone: at `sm` the
+	 * zone goes under the strip. At the border between columns the handle takes
+	 * the press — the strip lies over the button and its zone, — and on the button
+	 * the button does, sorting the column without changing its width. The geometry
+	 * is taken once the core has laid the columns out.
 	 */
 	it('у границы колонок нажатие берёт ручка, а не кнопка; на кнопке — кнопка', async () => {
 		const LONG: TTableColumnSource = {
@@ -2255,7 +2275,7 @@ describe('ручка ширины', () => {
 					]),
 			}),
 		)
-		await new Promise((resolve) => requestAnimationFrame(resolve))
+		await laidOut()
 
 		const [name, , age] = headers()
 		const button = find('.so-table-column__sort', name)
@@ -2264,26 +2284,26 @@ describe('ручка ширины', () => {
 		const own = button.getBoundingClientRect()
 		const y = own.top + own.height / 2
 
-		// Подпись во всю ширину — кнопка у конца колонки
+		// A label as wide as the column — the button at the column's end
 		expect(edge.right - own.right).toBeLessThan(strip.width)
 
-		// Зона нажатия кнопки заходит под полосу
+		// The button's hit zone goes under the strip
 		expect(own.left + own.width / 2 + ZONE / 2).toBeGreaterThan(strip.left)
 
-		// От границы до внутреннего края полосы — ручка, над кнопкой и её зоной
+		// From the border to the strip's inner edge — the handle, over the button and its zone
 		for (let x = edge.right - 0.5; x > strip.left; x -= 0.5) {
 			expect(resizerOf(name).contains(document.elementFromPoint(x, y)), `${x}`).toBe(true)
 		}
 
-		// Полоса соседа у начала — тоже ручка этой колонки
+		// The strip at the neighbour's start is this column's handle too
 		expect(resizerOf(name).contains(document.elementFromPoint(edge.right + 4, y))).toBe(true)
 
-		// Полоса последней колонки — у края таблицы
+		// The last column's strip is at the table's edge
 		const last = age.getBoundingClientRect()
 
 		expect(resizerOf(age).contains(document.elementFromPoint(last.right - 4, y))).toBe(true)
 
-		// На кнопке — кнопка: сортирует, ширина та же
+		// On the button — the button: it sorts, the width stays
 		const middle = own.left + own.width / 2
 
 		expect(button.contains(document.elementFromPoint(middle, y))).toBe(true)
@@ -2299,8 +2319,8 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Линия ручки — 3 px и висит посередине высоты заголовка: рамок строк, линии
-	 * шапки и верхнего края она не касается.
+	 * The handle's line is 3 px and hangs in the middle of the header's height: it
+	 * touches neither the row borders, nor the head's line, nor the top edge.
 	 */
 	it('линия — 3 px, висит посередине, не касаясь краёв заголовка', async () => {
 		await mount(resizeEngine(ALL), PLACE)
@@ -2313,7 +2333,7 @@ describe('ручка ширины', () => {
 		const bottom = top + parseFloat(line.height)
 
 		expect(parseFloat(line.width)).toBe(3)
-		// Отступ — десятая часть высоты заголовка сверху и снизу
+		// The offset is a tenth of the header's height above and below
 		expect(Math.abs(top - header.top - header.height / 10)).toBeLessThanOrEqual(EPSILON)
 		expect(header.bottom - bottom).toBeGreaterThan(0)
 		expect(Math.abs(top - header.top - (header.bottom - bottom))).toBeLessThanOrEqual(EPSILON)
@@ -2338,20 +2358,21 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Указатель, который прошёл через полосу мимоходом, линию не зажигает:
-	 * она ждёт, задержится ли он. Курсор ручки при этом встаёт сразу. Ручку
-	 * взяли — ждать нечего, и линия встаёт без задержки и под указателем, даже
-	 * посреди задержки наведения: переход, который её ждёт, отменяется, а не
-	 * доигрывает её. Гаснет линия и после жеста переходом.
+	 * A pointer passing over the strip on its way doesn't light the line: the line
+	 * waits to see whether it stays. The handle's cursor shows at once meanwhile.
+	 * Once the handle is taken there is nothing to wait for, and the line shows
+	 * without a delay under the pointer too, even in the middle of the hover delay:
+	 * the transition waiting for it is cancelled rather than played out. After a
+	 * gesture the line goes out with a transition as well.
 	 *
-	 * Мимоходом и посреди задержки — по переходу линии, а не по часам: ответ
-	 * наведения идёт кругом RPC и под нагрузкой приходит позже задержки, когда
-	 * линия уже горит. Переход ловит слушатель, заведённый до наведения, и
-	 * ставит на паузу, а мгновение выбирает тест: уходит указатель в последний
-	 * миг задержки, нажимает — в её начале.
+	 * Passing by and the middle of the delay are judged by the line's transition,
+	 * not by the clock: a hover's answer makes an RPC round trip and under load
+	 * comes after the delay, when the line already shows. A listener set up before
+	 * the hover catches the transition and pauses it, and the test picks the
+	 * instant: the pointer leaves in the last moment of the delay and presses at
+	 * its start.
 	 */
 	it('линия ждёт задержки указателя: мимоходом не моргает; взяли ручку — сразу', async (context) => {
-		context.skip(webkitUntil('869fn0tym'))
 		await mount(resizeEngine(ALL), PLACE)
 
 		const resizer = resizerOf(headers()[0])
@@ -2361,8 +2382,9 @@ describe('ручка ширины', () => {
 		const on = box.left + box.width / 2
 		const away = on + 60
 
-		// Сначала — мимо полосы, и линия в покое: указатель прошлого теста стоит
-		// там, где у новой таблицы полоса, и зажёг бы линию раньше наведения
+		// First away from the strip, with the line at rest: the previous test's pointer
+		// stands where the new table has its strip and would light the line before the
+		// hover
 		await pointAt(away, y)
 		await pseudoSettled(resizer, '::before')
 
@@ -2378,13 +2400,14 @@ describe('ручка ширины', () => {
 
 		expect(delay, 'линия ждёт указателя').toBeGreaterThan(0)
 
-		// Последний миг задержки — линии ещё нет
+		// The last moment of the delay — no line yet
 		transition.currentTime = delay - 1
 
 		expect(line().opacity).toBe('0')
 
-		// Ушёл в этот миг — линия так и не появилась: переход отменён, а не
-		// доигран, и нового перехода прозрачности нет — гаснуть линии не из чего
+		// Left at that moment — the line never showed: the transition is cancelled
+		// rather than played out, and there is no new opacity transition — the line
+		// has nothing to fade from
 		const runs = pseudoTransitionRuns(resizer, '::before')
 
 		await pointAt(away, y)
@@ -2393,16 +2416,16 @@ describe('ручка ширины', () => {
 		expect(transition.playState, 'переход линии отменён').toBe('idle')
 		expect(runs, 'гаснуть линии не из чего').not.toContain('opacity')
 
-		// Задержался — появилась
+		// It stayed — the line showed
 		await pointAt(on, y)
 		await expect.poll(() => line().opacity).toBe('1')
 
 		await pointAt(away, y)
 		await expect.poll(() => line().opacity).toBe('0')
 
-		// Нажали на полосу, пока линия ждёт, — встаёт сразу: переход наведения
-		// отменён, а не доигрывает задержку. Он на паузе в её начале, и
-		// неотменённый так и держал бы линию погасшей
+		// Pressed the strip while the line waits — it shows at once: the hover's
+		// transition is cancelled rather than playing out the delay. It is paused at
+		// the delay's start, and if not cancelled it would keep the line out
 		const waiting = await pausedPseudoTransition(resizer, '::before', 'opacity', () =>
 			pointAt(on, y),
 		)
@@ -2419,11 +2442,15 @@ describe('ручка ширины', () => {
 			await commands.mouseUp()
 		}
 
-		// Отпустили на полосе — горит; ушёл — гаснет переходом, как без жеста.
-		// Слушатель — после событий отпускания: пока указатель захвачен,
-		// наведение у заголовка, и полосе оно возвращается позже, чем снят
-		// признак жеста. Переход, заведённый между ними, браузер отменяет в
-		// первый же миг — линию гасит не он
+		// Released on the strip — the line stays; the pointer leaves — it fades
+		// with a transition, as without a gesture. While the pointer is captured,
+		// `:hover` is on the header, and it comes back to the strip after the
+		// gesture flag is gone: the transition started between the two the
+		// browser cancels at once — it isn't what puts the line out. So the
+		// listener goes after the release events. WebKit leaves `:hover` on the
+		// header until the pointer moves, and the line fades on the release
+		context.skip(!hoverAfterCapture)
+
 		await expect.poll(() => line().opacity).toBe('1')
 		await transitionEvents()
 
@@ -2436,10 +2463,11 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Фокус поля ручки с клавиатуры — намерение, как и нажатие: линия встаёт
-	 * сразу, и посреди задержки наведения переход, который её ждёт,
-	 * отменяется. Фокус с кольцом ставит скрипт (`focusVisible: true`), а
-	 * переход наведения ловится на паузе, как выше.
+	 * Keyboard focus on the handle's field is an intent, like a press: the line
+	 * shows at once, and in the middle of the hover delay the transition waiting
+	 * for it is cancelled. A script sets the focus with a ring
+	 * (`focusVisible: true`), and the hover's transition is caught paused, as
+	 * above.
 	 */
 	it('фокус поля с клавиатуры посреди задержки наведения — линия сразу', async () => {
 		await mount(resizeEngine(ALL), PLACE)
@@ -2466,11 +2494,11 @@ describe('ручка ширины', () => {
 	})
 
 	/**
-	 * Пока держат ручку — с нажатия, ещё без движения, — курсор ручки и запрет
-	 * выделения на всей таблице: указатель уходит с полосы, а край колонки идёт
-	 * за ним. Тема ставит их по признаку корня (`data-resizing`), который ядро
-	 * держит только в жесте, — после отпускания ячейка тела такая же, как до
-	 * нажатия.
+	 * While the handle is held — from the press, before any movement, — the
+	 * handle's cursor and no selection over the whole table: the pointer leaves the
+	 * strip, and the column's edge follows it. The theme sets them by the root flag
+	 * (`data-resizing`), which the core keeps only in a gesture, — after the release
+	 * a body cell is the same as before the press.
 	 */
 	it('держат ручку — курсор ручки и без выделения на всей таблице; отпустили — как было', async () => {
 		await mount(resizeEngine(ALL), PLACE)
