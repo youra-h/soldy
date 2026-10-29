@@ -1,0 +1,26 @@
+@use './mixins' as mixines;
+
+// The modifiers of Button — a variant and a view the consumer sets, or the
+// owner passes on: the list's view and variant reach its rows this way. They
+// override the base view and every view by context, the way a class of its
+// own overrides `:where()`. A view by context is declared by the part that
+// holds a button, in the layer of that part, and every such layer stands after
+// the layer of Button. So the modifiers live in a layer of their own, after
+// every part: `components.so.modifiers.button` (`index.scss`).
+//
+// Only the modifiers move there. The look of the block and its focus ring stay
+// in the layer of Button: a part that holds a button overrides them — the row
+// of a tab takes the ring off — and the order of the layers says so.
+
+// A variant writes only the color — the variables the view reads.
+@each $variant in mixines.$variants {
+	.so-button--variant-#{$variant} {
+		@include mixines.button-variant-tones($variant);
+	}
+}
+
+@each $view in mixines.$views {
+	.so-button--view-#{$view} {
+		@include mixines.button-view($view);
+	}
+}

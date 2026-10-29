@@ -1,2 +1,8 @@
-/* Global styles of the application: the theme's stylesheet */
-@import '@soldy-ui/theme-oren';
+/* Global styles of the application: the stylesheets of the theme for the
+ * components of the page — the shared part comes with each of them once */
+@import '@soldy-ui/theme-oren/button.css';
+@import '@soldy-ui/theme-oren/dialog.css';
+@import '@soldy-ui/theme-oren/input.css';
+@import '@soldy-ui/theme-oren/select.css';
+@import '@soldy-ui/theme-oren/table.css';
+@import '@soldy-ui/theme-oren/date-picker.css';

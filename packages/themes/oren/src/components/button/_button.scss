@@ -23,17 +23,23 @@
 	// вставал сплошным пятном.
 }
 
-// Цвет кнопки — переменные на её корне: нейтраль у блока, вариант у
-// модификатора (`button-tones`). Вид их только читает.
-@include mixines.button-tones('so-button');
+// The color of a button — variables on its root: the neutral one on the
+// block, a variant on its modifier (`_modifiers.scss`). The view only reads
+// them.
+:where(.so-button) {
+	@include mixines.button-neutral-tones;
+}
 
-// Вид блока без модификатора — `filled` с нейтралью.
+// The view of the block without a modifier — `filled` with the neutral color.
 //
-// Нулевая специфичность: вид по контексту и модификатор перекрывают базовый
-// вид, не споря с ним. Виды по контексту — у частей, чей вид раньше был зашит
-// в разметку: строки ListBox, Accordion и Select, крестики Tabs и Tags,
-// очистка полей (`plain`), строка таба (`none`). Объявлены в файлах этих
-// компонентов, после Button.
+// Zero specificity, and the layer of Button stands before the parts that hold
+// a button: a view by context overrides the base view without fighting it.
+// Views by context belong to the parts whose view used to be wired into the
+// markup: the rows of ListBox, Accordion and Select, the close buttons of Tabs
+// and Tags, the clear button of the fields (`plain`), the row of a tab
+// (`none`). They are declared in the files of those components, in their
+// layers. The modifiers of Button override both from the layer of modifiers,
+// over every part (`_modifiers.scss`).
 :where(.so-button) {
 	@include mixines.button-view('filled');
 }
@@ -53,10 +59,4 @@
 // этими же переменными, не споря.
 :where(.so-button) {
 	@include indicator.text-colored;
-}
-
-@each $view in mixines.$views {
-	.so-button--view-#{$view} {
-		@include mixines.button-view($view);
-	}
 }

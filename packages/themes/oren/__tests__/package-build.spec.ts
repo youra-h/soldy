@@ -3,20 +3,22 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import * as ts from 'typescript'
 import { build as viteBuild } from 'vite'
+import { COMPONENTS } from '../entries'
 import setupConfig from '../vite.setup.config'
 
 /**
- * The theme has two outputs, the CSS (`dist/index.css`) and the behavior
- * (`dist/setup`), and both lie in one folder that the build cleans
- * (`emptyOutDir`).
+ * The theme has two outputs, the CSS (`dist/index.css` with the stylesheets of
+ * components next to it) and the behavior (`dist/setup`), and both lie in one
+ * folder that the build cleans (`emptyOutDir`).
  *
  * So there is an order that breaks silently: build the behavior before the CSS,
  * and the CSS build wipes it out — only a consumer of the package would notice.
  *
  * The content of the CSS output breaks silently too: `files` ships the whole
- * `dist`, and an extra file next to `index.css` goes into the package for no
+ * `dist`, and an extra file next to the sheets goes into the package for no
  * purpose. So did the empty JS of the entry while the library mode built the
- * styles — `theme-oren.js`.
+ * styles — `theme-oren.js`. What the CSS files hold is guarded by
+ * `entries.spec.ts`.
  *
  * And the declarations of the behavior: they reference `index.d.ts`, so the
  * values of the theme reach the types wherever the stylesheet comes from. A
@@ -88,10 +90,26 @@ describe('тема oren · поставка', () => {
 		expect(manifest.files).not.toContain('setup')
 	})
 
-	it('CSS-сборка кладёт в dist один index.css', async () => {
-		// `main`, `style` and `exports["."]` of the theme read this name. There
-		// must be no second file: no entry point leads to it
-		expect(await cssOutputFiles()).toEqual(['index.css'])
+	it('CSS-сборка кладёт в dist лист целиком, общую часть, части и входы компонентов', async () => {
+		// `main`, `style` and `exports["."]` of the theme read `index.css`, the
+		// entries `./<component>.css` — `components/`, and those import the
+		// shared part and the parts. There must be no other file: no entry
+		// point leads to it, and no entry imports it
+		const parts = [...new Set(Object.values(COMPONENTS).flat())]
+
+		expect((await cssOutputFiles()).sort()).toEqual(
+			[
+				'index.css',
+				'common.css',
+				...parts.map((part) => `parts/${part}.css`),
+				...Object.keys(COMPONENTS).map((component) => `components/${component}.css`),
+			].sort(),
+		)
+	})
+
+	it('вход компонента ведёт в его лист, корень — в лист целиком', () => {
+		expect(manifest.exports['.']).toMatchObject({ default: './dist/index.css' })
+		expect(manifest.exports['./*.css']).toBe('./dist/components/*.css')
 	})
 
 	it('поведение собирается в свой подкаталог, а не поверх CSS', () => {

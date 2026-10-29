@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import postcss from 'postcss'
-import type { AtRule, ChildNode, Container, Rule } from 'postcss'
+import type { AtRule, ChildNode, Container, Root, Rule } from 'postcss'
 
 import { behaviourVariables } from './behaviour'
 import { BASE_READS, THEME_READS } from './contract'
@@ -18,9 +18,13 @@ import type { TTheme } from './themes'
  * служебной механики базы, роняет сторож, и его либо вносят в контракт, либо
  * берут из него.
  *
- * Стили — собранный CSS темы (`themes.ts`). Правила базы в нём — в слое `so`
- * (у темы на Tailwind — `base.so`), и чтения и объявления базы сторож
- * пропускает: их стережёт `base-css.spec.ts`.
+ * The styles are the built CSS of the theme (`themes.ts`). The rules of the
+ * shared layer of themes are in it in the layer `so` — at the top level, or
+ * inside a layer of the theme (`base.so` in a theme on Tailwind) — and the
+ * guard skips its reads and declarations: `base-css.spec.ts` guards them. The
+ * layer is found by its first sublayer, the reset (`so.reset`), and not by
+ * the name `so` alone: a theme may keep its own rules in a `so` of its own
+ * (oren — `components.so.<part>`).
  */
 
 /** Чтение переменной: `var(--x)` и `var(--x, запас)`. */
@@ -33,15 +37,42 @@ const isRule = (node: Container): node is Rule => node.type === 'rule'
 const isNested = (node: Container | undefined): node is AtRule | Rule =>
 	node !== undefined && (isAtRule(node) || isRule(node))
 
-/** Узел из слоя базы: среди имён `@layer` предков есть `so`. */
-function inBase(node: ChildNode): boolean {
+/** The layer of a node: the names of its `@layer` ancestors, outside in, through a dot. */
+function layerOf(node: ChildNode): string {
+	const names: string[] = []
+
 	for (let parent = node.parent; isNested(parent); parent = parent.parent) {
-		if (isAtRule(parent) && parent.name === 'layer') {
-			if (parent.params.split('.').some((name) => name.trim() === 'so')) return true
-		}
+		if (isAtRule(parent) && parent.name === 'layer') names.unshift(parent.params.trim())
 	}
 
-	return false
+	return names.join('.')
+}
+
+/** The reset of the library's nodes — the first sublayer of the shared layer of themes. */
+const RESET = /^(?:(.+)\.)?so\.reset$/
+
+/**
+ * The layer of the shared layer of themes in a sheet — the parent of its reset:
+ * `so` or `base.so`. A sheet without the reset has no shared layer.
+ */
+function baseLayerOf(css: Root): string | undefined {
+	let found: string | undefined
+
+	css.walkAtRules('layer', (rule) => {
+		const layer = [layerOf(rule), rule.params.trim()].filter(Boolean).join('.')
+		const match = RESET.exec(layer)
+
+		if (match && found === undefined) found = match[1] ? `${match[1]}.so` : 'so'
+	})
+
+	return found
+}
+
+/** A node of the shared layer of themes: its layer is that layer or one under it. */
+function inBase(node: ChildNode, base: string | undefined): boolean {
+	const layer = layerOf(node)
+
+	return base !== undefined && (layer === base || layer.startsWith(`${base}.`))
 }
 
 type TReport = {
@@ -53,11 +84,12 @@ type TReport = {
 
 function inspect(source: string, theme: TTheme): TReport {
 	const css = postcss.parse(source)
+	const base = baseLayerOf(css)
 	const reads: { place: string; name: string }[] = []
 	const own = new Set(behaviourVariables(theme).map(({ name }) => name))
 
 	css.walkDecls((decl) => {
-		if (inBase(decl)) return
+		if (inBase(decl, base)) return
 
 		if (decl.prop.startsWith('--')) own.add(decl.prop)
 
@@ -67,7 +99,7 @@ function inspect(source: string, theme: TTheme): TReport {
 	})
 
 	css.walkAtRules('property', (rule) => {
-		if (!inBase(rule)) own.add(rule.params.trim())
+		if (!inBase(rule, base)) own.add(rule.params.trim())
 	})
 
 	return { reads, own }
@@ -127,7 +159,15 @@ describe('сторож не пуст', () => {
 			[],
 		)
 		expect(
-			sample('@layer base { @layer so { .so-x { width: var(--so-table-cells-1-shift) } } }'),
+			sample(
+				'@layer base { @layer so.reset {} @layer so.x { .so-x { width: var(--so-table-cells-1-shift) } } }',
+			),
 		).toEqual([])
+		// A layer `so` of the theme's own is the theme, not the shared layer
+		expect(
+			sample(
+				'@layer base.so.reset {} @layer components.so.x { .so-x { width: var(--so-table-cells-1-shift) } }',
+			),
+		).toEqual(['--so-table-cells-1-shift ← .so-x'])
 	})
 })

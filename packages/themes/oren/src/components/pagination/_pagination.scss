@@ -20,12 +20,13 @@
 // ни рамки: пагинация стоит под таблицей, под списком, в подвале карточки, и
 // поверхность у неё та, на которой она стоит.
 
-// Переходом у строки страницы идут только вуаль состояний и кольцо фокуса:
-// отметка текущей встаёт и сходит сразу (см. ниже, у текущей). Правило на
-// класс сильнее перехода Button, а кольцо фокуса — сильнее его и своё
-// укорачивание сохраняет.
+// Only the veil of the states and the focus ring go by transition on the row
+// of a page: the mark of the current one comes and goes at once (see below, at
+// the current one). The rule narrows the list of the button's own transition
+// and leaves its duration alone: the focus ring of Button shortens it, and
+// that stays.
 .so-pagination-item > .so-button {
-	@include button.button-transition(background-color, outline-color);
+	@include button.button-transition-list(background-color, outline-color);
 }
 
 // Вид страниц и стрелок — `plain` по контексту: значения вида разметка не

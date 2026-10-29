@@ -1,33 +1,158 @@
-@use './components/button/button';
-@use './components/check-box/check-box';
-@use './components/accordion/accordion';
-@use './components/calendar/calendar';
-@use './components/date-input/date-input';
-@use './components/date-picker/date-picker';
-@use './components/dialog/dialog';
-@use './components/drag-and-drop/drag-and-drop';
-@use './components/drawer/drawer';
-@use './components/icon/icon';
-@use './components/input/input';
-@use './components/label/label';
-@use './components/field/field';
-@use './components/list-box/list-box';
-@use './components/menu/menu';
-@use './components/number-input/number-input';
-@use './components/pagination/pagination';
-@use './components/popover/popover';
-@use './components/progress-linear/progress-linear';
-@use './components/progress-spinner/progress-spinner';
-@use './components/radio-group/radio-group';
-@use './components/rating/rating';
-@use './components/scroller/scroller';
-@use './components/select/select';
-@use './components/skeleton/skeleton';
-@use './components/slider/slider';
-@use './components/switch/switch';
-@use './components/table/table';
-@use './components/tabs/tabs';
-@use './components/tags/tags';
-@use './components/textarea/textarea';
-@use './components/toasts/toasts';
-@use './components/tooltip/tooltip';
+@use 'sass:meta';
+
+// The stylesheets of the components, each part in a cascade layer of its own:
+// `components.so.<part>`, the folder of the part in `components/`. The order of
+// the blocks is the order of the layers, the same in the whole sheet and in the
+// stylesheets of components: the build declares it once, before any rule, in
+// the shared part (`vite.config.ts`, `entries.ts`). A layer named later wins
+// over an earlier one whatever the specificity, so a rule of one part never
+// overrides another by its weight or by its place in a file, and the order is
+// a decision written here (`AGENTS.md` of the package, «Слои: лист целиком и по
+// компонентам»):
+//
+// - a part comes before the parts that hold it and set its nodes: Icon first —
+//   CheckBox and Rating paint their icons over its default color; Button
+//   before every part with a view by context on its rows and close buttons;
+//   Popover and ListBox before Calendar, which sets its month and year picker
+//   over them, and Calendar before DatePicker;
+// - the modifiers of Button stand after every part, in the layer of modifiers
+//   (`components/button/_modifiers.scss`): a view or a variant the consumer
+//   sets overrides a view by context.
+//
+// Every part is a module loaded into its layer (`meta.load-css`), not `@use`:
+// the CSS of a module goes where it is loaded, and the layer wraps it.
+@layer components.so.icon {
+	@include meta.load-css('components/icon/icon');
+}
+
+@layer components.so.button {
+	@include meta.load-css('components/button/button');
+}
+
+@layer components.so.check-box {
+	@include meta.load-css('components/check-box/check-box');
+}
+
+@layer components.so.accordion {
+	@include meta.load-css('components/accordion/accordion');
+}
+
+@layer components.so.date-input {
+	@include meta.load-css('components/date-input/date-input');
+}
+
+@layer components.so.dialog {
+	@include meta.load-css('components/dialog/dialog');
+}
+
+@layer components.so.drag-and-drop {
+	@include meta.load-css('components/drag-and-drop/drag-and-drop');
+}
+
+@layer components.so.drawer {
+	@include meta.load-css('components/drawer/drawer');
+}
+
+@layer components.so.input {
+	@include meta.load-css('components/input/input');
+}
+
+@layer components.so.label {
+	@include meta.load-css('components/label/label');
+}
+
+@layer components.so.field {
+	@include meta.load-css('components/field/field');
+}
+
+@layer components.so.list-box {
+	@include meta.load-css('components/list-box/list-box');
+}
+
+@layer components.so.menu {
+	@include meta.load-css('components/menu/menu');
+}
+
+@layer components.so.number-input {
+	@include meta.load-css('components/number-input/number-input');
+}
+
+@layer components.so.pagination {
+	@include meta.load-css('components/pagination/pagination');
+}
+
+@layer components.so.popover {
+	@include meta.load-css('components/popover/popover');
+}
+
+@layer components.so.calendar {
+	@include meta.load-css('components/calendar/calendar');
+}
+
+@layer components.so.date-picker {
+	@include meta.load-css('components/date-picker/date-picker');
+}
+
+@layer components.so.progress-linear {
+	@include meta.load-css('components/progress-linear/progress-linear');
+}
+
+@layer components.so.progress-spinner {
+	@include meta.load-css('components/progress-spinner/progress-spinner');
+}
+
+@layer components.so.radio-group {
+	@include meta.load-css('components/radio-group/radio-group');
+}
+
+@layer components.so.rating {
+	@include meta.load-css('components/rating/rating');
+}
+
+@layer components.so.scroller {
+	@include meta.load-css('components/scroller/scroller');
+}
+
+@layer components.so.select {
+	@include meta.load-css('components/select/select');
+}
+
+@layer components.so.skeleton {
+	@include meta.load-css('components/skeleton/skeleton');
+}
+
+@layer components.so.slider {
+	@include meta.load-css('components/slider/slider');
+}
+
+@layer components.so.switch {
+	@include meta.load-css('components/switch/switch');
+}
+
+@layer components.so.table {
+	@include meta.load-css('components/table/table');
+}
+
+@layer components.so.tabs {
+	@include meta.load-css('components/tabs/tabs');
+}
+
+@layer components.so.tags {
+	@include meta.load-css('components/tags/tags');
+}
+
+@layer components.so.textarea {
+	@include meta.load-css('components/textarea/textarea');
+}
+
+@layer components.so.toasts {
+	@include meta.load-css('components/toasts/toasts');
+}
+
+@layer components.so.tooltip {
+	@include meta.load-css('components/tooltip/tooltip');
+}
+
+@layer components.so.modifiers.button {
+	@include meta.load-css('components/button/modifiers');
+}

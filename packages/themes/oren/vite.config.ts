@@ -1,25 +1,32 @@
 import { defineConfig } from 'vite'
 import path from 'node:path'
-// Расширение обязательно: с ним конфиг читает и нативный загрузчик Vite
+// The extensions are required: the native loader of Vite reads the config with them
+import { componentSheets, hoistRegistrations } from './layers.ts'
 import { tailwind } from './tailwind-postcss.ts'
 
 /**
- * Сборка стилей темы: SCSS-исходники компилируются в единый dist/index.css.
+ * The build of the styles of the theme: the SCSS sources compile into the
+ * whole sheet, `dist/index.css`, and the build cuts it by its cascade layers
+ * into the shared part (`dist/common.css`), the parts (`dist/parts/`) and the
+ * stylesheets of components (`dist/components/`) — `layers.ts`.
  *
- * Вход — сам `src/index.scss`, и режима библиотеки (`build.lib`) нет: у входа
- * из одних стилей пустой JS-чанк Vite выбрасывает сам, и в `dist` ложится один
- * `index.css`. Режим библиотеки требует JS-вход — со `.scss` он падает в
- * `vite:css-post`, — и пустой чанк такого входа уезжал в пакет файлом
- * `theme-oren.js`, на который не ведёт ни одна точка входа. Сторож —
- * `__tests__/package-build.spec.ts`.
+ * The entry is `src/index.scss` itself, with no library mode (`build.lib`): of
+ * an entry made of styles only Vite drops the empty JS chunk itself, and the
+ * whole sheet lands in `dist` as `index.css`. The library mode requires a JS
+ * entry — with `.scss` it fails in `vite:css-post`, — and the empty chunk of
+ * such an entry went into the package as `theme-oren.js`, to which no entry
+ * point leads. Guard — `__tests__/package-build.spec.ts`.
  *
- * В SCSS-вход инжектируется @import base.css (tailwind + токены + утилиты),
- * чтобы @apply в компонентных стилях развернул Tailwind — шаг PostCSS темы
- * (`tailwind-postcss.ts`): это `@tailwindcss/postcss` без полифила
- * `color-mix()`. Конфиг PostCSS встроен сюда, и файл `postcss.config.*` Vite
- * при нём не ищет.
+ * `@import` of `base.css` (Tailwind, the shared layer of themes, the tokens and
+ * the utilities) is injected into the SCSS entry so that Tailwind expands
+ * `@apply` in the styles of the components — the PostCSS step of the theme
+ * (`tailwind-postcss.ts`): `@tailwindcss/postcss` without the `color-mix()`
+ * polyfill. Before it the registrations of the parts leave their layers
+ * (`hoistRegistrations`). The PostCSS config is built in here, and Vite looks
+ * for no `postcss.config.*` with it.
  */
 export default defineConfig({
+	plugins: [componentSheets()],
 	build: {
 		outDir: 'dist',
 		emptyOutDir: true,
@@ -32,7 +39,7 @@ export default defineConfig({
 	},
 	css: {
 		postcss: {
-			plugins: [tailwind()],
+			plugins: [hoistRegistrations(), tailwind()],
 		},
 		preprocessorOptions: {
 			scss: {

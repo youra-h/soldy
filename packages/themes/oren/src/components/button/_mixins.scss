@@ -9,27 +9,42 @@ $variants: 'accent', 'positive', 'negative', 'caution';
 // Виды кнопки из `index.d.ts`. Без модификатора кнопка выглядит как `filled`.
 $views: 'filled', 'plain', 'outlined', 'none';
 
-// Переход цвета кнопки. Кольцо фокуса его укорачивает, и тот, кто кольцо
-// снимает (строка таба, `tabs/_tabs.scss`), возвращает переход этим же
-// миксином — длительность не расходится с самой кнопкой.
+// The color transition of a button. Its focus ring shortens it, and the one
+// that takes the ring off (the row of a tab, `tabs/_tabs.scss`) brings the
+// transition back with this mixin — the duration does not drift from the
+// button itself.
 //
-// Без списка свойств переходом идут все цвета (`transition-colors`). Список
-// передаёт часть, у которой цвет одного из состояний обязан вставать сразу:
-// строка страницы Pagination (`pagination/_pagination.scss`) ведёт переходом
-// только вуаль состояний и кольцо фокуса — `background-color` и
-// `outline-color`, — а отметку текущей рисует свойствами вне списка. Узел
-// страницы при сдвиге окна переезжает в соседнюю клетку, и отметка, гаснущая
-// переходом на нём, мигала бы в середине ряда. Длительность и режим
-// принудительных цветов у списка те же — одной копией здесь.
+// Without a list of properties every color goes by transition
+// (`transition-colors`). A surface of its own that looks like a button passes
+// the list of what goes by transition — the card of a toast
+// (`toasts/_toasts.scss`), — with the same duration and the same forced colors
+// mode, one copy here.
 //
-// В режиме принудительных цветов перехода нет. Цвета там системные, а у
-// выбранной подмена цветов снята (`button-state-forced`), и переход шёл бы от
-// цвета темы: выбранная строка ListBox с вариантом 200 мс показывала свой
-// синий текст на проступающей подсветке. Палитру в этом режиме выбирает
-// пользователь, и цветов темы между двумя её цветами быть не должно.
+// No transition in the forced colors mode. The colors there are the system's,
+// and the selected one has its color adjustment taken off
+// (`button-state-forced`), so a transition would start from a color of the
+// theme: a selected row of ListBox with a variant showed its blue text on the
+// highlight coming through for 200 ms. The palette in this mode is the user's,
+// and no color of the theme may stand between two of its colors.
 @mixin button-transition($properties...) {
 	@apply transition-colors duration-200;
+	@include button-transition-list($properties...);
+}
 
+// Only the list of what goes by transition — for a part that holds a button
+// and needs one of the colors of its states to change at once: the row of a
+// page of Pagination (`pagination/_pagination.scss`) leads by transition only
+// the veil of the states and the focus ring — `background-color` and
+// `outline-color`, — and draws the mark of the current page by properties out
+// of the list. The node of a page moves to the next cell when the window
+// shifts, and a mark fading by transition on it would blink in the middle of
+// the row.
+//
+// The duration and the timing stay the button's own (`button-transition` on
+// the button): the layer of the part stands after the layer of Button, and a
+// duration of its own would override the shortened one of the focus ring
+// whatever the specificity.
+@mixin button-transition-list($properties...) {
 	@if list.length($properties) > 0 {
 		transition-property: $properties;
 	}
@@ -224,52 +239,61 @@ $tone-steps: 300, 400, 500, 800;
 	--so-tone-filled-text: currentColor;
 }
 
-// Выбор в режиме принудительных цветов (высокий контраст Windows) — хвост
-// состояний каждого вида. Фон браузер в этом режиме заменяет цветом
-// поверхности — заливку целиком, вуаль вместе с её прозрачностью, — и выбор
-// пропал бы вместе с ним: у триггера открытой панели (Popover, заголовок
-// Calendar, кнопка DatePicker) пропадало «нажато», у строки Select — выбор.
-// Выбранное красится системной подсветкой с системным текстом подсветки, как
-// выбранный день Calendar: так этот режим показывает выбор везде. Слой выбора
-// под подсветкой снимается: он лёг бы поверх подсветки цветом темы.
+// Selection in the forced colors mode (Windows high contrast) — the tail of
+// the states of every view. In this mode the browser replaces the background
+// with the color of the surface — a fill whole, a veil with its transparency,
+// — and the selection would vanish with it: the trigger of an open panel
+// (Popover, the title of Calendar, the button of DatePicker) lost its
+// «pressed», the row of Select — its selection. The selected one is painted
+// with the system highlight and the system highlight text, as a selected day
+// of Calendar: so this mode shows selection everywhere. The selection layer
+// under the highlight is taken off: it would lie over the highlight in a color
+// of the theme.
 //
-// Без подмены цветов (`forced-color-adjust: none`): иначе браузер положил бы
-// под текст подложку цвета страницы, и он стоял бы на подсветке в её
-// прямоугольнике. Подмены нет и у кольца фокуса — свой системный цвет оно
-// берёт само (`button-focus-ring`), — и у рамки `outlined` (`button-view`).
+// Without color adjustment (`forced-color-adjust: none`): otherwise the
+// browser would lay an underlay of the page color under the text, and it would
+// stand on the highlight in its own rectangle. There is no adjustment for the
+// focus ring either — it takes its system color itself (`button-focus-ring`),
+// — nor for the border of `outlined` (`button-view`).
 //
-// Выбор под клавиатурной подсветкой — та же подсветка: селектор повторён,
-// потому что правило фона такого выбора на атрибут сильнее.
+// Selection under the keyboard highlight is the same highlight: the selector
+// is repeated because the background rule of such a selection is one
+// attribute stronger.
 //
-// Клавиатурная подсветка (`data-highlighted` — строка ListBox и опция Select
-// под стрелками) пропадала так же: её фон браузер заменяет тем же цветом
-// поверхности, а у Select фокус остаётся на поле, и другой отметки у строки
-// нет. Заливка `Highlight` здесь уже значит «выбрано», поэтому подсвеченная
-// обводится изнутри сплошным контуром: у строки без выбора — `Highlight`,
-// системным цветом фокуса (им же горит кольцо фокуса, `button-focus-ring`),
-// как прямоугольник фокуса у списков Windows; у выбранной — текстом подсветки
-// на её заливке, и выбор под подсветкой показывает оба состояния. Цвет —
-// системным ключевым словом: такой браузер не подменяет, и подмену цветов
-// строке без выбора снимать не нужно.
+// The keyboard highlight (`data-highlighted` — a row of ListBox and an option
+// of Select under the arrows) vanished the same way: the browser replaces its
+// background with the same surface color, and Select keeps the focus on its
+// field, so the row has no other mark. A `Highlight` fill already means
+// «selected» here, so the highlighted one is outlined inside by a solid
+// contour: a row without selection — in `Highlight`, the system focus color
+// (the focus ring burns in it too, `button-focus-ring`), like the focus
+// rectangle of Windows lists; a selected one — in the highlight text on its
+// fill, and a selection under the highlight shows both states. The color is a
+// system keyword: the browser does not replace those, and a row without
+// selection needs no adjustment taken off.
 //
-// Контур внутри своей рамки, а не кольцом снаружи: кольцо обрезали бы
-// прокрутка списка и панель, оно заполняло бы зазор до соседней строки и
-// читалось бы кольцом фокуса строки. Не рамкой: у `plain` её нет, и строка
-// прыгала бы, а запасную прозрачную рамку браузер в этом режиме красит у
-// каждой строки. Не тенью: тени браузер убирает.
+// The contour is inside its border, not a ring outside: a ring would be cut by
+// the scroll of the list and by the panel, it would fill the gap to the next
+// row and read as the focus ring of the row. Not a border: `plain` has none,
+// and the row would jump, while the browser paints a spare transparent border
+// in this mode on every row. Not a shadow: the browser removes shadows.
 //
-// И не вплотную к краю: снаружи от контура остаётся полоса фона строки в
-// его толщину. У выбранной это полоса заливки, а без неё текст подсветки
-// лёг бы у самого края и слился бы со страницей — в палитрах режима он часто
-// её цвета, — и выбор под подсветкой выглядел бы просто выбором чуть уже.
+// And not tight to the edge: a strip of the row background as thick as the
+// contour stays outside it. On a selected row that is a strip of the fill, and
+// without it the highlight text would lie at the very edge and merge with the
+// page — in the palettes of this mode it is often the page color, — and a
+// selection under the highlight would look like a selection a bit narrower.
 //
-// У выбранной под подсветкой контур объявлен целиком, а не одним цветом
-// поверх контура подсветки: иначе у строки под фокусом место и толщину брало
-// бы кольцо фокуса, а цвет — этот контур, и кольцо снаружи было бы цветом
-// текста подсветки, которого на фоне страницы не видно. Целиком строке
-// достаётся одно из двух — кольцо или контур. У подсвеченной без выбора под
-// фокусом это кольцо фокуса, у любого цвета одинаково: правило контура от
-// цвета не зависит.
+// A row under the focus ring gets one of the two whole — the ring or the
+// contour. On a selected row under the highlight the contour is declared
+// whole, not as one color over the contour of the highlight: otherwise the
+// focus ring would give its place and width and the contour its color, and the
+// ring outside would be in the highlight text, which is not seen on the page.
+// On a highlighted row without selection under the focus ring it is the ring,
+// for every color and every view: the contour of the highlight does not apply
+// under `:focus-visible`. Not by weight: the ring stays in the layer of
+// Button, and a view by context declares its states in the later layer of its
+// part, where a weaker contour would still override the ring.
 @mixin button-state-forced {
 	@media (forced-colors: active) {
 		&[data-selected='true']:not([data-disabled='true']),
@@ -280,7 +304,7 @@ $tone-steps: 300, 400, 500, 800;
 			color: HighlightText;
 		}
 
-		&[data-highlighted='true']:not([data-disabled='true']) {
+		&[data-highlighted='true']:not([data-disabled='true'], :focus-visible) {
 			outline: 2px solid Highlight;
 			outline-offset: -4px;
 		}
