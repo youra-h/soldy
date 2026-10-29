@@ -1,43 +1,48 @@
 /**
- * Toasts в настоящем браузере: раскладка, переходы и жест указателем.
+ * Toasts in a real browser: layout, transitions and the pointer gesture.
  *
- * Место региона, стопку и зазоры раскладывает CSS, без замеров, — общий слой
- * тем (`themes/base/src/components/toasts.css`), а переходы и облик — тема
- * oren. jsdom их не считает, и юнит-тесты (`ui/vue/__tests__/toasts.spec.ts`)
- * видят только классы и `data-*`. Здесь — что из них выходит на экране:
- * регион у своего края окна (логического — в RTL `start` справа), новый тост
- * у края, зазор между тостами и без зазора за последним, указатель мимо
- * тостов — странице, а в зазоре — тосту; новый тост въезжает переходом,
- * закрытый гаснет и уходит из документа, когда доиграл переходы, а без
- * движения проявляется и гаснет на месте.
+ * The region's place, the stack and the gaps are laid out by CSS, without
+ * measuring, — the shared theme layer (`themes/base/src/components/toasts.css`),
+ * while the transitions and the look are the oren theme's. jsdom computes
+ * none of it, and the unit tests (`ui/vue/__tests__/toasts.spec.ts`) see only
+ * classes and `data-*`. Here is what comes of them on screen: the region at
+ * its window edge (a logical one — in RTL `start` is on the right), a new
+ * toast at the edge, the gap between toasts and none past the last, the
+ * pointer off the toasts goes to the page and in a gap to the toast; a new
+ * toast slides in by transition, a closed one fades and leaves the document
+ * once its transitions have played, and without motion it appears and fades
+ * in place.
  *
- * Жест — настоящей мышью: захват указателя и `touch-action` jsdom не
- * выполняет вовсе.
+ * The gesture is by a real mouse: jsdom doesn't do pointer capture and
+ * `touch-action` at all.
  *
- * Стопка (`layout: 'cascade'`) — тоже раскладка общего слоя: передний у края,
- * задние уже и выглядывают на ступень, высота стопки — по переднему
- * (`--so-toasts-front-height` от поведения темы), фокус выводит тост вперёд
- * без перестановки, колесо листает стопку, а страница под ней не едет. Новый
- * тост въезжает в стопку от края окна на свою высоту, а прежний передний тем
- * же временем и той же кривой отходит на ступень, сразу за новым, и не
- * схлопывается; переставленный колесом назад проявляется на своём месте, без
- * въезда, а без движения новый только проявляется.
+ * The stack (`layout: 'cascade'`) is the shared layer's layout too: the front
+ * toast at the edge, the back ones narrower and peeping out by a step, the
+ * stack as high as the front one (`--so-toasts-front-height` from the theme's
+ * behaviour), focus brings a toast forward without reordering, the wheel pages
+ * the stack, and the page under it doesn't scroll. A new toast slides into the
+ * stack from the window's edge by its own height, while the former front one
+ * steps back at the same time and curve, right behind the new one, and doesn't
+ * collapse; one moved back by the wheel appears in its place without sliding,
+ * and without motion a new one only appears.
  *
- * Вид сообщения — заливка плашки: обычное сообщение стоит на поверхности
- * контрола, и всё на нём читается — заголовок, описание, значок, подписи
- * кнопок своего содержимого и крестик, в покое, под наведением и при нажатии.
- * У каждого вида заливка своя, и всё на ней — цвета её текста: значок, подписи
- * кнопок, крестик и кольцо фокуса; порогов контраста у заливки нет — она
- * сигнал, ступень кнопки `filled` своего цвета. Кромка — серое кольцо — только
- * у белой плашки: у сигнала рамки нет, как у кнопки `filled`. Тень — у каждой
- * плашки, а в режиме принудительных цветов край каждой держит рамка.
- * Наведение и нажатие кнопки видно, а на заливке оно уводит фон от подписи.
- * Палитры спек не знает: контраст по WCAG он меряет слоями, как их кладёт
- * браузер (`./colors`). Смена вида у открытого тоста — переход цвета плашки и
- * её кромки, а не корня: переходов корня ждёт удаление закрытого тоста. Пока
- * тост ждёт, на месте значка бежит кольцо цвета значка — по кругу глифа, и
- * текст не сдвигается, когда кольцо сменилось значком. Значки всех видов —
- * одного рисунка с ошибкой: контур, фигура внутри пуста.
+ * The message type is the plate's fill: a plain message stands on the control
+ * surface, and everything on it reads — the title, the description, the icon,
+ * the labels of its own buttons and the close button, at rest, under hover and
+ * when pressed. Each type has its own fill, and everything on it has the
+ * fill's text colour: the icon, the button labels, the close button and the
+ * focus ring; the fill has no contrast thresholds — it is a signal, the step of
+ * a `filled` button of its colour. The rim — a grey ring — only on the white
+ * plate: a signal has no frame, as a `filled` button. Every plate has a
+ * shadow, and in forced colors mode a frame holds each one's edge. A button's
+ * hover and press show, and on a fill they lead the background away from the
+ * label. The spec knows no palette: it measures WCAG contrast over layers as
+ * the browser lays them (`./colors`). Changing the type of an open toast is a
+ * colour transition of the plate and its rim, not of the root: the removal of
+ * a closed toast waits for the root's transitions. While the toast waits, a
+ * ring of the icon's colour runs in the icon's place — on the glyph's circle,
+ * and the text doesn't move when the icon replaces the ring. The icons of all
+ * types are drawn like the error's: an outline, the shape empty inside.
  */
 
 import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
@@ -69,7 +74,7 @@ import {
 } from './colors'
 import { setDir } from './directions'
 import { forcedColors, reducedMotion } from './media'
-import { forcedColorsRepaint, webkitUntil } from './engine'
+import { forcedColorsRepaint } from './engine'
 import {
 	durationOf,
 	easingOf,
@@ -82,27 +87,30 @@ import {
 
 import '@soldy-ui/theme-oren'
 
-/** Отступ региона от краёв окна у oren: `--so-toasts-offset` общего слоя тем, `1rem`. */
+/**
+ * The region's inset from the window's edges in oren: `--so-toasts-offset` of
+ * the shared layer, `1rem`.
+ */
 const OFFSET = 16
 
-/** Зазор между тостами: `--so-toasts-gap`, `0.75rem`. */
+/** The gap between toasts: `--so-toasts-gap`, `0.75rem`. */
 const GAP = 12
 
-/** Ширина тоста: `--so-toasts-width`, `22rem`. */
+/** A toast's width: `--so-toasts-width`, `22rem`. */
 const WIDTH = 352
 
-/** Допуск на субпиксельное округление координат. */
+/** Tolerance for subpixel rounding of coordinates. */
 const EPSILON = 1
 
-/** Окно прогона. */
+/** The run's window. */
 const VIEWPORT = { width: 1000, height: 700 }
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
-/** Тосты в документе — места в списке; новый — первым. */
+/** Toasts in the document — places in the list; the new one first. */
 const items = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.so-toasts-item')]
 
-/** Плашка тоста — то, что видно. */
+/** The toast's plate — what is seen. */
 const card = (item: HTMLElement): HTMLElement => {
 	const element = item.querySelector('.so-toasts-item__card')
 
@@ -111,7 +119,7 @@ const card = (item: HTMLElement): HTMLElement => {
 	return element
 }
 
-/** Часть тоста по классу; нет её — тест падает здесь. */
+/** A toast's part by class; without it the test fails here. */
 const part = (item: HTMLElement, name: string): HTMLElement => {
 	const element = item.querySelector(`.so-toasts-item__${name}`)
 
@@ -120,13 +128,13 @@ const part = (item: HTMLElement, name: string): HTMLElement => {
 	return element
 }
 
-/** Ширина окна без полосы прокрутки: от неё регион и отступает. */
+/** The window's width without the scrollbar: the region's inset counts from it. */
 const viewportWidth = () => document.documentElement.clientWidth
 
 /**
- * Регион с приложением и движком снаружи: тосты показываются кодом уже после
- * монтирования — так они въезжают, как у приложения. Длительность — ноль:
- * отсчёт таймера тесту не нужен.
+ * The region with an app and an engine from outside: toasts are shown by code
+ * after mounting — so they slide in, as in an app. The duration is zero: the
+ * test needs no timer.
  */
 const mount = async (props: Partial<IToastsProps> = {}) => {
 	const engine = createEngineToasts()
@@ -144,7 +152,7 @@ const mount = async (props: Partial<IToastsProps> = {}) => {
 	await nextFrame()
 	await nextFrame()
 
-	/** Показать тосты по порядку и дождаться, пока доедут. */
+	/** Show toasts in order and wait for them to arrive. */
 	const show = async (...inputs: TToastInput[]): Promise<IToastsItem[]> => {
 		const toasts = inputs.map((input) => {
 			const toast = engine.extensions.toasts.show(input)
@@ -160,7 +168,7 @@ const mount = async (props: Partial<IToastsProps> = {}) => {
 		return toasts
 	}
 
-	/** Все переходы тостов доиграли. */
+	/** All the toasts' transitions have played. */
 	const rest = async () => {
 		await Promise.all(items().map(settled))
 	}
@@ -181,7 +189,7 @@ afterEach(async () => {
 })
 
 describe('место', () => {
-	/** Где должен стоять тост: край по вертикали и место в строке. */
+	/** Where the toast must stand: the vertical edge and the place along the line. */
 	const CASES: readonly [TToastsPlacement, 'top' | 'bottom', 'left' | 'center' | 'right'][] = [
 		['top-start', 'top', 'left'],
 		['top', 'top', 'center'],
@@ -266,7 +274,7 @@ describe('стопка', () => {
 			'Второй',
 			'Первый',
 		])
-		// У нижнего края новый — внизу, стопка растёт вверх
+		// At the bottom edge the new one is at the bottom, the stack grows upward
 		expect(newest.bottom).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
 		expect(newest.top - middle.bottom).toBeCloseTo(GAP, 0)
 		expect(middle.top - oldest.bottom).toBeCloseTo(GAP, 0)
@@ -302,9 +310,10 @@ describe('стопка', () => {
 
 		if (!region || !newest || !older) throw new Error('тостов меньше двух')
 
-		// Левее стопки, на высоте нового тоста: регион во всю ширину, но мимо
+		// Left of the stack, at the new toast's height: the region is full width,
+		// but the point misses the toasts
 		const beside = document.elementFromPoint(OFFSET + 8, newest.top + newest.height / 2)
-		// Посередине зазора между тостами
+		// In the middle of the gap between toasts
 		const between = document.elementFromPoint(
 			(newest.left + newest.right) / 2,
 			(older.bottom + newest.top) / 2,
@@ -323,7 +332,7 @@ describe('стопка', () => {
 
 		expect(texts()).toEqual(['Третий', 'Второй'])
 
-		// Закрытый уходит после переходов — и ждавший возвращается
+		// The closed one leaves after its transitions — and the waiting one comes back
 		newest?.close()
 
 		await expect.poll(texts).toEqual(['Второй', 'Первый'])
@@ -343,8 +352,8 @@ describe('части тоста', () => {
 
 		expect(getComputedStyle(part(item, 'description')).display).toBe('none')
 		expect(getComputedStyle(part(item, 'content')).display).toBe('none')
-		// Значок, текст и крестик — в одной строке: значок перед текстом, крестик
-		// после, оба по центру строки текста
+		// The icon, the text and the close button are in one line: the icon before
+		// the text, the close button after it, both centred on the text's line
 		const icon = part(item, 'icon').getBoundingClientRect()
 		const text = part(item, 'text').getBoundingClientRect()
 		const close = part(item, 'close').getBoundingClientRect()
@@ -374,7 +383,7 @@ describe('части тоста', () => {
 		const text = title.getBoundingClientRect()
 		const line = parseFloat(getComputedStyle(title).lineHeight)
 
-		// Текст и правда в несколько строк — иначе первая строка и есть весь текст
+		// The text really takes several lines — otherwise the first line is all of it
 		expect(text.height).toBeGreaterThan(line * 1.5)
 		expect(Math.abs((icon.top + icon.bottom) / 2 - (text.top + line / 2))).toBeLessThan(EPSILON)
 	})
@@ -398,39 +407,41 @@ describe('части тоста', () => {
 })
 
 describe('вид', () => {
-	/** Обе схемы: цвета у них свои, а правила те же. */
+	/** Both schemes: their colours differ, the rules are the same. */
 	const SCHEMES = ['oren', 'oren-dark'] as const
 
-	/** Виды тоста: обычное сообщение — тост без вида — и каждый вид. */
+	/** The toast's kinds: a plain message — a toast without a type — and each type. */
 	const KINDS = [
 		{ name: 'обычное', type: undefined },
 		...TOASTS_ITEM_TYPES.map((type) => ({ name: type, type })),
 	] satisfies readonly { name: string; type: TToastsItemType | undefined }[]
 
-	/** Случай «схема × вид»: тост на случай. */
+	/** A "scheme × kind" case: a toast per case. */
 	const CASES = SCHEMES.flatMap((scheme) => KINDS.map((kind) => ({ scheme, ...kind })))
 
 	/**
-	 * Пороги WCAG 2 — у белой плашки обычного сообщения. Заголовок и подписи
-	 * кнопок — текст кегля `text-sm`: 4,5:1 (1.4.3). Значок и крестик —
-	 * графика: 3:1 (1.4.11). Описание — приглушённый текст ступени остальных
-	 * подсказок темы: порога у него нет, оно только тише заголовка. У заливки
-	 * вида порогов нет: она — сигнал, ступень кнопки `filled` своего цвета, и
-	 * под пороги её не подгоняют (`themes/oren/AGENTS.md`, «тосты Toasts»).
+	 * WCAG 2 thresholds — on the white plate of a plain message. The title and
+	 * button labels are `text-sm` text: 4.5:1 (1.4.3). The icon and the close
+	 * button are graphics: 3:1 (1.4.11). The description is muted text of the
+	 * step of the theme's other hints: it has no threshold, it is only quieter
+	 * than the title. A type's fill has no thresholds: it is a signal, the step
+	 * of a `filled` button of its colour, and it isn't fitted to thresholds
+	 * (`themes/oren/AGENTS.md`, «тосты Toasts»).
 	 */
 	const TEXT = 4.5
 	const GRAPHIC = 3
 
 	/**
-	 * Состояние кнопки видно, если фон под ним отошёл от фона в покое по
-	 * светлоте OKLab не меньше, чем вуаль-заливка от подложки, — порог
-	 * `VISIBLE_FILL` из `button-view.spec.ts`. По модулю: на белой плашке
-	 * состояния ведут фон к тёмной подписи, а на заливке вида — от белой, то
-	 * есть темнее; это направление проверяется отдельно.
+	 * A button's state shows if the background under it moved off the resting
+	 * one in OKLab lightness at least as far as the veil fill off its backdrop
+	 * — the `VISIBLE_FILL` threshold of `button-view.spec.ts`. In absolute
+	 * value: on the white plate states lead the background toward the dark
+	 * label, on a type's fill away from the white one, that is darker; the
+	 * direction is checked separately.
 	 */
 	const VISIBLE_FILL = 0.02
 
-	/** Рисунок в коробке значка — `svg` иконки; нет его — тест падает здесь. */
+	/** The drawing in the icon's box — the icon's `svg`; without it the test fails here. */
 	const glyph = (item: HTMLElement): SVGElement => {
 		const element = part(item, 'icon').querySelector('svg')
 
@@ -439,7 +450,7 @@ describe('вид', () => {
 		return element
 	}
 
-	/** Тост с этим заголовком; нет его — тест падает здесь. */
+	/** The toast with this title; without it the test fails here. */
 	const titled = (text: string): HTMLElement => {
 		const found = items().find((item) => part(item, 'text').textContent === text)
 
@@ -449,8 +460,8 @@ describe('вид', () => {
 	}
 
 	/**
-	 * Поверхность контрола в текущей схеме — проба: единственный токен, который
-	 * спек знает. На ней стоит обычный тост, как панели оверлеев.
+	 * The control surface in the current scheme, by a probe: the only token the
+	 * spec knows. A plain toast stands on it, like the overlay panels.
 	 */
 	const surface = (): string => {
 		const probe = document.createElement('div')
@@ -479,12 +490,12 @@ describe('вид', () => {
 
 			const fills = KINDS.map(({ name }) => style(card(titled(name))).backgroundColor)
 
-			// Обычное сообщение — на поверхности контрола
+			// A plain message is on the control surface
 			expect(pixel([style(card(titled('обычное'))).backgroundColor])).toEqual(
 				pixel([surface()]),
 			)
-			// У каждого вида — своя заливка, и она непрозрачна: тост стоит поверх
-			// чего угодно, а содержимое заднего в стопке закрывает её цвет
+			// Each type has its own fill, and it is opaque: a toast stands over
+			// anything, and its colour covers the content of a back toast in a stack
 			expect(fills.map(opacity)).toEqual(KINDS.map(() => 1))
 			expect(new Set(fills.map((fill) => pixel([fill]).join())).size).toBe(KINDS.length)
 
@@ -492,13 +503,13 @@ describe('вид', () => {
 				const item = titled(name)
 				const icon = style(part(item, 'icon')).color
 
-				// Рисунок значка — цвета коробки
+				// The icon's drawing has the box's colour
 				expect(pixel([iconPaint(glyph(item))]), `${name}: рисунок значка`).toEqual(
 					pixel([icon]),
 				)
 
-				// На заливке вида значок — цвета заголовка: всё на ней одного цвета.
-				// Порогов контраста у заливки нет (см. `TEXT`)
+				// On a type's fill the icon has the title's colour: everything on it is
+				// one colour. The fill has no contrast thresholds (see `TEXT`)
 				if (type) {
 					expect(pixel([icon]), `${name}: значок цвета заголовка`).toEqual(
 						pixel([style(part(item, 'text')).color]),
@@ -506,7 +517,7 @@ describe('вид', () => {
 					continue
 				}
 
-				// Белая плашка: текст и значок держат пороги WCAG
+				// The white plate: the text and the icon hold the WCAG thresholds
 				const plate = [style(card(item)).backgroundColor]
 
 				expect(
@@ -523,10 +534,10 @@ describe('вид', () => {
 	)
 
 	/**
-	 * Слои тени узла, которые видно, — как их отдаёт вычисленный стиль: цвет,
-	 * сдвиг по осям, размытие и разлёт. Пустые слои Tailwind — прозрачные и
-	 * нулевого размера — отсеяны. Запятая внутри цвета (`rgba(…)`) слоёв не
-	 * делит.
+	 * The node's visible shadow layers, as the computed style gives them: the
+	 * colour, the offsets, the blur and the spread. Tailwind's empty layers —
+	 * transparent and zero-size — are dropped. A comma inside a colour
+	 * (`rgba(…)`) doesn't split layers.
 	 */
 	const shadows = (element: Element) =>
 		style(element)
@@ -540,8 +551,9 @@ describe('вид', () => {
 			.filter(({ color }) => color !== 'none' && opacity(color) > 0)
 
 	/**
-	 * Кромка — кольцо: слой тени без сдвига и размытия, с разлётом, — так кольцо
-	 * рисует Tailwind (`ring-1`). У тени слои со сдвигом и размытием.
+	 * The rim is a ring: a shadow layer without offset and blur, with spread —
+	 * as Tailwind draws a ring (`ring-1`). A shadow's layers have offset and
+	 * blur.
 	 */
 	const ringed = (element: Element): boolean =>
 		shadows(element).some(
@@ -549,11 +561,11 @@ describe('вид', () => {
 		)
 
 	/**
-	 * Кромка — серое кольцо ступени 300 — только у белой плашки: она держит край
-	 * там, где тени не видно, — в тёмной схеме и поверх панели того же цвета.
-	 * Залитая — сигнал, а рамки у сигнала в теме нет нигде — ни у кнопки
-	 * `filled`, ни у пилюли тега, — и кольцо на заливке читалось грязным
-	 * ободком. Тень — у каждой плашки.
+	 * The rim — a grey ring of step 300 — only on the white plate: it holds the
+	 * edge where the shadow doesn't show — in the dark scheme and over a panel
+	 * of the same colour. A filled plate is a signal, and a signal has no frame
+	 * anywhere in the theme — neither a `filled` button nor a tag's pill, — and
+	 * a ring on the fill read as a dirty rim. Every plate has a shadow.
 	 */
 	it.each(SCHEMES)('%s: кромка — только у белой плашки, тень — у каждой', async (scheme) => {
 		document.documentElement.dataset.soTheme = scheme
@@ -575,10 +587,11 @@ describe('вид', () => {
 	})
 
 	/**
-	 * В режиме принудительных цветов браузер снимает заливку, тень и кольцо, а
-	 * край держит рамка — вторая половина кромки, прозрачный контур, который он
-	 * красит системным цветом (`forced-colors.spec.ts`, «кромка панели»). Она —
-	 * у каждой плашки: у залитой кольца нет и в обычном режиме, а контур тот же.
+	 * In forced colors mode the browser removes the fill, the shadow and the
+	 * ring, and a frame holds the edge — the rim's second half, a transparent
+	 * outline the browser paints with a system colour (`forced-colors.spec.ts`,
+	 * «кромка панели»). Every plate has it: a filled one has no ring in the
+	 * normal mode either, but the outline is the same.
 	 */
 	it.runIf(forcedColorsRepaint).each(SCHEMES)(
 		'%s: в режиме принудительных цветов рамка — у каждой плашки',
@@ -591,7 +604,7 @@ describe('вид', () => {
 			await show(...KINDS.map(({ name, type }) => ({ text: name, type })))
 			await rest()
 
-			// Режим действует: тень, а с ней и кольцо, браузер убрал
+			// The mode is on: the browser removed the shadow, and the ring with it
 			expect(matchMedia('(forced-colors: active)').matches).toBe(true)
 
 			for (const { name } of KINDS) {
@@ -608,9 +621,10 @@ describe('вид', () => {
 	)
 
 	/**
-	 * Точка внутри фигуры значка вида, мимо знака на ней, — в единицах `viewBox`
-	 * Material (x 0…960, y −960…0): у круга — под верхним краем, над знаком, у
-	 * колокольчика — посередине, у треугольника — над «!».
+	 * A point inside the shape of a type's icon, off the sign on it, — in
+	 * Material `viewBox` units (x 0…960, y −960…0): in a circle — under the top
+	 * edge, above the sign, in the bell — in the middle, in the triangle — above
+	 * the "!".
 	 */
 	const HOLLOW: Readonly<Record<string, { x: number; y: number }>> = {
 		обычное: { x: 480, y: -480 },
@@ -620,7 +634,7 @@ describe('вид', () => {
 		error: { x: 480, y: -760 },
 	}
 
-	/** Стороны от точки — шаг в единицах `viewBox`. */
+	/** Directions from the point — a step in `viewBox` units. */
 	const SIDES = {
 		вправо: { x: 1, y: 0 },
 		влево: { x: -1, y: 0 },
@@ -628,7 +642,7 @@ describe('вид', () => {
 		вверх: { x: 0, y: -1 },
 	}
 
-	/** Есть ли рисунок от точки в сторону `side` — до края коробки значка. */
+	/** Whether there is drawing from the point toward `side` — up to the icon box's edge. */
 	const reaches = (
 		path: SVGGeometryElement,
 		point: { x: number; y: number },
@@ -645,12 +659,13 @@ describe('вид', () => {
 	}
 
 	/**
-	 * Значки видов — одного рисунка: контур, как у ошибки. Залитый значок у
-	 * текста ошибки Field читался пятном и стал контуром, а значки остальных
-	 * видов пришли залитыми — в стопке ошибка выглядела чужой. Контур — пустая
-	 * фигура: в точке внутри неё рисунка нет, а в каждую сторону от точки он
-	 * есть — точка не снаружи фигуры. Мера — геометрия рисунка
-	 * (`isPointInFill`), а не пиксели: цвет и сглаживание ей не мешают.
+	 * The types' icons are drawn alike: an outline, like the error's. A filled
+	 * icon by Field's error text read as a blot and became an outline, while
+	 * the other types' icons came filled — the error looked alien in a stack. An
+	 * outline is an empty shape: at a point inside it there is no drawing, and
+	 * there is drawing in every direction from the point — the point isn't
+	 * outside the shape. The measure is the drawing's geometry (`isPointInFill`),
+	 * not pixels: colour and antialiasing don't disturb it.
 	 */
 	it('значок каждого вида — контур, как у ошибки: фигура внутри пуста', async () => {
 		const { show, rest } = await mount({ max: KINDS.length })
@@ -673,16 +688,20 @@ describe('вид', () => {
 		}
 	})
 
-	/** Своё содержимое — кнопка каждого вида, без варианта: цвет ей даёт плашка. */
+	/**
+	 * The toast's own content — a button of each view, without a variant: the
+	 * plate gives its colour.
+	 */
 	const Actions: TToastRender = () =>
 		BUTTON_VIEWS.map((view) => h(Button, { key: view, view, text: view }))
 
 	/**
-	 * Кнопки тоста в порядке разметки — порядке Tab: своё содержимое, потом
-	 * крестик. Подпись кнопки — текст, у крестика — значок, графика: порог
-	 * подписи на белой плашке свой (`label`). У вида `none` нет ни фона
-	 * состояний, ни кольца фокуса и вне тоста (`button/_button.scss`) — у него
-	 * проверяется только подпись.
+	 * The toast's buttons in markup order — the Tab order: its own content,
+	 * then the close button. A button's label is text, the close button's is an
+	 * icon, a graphic: the label's threshold on the white plate is its own
+	 * (`label`). The `none` view has neither a state background nor a focus
+	 * ring, outside a toast too (`button/_button.scss`) — only its label is
+	 * checked.
 	 */
 	const CONTROLS = [
 		...BUTTON_VIEWS.map((view) => ({
@@ -695,8 +714,8 @@ describe('вид', () => {
 	]
 
 	/**
-	 * Что видно у кнопки: цвет подписи, её контраст к своему фону и светлота
-	 * этого фона.
+	 * What a button shows: the label's colour, its contrast to its background
+	 * and that background's lightness.
 	 */
 	const look = (item: HTMLElement, button: HTMLElement) => {
 		const { color, backgroundColor } = style(button)
@@ -706,10 +725,11 @@ describe('вид', () => {
 	}
 
 	/**
-	 * Кнопка под наведением и при нажатии — когда доиграли переходы цвета всего
-	 * тоста. Нажатие отпускается и при упавшей проверке: зажатая кнопка мыши
-	 * досталась бы следующему тесту. Отпускание над кнопкой — клик, поэтому
-	 * крестик меряется последним: клик закрывает тост.
+	 * The button under hover and when pressed — once the whole toast's colour
+	 * transitions have played. The press is released even when a check fails:
+	 * a held mouse button would pass to the next test. A release over the
+	 * button is a click, so the close button is measured last: its click closes
+	 * the toast.
 	 */
 	const press = async (item: HTMLElement, button: HTMLElement) => {
 		await userEvent.hover(button)
@@ -729,10 +749,11 @@ describe('вид', () => {
 	}
 
 	/**
-	 * На белой плашке подпись держит порог WCAG к своему фону. На заливке вида
-	 * порогов нет (см. `TEXT`): там подпись — цвета текста плашки, как всё на
-	 * ней, и у `none` тоже, а наведение и нажатие — тень, фон уходит от белой
-	 * подписи, темнее.
+	 * On the white plate a label holds the WCAG threshold to its background. On
+	 * a type's fill there are no thresholds (see `TEXT`): there the label has
+	 * the plate's text colour, like everything on it, `none` too, and hover and
+	 * press are a shadow — the background moves away from the white label,
+	 * darker.
 	 */
 	it.each(CASES)(
 		'$scheme, $name: подписи кнопок и крестика в покое, под наведением и при нажатии — по плашке, а состояние видно',
@@ -750,7 +771,7 @@ describe('вид', () => {
 
 			const text = style(card(item)).color
 
-			// Покой — у всех кнопок разом: указатель уведён с тоста
+			// Rest — for all buttons at once: the pointer is moved off the toast
 			await userEvent.hover(find('.so-test-page'))
 			await colorsSettled(item)
 
@@ -795,10 +816,10 @@ describe('вид', () => {
 	)
 
 	/**
-	 * Кольцо фокуса кнопок с клавиатуры — по Tab от корня тоста, по кнопкам в
-	 * порядке разметки. На заливке вида оно цвета текста плашки, как подписи:
-	 * кольцо темы на ней почти пропадает. У обычного тоста кольцо темы, как
-	 * везде, — его не меряем.
+	 * The buttons' keyboard focus ring — by Tab from the toast's root, through
+	 * the buttons in markup order. On a type's fill it has the plate's text
+	 * colour, like the labels: the theme's ring almost vanishes on it. A plain
+	 * toast has the theme's ring, as everywhere, — it isn't measured.
 	 */
 	it.each(CASES.filter(({ type }) => type))(
 		'$scheme, $name: кольцо фокуса кнопок с клавиатуры на заливке — цвета текста плашки',
@@ -838,13 +859,14 @@ describe('вид', () => {
 	)
 
 	/**
-	 * «Сохраняем…» на белой плашке становится «Сохранено» на заливке успеха.
-	 * Плашка перекрашивается переходом — и фон, и текст на нём: текст, ставший
-	 * белым сразу, на миг пропал бы на ещё белой плашке. Кромка белой плашки
-	 * гаснет тем же переходом — тени: у залитой её нет, и снятая разом, она
-	 * оставила бы ещё белую плашку без края. У корня переходов нет: их ждёт
-	 * удаление закрытого тоста (`afterTransitions`), а цвет и тень переходом
-	 * идут и без движения.
+	 * «Сохраняем…» on the white plate becomes «Сохранено» on the success fill.
+	 * The plate is repainted by a transition — the background and the text on
+	 * it: text turned white at once would vanish for a moment on the still
+	 * white plate. The white plate's rim fades by the same transition, of the
+	 * shadow: a filled plate has none, and removed at once it would leave the
+	 * still white plate without an edge. The root has no transitions: the
+	 * removal of a closed toast waits for them (`afterTransitions`), while
+	 * colour and shadow transitions run without motion too.
 	 */
 	it('смена вида у открытого тоста — переход цвета и кромки плашки, а не корня', async () => {
 		const { show, rest } = await mount()
@@ -890,13 +912,14 @@ describe('вид', () => {
 
 		if (!(runner instanceof SVGElement)) throw new Error('бегущей дуги нет')
 
-		// Круг значков Material — 800 из 960 единиц коробки, 5/6 её стороны
+		// The circle of Material icons is 800 of the box's 960 units, 5/6 of its side
 		expect(ring.width).toBeCloseTo((box.width * 5) / 6, 0)
 		expect(ring.height).toBeCloseTo((box.height * 5) / 6, 0)
 		expect((ring.left + ring.right) / 2).toBeCloseTo((box.left + box.right) / 2, 0)
 		expect((ring.top + ring.bottom) / 2).toBeCloseTo((box.top + box.bottom) / 2, 0)
-		// Дуга — цвета коробки значка, как значок, который она сменит. Кольцо
-		// бежит, и видна бегущая дуга: дугу доли тема на бегу прячет
+		// The arc has the icon box's colour, like the icon it gives way to. The
+		// ring runs, and the running arc shows: the theme hides the fraction arc
+		// while running
 		expect(pixel([style(runner).stroke])).toEqual(pixel([style(part(item, 'icon')).color]))
 
 		toast.loading = false
@@ -954,7 +977,7 @@ describe('появление и исчезание', () => {
 			await nextFrame()
 		}
 
-		// Ушёл не сразу: переходы закрытия успели идти
+		// It didn't leave at once: the closing transitions had time to run
 		expect(frames).toBeGreaterThan(2)
 	})
 
@@ -984,6 +1007,12 @@ describe('появление и исчезание', () => {
 })
 
 describe('жест', () => {
+	/**
+	 * How long the pointer stands before the release, ms: longer than the
+	 * velocity window of the swipe plugin (`VELOCITY_WINDOW`, 100 ms).
+	 */
+	const STILL = 200
+
 	it('у бокового места тост смахивают к краю строки: закрыт и ушёл', async () => {
 		const { show, rest } = await mount()
 		const [toast] = await show('Сохранено')
@@ -1011,8 +1040,17 @@ describe('жест', () => {
 		await expect.poll(() => item.isConnected).toBe(false)
 	})
 
-	it('отпустили ближе четверти — тост возвращается на место', async (context) => {
-		context.skip(webkitUntil('869fn0u0m'))
+	/**
+	 * Released after a pause: the pointer stood still longer than the swipe
+	 * plugin's velocity window (`VELOCITY_WINDOW`, 100 ms), so the release is no
+	 * throw, and only the distance decides — 40 px is short of a quarter of the
+	 * card. Without the pause WebKit got the steps of the drag almost at once:
+	 * 40 px in a few milliseconds is a throw by the plugin's rule
+	 * (`CLOSE_VELOCITY`), and the toast closed. The pause is the input «the
+	 * pointer stands», not a wait for the outcome. Points are from `body`: the
+	 * card follows the pointer.
+	 */
+	it('отпустили ближе четверти — тост возвращается на место', async () => {
 		const { show, rest } = await mount()
 		const [toast] = await show('Сохранено')
 
@@ -1023,15 +1061,21 @@ describe('жест', () => {
 		if (!item || !toast) throw new Error('тоста нет')
 
 		const before = card(item).getBoundingClientRect()
-		const x = 40
-		const y = before.height / 2
+		const body = document.body.getBoundingClientRect()
+		const from = {
+			x: before.left + 40 - body.left,
+			y: before.top + before.height / 2 - body.top,
+		}
 
-		await userEvent.dragAndDrop(card(item), card(item), {
-			sourcePosition: { x, y },
-			targetPosition: { x: x + 40, y },
-			steps: 20,
-			force: true,
-		})
+		await userEvent.hover(document.body, { position: from })
+		await commands.mouseDown()
+
+		try {
+			await userEvent.hover(document.body, { position: { x: from.x + 40, y: from.y } })
+			await new Promise((resolve) => setTimeout(resolve, STILL))
+		} finally {
+			await commands.mouseUp()
+		}
 
 		expect(toast.open).toBe(true)
 
@@ -1042,20 +1086,20 @@ describe('жест', () => {
 })
 
 describe('стопка', () => {
-	/** На сколько задний выглядывает из-под стоящего перед ним: зазор столбца. */
+	/** How far a back toast peeps out from under the one before it: the column's gap. */
 	const PEEK = GAP
 
-	/** На сколько задний уже на каждой ступени. */
+	/** How much narrower a back toast is at each step. */
 	const NARROW = 0.05
 
-	/** Середина плашки по строке. */
+	/** The plate's middle along the line. */
 	const middle = (box: DOMRect) => (box.left + box.right) / 2
 
-	/** Тексты тостов по порядку документа — порядок стопки, передний первым. */
+	/** The toasts' texts in document order — the stack's order, the front one first. */
 	const texts = () =>
 		items().map((item) => item.querySelector('.so-toasts-item__text')?.textContent)
 
-	/** Тосты по порядку; их меньше `count` — тест падает здесь. */
+	/** The toasts in order; fewer than `count` — the test fails here. */
 	const take = (count: number): HTMLElement[] => {
 		const found = items()
 
@@ -1065,8 +1109,8 @@ describe('стопка', () => {
 	}
 
 	/**
-	 * Узел в конце документа — за регионом тостов, который телепортирован туда
-	 * раньше. Снимается после теста.
+	 * A node at the document's end — past the toasts' region, which was
+	 * teleported there earlier. Removed after the test.
 	 */
 	const append = <T extends HTMLElement>(element: T): T => {
 		document.body.append(element)
@@ -1075,7 +1119,7 @@ describe('стопка', () => {
 		return element
 	}
 
-	/** Страница длиннее окна: её есть куда прокрутить. */
+	/** The page is longer than the window: there is room to scroll it. */
 	const scrollable = () => {
 		const spacer = append(document.createElement('div'))
 
@@ -1083,9 +1127,10 @@ describe('стопка', () => {
 	}
 
 	/**
-	 * Переходы стопки доиграли. Высоту задних плагин раскладки пишет, когда
-	 * передний сменился, и переход высоты, начатый сменой ступени, сменяется
-	 * новым: прерванный переход `finished` отклоняет. Ждём, пока новых нет.
+	 * The stack's transitions have played. The layout plugin writes the back
+	 * toasts' height when the front one changed, and a height transition
+	 * started by a step change gives way to a new one: an interrupted
+	 * transition rejects `finished`. Wait until no new ones come.
 	 */
 	const still = async () => {
 		for (;;) {
@@ -1118,7 +1163,7 @@ describe('стопка', () => {
 		expect(Math.abs(middle(next) - middle(front))).toBeLessThan(EPSILON)
 		expect(Math.abs(middle(last) - middle(front))).toBeLessThan(EPSILON)
 
-		// Передний сверху: в его середине — он
+		// The front one is on top: at its middle is itself
 		const hit = document.elementFromPoint(middle(front), (front.top + front.bottom) / 2)
 
 		expect(hit?.closest('.so-toasts-item')).toBe(take(1)[0])
@@ -1145,7 +1190,8 @@ describe('стопка', () => {
 
 		const frontHeight = front.getBoundingClientRect().height
 
-		// Своё содержимое заднего выше переднего — иначе проверять нечего
+		// The back toast's own content is higher than the front one — otherwise
+		// there's nothing to check
 		expect(Number.parseFloat(getComputedStyle(body).height)).toBeGreaterThan(frontHeight)
 		expect(getComputedStyle(back).height).toBe(getComputedStyle(front).height)
 		expect(
@@ -1173,9 +1219,9 @@ describe('стопка', () => {
 	})
 
 	/**
-	 * Второй тост въезжает в стопку: первый уже стоит, второй показан кодом.
-	 * Переход сдвига нового — въезд — встаёт на паузу в самом начале: так видно,
-	 * откуда тост въезжает.
+	 * The second toast slides into the stack: the first one already stands, the
+	 * second is shown by code. The new one's shift transition — the slide-in —
+	 * is paused at its very start: so it shows where the toast comes from.
 	 */
 	const arrive = async (props: Partial<IToastsProps> = {}) => {
 		const { show, engine } = await mount({ layout: 'cascade', ...props })
@@ -1202,9 +1248,10 @@ describe('стопка', () => {
 		const { arriving, previous, entry } = await arrive()
 
 		expect(transitioning(arriving)).toEqual(expect.arrayContaining(['translate', 'opacity']))
-		// Ниже своего места на свою высоту: верх — там, где встанет низ, у края окна
+		// Below its place by its own height: the top is where the bottom will
+		// stand, at the window's edge
 		expect(card(arriving).getBoundingClientRect().top).toBeCloseTo(VIEWPORT.height - OFFSET, 0)
-		// Прежний передний — уже за новым, в том же кадре
+		// The former front one is already behind the new one, in the same frame
 		expect(Number(getComputedStyle(previous).zIndex)).toBeLessThan(
 			Number(getComputedStyle(arriving).zIndex),
 		)
@@ -1224,10 +1271,11 @@ describe('стопка', () => {
 	})
 
 	/**
-	 * Ушедший назад встаёт в высоту переднего из переменной поведения темы, а
-	 * не идёт к ней переходом от `auto`: под `contain: size` заднего `auto` —
-	 * ноль, и прежний передний схлопывался в полоску у края, пока новый
-	 * въезжал. Высота места — без сжатия (`offsetHeight`), каждым кадром.
+	 * One gone back takes the front one's height from the theme behaviour's
+	 * variable, and doesn't go to it by a transition from `auto`: under a back
+	 * toast's `contain: size`, `auto` is zero, and the former front one
+	 * collapsed into a strip at the edge while the new one slid in. The place's
+	 * height is unscaled (`offsetHeight`), every frame.
 	 */
 	it('прежний передний не схлопывается: высота идёт от своей к высоте нового переднего', async () => {
 		const { show, engine } = await mount({ layout: 'cascade' })
@@ -1258,7 +1306,7 @@ describe('стопка', () => {
 
 		if (!front) throw new Error('тоста нет')
 
-		// Новый ниже прежнего — иначе проверять нечего
+		// The new one is lower than the former — otherwise there's nothing to check
 		expect(front.offsetHeight).toBeLessThan(own)
 		expect(heights[0]).toBeCloseTo(own, 0)
 		expect(Math.min(...heights)).toBeGreaterThanOrEqual(front.offsetHeight - EPSILON)
@@ -1305,10 +1353,11 @@ describe('стопка', () => {
 	})
 
 	/**
-	 * Задний — с видом: его плашка залита, и закрыть содержимое она обязана
-	 * своей заливкой. Закрывает его `::after` цветом фона плашки
-	 * (`background-color: inherit`), и заливка не фоном — градиентом или своим
-	 * слоем — под ним не повторилась бы: текст заднего проступил бы.
+	 * The back toast has a type: its plate is filled, and it must cover the
+	 * content with its fill. `::after` covers it with the plate's background
+	 * colour (`background-color: inherit`), and a fill that isn't the
+	 * background — a gradient or a layer of its own — wouldn't repeat under it:
+	 * the back toast's text would show through.
 	 */
 	it('содержимое заднего закрыто его плашкой, а нажатие по краю достаётся тосту', async () => {
 		const { show } = await mount({ layout: 'cascade' })
@@ -1352,8 +1401,8 @@ describe('стопка', () => {
 		expect(transitioning(next)).toEqual(expect.arrayContaining(['translate', 'scale']))
 		expect(window.scrollY).toBe(0)
 
-		// Ушедший назад — узел, вставленный заново: он проявляется на своём
-		// месте, а не въезжает от края, как новый
+		// One gone back is a node inserted anew: it appears in its place and
+		// doesn't slide in from the edge, like a new one
 		await transitionEvents()
 
 		expect(moved).toEqual(['opacity'])
@@ -1393,7 +1442,7 @@ describe('стопка', () => {
 		if (!front || !back) throw new Error('тостов меньше двух')
 
 		front.focus()
-		// Крестик переднего, потом задний
+		// The front one's close button, then the back one
 		await userEvent.tab()
 		await userEvent.tab()
 
@@ -1411,10 +1460,10 @@ describe('стопка', () => {
 				.elementFromPoint(middle(box), (box.top + box.bottom) / 2)
 				?.closest('.so-toasts-item'),
 		).toBe(back)
-		// Передний отошёл на ступень назад
+		// The front one stepped back
 		expect(box.top - card(front).getBoundingClientRect().top).toBeCloseTo(PEEK, 0)
 
-		// Крестик заднего, потом — из стопки, к тому, что за регионом
+		// The back one's close button, then out of the stack, to what is past the region
 		await userEvent.tab()
 		await userEvent.tab()
 
@@ -1437,8 +1486,9 @@ describe('стопка', () => {
 		await nextTick()
 
 		expect(getComputedStyle(front).zIndex).toBe('1')
-		// Место закрытого в ячейке стопки не схлопывается, как в столбце: он
-		// уходит поверх нового переднего, пока гаснет, а схлопнутый пропал бы сразу
+		// The closed one's place in the stack's cell doesn't collapse, as in a
+		// column: it leaves over the new front one while fading, and a collapsed
+		// one would vanish at once
 		expect(front.offsetHeight).toBeCloseTo(height, 0)
 
 		await still()

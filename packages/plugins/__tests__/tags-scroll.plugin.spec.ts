@@ -1,19 +1,19 @@
 // @vitest-environment jsdom
 
 /**
- * Доводка тега под фокусом в окно ряда `scroll`.
+ * Bringing the focused tag into the window of a `scroll` row.
  *
- * Счёт — общая доводка (`nearestShift`, её делит с рядом лента), и
- * проверяется он числами: субпиксели, оба края и элемент шире окна — то, что
- * в браузере дороже всего подобрать раскладкой. Окно здесь — [100, 300]:
- * паддинг-бокс ряда без `scroll-padding`. Сдвиг — как у `scrollBy`: на
- * сколько ряд уезжает влево. Направление письма доводке не нужно: ближайший
- * сдвиг одинаков в обе стороны.
+ * The arithmetic is the shared one (`nearestShift`, the scroller uses it too),
+ * and it is checked with numbers: subpixels, both edges and an element wider
+ * than the window — what is hardest to set up by layout in a browser. The
+ * window here is [100, 300]: the row's padding box without `scroll-padding`.
+ * A shift is as for `scrollBy`: how far the row moves to the left. The writing
+ * direction doesn't matter: the nearest shift is the same both ways.
  *
- * Проводка плагина — ниже, в jsdom: за какой режим и на какой фокус он
- * берётся и чем двигает ряд. Прямоугольники узлов jsdom не считает, их задаёт
- * тест. Настоящая раскладка и порядок событий браузера —
- * `playground/vue/browser/tags-overflow.spec.ts` и `select-tags.spec.ts`.
+ * The plugin's wiring is below, in jsdom: which mode and which focus it takes
+ * and how it moves the row. jsdom doesn't compute node boxes, the test sets
+ * them. The real layout and the browser's order of events —
+ * `playground/vue/browser/tags-overflow.spec.ts` and `select-tags.spec.ts`.
  */
 
 import { describe, it, expect, afterAll, afterEach, beforeAll, vi } from 'vitest'
@@ -23,16 +23,16 @@ import { TElementPlugin, TPluginBundle, TTagsScrollPlugin } from '../src'
 import { nearestShift } from '../src/utils'
 import type { TInlineSpan } from '../src/utils'
 
-/** Окно всех расчётных случаев. */
+/** The window of every arithmetic case. */
 const WINDOW: TInlineSpan = { left: 100, right: 300 }
 
 const span = (left: number, right: number): TInlineSpan => ({ left, right })
 
-/** Где окажется отрезок после сдвига ряда. */
+/** Where a span ends up after the row's shift. */
 const shifted = (box: TInlineSpan, shift: number): TInlineSpan =>
 	span(box.left - shift, box.right - shift)
 
-/** Сдвиг есть — иначе проверять, где что оказалось, нечего. */
+/** There is a shift — otherwise there's nothing to check the placement of. */
 const required = (shift: number | null): number => {
 	if (shift === null) throw new Error('сдвига нет')
 
@@ -46,7 +46,7 @@ describe('доводка: тег уже в окне', () => {
 		).toBeNull()
 	})
 
-	/** Ряд встаёт на целый пиксель, а края тегов дробные. */
+	/** The row stops at a whole pixel, while the tags' edges are fractional. */
 	it.each([
 		{ side: 'в начале', inside: span(99.6, 180), outside: span(99.4, 180) },
 		{ side: 'в конце', inside: span(220, 300.4), outside: span(220, 300.6) },
@@ -59,8 +59,8 @@ describe('доводка: тег уже в окне', () => {
 })
 
 /**
- * Тег не шире окна встаёт в окно целиком — к ближнему краю: снапа у ряда нет,
- * и ставить тег к началу окна незачем.
+ * A tag no wider than the window goes into it whole — at the nearer edge: the
+ * row has no snap, and there's no reason to put the tag at the window's start.
  */
 describe('доводка: тег не шире окна — к ближнему краю окна', () => {
 	it('за краем в конце — конец тега у конца окна', () => {
@@ -80,9 +80,10 @@ describe('доводка: тег не шире окна — к ближнему 
 	})
 
 	/**
-	 * Крестик в окне, а подпись тега — за краем. Кольцо в режиме выбора рисует
-	 * пилюля, а крестик без подписи не скажет, какой тег он закроет: в окно
-	 * встаёт весь тег.
+	 * The close button is in the window, the tag's label past the edge. In
+	 * selection mode the pill draws the ring, and a close button without its
+	 * label doesn't tell which tag it closes: the whole tag goes into the
+	 * window.
 	 */
 	it('элемент под фокусом в окне, а тег нет — сдвиг до всего тега', () => {
 		const item = span(40, 190)
@@ -94,11 +95,11 @@ describe('доводка: тег не шире окна — к ближнему 
 })
 
 /**
- * Тег шире окна в него не встанет: он накрывает окно, а элемент под фокусом
- * лежит в окне. Из таких положений — ближайшее.
+ * A tag wider than the window won't fit in it: it covers the window, with the
+ * focused element inside. Of such placements — the nearest.
  */
 describe('доводка: тег шире окна — накрывает окно', () => {
-	/** Проверка результата: элемент под фокусом в окне, тег его накрывает. */
+	/** The outcome: the focused element is in the window, the tag covers it. */
 	const expectPlaced = (focused: TInlineSpan, item: TInlineSpan, shift: number) => {
 		const placedFocus = shifted(focused, shift)
 		const placedItem = shifted(item, shift)
@@ -114,8 +115,9 @@ describe('доводка: тег шире окна — накрывает окн
 	}
 
 	/**
-	 * Крестик в конце длинного тега за краем окна. С «началом тега к началу
-	 * окна» крестик остался бы за краем, на [510, 540].
+	 * The close button at the end of a long tag past the window's edge. With the
+	 * tag's start put at the window's start, the button would stay past the
+	 * edge, at [510, 540].
 	 */
 	it('крестик в конце встаёт у края окна', () => {
 		const focused = span(560, 590)
@@ -143,8 +145,8 @@ describe('доводка: тег шире окна — накрывает окн
 })
 
 /**
- * Элемент под фокусом шире окна в него не встанет ни при каком сдвиге, и
- * больше всего его видно, когда он окно накрывает.
+ * A focused element wider than the window fits in it at no shift, and most of
+ * it shows when it covers the window.
  */
 describe('доводка: элемент под фокусом шире окна', () => {
 	it('уже накрывает окно — ряд не трогаем', () => {
@@ -161,8 +163,9 @@ describe('доводка: элемент под фокусом шире окна
 })
 
 /**
- * Без элемента области в окно доводится один элемент под фокусом: так «уже в
- * окне» смотрит лента, когда её элемент шире окна (`resolveFocusShift`).
+ * Without the area's element only the focused element is brought into the
+ * window: that is how the scroller checks "already in the window" when its
+ * element is wider than the window (`resolveFocusShift`).
  */
 describe('доводка: без элемента области', () => {
 	it('элемент под фокусом в окне — сдвига нет', () => {
@@ -175,18 +178,19 @@ describe('доводка: без элемента области', () => {
 })
 
 /**
- * Проводка: за какой режим и на какой фокус плагин берётся и чем двигает ряд.
+ * The wiring: which mode and which focus the plugin takes and how it moves the
+ * row.
  *
- * Разметка — ряд и теги в нём, как их рисует Vue: пилюля, в ней строка и
- * крестик. Окно — [10, 290]: ряд [0, 300] без `scroll-padding` по 10 с каждой
- * стороны.
+ * The markup is the row with its tags, as Vue draws them: a pill with a line
+ * and a close button in it. The window is [10, 290]: the row [0, 300] without
+ * a `scroll-padding` of 10 on each side.
  */
 describe('плагин: фокус в ряду', () => {
 	const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve))
 
 	/**
-	 * `ResizeObserver` в jsdom не реализован. Плагину он не нужен, но заглушка
-	 * страхует от соседа по набору, который его заведёт.
+	 * jsdom has no `ResizeObserver`. The plugin doesn't need it, but the stub
+	 * guards against a neighbour in the bundle that would create one.
 	 */
 	beforeAll(() => {
 		vi.stubGlobal(
@@ -207,7 +211,7 @@ describe('плагин: фокус в ряду', () => {
 		document.body.innerHTML = ''
 	})
 
-	/** Узел по селектору; нет его — тест падает здесь, а не на чтении свойства. */
+	/** A node by selector; without it the test fails here, not on reading a property. */
 	const nodeOf = (selector: string): HTMLElement => {
 		const node = document.querySelector(selector)
 
@@ -216,7 +220,7 @@ describe('плагин: фокус в ряду', () => {
 		return node
 	}
 
-	/** Прямоугольник узла по строке — jsdom его не считает. */
+	/** The node's box along the line — jsdom doesn't compute it. */
 	const place = (node: Element, left: number, right: number) => {
 		vi.spyOn(node, 'getBoundingClientRect').mockReturnValue(
 			new DOMRect(left, 0, right - left, 20),
@@ -224,10 +228,10 @@ describe('плагин: фокус в ряду', () => {
 	}
 
 	/**
-	 * Фокус, который браузер счёл бы видимым (`:focus-visible`) или нет.
-	 * Видимость задаёт тест: эвристика jsdom своя, а плагину важен только
-	 * ответ. Как его даёт браузер (Tab — да, нажатие мышью — нет), проверяет
-	 * `playground/vue/browser/tags-overflow.spec.ts`.
+	 * Focus the browser would count as visible (`:focus-visible`) or not. The
+	 * test sets the visibility: jsdom has its own heuristic, and the plugin
+	 * only cares about the answer. How the browser gives it (Tab — yes, a mouse
+	 * press — no) is checked by `playground/vue/browser/tags-overflow.spec.ts`.
 	 */
 	const focusWith = (target: HTMLElement, visible: boolean) => {
 		vi.spyOn(target, 'matches').mockImplementation((selector: string) =>
@@ -259,7 +263,7 @@ describe('плагин: фокус в ряду', () => {
 
 		place(root, 0, 300)
 		Object.defineProperty(root, 'clientWidth', { value: 300 })
-		// jsdom прокрутки не знает вовсе — сдвиг ловит шпион
+		// jsdom knows no scrolling at all — a spy catches the shift
 		Object.defineProperty(root, 'scrollBy', { value: scrollBy })
 
 		const bundle = new TPluginBundle(owner).use(TElementPlugin).use(TTagsScrollPlugin)
@@ -268,13 +272,16 @@ describe('плагин: фокус в ряду', () => {
 		if (!element) throw new Error('узла корня нет')
 
 		element.element = root
-		// Корень плагины получают кадром позже
+		// Plugins get the root a frame later
 		await nextFrame()
 
 		return { owner, bundle, root, scrollBy }
 	}
 
-	/** Второй тег у конца ряда виден частично: строка в окне, крестик — за краем. */
+	/**
+	 * The second tag at the row's end is partly visible: the line in the
+	 * window, the close button past the edge.
+	 */
 	const secondAtEnd = () => {
 		place(nodeOf('.second'), 240, 320)
 		place(nodeOf('.second-row'), 240, 290)
@@ -287,14 +294,15 @@ describe('плагин: фокус в ряду', () => {
 		secondAtEnd()
 		focusWith(nodeOf('.second-close'), true)
 
-		// Синхронно, в обработчике `focusin`: без ожидания кадра
+		// Synchronously, in the `focusin` handler: no frame to wait for
 		expect(scrollBy).toHaveBeenCalledOnce()
 		expect(scrollBy).toHaveBeenCalledWith({ left: 30, behavior: 'instant' })
 	})
 
 	/**
-	 * Строка под фокусом в окне, а пилюля — за краем: кольцо в режиме выбора
-	 * рисует она, и в окно встаёт тег целиком, а не строка.
+	 * The focused line is in the window, the pill past the edge: in selection
+	 * mode the pill draws the ring, and the whole tag goes into the window, not
+	 * the line.
 	 */
 	it('в окно встаёт тег — прямой ребёнок ряда, а не элемент под фокусом', async () => {
 		const { scrollBy } = await mount()
@@ -304,6 +312,40 @@ describe('плагин: фокус в ряду', () => {
 		focusWith(nodeOf('.first-row'), true)
 
 		expect(scrollBy).toHaveBeenCalledWith({ left: -30, behavior: 'instant' })
+	})
+
+	/**
+	 * WebKit keeps the scroll position in whole pixels and truncates a
+	 * fractional target toward zero: a fractional shift would leave the tag
+	 * short of the window. The row moves by whole pixels, rounded away from
+	 * zero — both ways.
+	 */
+	it.each([
+		{
+			way: 'к концу ряда',
+			arrange: () => {
+				place(nodeOf('.second'), 240.4, 320.4)
+				place(nodeOf('.second-close'), 290.4, 310.4)
+			},
+			focused: '.second-close',
+			left: 31,
+		},
+		{
+			way: 'к началу ряда',
+			arrange: () => {
+				place(nodeOf('.first'), -20.4, 99.6)
+				place(nodeOf('.first-row'), 15, 75)
+			},
+			focused: '.first-row',
+			left: -31,
+		},
+	])('дробный сдвиг $way — на целые пиксели, от нуля', async ({ arrange, focused, left }) => {
+		const { scrollBy } = await mount()
+
+		arrange()
+		focusWith(nodeOf(focused), true)
+
+		expect(scrollBy).toHaveBeenCalledWith({ left, behavior: 'instant' })
 	})
 
 	it('тег в окне — ряд стоит', async () => {
@@ -317,8 +359,8 @@ describe('плагин: фокус в ряду', () => {
 	})
 
 	/**
-	 * Фокус от нажатия мышью: сдвинься ряд между нажатием и отпусканием, под
-	 * указателем оказался бы другой тег, и `click` не дошёл бы.
+	 * Focus from a mouse press: had the row moved between the press and the
+	 * release, another tag would be under the pointer, and `click` would miss.
 	 */
 	it('фокус не с клавиатуры — ряд стоит', async () => {
 		const { scrollBy } = await mount()
@@ -329,7 +371,7 @@ describe('плагин: фокус в ряду', () => {
 		expect(scrollBy).not.toHaveBeenCalled()
 	})
 
-	/** Ряд без своих остановок сам становится остановкой Tab: он и есть окно. */
+	/** A row without stops of its own becomes a Tab stop itself: it is the window. */
 	it('фокус на самом ряду — ряд стоит', async () => {
 		const { root, scrollBy } = await mount()
 
@@ -339,7 +381,7 @@ describe('плагин: фокус в ряду', () => {
 		expect(scrollBy).not.toHaveBeenCalled()
 	})
 
-	/** В `wrap` ряд не прокручивается. */
+	/** In `wrap` the row doesn't scroll. */
 	it('wrap — ряд стоит', async () => {
 		const { scrollBy } = await mount('wrap')
 

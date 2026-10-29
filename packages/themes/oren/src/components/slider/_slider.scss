@@ -3,57 +3,61 @@
 @use '../../mixins/tooltip';
 @use './mixins' as mixines;
 
-// Slider — ползунок: одна или несколько ручек на рельсе, заливка и метки.
+// Slider — one or more thumbs on a rail, the fill and the marks.
 //
-// Структура — ось и отступы корня под края хода и ореол, дорожка — ход
-// центров ручек, место рельса, заливки, ручек и меток, прозрачное поле во всю
-// ручку, место подсказки и её видимость в `auto`, кегль подписей меток, шкала
-// размеров, курсоры и гашение выключенного — в общем слое тем
-// (`components/slider.css` в `@soldy-ui/theme-base`). Здесь — облик: цвет
-// рельса, заливки, ручки и точек, скругления, кромка, тень и ореол ручки,
-// кольцо фокуса, вид плашки подсказки, цвет и начертание подписей, щелчок к
-// метке, ход ручки и вид в режиме принудительных цветов.
+// The structure — the axis and the root's insets for the ends of travel and
+// the halo, the track as the travel of thumb centres, the place of the rail,
+// the fill, the thumbs and the marks, the transparent field over the whole
+// thumb, the tooltip's place and its visibility in `auto`, the size of mark
+// labels, the size scale, the cursors and the disabled fade — is in the shared
+// theme layer (`components/slider.css` in `@soldy-ui/theme-base`). Here is the
+// look: the colour of the rail, the fill, the thumb and the dots, the radii,
+// the thumb's rim, shadow and halo, the focus ring, the tooltip plate, the
+// colour and weight of labels, the detent at a mark, the thumb's travel and
+// forced colors mode.
 .so-slider {
 	$this: &;
 
-	// Кромка ручки без модификатора — `normal`. Её толщину читает и общий слой
-	// тем: подсказка встаёт от края ручки за ней.
+	// The thumb's rim without a modifier is `normal`. The shared layer reads its
+	// width too: the tooltip stands off the thumb's edge beyond it.
 	--so-slider-thumb-border: #{map.get(mixines.$borders, 'normal')};
 
-	// Рельс — псевдоэлемент дорожки. Скругление уходит под ручку.
+	// The rail is the track's pseudo-element. Its rounding goes under the thumb.
 	&__track::before {
 		@apply rounded-full;
 		@apply transition-colors duration-150;
 		background-color: var(--so-slider-rail);
 	}
 
-	// Наведение на ползунок — рельс отходит от поверхности на шаг: нажатие в
-	// любом его месте двигает ручку. Выключенный нажатие не меняет — его не
-	// красим.
+	// Hovering the slider moves the rail a step off the surface: a press
+	// anywhere on it moves a thumb. A press doesn't change a disabled one, so it
+	// isn't painted.
 	&:hover:not([data-disabled='true']) > #{$this}__track::before {
 		background-color: var(--so-slider-rail-hover);
 	}
 
-	// Заливка — тем же цветом, что кромка ручки: ручка читается концом
-	// заливки.
+	// The fill has the colour of the thumb's rim: the thumb reads as the fill's
+	// end.
 	&__range {
 		@apply rounded-full;
 		background-color: var(--so-slider-fill);
-		// Список переходов — явно, как у ручки: с умолчанием `all` края ехали
-		// переходом и при протяжке, и без движения, и заливка догоняла ручку.
-		// Края в список добавляет только надстройка движения ниже.
+		// The list of transitions is explicit, as at the thumb: with the default
+		// `all` the ends went by transition during a drag and without motion
+		// too, and the fill lagged behind the thumb. Only the motion layer below
+		// adds the ends to the list.
 		transition-property: none;
 		transition-duration: 150ms;
 		transition-timing-function: ease-out;
 	}
 
-	// Поверхность и тень ручки — те же, что у ручки Switch
-	// (`--so-component-knob` и `shadow-md`): ручка контрола — одна роль, и тень
-	// у неё одна. Кромка — цвет заливки. Ореол — вуаль вокруг кромки: кольцо
-	// `ring` ложится в одну тень с `shadow-md` и её не перебивает. Ширина
-	// ореола — отступ корня поперёк оси, треть стороны ручки
-	// (`--so-slider-halo-size`, общий слой тем). Без наведения и
-	// перетаскивания ореола нет: кольцо нулевой ширины.
+	// The thumb's surface and shadow are those of the Switch thumb
+	// (`--so-component-knob` and `shadow-md`): a control's thumb is one role
+	// with one shadow. The rim has the fill's colour. The halo is a veil around
+	// the rim: the `ring` goes into one shadow with `shadow-md` and doesn't
+	// override it. The halo's width is the root's inset across the axis, a
+	// third of the thumb's side (`--so-slider-halo-size`, the shared layer).
+	// Without a hover, a press or a drag there is no halo: the ring is zero
+	// wide.
 	&__thumb {
 		@apply rounded-full border-solid;
 		@apply bg-so-component-knob shadow-md;
@@ -67,38 +71,44 @@
 		transition-timing-function: ease-out;
 	}
 
-	// Наведение на ручку — ореол. Только там, где нажатие что-то сделает.
+	// Hovering the thumb — the halo. Only where a press does something.
 	&:not([data-disabled='true']) #{$this}__thumb:hover {
 		--so-slider-halo: var(--so-slider-halo-size);
 		--so-slider-halo-color: var(--so-slider-halo-hover);
 	}
 
-	// Тянут эту ручку — ореол плотнее.
-	&__thumb[data-dragging='true'] {
+	// The thumb is held or dragged — the denser halo of a press. The weight is
+	// the hover's and the rule comes after it: WebKit, like Safari, keeps
+	// `:hover` on the thumb under the pointer while the root holds the pointer
+	// capture, and the press wins by order.
+	&:not([data-disabled='true']) #{$this}__thumb:is([data-dragging='true'], :active) {
 		--so-slider-halo: var(--so-slider-halo-size);
 		--so-slider-halo-color: var(--so-slider-halo-active);
 	}
 
-	// Кольцо фокуса — на ручке: фокус у поля внутри неё, а поле невидимо.
+	// The focus ring is on the thumb: focus is on the field inside it, and the
+	// field is invisible.
 	&__thumb:has(> #{$this}__input:focus-visible) {
 		@apply outline-2 outline-offset-2 outline-so-component;
 	}
 
-	// Подсказка со значением — плашка подсказки (`mixins/_tooltip.scss`), та
-	// же, что у Tooltip, и одна на все размеры ползунка. Разметка рисует её,
-	// только когда подсказка включена.
+	// The value tooltip is the tooltip plate (`mixins/_tooltip.scss`), the
+	// Tooltip's one, the same for every slider size. The markup draws it only
+	// when the tooltip is on.
 	//
-	// Указатель подсказка не гасит. Наведение на неё — наведение на ручку, и
-	// курсор, перешедший на подсказку, её не прячет (WCAG 1.4.13). Нажатие на
-	// неё берёт ручку: плагин указателя ищет ручку по `contains`.
+	// The tooltip doesn't block the pointer. Hovering it is hovering the thumb,
+	// and a cursor moved over to the tooltip doesn't hide it (WCAG 1.4.13). A
+	// press on it takes the thumb: the pointer plugin finds the thumb by
+	// `contains`.
 	&__tooltip {
 		@include tooltip.plate-look;
 	}
 
-	// `auto` — в покое плашку прячет общий слой тем (`visibility`), а здесь она
-	// гаснет и проявляется прозрачностью. `visibility` в списке переходов держит
-	// плашку видимой, пока она гаснет: курсор успевает перейти с ручки на
-	// подсказку. Прозрачность — не движение, и режим движения её не касается.
+	// `auto` — at rest the shared layer hides the plate (`visibility`), and here
+	// it fades out and in by opacity. `visibility` in the transition list keeps
+	// the plate visible while it fades: the cursor has time to move from the
+	// thumb to the tooltip. Opacity is not motion, and the motion mode doesn't
+	// touch it.
 	&--tooltip-auto #{$this}__tooltip {
 		@apply opacity-0;
 		transition-property: opacity, visibility;
@@ -118,8 +128,8 @@
 		}
 	}
 
-	// Точка метки на рельсе. На заливке — цветом ручки: вуаль той же ступени,
-	// что заливка, на ней невидима.
+	// The mark's dot on the rail. On the fill it takes the thumb's colour: a
+	// veil of the fill's own step is invisible on it.
 	&__mark::before {
 		@apply rounded-full;
 		@apply transition-colors duration-150;
@@ -130,10 +140,10 @@
 		background-color: color-mix(in oklab, var(--so-component-knob) 80%, transparent);
 	}
 
-	// Щелчок: кольцо цвета заливки расходится от ручки, которая встала на
-	// метку при перетаскивании (анимация — ниже, в надстройке движения). В
-	// покое кольца нет. Кольцо — облик темы целиком: без него у метки только
-	// точка и подпись.
+	// The detent: a ring of the fill's colour spreads from a thumb that settled
+	// on a mark during a drag (the animation is below, in the motion layer).
+	// There is no ring at rest. The ring is wholly the theme's look: without it
+	// a mark has only its dot and label.
 	&__mark::after {
 		content: '';
 		@apply absolute rounded-full pointer-events-none opacity-0;
@@ -154,9 +164,9 @@
 		inset-block-start: 0;
 	}
 
-	// Подпись метки — приглушённый текст; внутри заливки — основной, на метке
-	// под ручкой — текст варианта и плотнее. Жирность раскладку не двигает:
-	// подпись стоит по центру метки нулевой ширины и растёт в обе стороны.
+	// A mark's label is muted text; within the fill — the main text, at the mark
+	// under the thumb — the variant's text and bolder. The weight doesn't shift
+	// the layout: the label is centred on a zero-wide mark and grows both ways.
 	&__mark-label {
 		@apply text-so-neutral-500;
 		@apply transition-colors duration-150;
@@ -183,27 +193,27 @@
 		}
 	}
 
-	// Невалидный ползунок — `data-invalid` корня (его пишет поле формы
-	// `Field`): рельс — вуаль цвета ошибки той же плотности, как у варианта
-	// `negative`. Ошибку несёт рельс, а не значение: заливка и ручка остаются
-	// цветом своего варианта, как звёзды Rating.
+	// An invalid slider — `data-invalid` on the root (the `Field` form field
+	// writes it): the rail is a veil of the error colour of the same density, as
+	// with the `negative` variant. The rail carries the error, not the value:
+	// the fill and the thumb keep their variant's colour, like Rating's stars.
 	&[data-invalid='true'] {
 		@include mixines.slider-rail('negative');
 	}
 }
 
-// Вид блока без варианта — нейтраль. Модификатору `normal` правило не нужно,
-// он совпадает с базой. Нулевая специфичность — вариант перекрывает базу, не
-// споря с ней.
+// The block without a variant is neutral. The `normal` modifier needs no rule,
+// it equals the base. Zero specificity: a variant overrides the base without
+// arguing with it.
 :where(.so-slider) {
 	@include mixines.slider-colors('neutral');
 }
 
-// Ход ручек и заливки — плавный: от клавиатуры и от смены значения кодом.
-// Позиции в список переходов добавляет только надстройка движения — базовые
-// правила частей их не анимируют, — поэтому во время перетаскивания ручка и
-// заливка идут за указателем без задержки, а без движения встают на новое
-// значение сразу.
+// The thumbs and the fill travel smoothly: from the keyboard and from a value
+// set by code. Only the motion layer adds the positions to the transition
+// list — the parts' base rules don't animate them, — so during a drag the
+// thumb and the fill follow the pointer without lag, and without motion they
+// take the new value at once.
 .so-slider:not([data-dragging='true']) > .so-slider__track {
 	> .so-slider__thumb {
 		@include motion.allowed {
@@ -219,10 +229,10 @@
 	}
 }
 
-// Щелчок — отклик метки, на которую встала ручка: кольцо расходится от ручки
-// и гаснет. Только при перетаскивании: клавиша и так ходит по шагу, а на
-// первой отрисовке кольцо вспыхнуло бы у каждой занятой метки. Кольцо растёт
-// — это движение, и без него отклика нет.
+// The detent is the response of the mark the thumb settled on: a ring spreads
+// from the thumb and fades. Only during a drag: a key moves by steps anyway,
+// and on the first paint the ring would flash at every occupied mark. The ring
+// grows — that is motion, and without motion there is no response.
 .so-slider[data-dragging='true'] .so-slider__mark[data-current='true']::after {
 	@include motion.allowed {
 		animation: so-slider-detent 400ms ease-out;
@@ -241,9 +251,9 @@
 	}
 }
 
-// Принудительные цвета (высокий контраст Windows): браузер заменяет фоны
-// системным цветом поверхности, и рельс, заливка и точки меток пропали бы
-// вместе с ними — от ползунка остались бы одни кольца ручек.
+// Forced colors (Windows high contrast): the browser replaces backgrounds with
+// the system surface colour, and the rail, the fill and the mark dots would go
+// with them — only the thumbs' rings would remain of the slider.
 @media (forced-colors: active) {
 	.so-slider__track::before {
 		forced-color-adjust: none;
@@ -260,9 +270,10 @@
 		background-color: CanvasText;
 	}
 
-	// Ошибка: цвет рельса здесь системный, и невалидный отличает контур вокруг
-	// рельса — рамка, как у полей и коробки CheckBox, которые в ошибке вдвое
-	// толще. Точки меток на рельсе он не закрывает.
+	// An error: the rail's colour is the system's here, and an invalid slider is
+	// told by an outline around the rail — a frame, as fields and the CheckBox
+	// box get twice as thick in an error. It doesn't cover the mark dots on the
+	// rail.
 	.so-slider[data-invalid='true'] .so-slider__track::before {
 		outline: 1px solid CanvasText;
 		outline-offset: 1px;
