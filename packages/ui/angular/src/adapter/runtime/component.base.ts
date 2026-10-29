@@ -3,8 +3,8 @@
  * lifecycle, outputs, slots and the root. AGENTS.md (Angular), «Корень-хост
  * ведёт базовый `TComponentBase`».
  *
- * - constructor: the root by its spec (`TRootSpec`, strategies in `root/`)
- *   and the subtree flag for descendants;
+ * - constructor: the output getters (once per class), the root by its spec
+ *   (`TRootSpec`, strategies in `root/`) and the subtree flag for descendants;
  * - `ngOnInit`: assembly by the component's setup function in its injection
  *   context, and the sink of core events;
  * - `ngOnChanges`: changed inputs go to the core;
@@ -12,7 +12,8 @@
  *   unsubscription and `destroy()`.
  *
  * A component extends the generated `T<Name>Surface`, not the base: the
- * surface declares inputs and outputs with their types for strict templates.
+ * surface declares inputs and outputs with their types for strict templates
+ * and gives the base their names.
  */
 
 import {
@@ -173,11 +174,14 @@ export abstract class TComponentBase<
 
 	constructor(
 		inputNames: readonly string[],
+		outputNames: readonly string[],
 		setup: TSetup<TInstance, TFacade, TOutputs, TOwnerFacade>,
 		spec: TRootSpec = VIEW_ROOT,
 	) {
 		this._inputNames = inputNames
 		this._setup = setup
+
+		TComponentBase._defineOutputs(new.target.prototype, outputNames)
 
 		const above =
 			inject(SubtreeDirective, { skipSelf: true, optional: true })?.present ?? SUBTREE_PRESENT
@@ -267,9 +271,30 @@ export abstract class TComponentBase<
 	}
 
 	/**
-	 * The output's emitter, called by the `T<Name>Surface` getter on the first
-	 * read. The emitter becomes an own property and shadows the getter; a second
-	 * call is an error, not a replacement. Created in the injector's context:
+	 * The output getters on the prototype of the instance's class, one per
+	 * output: the first instance of the class defines them, the next ones find
+	 * them there. Not generated code: the getter is the same for every output
+	 * but its name, and generated per output it weighed 72 KB on a page of six
+	 * components (benchmarks/install/angular.md).
+	 */
+	private static _defineOutputs(prototype: object, names: readonly string[]): void {
+		// The getters are defined all at once, so the first one marks the class
+		if (names.length === 0 || Object.hasOwn(prototype, names[0])) return
+
+		for (const name of names) {
+			Object.defineProperty(prototype, name, {
+				configurable: true,
+				get(this: TComponentBase<IEntity>): EventEmitter<unknown> {
+					return this.createOutput(name)
+				},
+			})
+		}
+	}
+
+	/**
+	 * The output's emitter, called by the output's getter on the first read.
+	 * The emitter becomes an own property and shadows the getter; a second call
+	 * is an error, not a replacement. Created in the injector's context:
 	 * `EventEmitter` takes `DestroyRef` from it, and `outputToObservable`
 	 * completes with the component.
 	 */

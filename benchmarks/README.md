@@ -17,6 +17,7 @@
 | [`ssr/`](ssr/README.md)                 | серверный рендер: утечки на тысячах рендеров в Node и языки соседних запросов; `report.md` — отчёт                   | [`tools/bench-ssr`](../tools/bench-ssr/)         |
 | [`parity/`](parity/README.md)           | одинаковость платформ: события и дерево доступности после каждого шага сценария; `report.md` — отчёт                 | [`tools/bench-pages`](../tools/bench-pages/)     |
 | [`interaction/`](interaction/README.md) | отклик на действие на странице из 50 копий, с замедлением процессора, и перерисовки на действие; `report.md` — отчёт | [`tools/bench-pages`](../tools/bench-pages/)     |
+| [`install/`](install/README.md)         | продакшен-сборка чистого проекта с пакетами из тарболлов: начальная загрузка по пакетам и бюджет инструмента         | [`tools/install-smoke`](../tools/install-smoke/) |
 
 ## Как вести журнал
 

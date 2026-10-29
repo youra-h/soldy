@@ -87,7 +87,7 @@ export abstract class TTableColumnSurface<TInstance extends IEntity> extends TCo
 		>,
 		spec?: TRootSpec,
 	) {
-		super(TableColumnInputNames, setup, spec)
+		super(TableColumnInputNames, TableColumnOutputNames, setup, spec)
 	}
 	private readonly _slots = contentChildren(SlotDirective)
 	protected override slotTemplates(): readonly SlotDirective[] {
@@ -98,127 +98,48 @@ export abstract class TTableColumnSurface<TInstance extends IEntity> extends TCo
 	declare rendered: TInputValue<typeof descriptor, 'rendered'>
 	declare visible: TInputValue<typeof descriptor, 'visible'>
 	declare direction: TInputValue<typeof descriptor, 'direction'>
-	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('soBundleCreate')
-	}
-	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('soPluginEvent')
-	}
-	get soShow(): TOutputEmitter<typeof descriptor, 'show'> {
-		return this.createOutput('soShow')
-	}
-	get soHide(): TOutputEmitter<typeof descriptor, 'hide'> {
-		return this.createOutput('soHide')
-	}
-	get soShowBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
-		return this.createOutput('soShowBefore')
-	}
-	get soShowAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
-		return this.createOutput('soShowAfter')
-	}
-	get soHideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
-		return this.createOutput('soHideBefore')
-	}
-	get soHideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
-		return this.createOutput('soHideAfter')
-	}
-	get soReady(): TOutputEmitter<typeof descriptor, 'ready'> {
-		return this.createOutput('soReady')
-	}
-	get soElementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
-		return this.createOutput('soElementCreate')
-	}
-	get soElementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
-		return this.createOutput('soElementReady')
-	}
-	get soElementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
-		return this.createOutput('soElementRemoved')
-	}
-	get soReadyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
-		return this.createOutput('soReadyCreate')
-	}
-	get soIdsCreate(): TOutputEmitter<typeof descriptor, 'ids:create'> {
-		return this.createOutput('soIdsCreate')
-	}
-	get soNamesCreate(): TOutputEmitter<typeof descriptor, 'names:create'> {
-		return this.createOutput('soNamesCreate')
-	}
-	get soResizeCreate(): TOutputEmitter<typeof descriptor, 'resize:create'> {
-		return this.createOutput('soResizeCreate')
-	}
-	get soChangeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
-		return this.createOutput('soChangeRendered')
-	}
-	get soChangeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
-		return this.createOutput('soChangeVisible')
-	}
-	get soChangeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
-		return this.createOutput('soChangeTag')
-	}
-	get soChangeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
-		return this.createOutput('soChangeDirection')
-	}
-	get soChangeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
-		return this.createOutput('soChangeClasses')
-	}
-	get soChangeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
-		return this.createOutput('soChangeAria')
-	}
-	get soChangeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
-		return this.createOutput('soChangeDataset')
-	}
-	get soChangeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
-		return this.createOutput('soChangeAttrs')
-	}
-	get soChangeField(): TOutputEmitter<typeof descriptor, 'change:field'> {
-		return this.createOutput('soChangeField')
-	}
-	get soChangeText(): TOutputEmitter<typeof descriptor, 'change:text'> {
-		return this.createOutput('soChangeText')
-	}
-	get soChangeWidth(): TOutputEmitter<typeof descriptor, 'change:width'> {
-		return this.createOutput('soChangeWidth')
-	}
-	get soChangeMinWidth(): TOutputEmitter<typeof descriptor, 'change:minWidth'> {
-		return this.createOutput('soChangeMinWidth')
-	}
-	get soChangeMaxWidth(): TOutputEmitter<typeof descriptor, 'change:maxWidth'> {
-		return this.createOutput('soChangeMaxWidth')
-	}
-	get soChangeAlign(): TOutputEmitter<typeof descriptor, 'change:align'> {
-		return this.createOutput('soChangeAlign')
-	}
-	get soChangeSortable(): TOutputEmitter<typeof descriptor, 'change:sortable'> {
-		return this.createOutput('soChangeSortable')
-	}
-	get soChangeCompare(): TOutputEmitter<typeof descriptor, 'change:compare'> {
-		return this.createOutput('soChangeCompare')
-	}
-	get soChangeRowHeader(): TOutputEmitter<typeof descriptor, 'change:rowHeader'> {
-		return this.createOutput('soChangeRowHeader')
-	}
-	get soChangeResizable(): TOutputEmitter<typeof descriptor, 'change:resizable'> {
-		return this.createOutput('soChangeResizable')
-	}
-	get soChangeReorderable(): TOutputEmitter<typeof descriptor, 'change:reorderable'> {
-		return this.createOutput('soChangeReorderable')
-	}
-	get soChangeDisabled(): TOutputEmitter<typeof descriptor, 'change:disabled'> {
-		return this.createOutput('soChangeDisabled')
-	}
-	get soChangeResizerRendered(): TOutputEmitter<typeof descriptor, 'change:resizerRendered'> {
-		return this.createOutput('soChangeResizerRendered')
-	}
-	get soChangeResizer(): TOutputEmitter<typeof descriptor, 'change:resizer'> {
-		return this.createOutput('soChangeResizer')
-	}
-	get soChangeResizerAria(): TOutputEmitter<typeof descriptor, 'change:resizerAria'> {
-		return this.createOutput('soChangeResizerAria')
-	}
-	get soChangeTextAria(): TOutputEmitter<typeof descriptor, 'change:textAria'> {
-		return this.createOutput('soChangeTextAria')
-	}
-	get soChangeSortAria(): TOutputEmitter<typeof descriptor, 'change:sortAria'> {
-		return this.createOutput('soChangeSortAria')
-	}
+	declare readonly soBundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
+	declare readonly soPluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
+	declare readonly soShow: TOutputEmitter<typeof descriptor, 'show'>
+	declare readonly soHide: TOutputEmitter<typeof descriptor, 'hide'>
+	declare readonly soShowBefore: TOutputEmitter<typeof descriptor, 'show:before'>
+	declare readonly soShowAfter: TOutputEmitter<typeof descriptor, 'show:after'>
+	declare readonly soHideBefore: TOutputEmitter<typeof descriptor, 'hide:before'>
+	declare readonly soHideAfter: TOutputEmitter<typeof descriptor, 'hide:after'>
+	declare readonly soReady: TOutputEmitter<typeof descriptor, 'ready'>
+	declare readonly soElementCreate: TOutputEmitter<typeof descriptor, 'element:create'>
+	declare readonly soElementReady: TOutputEmitter<typeof descriptor, 'element:ready'>
+	declare readonly soElementRemoved: TOutputEmitter<typeof descriptor, 'element:removed'>
+	declare readonly soReadyCreate: TOutputEmitter<typeof descriptor, 'ready:create'>
+	declare readonly soIdsCreate: TOutputEmitter<typeof descriptor, 'ids:create'>
+	declare readonly soNamesCreate: TOutputEmitter<typeof descriptor, 'names:create'>
+	declare readonly soResizeCreate: TOutputEmitter<typeof descriptor, 'resize:create'>
+	declare readonly soChangeRendered: TOutputEmitter<typeof descriptor, 'change:rendered'>
+	declare readonly soChangeVisible: TOutputEmitter<typeof descriptor, 'change:visible'>
+	declare readonly soChangeTag: TOutputEmitter<typeof descriptor, 'change:tag'>
+	declare readonly soChangeDirection: TOutputEmitter<typeof descriptor, 'change:direction'>
+	declare readonly soChangeClasses: TOutputEmitter<typeof descriptor, 'change:classes'>
+	declare readonly soChangeAria: TOutputEmitter<typeof descriptor, 'change:aria'>
+	declare readonly soChangeDataset: TOutputEmitter<typeof descriptor, 'change:dataset'>
+	declare readonly soChangeAttrs: TOutputEmitter<typeof descriptor, 'change:attrs'>
+	declare readonly soChangeField: TOutputEmitter<typeof descriptor, 'change:field'>
+	declare readonly soChangeText: TOutputEmitter<typeof descriptor, 'change:text'>
+	declare readonly soChangeWidth: TOutputEmitter<typeof descriptor, 'change:width'>
+	declare readonly soChangeMinWidth: TOutputEmitter<typeof descriptor, 'change:minWidth'>
+	declare readonly soChangeMaxWidth: TOutputEmitter<typeof descriptor, 'change:maxWidth'>
+	declare readonly soChangeAlign: TOutputEmitter<typeof descriptor, 'change:align'>
+	declare readonly soChangeSortable: TOutputEmitter<typeof descriptor, 'change:sortable'>
+	declare readonly soChangeCompare: TOutputEmitter<typeof descriptor, 'change:compare'>
+	declare readonly soChangeRowHeader: TOutputEmitter<typeof descriptor, 'change:rowHeader'>
+	declare readonly soChangeResizable: TOutputEmitter<typeof descriptor, 'change:resizable'>
+	declare readonly soChangeReorderable: TOutputEmitter<typeof descriptor, 'change:reorderable'>
+	declare readonly soChangeDisabled: TOutputEmitter<typeof descriptor, 'change:disabled'>
+	declare readonly soChangeResizerRendered: TOutputEmitter<
+		typeof descriptor,
+		'change:resizerRendered'
+	>
+	declare readonly soChangeResizer: TOutputEmitter<typeof descriptor, 'change:resizer'>
+	declare readonly soChangeResizerAria: TOutputEmitter<typeof descriptor, 'change:resizerAria'>
+	declare readonly soChangeTextAria: TOutputEmitter<typeof descriptor, 'change:textAria'>
+	declare readonly soChangeSortAria: TOutputEmitter<typeof descriptor, 'change:sortAria'>
 }

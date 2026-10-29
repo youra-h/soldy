@@ -215,13 +215,14 @@ export function setup<Name>(ctrl: I<Name> | undefined, props: object): TBinding<
   (он — `TComponentBase`, `packages/ui/angular/src/adapter/runtime/component.base.ts`),
   состояние читается как `state()` (сигнал). Корень ведёт база: компонент
   зовёт только `super(setup<Name>, { strategy: 'host' })` — свою setup-функцию
-  и описание корня (`TRootSpec`); имена входов подставляет `T<Name>Surface`.
+  и описание корня (`TRootSpec`); имена входов и выходов подставляет `T<Name>Surface`.
   Владелец коллекции отдаёт в setup свой вход `engine` стрелкой:
   `super((ctrl, inputs) => setup<Name>(ctrl, inputs, this.engine), …)`. Своему стилю, который
   считает ядро, компонент называет имя выхода (`style: 'fractionStyle'` у
   ProgressSpinner), а корень, который видимость не прячет, — `hides: false`
-  (Skeleton). Эмиттеры выходов компонент не заводит: геттер выхода в
-  `T<Name>Surface` заводит эмиттер при первом чтении. Своих `inputs` и
+  (Skeleton). Эмиттеры выходов компонент не заводит: геттер выхода, который
+  база ставит на прототип класса по списку имён `T<Name>Surface`, заводит
+  эмиттер при первом чтении. Своих `inputs` и
   `outputs` в `@Component` нет: их объявляет `T<Name>Surface`, и вход,
   объявленный здесь ещё раз, строгий шаблон потребителя пропускал бы без
   сверки значения — это ловит `packages/ui/angular/__tests__/inputs.spec.ts`:

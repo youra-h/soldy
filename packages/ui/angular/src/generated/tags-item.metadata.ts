@@ -117,7 +117,7 @@ export abstract class TTagsItemSurface<TInstance extends IEntity> extends TCompo
 		>,
 		spec?: TRootSpec,
 	) {
-		super(TagsItemInputNames, setup, spec)
+		super(TagsItemInputNames, TagsItemOutputNames, setup, spec)
 	}
 	private readonly _controlRef = viewChild<unknown, ElementRef<Element>>('control', {
 		read: ElementRef,
@@ -146,136 +146,54 @@ export abstract class TTagsItemSurface<TInstance extends IEntity> extends TCompo
 	declare aria_labelledBy: TInputValue<typeof descriptor, 'aria_labelledBy'>
 	declare aria_describedBy: TInputValue<typeof descriptor, 'aria_describedBy'>
 	declare selected: TInputValue<typeof descriptor, 'selected'>
-	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('soBundleCreate')
-	}
-	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('soPluginEvent')
-	}
-	get soShow(): TOutputEmitter<typeof descriptor, 'show'> {
-		return this.createOutput('soShow')
-	}
-	get soHide(): TOutputEmitter<typeof descriptor, 'hide'> {
-		return this.createOutput('soHide')
-	}
-	get soShowBefore(): TOutputEmitter<typeof descriptor, 'show:before'> {
-		return this.createOutput('soShowBefore')
-	}
-	get soShowAfter(): TOutputEmitter<typeof descriptor, 'show:after'> {
-		return this.createOutput('soShowAfter')
-	}
-	get soHideBefore(): TOutputEmitter<typeof descriptor, 'hide:before'> {
-		return this.createOutput('soHideBefore')
-	}
-	get soHideAfter(): TOutputEmitter<typeof descriptor, 'hide:after'> {
-		return this.createOutput('soHideAfter')
-	}
-	get soReady(): TOutputEmitter<typeof descriptor, 'ready'> {
-		return this.createOutput('soReady')
-	}
-	get soInput(): TOutputEmitter<typeof descriptor, 'input'> {
-		return this.createOutput('soInput')
-	}
-	get soInputValue(): TOutputEmitter<typeof descriptor, 'input:value'> {
-		return this.createOutput('soInputValue')
-	}
-	get soElementCreate(): TOutputEmitter<typeof descriptor, 'element:create'> {
-		return this.createOutput('soElementCreate')
-	}
-	get soElementReady(): TOutputEmitter<typeof descriptor, 'element:ready'> {
-		return this.createOutput('soElementReady')
-	}
-	get soElementRemoved(): TOutputEmitter<typeof descriptor, 'element:removed'> {
-		return this.createOutput('soElementRemoved')
-	}
-	get soReadyCreate(): TOutputEmitter<typeof descriptor, 'ready:create'> {
-		return this.createOutput('soReadyCreate')
-	}
-	get soActionCreate(): TOutputEmitter<typeof descriptor, 'action:create'> {
-		return this.createOutput('soActionCreate')
-	}
-	get soActionPress(): TOutputEmitter<typeof descriptor, 'action:press'> {
-		return this.createOutput('soActionPress')
-	}
-	get soActionClick(): TOutputEmitter<typeof descriptor, 'action:click'> {
-		return this.createOutput('soActionClick')
-	}
-	get soActionFocus(): TOutputEmitter<typeof descriptor, 'action:focus'> {
-		return this.createOutput('soActionFocus')
-	}
-	get soActionBlur(): TOutputEmitter<typeof descriptor, 'action:blur'> {
-		return this.createOutput('soActionBlur')
-	}
-	get soAriaCreate(): TOutputEmitter<typeof descriptor, 'aria:create'> {
-		return this.createOutput('soAriaCreate')
-	}
-	get soNamesCreate(): TOutputEmitter<typeof descriptor, 'names:create'> {
-		return this.createOutput('soNamesCreate')
-	}
-	get soChangeRendered(): TOutputEmitter<typeof descriptor, 'change:rendered'> {
-		return this.createOutput('soChangeRendered')
-	}
-	get soChangeVisible(): TOutputEmitter<typeof descriptor, 'change:visible'> {
-		return this.createOutput('soChangeVisible')
-	}
-	get soChangeTag(): TOutputEmitter<typeof descriptor, 'change:tag'> {
-		return this.createOutput('soChangeTag')
-	}
-	get soChangeDirection(): TOutputEmitter<typeof descriptor, 'change:direction'> {
-		return this.createOutput('soChangeDirection')
-	}
-	get soChangeClasses(): TOutputEmitter<typeof descriptor, 'change:classes'> {
-		return this.createOutput('soChangeClasses')
-	}
-	get soChangeAria(): TOutputEmitter<typeof descriptor, 'change:aria'> {
-		return this.createOutput('soChangeAria')
-	}
-	get soChangeDataset(): TOutputEmitter<typeof descriptor, 'change:dataset'> {
-		return this.createOutput('soChangeDataset')
-	}
-	get soChangeAttrs(): TOutputEmitter<typeof descriptor, 'change:attrs'> {
-		return this.createOutput('soChangeAttrs')
-	}
-	get soChangeSize(): TOutputEmitter<typeof descriptor, 'change:size'> {
-		return this.createOutput('soChangeSize')
-	}
-	get soChangeVariant(): TOutputEmitter<typeof descriptor, 'change:variant'> {
-		return this.createOutput('soChangeVariant')
-	}
-	get soChangeDisabled(): TOutputEmitter<typeof descriptor, 'change:disabled'> {
-		return this.createOutput('soChangeDisabled')
-	}
-	get soChangeFocused(): TOutputEmitter<typeof descriptor, 'change:focused'> {
-		return this.createOutput('soChangeFocused')
-	}
-	get soChangeValue(): TOutputEmitter<typeof descriptor, 'change:value'> {
-		return this.createOutput('soChangeValue')
-	}
-	get soChangeName(): TOutputEmitter<typeof descriptor, 'change:name'> {
-		return this.createOutput('soChangeName')
-	}
-	get soChangeText(): TOutputEmitter<typeof descriptor, 'change:text'> {
-		return this.createOutput('soChangeText')
-	}
-	get soChangeClosable(): TOutputEmitter<typeof descriptor, 'change:closable'> {
-		return this.createOutput('soChangeClosable')
-	}
-	get soChangeCloseAria(): TOutputEmitter<typeof descriptor, 'change:closeAria'> {
-		return this.createOutput('soChangeCloseAria')
-	}
-	get soAriaChangeLabel(): TOutputEmitter<typeof descriptor, 'aria:change:label'> {
-		return this.createOutput('soAriaChangeLabel')
-	}
-	get soAriaChangeLabelledBy(): TOutputEmitter<typeof descriptor, 'aria:change:labelledBy'> {
-		return this.createOutput('soAriaChangeLabelledBy')
-	}
-	get soAriaChangeDescribedBy(): TOutputEmitter<typeof descriptor, 'aria:change:describedBy'> {
-		return this.createOutput('soAriaChangeDescribedBy')
-	}
-	get soChangeSelected(): TOutputEmitter<typeof facade, 'change:selected'> {
-		return this.createOutput('soChangeSelected')
-	}
-	get soChangeOrder(): TOutputEmitter<typeof facade, 'change:order'> {
-		return this.createOutput('soChangeOrder')
-	}
+	declare readonly soBundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
+	declare readonly soPluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
+	declare readonly soShow: TOutputEmitter<typeof descriptor, 'show'>
+	declare readonly soHide: TOutputEmitter<typeof descriptor, 'hide'>
+	declare readonly soShowBefore: TOutputEmitter<typeof descriptor, 'show:before'>
+	declare readonly soShowAfter: TOutputEmitter<typeof descriptor, 'show:after'>
+	declare readonly soHideBefore: TOutputEmitter<typeof descriptor, 'hide:before'>
+	declare readonly soHideAfter: TOutputEmitter<typeof descriptor, 'hide:after'>
+	declare readonly soReady: TOutputEmitter<typeof descriptor, 'ready'>
+	declare readonly soInput: TOutputEmitter<typeof descriptor, 'input'>
+	declare readonly soInputValue: TOutputEmitter<typeof descriptor, 'input:value'>
+	declare readonly soElementCreate: TOutputEmitter<typeof descriptor, 'element:create'>
+	declare readonly soElementReady: TOutputEmitter<typeof descriptor, 'element:ready'>
+	declare readonly soElementRemoved: TOutputEmitter<typeof descriptor, 'element:removed'>
+	declare readonly soReadyCreate: TOutputEmitter<typeof descriptor, 'ready:create'>
+	declare readonly soActionCreate: TOutputEmitter<typeof descriptor, 'action:create'>
+	declare readonly soActionPress: TOutputEmitter<typeof descriptor, 'action:press'>
+	declare readonly soActionClick: TOutputEmitter<typeof descriptor, 'action:click'>
+	declare readonly soActionFocus: TOutputEmitter<typeof descriptor, 'action:focus'>
+	declare readonly soActionBlur: TOutputEmitter<typeof descriptor, 'action:blur'>
+	declare readonly soAriaCreate: TOutputEmitter<typeof descriptor, 'aria:create'>
+	declare readonly soNamesCreate: TOutputEmitter<typeof descriptor, 'names:create'>
+	declare readonly soChangeRendered: TOutputEmitter<typeof descriptor, 'change:rendered'>
+	declare readonly soChangeVisible: TOutputEmitter<typeof descriptor, 'change:visible'>
+	declare readonly soChangeTag: TOutputEmitter<typeof descriptor, 'change:tag'>
+	declare readonly soChangeDirection: TOutputEmitter<typeof descriptor, 'change:direction'>
+	declare readonly soChangeClasses: TOutputEmitter<typeof descriptor, 'change:classes'>
+	declare readonly soChangeAria: TOutputEmitter<typeof descriptor, 'change:aria'>
+	declare readonly soChangeDataset: TOutputEmitter<typeof descriptor, 'change:dataset'>
+	declare readonly soChangeAttrs: TOutputEmitter<typeof descriptor, 'change:attrs'>
+	declare readonly soChangeSize: TOutputEmitter<typeof descriptor, 'change:size'>
+	declare readonly soChangeVariant: TOutputEmitter<typeof descriptor, 'change:variant'>
+	declare readonly soChangeDisabled: TOutputEmitter<typeof descriptor, 'change:disabled'>
+	declare readonly soChangeFocused: TOutputEmitter<typeof descriptor, 'change:focused'>
+	declare readonly soChangeValue: TOutputEmitter<typeof descriptor, 'change:value'>
+	declare readonly soChangeName: TOutputEmitter<typeof descriptor, 'change:name'>
+	declare readonly soChangeText: TOutputEmitter<typeof descriptor, 'change:text'>
+	declare readonly soChangeClosable: TOutputEmitter<typeof descriptor, 'change:closable'>
+	declare readonly soChangeCloseAria: TOutputEmitter<typeof descriptor, 'change:closeAria'>
+	declare readonly soAriaChangeLabel: TOutputEmitter<typeof descriptor, 'aria:change:label'>
+	declare readonly soAriaChangeLabelledBy: TOutputEmitter<
+		typeof descriptor,
+		'aria:change:labelledBy'
+	>
+	declare readonly soAriaChangeDescribedBy: TOutputEmitter<
+		typeof descriptor,
+		'aria:change:describedBy'
+	>
+	declare readonly soChangeSelected: TOutputEmitter<typeof facade, 'change:selected'>
+	declare readonly soChangeOrder: TOutputEmitter<typeof facade, 'change:order'>
 }

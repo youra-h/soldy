@@ -524,6 +524,17 @@ Not an `import` in `main.ts`: Angular CLI puts CSS imported from a module into a
 never loads, and the components stay unstyled. The values of the theme, such as
 `variant="accent"`, reach the template type check with `@soldy-ui/theme-oren/setup`.
 
+The `initial` budget of Angular CLI counts the raw bytes of the initial JavaScript and the global
+styles, and a project made by `ng new` fails the build above 1 MB. The theme's stylesheet holds the
+CSS of every component — 356 kB raw, 35 kB gzip — and a page with a Button, an Input, a Select, a
+Dialog, a Table and a DatePicker adds 698 kB of JavaScript (170 kB gzip): 1.05 MB raw, 205 kB over
+the network. Raise the error threshold of the `initial` entry in `budgets` of the `production`
+configuration in `angular.json`:
+
+```json
+{ "type": "initial", "maximumWarning": "500kB", "maximumError": "2MB" }
+```
+
 ## Documentation
 
 - [Soldy UI README](https://github.com/youra-h/soldy-ui#readme) — the component set and what each

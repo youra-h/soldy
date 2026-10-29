@@ -32,18 +32,12 @@ export abstract class TVirtualSurface<TInstance extends IEntity> extends TCompon
 		>,
 		spec?: TRootSpec,
 	) {
-		super(VirtualInputNames, setup, spec)
+		super(VirtualInputNames, VirtualOutputNames, setup, spec)
 	}
 	declare embedded: TInputValue<typeof descriptor, 'embedded'>
 	declare pluginProps: TInputValue<typeof descriptor, 'pluginProps'>
 	declare enabled: TInputValue<typeof descriptor, 'enabled'>
-	get soBundleCreate(): TOutputEmitter<typeof descriptor, 'bundle:create'> {
-		return this.createOutput('soBundleCreate')
-	}
-	get soPluginEvent(): TOutputEmitter<typeof descriptor, 'plugin:event'> {
-		return this.createOutput('soPluginEvent')
-	}
-	get soChangeEnabled(): TOutputEmitter<typeof descriptor, 'change:enabled'> {
-		return this.createOutput('soChangeEnabled')
-	}
+	declare readonly soBundleCreate: TOutputEmitter<typeof descriptor, 'bundle:create'>
+	declare readonly soPluginEvent: TOutputEmitter<typeof descriptor, 'plugin:event'>
+	declare readonly soChangeEnabled: TOutputEmitter<typeof descriptor, 'change:enabled'>
 }
