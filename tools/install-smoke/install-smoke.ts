@@ -163,8 +163,10 @@ export function withTarballs(manifest: TManifest, specs: ReadonlyMap<string, str
 
 /**
  * The project's manifest with the library from the registry: every library
- * package it names takes `spec` — a version or a dist-tag (`0.3.0`, `beta`),
+ * package it names takes `spec` — a version or a dist-tag (`0.3.0`, `latest`),
  * and npm brings the rest of the closure by their manifests, as at a user's.
+ * A theme and an icon pack have versions of their own, so a version fits a
+ * release only where theirs is the same; the whole release is `latest`.
  */
 export function withRegistry(manifest: TManifest, spec: string): TManifest {
 	const specs = new Map(libraryNamesOf(manifest).map((name) => [name, spec]))

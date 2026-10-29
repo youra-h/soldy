@@ -102,10 +102,10 @@ describe('манифест проекта', () => {
 	})
 
 	it('из реестра: названные пакеты — под версией или тегом, остальное ставит npm', () => {
-		expect(withRegistry(PROJECT, 'beta')).toEqual({
+		expect(withRegistry(PROJECT, 'latest')).toEqual({
 			name: 'app',
-			dependencies: { vue: '^3.5.44', '@soldy-ui/vue': 'beta' },
-			devDependencies: { vite: '^8.3.5', '@soldy-ui/theme-oren': 'beta' },
+			dependencies: { vue: '^3.5.44', '@soldy-ui/vue': 'latest' },
+			devDependencies: { vite: '^8.3.5', '@soldy-ui/theme-oren': 'latest' },
 		})
 	})
 })

@@ -34,7 +34,7 @@ import type { TManifest, TProject } from './install-smoke.ts'
  * npm run build                                   # the run packs what the build left in dist
  * node tools/install-smoke/cli.ts                 # every project
  * node tools/install-smoke/cli.ts vue next        # these two
- * node tools/install-smoke/cli.ts --registry beta # the published packages instead of tarballs
+ * node tools/install-smoke/cli.ts --registry latest # the published packages instead of tarballs
  * ```
  *
  * A project is copied out of the repository into the run folder (`--dir`,
