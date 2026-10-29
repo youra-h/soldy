@@ -32,6 +32,7 @@ jobs:
           npm run test:core
           npm run test:eslint
           npm run test:min-peers
+          npm run test:install-smoke
           npm run test:side-effects
           npm run test:setup
           npm run test:plugins
@@ -313,6 +314,75 @@ jobs:
       # Только спеки: сборка, типы и браузерный прогон идут в своих задачах.
       - name: Спеки
         run: npm run test:${{ matrix.adapter }}
+
+  # The built packages, packed as npm publishes them, installed into a clean
+  # project of each target — Vite with every adapter, Angular CLI, Nuxt,
+  # Next.js, SvelteKit, SolidStart, Angular SSR (docs/agents/build.md,
+  # «Прогон установки»). The tests read the neighbors from sources and never
+  # see a tarball: a file missing from `files`, an export condition, a
+  # directive the bundler drops, the theme's CSS, a peer range. The project
+  # installs with no peer problem, type-checks, builds, renders on the server
+  # and comes alive in Chromium. The frameworks are the current versions of
+  # the starters' ranges, as at a user who creates a project today.
+  #
+  # The key of the matrix is `project`: under it `tools/install-smoke` reads
+  # the matrix against its table of projects (`projects.spec.ts`).
+  install:
+    name: Установка — ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # A red project does not stop the others: each is a target of its own.
+      fail-fast: false
+      matrix:
+        project:
+          [
+            vue,
+            react,
+            svelte,
+            solid,
+            webc,
+            angular,
+            nuxt,
+            next,
+            sveltekit,
+            solid-start,
+            angular-ssr,
+          ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 24: SolidStart 2 requires it, and a new project is made on the
+      # current LTS.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The same browser as the layout run: the revision of package-lock.
+      - name: Кэш браузеров Playwright
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Установка Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+
+      - name: Системные зависимости Chromium
+        run: npx playwright install-deps chromium
+
+      # The run packs what the build left in dist.
+      - name: Сборка пакетов
+        run: npm run build
+
+      - name: Установка в чистый проект
+        run: npm run check:install -- ${{ matrix.project }}
 
   lint:
     name: Линт

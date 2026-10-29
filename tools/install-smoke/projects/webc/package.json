@@ -1,0 +1,20 @@
+{
+  "name": "soldy-install-webc",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@soldy-ui/icons-material": "*",
+    "@soldy-ui/setup": "*",
+    "@soldy-ui/theme-oren": "*",
+    "@soldy-ui/webc": "*"
+  },
+  "devDependencies": {
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5"
+  }
+}
