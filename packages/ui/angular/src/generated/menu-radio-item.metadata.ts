@@ -8,7 +8,6 @@ import type {
 } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -16,6 +15,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor, facade } from '../components/menu/radio-item/manifest'
 
 export const MenuRadioItemInputNames = [
@@ -36,21 +36,8 @@ export const MenuRadioItemInputNames = [
 	'selected',
 ] as const
 export const MenuRadioItemOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soInput',
 	'soInputValue',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soActionCreate',
 	'soActionPress',
 	'soActionClick',
@@ -58,14 +45,6 @@ export const MenuRadioItemOutputNames = [
 	'soActionBlur',
 	'soAriaCreate',
 	'soListItemCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeSize',
 	'soChangeVariant',
 	'soChangeDisabled',
@@ -100,7 +79,7 @@ export const MenuRadioItemOutputNames = [
 	],
 	outputs: [...MenuRadioItemOutputNames],
 })
-export abstract class TMenuRadioItemSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TMenuRadioItemSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	DescriptorInstance<typeof facade>,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

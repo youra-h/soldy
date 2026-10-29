@@ -1,21 +1,24 @@
 /**
- * Плагин узла в тестах — только через выход `soElementCreate`.
+ * The node plugin in the specs — only through the output `soElementCreate`.
  *
- * Выход `soElementCreate` — геттер сгенерированного `T<Имя>Surface`, от которого
- * наследуется компонент: он даёт выходу тип, а первое чтение заводит эмиттер.
- * Поэтому выход читается как поле, без рефлексии и приведений.
+ * Every visual component has the output `soElementCreate`: the generated
+ * `T<Name>Surface` the component extends gives it a type with its `declare`
+ * field, and its getter, which the base defines on the prototype of the
+ * generated `TViewSurface`, creates the emitter on the first read. So the
+ * output is read as a field, without reflection or casts.
  *
- * Подписка ставится до первой проверки изменений: набор объявляет себя на
- * микрозадаче после `ngOnInit` (`TOwnBundle._announce`), а `ngOnInit` зовёт
- * первый `detectChanges()`. Эмиттер заводит само чтение здесь, ещё до
- * `ngOnInit`, а приёмник событий ядра, поставленный там, находит его по имени.
+ * The subscription is made before the first change detection: the bundle
+ * announces itself on a microtask after `ngOnInit` (`TOwnBundle._announce`),
+ * and `ngOnInit` is called by the first `detectChanges()`. The read here
+ * creates the emitter before `ngOnInit`, and the sink of core events set there
+ * finds it by name.
  */
 
 import type { ComponentFixture } from '@angular/core/testing'
 import { TElementPlugin } from '@soldy-ui/plugins'
 import type { TComponentViewComponent } from '@soldy-ui/angular'
 
-/** Компонент с `TElementPlugin` в наборе: выход `soElementCreate` у всех визуальных один. */
+/** A component with `TElementPlugin` in its bundle: every visual one has the same `soElementCreate`. */
 type TWithElementCreate = Pick<TComponentViewComponent, 'soElementCreate'>
 
 export function elementPlugin(fixture: ComponentFixture<TWithElementCreate>): () => TElementPlugin {
@@ -32,5 +35,5 @@ export function elementPlugin(fixture: ComponentFixture<TWithElementCreate>): ()
 	}
 }
 
-/** Набор объявляется на микрозадаче — см. `TOwnBundle._announce`. */
+/** The bundle announces itself on a microtask — see `TOwnBundle._announce`. */
 export const announced = (): Promise<void> => Promise.resolve()

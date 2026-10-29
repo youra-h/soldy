@@ -15,10 +15,19 @@
  *
  * The output's emitter is created by its first read — the same template
  * binding or a subscription from code — through the getter the base defines on
- * the class prototype, once per class. An output nobody read creates no
+ * a prototype: of an own output — on the prototype of the component's class,
+ * once per class, of an output every visual component has — on the prototype
+ * of `TViewSurface`, once per application. An output nobody read creates no
  * emitter, even after core events: there is no one to give the event to. A
  * created emitter is an own property of the instance under the output's name,
  * and that is how the specs see what was created.
+ *
+ * The decorator of the generated `TViewSurface` declares the outputs every
+ * visual component has, and that of a visual `T<Name>Surface` — only its own:
+ * `<Name>OutputNames` lists them, and all outputs of the component are
+ * `[...ViewOutputNames, ...<Name>OutputNames]`. The emitter checks go by the
+ * full list: by the own one alone `soChangeVisible` would drop out of them,
+ * and ComponentView has no own outputs at all.
  *
  * A host per exported component: an output is typed only if the component
  * extends its own `T<Name>Surface`, not `TComponentBase` directly.
@@ -32,22 +41,41 @@
 
 import { describe, it, expect, expectTypeOf } from 'vitest'
 import { DomElementSchemaRegistry } from '@angular/compiler'
-import { Component, EventEmitter, viewChild } from '@angular/core'
+import { Component, EventEmitter, reflectComponentType, viewChild, type Type } from '@angular/core'
 import { outputToObservable } from '@angular/core/rxjs-interop'
 import { TestBed } from '@angular/core/testing'
 import { TButton, TComponent, TComponentView, type TPluginEvent } from '@soldy-ui/core'
 import * as setup from '@soldy-ui/setup'
-import { ButtonDescriptor, InputDescriptor, type IComponentDescriptor } from '@soldy-ui/setup'
+import {
+	ButtonDescriptor,
+	ComponentDescriptor,
+	DragAndDropDescriptor,
+	InputDescriptor,
+	VirtualDescriptor,
+	type IComponentDescriptor,
+} from '@soldy-ui/setup'
 import {
 	ButtonOutputNames,
 	ComponentOutputNames,
 	ComponentViewOutputNames,
+	ListBoxOutputNames,
 	TButtonComponent,
+	TComponentBase,
 	TComponentComponent,
 	TComponentViewComponent,
+	TListBoxComponent,
+	TViewSurface,
+	ViewOutputNames,
 	useOutputs,
 } from '@soldy-ui/angular'
 import { exportedDeclarations, type TDeclaration } from './declarations'
+
+/** All outputs of a visual component: those of `TViewSurface` and its own. */
+const BUTTON_OUTPUTS: readonly string[] = [...ViewOutputNames, ...ButtonOutputNames]
+const COMPONENT_VIEW_OUTPUTS: readonly string[] = [...ViewOutputNames, ...ComponentViewOutputNames]
+
+/** The outputs `TViewSurface` declares for every visual component. */
+const VIEW_OUTPUTS: ReadonlySet<string> = new Set(ViewOutputNames)
 
 @Component({
 	standalone: true,
@@ -233,7 +261,7 @@ describe('эмиттер выхода · заводит первое чтени�
 		fixture.componentInstance.ctrl.text = 'Saved'
 		fixture.detectChanges()
 
-		expect(created(fixture.componentInstance.button(), ButtonOutputNames)).toEqual([])
+		expect(created(fixture.componentInstance.button(), BUTTON_OUTPUTS)).toEqual([])
 	})
 
 	it('ComponentView: без привязанных выходов эмиттеров нет и после событий ядра', async () => {
@@ -245,7 +273,7 @@ describe('эмиттер выхода · заводит первое чтени�
 		fixture.componentInstance.ctrl.visible = false
 		fixture.detectChanges()
 
-		expect(created(fixture.componentInstance.view(), ComponentViewOutputNames)).toEqual([])
+		expect(created(fixture.componentInstance.view(), COMPONENT_VIEW_OUTPUTS)).toEqual([])
 	})
 
 	it('Component: без привязанных выходов эмиттеров нет и после событий ядра', () => {
@@ -270,18 +298,25 @@ describe('эмиттер выхода · заводит первое чтени�
 		const emitter = view.soChangeVisible
 
 		expect(emitter).toBeInstanceOf(EventEmitter)
-		expect(created(view, ComponentViewOutputNames)).toEqual(['soChangeVisible'])
+		expect(created(view, COMPONENT_VIEW_OUTPUTS)).toEqual(['soChangeVisible'])
 		expect(view.soChangeVisible).toBe(emitter)
 	})
 
 	/**
-	 * The getters are the base's, on the prototype of the component's class:
-	 * the first instance defines them, and the next one neither replaces them
-	 * nor gets its own.
+	 * The getters are the base's. Those of the own outputs of Button are on
+	 * the prototype of its class, once per class; those of the outputs every
+	 * visual component has — on the prototype of `TViewSurface`, once per
+	 * application, and the class of the component has no copies. The first
+	 * instance defines them: a second Button and then a ComponentView neither
+	 * replace them nor get their own.
 	 */
-	it('геттер выхода — на прототипе класса, один на класс', () => {
-		const getters = (): unknown[] =>
-			ButtonOutputNames.map((output) => getterOf(TButtonComponent.prototype, output))
+	it('геттеры выходов Button: свои — на прототипе его класса, общие — на TViewSurface', () => {
+		const getters = (): unknown[] => [
+			...ButtonOutputNames.map((output) => getterOf(TButtonComponent.prototype, output)),
+			...ViewOutputNames.map((output) => getterOf(TViewSurface.prototype, output)),
+		]
+		const copies = (prototype: object): string[] =>
+			ViewOutputNames.filter((output) => Object.hasOwn(prototype, output))
 		const first = TestBed.createComponent(BareButtonHost)
 
 		first.detectChanges()
@@ -289,13 +324,18 @@ describe('эмиттер выхода · заводит первое чтени�
 		const defined = getters()
 
 		expect(defined.filter((getter) => typeof getter !== 'function')).toEqual([])
+		expect(copies(TButtonComponent.prototype)).toEqual([])
 
 		const second = TestBed.createComponent(BareButtonHost)
+		const view = TestBed.createComponent(BareComponentViewHost)
 
 		second.detectChanges()
+		view.detectChanges()
 
 		expect(getters().filter((getter, index) => getter !== defined[index])).toEqual([])
-		expect(created(second.componentInstance.button(), ButtonOutputNames)).toEqual([])
+		expect(copies(TComponentViewComponent.prototype)).toEqual([])
+		expect(created(second.componentInstance.button(), BUTTON_OUTPUTS)).toEqual([])
+		expect(created(view.componentInstance.view(), COMPONENT_VIEW_OUTPUTS)).toEqual([])
 	})
 
 	it('привязка в шаблоне заводит эмиттер только своему выходу', () => {
@@ -306,7 +346,7 @@ describe('эмиттер выхода · заводит первое чтени�
 		fixture.componentInstance.ctrl.visible = false
 
 		expect(fixture.componentInstance.changes).toEqual([false])
-		expect(created(fixture.componentInstance.button(), ButtonOutputNames)).toEqual([
+		expect(created(fixture.componentInstance.button(), BUTTON_OUTPUTS)).toEqual([
 			'soChangeVisible',
 		])
 	})
@@ -375,11 +415,36 @@ function mountDeclaration({ kind, type }: TDeclaration): {
 }
 
 /**
- * The decorator of `T<Name>Surface` declares the outputs, and the base defines
- * their getters from the generator's list of the same names. Here every
- * declared output has a getter on the prototype of its class: Angular reads an
- * output only when it is bound, and an output without a getter would fail only
- * for whoever binds it. Rootless components — directives — the same.
+ * The prototype holding the getter of an output: the first one up the chain
+ * from the instance, below the base — the base itself holds none.
+ */
+function getterHolder(instance: object, output: string): object | undefined {
+	let prototype: unknown = Object.getPrototypeOf(instance)
+
+	while (
+		typeof prototype === 'object' &&
+		prototype !== null &&
+		prototype !== TComponentBase.prototype
+	) {
+		if (typeof getterOf(prototype, output) === 'function') return prototype
+
+		prototype = Object.getPrototypeOf(prototype)
+	}
+
+	return undefined
+}
+
+/**
+ * The decorators of `TViewSurface` and `T<Name>Surface` declare the outputs,
+ * and the base defines their getters from the generator's lists of the same
+ * names. Here every output Angular knows has a getter in the chain of its
+ * class: Angular reads an output only when it is bound, and an output without
+ * a getter would fail only for whoever binds it. A visual component has every
+ * output of `TViewSurface`, their getters are the ancestor's, and its class
+ * has no copies; the getters of its own outputs are on the prototype of its
+ * class.
+ * Rootless components — directives — have no `TViewSurface` in the chain, and
+ * their surface declares every output of the descriptor, as before.
  */
 describe('выходы компонентов экспорта · геттер на каждый выход', () => {
 	// The soldy components are not a hand-written list: a new one is checked by itself
@@ -408,7 +473,7 @@ describe('выходы компонентов экспорта · геттер �
 	})
 
 	it.each(components.map((declaration) => [declaration.name, declaration] as const))(
-		'%s: чтение каждого выхода заводит ровно его эмиттер',
+		'%s: геттер каждого выхода — на своём прототипе, чтение заводит ровно его эмиттер',
 		async (_name, declaration) => {
 			const { outputs } = declaration
 			const { fixture, instance } = mountDeclaration(declaration)
@@ -422,10 +487,22 @@ describe('выходы компонентов экспорта · геттер �
 
 			expect(created(instance, outputs)).toEqual([])
 
-			const prototype: object = Object.getPrototypeOf(instance)
+			const visual = instance instanceof TViewSurface
+			const own: unknown = Object.getPrototypeOf(instance)
 
+			if (visual) {
+				expect(ViewOutputNames.filter((output) => !outputs.includes(output))).toEqual([])
+			}
+
+			// A shared output of a visual component — from the ancestor, any other — from the class
 			expect(
-				outputs.filter((output) => typeof getterOf(prototype, output) !== 'function'),
+				outputs.filter((output) => {
+					const holder = getterHolder(instance, output)
+
+					return visual && VIEW_OUTPUTS.has(output)
+						? holder !== TViewSurface.prototype
+						: holder !== own
+				}),
 			).toEqual([])
 
 			outputs.forEach((output, index) => {
@@ -437,6 +514,57 @@ describe('выходы компонентов экспорта · геттер �
 			})
 		},
 	)
+
+	/**
+	 * The ancestor is chosen by a rule — the surface has every output of
+	 * `TViewSurface`, — not by a list of names: so without it are exactly the
+	 * rootless components, and their outputs are all those of the descriptor.
+	 */
+	it('без TViewSurface — ровно три компонента без корня, у них все выходы дескриптора', () => {
+		const rootless: readonly (readonly [name: string, descriptor: IComponentDescriptor])[] = [
+			['TComponentComponent', ComponentDescriptor()],
+			['TVirtualComponent', VirtualDescriptor()],
+			['TDragAndDropComponent', DragAndDropDescriptor()],
+		]
+		const found = components.filter(({ type }) => !(type.prototype instanceof TViewSurface))
+
+		expect(found.map(({ name }) => name).sort()).toEqual(rootless.map(([name]) => name).sort())
+
+		for (const [name, descriptor] of rootless) {
+			const outputs = found.find((declaration) => declaration.name === name)?.outputs
+
+			expect(new Set(outputs)).toEqual(
+				new Set(useOutputs(descriptor).map(([output]) => output)),
+			)
+		}
+	})
+})
+
+/**
+ * The outputs in the Angular definition of a visual component, as the mirror
+ * `reflectComponentType` gives them: Angular merges those of `TViewSurface`
+ * into the definition of the descendant, and its decorator declares only its
+ * own — `<Name>OutputNames`. ListBox — with the outputs of its facade.
+ */
+describe('выходы в определении Angular · общие от TViewSurface и свои', () => {
+	const visuals: readonly (readonly [
+		name: string,
+		type: Type<unknown>,
+		own: readonly string[],
+	])[] = [
+		['Button', TButtonComponent, ButtonOutputNames],
+		['ComponentView', TComponentViewComponent, ComponentViewOutputNames],
+		['ListBox', TListBoxComponent, ListBoxOutputNames],
+	]
+
+	it.each(visuals)('%s: выходы — ViewOutputNames и свои', (_name, type, own) => {
+		const outputs = reflectComponentType(type)?.outputs.map(({ propName }) => propName)
+
+		expect(outputs).toBeDefined()
+		expect(new Set(outputs)).toEqual(new Set([...ViewOutputNames, ...own]))
+		// Each one once: an own output is not one of the shared
+		expect(outputs).toHaveLength(ViewOutputNames.length + own.length)
+	})
 })
 
 function isComponentDescriptor(value: unknown): value is IComponentDescriptor {

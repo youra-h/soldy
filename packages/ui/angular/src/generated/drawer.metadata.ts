@@ -4,7 +4,6 @@ import type { IEntity } from '@soldy-ui/core'
 import type { DescriptorPluginOutputs, DescriptorPluginProps } from '@soldy-ui/setup'
 import {
 	SlotDirective,
-	TComponentBase,
 	type TInputValue,
 	type TOutputEmitter,
 	type TRootSpec,
@@ -12,6 +11,7 @@ import {
 	type TTemplateRef,
 } from '../adapter/runtime'
 import { booleanInput } from '../adapter/runtime/boolean-input'
+import { TViewSurface } from './view.metadata'
 import type { descriptor } from '../components/drawer/manifest'
 
 export const DrawerInputNames = [
@@ -33,21 +33,8 @@ export const DrawerInputNames = [
 	'scrollLock_enabled',
 ] as const
 export const DrawerOutputNames = [
-	'soBundleCreate',
-	'soPluginEvent',
-	'soShow',
-	'soHide',
-	'soShowBefore',
-	'soShowAfter',
-	'soHideBefore',
-	'soHideAfter',
-	'soReady',
 	'soChangeZIndex',
 	'soCloseBefore',
-	'soElementCreate',
-	'soElementReady',
-	'soElementRemoved',
-	'soReadyCreate',
 	'soDismissCreate',
 	'soDismissDismiss',
 	'soFocusCreate',
@@ -57,14 +44,6 @@ export const DrawerOutputNames = [
 	'soSwipeCreate',
 	'soIdsCreate',
 	'soNamesCreate',
-	'soChangeRendered',
-	'soChangeVisible',
-	'soChangeTag',
-	'soChangeDirection',
-	'soChangeClasses',
-	'soChangeAria',
-	'soChangeDataset',
-	'soChangeAttrs',
 	'soChangeTarget',
 	'soChangeWidth',
 	'soChangeHeight',
@@ -103,7 +82,7 @@ export const DrawerOutputNames = [
 	],
 	outputs: [...DrawerOutputNames],
 })
-export abstract class TDrawerSurface<TInstance extends IEntity> extends TComponentBase<
+export abstract class TDrawerSurface<TInstance extends IEntity> extends TViewSurface<
 	TInstance,
 	unknown,
 	DescriptorPluginProps<typeof descriptor> & DescriptorPluginOutputs<typeof descriptor>

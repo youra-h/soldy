@@ -527,7 +527,7 @@ never loads, and the components stay unstyled. The values of the theme, such as
 The `initial` budget of Angular CLI counts the raw bytes of the initial JavaScript and the global
 styles, and a project made by `ng new` fails the build above 1 MB. `@soldy-ui/theme-oren` holds the
 CSS of every component — 361 kB raw, 36 kB gzip — and a page with a Button, an Input, a Select, a
-Dialog, a Table and a DatePicker adds 698 kB of JavaScript (170 kB gzip): over the threshold. Import
+Dialog, a Table and a DatePicker adds 677 kB of JavaScript (169 kB gzip): over the threshold. Import
 the stylesheets of the components your pages use instead — each one with the shared part of the
 theme:
 

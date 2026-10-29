@@ -1,3 +1,4 @@
+export * from '../generated/view.metadata'
 export * from './component'
 export * from './component-view'
 export * from './stylable'
